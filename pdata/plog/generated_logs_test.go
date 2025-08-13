@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 func TestLogs_MoveTo(t *testing.T) {
@@ -24,8 +24,8 @@ func TestLogs_MoveTo(t *testing.T) {
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLogs(), dest)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLogs(&otlpcollectorlog.ExportLogsServiceRequest{}, &sharedState)) })
-	assert.Panics(t, func() { newLogs(&otlpcollectorlog.ExportLogsServiceRequest{}, &sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState)) })
+	assert.Panics(t, func() { newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState).MoveTo(dest) })
 }
 
 func TestLogs_CopyTo(t *testing.T) {
@@ -37,7 +37,7 @@ func TestLogs_CopyTo(t *testing.T) {
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLogs(&otlpcollectorlog.ExportLogsServiceRequest{}, &sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState)) })
 }
 
 func TestLogs_ResourceLogs(t *testing.T) {

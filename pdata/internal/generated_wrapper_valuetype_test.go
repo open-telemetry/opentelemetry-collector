@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
+	dest := &otlpprofiles.ValueType{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpprofiles.ValueType{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 	for name, src := range getEncodingTestValuesValueType() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 
 			dest := &otlpprofiles.ValueType{}
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
+	for name, src := range getEncodingTestValuesValueType() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigValueType(src))
+			gotSize := MarshalProtoOrigValueType(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.ValueType{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpprofiles.ValueType{}
+			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

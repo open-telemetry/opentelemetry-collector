@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
+	dest := &otlpmetrics.SummaryDataPoint{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpmetrics.SummaryDataPoint{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 	for name, src := range getEncodingTestValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 
 			dest := &otlpmetrics.SummaryDataPoint{}
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.SummaryDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpmetrics.SummaryDataPoint{}
+			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

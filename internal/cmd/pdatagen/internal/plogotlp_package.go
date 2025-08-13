@@ -12,18 +12,23 @@ var plogotlp = &Package{
 		path: filepath.Join("plog", "plogotlp"),
 		imports: []string{
 			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
 			``,
-			`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
+			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 		},
 		testImports: []string{
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectorlogs "go.opentelemetry.io/proto/slim/otlp/collector/logs/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 		},
 	},
 	structs: []baseStruct{
@@ -35,7 +40,7 @@ var plogotlp = &Package{
 var exportLogsResponse = &messageStruct{
 	structName:     "ExportResponse",
 	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
-	originFullName: "otlpcollectorlog.ExportLogsServiceResponse",
+	originFullName: "otlpcollectorlogs.ExportLogsServiceResponse",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "PartialSuccess",
@@ -48,7 +53,7 @@ var exportLogsResponse = &messageStruct{
 var exportLogsPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
-	originFullName: "otlpcollectorlog.ExportLogsPartialSuccess",
+	originFullName: "otlpcollectorlogs.ExportLogsPartialSuccess",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "RejectedLogRecords",

@@ -120,6 +120,10 @@ func (opv *OptionalPrimitiveField) GenerateMarshalProto(ms *messageStruct) strin
 	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genMarshalProto() + "\n}"
 }
 
+func (opv *OptionalPrimitiveField) GenerateUnmarshalProto(ms *messageStruct) string {
+	return opv.toProtoField(ms).genUnmarshalProto()
+}
+
 func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct) *ProtoField {
 	return &ProtoField{
 		Type:     opv.protoType,

@@ -96,6 +96,10 @@ func (pf *PrimitiveField) GenerateMarshalProto(*messageStruct) string {
 	return pf.toProtoField().genMarshalProto()
 }
 
+func (pf *PrimitiveField) GenerateUnmarshalProto(*messageStruct) string {
+	return pf.toProtoField().genUnmarshalProto()
+}
+
 func (pf *PrimitiveField) toProtoField() *ProtoField {
 	return &ProtoField{
 		Type: pf.protoType,

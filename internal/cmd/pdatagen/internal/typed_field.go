@@ -101,12 +101,16 @@ func (ptf *TypedField) GenerateMarshalProto(*messageStruct) string {
 	return ptf.toProtoField().genMarshalProto()
 }
 
+func (ptf *TypedField) GenerateUnmarshalProto(*messageStruct) string {
+	return ptf.toProtoField().genUnmarshalProto()
+}
+
 func (ptf *TypedField) toProtoField() *ProtoField {
 	return &ProtoField{
-		Type:        ptf.returnType.protoType,
-		ID:          ptf.protoID,
-		Name:        ptf.getOriginFieldName(),
-		MessageName: ptf.returnType.structName,
+		Type:            ptf.returnType.protoType,
+		ID:              ptf.protoID,
+		Name:            ptf.getOriginFieldName(),
+		MessageFullName: ptf.returnType.messageName,
 	}
 }
 

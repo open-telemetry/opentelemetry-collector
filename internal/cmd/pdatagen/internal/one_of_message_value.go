@@ -130,13 +130,17 @@ func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfF
 	return omv.toProtoField(ms, of).genMarshalProto()
 }
 
+func (omv *OneOfMessageValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of).genUnmarshalProto()
+}
+
 func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) *ProtoField {
 	return &ProtoField{
-		Type:        ProtoTypeMessage,
-		ID:          omv.protoID,
-		Name:        of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
-		MessageName: omv.returnMessage.getOriginName(),
-		Nullable:    true,
+		Type:            ProtoTypeMessage,
+		ID:              omv.protoID,
+		Name:            of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
+		MessageFullName: omv.returnMessage.getOriginName(),
+		Nullable:        true,
 	}
 }
 

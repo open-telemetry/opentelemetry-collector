@@ -120,6 +120,10 @@ func (opv *OneOfPrimitiveValue) GenerateMarshalProto(ms *messageStruct, of *OneO
 	return opv.toProtoField(ms, of).genMarshalProto()
 }
 
+func (opv *OneOfPrimitiveValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of).genUnmarshalProto()
+}
+
 func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField) *ProtoField {
 	return &ProtoField{
 		Type:     opv.protoType,

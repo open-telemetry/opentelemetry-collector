@@ -8,12 +8,21 @@ package internal
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigHistogramDataPoint() otlpmetrics.HistogramDataPoint {
+	return otlpmetrics.HistogramDataPoint{}
+}
+
+func NewOrigPtrHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+	return &otlpmetrics.HistogramDataPoint{}
+}
 
 func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
@@ -309,5 +318,172 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 }
 
 func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 9:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			return UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.StartTimeUnixNano = uint64(num)
+
+		case 3:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.TimeUnixNano = uint64(num)
+
+		case 4:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Count", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Count = uint64(num)
+
+		case 5:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum = math.Float64frombits(num)
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			size := (pos - prevPos) / 8
+			orig.BucketCounts = make([]uint64, 0, size)
+			var num uint64
+			for i := 0; i < size; i++ {
+				num, prevPos, err = proto.ConsumeI64(buf[:pos], prevPos)
+				if err != nil {
+					return err
+				}
+				orig.BucketCounts[i] = uint64(num)
+			}
+			if prevPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-prevPos)
+			}
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			size := (pos - prevPos) / 8
+			orig.ExplicitBounds = make([]float64, 0, size)
+			var num uint64
+			for i := 0; i < size; i++ {
+				num, prevPos, err = proto.ConsumeI64(buf[:pos], prevPos)
+				if err != nil {
+					return err
+				}
+				orig.ExplicitBounds[i] = math.Float64frombits(num)
+			}
+			if prevPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field ExplicitBounds", pos-prevPos)
+			}
+
+		case 8:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exemplars", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Exemplars = append(orig.Exemplars, NewOrigExemplar())
+			return UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[prevPos:pos])
+
+		case 10:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Flags = uint32(num)
+
+		case 11:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min_.(*otlpmetrics.HistogramDataPoint_Min).Min", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min = math.Float64frombits(num)
+
+		case 12:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max_.(*otlpmetrics.HistogramDataPoint_Max).Max", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max = math.Float64frombits(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

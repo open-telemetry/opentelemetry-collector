@@ -7,21 +7,31 @@
 package internal
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"fmt"
+
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func CopyOrigExportLogsServiceResponse(dest, src *otlpcollectorlog.ExportLogsServiceResponse) {
+func NewOrigExportLogsServiceResponse() otlpcollectorlogs.ExportLogsServiceResponse {
+	return otlpcollectorlogs.ExportLogsServiceResponse{}
+}
+
+func NewOrigPtrExportLogsServiceResponse() *otlpcollectorlogs.ExportLogsServiceResponse {
+	return &otlpcollectorlogs.ExportLogsServiceResponse{}
+}
+
+func CopyOrigExportLogsServiceResponse(dest, src *otlpcollectorlogs.ExportLogsServiceResponse) {
 	CopyOrigExportLogsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func FillOrigTestExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse) {
+func FillOrigTestExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse) {
 	FillOrigTestExportLogsPartialSuccess(&orig.PartialSuccess)
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, dest *json.Stream) {
+func MarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("partialSuccess")
 	MarshalJSONOrigExportLogsPartialSuccess(&orig.PartialSuccess, dest)
@@ -29,7 +39,7 @@ func MarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsS
 }
 
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, iter *json.Iterator) {
+func UnmarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "partialSuccess", "partial_success":
@@ -41,7 +51,7 @@ func UnmarshalJSONOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLog
 	})
 }
 
-func SizeProtoOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse) int {
+func SizeProtoOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse) int {
 	var n int
 	var l int
 	_ = l
@@ -50,7 +60,7 @@ func SizeProtoOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsSer
 	return n
 }
 
-func MarshalProtoOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, buf []byte) int {
+func MarshalProtoOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -64,6 +74,40 @@ func MarshalProtoOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogs
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportLogsServiceResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, buf []byte) error {
-	return orig.Unmarshal(buf)
+func UnmarshalProtoOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field PartialSuccess", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigExportLogsPartialSuccess(&orig.PartialSuccess, buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

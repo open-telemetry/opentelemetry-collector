@@ -10,6 +10,8 @@ type Field interface {
 
 	GenerateSetWithTestValue(ms *messageStruct) string
 
+	GenerateTestValue(ms *messageStruct) string
+
 	GenerateCopyOrig(ms *messageStruct) string
 
 	GenerateMarshalJSON(ms *messageStruct) string
@@ -20,7 +22,7 @@ type Field interface {
 
 	GenerateMarshalProto(ms *messageStruct) string
 
-	GenerateTestValue(ms *messageStruct) string
+	GenerateUnmarshalProto(*messageStruct) string
 }
 
 func origAccessor(hasWrapper bool) string {

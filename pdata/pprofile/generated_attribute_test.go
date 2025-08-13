@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -25,8 +25,8 @@ func TestAttribute_MoveTo(t *testing.T) {
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestAttribute(), dest)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newAttribute(&otlpcommon.KeyValue{}, &sharedState)) })
+	assert.Panics(t, func() { newAttribute(&otlpcommon.KeyValue{}, &sharedState).MoveTo(dest) })
 }
 
 func TestAttribute_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestAttribute_CopyTo(t *testing.T) {
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newAttribute(&otlpcommon.KeyValue{}, &sharedState)) })
 }
 
 func TestAttribute_Key(t *testing.T) {
@@ -47,7 +47,7 @@ func TestAttribute_Key(t *testing.T) {
 	ms.SetKey("test_key")
 	assert.Equal(t, "test_key", ms.Key())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("test_key") })
+	assert.Panics(t, func() { newAttribute(&otlpcommon.KeyValue{}, &sharedState).SetKey("test_key") })
 }
 
 func TestAttribute_Value(t *testing.T) {

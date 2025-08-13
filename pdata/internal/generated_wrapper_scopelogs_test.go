@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
+	dest := &otlplogs.ScopeLogs{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlplogs.ScopeLogs{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 	for name, src := range getEncodingTestValuesScopeLogs() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 
 			dest := &otlplogs.ScopeLogs{}
 			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
+	for name, src := range getEncodingTestValuesScopeLogs() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeLogs(src))
+			gotSize := MarshalProtoOrigScopeLogs(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlplogs.ScopeLogs{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlplogs.ScopeLogs{}
+			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

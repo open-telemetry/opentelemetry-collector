@@ -49,3 +49,15 @@ func MarshalProtoOrigProfileID(id *data.ProfileID, buf []byte) int {
 	_, _ = id.MarshalTo(buf[len(buf)-size:])
 	return size
 }
+
+func UnmarshalProtoOrigTraceID(id *data.TraceID, buf []byte) error {
+	return id.Unmarshal(buf)
+}
+
+func UnmarshalProtoOrigSpanID(id *data.SpanID, buf []byte) error {
+	return id.Unmarshal(buf)
+}
+
+func UnmarshalProtoOrigProfileID(id *data.ProfileID, buf []byte) error {
+	return id.Unmarshal(buf)
+}

@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigSample() otlpprofiles.Sample {
+	return otlpprofiles.Sample{}
+}
+
+func NewOrigPtrSample() *otlpprofiles.Sample {
+	return &otlpprofiles.Sample{}
+}
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
 	dest.LocationsStartIndex = src.LocationsStartIndex
@@ -201,5 +211,120 @@ func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
 }
 
 func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocationsStartIndex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.LocationsStartIndex = int32(num)
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocationsLength", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.LocationsLength = int32(num)
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			var num uint64
+			for prevPos < pos {
+				num, prevPos, err = proto.ConsumeVarint(buf[:pos], prevPos)
+				if err != nil {
+					return err
+				}
+				orig.Value = append(orig.Value, int64(num))
+			}
+			if prevPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field Value", pos-prevPos)
+			}
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			var num uint64
+			for prevPos < pos {
+				num, prevPos, err = proto.ConsumeVarint(buf[:pos], prevPos)
+				if err != nil {
+					return err
+				}
+				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+			}
+			if prevPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-prevPos)
+			}
+
+		case 5:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex = int32(num)
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			var num uint64
+			for prevPos < pos {
+				num, prevPos, err = proto.ConsumeVarint(buf[:pos], prevPos)
+				if err != nil {
+					return err
+				}
+				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
+			}
+			if prevPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-prevPos)
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

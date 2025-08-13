@@ -208,3 +208,7 @@ func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 	size, _ := orig.MarshalToSizedBuffer(buf)
 	return size
 }
+
+func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

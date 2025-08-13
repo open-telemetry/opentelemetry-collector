@@ -70,6 +70,10 @@ func (ss *sliceOfPtrs) getOriginName() string {
 	return ss.element.getOriginName() + "Slice"
 }
 
+func (ss *sliceOfPtrs) getOriginFullName() string {
+	return ss.element.getOriginFullName()
+}
+
 func (ss *sliceOfPtrs) getElementProtoType() ProtoType {
 	return ProtoTypeMessage
 }
@@ -140,6 +144,10 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 
 func (ss *sliceOfValues) getOriginName() string {
 	return ss.element.getOriginName() + "Slice"
+}
+
+func (ss *sliceOfValues) getOriginFullName() string {
+	return ss.element.getOriginFullName()
 }
 
 func (ss *sliceOfValues) getElementProtoType() ProtoType {

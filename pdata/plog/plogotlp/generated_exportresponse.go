@@ -8,7 +8,7 @@ package plogotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -19,11 +19,11 @@ import (
 // Must use NewExportResponse function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportResponse struct {
-	orig  *otlpcollectorlog.ExportLogsServiceResponse
+	orig  *otlpcollectorlogs.ExportLogsServiceResponse
 	state *internal.State
 }
 
-func newExportResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, state *internal.State) ExportResponse {
+func newExportResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, state *internal.State) ExportResponse {
 	return ExportResponse{orig: orig, state: state}
 }
 
@@ -33,7 +33,7 @@ func newExportResponse(orig *otlpcollectorlog.ExportLogsServiceResponse, state *
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
 	state := internal.StateMutable
-	return newExportResponse(&otlpcollectorlog.ExportLogsServiceResponse{}, &state)
+	return newExportResponse(&otlpcollectorlogs.ExportLogsServiceResponse{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +46,7 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorlog.ExportLogsServiceResponse{}
+	*ms.orig = otlpcollectorlogs.ExportLogsServiceResponse{}
 }
 
 // PartialSuccess returns the partialsuccess associated with this ExportResponse.

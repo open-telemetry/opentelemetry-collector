@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(t *tes
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_BucketsUnknown(t *testing.T) {
+	dest := &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint_Buckets() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(t *te
 
 			dest := &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint_Buckets(t *testing.T) {
+	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint_Buckets() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint_Buckets(src))
+			gotSize := MarshalProtoOrigExponentialHistogramDataPoint_Buckets(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

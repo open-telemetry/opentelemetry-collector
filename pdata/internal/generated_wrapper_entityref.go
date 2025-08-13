@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,6 +36,14 @@ func GenerateTestEntityRef() EntityRef {
 	FillOrigTestEntityRef(&orig)
 	state := StateMutable
 	return NewEntityRef(&orig, &state)
+}
+
+func NewOrigEntityRef() otlpcommon.EntityRef {
+	return otlpcommon.EntityRef{}
+}
+
+func NewOrigPtrEntityRef() *otlpcommon.EntityRef {
+	return &otlpcommon.EntityRef{}
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
@@ -166,5 +176,71 @@ func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
 }
 
 func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SchemaUrl = string(buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Type = string(buf[prevPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdKeys", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.IdKeys = append(orig.IdKeys, string(buf[prevPos:pos]))
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DescriptionKeys", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[prevPos:pos]))
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
+	dest := &otlpcommon.EntityRef{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpcommon.EntityRef{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 	for name, src := range getEncodingTestValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 
 			dest := &otlpcommon.EntityRef{}
 			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
+	for name, src := range getEncodingTestValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigEntityRef(src))
+			gotSize := MarshalProtoOrigEntityRef(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcommon.EntityRef{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpcommon.EntityRef{}
+			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
