@@ -480,7 +480,7 @@ func TestOptionalValidate(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(hasNested{
 		CouldBe: None[invalid](),
 	}))
-	require.Error(t, xconfmap.Validate(hasNested{
+	require.NoError(t, xconfmap.Validate(hasNested{
 		CouldBe: Default(invalid{}),
 	}))
 	require.Error(t, xconfmap.Validate(hasNested{
@@ -571,7 +571,7 @@ func TestOptionalFileValidate(t *testing.T) {
 				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
 				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
 			},
-			err: errors.New("default0: non-required fields cannot be set to 'no'\ndefault1: non-required fields cannot be set to 'no'"),
+			err: errors.New("default1: non-required fields cannot be set to 'no'"),
 		},
 		{
 			name:    "invalid and valid default",
@@ -612,5 +612,5 @@ func TestDefaultValueNoUnmarshaling(t *testing.T) {
 	}
 
 	err := xconfmap.Validate(cfg)
-	require.EqualError(t, err, "field `actually_required` must be set\ndefault0: non-required fields cannot be set to 'no'\ndefault1: non-required fields cannot be set to 'no'\nsome: field `required` must be set")
+	require.EqualError(t, err, "field `actually_required` must be set\nsome: field `required` must be set")
 }

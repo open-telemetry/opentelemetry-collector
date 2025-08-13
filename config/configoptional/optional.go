@@ -203,11 +203,13 @@ func (o *Optional[T]) Validate() error {
 	// and therefore we should not validate it. The parent struct holding
 	// the Optional type can determine whether a None value is valid for
 	// a given config.
-	if o.flavor == noneFlavor {
+	//
+	// If the flavor is still Default, then the user has not passed this
+	// value and we should also not validate it.
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
 		return nil
 	}
 
-	// For the default flavor, validate the default value.
 	// For the some flavor, validate the actual value.
 	return xconfmap.Validate(o.value)
 }
