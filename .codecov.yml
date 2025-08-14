@@ -18,6 +18,5 @@ coverage:
         target: 95%
 
 ignore:
-  - "pdata/internal/data/protogen/**/*"
+  - "pdata/internal/generated_*.go"
   - "**/*.pb.go"
-  - "cmd/mdatagen/third_party/**/*"
