@@ -98,7 +98,7 @@ func MarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expo
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceMetrics {
+	for i := len(orig.ResourceMetrics) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceMetrics(orig.ResourceMetrics[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

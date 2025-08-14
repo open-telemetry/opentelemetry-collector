@@ -542,7 +542,7 @@ func TestMap_RemoveIf(t *testing.T) {
 
 func TestMap_RemoveIfAll(t *testing.T) {
 	am := Map(internal.GenerateTestMap())
-	assert.Equal(t, 7, am.Len())
+	assert.Equal(t, 5, am.Len())
 	am.RemoveIf(func(string, Value) bool {
 		return true
 	})

@@ -41,11 +41,14 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 }
 
 func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
-	orig := make([]*otlpprofiles.ValueType, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.ValueType{}
-		FillOrigTestValueType(orig[i])
-	}
+	orig := make([]*otlpprofiles.ValueType, 5)
+	orig[0] = &otlpprofiles.ValueType{}
+	orig[1] = &otlpprofiles.ValueType{}
+	FillOrigTestValueType(orig[1])
+	orig[2] = &otlpprofiles.ValueType{}
+	orig[3] = &otlpprofiles.ValueType{}
+	FillOrigTestValueType(orig[1])
+	orig[4] = &otlpprofiles.ValueType{}
 	return orig
 }
 

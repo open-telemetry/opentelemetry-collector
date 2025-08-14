@@ -41,11 +41,14 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 }
 
 func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
-	orig := make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlplogs.LogRecord{}
-		FillOrigTestLogRecord(orig[i])
-	}
+	orig := make([]*otlplogs.LogRecord, 5)
+	orig[0] = &otlplogs.LogRecord{}
+	orig[1] = &otlplogs.LogRecord{}
+	FillOrigTestLogRecord(orig[1])
+	orig[2] = &otlplogs.LogRecord{}
+	orig[3] = &otlplogs.LogRecord{}
+	FillOrigTestLogRecord(orig[1])
+	orig[4] = &otlplogs.LogRecord{}
 	return orig
 }
 
