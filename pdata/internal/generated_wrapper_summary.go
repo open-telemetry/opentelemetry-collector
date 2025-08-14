@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigSummary() otlpmetrics.Summary {
+	return otlpmetrics.Summary{}
+}
+
+func NewOrigPtrSummary() *otlpmetrics.Summary {
+	return &otlpmetrics.Summary{}
+}
 
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
@@ -75,5 +85,41 @@ func MarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) int {
 }
 
 func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.DataPoints = append(orig.DataPoints, NewOrigPtrSummaryDataPoint())
+			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

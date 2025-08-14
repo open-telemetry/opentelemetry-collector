@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigExportTraceServiceResponse(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponseUnknown(t *testing.T) {
+	dest := &otlpcollectortrace.ExportTraceServiceResponse{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceResponse{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponse(t *testing.T) {
 	for name, src := range getEncodingTestValuesExportTraceServiceResponse() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponse(t *testing.T) {
 
 			dest := &otlpcollectortrace.ExportTraceServiceResponse{}
 			require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceResponse(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportTraceServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportTraceServiceResponse(src))
+			gotSize := MarshalProtoOrigExportTraceServiceResponse(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectortrace.ExportTraceServiceResponse{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpcollectortrace.ExportTraceServiceResponse{}
+			require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
