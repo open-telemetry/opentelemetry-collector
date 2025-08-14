@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	semconv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -42,15 +40,17 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
-// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
-// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
-var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+// This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableHighCardinalityMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
-		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterToVersion("0.133.0"),
+	featuregate.WithRegisterDescription(
+		"Controls whether the collector should enable potentially high "+
+			"cardinality metrics. Deprecated, configure service::telemetry::metrics::views instead."))
 
 // ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
@@ -130,54 +130,26 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
-	sch := semconv.SchemaURL
-
 	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
-
-	if mpConfig.Views != nil {
-		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
-			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
-		}
-	} else {
+	if mpConfig.Views == nil {
 		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
 	}
 
-	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
-		mpConfig.Readers = []config.MetricReader{}
-	}
-
-	sdk, err := config.NewSDK(
-		config.WithContext(ctx),
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: cfg.Telemetry.Logs.Processors,
-				},
-				MeterProvider:  mpConfig,
-				TracerProvider: &cfg.Telemetry.Traces.TracerProvider,
-				Resource: &config.Resource{
-					SchemaUrl:  &sch,
-					Attributes: attributes(res, cfg.Telemetry),
-				},
-			},
-		),
-	)
+	sdk, err := otelconftelemetry.NewSDK(ctx, &cfg.Telemetry, res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
-	srv.sdk = &sdk
+	srv.sdk = sdk
 	defer func() {
 		if err != nil {
 			err = multierr.Append(err, sdk.Shutdown(ctx))
 		}
 	}()
 
-	telFactory := telemetry.NewFactory()
+	telFactory := otelconftelemetry.NewFactory(sdk, res)
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
-		SDK:        &sdk,
-		Resource:   res,
 	}
 
 	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
@@ -254,14 +226,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	return srv, nil
 }
 
-func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
+func logsAboutMeterProvider(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig, mp metric.MeterProvider) {
 	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
 		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
 	if lmp, ok := mp.(interface {
-		LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig)
+		LogAboutServers(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig)
 	}); ok {
 		lmp.LogAboutServers(logger, cfg)
 	}
@@ -406,42 +378,12 @@ func configureViews(level configtelemetry.Level) []config.View {
 			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
 			}),
+			// Drop duration metric if the level is not detailed
+			dropViewOption(&config.ViewSelector{
+				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
+				InstrumentName: ptr("otelcol_processor_internal_duration"),
+			}),
 		)
-	}
-
-	// Make sure to add the AttributeKeys view after the AggregationDrop view:
-	// Only the first view outputting a given metric identity is actually used, so placing the
-	// AttributeKeys view first would never drop the metrics regadless of level.
-	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
-		views = append(views, []config.View{
-			{
-				Selector: &config.ViewSelector{
-					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
-				},
-				Stream: &config.ViewStream{
-					AttributeKeys: &config.IncludeExclude{
-						Excluded: []string{
-							string(semconv118.NetSockPeerAddrKey),
-							string(semconv118.NetSockPeerPortKey),
-							string(semconv118.NetSockPeerNameKey),
-						},
-					},
-				},
-			},
-			{
-				Selector: &config.ViewSelector{
-					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
-				},
-				Stream: &config.ViewStream{
-					AttributeKeys: &config.IncludeExclude{
-						Excluded: []string{
-							string(semconv118.NetHostNameKey),
-							string(semconv118.NetHostPortKey),
-						},
-					},
-				},
-			},
-		}...)
 	}
 
 	// otel-arrow library metrics

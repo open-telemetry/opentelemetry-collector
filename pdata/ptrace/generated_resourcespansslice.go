@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.
@@ -148,7 +147,7 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigResourceSpansSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigResourceSpansSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
@@ -157,55 +156,4 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ResourceSpansSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ResourceSpansSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlptrace.ResourceSpans{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptrace.ResourceSpans {
-	var newDest []*otlptrace.ResourceSpans
-	if cap(dest) < len(src) {
-		newDest = make([]*otlptrace.ResourceSpans, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ResourceSpans{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ResourceSpans{}
-		}
-	}
-	for i := range src {
-		copyOrigResourceSpans(newDest[i], src[i])
-	}
-	return newDest
 }

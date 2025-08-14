@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.23"
+    "go": "1.24"
   },
   "extends": [
     "config:recommended",
@@ -79,7 +79,7 @@
       "matchSourceUrls": [
         "https://go.opentelemetry.io/otel{/,}**"
       ],
-      "ignoreVersions": ["!/v0.59.*/"]
+      "allowedVersions": "!/v0.59.*/"
     },
     {
       "matchManagers": [

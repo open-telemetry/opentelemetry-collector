@@ -10,26 +10,24 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestAttributeTableSlice(t *testing.T) {
 	es := NewAttributeTableSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newAttributeTableSlice(&[]v1.KeyValue{}, &state)
+	es = newAttributeTableSlice(&[]otlpcommon.KeyValue{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttribute()
 	testVal := generateTestAttribute()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestAttribute(el)
+		internal.FillOrigTestKeyValue(&(*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -37,7 +35,7 @@ func TestAttributeTableSlice(t *testing.T) {
 
 func TestAttributeTableSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newAttributeTableSlice(&[]v1.KeyValue{}, &sharedState)
+	es := newAttributeTableSlice(&[]otlpcommon.KeyValue{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -50,24 +48,7 @@ func TestAttributeTableSliceReadOnly(t *testing.T) {
 
 func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
-	// Test CopyTo empty
-	NewAttributeTableSlice().CopyTo(dest)
-	assert.Equal(t, NewAttributeTableSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestAttributeTableSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeTableSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeTableSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewAttributeTableSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
@@ -160,32 +141,8 @@ func TestAttributeTableSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestAttributeTableSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestAttributeTableSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewAttributeTableSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func generateTestAttributeTableSlice() AttributeTableSlice {
-	es := NewAttributeTableSlice()
-	fillTestAttributeTableSlice(es)
-	return es
-}
-
-func fillTestAttributeTableSlice(es AttributeTableSlice) {
-	*es.orig = make([]v1.KeyValue, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = v1.KeyValue{}
-		fillTestAttribute(newAttribute(&(*es.orig)[i], es.state))
-	}
+	ms := NewAttributeTableSlice()
+	*ms.orig = internal.GenerateOrigTestKeyValueSlice()
+	return ms
 }

@@ -1,15 +1,18 @@
 module go.opentelemetry.io/collector/pdata
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/proto/slim/otlp v1.7.1
+	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1
+	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.0.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.74.2
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 )
 
 require (
