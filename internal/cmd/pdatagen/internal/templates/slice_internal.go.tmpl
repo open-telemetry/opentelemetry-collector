@@ -77,11 +77,14 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ .originElementType }})
 }
 
 func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .originElementType }} {
-	orig := make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = {{ .emptyOriginElement }}
-		FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[i])
-	}
+	orig := make([]{{ .originElementType }}, 5)
+	orig[0] = {{ .emptyOriginElement }}
+	orig[1] = {{ .emptyOriginElement }}
+	FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[1])
+	orig[2] = {{ .emptyOriginElement }}
+	orig[3] = {{ .emptyOriginElement }}
+	FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[1])
+	orig[4] = {{ .emptyOriginElement }}
 	return orig
 }
 

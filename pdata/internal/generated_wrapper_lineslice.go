@@ -41,11 +41,14 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 }
 
 func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
-	orig := make([]*otlpprofiles.Line, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.Line{}
-		FillOrigTestLine(orig[i])
-	}
+	orig := make([]*otlpprofiles.Line, 5)
+	orig[0] = &otlpprofiles.Line{}
+	orig[1] = &otlpprofiles.Line{}
+	FillOrigTestLine(orig[1])
+	orig[2] = &otlpprofiles.Line{}
+	orig[3] = &otlpprofiles.Line{}
+	FillOrigTestLine(orig[1])
+	orig[4] = &otlpprofiles.Line{}
 	return orig
 }
 

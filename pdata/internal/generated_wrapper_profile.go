@@ -254,14 +254,14 @@ func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.SampleType {
+	for i := len(orig.SampleType) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigValueType(orig.SampleType[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0xa
 	}
-	for i := range orig.Sample {
+	for i := len(orig.Sample) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigSample(orig.Sample[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

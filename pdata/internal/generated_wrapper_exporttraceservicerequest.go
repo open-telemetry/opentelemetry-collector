@@ -98,7 +98,7 @@ func MarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTr
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceSpans {
+	for i := len(orig.ResourceSpans) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceSpans(orig.ResourceSpans[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

@@ -41,11 +41,14 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 }
 
 func GenerateOrigTestResourceMetricsSlice() []*otlpmetrics.ResourceMetrics {
-	orig := make([]*otlpmetrics.ResourceMetrics, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.ResourceMetrics{}
-		FillOrigTestResourceMetrics(orig[i])
-	}
+	orig := make([]*otlpmetrics.ResourceMetrics, 5)
+	orig[0] = &otlpmetrics.ResourceMetrics{}
+	orig[1] = &otlpmetrics.ResourceMetrics{}
+	FillOrigTestResourceMetrics(orig[1])
+	orig[2] = &otlpmetrics.ResourceMetrics{}
+	orig[3] = &otlpmetrics.ResourceMetrics{}
+	FillOrigTestResourceMetrics(orig[1])
+	orig[4] = &otlpmetrics.ResourceMetrics{}
 	return orig
 }
 

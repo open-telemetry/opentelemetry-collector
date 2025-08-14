@@ -53,11 +53,14 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 }
 
 func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
-	orig := make([]otlpcommon.AnyValue, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = otlpcommon.AnyValue{}
-		FillOrigTestAnyValue(&orig[i])
-	}
+	orig := make([]otlpcommon.AnyValue, 5)
+	orig[0] = otlpcommon.AnyValue{}
+	orig[1] = otlpcommon.AnyValue{}
+	FillOrigTestAnyValue(&orig[1])
+	orig[2] = otlpcommon.AnyValue{}
+	orig[3] = otlpcommon.AnyValue{}
+	FillOrigTestAnyValue(&orig[1])
+	orig[4] = otlpcommon.AnyValue{}
 	return orig
 }
 
