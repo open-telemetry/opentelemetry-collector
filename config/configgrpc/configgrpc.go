@@ -224,14 +224,10 @@ func (cc *ClientConfig) Validate() error {
 	}
 	// Perform a simple check that we will be able to create a new client
 	conn, err := grpc.NewClient(cc.Endpoint, grpcOpts...)
-	defer func() {
-		if conn != nil {
-			_ = conn.Close()
-		}
-	}()
 	if err != nil {
 		return err
 	}
+	_ = conn.Close()
 
 	if cc.BalancerName != "" {
 		if balancer.Get(cc.BalancerName) == nil {
