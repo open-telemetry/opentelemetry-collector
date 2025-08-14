@@ -10,13 +10,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/client"
-	pdataint "go.opentelemetry.io/collector/pdata/internal"
-	protocommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
-
-var readOnlyState = pdataint.StateReadOnly
 
 // encodeContext encodes the context into a map of strings.
 func encodeContext(ctx context.Context) internal.RequestContext {
@@ -45,18 +41,24 @@ func encodeSpanContext(ctx context.Context, rc *internal.RequestContext) {
 
 func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 	clientMetadata := client.FromContext(ctx).Metadata
-	metadataMap, metadataFound := pcommon.Map{}, false
 	for k := range clientMetadata.Keys() {
-		if !metadataFound {
-			metadataMap, metadataFound = pcommon.NewMap(), true
+		vals := clientMetadata.Get(k)
+		switch len(vals) {
+		case 1:
+			rc.ClientMetadata = append(rc.ClientMetadata, otlpcommon.KeyValue{
+				Key:   k,
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: vals[0]}},
+			})
+		default:
+			metadataArray := make([]otlpcommon.AnyValue, 0, len(vals))
+			for i := 0; i < len(vals); i++ {
+				metadataArray = append(metadataArray, otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: vals[i]}})
+			}
+			rc.ClientMetadata = append(rc.ClientMetadata, otlpcommon.KeyValue{
+				Key:   k,
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: metadataArray}}},
+			})
 		}
-		vals := metadataMap.PutEmptySlice(k)
-		for i := 0; i < len(clientMetadata.Get(k)); i++ {
-			vals.AppendEmpty().SetStr(clientMetadata.Get(k)[i])
-		}
-	}
-	if metadataFound {
-		rc.ClientMetadata = *pdataint.GetOrigMap(pdataint.Map(metadataMap))
 	}
 }
 
@@ -122,15 +124,21 @@ func decodeSpanContext(ctx context.Context, sc *internal.SpanContext) context.Co
 	}))
 }
 
-func decodeClientMetadata(clientMetadata []protocommon.KeyValue) map[string][]string {
+func decodeClientMetadata(clientMetadata []otlpcommon.KeyValue) map[string][]string {
 	if len(clientMetadata) == 0 {
 		return nil
 	}
 	metadataMap := make(map[string][]string, len(clientMetadata))
-	for k, vals := range pcommon.Map(pdataint.NewMap(&clientMetadata, &readOnlyState)).All() {
-		metadataMap[k] = make([]string, vals.Slice().Len())
-		for i, v := range vals.Slice().All() {
-			metadataMap[k][i] = v.Str()
+	for _, kv := range clientMetadata {
+		switch val := kv.Value.Value.(type) {
+		case *otlpcommon.AnyValue_StringValue:
+			metadataMap[kv.Key] = make([]string, 1)
+			metadataMap[kv.Key][0] = val.StringValue
+		case *otlpcommon.AnyValue_ArrayValue:
+			metadataMap[kv.Key] = make([]string, len(val.ArrayValue.Values))
+			for i, v := range val.ArrayValue.Values {
+				metadataMap[kv.Key][i] = v.GetStringValue()
+			}
 		}
 	}
 	return metadataMap
