@@ -218,6 +218,12 @@ func NewDefaultServerConfig() ServerConfig {
 }
 
 func (cc *ClientConfig) Validate() error {
+	if cc.BalancerName != "" {
+		if balancer.Get(cc.BalancerName) == nil {
+			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
+		}
+	}
+
 	grpcOpts, err := cc.getStaticDialOptions(context.Background())
 	if err != nil {
 		return err
@@ -228,12 +234,6 @@ func (cc *ClientConfig) Validate() error {
 		return err
 	}
 	_ = conn.Close()
-
-	if cc.BalancerName != "" {
-		if balancer.Get(cc.BalancerName) == nil {
-			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
-		}
-	}
 
 	return nil
 }
