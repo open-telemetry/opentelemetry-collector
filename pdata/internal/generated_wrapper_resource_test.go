@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
+	dest := &otlpresource.Resource{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigResource(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpresource.Resource{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 	for name, src := range getEncodingTestValuesResource() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 
 			dest := &otlpresource.Resource{}
 			require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
+	for name, src := range getEncodingTestValuesResource() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigResource(src))
+			gotSize := MarshalProtoOrigResource(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpresource.Resource{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpresource.Resource{}
+			require.NoError(t, UnmarshalProtoOrigResource(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

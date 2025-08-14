@@ -7,17 +7,19 @@
 package internal
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"fmt"
+
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type Logs struct {
-	orig  *otlpcollectorlog.ExportLogsServiceRequest
+	orig  *otlpcollectorlogs.ExportLogsServiceRequest
 	state *State
 }
 
-func GetOrigLogs(ms Logs) *otlpcollectorlog.ExportLogsServiceRequest {
+func GetOrigLogs(ms Logs) *otlpcollectorlogs.ExportLogsServiceRequest {
 	return ms.orig
 }
 
@@ -25,27 +27,35 @@ func GetLogsState(ms Logs) *State {
 	return ms.state
 }
 
-func NewLogs(orig *otlpcollectorlog.ExportLogsServiceRequest, state *State) Logs {
+func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Logs {
 	return Logs{orig: orig, state: state}
 }
 
 func GenerateTestLogs() Logs {
-	orig := otlpcollectorlog.ExportLogsServiceRequest{}
+	orig := otlpcollectorlogs.ExportLogsServiceRequest{}
 	FillOrigTestExportLogsServiceRequest(&orig)
 	state := StateMutable
 	return NewLogs(&orig, &state)
 }
 
-func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlog.ExportLogsServiceRequest) {
+func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {
+	return otlpcollectorlogs.ExportLogsServiceRequest{}
+}
+
+func NewOrigPtrExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+	return &otlpcollectorlogs.ExportLogsServiceRequest{}
+}
+
+func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {
 	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 
-func FillOrigTestExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest) {
+func FillOrigTestExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) {
 	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest, dest *json.Stream) {
+func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.ResourceLogs) > 0 {
 		dest.WriteObjectField("resourceLogs")
@@ -61,7 +71,7 @@ func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsSe
 }
 
 // UnmarshalJSONOrigLogs unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest, iter *json.Iterator) {
+func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceLogs", "resource_logs":
@@ -73,7 +83,7 @@ func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogs
 	})
 }
 
-func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest) int {
+func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) int {
 	var n int
 	var l int
 	_ = l
@@ -84,7 +94,7 @@ func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServ
 	return n
 }
 
-func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest, buf []byte) int {
+func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -98,6 +108,42 @@ func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsS
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsServiceRequest, buf []byte) error {
-	return orig.Unmarshal(buf)
+func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceLogs", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigPtrResourceLogs())
+			err = UnmarshalProtoOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

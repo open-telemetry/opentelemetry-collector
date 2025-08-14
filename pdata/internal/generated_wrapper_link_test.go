@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
+	dest := &otlpprofiles.Link{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigLink(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpprofiles.Link{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 	for name, src := range getEncodingTestValuesLink() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 
 			dest := &otlpprofiles.Link{}
 			require.NoError(t, UnmarshalProtoOrigLink(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
+	for name, src := range getEncodingTestValuesLink() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLink(src))
+			gotSize := MarshalProtoOrigLink(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.Link{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpprofiles.Link{}
+			require.NoError(t, UnmarshalProtoOrigLink(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

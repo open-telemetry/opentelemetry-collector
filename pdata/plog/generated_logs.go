@@ -8,7 +8,7 @@ package plog
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
@@ -21,7 +21,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Logs internal.Logs
 
-func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest, state *internal.State) Logs {
+func newLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *internal.State) Logs {
 	return Logs(internal.NewLogs(orig, state))
 }
 
@@ -31,7 +31,7 @@ func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest, state *internal.St
 // OR directly access the member if this is embedded in another struct.
 func NewLogs() Logs {
 	state := internal.StateMutable
-	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{}, &state)
+	return newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms Logs) MoveTo(dest Logs) {
 		return
 	}
 	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
+	*ms.getOrig() = otlpcollectorlogs.ExportLogsServiceRequest{}
 }
 
 // ResourceLogs returns the ResourceLogs associated with this Logs.
@@ -58,7 +58,7 @@ func (ms Logs) CopyTo(dest Logs) {
 	internal.CopyOrigExportLogsServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
+func (ms Logs) getOrig() *otlpcollectorlogs.ExportLogsServiceRequest {
 	return internal.GetOrigLogs(internal.Logs(ms))
 }
 

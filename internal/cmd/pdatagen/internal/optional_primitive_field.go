@@ -104,7 +104,7 @@ func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 }
 
 func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genMarshalJSON() + "\n}"
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).genMarshalJSON() + "\n}"
 }
 
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -113,20 +113,31 @@ func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) stri
 }
 
 func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genSizeProto() + "\n}"
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).genSizeProto() + "\n}"
 }
 
 func (opv *OptionalPrimitiveField) GenerateMarshalProto(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genMarshalProto() + "\n}"
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).genMarshalProto() + "\n}"
 }
 
-func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct) *ProtoField {
-	return &ProtoField{
-		Type:     opv.protoType,
-		ID:       opv.protoID,
-		Name:     opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName,
-		Nullable: true,
+func (opv *OptionalPrimitiveField) GenerateUnmarshalProto(ms *messageStruct) string {
+	return opv.toProtoField(ms, false).genUnmarshalProto()
+}
+
+func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct, oldOneOf bool) *ProtoField {
+	pf := &ProtoField{
+		Type:                 opv.protoType,
+		ID:                   opv.protoID,
+		OneOfGroup:           opv.fieldName + "_",
+		Name:                 opv.fieldName,
+		OneOfMessageFullName: ms.originFullName + "_" + opv.fieldName,
+		Nullable:             true,
 	}
+	// TODO: Cleanup this by moving everyone to the new OneOfGroup
+	if oldOneOf {
+		pf.Name = opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName
+	}
+	return pf
 }
 
 func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]any {

@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
+	dest := &otlptrace.Span_Link{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlptrace.Span_Link{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 	for name, src := range getEncodingTestValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 
 			dest := &otlptrace.Span_Link{}
 			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
+	for name, src := range getEncodingTestValuesSpan_Link() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan_Link(src))
+			gotSize := MarshalProtoOrigSpan_Link(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlptrace.Span_Link{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlptrace.Span_Link{}
+			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
