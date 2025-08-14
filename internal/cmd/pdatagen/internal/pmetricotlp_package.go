@@ -13,6 +13,7 @@ var pmetricotlp = &Package{
 		path: filepath.Join("pmetric", "pmetricotlp"),
 		imports: []string{
 			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
@@ -23,8 +24,12 @@ var pmetricotlp = &Package{
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 		},
 	},
 	structs: []baseStruct{

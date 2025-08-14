@@ -9,6 +9,7 @@ var ptrace = &Package{
 		path: "ptrace",
 		imports: []string{
 			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
@@ -27,6 +28,9 @@ var ptrace = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"`,
+			`gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,

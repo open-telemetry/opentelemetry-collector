@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,6 +36,14 @@ func GenerateTestTraces() Traces {
 	FillOrigTestExportTraceServiceRequest(&orig)
 	state := StateMutable
 	return NewTraces(&orig, &state)
+}
+
+func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
+	return otlpcollectortrace.ExportTraceServiceRequest{}
+}
+
+func NewOrigPtrExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+	return &otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
 func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
@@ -99,5 +109,41 @@ func MarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTr
 }
 
 func UnmarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceSpans", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigPtrResourceSpans())
+			err = UnmarshalProtoOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

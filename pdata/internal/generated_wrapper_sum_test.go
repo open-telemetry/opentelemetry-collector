@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSumUnknown(t *testing.T) {
+	dest := &otlpmetrics.Sum{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSum(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpmetrics.Sum{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 	for name, src := range getEncodingTestValuesSum() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 
 			dest := &otlpmetrics.Sum{}
 			require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.Sum{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpmetrics.Sum{}
+			require.NoError(t, UnmarshalProtoOrigSum(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
