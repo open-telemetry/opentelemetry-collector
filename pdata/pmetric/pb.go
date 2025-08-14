@@ -5,7 +5,6 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
@@ -13,47 +12,51 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
-	pb := internal.MetricsToProto(internal.Metrics(md))
-	return pb.Marshal()
+	size := internal.SizeProtoOrigExportMetricsServiceRequest(md.getOrig())
+	buf := make([]byte, size)
+	_ = internal.MarshalProtoOrigExportMetricsServiceRequest(md.getOrig(), buf)
+	return buf, nil
 }
 
 func (e *ProtoMarshaler) MetricsSize(md Metrics) int {
-	pb := internal.MetricsToProto(internal.Metrics(md))
-	return pb.Size()
+	return internal.SizeProtoOrigExportMetricsServiceRequest(md.getOrig())
 }
 
 func (e *ProtoMarshaler) ResourceMetricsSize(rm ResourceMetrics) int {
-	return rm.orig.Size()
+	return internal.SizeProtoOrigResourceMetrics(rm.orig)
 }
 
 func (e *ProtoMarshaler) ScopeMetricsSize(sm ScopeMetrics) int {
-	return sm.orig.Size()
+	return internal.SizeProtoOrigScopeMetrics(sm.orig)
 }
 
 func (e *ProtoMarshaler) MetricSize(m Metric) int {
-	return m.orig.Size()
+	return internal.SizeProtoOrigMetric(m.orig)
 }
 
 func (e *ProtoMarshaler) NumberDataPointSize(ndp NumberDataPoint) int {
-	return ndp.orig.Size()
+	return internal.SizeProtoOrigNumberDataPoint(ndp.orig)
 }
 
 func (e *ProtoMarshaler) SummaryDataPointSize(sdps SummaryDataPoint) int {
-	return sdps.orig.Size()
+	return internal.SizeProtoOrigSummaryDataPoint(sdps.orig)
 }
 
 func (e *ProtoMarshaler) HistogramDataPointSize(hdp HistogramDataPoint) int {
-	return hdp.orig.Size()
+	return internal.SizeProtoOrigHistogramDataPoint(hdp.orig)
 }
 
 func (e *ProtoMarshaler) ExponentialHistogramDataPointSize(ehdp ExponentialHistogramDataPoint) int {
-	return ehdp.orig.Size()
+	return internal.SizeProtoOrigExponentialHistogramDataPoint(ehdp.orig)
 }
 
 type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
-	pb := otlpmetrics.MetricsData{}
-	err := pb.Unmarshal(buf)
-	return Metrics(internal.MetricsFromProto(pb)), err
+	md := NewMetrics()
+	err := internal.UnmarshalProtoOrigExportMetricsServiceRequest(md.getOrig(), buf)
+	if err != nil {
+		return Metrics{}, err
+	}
+	return md, nil
 }

@@ -13,25 +13,26 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalTraces(td Traces) ([]byte, error) {
-	pb := internal.TracesToProto(internal.Traces(td))
-	return pb.Marshal()
+	size := internal.SizeProtoOrigExportTraceServiceRequest(td.getOrig())
+	buf := make([]byte, size)
+	_ = internal.MarshalProtoOrigExportTraceServiceRequest(td.getOrig(), buf)
+	return buf, nil
 }
 
 func (e *ProtoMarshaler) TracesSize(td Traces) int {
-	pb := internal.TracesToProto(internal.Traces(td))
-	return pb.Size()
+	return internal.SizeProtoOrigExportTraceServiceRequest(td.getOrig())
 }
 
 func (e *ProtoMarshaler) ResourceSpansSize(rs ResourceSpans) int {
-	return rs.orig.Size()
+	return internal.SizeProtoOrigResourceSpans(rs.orig)
 }
 
 func (e *ProtoMarshaler) ScopeSpansSize(ss ScopeSpans) int {
-	return ss.orig.Size()
+	return internal.SizeProtoOrigScopeSpans(ss.orig)
 }
 
 func (e *ProtoMarshaler) SpanSize(span Span) int {
-	return span.orig.Size()
+	return internal.SizeProtoOrigSpan(span.orig)
 }
 
 type ProtoUnmarshaler struct{}
