@@ -101,7 +101,7 @@ func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
 	pos--
 	buf[pos] = 0xa
 
-	for i := range orig.Spans {
+	for i := len(orig.Spans) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigSpan(orig.Spans[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

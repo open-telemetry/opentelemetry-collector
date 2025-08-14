@@ -101,7 +101,7 @@ func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf [
 	pos--
 	buf[pos] = 0xa
 
-	for i := range orig.ScopeProfiles {
+	for i := len(orig.ScopeProfiles) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigScopeProfiles(orig.ScopeProfiles[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

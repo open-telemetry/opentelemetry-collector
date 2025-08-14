@@ -106,7 +106,7 @@ func MarshalProtoOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.Ex
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceProfiles {
+	for i := len(orig.ResourceProfiles) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceProfiles(orig.ResourceProfiles[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

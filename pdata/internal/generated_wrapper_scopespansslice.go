@@ -41,11 +41,14 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 }
 
 func GenerateOrigTestScopeSpansSlice() []*otlptrace.ScopeSpans {
-	orig := make([]*otlptrace.ScopeSpans, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlptrace.ScopeSpans{}
-		FillOrigTestScopeSpans(orig[i])
-	}
+	orig := make([]*otlptrace.ScopeSpans, 5)
+	orig[0] = &otlptrace.ScopeSpans{}
+	orig[1] = &otlptrace.ScopeSpans{}
+	FillOrigTestScopeSpans(orig[1])
+	orig[2] = &otlptrace.ScopeSpans{}
+	orig[3] = &otlptrace.ScopeSpans{}
+	FillOrigTestScopeSpans(orig[1])
+	orig[4] = &otlptrace.ScopeSpans{}
 	return orig
 }
 

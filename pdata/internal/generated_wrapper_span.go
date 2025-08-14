@@ -313,7 +313,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		pos--
 		buf[pos] = 0x41
 	}
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -325,7 +325,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		pos--
 		buf[pos] = 0x50
 	}
-	for i := range orig.Events {
+	for i := len(orig.Events) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigSpan_Event(orig.Events[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -337,7 +337,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		pos--
 		buf[pos] = 0x60
 	}
-	for i := range orig.Links {
+	for i := len(orig.Links) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigSpan_Link(orig.Links[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

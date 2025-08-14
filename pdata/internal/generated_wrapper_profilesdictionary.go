@@ -182,28 +182,28 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.MappingTable {
+	for i := len(orig.MappingTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigMapping(orig.MappingTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0xa
 	}
-	for i := range orig.LocationTable {
+	for i := len(orig.LocationTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLocation(orig.LocationTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x12
 	}
-	for i := range orig.FunctionTable {
+	for i := len(orig.FunctionTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigFunction(orig.FunctionTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x1a
 	}
-	for i := range orig.LinkTable {
+	for i := len(orig.LinkTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLink(orig.LinkTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -218,14 +218,14 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 		pos--
 		buf[pos] = 0x2a
 	}
-	for i := range orig.AttributeTable {
+	for i := len(orig.AttributeTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.AttributeTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x32
 	}
-	for i := range orig.AttributeUnits {
+	for i := len(orig.AttributeUnits) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigAttributeUnit(orig.AttributeUnits[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

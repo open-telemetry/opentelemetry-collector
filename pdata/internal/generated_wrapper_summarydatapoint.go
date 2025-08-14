@@ -149,7 +149,7 @@ func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -180,7 +180,7 @@ func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []
 		pos--
 		buf[pos] = 0x29
 	}
-	for i := range orig.QuantileValues {
+	for i := len(orig.QuantileValues) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

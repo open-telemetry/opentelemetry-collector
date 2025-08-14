@@ -41,11 +41,14 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 }
 
 func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
-	orig := make([]*otlpprofiles.AttributeUnit, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.AttributeUnit{}
-		FillOrigTestAttributeUnit(orig[i])
-	}
+	orig := make([]*otlpprofiles.AttributeUnit, 5)
+	orig[0] = &otlpprofiles.AttributeUnit{}
+	orig[1] = &otlpprofiles.AttributeUnit{}
+	FillOrigTestAttributeUnit(orig[1])
+	orig[2] = &otlpprofiles.AttributeUnit{}
+	orig[3] = &otlpprofiles.AttributeUnit{}
+	FillOrigTestAttributeUnit(orig[1])
+	orig[4] = &otlpprofiles.AttributeUnit{}
 	return orig
 }
 
