@@ -28,6 +28,7 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ExporterDuration                  metric.Float64Histogram
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -110,6 +111,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterDuration, err = builder.meter.Float64Histogram(
+		"otelcol_exporter_duration",
+		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the exporter. [alpha]"),
+		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
