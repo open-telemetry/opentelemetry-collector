@@ -47,59 +47,108 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
+		OutputPaths:        []string{"stdout"},
 	}
 }
 
 func createTraces(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.Logger)
+	exporterLogger, closer := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+
+	shutdownFunc := func(ctx context.Context) error {
+		// First sync the logger
+		if err := otlptext.LoggerSync(exporterLogger)(ctx); err != nil {
+			return err
+		}
+		// Then close any opened files
+		return closer()
+	}
+
 	return exporterhelper.NewTraces(ctx, set, config,
 		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithShutdown(shutdownFunc),
 	)
 }
 
 func createMetrics(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.Logger)
+	exporterLogger, closer := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+
+	shutdownFunc := func(ctx context.Context) error {
+		// First sync the logger
+		if err := otlptext.LoggerSync(exporterLogger)(ctx); err != nil {
+			return err
+		}
+		// Then close any opened files
+		return closer()
+	}
+
 	return exporterhelper.NewMetrics(ctx, set, config,
 		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithShutdown(shutdownFunc),
 	)
 }
 
 func createLogs(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.Logger)
+	exporterLogger, closer := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+
+	shutdownFunc := func(ctx context.Context) error {
+		// First sync the logger
+		if err := otlptext.LoggerSync(exporterLogger)(ctx); err != nil {
+			return err
+		}
+		// Then close any opened files
+		return closer()
+	}
+
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithShutdown(shutdownFunc),
 	)
 }
 
 func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.Logger)
+	exporterLogger, closer := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+
+	shutdownFunc := func(ctx context.Context) error {
+		// First sync the logger
+		if err := otlptext.LoggerSync(exporterLogger)(ctx); err != nil {
+			return err
+		}
+		// Then close any opened files
+		return closer()
+	}
+
 	return xexporterhelper.NewProfiles(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithShutdown(shutdownFunc),
 	)
 }
 
-func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+// createLoggerFunc is a function variable that can be overridden in tests
+var createLoggerFunc = createLoggerImpl
+
+func createLogger(cfg *Config, logger *zap.Logger) (*zap.Logger, func() error) {
+	return createLoggerFunc(cfg, logger)
+}
+
+func createLoggerImpl(cfg *Config, logger *zap.Logger) (*zap.Logger, func() error) {
 	var exporterLogger *zap.Logger
+	var closer func() error
 	if cfg.UseInternalLogger {
 		core := zapcore.NewSamplerWithOptions(
 			logger.Core(),
@@ -108,29 +157,70 @@ func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
 			cfg.SamplingThereafter,
 		)
 		exporterLogger = zap.New(core)
+		closer = func() error { return nil } // No cleanup needed for internal logger
 	} else {
-		exporterLogger = createCustomLogger(cfg)
+		exporterLogger, closer = createCustomLogger(cfg)
 	}
-	return exporterLogger
+	return exporterLogger, closer
 }
 
-func createCustomLogger(exporterConfig *Config) *zap.Logger {
+func createCustomLogger(exporterConfig *Config) (*zap.Logger, func() error) {
 	encoderConfig := zap.NewDevelopmentEncoderConfig()
 	// Do not prefix the output with log level (`info`)
 	encoderConfig.LevelKey = ""
 	// Do not prefix the output with current timestamp.
 	encoderConfig.TimeKey = ""
-	zapConfig := zap.Config{
-		Level:         zap.NewAtomicLevelAt(zap.InfoLevel),
-		DisableCaller: true,
-		Sampling: &zap.SamplingConfig{
-			Initial:    exporterConfig.SamplingInitial,
-			Thereafter: exporterConfig.SamplingThereafter,
-		},
-		Encoding:      "console",
-		EncoderConfig: encoderConfig,
-		// Send exporter's output to stdout. This should be made configurable.
-		OutputPaths: []string{"stdout"},
+
+	outputPaths := exporterConfig.OutputPaths
+
+	// Open all output paths using zap.Open
+	writers := make([]zapcore.WriteSyncer, 0, len(outputPaths))
+	closers := make([]func(), 0, len(outputPaths))
+
+	for _, path := range outputPaths {
+		sink, closeFunc, err := zap.Open(path)
+		if err != nil {
+			// Close any previously opened sinks
+			for _, closer := range closers {
+				closer()
+			}
+			panic(err) // Maintain existing panic behavior similar to zap.Must
+		}
+		writers = append(writers, sink)
+		if closeFunc != nil {
+			closers = append(closers, closeFunc)
+		}
 	}
-	return zap.Must(zapConfig.Build())
+
+	// Create a multiwriter if there are multiple outputs
+	var writeSyncer zapcore.WriteSyncer
+	if len(writers) == 1 {
+		writeSyncer = writers[0]
+	} else {
+		writeSyncer = zapcore.NewMultiWriteSyncer(writers...)
+	}
+
+	// Create the encoder
+	encoder := zapcore.NewConsoleEncoder(encoderConfig)
+
+	// Create the core with sampling
+	core := zapcore.NewCore(encoder, writeSyncer, zap.InfoLevel)
+	samplingCore := zapcore.NewSamplerWithOptions(
+		core,
+		1*time.Second,
+		exporterConfig.SamplingInitial,
+		exporterConfig.SamplingThereafter,
+	)
+
+	logger := zap.New(samplingCore)
+
+	// Create a closer function that closes all opened files
+	closer := func() error {
+		for _, c := range closers {
+			c() // Call the close function
+		}
+		return nil
+	}
+
+	return logger, closer
 }

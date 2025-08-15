@@ -34,11 +34,20 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				OutputPaths:        []string{"stdout"},
 			},
 		},
 		{
 			filename:    "config_verbosity_typo.yaml",
 			expectedErr: "'' has invalid keys: verBosity",
+		},
+		{
+			filename: "config_file_outputs.yaml",
+			cfg: &Config{
+				SamplingInitial:    2,
+				SamplingThereafter: 1,
+				OutputPaths:        []string{"stdout", "/tmp/debugexporter_test.log"},
+			},
 		},
 	}
 
