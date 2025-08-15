@@ -107,7 +107,7 @@ const sizeProtoSignedVarint = `{{ if .repeated -}}
 {{- end }}`
 
 func (pf *ProtoField) genSizeProto() string {
-	tf := pf.sizeTemplateFields()
+	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeDouble:
 		return executeTemplate(template.Must(templateNew("sizeProtoI8").Parse(sizeProtoI8)), tf)
@@ -125,15 +125,4 @@ func (pf *ProtoField) genSizeProto() string {
 		return executeTemplate(template.Must(templateNew("sizeProtoSignedVarint").Parse(sizeProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
-}
-
-func (pf *ProtoField) sizeTemplateFields() map[string]any {
-	key := genProtoKey(pf.ID, pf.wireType())
-	return map[string]any{
-		"protoTagSize": len(key),
-		"fieldName":    pf.Name,
-		"origName":     extractNameFromFullQualified(pf.MessageFullName),
-		"repeated":     pf.Repeated,
-		"nullable":     pf.Nullable,
-	}
 }

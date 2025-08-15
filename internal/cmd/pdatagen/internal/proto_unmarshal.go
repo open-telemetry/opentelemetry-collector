@@ -9,7 +9,7 @@ import (
 )
 
 const unmarshalProtoFloat = `{{ if .repeated -}}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -33,7 +33,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
 		}
 {{- else }}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeI{{ .bitSize }} {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -51,7 +51,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const unmarshalProtoFixed = `{{ if .repeated -}}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -75,7 +75,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
 		}
 {{- else }}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeI{{ .bitSize }} {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -93,7 +93,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const unmarshalProtoBool = `{{ if .repeated -}}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -117,7 +117,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
 		}
 {{- else }}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeVarint {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -135,7 +135,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const unmarshalProtoVarint = `{{ if .repeated -}}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -157,7 +157,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
 		}
 {{- else }}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeVarint {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -175,7 +175,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const unmarshalProtoString = `
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -196,7 +196,7 @@ const unmarshalProtoString = `
 {{- end }}`
 
 const unmarshalProtoBytes = `	
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -220,7 +220,7 @@ const unmarshalProtoBytes = `
 {{- end }}`
 
 const unmarshalProtoMessage = `
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -253,7 +253,7 @@ const unmarshalProtoMessage = `
 {{- end }}`
 
 const unmarshalProtoSignedVarint = `{{ if .repeated -}}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeLen {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -277,7 +277,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
 		}
 {{- else }}
-	case {{ .fieldID }}:
+	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeVarint {
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -293,7 +293,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 func (pf *ProtoField) genUnmarshalProto() string {
-	tf := pf.unmarshalProtoTemplateFields()
+	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case ProtoTypeDouble, ProtoTypeFloat:
 		return executeTemplate(template.Must(templateNew("unmarshalProtoFloat").Parse(unmarshalProtoFloat)), tf)
@@ -313,26 +313,4 @@ func (pf *ProtoField) genUnmarshalProto() string {
 		return executeTemplate(template.Must(templateNew("unmarshalProtoSignedVarint").Parse(unmarshalProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
-}
-
-func (pf *ProtoField) unmarshalProtoTemplateFields() map[string]any {
-	bitSize := 0
-	switch pf.Type {
-	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeInt64, ProtoTypeUint64, ProtoTypeSInt64, ProtoTypeDouble:
-		bitSize = 64
-	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeInt32, ProtoTypeUint32, ProtoTypeSInt32, ProtoTypeFloat, ProtoTypeEnum:
-		bitSize = 32
-	}
-
-	return map[string]any{
-		"fieldID":              pf.ID,
-		"fieldName":            pf.Name,
-		"origName":             extractNameFromFullQualified(pf.MessageFullName),
-		"oneOfGroup":           pf.OneOfGroup,
-		"oneOfMessageFullName": pf.OneOfMessageFullName,
-		"repeated":             pf.Repeated,
-		"nullable":             pf.Nullable,
-		"bitSize":              bitSize,
-		"goType":               pf.goType(),
-	}
 }
