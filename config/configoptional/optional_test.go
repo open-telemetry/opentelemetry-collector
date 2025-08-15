@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Config[T any] struct {
@@ -459,4 +462,155 @@ func TestComparePointerMarshal(t *testing.T) {
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
 	}
+}
+
+type invalid struct{}
+
+func (invalid) Validate() error {
+	return errors.New("invalid")
+}
+
+var _ xconfmap.Validator = invalid{}
+
+type hasNested struct {
+	CouldBe Optional[invalid]
+}
+
+func TestOptionalValidate(t *testing.T) {
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: None[invalid](),
+	}))
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: Default(invalid{}),
+	}))
+	require.Error(t, xconfmap.Validate(hasNested{
+		CouldBe: Some(invalid{}),
+	}))
+}
+
+var _ xconfmap.Validator = (*validatedConfig)(nil)
+
+type validatedConfig struct {
+	Default0         Optional[nestedConfig] `mapstructure:"default0"`
+	Default1         Optional[nestedConfig] `mapstructure:"default1"`
+	Some             Optional[someConfig]   `mapstructure:"some"`
+	ActuallyRequired Optional[nestedConfig] `mapstructure:"actually_required"`
+}
+
+func (v validatedConfig) Validate() error {
+	if !v.ActuallyRequired.HasValue() {
+		return errors.New("field `actually_required` must be set")
+	}
+
+	return nil
+}
+
+var _ xconfmap.Validator = (*nestedConfig)(nil)
+
+type nestedConfig struct {
+	Required     string `mapstructure:"required"`
+	NotRequired0 string `mapstructure:"not_required0"`
+	NotRequired1 string `mapstructure:"not_required1"`
+}
+
+func (n nestedConfig) Validate() error {
+	if n.Required == "" {
+		return errors.New("field `required` must be set")
+	}
+
+	if n.NotRequired0 == "no" || n.NotRequired1 == "no" {
+		return errors.New("non-required fields cannot be set to 'no'")
+	}
+
+	return nil
+}
+
+var _ xconfmap.Validator = (*someConfig)(nil)
+
+type someConfig struct {
+	Required string                 `mapstructure:"required"`
+	Nested   Optional[nestedConfig] `mapstructure:"nested"`
+}
+
+func (s someConfig) Validate() error {
+	if s.Required == "" {
+		return errors.New("field `required` must be set")
+	}
+
+	return nil
+}
+
+func TestOptionalFileValidate(t *testing.T) {
+	cases := []struct {
+		name    string
+		variant string
+		cfg     validatedConfig
+		err     error
+	}{
+		{
+			name:    "valid config",
+			variant: "valid",
+			cfg: validatedConfig{
+				Default0: Default(nestedConfig{Required: "valid value"}),
+				Default1: Default(nestedConfig{Required: "valid value"}),
+			},
+		},
+		{
+			name:    "invalid config",
+			variant: "missing_required",
+			cfg: validatedConfig{
+				Default0: Default(nestedConfig{Required: "valid value"}),
+				Default1: Default(nestedConfig{Required: "valid value"}),
+			},
+			err: errors.New("field `actually_required` must be set\nsome: field `required` must be set"),
+		},
+		{
+			name:    "invalid default",
+			variant: "valid",
+			cfg: validatedConfig{
+				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+			},
+			err: errors.New("default1: non-required fields cannot be set to 'no'"),
+		},
+		{
+			name:    "invalid and valid default",
+			variant: "valid_with_extra",
+			cfg: validatedConfig{
+				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+			},
+			err: errors.New("default0: non-required fields cannot be set to 'no'"),
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(fmt.Sprintf("testdata/validate_%s.yaml", tt.variant))
+			require.NoError(t, err)
+
+			cfg := tt.cfg
+
+			err = conf.Unmarshal(&cfg)
+			require.NoError(t, err)
+
+			err = xconfmap.Validate(cfg)
+			if tt.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tt.err.Error())
+			}
+		})
+	}
+}
+
+func TestDefaultValueNoUnmarshaling(t *testing.T) {
+	cfg := validatedConfig{
+		Some:     Some(someConfig{}),
+		Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+		Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+	}
+
+	err := xconfmap.Validate(cfg)
+	require.EqualError(t, err, "field `actually_required` must be set\nsome: field `required` must be set")
 }

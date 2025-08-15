@@ -114,3 +114,5 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
