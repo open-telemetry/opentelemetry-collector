@@ -99,7 +99,7 @@ func (es MetricSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Metric.
 func (es MetricSlice) AppendEmpty() Metric {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrMetric())
 	return es.At(es.Len() - 1)
 }
 

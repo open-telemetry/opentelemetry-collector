@@ -99,7 +99,7 @@ func (es LogRecordSlice) EnsureCapacity(newCap int) {
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLogRecord())
 	return es.At(es.Len() - 1)
 }
 

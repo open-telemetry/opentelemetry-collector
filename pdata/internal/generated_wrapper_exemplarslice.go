@@ -20,7 +20,7 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpmetrics.Exemplar{}
+			dest[i].Reset()
 		}
 	}
 	for i := range src {
@@ -31,13 +31,8 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 
 func GenerateOrigTestExemplarSlice() []otlpmetrics.Exemplar {
 	orig := make([]otlpmetrics.Exemplar, 5)
-	orig[0] = otlpmetrics.Exemplar{}
-	orig[1] = otlpmetrics.Exemplar{}
 	FillOrigTestExemplar(&orig[1])
-	orig[2] = otlpmetrics.Exemplar{}
-	orig[3] = otlpmetrics.Exemplar{}
-	FillOrigTestExemplar(&orig[1])
-	orig[4] = otlpmetrics.Exemplar{}
+	FillOrigTestExemplar(&orig[3])
 	return orig
 }
 

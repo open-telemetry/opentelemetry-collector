@@ -99,7 +99,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceProfiles.
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ResourceProfiles{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceProfiles())
 	return es.At(es.Len() - 1)
 }
 

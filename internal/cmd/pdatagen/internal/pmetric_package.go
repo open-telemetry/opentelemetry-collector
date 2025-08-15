@@ -84,9 +84,10 @@ var metrics = &messageStruct{
 	hasWrapper: true,
 }
 
-var resourceMetricsSlice = &sliceOfPtrs{
-	structName: "ResourceMetricsSlice",
-	element:    resourceMetrics,
+var resourceMetricsSlice = &messageSlice{
+	structName:      "ResourceMetricsSlice",
+	elementNullable: true,
+	element:         resourceMetrics,
 }
 
 var resourceMetrics = &messageStruct{
@@ -113,9 +114,10 @@ var resourceMetrics = &messageStruct{
 	},
 }
 
-var scopeMetricsSlice = &sliceOfPtrs{
-	structName: "ScopeMetricsSlice",
-	element:    scopeMetrics,
+var scopeMetricsSlice = &messageSlice{
+	structName:      "ScopeMetricsSlice",
+	elementNullable: true,
+	element:         scopeMetrics,
 }
 
 var scopeMetrics = &messageStruct{
@@ -142,9 +144,10 @@ var scopeMetrics = &messageStruct{
 	},
 }
 
-var metricSlice = &sliceOfPtrs{
-	structName: "MetricSlice",
-	element:    metric,
+var metricSlice = &messageSlice{
+	structName:      "MetricSlice",
+	elementNullable: true,
+	element:         metric,
 }
 
 var metric = &messageStruct{
@@ -306,9 +309,10 @@ var summary = &messageStruct{
 	},
 }
 
-var numberDataPointSlice = &sliceOfPtrs{
-	structName: "NumberDataPointSlice",
-	element:    numberDataPoint,
+var numberDataPointSlice = &messageSlice{
+	structName:      "NumberDataPointSlice",
+	elementNullable: true,
+	element:         numberDataPoint,
 }
 
 var numberDataPoint = &messageStruct{
@@ -372,9 +376,10 @@ var numberDataPoint = &messageStruct{
 	},
 }
 
-var histogramDataPointSlice = &sliceOfPtrs{
-	structName: "HistogramDataPointSlice",
-	element:    histogramDataPoint,
+var histogramDataPointSlice = &messageSlice{
+	structName:      "HistogramDataPointSlice",
+	elementNullable: true,
+	element:         histogramDataPoint,
 }
 
 var histogramDataPoint = &messageStruct{
@@ -451,9 +456,10 @@ var histogramDataPoint = &messageStruct{
 	},
 }
 
-var exponentialHistogramDataPointSlice = &sliceOfPtrs{
-	structName: "ExponentialHistogramDataPointSlice",
-	element:    exponentialHistogramDataPoint,
+var exponentialHistogramDataPointSlice = &messageSlice{
+	structName:      "ExponentialHistogramDataPointSlice",
+	elementNullable: true,
+	element:         exponentialHistogramDataPoint,
 }
 
 var exponentialHistogramDataPoint = &messageStruct{
@@ -565,9 +571,10 @@ var bucketsValues = &messageStruct{
 	},
 }
 
-var summaryDataPointSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointSlice",
-	element:    summaryDataPoint,
+var summaryDataPointSlice = &messageSlice{
+	structName:      "SummaryDataPointSlice",
+	elementNullable: true,
+	element:         summaryDataPoint,
 }
 
 var summaryDataPoint = &messageStruct{
@@ -622,9 +629,10 @@ var summaryDataPoint = &messageStruct{
 	},
 }
 
-var quantileValuesSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointValueAtQuantileSlice",
-	element:    quantileValues,
+var quantileValuesSlice = &messageSlice{
+	structName:      "SummaryDataPointValueAtQuantileSlice",
+	elementNullable: true,
+	element:         quantileValues,
 }
 
 var quantileValues = &messageStruct{
@@ -645,9 +653,10 @@ var quantileValues = &messageStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfValues{
-	structName: "ExemplarSlice",
-	element:    exemplar,
+var exemplarSlice = &messageSlice{
+	structName:      "ExemplarSlice",
+	elementNullable: false,
+	element:         exemplar,
 }
 
 var exemplar = &messageStruct{

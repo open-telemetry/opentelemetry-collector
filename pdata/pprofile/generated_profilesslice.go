@@ -99,7 +99,7 @@ func (es ProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Profile.
 func (es ProfilesSlice) AppendEmpty() Profile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Profile{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrProfile())
 	return es.At(es.Len() - 1)
 }
 

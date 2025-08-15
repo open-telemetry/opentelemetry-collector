@@ -99,7 +99,7 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSpan_Event())
 	return es.At(es.Len() - 1)
 }
 

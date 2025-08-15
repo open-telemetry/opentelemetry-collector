@@ -99,7 +99,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSpan_Link())
 	return es.At(es.Len() - 1)
 }
 

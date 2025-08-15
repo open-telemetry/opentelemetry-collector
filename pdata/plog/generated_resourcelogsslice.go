@@ -99,7 +99,7 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceLogs())
 	return es.At(es.Len() - 1)
 }
 

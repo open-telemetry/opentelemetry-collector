@@ -99,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSample())
 	return es.At(es.Len() - 1)
 }
 

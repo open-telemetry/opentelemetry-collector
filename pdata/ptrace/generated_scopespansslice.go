@@ -99,7 +99,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeSpans.
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeSpans())
 	return es.At(es.Len() - 1)
 }
 

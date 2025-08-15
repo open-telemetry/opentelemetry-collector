@@ -99,7 +99,7 @@ func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeMetrics.
 func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ScopeMetrics{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeMetrics())
 	return es.At(es.Len() - 1)
 }
 

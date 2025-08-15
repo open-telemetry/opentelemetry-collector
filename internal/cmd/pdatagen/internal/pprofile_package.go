@@ -91,9 +91,10 @@ var profiles = &messageStruct{
 	hasWrapper: true,
 }
 
-var resourceProfilesSlice = &sliceOfPtrs{
-	structName: "ResourceProfilesSlice",
-	element:    resourceProfiles,
+var resourceProfilesSlice = &messageSlice{
+	structName:      "ResourceProfilesSlice",
+	elementNullable: true,
+	element:         resourceProfiles,
 }
 
 var resourceProfiles = &messageStruct{
@@ -170,9 +171,10 @@ var profilesDictionary = &messageStruct{
 	},
 }
 
-var scopeProfilesSlice = &sliceOfPtrs{
-	structName: "ScopeProfilesSlice",
-	element:    scopeProfiles,
+var scopeProfilesSlice = &messageSlice{
+	structName:      "ScopeProfilesSlice",
+	elementNullable: true,
+	element:         scopeProfiles,
 }
 
 var scopeProfiles = &messageStruct{
@@ -199,9 +201,10 @@ var scopeProfiles = &messageStruct{
 	},
 }
 
-var profilesSlice = &sliceOfPtrs{
-	structName: "ProfilesSlice",
-	element:    profile,
+var profilesSlice = &messageSlice{
+	structName:      "ProfilesSlice",
+	elementNullable: true,
+	element:         profile,
 }
 
 var profile = &messageStruct{
@@ -309,9 +312,10 @@ var profile = &messageStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfPtrs{
-	structName: "AttributeUnitSlice",
-	element:    attributeUnit,
+var attributeUnitSlice = &messageSlice{
+	structName:      "AttributeUnitSlice",
+	elementNullable: true,
+	element:         attributeUnit,
 }
 
 var attributeUnit = &messageStruct{
@@ -332,9 +336,10 @@ var attributeUnit = &messageStruct{
 	},
 }
 
-var linkSlice = &sliceOfPtrs{
-	structName: "LinkSlice",
-	element:    link,
+var linkSlice = &messageSlice{
+	structName:      "LinkSlice",
+	elementNullable: true,
+	element:         link,
 }
 
 var link = &messageStruct{
@@ -357,9 +362,10 @@ var link = &messageStruct{
 	},
 }
 
-var valueTypeSlice = &sliceOfPtrs{
-	structName: "ValueTypeSlice",
-	element:    valueType,
+var valueTypeSlice = &messageSlice{
+	structName:      "ValueTypeSlice",
+	elementNullable: true,
+	element:         valueType,
 }
 
 var valueType = &messageStruct{
@@ -391,9 +397,10 @@ var valueType = &messageStruct{
 	},
 }
 
-var sampleSlice = &sliceOfPtrs{
-	structName: "SampleSlice",
-	element:    sample,
+var sampleSlice = &messageSlice{
+	structName:      "SampleSlice",
+	elementNullable: true,
+	element:         sample,
 }
 
 var sample = &messageStruct{
@@ -437,9 +444,10 @@ var sample = &messageStruct{
 	},
 }
 
-var mappingSlice = &sliceOfPtrs{
-	structName: "MappingSlice",
-	element:    mapping,
+var mappingSlice = &messageSlice{
+	structName:      "MappingSlice",
+	elementNullable: true,
+	element:         mapping,
 }
 
 var mapping = &messageStruct{
@@ -496,9 +504,10 @@ var mapping = &messageStruct{
 	},
 }
 
-var locationSlice = &sliceOfPtrs{
-	structName: "LocationSlice",
-	element:    location,
+var locationSlice = &messageSlice{
+	structName:      "LocationSlice",
+	elementNullable: true,
+	element:         location,
 }
 
 var location = &messageStruct{
@@ -536,9 +545,10 @@ var location = &messageStruct{
 	},
 }
 
-var lineSlice = &sliceOfPtrs{
-	structName: "LineSlice",
-	element:    line,
+var lineSlice = &messageSlice{
+	structName:      "LineSlice",
+	elementNullable: true,
+	element:         line,
 }
 
 var line = &messageStruct{
@@ -564,9 +574,10 @@ var line = &messageStruct{
 	},
 }
 
-var functionSlice = &sliceOfPtrs{
-	structName: "FunctionSlice",
-	element:    function,
+var functionSlice = &messageSlice{
+	structName:      "FunctionSlice",
+	elementNullable: true,
+	element:         function,
 }
 
 var function = &messageStruct{
@@ -597,9 +608,10 @@ var function = &messageStruct{
 	},
 }
 
-var attributeTableSlice = &sliceOfValues{
-	structName: "AttributeTableSlice",
-	element:    attribute,
+var attributeTableSlice = &messageSlice{
+	structName:      "AttributeTableSlice",
+	elementNullable: false,
+	element:         attribute,
 }
 
 var attribute = &messageStruct{

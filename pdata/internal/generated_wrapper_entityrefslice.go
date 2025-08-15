@@ -41,7 +41,7 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpcommon.EntityRef{}
+			newDest[i] = NewOrigPtrEntityRef()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -53,7 +53,7 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpcommon.EntityRef{}
+			newDest[i] = NewOrigPtrEntityRef()
 		}
 	}
 	for i := range src {
@@ -64,13 +64,13 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 
 func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
 	orig := make([]*otlpcommon.EntityRef, 5)
-	orig[0] = &otlpcommon.EntityRef{}
-	orig[1] = &otlpcommon.EntityRef{}
+	orig[0] = NewOrigPtrEntityRef()
+	orig[1] = NewOrigPtrEntityRef()
 	FillOrigTestEntityRef(orig[1])
-	orig[2] = &otlpcommon.EntityRef{}
-	orig[3] = &otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(orig[1])
-	orig[4] = &otlpcommon.EntityRef{}
+	orig[2] = NewOrigPtrEntityRef()
+	orig[3] = NewOrigPtrEntityRef()
+	FillOrigTestEntityRef(orig[3])
+	orig[4] = NewOrigPtrEntityRef()
 	return orig
 }
 
@@ -78,7 +78,7 @@ func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
 func UnmarshalJSONOrigEntityRefSlice(iter *json.Iterator) []*otlpcommon.EntityRef {
 	var orig []*otlpcommon.EntityRef
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpcommon.EntityRef{})
+		orig = append(orig, NewOrigPtrEntityRef())
 		UnmarshalJSONOrigEntityRef(orig[len(orig)-1], iter)
 		return true
 	})

@@ -127,7 +127,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			(*es.orig)[i] = otlpcommon.KeyValue{}
+			(*es.orig)[i].Reset()
 			continue
 		}
 		if newLen == i {
@@ -136,7 +136,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		(*es.orig)[i] = otlpcommon.KeyValue{}
+		(*es.orig)[i].Reset()
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
