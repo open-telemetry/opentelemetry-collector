@@ -33,8 +33,7 @@ func newResourceLogs(orig *otlplogs.ResourceLogs, state *internal.State) Resourc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceLogs() ResourceLogs {
-	state := internal.StateMutable
-	return newResourceLogs(&otlplogs.ResourceLogs{}, &state)
+	return newResourceLogs(&otlplogs.ResourceLogs{}, internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

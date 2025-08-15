@@ -19,8 +19,7 @@ import (
 func TestMappingSlice(t *testing.T) {
 	es := NewMappingSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newMappingSlice(&[]*otlpprofiles.Mapping{}, &state)
+	es = newMappingSlice(&[]*otlpprofiles.Mapping{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMapping()
@@ -35,8 +34,9 @@ func TestMappingSlice(t *testing.T) {
 }
 
 func TestMappingSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newMappingSlice(&[]*otlpprofiles.Mapping{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newMappingSlice(&[]*otlpprofiles.Mapping{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

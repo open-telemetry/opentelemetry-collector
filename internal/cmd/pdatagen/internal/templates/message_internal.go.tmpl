@@ -33,8 +33,7 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := {{ .originFullName }}{}
 	FillOrigTest{{ .originName }}(&orig)
-	state := StateMutable
-	return New{{ .structName }}(&orig, &state)
+	return New{{ .structName }}(&orig, NewState())
 }
 
 {{ end }}

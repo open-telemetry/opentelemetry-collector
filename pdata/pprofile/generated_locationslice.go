@@ -34,8 +34,7 @@ func newLocationSlice(orig *[]*otlpprofiles.Location, state *internal.State) Loc
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
 	orig := []*otlpprofiles.Location(nil)
-	state := internal.StateMutable
-	return newLocationSlice(&orig, &state)
+	return newLocationSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

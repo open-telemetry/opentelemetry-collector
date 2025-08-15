@@ -19,8 +19,7 @@ import (
 func TestEntityRefSlice(t *testing.T) {
 	es := NewEntityRefSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newEntityRefSlice(&[]*otlpcommon.EntityRef{}, &state)
+	es = newEntityRefSlice(&[]*otlpcommon.EntityRef{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewEntityRef()
@@ -35,8 +34,9 @@ func TestEntityRefSlice(t *testing.T) {
 }
 
 func TestEntityRefSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newEntityRefSlice(&[]*otlpcommon.EntityRef{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newEntityRefSlice(&[]*otlpcommon.EntityRef{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

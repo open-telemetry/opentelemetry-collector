@@ -34,8 +34,7 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 func GenerateTestLogs() Logs {
 	orig := otlpcollectorlogs.ExportLogsServiceRequest{}
 	FillOrigTestExportLogsServiceRequest(&orig)
-	state := StateMutable
-	return NewLogs(&orig, &state)
+	return NewLogs(&orig, NewState())
 }
 
 func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {

@@ -7,16 +7,26 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal"
 type State int32
 
 const (
-	// StateMutable indicates that the data is exclusive to the current consumer.
-	StateMutable State = iota
-
-	// StateReadOnly indicates that the data is shared with other consumers.
-	StateReadOnly
+	defaultState     State = 0
+	stateReadOnlyBit       = State(1 << 0)
 )
+
+func NewState() *State {
+	state := defaultState
+	return &state
+}
+
+func (state *State) MarkReadOnly() {
+	*state |= stateReadOnlyBit
+}
+
+func (state *State) IsReadOnly() bool {
+	return *state&stateReadOnlyBit != 0
+}
 
 // AssertMutable panics if the state is not StateMutable.
 func (state *State) AssertMutable() {
-	if *state != StateMutable {
+	if *state&stateReadOnlyBit != 0 {
 		panic("invalid access to shared data")
 	}
 }

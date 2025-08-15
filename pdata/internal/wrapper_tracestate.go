@@ -27,8 +27,7 @@ func NewTraceState(orig *string, state *State) TraceState {
 func GenerateTestTraceState() TraceState {
 	var orig string
 	FillOrigTestTraceState(&orig)
-	state := StateMutable
-	return NewTraceState(&orig, &state)
+	return NewTraceState(&orig, NewState())
 }
 
 // MarshalJSONOrigTraceState marshals all properties from the current struct to the destination stream.

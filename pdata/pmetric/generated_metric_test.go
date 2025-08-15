@@ -24,9 +24,10 @@ func TestMetric_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMetric(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestMetric(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newMetric(&otlpmetrics.Metric{}, sharedState)) })
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).MoveTo(dest) })
 }
 
 func TestMetric_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestMetric_CopyTo(t *testing.T) {
 	orig = generateTestMetric()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newMetric(&otlpmetrics.Metric{}, sharedState)) })
 }
 
 func TestMetric_Name(t *testing.T) {
@@ -46,8 +48,9 @@ func TestMetric_Name(t *testing.T) {
 	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetName("test_name") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetName("test_name") })
 }
 
 func TestMetric_Description(t *testing.T) {
@@ -55,8 +58,9 @@ func TestMetric_Description(t *testing.T) {
 	assert.Empty(t, ms.Description())
 	ms.SetDescription("test_description")
 	assert.Equal(t, "test_description", ms.Description())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetDescription("test_description") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetDescription("test_description") })
 }
 
 func TestMetric_Unit(t *testing.T) {
@@ -64,8 +68,9 @@ func TestMetric_Unit(t *testing.T) {
 	assert.Empty(t, ms.Unit())
 	ms.SetUnit("test_unit")
 	assert.Equal(t, "test_unit", ms.Unit())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("test_unit") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetUnit("test_unit") })
 }
 
 func TestMetric_Type(t *testing.T) {
@@ -80,8 +85,9 @@ func TestMetric_Gauge(t *testing.T) {
 	internal.FillOrigTestGauge(ms.orig.GetData().(*otlpmetrics.Metric_Gauge).Gauge)
 	assert.Equal(t, MetricTypeGauge, ms.Type())
 	assert.Equal(t, generateTestGauge(), ms.Gauge())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptyGauge() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyGauge() })
 }
 
 func TestMetric_Sum(t *testing.T) {
@@ -91,8 +97,9 @@ func TestMetric_Sum(t *testing.T) {
 	internal.FillOrigTestSum(ms.orig.GetData().(*otlpmetrics.Metric_Sum).Sum)
 	assert.Equal(t, MetricTypeSum, ms.Type())
 	assert.Equal(t, generateTestSum(), ms.Sum())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptySum() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptySum() })
 }
 
 func TestMetric_Histogram(t *testing.T) {
@@ -102,8 +109,9 @@ func TestMetric_Histogram(t *testing.T) {
 	internal.FillOrigTestHistogram(ms.orig.GetData().(*otlpmetrics.Metric_Histogram).Histogram)
 	assert.Equal(t, MetricTypeHistogram, ms.Type())
 	assert.Equal(t, generateTestHistogram(), ms.Histogram())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptyHistogram() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyHistogram() })
 }
 
 func TestMetric_ExponentialHistogram(t *testing.T) {
@@ -113,8 +121,9 @@ func TestMetric_ExponentialHistogram(t *testing.T) {
 	internal.FillOrigTestExponentialHistogram(ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
 	assert.Equal(t, MetricTypeExponentialHistogram, ms.Type())
 	assert.Equal(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptyExponentialHistogram() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyExponentialHistogram() })
 }
 
 func TestMetric_Summary(t *testing.T) {
@@ -124,8 +133,9 @@ func TestMetric_Summary(t *testing.T) {
 	internal.FillOrigTestSummary(ms.orig.GetData().(*otlpmetrics.Metric_Summary).Summary)
 	assert.Equal(t, MetricTypeSummary, ms.Type())
 	assert.Equal(t, generateTestSummary(), ms.Summary())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptySummary() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptySummary() })
 }
 
 func TestMetric_Metadata(t *testing.T) {

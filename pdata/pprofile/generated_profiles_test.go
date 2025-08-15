@@ -23,9 +23,10 @@ func TestProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, &sharedState)) })
-	assert.Panics(t, func() { newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState)) })
+	assert.Panics(t, func() { newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState).MoveTo(dest) })
 }
 
 func TestProfiles_CopyTo(t *testing.T) {
@@ -36,8 +37,9 @@ func TestProfiles_CopyTo(t *testing.T) {
 	orig = generateTestProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState)) })
 }
 
 func TestProfiles_ResourceProfiles(t *testing.T) {

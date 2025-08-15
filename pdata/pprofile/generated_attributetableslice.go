@@ -33,8 +33,7 @@ func newAttributeTableSlice(orig *[]otlpcommon.KeyValue, state *internal.State) 
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeTableSlice() AttributeTableSlice {
 	orig := []otlpcommon.KeyValue(nil)
-	state := internal.StateMutable
-	return newAttributeTableSlice(&orig, &state)
+	return newAttributeTableSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

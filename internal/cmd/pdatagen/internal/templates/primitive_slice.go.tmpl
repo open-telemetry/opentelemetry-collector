@@ -30,8 +30,7 @@ func (ms {{ .structName }}) getState() *internal.State {
 // New{{ .structName }} creates a new empty {{ .structName }}.
 func New{{ .structName }}() {{ .structName }} {
 	orig := []{{ .itemType }}(nil)
-	state := internal.StateMutable
-	return {{ .structName }}(internal.New{{ .structName }}(&orig, &state))
+	return {{ .structName }}(internal.New{{ .structName }}(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.

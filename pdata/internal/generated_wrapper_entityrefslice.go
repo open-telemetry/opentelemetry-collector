@@ -30,8 +30,7 @@ func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSli
 
 func GenerateTestEntityRefSlice() EntityRefSlice {
 	orig := GenerateOrigTestEntityRefSlice()
-	state := StateMutable
-	return NewEntityRefSlice(&orig, &state)
+	return NewEntityRefSlice(&orig, NewState())
 }
 
 func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {

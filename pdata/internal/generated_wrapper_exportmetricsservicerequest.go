@@ -34,8 +34,7 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 func GenerateTestMetrics() Metrics {
 	orig := otlpcollectormetrics.ExportMetricsServiceRequest{}
 	FillOrigTestExportMetricsServiceRequest(&orig)
-	state := StateMutable
-	return NewMetrics(&orig, &state)
+	return NewMetrics(&orig, NewState())
 }
 
 func NewOrigExportMetricsServiceRequest() otlpcollectormetrics.ExportMetricsServiceRequest {

@@ -34,8 +34,7 @@ func newFunctionSlice(orig *[]*otlpprofiles.Function, state *internal.State) Fun
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewFunctionSlice() FunctionSlice {
 	orig := []*otlpprofiles.Function(nil)
-	state := internal.StateMutable
-	return newFunctionSlice(&orig, &state)
+	return newFunctionSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

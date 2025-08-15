@@ -31,8 +31,7 @@ func newEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *internal.State) Ent
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewEntityRefSlice() EntityRefSlice {
 	orig := []*otlpcommon.EntityRef(nil)
-	state := internal.StateMutable
-	return newEntityRefSlice(&orig, &state)
+	return newEntityRefSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

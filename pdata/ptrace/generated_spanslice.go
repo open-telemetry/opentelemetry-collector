@@ -34,8 +34,7 @@ func newSpanSlice(orig *[]*otlptrace.Span, state *internal.State) SpanSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanSlice() SpanSlice {
 	orig := []*otlptrace.Span(nil)
-	state := internal.StateMutable
-	return newSpanSlice(&orig, &state)
+	return newSpanSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

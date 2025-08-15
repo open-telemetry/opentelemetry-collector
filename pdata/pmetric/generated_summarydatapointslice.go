@@ -34,8 +34,7 @@ func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint, state *inte
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointSlice() SummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint(nil)
-	state := internal.StateMutable
-	return newSummaryDataPointSlice(&orig, &state)
+	return newSummaryDataPointSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

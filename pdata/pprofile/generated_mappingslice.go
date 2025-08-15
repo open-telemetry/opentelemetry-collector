@@ -34,8 +34,7 @@ func newMappingSlice(orig *[]*otlpprofiles.Mapping, state *internal.State) Mappi
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMappingSlice() MappingSlice {
 	orig := []*otlpprofiles.Mapping(nil)
-	state := internal.StateMutable
-	return newMappingSlice(&orig, &state)
+	return newMappingSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

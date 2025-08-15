@@ -34,8 +34,7 @@ func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, state *internal.State) Sc
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	state := internal.StateMutable
-	return newScopeSpansSlice(&orig, &state)
+	return newScopeSpansSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

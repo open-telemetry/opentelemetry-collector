@@ -34,8 +34,7 @@ func newLogRecordSlice(orig *[]*otlplogs.LogRecord, state *internal.State) LogRe
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogRecordSlice() LogRecordSlice {
 	orig := []*otlplogs.LogRecord(nil)
-	state := internal.StateMutable
-	return newLogRecordSlice(&orig, &state)
+	return newLogRecordSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

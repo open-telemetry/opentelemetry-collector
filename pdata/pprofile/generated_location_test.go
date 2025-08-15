@@ -24,9 +24,10 @@ func TestLocation_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLocation(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLocation(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLocation(&otlpprofiles.Location{}, sharedState)) })
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, sharedState).MoveTo(dest) })
 }
 
 func TestLocation_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestLocation_CopyTo(t *testing.T) {
 	orig = generateTestLocation()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, sharedState)) })
 }
 
 func TestLocation_MappingIndex(t *testing.T) {
@@ -60,8 +62,9 @@ func TestLocation_Address(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Address())
 	ms.SetAddress(uint64(13))
 	assert.Equal(t, uint64(13), ms.Address())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, sharedState).SetAddress(uint64(13)) })
 }
 
 func TestLocation_Line(t *testing.T) {
@@ -76,8 +79,9 @@ func TestLocation_IsFolded(t *testing.T) {
 	assert.False(t, ms.IsFolded())
 	ms.SetIsFolded(true)
 	assert.True(t, ms.IsFolded())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetIsFolded(true) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, sharedState).SetIsFolded(true) })
 }
 
 func TestLocation_AttributeIndices(t *testing.T) {

@@ -19,8 +19,7 @@ import (
 func TestLogRecordSlice(t *testing.T) {
 	es := NewLogRecordSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, &state)
+	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLogRecord()
@@ -35,8 +34,9 @@ func TestLogRecordSlice(t *testing.T) {
 }
 
 func TestLogRecordSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

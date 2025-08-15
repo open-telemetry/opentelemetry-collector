@@ -34,8 +34,7 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 func GenerateTestResource() Resource {
 	orig := otlpresource.Resource{}
 	FillOrigTestResource(&orig)
-	state := StateMutable
-	return NewResource(&orig, &state)
+	return NewResource(&orig, NewState())
 }
 
 func NewOrigResource() otlpresource.Resource {

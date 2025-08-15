@@ -30,8 +30,7 @@ func newSlice(orig *[]otlpcommon.AnyValue, state *internal.State) Slice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSlice() Slice {
 	orig := []otlpcommon.AnyValue(nil)
-	state := internal.StateMutable
-	return newSlice(&orig, &state)
+	return newSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
