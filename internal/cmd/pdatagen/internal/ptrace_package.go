@@ -71,9 +71,10 @@ var traces = &messageStruct{
 	hasWrapper: true,
 }
 
-var resourceSpansSlice = &sliceOfPtrs{
-	structName: "ResourceSpansSlice",
-	element:    resourceSpans,
+var resourceSpansSlice = &messageSlice{
+	structName:      "ResourceSpansSlice",
+	elementNullable: true,
+	element:         resourceSpans,
 }
 
 var resourceSpans = &messageStruct{
@@ -100,9 +101,10 @@ var resourceSpans = &messageStruct{
 	},
 }
 
-var scopeSpansSlice = &sliceOfPtrs{
-	structName: "ScopeSpansSlice",
-	element:    scopeSpans,
+var scopeSpansSlice = &messageSlice{
+	structName:      "ScopeSpansSlice",
+	elementNullable: true,
+	element:         scopeSpans,
 }
 
 var scopeSpans = &messageStruct{
@@ -129,9 +131,10 @@ var scopeSpans = &messageStruct{
 	},
 }
 
-var spanSlice = &sliceOfPtrs{
-	structName: "SpanSlice",
-	element:    span,
+var spanSlice = &messageSlice{
+	structName:      "SpanSlice",
+	elementNullable: true,
+	element:         span,
 }
 
 var span = &messageStruct{
@@ -237,9 +240,10 @@ var span = &messageStruct{
 	},
 }
 
-var spanEventSlice = &sliceOfPtrs{
-	structName: "SpanEventSlice",
-	element:    spanEvent,
+var spanEventSlice = &messageSlice{
+	structName:      "SpanEventSlice",
+	elementNullable: true,
+	element:         spanEvent,
 }
 
 var spanEvent = &messageStruct{
@@ -273,9 +277,10 @@ var spanEvent = &messageStruct{
 	},
 }
 
-var spanLinkSlice = &sliceOfPtrs{
-	structName: "SpanLinkSlice",
-	element:    spanLink,
+var spanLinkSlice = &messageSlice{
+	structName:      "SpanLinkSlice",
+	elementNullable: true,
+	element:         spanLink,
 }
 
 var spanLink = &messageStruct{

@@ -99,7 +99,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Link{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLink())
 	return es.At(es.Len() - 1)
 }
 

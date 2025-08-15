@@ -19,7 +19,7 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ResourceLogs{}
+			newDest[i] = NewOrigPtrResourceLogs()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ResourceLogs{}
+			newDest[i] = NewOrigPtrResourceLogs()
 		}
 	}
 	for i := range src {
@@ -42,13 +42,13 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 
 func GenerateOrigTestResourceLogsSlice() []*otlplogs.ResourceLogs {
 	orig := make([]*otlplogs.ResourceLogs, 5)
-	orig[0] = &otlplogs.ResourceLogs{}
-	orig[1] = &otlplogs.ResourceLogs{}
+	orig[0] = NewOrigPtrResourceLogs()
+	orig[1] = NewOrigPtrResourceLogs()
 	FillOrigTestResourceLogs(orig[1])
-	orig[2] = &otlplogs.ResourceLogs{}
-	orig[3] = &otlplogs.ResourceLogs{}
-	FillOrigTestResourceLogs(orig[1])
-	orig[4] = &otlplogs.ResourceLogs{}
+	orig[2] = NewOrigPtrResourceLogs()
+	orig[3] = NewOrigPtrResourceLogs()
+	FillOrigTestResourceLogs(orig[3])
+	orig[4] = NewOrigPtrResourceLogs()
 	return orig
 }
 
@@ -56,7 +56,7 @@ func GenerateOrigTestResourceLogsSlice() []*otlplogs.ResourceLogs {
 func UnmarshalJSONOrigResourceLogsSlice(iter *json.Iterator) []*otlplogs.ResourceLogs {
 	var orig []*otlplogs.ResourceLogs
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlplogs.ResourceLogs{})
+		orig = append(orig, NewOrigPtrResourceLogs())
 		UnmarshalJSONOrigResourceLogs(orig[len(orig)-1], iter)
 		return true
 	})

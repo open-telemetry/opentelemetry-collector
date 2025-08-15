@@ -19,7 +19,7 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
+			newDest[i] = NewOrigPtrScopeLogs()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
+			newDest[i] = NewOrigPtrScopeLogs()
 		}
 	}
 	for i := range src {
@@ -42,13 +42,13 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 
 func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
 	orig := make([]*otlplogs.ScopeLogs, 5)
-	orig[0] = &otlplogs.ScopeLogs{}
-	orig[1] = &otlplogs.ScopeLogs{}
+	orig[0] = NewOrigPtrScopeLogs()
+	orig[1] = NewOrigPtrScopeLogs()
 	FillOrigTestScopeLogs(orig[1])
-	orig[2] = &otlplogs.ScopeLogs{}
-	orig[3] = &otlplogs.ScopeLogs{}
-	FillOrigTestScopeLogs(orig[1])
-	orig[4] = &otlplogs.ScopeLogs{}
+	orig[2] = NewOrigPtrScopeLogs()
+	orig[3] = NewOrigPtrScopeLogs()
+	FillOrigTestScopeLogs(orig[3])
+	orig[4] = NewOrigPtrScopeLogs()
 	return orig
 }
 
@@ -56,7 +56,7 @@ func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
 func UnmarshalJSONOrigScopeLogsSlice(iter *json.Iterator) []*otlplogs.ScopeLogs {
 	var orig []*otlplogs.ScopeLogs
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlplogs.ScopeLogs{})
+		orig = append(orig, NewOrigPtrScopeLogs())
 		UnmarshalJSONOrigScopeLogs(orig[len(orig)-1], iter)
 		return true
 	})

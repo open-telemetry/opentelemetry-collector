@@ -99,7 +99,7 @@ func (es LineSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Line.
 func (es LineSlice) AppendEmpty() Line {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Line{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLine())
 	return es.At(es.Len() - 1)
 }
 

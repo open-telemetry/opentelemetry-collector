@@ -19,7 +19,7 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ScopeSpans{}
+			newDest[i] = NewOrigPtrScopeSpans()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ScopeSpans{}
+			newDest[i] = NewOrigPtrScopeSpans()
 		}
 	}
 	for i := range src {
@@ -42,13 +42,13 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 
 func GenerateOrigTestScopeSpansSlice() []*otlptrace.ScopeSpans {
 	orig := make([]*otlptrace.ScopeSpans, 5)
-	orig[0] = &otlptrace.ScopeSpans{}
-	orig[1] = &otlptrace.ScopeSpans{}
+	orig[0] = NewOrigPtrScopeSpans()
+	orig[1] = NewOrigPtrScopeSpans()
 	FillOrigTestScopeSpans(orig[1])
-	orig[2] = &otlptrace.ScopeSpans{}
-	orig[3] = &otlptrace.ScopeSpans{}
-	FillOrigTestScopeSpans(orig[1])
-	orig[4] = &otlptrace.ScopeSpans{}
+	orig[2] = NewOrigPtrScopeSpans()
+	orig[3] = NewOrigPtrScopeSpans()
+	FillOrigTestScopeSpans(orig[3])
+	orig[4] = NewOrigPtrScopeSpans()
 	return orig
 }
 
@@ -56,7 +56,7 @@ func GenerateOrigTestScopeSpansSlice() []*otlptrace.ScopeSpans {
 func UnmarshalJSONOrigScopeSpansSlice(iter *json.Iterator) []*otlptrace.ScopeSpans {
 	var orig []*otlptrace.ScopeSpans
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlptrace.ScopeSpans{})
+		orig = append(orig, NewOrigPtrScopeSpans())
 		UnmarshalJSONOrigScopeSpans(orig[len(orig)-1], iter)
 		return true
 	})

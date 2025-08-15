@@ -19,7 +19,7 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigPtrLink()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigPtrLink()
 		}
 	}
 	for i := range src {
@@ -42,13 +42,13 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 
 func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
 	orig := make([]*otlpprofiles.Link, 5)
-	orig[0] = &otlpprofiles.Link{}
-	orig[1] = &otlpprofiles.Link{}
+	orig[0] = NewOrigPtrLink()
+	orig[1] = NewOrigPtrLink()
 	FillOrigTestLink(orig[1])
-	orig[2] = &otlpprofiles.Link{}
-	orig[3] = &otlpprofiles.Link{}
-	FillOrigTestLink(orig[1])
-	orig[4] = &otlpprofiles.Link{}
+	orig[2] = NewOrigPtrLink()
+	orig[3] = NewOrigPtrLink()
+	FillOrigTestLink(orig[3])
+	orig[4] = NewOrigPtrLink()
 	return orig
 }
 
@@ -56,7 +56,7 @@ func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
 func UnmarshalJSONOrigLinkSlice(iter *json.Iterator) []*otlpprofiles.Link {
 	var orig []*otlpprofiles.Link
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.Link{})
+		orig = append(orig, NewOrigPtrLink())
 		UnmarshalJSONOrigLink(orig[len(orig)-1], iter)
 		return true
 	})

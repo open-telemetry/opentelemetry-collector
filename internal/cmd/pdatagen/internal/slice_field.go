@@ -92,14 +92,13 @@ func (sf *SliceField) GenerateUnmarshalProto(*messageStruct) string {
 }
 
 func (sf *SliceField) toProtoField() *ProtoField {
-	_, nullable := sf.returnSlice.(*sliceOfPtrs)
 	return &ProtoField{
 		Type:            sf.protoType,
 		ID:              sf.protoID,
 		Name:            sf.fieldName,
 		MessageFullName: sf.returnSlice.getElementOriginName(),
 		Repeated:        sf.protoType != ProtoTypeBytes,
-		Nullable:        nullable,
+		Nullable:        sf.returnSlice.getElementNullable(),
 	}
 }
 

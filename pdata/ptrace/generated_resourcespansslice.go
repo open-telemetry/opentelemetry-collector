@@ -99,7 +99,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceSpans())
 	return es.At(es.Len() - 1)
 }
 

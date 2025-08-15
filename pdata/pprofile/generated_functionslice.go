@@ -99,7 +99,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Function{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrFunction())
 	return es.At(es.Len() - 1)
 }
 

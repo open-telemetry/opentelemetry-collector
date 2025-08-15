@@ -99,7 +99,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added NumberDataPoint.
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrNumberDataPoint())
 	return es.At(es.Len() - 1)
 }
 

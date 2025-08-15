@@ -66,9 +66,10 @@ var logs = &messageStruct{
 	hasWrapper: true,
 }
 
-var resourceLogsSlice = &sliceOfPtrs{
-	structName: "ResourceLogsSlice",
-	element:    resourceLogs,
+var resourceLogsSlice = &messageSlice{
+	structName:      "ResourceLogsSlice",
+	elementNullable: true,
+	element:         resourceLogs,
 }
 
 var resourceLogs = &messageStruct{
@@ -95,9 +96,10 @@ var resourceLogs = &messageStruct{
 	},
 }
 
-var scopeLogsSlice = &sliceOfPtrs{
-	structName: "ScopeLogsSlice",
-	element:    scopeLogs,
+var scopeLogsSlice = &messageSlice{
+	structName:      "ScopeLogsSlice",
+	elementNullable: true,
+	element:         scopeLogs,
 }
 
 var scopeLogs = &messageStruct{
@@ -124,9 +126,10 @@ var scopeLogs = &messageStruct{
 	},
 }
 
-var logSlice = &sliceOfPtrs{
-	structName: "LogRecordSlice",
-	element:    logRecord,
+var logSlice = &messageSlice{
+	structName:      "LogRecordSlice",
+	elementNullable: true,
+	element:         logRecord,
 }
 
 var logRecord = &messageStruct{
