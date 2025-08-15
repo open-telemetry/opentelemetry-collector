@@ -36,10 +36,9 @@ const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }
 	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
 
 type MessageField struct {
-	fieldName           string
-	fieldOriginFullName string
-	protoID             uint32
-	returnMessage       *messageStruct
+	fieldName     string
+	protoID       uint32
+	returnMessage *messageStruct
 }
 
 func (mf *MessageField) GenerateAccessors(ms *messageStruct) string {
@@ -93,7 +92,7 @@ func (mf *MessageField) toProtoField() *ProtoField {
 	return &ProtoField{
 		Type:            pt,
 		ID:              mf.protoID,
-		Name:            mf.getFieldOriginFullName(),
+		Name:            mf.fieldName,
 		MessageFullName: mf.returnMessage.getOriginFullName(),
 	}
 }
@@ -103,7 +102,7 @@ func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 		"messageHasWrapper":   usedByOtherDataTypes(mf.returnMessage.packageName),
 		"structName":          ms.getName(),
 		"fieldName":           mf.fieldName,
-		"fieldOriginFullName": mf.getFieldOriginFullName(),
+		"fieldOriginFullName": mf.fieldName,
 		"fieldOriginName":     mf.returnMessage.getOriginName(),
 		"lowerFieldName":      strings.ToLower(mf.fieldName),
 		"returnType":          mf.returnMessage.getName(),
@@ -116,13 +115,6 @@ func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 		"origAccessor":  origAccessor(ms.getHasWrapper()),
 		"stateAccessor": stateAccessor(ms.getHasWrapper()),
 	}
-}
-
-func (mf *MessageField) getFieldOriginFullName() string {
-	if mf.fieldOriginFullName != "" {
-		return mf.fieldOriginFullName
-	}
-	return mf.fieldName
 }
 
 var _ Field = (*MessageField)(nil)

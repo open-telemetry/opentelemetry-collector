@@ -52,7 +52,7 @@ func TestProfilesText(t *testing.T) {
 
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
 func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	location := dic.LocationTable().AppendEmpty()
 	location.SetMappingIndex(3)
 	location.SetAddress(4)
@@ -120,7 +120,7 @@ func generateProfilesWithEntityRefs() pprofile.Profiles {
 	sample.SetLocationsLength(1)
 	sample.Value().FromRaw([]int64{100})
 
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 	dic.StringTable().Append("")
 	dic.StringTable().Append("cpu")
 	dic.StringTable().Append("nanoseconds")

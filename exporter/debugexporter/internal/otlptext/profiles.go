@@ -19,7 +19,7 @@ type textProfilesMarshaler struct{}
 // MarshalProfiles pprofile.Profiles to OTLP text.
 func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, error) {
 	buf := dataBuffer{}
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 	rps := pd.ResourceProfiles()
 
 	buf.logProfileMappings(dic.MappingTable())
