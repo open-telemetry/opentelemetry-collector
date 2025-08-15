@@ -32,7 +32,7 @@ func newValueType(orig *otlpprofiles.ValueType, state *internal.State) ValueType
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewValueType() ValueType {
-	return newValueType(&otlpprofiles.ValueType{}, internal.NewState())
+	return newValueType(internal.NewOrigPtrValueType(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

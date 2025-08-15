@@ -25,8 +25,8 @@ func TestLine_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLine(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLine(&otlpprofiles.Line{}, sharedState)) })
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLine(internal.NewOrigPtrLine(), sharedState)) })
+	assert.Panics(t, func() { newLine(internal.NewOrigPtrLine(), sharedState).MoveTo(dest) })
 }
 
 func TestLine_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestLine_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLine(&otlpprofiles.Line{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLine(internal.NewOrigPtrLine(), sharedState)) })
 }
 
 func TestLine_FunctionIndex(t *testing.T) {

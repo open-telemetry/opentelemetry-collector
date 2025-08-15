@@ -33,7 +33,7 @@ func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttribute() Attribute {
-	return newAttribute(&otlpcommon.KeyValue{}, internal.NewState())
+	return newAttribute(internal.NewOrigPtrKeyValue(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

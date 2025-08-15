@@ -27,8 +27,8 @@ func TestProfile_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfile(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfile(&otlpprofiles.Profile{}, sharedState)) })
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfile(internal.NewOrigPtrProfile(), sharedState)) })
+	assert.Panics(t, func() { newProfile(internal.NewOrigPtrProfile(), sharedState).MoveTo(dest) })
 }
 
 func TestProfile_CopyTo(t *testing.T) {
@@ -41,7 +41,7 @@ func TestProfile_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfile(&otlpprofiles.Profile{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfile(internal.NewOrigPtrProfile(), sharedState)) })
 }
 
 func TestProfile_SampleType(t *testing.T) {

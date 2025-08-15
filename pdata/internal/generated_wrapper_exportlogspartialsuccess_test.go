@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportLogsPartialSuccess(t *testing.T) {
-	src := &otlpcollectorlogs.ExportLogsPartialSuccess{}
-	dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+	src := NewOrigPtrExportLogsPartialSuccess()
+	dest := NewOrigPtrExportLogsPartialSuccess()
 	CopyOrigExportLogsPartialSuccess(dest, src)
-	assert.Equal(t, &otlpcollectorlogs.ExportLogsPartialSuccess{}, dest)
+	assert.Equal(t, NewOrigPtrExportLogsPartialSuccess(), dest)
 	FillOrigTestExportLogsPartialSuccess(src)
 	CopyOrigExportLogsPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportLogsPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+	dest := NewOrigPtrExportLogsPartialSuccess()
 	UnmarshalJSONOrigExportLogsPartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectorlogs.ExportLogsPartialSuccess{}, dest)
+	assert.Equal(t, NewOrigPtrExportLogsPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccess(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccess(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+			dest := NewOrigPtrExportLogsPartialSuccess()
 			UnmarshalJSONOrigExportLogsPartialSuccess(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccess(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccessUnknown(t *testing.T) {
-	dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+	dest := NewOrigPtrExportLogsPartialSuccess()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportLogsPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpcollectorlogs.ExportLogsPartialSuccess{}, dest)
+	assert.Equal(t, NewOrigPtrExportLogsPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccess(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccess(t *testing.T) {
 			gotSize := MarshalProtoOrigExportLogsPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+			dest := NewOrigPtrExportLogsPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportLogsPartialSuccess(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportLogsPartialSuccess(t *testing.
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+			dest := NewOrigPtrExportLogsPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportLogsPartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportLogsPartialSuccess(t *testing.
 
 func getEncodingTestValuesExportLogsPartialSuccess() map[string]*otlpcollectorlogs.ExportLogsPartialSuccess {
 	return map[string]*otlpcollectorlogs.ExportLogsPartialSuccess{
-		"empty": {},
+		"empty": NewOrigPtrExportLogsPartialSuccess(),
 		"fill_test": func() *otlpcollectorlogs.ExportLogsPartialSuccess {
-			src := &otlpcollectorlogs.ExportLogsPartialSuccess{}
+			src := NewOrigPtrExportLogsPartialSuccess()
 			FillOrigTestExportLogsPartialSuccess(src)
 			return src
 		}(),

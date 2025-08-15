@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigLine(t *testing.T) {
-	src := &otlpprofiles.Line{}
-	dest := &otlpprofiles.Line{}
+	src := NewOrigPtrLine()
+	dest := NewOrigPtrLine()
 	CopyOrigLine(dest, src)
-	assert.Equal(t, &otlpprofiles.Line{}, dest)
+	assert.Equal(t, NewOrigPtrLine(), dest)
 	FillOrigTestLine(src)
 	CopyOrigLine(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigLine(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLineUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.Line{}
+	dest := NewOrigPtrLine()
 	UnmarshalJSONOrigLine(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpprofiles.Line{}, dest)
+	assert.Equal(t, NewOrigPtrLine(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpprofiles.Line{}
+			dest := NewOrigPtrLine()
 			UnmarshalJSONOrigLine(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLineUnknown(t *testing.T) {
-	dest := &otlpprofiles.Line{}
+	dest := NewOrigPtrLine()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLine(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpprofiles.Line{}, dest)
+	assert.Equal(t, NewOrigPtrLine(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
 			gotSize := MarshalProtoOrigLine(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpprofiles.Line{}
+			dest := NewOrigPtrLine()
 			require.NoError(t, UnmarshalProtoOrigLine(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpprofiles.Line{}
+			dest := NewOrigPtrLine()
 			require.NoError(t, UnmarshalProtoOrigLine(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 
 func getEncodingTestValuesLine() map[string]*otlpprofiles.Line {
 	return map[string]*otlpprofiles.Line{
-		"empty": {},
+		"empty": NewOrigPtrLine(),
 		"fill_test": func() *otlpprofiles.Line {
-			src := &otlpprofiles.Line{}
+			src := NewOrigPtrLine()
 			FillOrigTestLine(src)
 			return src
 		}(),

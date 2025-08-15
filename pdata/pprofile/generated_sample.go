@@ -33,7 +33,7 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	return newSample(&otlpprofiles.Sample{}, internal.NewState())
+	return newSample(internal.NewOrigPtrSample(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

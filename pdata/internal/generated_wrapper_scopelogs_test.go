@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigScopeLogs(t *testing.T) {
-	src := &otlplogs.ScopeLogs{}
-	dest := &otlplogs.ScopeLogs{}
+	src := NewOrigPtrScopeLogs()
+	dest := NewOrigPtrScopeLogs()
 	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, &otlplogs.ScopeLogs{}, dest)
+	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
 	FillOrigTestScopeLogs(src)
 	CopyOrigScopeLogs(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigScopeLogs(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlplogs.ScopeLogs{}
+	dest := NewOrigPtrScopeLogs()
 	UnmarshalJSONOrigScopeLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlplogs.ScopeLogs{}, dest)
+	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlplogs.ScopeLogs{}
+			dest := NewOrigPtrScopeLogs()
 			UnmarshalJSONOrigScopeLogs(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
-	dest := &otlplogs.ScopeLogs{}
+	dest := NewOrigPtrScopeLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlplogs.ScopeLogs{}, dest)
+	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 			gotSize := MarshalProtoOrigScopeLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlplogs.ScopeLogs{}
+			dest := NewOrigPtrScopeLogs()
 			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlplogs.ScopeLogs{}
+			dest := NewOrigPtrScopeLogs()
 			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 
 func getEncodingTestValuesScopeLogs() map[string]*otlplogs.ScopeLogs {
 	return map[string]*otlplogs.ScopeLogs{
-		"empty": {},
+		"empty": NewOrigPtrScopeLogs(),
 		"fill_test": func() *otlplogs.ScopeLogs {
-			src := &otlplogs.ScopeLogs{}
+			src := NewOrigPtrScopeLogs()
 			FillOrigTestScopeLogs(src)
 			return src
 		}(),

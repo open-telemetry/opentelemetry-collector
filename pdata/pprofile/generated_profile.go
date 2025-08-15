@@ -34,7 +34,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	return newProfile(&otlpprofiles.Profile{}, internal.NewState())
+	return newProfile(internal.NewOrigPtrProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

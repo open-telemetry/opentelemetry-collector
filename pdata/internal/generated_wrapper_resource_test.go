@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigResource(t *testing.T) {
-	src := &otlpresource.Resource{}
-	dest := &otlpresource.Resource{}
+	src := NewOrigPtrResource()
+	dest := NewOrigPtrResource()
 	CopyOrigResource(dest, src)
-	assert.Equal(t, &otlpresource.Resource{}, dest)
+	assert.Equal(t, NewOrigPtrResource(), dest)
 	FillOrigTestResource(src)
 	CopyOrigResource(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigResource(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigResourceUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpresource.Resource{}
+	dest := NewOrigPtrResource()
 	UnmarshalJSONOrigResource(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpresource.Resource{}, dest)
+	assert.Equal(t, NewOrigPtrResource(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpresource.Resource{}
+			dest := NewOrigPtrResource()
 			UnmarshalJSONOrigResource(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
-	dest := &otlpresource.Resource{}
+	dest := NewOrigPtrResource()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResource(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpresource.Resource{}, dest)
+	assert.Equal(t, NewOrigPtrResource(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 			gotSize := MarshalProtoOrigResource(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpresource.Resource{}
+			dest := NewOrigPtrResource()
 			require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpresource.Resource{}
+			dest := NewOrigPtrResource()
 			require.NoError(t, UnmarshalProtoOrigResource(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 
 func getEncodingTestValuesResource() map[string]*otlpresource.Resource {
 	return map[string]*otlpresource.Resource{
-		"empty": {},
+		"empty": NewOrigPtrResource(),
 		"fill_test": func() *otlpresource.Resource {
-			src := &otlpresource.Resource{}
+			src := NewOrigPtrResource()
 			FillOrigTestResource(src)
 			return src
 		}(),

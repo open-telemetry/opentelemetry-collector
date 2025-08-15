@@ -26,10 +26,10 @@ func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState))
+		ms.MoveTo(newSummaryDataPointValueAtQuantile(internal.NewOrigPtrSummaryDataPoint_ValueAtQuantile(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState).MoveTo(dest)
+		newSummaryDataPointValueAtQuantile(internal.NewOrigPtrSummaryDataPoint_ValueAtQuantile(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -44,7 +44,7 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState))
+		ms.CopyTo(newSummaryDataPointValueAtQuantile(internal.NewOrigPtrSummaryDataPoint_ValueAtQuantile(), sharedState))
 	})
 }
 

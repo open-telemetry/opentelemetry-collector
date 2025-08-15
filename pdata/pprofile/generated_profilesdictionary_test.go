@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestProfilesDictionary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfilesDictionary(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState)) })
-	assert.Panics(t, func() { newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState)) })
+	assert.Panics(t, func() { newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState).MoveTo(dest) })
 }
 
 func TestProfilesDictionary_CopyTo(t *testing.T) {
@@ -40,7 +39,7 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState)) })
 }
 
 func TestProfilesDictionary_MappingTable(t *testing.T) {

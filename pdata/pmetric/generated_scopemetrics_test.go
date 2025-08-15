@@ -26,8 +26,8 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, sharedState)) })
-	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(internal.NewOrigPtrScopeMetrics(), sharedState)) })
+	assert.Panics(t, func() { newScopeMetrics(internal.NewOrigPtrScopeMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(internal.NewOrigPtrScopeMetrics(), sharedState)) })
 }
 
 func TestScopeMetrics_Scope(t *testing.T) {

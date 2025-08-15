@@ -25,9 +25,9 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState)) })
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState)) })
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -41,7 +41,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {

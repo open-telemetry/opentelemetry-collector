@@ -25,8 +25,8 @@ func TestValueType_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestValueType(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newValueType(&otlpprofiles.ValueType{}, sharedState)) })
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewOrigPtrValueType(), sharedState)) })
+	assert.Panics(t, func() { newValueType(internal.NewOrigPtrValueType(), sharedState).MoveTo(dest) })
 }
 
 func TestValueType_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestValueType_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newValueType(&otlpprofiles.ValueType{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewOrigPtrValueType(), sharedState)) })
 }
 
 func TestValueType_TypeStrindex(t *testing.T) {

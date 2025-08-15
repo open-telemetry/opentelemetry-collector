@@ -32,9 +32,9 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 }
 
 func GenerateTestTraces() Traces {
-	orig := otlpcollectortrace.ExportTraceServiceRequest{}
-	FillOrigTestExportTraceServiceRequest(&orig)
-	return NewTraces(&orig, NewState())
+	orig := NewOrigPtrExportTraceServiceRequest()
+	FillOrigTestExportTraceServiceRequest(orig)
+	return NewTraces(orig, NewState())
 }
 
 func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
