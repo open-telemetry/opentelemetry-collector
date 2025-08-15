@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package statustest // import "go.opentelemetry.io/collector/service/internal/status/statustest"
+package status // import "go.opentelemetry.io/collector/service/internal/status"
 
 import "testing"
 

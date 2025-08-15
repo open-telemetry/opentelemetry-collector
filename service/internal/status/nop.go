@@ -1,14 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package statustest // import "go.opentelemetry.io/collector/service/internal/status/statustest"
+package status // import "go.opentelemetry.io/collector/service/internal/status"
 
 import (
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/service/internal/status"
 )
 
-func NewNopStatusReporter() status.Reporter {
+func NewNopStatusReporter() Reporter {
 	return &nopStatusReporter{}
 }
 
