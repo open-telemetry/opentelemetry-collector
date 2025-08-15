@@ -41,11 +41,14 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 }
 
 func GenerateOrigTestSummaryDataPointSlice() []*otlpmetrics.SummaryDataPoint {
-	orig := make([]*otlpmetrics.SummaryDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.SummaryDataPoint{}
-		FillOrigTestSummaryDataPoint(orig[i])
-	}
+	orig := make([]*otlpmetrics.SummaryDataPoint, 5)
+	orig[0] = &otlpmetrics.SummaryDataPoint{}
+	orig[1] = &otlpmetrics.SummaryDataPoint{}
+	FillOrigTestSummaryDataPoint(orig[1])
+	orig[2] = &otlpmetrics.SummaryDataPoint{}
+	orig[3] = &otlpmetrics.SummaryDataPoint{}
+	FillOrigTestSummaryDataPoint(orig[1])
+	orig[4] = &otlpmetrics.SummaryDataPoint{}
 	return orig
 }
 

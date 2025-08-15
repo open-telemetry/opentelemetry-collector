@@ -64,11 +64,14 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 }
 
 func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
-	orig := make([]*otlpcommon.EntityRef, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpcommon.EntityRef{}
-		FillOrigTestEntityRef(orig[i])
-	}
+	orig := make([]*otlpcommon.EntityRef, 5)
+	orig[0] = &otlpcommon.EntityRef{}
+	orig[1] = &otlpcommon.EntityRef{}
+	FillOrigTestEntityRef(orig[1])
+	orig[2] = &otlpcommon.EntityRef{}
+	orig[3] = &otlpcommon.EntityRef{}
+	FillOrigTestEntityRef(orig[1])
+	orig[4] = &otlpcommon.EntityRef{}
 	return orig
 }
 

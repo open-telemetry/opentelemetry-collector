@@ -247,7 +247,7 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -308,7 +308,7 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 		pos--
 		buf[pos] = 0x50
 	}
-	for i := range orig.Exemplars {
+	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

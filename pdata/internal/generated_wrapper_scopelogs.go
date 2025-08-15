@@ -101,7 +101,7 @@ func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) int {
 	pos--
 	buf[pos] = 0xa
 
-	for i := range orig.LogRecords {
+	for i := len(orig.LogRecords) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLogRecord(orig.LogRecords[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

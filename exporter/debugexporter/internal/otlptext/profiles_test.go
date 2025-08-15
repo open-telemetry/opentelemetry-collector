@@ -32,6 +32,11 @@ func TestProfilesText(t *testing.T) {
 			in:   extendProfiles(testdata.GenerateProfiles(2)),
 			out:  "two_profiles.out",
 		},
+		{
+			name: "profiles_with_entity_refs",
+			in:   generateProfilesWithEntityRefs(),
+			out:  "profiles_with_entity_refs.out",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -98,4 +103,31 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 		}
 	}
 	return profiles
+}
+
+func generateProfilesWithEntityRefs() pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+	rp := pd.ResourceProfiles().AppendEmpty()
+
+	setupResourceWithEntityRefs(rp.Resource())
+
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("test-scope")
+	profile := sp.Profiles().AppendEmpty()
+
+	sample := profile.Sample().AppendEmpty()
+	sample.SetLocationsStartIndex(0)
+	sample.SetLocationsLength(1)
+	sample.Value().FromRaw([]int64{100})
+
+	dic := pd.ProfilesDictionary()
+	dic.StringTable().Append("")
+	dic.StringTable().Append("cpu")
+	dic.StringTable().Append("nanoseconds")
+
+	sampleType := profile.SampleType().AppendEmpty()
+	sampleType.SetTypeStrindex(1)
+	sampleType.SetUnitStrindex(2)
+
+	return pd
 }

@@ -101,7 +101,7 @@ func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) in
 	pos--
 	buf[pos] = 0xa
 
-	for i := range orig.Metrics {
+	for i := len(orig.Metrics) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigMetric(orig.Metrics[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

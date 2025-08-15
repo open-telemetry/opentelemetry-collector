@@ -149,7 +149,7 @@ func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope,
 		pos--
 		buf[pos] = 0x12
 	}
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
