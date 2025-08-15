@@ -49,11 +49,11 @@ func TestProfiles_ResourceProfiles(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfilesSlice(), ms.ResourceProfiles())
 }
 
-func TestProfiles_ProfilesDictionary(t *testing.T) {
+func TestProfiles_Dictionary(t *testing.T) {
 	ms := NewProfiles()
-	assert.Equal(t, NewProfilesDictionary(), ms.ProfilesDictionary())
+	assert.Equal(t, NewProfilesDictionary(), ms.Dictionary())
 	internal.FillOrigTestProfilesDictionary(&ms.getOrig().Dictionary)
-	assert.Equal(t, generateTestProfilesDictionary(), ms.ProfilesDictionary())
+	assert.Equal(t, generateTestProfilesDictionary(), ms.Dictionary())
 }
 
 func generateTestProfiles() Profiles {

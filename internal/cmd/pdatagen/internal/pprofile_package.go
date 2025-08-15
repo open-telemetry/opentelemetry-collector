@@ -83,10 +83,9 @@ var profiles = &messageStruct{
 			returnSlice: resourceProfilesSlice,
 		},
 		&MessageField{
-			fieldName:           "ProfilesDictionary",
-			fieldOriginFullName: "Dictionary",
-			protoID:             2,
-			returnMessage:       profilesDictionary,
+			fieldName:     "Dictionary",
+			protoID:       2,
+			returnMessage: profilesDictionary,
 		},
 	},
 	hasWrapper: true,
