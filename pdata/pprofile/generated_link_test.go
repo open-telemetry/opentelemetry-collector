@@ -13,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -27,8 +26,8 @@ func TestLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLink(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, sharedState)) })
-	assert.Panics(t, func() { newLink(&otlpprofiles.Link{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewOrigPtrLink(), sharedState)) })
+	assert.Panics(t, func() { newLink(internal.NewOrigPtrLink(), sharedState).MoveTo(dest) })
 }
 
 func TestLink_CopyTo(t *testing.T) {
@@ -41,7 +40,7 @@ func TestLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLink(&otlpprofiles.Link{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewOrigPtrLink(), sharedState)) })
 }
 
 func TestLink_TraceID(t *testing.T) {

@@ -26,10 +26,10 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(&otlpcollectormetrics.ExportMetricsPartialSuccess{}, sharedState))
+		ms.MoveTo(newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectormetrics.ExportMetricsPartialSuccess{}, sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -44,7 +44,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(&otlpcollectormetrics.ExportMetricsPartialSuccess{}, sharedState))
+		ms.CopyTo(newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState))
 	})
 }
 

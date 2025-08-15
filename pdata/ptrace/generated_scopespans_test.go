@@ -26,8 +26,8 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeSpans(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(&otlptrace.ScopeSpans{}, sharedState)) })
-	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(&otlptrace.ScopeSpans{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState)) })
 }
 
 func TestScopeSpans_Scope(t *testing.T) {

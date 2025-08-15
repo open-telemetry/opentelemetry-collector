@@ -32,9 +32,9 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 }
 
 func GenerateTestLogs() Logs {
-	orig := otlpcollectorlogs.ExportLogsServiceRequest{}
-	FillOrigTestExportLogsServiceRequest(&orig)
-	return NewLogs(&orig, NewState())
+	orig := NewOrigPtrExportLogsServiceRequest()
+	FillOrigTestExportLogsServiceRequest(orig)
+	return NewLogs(orig, NewState())
 }
 
 func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {

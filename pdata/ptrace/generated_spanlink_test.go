@@ -27,8 +27,8 @@ func TestSpanLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanLink(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpanLink(&otlptrace.Span_Link{}, sharedState)) })
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpanLink(internal.NewOrigPtrSpan_Link(), sharedState)) })
+	assert.Panics(t, func() { newSpanLink(internal.NewOrigPtrSpan_Link(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpanLink(internal.NewOrigPtrSpan_Link(), sharedState)) })
 }
 
 func TestSpanLink_TraceID(t *testing.T) {

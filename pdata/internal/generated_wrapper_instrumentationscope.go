@@ -32,9 +32,9 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 }
 
 func GenerateTestInstrumentationScope() InstrumentationScope {
-	orig := otlpcommon.InstrumentationScope{}
-	FillOrigTestInstrumentationScope(&orig)
-	return NewInstrumentationScope(&orig, NewState())
+	orig := NewOrigPtrInstrumentationScope()
+	FillOrigTestInstrumentationScope(orig)
+	return NewInstrumentationScope(orig, NewState())
 }
 
 func NewOrigInstrumentationScope() otlpcommon.InstrumentationScope {

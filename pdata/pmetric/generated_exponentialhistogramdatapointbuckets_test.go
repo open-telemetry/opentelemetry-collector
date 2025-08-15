@@ -27,10 +27,10 @@ func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, sharedState))
+		ms.MoveTo(newExponentialHistogramDataPointBuckets(internal.NewOrigPtrExponentialHistogramDataPoint_Buckets(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, sharedState).MoveTo(dest)
+		newExponentialHistogramDataPointBuckets(internal.NewOrigPtrExponentialHistogramDataPoint_Buckets(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -45,7 +45,7 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, sharedState))
+		ms.CopyTo(newExponentialHistogramDataPointBuckets(internal.NewOrigPtrExponentialHistogramDataPoint_Buckets(), sharedState))
 	})
 }
 

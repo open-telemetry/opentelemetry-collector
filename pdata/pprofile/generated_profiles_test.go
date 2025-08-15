@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestProfiles_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState)) })
-	assert.Panics(t, func() { newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfiles(internal.NewOrigPtrExportProfilesServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newProfiles(internal.NewOrigPtrExportProfilesServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestProfiles_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfiles(&otlpcollectorprofiles.ExportProfilesServiceRequest{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfiles(internal.NewOrigPtrExportProfilesServiceRequest(), sharedState)) })
 }
 
 func TestProfiles_ResourceProfiles(t *testing.T) {

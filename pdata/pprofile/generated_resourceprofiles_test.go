@@ -26,8 +26,8 @@ func TestResourceProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState)) })
-	assert.Panics(t, func() { newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState)) })
+	assert.Panics(t, func() { newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceProfiles_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState)) })
 }
 
 func TestResourceProfiles_Resource(t *testing.T) {

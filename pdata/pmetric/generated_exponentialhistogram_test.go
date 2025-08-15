@@ -25,8 +25,8 @@ func TestExponentialHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, sharedState)) })
-	assert.Panics(t, func() { newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState)) })
+	assert.Panics(t, func() { newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState)) })
 }
 
 func TestExponentialHistogram_DataPoints(t *testing.T) {

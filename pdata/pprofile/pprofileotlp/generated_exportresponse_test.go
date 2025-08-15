@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportResponse_MoveTo(t *testing.T) {
@@ -25,11 +24,9 @@ func TestExportResponse_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportResponse(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportResponse(internal.NewOrigPtrExportProfilesServiceResponse(), sharedState)) })
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportResponse(&otlpcollectorprofiles.ExportProfilesServiceResponse{}, sharedState))
-	})
-	assert.Panics(t, func() {
-		newExportResponse(&otlpcollectorprofiles.ExportProfilesServiceResponse{}, sharedState).MoveTo(dest)
+		newExportResponse(internal.NewOrigPtrExportProfilesServiceResponse(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -43,9 +40,7 @@ func TestExportResponse_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		ms.CopyTo(newExportResponse(&otlpcollectorprofiles.ExportProfilesServiceResponse{}, sharedState))
-	})
+	assert.Panics(t, func() { ms.CopyTo(newExportResponse(internal.NewOrigPtrExportProfilesServiceResponse(), sharedState)) })
 }
 
 func TestExportResponse_PartialSuccess(t *testing.T) {

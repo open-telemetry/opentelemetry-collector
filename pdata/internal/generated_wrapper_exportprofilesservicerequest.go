@@ -32,9 +32,9 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 }
 
 func GenerateTestProfiles() Profiles {
-	orig := otlpcollectorprofiles.ExportProfilesServiceRequest{}
-	FillOrigTestExportProfilesServiceRequest(&orig)
-	return NewProfiles(&orig, NewState())
+	orig := NewOrigPtrExportProfilesServiceRequest()
+	FillOrigTestExportProfilesServiceRequest(orig)
+	return NewProfiles(orig, NewState())
 }
 
 func NewOrigExportProfilesServiceRequest() otlpcollectorprofiles.ExportProfilesServiceRequest {

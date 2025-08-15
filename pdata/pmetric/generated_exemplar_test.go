@@ -27,8 +27,8 @@ func TestExemplar_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExemplar(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExemplar(&otlpmetrics.Exemplar{}, sharedState)) })
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newExemplar(internal.NewOrigPtrExemplar(), sharedState)) })
+	assert.Panics(t, func() { newExemplar(internal.NewOrigPtrExemplar(), sharedState).MoveTo(dest) })
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
@@ -41,7 +41,7 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExemplar(internal.NewOrigPtrExemplar(), sharedState)) })
 }
 
 func TestExemplar_FilteredAttributes(t *testing.T) {

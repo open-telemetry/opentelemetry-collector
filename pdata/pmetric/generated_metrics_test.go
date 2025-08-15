@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 )
 
 func TestMetrics_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{}, sharedState)) })
-	assert.Panics(t, func() { newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{}, sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestMetrics_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{}, sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState)) })
 }
 
 func TestMetrics_ResourceMetrics(t *testing.T) {

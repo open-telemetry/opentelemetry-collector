@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigResourceMetrics(t *testing.T) {
-	src := &otlpmetrics.ResourceMetrics{}
-	dest := &otlpmetrics.ResourceMetrics{}
+	src := NewOrigPtrResourceMetrics()
+	dest := NewOrigPtrResourceMetrics()
 	CopyOrigResourceMetrics(dest, src)
-	assert.Equal(t, &otlpmetrics.ResourceMetrics{}, dest)
+	assert.Equal(t, NewOrigPtrResourceMetrics(), dest)
 	FillOrigTestResourceMetrics(src)
 	CopyOrigResourceMetrics(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigResourceMetrics(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigResourceMetricsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.ResourceMetrics{}
+	dest := NewOrigPtrResourceMetrics()
 	UnmarshalJSONOrigResourceMetrics(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.ResourceMetrics{}, dest)
+	assert.Equal(t, NewOrigPtrResourceMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.ResourceMetrics{}
+			dest := NewOrigPtrResourceMetrics()
 			UnmarshalJSONOrigResourceMetrics(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceMetricsUnknown(t *testing.T) {
-	dest := &otlpmetrics.ResourceMetrics{}
+	dest := NewOrigPtrResourceMetrics()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpmetrics.ResourceMetrics{}, dest)
+	assert.Equal(t, NewOrigPtrResourceMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
 			gotSize := MarshalProtoOrigResourceMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.ResourceMetrics{}
+			dest := NewOrigPtrResourceMetrics()
 			require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpmetrics.ResourceMetrics{}
+			dest := NewOrigPtrResourceMetrics()
 			require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 
 func getEncodingTestValuesResourceMetrics() map[string]*otlpmetrics.ResourceMetrics {
 	return map[string]*otlpmetrics.ResourceMetrics{
-		"empty": {},
+		"empty": NewOrigPtrResourceMetrics(),
 		"fill_test": func() *otlpmetrics.ResourceMetrics {
-			src := &otlpmetrics.ResourceMetrics{}
+			src := NewOrigPtrResourceMetrics()
 			FillOrigTestResourceMetrics(src)
 			return src
 		}(),
