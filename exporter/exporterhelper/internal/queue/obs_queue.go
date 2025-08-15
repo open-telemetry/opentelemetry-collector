@@ -26,10 +26,11 @@ const (
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	tb                *metadata.TelemetryBuilder
-	metricAttr        metric.MeasurementOption
-	enqueueFailedInst metric.Int64Counter
-	tracer            trace.Tracer
+	tb                 *metadata.TelemetryBuilder
+	metricAttr         metric.MeasurementOption
+	enqueueFailedInst  metric.Int64Counter
+	queueBatchSizeInst metric.Int64Histogram
+	tracer             trace.Tracer
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
@@ -74,6 +75,8 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		or.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
 	}
 
+	or.queueBatchSizeInst = tb.ExporterQueueBatchSize
+
 	return or, nil
 }
 
@@ -86,6 +89,8 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
+
+	or.queueBatchSizeInst.Record(ctx, int64(req.BytesSize()), or.metricAttr)
 
 	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)
