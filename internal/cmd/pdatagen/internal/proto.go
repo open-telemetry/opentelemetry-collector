@@ -150,8 +150,40 @@ func (pf *ProtoField) goType() string {
 	return pf.Type.goType(pf.MessageFullName)
 }
 
-// genProtoKey encodes the field key, and returns it in the reverse order.
-func genProtoKey(fieldNumber uint32, wt WireType) []string {
+func (pf *ProtoField) getTemplateFields() map[string]any {
+	bitSize := 0
+	switch pf.Type {
+	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeInt64, ProtoTypeUint64, ProtoTypeSInt64, ProtoTypeDouble:
+		bitSize = 64
+	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeInt32, ProtoTypeUint32, ProtoTypeSInt32, ProtoTypeFloat, ProtoTypeEnum:
+		bitSize = 32
+	}
+
+	protoTag := genProtoTag(pf.ID, pf.wireType())
+	return map[string]any{
+		"protoTagSize":         len(protoTag),
+		"protoTag":             protoTag,
+		"protoFieldID":         pf.ID,
+		"jsonTag":              genJSONTag(pf.Name),
+		"fieldName":            pf.Name,
+		"origName":             extractNameFromFullQualified(pf.MessageFullName),
+		"oneOfGroup":           pf.OneOfGroup,
+		"oneOfMessageFullName": pf.OneOfMessageFullName,
+		"repeated":             pf.Repeated,
+		"nullable":             pf.Nullable,
+		"bitSize":              bitSize,
+		"goType":               pf.goType(),
+		"defaultValue":         pf.Type.defaultValue(pf.MessageFullName),
+	}
+}
+
+func genJSONTag(fieldName string) string {
+	// Extract last word because for Enums we use the full name.
+	return lowerFirst(extractNameFromFullQualified(fieldName))
+}
+
+// genProtoTag encodes the field key, and returns it in the reverse order.
+func genProtoTag(fieldNumber uint32, wt WireType) []string {
 	x := fieldNumber<<3 | uint32(wt)
 	i := 0
 	keybuf := make([]byte, 0)

@@ -87,7 +87,7 @@ const marshalJSONBytes = `{{ if .repeated -}}
 {{- end }}`
 
 func (pf *ProtoField) genMarshalJSON() string {
-	tf := pf.marshalJSONTemplateFields()
+	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case ProtoTypeBytes:
 		return executeTemplate(template.Must(templateNew("marshalJSONBytes").Parse(marshalJSONBytes)), tf)
@@ -103,21 +103,4 @@ func (pf *ProtoField) genMarshalJSON() string {
 		return executeTemplate(template.Must(templateNew("marshalJSONPrimitive").Parse(marshalJSONPrimitive)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
-}
-
-func (pf *ProtoField) marshalJSONTemplateFields() map[string]any {
-	return map[string]any{
-		"goType":       pf.Type.goType(pf.MessageFullName),
-		"defaultValue": pf.Type.defaultValue(pf.MessageFullName),
-		"fieldName":    pf.Name,
-		"origName":     extractNameFromFullQualified(pf.MessageFullName),
-		"repeated":     pf.Repeated,
-		"nullable":     pf.Nullable,
-		"jsonTag":      pf.jsonTag(),
-	}
-}
-
-func (pf *ProtoField) jsonTag() string {
-	// Extract last word because for Enums we use the full name.
-	return lowerFirst(extractNameFromFullQualified(pf.Name))
 }
