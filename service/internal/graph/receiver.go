@@ -55,6 +55,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		return err
 	}
 
+	producedSettings := obsconsumer.Settings{
+		ItemCounter: tb.ReceiverProducedItems,
+		SizeCounter: tb.ReceiverProducedSize,
+		Logger:      set.Logger,
+	}
+
 	switch n.pipelineType {
 	case pipeline.SignalTraces:
 		var consumers []consumer.Traces
@@ -62,7 +68,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Traces))
 		}
 		n.Component, err = builder.CreateTraces(ctx, set,
-			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), tb.ReceiverProducedItems, tb.ReceiverProducedSize),
+			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), producedSettings),
 		)
 	case pipeline.SignalMetrics:
 		var consumers []consumer.Metrics
@@ -70,21 +76,21 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
 		n.Component, err = builder.CreateMetrics(ctx, set,
-			obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), tb.ReceiverProducedItems, tb.ReceiverProducedSize))
+			obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), producedSettings))
 	case pipeline.SignalLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set,
-			obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), tb.ReceiverProducedItems, tb.ReceiverProducedSize))
+			obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), producedSettings))
 	case xpipeline.SignalProfiles:
 		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
 			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
 		n.Component, err = builder.CreateProfiles(ctx, set,
-			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), tb.ReceiverProducedItems, tb.ReceiverProducedSize))
+			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), producedSettings))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

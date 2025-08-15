@@ -6,7 +6,7 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -20,7 +20,7 @@ var (
 	profilesMarshaler                    = pprofile.ProtoMarshaler{}
 )
 
-func NewProfiles(cons xconsumer.Profiles, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
+func NewProfiles(cons xconsumer.Profiles, set Settings, opts ...Option) xconsumer.Profiles {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -30,18 +30,22 @@ func NewProfiles(cons xconsumer.Profiles, itemCounter, sizeCounter metric.Int64C
 		opt(&o)
 	}
 
+	consumerSet := Settings{
+		ItemCounter: set.ItemCounter,
+		SizeCounter: set.SizeCounter,
+		Logger:      set.Logger.With(zapFields(o.staticDataPointAttributes)...),
+	}
+
 	return obsProfiles{
 		consumer:        cons,
-		itemCounter:     itemCounter,
-		sizeCounter:     sizeCounter,
+		set:             consumerSet,
 		compiledOptions: o.compile(),
 	}
 }
 
 type obsProfiles struct {
-	consumer    xconsumer.Profiles
-	itemCounter metric.Int64Counter
-	sizeCounter metric.Int64Counter
+	consumer xconsumer.Profiles
+	set      Settings
 	compiledOptions
 }
 
@@ -52,13 +56,13 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 
 	itemCount := pd.SampleCount()
 	defer func() {
-		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+		c.set.ItemCounter.Add(ctx, int64(itemCount), *attrs)
 	}()
 
-	if isEnabled(ctx, c.sizeCounter) {
+	if isEnabled(ctx, c.set.SizeCounter) {
 		byteCount := int64(profilesMarshaler.ProfilesSize(pd))
 		defer func() {
-			c.sizeCounter.Add(ctx, byteCount, *attrs)
+			c.set.SizeCounter.Add(ctx, byteCount, *attrs)
 		}()
 	}
 
@@ -69,6 +73,9 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 		} else {
 			attrs = &c.withFailureAttrs
 			err = consumererror.NewDownstream(err)
+		}
+		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
+			c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
 		}
 	}
 	return err
