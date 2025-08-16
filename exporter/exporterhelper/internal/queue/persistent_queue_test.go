@@ -43,18 +43,21 @@ func (is *bytesSizer) Sizeof(val int64) int64 {
 	return val * 10
 }
 
-type int64Encoding struct{}
+type int64Encoding struct {
+	rc ReferenceCounter[int64]
+}
 
 func (int64Encoding) Marshal(_ context.Context, val int64) ([]byte, error) {
 	str := strconv.FormatInt(val, 10)
 	return []byte(str), nil
 }
 
-func (int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
+func (ie int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
 	val, err := strconv.ParseInt(string(bytes), 10, 64)
 	if err != nil {
 		return context.Background(), 0, err
 	}
+	ie.rc.Ref(val)
 	return context.Background(), val, nil
 }
 
@@ -216,16 +219,38 @@ func (m *fakeStorageClientWithErrors) Reset() {
 	m.nextErrorIndex = 0
 }
 
+type fakeReferenceCounter struct {
+	mu  sync.Mutex
+	ref int64
+}
+
+func (f *fakeReferenceCounter) Ref(int64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ref++
+}
+
+func (f *fakeReferenceCounter) Unref(int64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ref--
+	if f.ref < 0 {
+		panic("this should never happen")
+	}
+}
+
 func newSettings(sizerType request.SizerType, capacity int64) Settings[int64] {
+	rc := &fakeReferenceCounter{}
 	return Settings[int64]{
-		SizerType:  sizerType,
-		ItemsSizer: &itemsSizer{},
-		BytesSizer: &bytesSizer{},
-		Capacity:   capacity,
-		Signal:     pipeline.SignalTraces,
-		Encoding:   int64Encoding{},
-		ID:         component.NewID(exportertest.NopType),
-		Telemetry:  componenttest.NewNopTelemetrySettings(),
+		ReferenceCounter: rc,
+		SizerType:        sizerType,
+		ItemsSizer:       &itemsSizer{},
+		BytesSizer:       &bytesSizer{},
+		Capacity:         capacity,
+		Signal:           pipeline.SignalTraces,
+		Encoding:         int64Encoding{rc},
+		ID:               component.NewID(exportertest.NopType),
+		Telemetry:        componenttest.NewNopTelemetrySettings(),
 	}
 }
 
@@ -356,7 +381,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			aq := newAsyncQueue[int64](pq, c.numConsumers, func(_ context.Context, _ int64, done Done) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
-			})
+			}, nil)
 			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			},
@@ -400,7 +425,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ int64, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
-			})
+			}, set.ReferenceCounter)
 			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			})))

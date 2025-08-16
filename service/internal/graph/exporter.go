@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
+	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
 var _ consumerNode = (*exporterNode)(nil)
@@ -68,24 +69,28 @@ func (n *exporterNode) buildComponent(
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

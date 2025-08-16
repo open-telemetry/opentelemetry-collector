@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -32,8 +33,9 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding:   metricsEncoding{},
-		ItemsSizer: request.NewItemsSizer(),
+		ReferenceCounter: metricsReferenceCounter{},
+		Encoding:         metricsEncoding{},
+		ItemsSizer:       request.NewItemsSizer(),
 		BytesSizer: request.BaseSizer{
 			SizeofFunc: func(req request.Request) int64 {
 				return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
@@ -41,6 +43,11 @@ func NewMetricsQueueBatchSettings() QueueBatchSettings {
 		},
 	}
 }
+
+var (
+	_ request.Request      = (*metricsRequest)(nil)
+	_ request.ErrorHandler = (*metricsRequest)(nil)
+)
 
 type metricsRequest struct {
 	md         pmetric.Metrics
@@ -83,9 +90,22 @@ func (metricsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error)
 	return metricsMarshaler.MarshalMetrics(metrics)
 }
 
+var _ queue.ReferenceCounter[Request] = metricsReferenceCounter{}
+
+type metricsReferenceCounter struct{}
+
+func (metricsReferenceCounter) Ref(req Request) {
+	pref.RefMetrics(req.(*metricsRequest).md)
+}
+
+func (metricsReferenceCounter) Unref(req Request) {
+	pref.UnrefMetrics(req.(*metricsRequest).md)
+}
+
 func (req *metricsRequest) OnError(err error) Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
+		// TODO: Add logic to unref the new request created here.
 		return newMetricsRequest(metricsError.Data())
 	}
 	return req

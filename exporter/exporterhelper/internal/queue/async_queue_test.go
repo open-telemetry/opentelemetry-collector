@@ -25,7 +25,7 @@ func TestAsyncMemoryQueue(t *testing.T) {
 		1, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
-		})
+		}, set.ReferenceCounter)
 	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 	for j := 0; j < 10; j++ {
 		require.NoError(t, ac.Offer(context.Background(), 10))
@@ -42,7 +42,7 @@ func TestAsyncMemoryQueueBlocking(t *testing.T) {
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
-		})
+		}, set.ReferenceCounter)
 	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 10; i++ {
@@ -68,7 +68,7 @@ func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
-		})
+		}, set.ReferenceCounter)
 	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 10; i++ {
@@ -93,7 +93,7 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 		1, func(_ context.Context, _ int64, done Done) {
 			<-stop
 			done.OnDone(nil)
-		})
+		}, set.ReferenceCounter)
 	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -122,7 +122,7 @@ func BenchmarkAsyncMemoryQueue(b *testing.B) {
 	ac := newAsyncQueue(newMemoryQueue[int64](set), 1, func(_ context.Context, _ int64, done Done) {
 		consumed.Add(1)
 		done.OnDone(nil)
-	})
+	}, set.ReferenceCounter)
 	require.NoError(b, ac.Start(context.Background(), componenttest.NewNopHost()))
 	b.ResetTimer()
 	b.ReportAllocs()
