@@ -5,7 +5,6 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
@@ -13,31 +12,35 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
-	pb := internal.ProfilesToProto(internal.Profiles(pd))
-	return pb.Marshal()
+	size := internal.SizeProtoOrigExportProfilesServiceRequest(pd.getOrig())
+	buf := make([]byte, size)
+	_ = internal.MarshalProtoOrigExportProfilesServiceRequest(pd.getOrig(), buf)
+	return buf, nil
 }
 
 func (e *ProtoMarshaler) ProfilesSize(pd Profiles) int {
-	pb := internal.ProfilesToProto(internal.Profiles(pd))
-	return pb.Size()
+	return internal.SizeProtoOrigExportProfilesServiceRequest(pd.getOrig())
 }
 
 func (e *ProtoMarshaler) ResourceProfilesSize(pd ResourceProfiles) int {
-	return pd.orig.Size()
+	return internal.SizeProtoOrigResourceProfiles(pd.orig)
 }
 
 func (e *ProtoMarshaler) ScopeProfilesSize(pd ScopeProfiles) int {
-	return pd.orig.Size()
+	return internal.SizeProtoOrigScopeProfiles(pd.orig)
 }
 
 func (e *ProtoMarshaler) ProfileSize(pd Profile) int {
-	return pd.orig.Size()
+	return internal.SizeProtoOrigProfile(pd.orig)
 }
 
 type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
-	pb := otlpprofile.ProfilesData{}
-	err := pb.Unmarshal(buf)
-	return Profiles(internal.ProfilesFromProto(pb)), err
+	pd := NewProfiles()
+	err := internal.UnmarshalProtoOrigExportProfilesServiceRequest(pd.getOrig(), buf)
+	if err != nil {
+		return Profiles{}, err
+	}
+	return pd, nil
 }
