@@ -3,6 +3,18 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
+import (
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var UseCustomProtoEncoding = featuregate.GlobalRegistry().MustRegister(
+	"pdata.useCustomProtoEncoding",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, enable custom proto encoding. This is required step to enable pipeline memory ownership."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/13631"),
+	featuregate.WithRegisterFromVersion("v0.133.0"),
+)
+
 // State defines an ownership state of pmetric.Metrics, plog.Logs or ptrace.Traces.
 type State int32
 
