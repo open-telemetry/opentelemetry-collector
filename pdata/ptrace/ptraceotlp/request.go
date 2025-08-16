@@ -42,6 +42,9 @@ func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Marshal()
+	}
 	size := internal.SizeProtoOrigExportTraceServiceRequest(ms.orig)
 	buf := make([]byte, size)
 	_ = internal.MarshalProtoOrigExportTraceServiceRequest(ms.orig, buf)
@@ -50,6 +53,9 @@ func (ms ExportRequest) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Unmarshal(data)
+	}
 	err := internal.UnmarshalProtoOrigExportTraceServiceRequest(ms.orig, data)
 	if err != nil {
 		return err

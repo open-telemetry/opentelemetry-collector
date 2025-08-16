@@ -5,7 +5,6 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
@@ -13,6 +12,9 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalTraces(td Traces) ([]byte, error) {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return td.getOrig().Marshal()
+	}
 	size := internal.SizeProtoOrigExportTraceServiceRequest(td.getOrig())
 	buf := make([]byte, size)
 	_ = internal.MarshalProtoOrigExportTraceServiceRequest(td.getOrig(), buf)
@@ -20,25 +22,47 @@ func (e *ProtoMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 }
 
 func (e *ProtoMarshaler) TracesSize(td Traces) int {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return td.getOrig().Size()
+	}
 	return internal.SizeProtoOrigExportTraceServiceRequest(td.getOrig())
 }
 
-func (e *ProtoMarshaler) ResourceSpansSize(rs ResourceSpans) int {
-	return internal.SizeProtoOrigResourceSpans(rs.orig)
+func (e *ProtoMarshaler) ResourceSpansSize(td ResourceSpans) int {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return td.orig.Size()
+	}
+	return internal.SizeProtoOrigResourceSpans(td.orig)
 }
 
-func (e *ProtoMarshaler) ScopeSpansSize(ss ScopeSpans) int {
-	return internal.SizeProtoOrigScopeSpans(ss.orig)
+func (e *ProtoMarshaler) ScopeSpansSize(td ScopeSpans) int {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return td.orig.Size()
+	}
+	return internal.SizeProtoOrigScopeSpans(td.orig)
 }
 
-func (e *ProtoMarshaler) SpanSize(span Span) int {
-	return internal.SizeProtoOrigSpan(span.orig)
+func (e *ProtoMarshaler) SpanSize(td Span) int {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return td.orig.Size()
+	}
+	return internal.SizeProtoOrigSpan(td.orig)
 }
 
 type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
-	pb := otlptrace.TracesData{}
-	err := pb.Unmarshal(buf)
-	return Traces(internal.TracesFromProto(pb)), err
+	td := NewTraces()
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		err := td.getOrig().Unmarshal(buf)
+		if err != nil {
+			return Traces{}, err
+		}
+		return td, nil
+	}
+	err := internal.UnmarshalProtoOrigExportTraceServiceRequest(td.getOrig(), buf)
+	if err != nil {
+		return Traces{}, err
+	}
+	return td, nil
 }
