@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd.
 
-package golint
+package golint // import "go.opentelemetry.io/collector/cmd/mdatagen/third_party/golint"
 
 // See https://github.com/golang/lint/blob/d0100b6bd8b389f0385611eb39152c4d7c3a7905/lint.go#L771
 

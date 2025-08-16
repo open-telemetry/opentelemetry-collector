@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-tpm/tpmutil"
 )
 
-func openTPM(path string) func() (transport.TPMCloser, error) {
+func openTPM(_ string) func() (transport.TPMCloser, error) {
 	return func() (transport.TPMCloser, error) {
 		tpm, err := tpmutil.OpenTPM()
 		if err != nil {
