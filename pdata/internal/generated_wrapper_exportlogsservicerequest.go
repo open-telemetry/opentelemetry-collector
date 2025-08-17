@@ -32,10 +32,9 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 }
 
 func GenerateTestLogs() Logs {
-	orig := otlpcollectorlogs.ExportLogsServiceRequest{}
-	FillOrigTestExportLogsServiceRequest(&orig)
-	state := StateMutable
-	return NewLogs(&orig, &state)
+	orig := NewOrigPtrExportLogsServiceRequest()
+	FillOrigTestExportLogsServiceRequest(orig)
+	return NewLogs(orig, NewState())
 }
 
 func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {
@@ -98,7 +97,7 @@ func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogs
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceLogs {
+	for i := len(orig.ResourceLogs) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceLogs(orig.ResourceLogs[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

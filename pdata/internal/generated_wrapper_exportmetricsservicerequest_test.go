@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
-	src := &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	src := NewOrigPtrExportMetricsServiceRequest()
+	dest := NewOrigPtrExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, dest)
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 	FillOrigTestExportMetricsServiceRequest(src)
 	CopyOrigExportMetricsServiceRequest(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	dest := NewOrigPtrExportMetricsServiceRequest()
 	UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, dest)
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			dest := NewOrigPtrExportMetricsServiceRequest()
 			UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testing.T) {
-	dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	dest := NewOrigPtrExportMetricsServiceRequest()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, dest)
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			dest := NewOrigPtrExportMetricsServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			dest := NewOrigPtrExportMetricsServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 
 func getEncodingTestValuesExportMetricsServiceRequest() map[string]*otlpcollectormetrics.ExportMetricsServiceRequest {
 	return map[string]*otlpcollectormetrics.ExportMetricsServiceRequest{
-		"empty": {},
+		"empty": NewOrigPtrExportMetricsServiceRequest(),
 		"fill_test": func() *otlpcollectormetrics.ExportMetricsServiceRequest {
-			src := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			src := NewOrigPtrExportMetricsServiceRequest()
 			FillOrigTestExportMetricsServiceRequest(src)
 			return src
 		}(),

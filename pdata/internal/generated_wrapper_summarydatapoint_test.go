@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigSummaryDataPoint(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint{}
-	dest := &otlpmetrics.SummaryDataPoint{}
+	src := NewOrigPtrSummaryDataPoint()
+	dest := NewOrigPtrSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 	FillOrigTestSummaryDataPoint(src)
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigSummaryDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.SummaryDataPoint{}
+	dest := NewOrigPtrSummaryDataPoint()
 	UnmarshalJSONOrigSummaryDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.SummaryDataPoint{}
+			dest := NewOrigPtrSummaryDataPoint()
 			UnmarshalJSONOrigSummaryDataPoint(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
-	dest := &otlpmetrics.SummaryDataPoint{}
+	dest := NewOrigPtrSummaryDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.SummaryDataPoint{}
+			dest := NewOrigPtrSummaryDataPoint()
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpmetrics.SummaryDataPoint{}
+			dest := NewOrigPtrSummaryDataPoint()
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 
 func getEncodingTestValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
 	return map[string]*otlpmetrics.SummaryDataPoint{
-		"empty": {},
+		"empty": NewOrigPtrSummaryDataPoint(),
 		"fill_test": func() *otlpmetrics.SummaryDataPoint {
-			src := &otlpmetrics.SummaryDataPoint{}
+			src := NewOrigPtrSummaryDataPoint()
 			FillOrigTestSummaryDataPoint(src)
 			return src
 		}(),

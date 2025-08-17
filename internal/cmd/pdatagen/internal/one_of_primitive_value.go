@@ -39,8 +39,9 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 	assert.Equal(t, {{ .testValue }}, ms.{{ .accessorFieldName }}())
 	{{- end }}
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).Set{{ .accessorFieldName }}({{ .testValue }}) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, sharedState).Set{{ .accessorFieldName }}({{ .testValue }}) })
 }
 `
 

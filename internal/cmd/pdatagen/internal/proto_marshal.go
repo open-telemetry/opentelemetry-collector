@@ -151,7 +151,7 @@ const marshalProtoBytesString = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const marshalProtoMessage = `{{ if .repeated -}}
-	for i := range orig.{{ .fieldName }} {
+	for i := len(orig.{{ .fieldName }}) - 1; i >= 0; i-- {
 		l = MarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -197,7 +197,7 @@ const marshalProtoSignedVarint = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 func (pf *ProtoField) genMarshalProto() string {
-	tf := pf.marshalTemplateFields()
+	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case ProtoTypeDouble, ProtoTypeFloat:
 		return executeTemplate(template.Must(templateNew("marshalProtoFloat").Parse(marshalProtoFloat)), tf)
@@ -215,23 +215,4 @@ func (pf *ProtoField) genMarshalProto() string {
 		return executeTemplate(template.Must(templateNew("marshalProtoSignedVarint").Parse(marshalProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
-}
-
-func (pf *ProtoField) marshalTemplateFields() map[string]any {
-	bitSize := 0
-	switch pf.Type {
-	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeInt64, ProtoTypeUint64, ProtoTypeSInt64, ProtoTypeDouble:
-		bitSize = 64
-	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeInt32, ProtoTypeUint32, ProtoTypeSInt32, ProtoTypeFloat, ProtoTypeEnum:
-		bitSize = 32
-	}
-
-	return map[string]any{
-		"protoTag":  genProtoKey(pf.ID, pf.wireType()),
-		"fieldName": pf.Name,
-		"origName":  extractNameFromFullQualified(pf.MessageFullName),
-		"repeated":  pf.Repeated,
-		"nullable":  pf.Nullable,
-		"bitSize":   bitSize,
-	}
 }

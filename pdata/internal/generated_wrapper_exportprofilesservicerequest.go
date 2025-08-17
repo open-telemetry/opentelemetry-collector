@@ -32,10 +32,9 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 }
 
 func GenerateTestProfiles() Profiles {
-	orig := otlpcollectorprofiles.ExportProfilesServiceRequest{}
-	FillOrigTestExportProfilesServiceRequest(&orig)
-	state := StateMutable
-	return NewProfiles(&orig, &state)
+	orig := NewOrigPtrExportProfilesServiceRequest()
+	FillOrigTestExportProfilesServiceRequest(orig)
+	return NewProfiles(orig, NewState())
 }
 
 func NewOrigExportProfilesServiceRequest() otlpcollectorprofiles.ExportProfilesServiceRequest {
@@ -106,7 +105,7 @@ func MarshalProtoOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.Ex
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceProfiles {
+	for i := len(orig.ResourceProfiles) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceProfiles(orig.ResourceProfiles[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

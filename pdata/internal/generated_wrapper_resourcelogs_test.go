@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigResourceLogs(t *testing.T) {
-	src := &otlplogs.ResourceLogs{}
-	dest := &otlplogs.ResourceLogs{}
+	src := NewOrigPtrResourceLogs()
+	dest := NewOrigPtrResourceLogs()
 	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, &otlplogs.ResourceLogs{}, dest)
+	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
 	FillOrigTestResourceLogs(src)
 	CopyOrigResourceLogs(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigResourceLogs(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlplogs.ResourceLogs{}
+	dest := NewOrigPtrResourceLogs()
 	UnmarshalJSONOrigResourceLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlplogs.ResourceLogs{}, dest)
+	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlplogs.ResourceLogs{}
+			dest := NewOrigPtrResourceLogs()
 			UnmarshalJSONOrigResourceLogs(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
-	dest := &otlplogs.ResourceLogs{}
+	dest := NewOrigPtrResourceLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlplogs.ResourceLogs{}, dest)
+	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 			gotSize := MarshalProtoOrigResourceLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlplogs.ResourceLogs{}
+			dest := NewOrigPtrResourceLogs()
 			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlplogs.ResourceLogs{}
+			dest := NewOrigPtrResourceLogs()
 			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 
 func getEncodingTestValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
 	return map[string]*otlplogs.ResourceLogs{
-		"empty": {},
+		"empty": NewOrigPtrResourceLogs(),
 		"fill_test": func() *otlplogs.ResourceLogs {
-			src := &otlplogs.ResourceLogs{}
+			src := NewOrigPtrResourceLogs()
 			FillOrigTestResourceLogs(src)
 			return src
 		}(),

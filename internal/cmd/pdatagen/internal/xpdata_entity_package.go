@@ -40,10 +40,11 @@ var xpdataEntity = &Package{
 	},
 }
 
-var entityRefSlice = &sliceOfPtrs{
-	structName:  "EntityRefSlice",
-	packageName: "entity",
-	element:     entityRef,
+var entityRefSlice = &messageSlice{
+	structName:      "EntityRefSlice",
+	packageName:     "entity",
+	elementNullable: true,
+	element:         entityRef,
 }
 
 var entityRef = &messageStruct{

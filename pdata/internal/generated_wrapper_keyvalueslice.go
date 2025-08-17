@@ -20,7 +20,7 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpcommon.KeyValue{}
+			dest[i].Reset()
 		}
 	}
 	for i := range src {
@@ -30,11 +30,9 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 }
 
 func GenerateOrigTestKeyValueSlice() []otlpcommon.KeyValue {
-	orig := make([]otlpcommon.KeyValue, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = otlpcommon.KeyValue{}
-		FillOrigTestKeyValue(&orig[i])
-	}
+	orig := make([]otlpcommon.KeyValue, 5)
+	FillOrigTestKeyValue(&orig[1])
+	FillOrigTestKeyValue(&orig[3])
 	return orig
 }
 

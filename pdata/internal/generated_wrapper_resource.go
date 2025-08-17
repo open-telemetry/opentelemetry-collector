@@ -32,10 +32,9 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 }
 
 func GenerateTestResource() Resource {
-	orig := otlpresource.Resource{}
-	FillOrigTestResource(&orig)
-	state := StateMutable
-	return NewResource(&orig, &state)
+	orig := NewOrigPtrResource()
+	FillOrigTestResource(orig)
+	return NewResource(orig, NewState())
 }
 
 func NewOrigResource() otlpresource.Resource {
@@ -127,7 +126,7 @@ func MarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -139,7 +138,7 @@ func MarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) int {
 		pos--
 		buf[pos] = 0x10
 	}
-	for i := range orig.EntityRefs {
+	for i := len(orig.EntityRefs) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigEntityRef(orig.EntityRefs[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

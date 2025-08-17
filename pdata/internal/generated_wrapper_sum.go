@@ -97,7 +97,7 @@ func MarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.DataPoints {
+	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

@@ -24,9 +24,10 @@ func TestMapping_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMapping(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestMapping(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newMapping(internal.NewOrigPtrMapping(), sharedState)) })
+	assert.Panics(t, func() { newMapping(internal.NewOrigPtrMapping(), sharedState).MoveTo(dest) })
 }
 
 func TestMapping_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestMapping_CopyTo(t *testing.T) {
 	orig = generateTestMapping()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newMapping(internal.NewOrigPtrMapping(), sharedState)) })
 }
 
 func TestMapping_MemoryStart(t *testing.T) {
@@ -46,8 +48,9 @@ func TestMapping_MemoryStart(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.MemoryStart())
 	ms.SetMemoryStart(uint64(13))
 	assert.Equal(t, uint64(13), ms.MemoryStart())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryStart(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetMemoryStart(uint64(13)) })
 }
 
 func TestMapping_MemoryLimit(t *testing.T) {
@@ -55,8 +58,9 @@ func TestMapping_MemoryLimit(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.MemoryLimit())
 	ms.SetMemoryLimit(uint64(13))
 	assert.Equal(t, uint64(13), ms.MemoryLimit())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryLimit(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetMemoryLimit(uint64(13)) })
 }
 
 func TestMapping_FileOffset(t *testing.T) {
@@ -64,8 +68,9 @@ func TestMapping_FileOffset(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.FileOffset())
 	ms.SetFileOffset(uint64(13))
 	assert.Equal(t, uint64(13), ms.FileOffset())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFileOffset(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetFileOffset(uint64(13)) })
 }
 
 func TestMapping_FilenameStrindex(t *testing.T) {
@@ -73,8 +78,9 @@ func TestMapping_FilenameStrindex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.FilenameStrindex())
 	ms.SetFilenameStrindex(int32(13))
 	assert.Equal(t, int32(13), ms.FilenameStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFilenameStrindex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetFilenameStrindex(int32(13)) })
 }
 
 func TestMapping_AttributeIndices(t *testing.T) {
@@ -89,8 +95,9 @@ func TestMapping_HasFunctions(t *testing.T) {
 	assert.False(t, ms.HasFunctions())
 	ms.SetHasFunctions(true)
 	assert.True(t, ms.HasFunctions())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasFunctions(true) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasFunctions(true) })
 }
 
 func TestMapping_HasFilenames(t *testing.T) {
@@ -98,8 +105,9 @@ func TestMapping_HasFilenames(t *testing.T) {
 	assert.False(t, ms.HasFilenames())
 	ms.SetHasFilenames(true)
 	assert.True(t, ms.HasFilenames())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasFilenames(true) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasFilenames(true) })
 }
 
 func TestMapping_HasLineNumbers(t *testing.T) {
@@ -107,8 +115,9 @@ func TestMapping_HasLineNumbers(t *testing.T) {
 	assert.False(t, ms.HasLineNumbers())
 	ms.SetHasLineNumbers(true)
 	assert.True(t, ms.HasLineNumbers())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasLineNumbers(true) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasLineNumbers(true) })
 }
 
 func TestMapping_HasInlineFrames(t *testing.T) {
@@ -116,8 +125,9 @@ func TestMapping_HasInlineFrames(t *testing.T) {
 	assert.False(t, ms.HasInlineFrames())
 	ms.SetHasInlineFrames(true)
 	assert.True(t, ms.HasInlineFrames())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasInlineFrames(true) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasInlineFrames(true) })
 }
 
 func generateTestMapping() Mapping {

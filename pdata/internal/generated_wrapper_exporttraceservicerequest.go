@@ -32,10 +32,9 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 }
 
 func GenerateTestTraces() Traces {
-	orig := otlpcollectortrace.ExportTraceServiceRequest{}
-	FillOrigTestExportTraceServiceRequest(&orig)
-	state := StateMutable
-	return NewTraces(&orig, &state)
+	orig := NewOrigPtrExportTraceServiceRequest()
+	FillOrigTestExportTraceServiceRequest(orig)
+	return NewTraces(orig, NewState())
 }
 
 func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
@@ -98,7 +97,7 @@ func MarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTr
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.ResourceSpans {
+	for i := len(orig.ResourceSpans) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigResourceSpans(orig.ResourceSpans[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))

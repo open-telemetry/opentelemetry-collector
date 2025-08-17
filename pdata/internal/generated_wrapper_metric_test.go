@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigMetric(t *testing.T) {
-	src := &otlpmetrics.Metric{}
-	dest := &otlpmetrics.Metric{}
+	src := NewOrigPtrMetric()
+	dest := NewOrigPtrMetric()
 	CopyOrigMetric(dest, src)
-	assert.Equal(t, &otlpmetrics.Metric{}, dest)
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 	FillOrigTestMetric(src)
 	CopyOrigMetric(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigMetric(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigMetricUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Metric{}
+	dest := NewOrigPtrMetric()
 	UnmarshalJSONOrigMetric(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.Metric{}, dest)
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.Metric{}
+			dest := NewOrigPtrMetric()
 			UnmarshalJSONOrigMetric(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetricUnknown(t *testing.T) {
-	dest := &otlpmetrics.Metric{}
+	dest := NewOrigPtrMetric()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigMetric(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpmetrics.Metric{}, dest)
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
 			gotSize := MarshalProtoOrigMetric(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.Metric{}
+			dest := NewOrigPtrMetric()
 			require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpmetrics.Metric{}
+			dest := NewOrigPtrMetric()
 			require.NoError(t, UnmarshalProtoOrigMetric(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 
 func getEncodingTestValuesMetric() map[string]*otlpmetrics.Metric {
 	return map[string]*otlpmetrics.Metric{
-		"empty": {},
+		"empty": NewOrigPtrMetric(),
 		"fill_test": func() *otlpmetrics.Metric {
-			src := &otlpmetrics.Metric{}
+			src := NewOrigPtrMetric()
 			FillOrigTestMetric(src)
 			return src
 		}(),

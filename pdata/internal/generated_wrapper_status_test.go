@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigStatus(t *testing.T) {
-	src := &otlptrace.Status{}
-	dest := &otlptrace.Status{}
+	src := NewOrigPtrStatus()
+	dest := NewOrigPtrStatus()
 	CopyOrigStatus(dest, src)
-	assert.Equal(t, &otlptrace.Status{}, dest)
+	assert.Equal(t, NewOrigPtrStatus(), dest)
 	FillOrigTestStatus(src)
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigStatus(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlptrace.Status{}
+	dest := NewOrigPtrStatus()
 	UnmarshalJSONOrigStatus(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlptrace.Status{}, dest)
+	assert.Equal(t, NewOrigPtrStatus(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlptrace.Status{}
+			dest := NewOrigPtrStatus()
 			UnmarshalJSONOrigStatus(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -57,10 +57,10 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
-	dest := &otlptrace.Status{}
+	dest := NewOrigPtrStatus()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigStatus(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlptrace.Status{}, dest)
+	assert.Equal(t, NewOrigPtrStatus(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 			gotSize := MarshalProtoOrigStatus(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlptrace.Status{}
+			dest := NewOrigPtrStatus()
 			require.NoError(t, UnmarshalProtoOrigStatus(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlptrace.Status{}
+			dest := NewOrigPtrStatus()
 			require.NoError(t, UnmarshalProtoOrigStatus(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,9 +99,9 @@ func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
 
 func getEncodingTestValuesStatus() map[string]*otlptrace.Status {
 	return map[string]*otlptrace.Status{
-		"empty": {},
+		"empty": NewOrigPtrStatus(),
 		"fill_test": func() *otlptrace.Status {
-			src := &otlptrace.Status{}
+			src := NewOrigPtrStatus()
 			FillOrigTestStatus(src)
 			return src
 		}(),

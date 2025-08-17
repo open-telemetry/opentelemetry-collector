@@ -148,7 +148,7 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 		pos--
 		buf[pos] = 0x10
 	}
-	for i := range orig.Line {
+	for i := len(orig.Line) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLine(orig.Line[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
