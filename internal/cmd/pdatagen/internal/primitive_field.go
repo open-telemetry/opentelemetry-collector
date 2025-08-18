@@ -40,8 +40,9 @@ const primitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
 	{{- end }}
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).Set{{ .fieldName }}({{ .testValue }}) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, sharedState).Set{{ .fieldName }}({{ .testValue }}) })
 }`
 
 const primitiveSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
@@ -94,6 +95,10 @@ func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {
 
 func (pf *PrimitiveField) GenerateMarshalProto(*messageStruct) string {
 	return pf.toProtoField().genMarshalProto()
+}
+
+func (pf *PrimitiveField) GenerateUnmarshalProto(*messageStruct) string {
+	return pf.toProtoField().genUnmarshalProto()
 }
 
 func (pf *PrimitiveField) toProtoField() *ProtoField {

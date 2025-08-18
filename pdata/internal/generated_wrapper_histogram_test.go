@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigHistogram(t *testing.T) {
-	src := &otlpmetrics.Histogram{}
-	dest := &otlpmetrics.Histogram{}
+	src := NewOrigPtrHistogram()
+	dest := NewOrigPtrHistogram()
 	CopyOrigHistogram(dest, src)
-	assert.Equal(t, &otlpmetrics.Histogram{}, dest)
+	assert.Equal(t, NewOrigPtrHistogram(), dest)
 	FillOrigTestHistogram(src)
 	CopyOrigHistogram(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigHistogram(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigHistogramUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Histogram{}
+	dest := NewOrigPtrHistogram()
 	UnmarshalJSONOrigHistogram(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.Histogram{}, dest)
+	assert.Equal(t, NewOrigPtrHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.Histogram{}
+			dest := NewOrigPtrHistogram()
 			UnmarshalJSONOrigHistogram(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigHistogramUnknown(t *testing.T) {
+	dest := NewOrigPtrHistogram()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 			gotSize := MarshalProtoOrigHistogram(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.Histogram{}
+			dest := NewOrigPtrHistogram()
 			require.NoError(t, UnmarshalProtoOrigHistogram(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
+	for name, src := range getEncodingTestValuesHistogram() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigHistogram(src))
+			gotSize := MarshalProtoOrigHistogram(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.Histogram{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrHistogram()
+			require.NoError(t, UnmarshalProtoOrigHistogram(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 
 func getEncodingTestValuesHistogram() map[string]*otlpmetrics.Histogram {
 	return map[string]*otlpmetrics.Histogram{
-		"empty": {},
+		"empty": NewOrigPtrHistogram(),
 		"fill_test": func() *otlpmetrics.Histogram {
-			src := &otlpmetrics.Histogram{}
+			src := NewOrigPtrHistogram()
 			FillOrigTestHistogram(src)
 			return src
 		}(),

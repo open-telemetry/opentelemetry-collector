@@ -9,6 +9,7 @@ var pprofile = &Package{
 		path: "pprofile",
 		imports: []string{
 			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
@@ -17,7 +18,8 @@ var pprofile = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
+			`otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
+			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -27,10 +29,14 @@ var pprofile = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectorprofiles "go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development"`,
+			`gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"`,
+			`gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
-			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
+			`otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -68,7 +74,7 @@ var pprofile = &Package{
 var profiles = &messageStruct{
 	structName:     "Profiles",
 	description:    "// Profiles is the top-level struct that is propagated through the profiles pipeline.\n// Use NewProfiles to create new instance, zero-initialized instance is not valid for use.",
-	originFullName: "otlpcollectorprofile.ExportProfilesServiceRequest",
+	originFullName: "otlpcollectorprofiles.ExportProfilesServiceRequest",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "ResourceProfiles",
@@ -77,18 +83,18 @@ var profiles = &messageStruct{
 			returnSlice: resourceProfilesSlice,
 		},
 		&MessageField{
-			fieldName:           "ProfilesDictionary",
-			fieldOriginFullName: "Dictionary",
-			protoID:             2,
-			returnMessage:       profilesDictionary,
+			fieldName:     "Dictionary",
+			protoID:       2,
+			returnMessage: profilesDictionary,
 		},
 	},
 	hasWrapper: true,
 }
 
-var resourceProfilesSlice = &sliceOfPtrs{
-	structName: "ResourceProfilesSlice",
-	element:    resourceProfiles,
+var resourceProfilesSlice = &messageSlice{
+	structName:      "ResourceProfilesSlice",
+	elementNullable: true,
+	element:         resourceProfiles,
 }
 
 var resourceProfiles = &messageStruct{
@@ -165,9 +171,10 @@ var profilesDictionary = &messageStruct{
 	},
 }
 
-var scopeProfilesSlice = &sliceOfPtrs{
-	structName: "ScopeProfilesSlice",
-	element:    scopeProfiles,
+var scopeProfilesSlice = &messageSlice{
+	structName:      "ScopeProfilesSlice",
+	elementNullable: true,
+	element:         scopeProfiles,
 }
 
 var scopeProfiles = &messageStruct{
@@ -194,9 +201,10 @@ var scopeProfiles = &messageStruct{
 	},
 }
 
-var profilesSlice = &sliceOfPtrs{
-	structName: "ProfilesSlice",
-	element:    profile,
+var profilesSlice = &messageSlice{
+	structName:      "ProfilesSlice",
+	elementNullable: true,
+	element:         profile,
 }
 
 var profile = &messageStruct{
@@ -304,9 +312,10 @@ var profile = &messageStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfPtrs{
-	structName: "AttributeUnitSlice",
-	element:    attributeUnit,
+var attributeUnitSlice = &messageSlice{
+	structName:      "AttributeUnitSlice",
+	elementNullable: true,
+	element:         attributeUnit,
 }
 
 var attributeUnit = &messageStruct{
@@ -327,9 +336,10 @@ var attributeUnit = &messageStruct{
 	},
 }
 
-var linkSlice = &sliceOfPtrs{
-	structName: "LinkSlice",
-	element:    link,
+var linkSlice = &messageSlice{
+	structName:      "LinkSlice",
+	elementNullable: true,
+	element:         link,
 }
 
 var link = &messageStruct{
@@ -352,9 +362,10 @@ var link = &messageStruct{
 	},
 }
 
-var valueTypeSlice = &sliceOfPtrs{
-	structName: "ValueTypeSlice",
-	element:    valueType,
+var valueTypeSlice = &messageSlice{
+	structName:      "ValueTypeSlice",
+	elementNullable: true,
+	element:         valueType,
 }
 
 var valueType = &messageStruct{
@@ -386,9 +397,10 @@ var valueType = &messageStruct{
 	},
 }
 
-var sampleSlice = &sliceOfPtrs{
-	structName: "SampleSlice",
-	element:    sample,
+var sampleSlice = &messageSlice{
+	structName:      "SampleSlice",
+	elementNullable: true,
+	element:         sample,
 }
 
 var sample = &messageStruct{
@@ -432,9 +444,10 @@ var sample = &messageStruct{
 	},
 }
 
-var mappingSlice = &sliceOfPtrs{
-	structName: "MappingSlice",
-	element:    mapping,
+var mappingSlice = &messageSlice{
+	structName:      "MappingSlice",
+	elementNullable: true,
+	element:         mapping,
 }
 
 var mapping = &messageStruct{
@@ -491,9 +504,10 @@ var mapping = &messageStruct{
 	},
 }
 
-var locationSlice = &sliceOfPtrs{
-	structName: "LocationSlice",
-	element:    location,
+var locationSlice = &messageSlice{
+	structName:      "LocationSlice",
+	elementNullable: true,
+	element:         location,
 }
 
 var location = &messageStruct{
@@ -531,9 +545,10 @@ var location = &messageStruct{
 	},
 }
 
-var lineSlice = &sliceOfPtrs{
-	structName: "LineSlice",
-	element:    line,
+var lineSlice = &messageSlice{
+	structName:      "LineSlice",
+	elementNullable: true,
+	element:         line,
 }
 
 var line = &messageStruct{
@@ -559,9 +574,10 @@ var line = &messageStruct{
 	},
 }
 
-var functionSlice = &sliceOfPtrs{
-	structName: "FunctionSlice",
-	element:    function,
+var functionSlice = &messageSlice{
+	structName:      "FunctionSlice",
+	elementNullable: true,
+	element:         function,
 }
 
 var function = &messageStruct{
@@ -592,15 +608,16 @@ var function = &messageStruct{
 	},
 }
 
-var attributeTableSlice = &sliceOfValues{
-	structName: "AttributeTableSlice",
-	element:    attribute,
+var attributeTableSlice = &messageSlice{
+	structName:      "AttributeTableSlice",
+	elementNullable: false,
+	element:         attribute,
 }
 
 var attribute = &messageStruct{
 	structName:     "Attribute",
 	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
-	originFullName: "v1.KeyValue",
+	originFullName: "otlpcommon.KeyValue",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Key",

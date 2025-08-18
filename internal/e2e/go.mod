@@ -1,8 +1,9 @@
 module go.opentelemetry.io/collector/internal/e2e
 
-go 1.23.0
+go 1.24
 
 require (
+	github.com/google/go-cmp v0.7.0
 	github.com/prometheus/common v0.65.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector v0.132.0
@@ -43,9 +44,11 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.132.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.132.0
 	go.opentelemetry.io/collector/service v0.132.0
+	go.opentelemetry.io/proto/otlp v1.7.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.74.2
+	google.golang.org/protobuf v1.36.7
 )
 
 require (
@@ -144,7 +147,6 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
@@ -155,7 +157,6 @@ require (
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.5.0 // indirect
 )

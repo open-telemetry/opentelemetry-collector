@@ -87,15 +87,18 @@ func (sf *SliceField) GenerateMarshalProto(*messageStruct) string {
 	return sf.toProtoField().genMarshalProto()
 }
 
+func (sf *SliceField) GenerateUnmarshalProto(*messageStruct) string {
+	return sf.toProtoField().genUnmarshalProto()
+}
+
 func (sf *SliceField) toProtoField() *ProtoField {
-	_, nullable := sf.returnSlice.(*sliceOfPtrs)
 	return &ProtoField{
-		Type:        sf.protoType,
-		ID:          sf.protoID,
-		Name:        sf.fieldName,
-		MessageName: sf.returnSlice.getElementOriginName(),
-		Repeated:    sf.protoType != ProtoTypeBytes,
-		Nullable:    nullable,
+		Type:            sf.protoType,
+		ID:              sf.protoID,
+		Name:            sf.fieldName,
+		MessageFullName: sf.returnSlice.getElementOriginName(),
+		Repeated:        sf.protoType != ProtoTypeBytes,
+		Nullable:        sf.returnSlice.getElementNullable(),
 	}
 }
 
