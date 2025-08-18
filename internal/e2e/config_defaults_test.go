@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -17,7 +18,7 @@ import (
 
 type config struct {
 	StringKey string                                           `mapstructure:"string_key"`
-	Http      configoptional.Optional[confighttp.ServerConfig] `mapstructure:"http"`
+	HTTP      configoptional.Optional[confighttp.ServerConfig] `mapstructure:"http"`
 	Grpc      configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
 }
 
@@ -44,7 +45,7 @@ func TestOptionalDefaults(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg := config{
-				Http: configoptional.Default(confighttp.ServerConfig{}),
+				HTTP: configoptional.Default(confighttp.ServerConfig{}),
 				Grpc: configoptional.Default(configgrpc.ServerConfig{}),
 			}
 
