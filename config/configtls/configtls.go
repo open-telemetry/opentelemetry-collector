@@ -247,7 +247,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	for _, curve := range c.CurvePreferences {
 		curveID, ok := tlsCurveTypes[curve]
 		if !ok {
-			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519]", curveID)
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519, X25519MLKEM768]", curveID)
 		}
 		curvePreferences = append(curvePreferences, curveID)
 	}
@@ -482,4 +482,5 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	"P384":   tls.CurveP384,
 	"P521":   tls.CurveP521,
 	"X25519": tls.X25519,
+	"X25519MLKEM768": tls.X25519MLKEM768,
 }

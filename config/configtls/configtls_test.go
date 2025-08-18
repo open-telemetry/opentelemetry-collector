@@ -882,6 +882,11 @@ func TestCurvePreferences(t *testing.T) {
 		expectedErr      string
 	}{
 		{
+			name:             "X25519MLKEM768",
+			preferences:      []string{"X25119MLKEM768"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+		}
+		{
 			name:             "X25519",
 			preferences:      []string{"X25519"},
 			expectedCurveIDs: []tls.CurveID{tls.X25519},
