@@ -23,12 +23,12 @@ import (
 type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
-	orig *[]{{ .originElementType }}
+	orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.State) {{ .structName }} {
+func new{{ .structName }}(orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, state *internal.State) {{ .structName }} {
 	{{- if .hasWrapper }}
 	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
 	{{- else }}
@@ -39,9 +39,8 @@ func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.Stat
 // New{{ .structName }} creates a {{ .structName }} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func New{{ .structName }}() {{ .structName }} {
-	orig := []{{ .originElementType }}(nil)
-	state := internal.StateMutable
-	return new{{ .structName }}(&orig, &state)
+	orig := []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}(nil)
+	return new{{ .structName }}(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -59,7 +58,7 @@ func (es {{ .structName }}) Len() int {
 //       ... // Do something with the element
 //   }
 func (es {{ .structName }}) At(i int) {{ .elementName }} {
-	return {{ .newElement }}
+	return new{{ .elementName }}({{ if not .elementNullable }}&{{ end }}(*es.{{ .origAccessor }})[i], es.{{ .stateAccessor }})
 }
 
 // All returns an iterator over index-value pairs in the slice.
@@ -95,7 +94,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]{{ .originElementType }}, len(*es.{{ .origAccessor }}), newCap)
+	newOrig := make([]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, len(*es.{{ .origAccessor }}), newCap)
 	copy(newOrig, *es.{{ .origAccessor }})
 	*es.{{ .origAccessor }} = newOrig
 }
@@ -104,7 +103,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 	es.{{ .stateAccessor }}.AssertMutable()
-	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{ .emptyOriginElement }})
+	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.NewOrigPtr{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
 	return es.At(es.Len() - 1)
 }
 
@@ -133,10 +132,9 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.{{ .origAccessor }}); i++ {
 		if f(es.At(i)) {
-			{{- if eq .type "sliceOfPtrs" }}
-			(*es.{{ .origAccessor }})[i] = nil
-			{{- else }}
-			(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+			{{ if .elementNullable -}}
+			(*es.{{ .origAccessor }})[i] = nil{{ else -}}
+			(*es.{{ .origAccessor }})[i].Reset()
 			{{- end }}
 			continue
 		}
@@ -146,10 +144,9 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 			continue
 		}
 		(*es.{{ .origAccessor }})[newLen] = (*es.{{ .origAccessor }})[i]
-		{{- if eq .type "sliceOfPtrs" }}
-		(*es.{{ .origAccessor }})[i] = nil
-		{{- else }}
-		(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+		{{ if .elementNullable -}}
+		(*es.{{ .origAccessor }})[i] = nil{{ else -}}
+		(*es.{{ .origAccessor }})[i].Reset()
 		{{- end }}
 		newLen++
 	}
@@ -163,7 +160,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 }
 
-{{ if eq .type "sliceOfPtrs" -}}
+{{ if .elementNullable -}}
 // Sort sorts the {{ .elementName }} elements within {{ .structName }} given the
 // provided less function so that two instances of {{ .structName }}
 // can be compared.
@@ -174,7 +171,7 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 {{- end }}
 
 {{ if .hasWrapper -}}
-func (ms {{ .structName }}) getOrig() *[]{{ .originElementType }} {
+func (ms {{ .structName }}) getOrig() *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
 }
 

@@ -34,8 +34,7 @@ func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs, state *internal.State) Scope
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeLogsSlice() ScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs(nil)
-	state := internal.StateMutable
-	return newScopeLogsSlice(&orig, &state)
+	return newScopeLogsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeLogs.
 func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.ScopeLogs{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeLogs())
 	return es.At(es.Len() - 1)
 }
 

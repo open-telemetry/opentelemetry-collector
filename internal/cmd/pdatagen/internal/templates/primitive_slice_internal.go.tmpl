@@ -31,8 +31,7 @@ func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName 
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
-	state := StateMutable
-	return New{{ .structName }}(&orig, &state)
+	return New{{ .structName }}(&orig, NewState())
 }
 
 func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {

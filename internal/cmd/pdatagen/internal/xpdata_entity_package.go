@@ -10,6 +10,12 @@ var xpdataEntity = &Package{
 		name: "entity",
 		path: filepath.Join("xpdata", "entity"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"fmt"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
@@ -20,8 +26,10 @@ var xpdataEntity = &Package{
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -32,10 +40,11 @@ var xpdataEntity = &Package{
 	},
 }
 
-var entityRefSlice = &sliceOfPtrs{
-	structName:  "EntityRefSlice",
-	packageName: "entity",
-	element:     entityRef,
+var entityRefSlice = &messageSlice{
+	structName:      "EntityRefSlice",
+	packageName:     "entity",
+	elementNullable: true,
+	element:         entityRef,
 }
 
 var entityRef = &messageStruct{

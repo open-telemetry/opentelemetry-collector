@@ -34,8 +34,7 @@ func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleS
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
 	orig := []*otlpprofiles.Sample(nil)
-	state := internal.StateMutable
-	return newSampleSlice(&orig, &state)
+	return newSampleSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSample())
 	return es.At(es.Len() - 1)
 }
 

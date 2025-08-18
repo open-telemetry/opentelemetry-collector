@@ -14,11 +14,11 @@ import (
 {{ if .hasWrapper }}
 
 type {{ .structName }} struct {
-	orig *[]{{ .originElementType }}
+	orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ .originElementType }} {
+func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
 	return ms.orig
 }
 
@@ -26,71 +26,76 @@ func Get{{ .structName }}State(ms {{ .structName }}) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .structName }} {
+func New{{ .structName }}(orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, state *State) {{ .structName }} {
 	return {{ .structName }}{orig: orig, state: state}
 }
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
-	state := StateMutable
-	return New{{ .structName }}(&orig, &state)
+	return New{{ .structName }}(&orig, NewState())
 }
 {{ end }}
 
-func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
-	var newDest []{{ .originElementType }}
+func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+	var newDest []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	if cap(dest) < len(src) {
-		{{- if eq .type "sliceOfPtrs" }}
-		newDest = make([]{{ .originElementType }}, len(src))
+		{{ if .elementNullable -}}
+		newDest = make([]*{{ .elementOriginFullName }}, len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &{{ .elementOriginFullName }}{}
-		}
-		{{- else }}
-		newDest = make([]{{ .originElementType }}, len(src))
-		{{- end }}
+			newDest[i] = NewOrigPtr{{ .elementOriginName }}()
+		}{{ else -}}
+		newDest = make([]{{ .elementOriginFullName }}, len(src))
+        {{- end }}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
-		{{- if eq .type "sliceOfPtrs" }}
+		{{ if .elementNullable -}}
 		for i := len(src); i < len(dest); i++ {
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &{{ .elementOriginFullName }}{}
-		}
-		{{- else }}
+			newDest[i] = NewOrigPtr{{ .elementOriginName }}()
+		}{{ else -}}
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = {{ .emptyOriginElement }}
+			dest[i].Reset()
 		}
-		{{- end }}
+        {{- end }}
 	}
 	for i := range src {
-	CopyOrig{{ .elementOriginName }}({{ .originElementPtr }}newDest[i], {{ .originElementPtr }}src[i])
+	    CopyOrig{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}newDest[i], {{ if not .elementNullable }}&{{ end }}src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .originElementType }} {
-	orig := make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = {{ .emptyOriginElement }}
-		FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[i])
-	}
+func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+    {{ if .elementNullable -}}
+    orig := make([]*{{ .elementOriginFullName }}, 5)
+	orig[0] = NewOrigPtr{{ .elementOriginName }}()
+	orig[1] = NewOrigPtr{{ .elementOriginName }}()
+	FillOrigTest{{ .elementOriginName }}(orig[1])
+    orig[2] = NewOrigPtr{{ .elementOriginName }}()
+	orig[3] = NewOrigPtr{{ .elementOriginName }}()
+	FillOrigTest{{ .elementOriginName }}(orig[3])
+    orig[4] = NewOrigPtr{{ .elementOriginName }}(){{ else -}}
+    orig := make([]{{ .elementOriginFullName }}, 5)
+    FillOrigTest{{ .elementOriginName }}(&orig[1])
+    FillOrigTest{{ .elementOriginName }}(&orig[3])
+    {{- end }}
 	return orig
 }
 
 // UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ .originElementType }} {
-	var orig []{{ .originElementType }}
+func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+	var orig []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, {{ .emptyOriginElement }})
-		UnmarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[len(orig)-1], iter)
+		orig = append(orig, {{- if .elementNullable }}NewOrigPtr{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
+		UnmarshalJSONOrig{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}orig[len(orig)-1], iter)
 		return true
 	})
 	return orig

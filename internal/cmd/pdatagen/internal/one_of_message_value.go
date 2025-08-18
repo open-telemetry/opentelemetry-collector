@@ -41,8 +41,9 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 	internal.FillOrigTest{{ .returnType }}(ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }})
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).SetEmpty{{ .fieldName }}() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, sharedState).SetEmpty{{ .fieldName }}() })
 }
 `
 
@@ -114,7 +115,7 @@ func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) st
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of).genMarshalJSON()
+	return omv.toProtoField(ms, of, true).genMarshalJSON()
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
@@ -123,21 +124,32 @@ func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOf
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of).genSizeProto()
+	return omv.toProtoField(ms, of, true).genSizeProto()
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of).genMarshalProto()
+	return omv.toProtoField(ms, of, true).genMarshalProto()
 }
 
-func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) *ProtoField {
-	return &ProtoField{
-		Type:        ProtoTypeMessage,
-		ID:          omv.protoID,
-		Name:        of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
-		MessageName: omv.returnMessage.getOriginName(),
-		Nullable:    true,
+func (omv *OneOfMessageValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, false).genUnmarshalProto()
+}
+
+func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, oldOneOf bool) *ProtoField {
+	pf := &ProtoField{
+		Type:                 ProtoTypeMessage,
+		ID:                   omv.protoID,
+		OneOfGroup:           of.originFieldName,
+		OneOfMessageFullName: ms.originFullName + "_" + omv.fieldName,
+		Name:                 omv.fieldName,
+		MessageFullName:      omv.returnMessage.getOriginName(),
+		Nullable:             true,
 	}
+	// TODO: Cleanup this by moving everyone to the new OneOfGroup
+	if oldOneOf {
+		pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName
+	}
+	return pf
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {

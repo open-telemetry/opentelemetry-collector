@@ -9,9 +9,46 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
+	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+func TestLogsProtoWireCompatibility(t *testing.T) {
+	// This test verifies that OTLP ProtoBufs generated using goproto lib in
+	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
+	// this repository are wire compatible.
+
+	// Generate Logs as pdata struct.
+	td := generateTestLogs()
+
+	// Marshal its underlying ProtoBuf to wire.
+	marshaler := &ProtoMarshaler{}
+	wire1, err := marshaler.MarshalLogs(td)
+	require.NoError(t, err)
+	assert.NotNil(t, wire1)
+
+	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
+	var goprotoMessage gootlplogs.LogsData
+	err = goproto.Unmarshal(wire1, &goprotoMessage)
+	require.NoError(t, err)
+
+	// Marshal to the wire again.
+	wire2, err := goproto.Marshal(&goprotoMessage)
+	require.NoError(t, err)
+	assert.NotNil(t, wire2)
+
+	// Unmarshal from the wire into gogoproto's representation.
+	var td2 Logs
+	unmarshaler := &ProtoUnmarshaler{}
+	td2, err = unmarshaler.UnmarshalLogs(wire2)
+	require.NoError(t, err)
+
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	assert.Equal(t, td, td2)
+}
 
 func TestProtoLogsUnmarshalerError(t *testing.T) {
 	p := &ProtoUnmarshaler{}

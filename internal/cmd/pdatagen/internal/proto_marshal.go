@@ -16,7 +16,7 @@ const marshalProtoFloat = `{{ if .repeated -}}
 			binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], math.Float{{ .bitSize }}bits(orig.{{ .fieldName }}[i]))
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(l*{{ div .bitSize 8 }}))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -27,7 +27,7 @@ const marshalProtoFloat = `{{ if .repeated -}}
 {{ end -}}
 		pos -= {{ div .bitSize 8 }}
 		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], math.Float{{ .bitSize }}bits(orig.{{ .fieldName }}))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -43,7 +43,7 @@ const marshalProtoFixed = `{{ if .repeated -}}
 			binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], uint{{ .bitSize }}(orig.{{ .fieldName }}[i]))
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(l*{{ div .bitSize 8 }}))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -54,7 +54,7 @@ const marshalProtoFixed = `{{ if .repeated -}}
 {{ end -}}
 		pos -= {{ div .bitSize 8 }}
 		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], uint{{ .bitSize }}(orig.{{ .fieldName }}))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -74,7 +74,7 @@ const marshalProtoBool = `{{ if .repeated -}}
 			}
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -89,7 +89,7 @@ const marshalProtoBool = `{{ if .repeated -}}
 		} else {
 			buf[pos] = 0
 		}
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -105,7 +105,7 @@ const marshalProtoVarint = `{{ if .repeated -}}
 			pos = proto.EncodeVarint(buf, pos, uint64(orig.{{ .fieldName }}[i]))
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -115,7 +115,7 @@ const marshalProtoVarint = `{{ if .repeated -}}
 	if orig.{{ .fieldName }} != 0 {
 {{ end -}}
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.{{ .fieldName }}))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -129,7 +129,7 @@ const marshalProtoBytesString = `{{ if .repeated -}}
 		pos -= l
 		copy(buf[pos:], orig.{{ .fieldName }}[i])
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -142,7 +142,7 @@ const marshalProtoBytesString = `{{ if .repeated -}}
 		pos -= l
 		copy(buf[pos:], orig.{{ .fieldName }})
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -151,20 +151,20 @@ const marshalProtoBytesString = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 const marshalProtoMessage = `{{ if .repeated -}}
-	for i := range orig.{{ .fieldName }} {
-		l = MarshalProtoOrig{{ .messageName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], buf[:pos])
+	for i := len(orig.{{ .fieldName }}) - 1; i >= 0; i-- {
+		l = MarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
 {{- else }}
-	l = MarshalProtoOrig{{ .messageName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[:pos])
+	l = MarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	{{ range .protoKey -}}
+	{{ range .protoTag -}}
 	pos--
 	buf[pos] = {{ . }}
 	{{ end -}}
@@ -178,7 +178,7 @@ const marshalProtoSignedVarint = `{{ if .repeated -}}
 			pos = proto.EncodeVarint(buf, pos, uint64((uint{{ .bitSize }}(orig.{{ .fieldName }}[i])<<1)^uint{{ .bitSize }}(orig.{{ .fieldName }}[i]>>{{ sub .bitSize 1}})))
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -188,7 +188,7 @@ const marshalProtoSignedVarint = `{{ if .repeated -}}
 	if orig.{{ .fieldName }} != 0 {
 {{ end -}}
 		pos = proto.EncodeVarint(buf, pos, uint64((uint{{ .bitSize }}(orig.{{ .fieldName }})<<1)^uint{{ .bitSize }}(orig.{{ .fieldName }}>>{{ sub .bitSize 1}})))
-		{{ range .protoKey -}}
+		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
@@ -197,7 +197,7 @@ const marshalProtoSignedVarint = `{{ if .repeated -}}
 {{- end }}{{- end }}`
 
 func (pf *ProtoField) genMarshalProto() string {
-	tf := pf.marshalTemplateFields()
+	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case ProtoTypeDouble, ProtoTypeFloat:
 		return executeTemplate(template.Must(templateNew("marshalProtoFloat").Parse(marshalProtoFloat)), tf)
@@ -215,23 +215,4 @@ func (pf *ProtoField) genMarshalProto() string {
 		return executeTemplate(template.Must(templateNew("marshalProtoSignedVarint").Parse(marshalProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
-}
-
-func (pf *ProtoField) marshalTemplateFields() map[string]any {
-	bitSize := 0
-	switch pf.Type {
-	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeInt64, ProtoTypeUint64, ProtoTypeSInt64, ProtoTypeDouble:
-		bitSize = 64
-	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeInt32, ProtoTypeUint32, ProtoTypeSInt32, ProtoTypeFloat, ProtoTypeEnum:
-		bitSize = 32
-	}
-
-	return map[string]any{
-		"protoKey":    genProtoKey(pf.ID, pf.wireType()),
-		"fieldName":   pf.Name,
-		"messageName": pf.MessageName,
-		"repeated":    pf.Repeated,
-		"nullable":    pf.Nullable,
-		"bitSize":     bitSize,
-	}
 }

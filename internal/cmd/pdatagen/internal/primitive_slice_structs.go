@@ -48,8 +48,8 @@ func (iss *primitiveSliceStruct) getOriginName() string {
 	return iss.getName()
 }
 
-func (iss *primitiveSliceStruct) getElementProtoType() ProtoType {
-	return ProtoTypeInt64
+func (iss *primitiveSliceStruct) getOriginFullName() string {
+	return iss.getName()
 }
 
 func (iss *primitiveSliceStruct) getHasWrapper() bool {
@@ -58,6 +58,10 @@ func (iss *primitiveSliceStruct) getHasWrapper() bool {
 
 func (iss *primitiveSliceStruct) getElementOriginName() string {
 	return upperFirst(iss.itemType)
+}
+
+func (iss *primitiveSliceStruct) getElementNullable() bool {
+	return false
 }
 
 func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[string]any {

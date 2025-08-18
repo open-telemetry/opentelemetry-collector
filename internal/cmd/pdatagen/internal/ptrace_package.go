@@ -9,6 +9,7 @@ var ptrace = &Package{
 		path: "ptrace",
 		imports: []string{
 			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
@@ -27,6 +28,9 @@ var ptrace = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"`,
+			`gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
@@ -67,9 +71,10 @@ var traces = &messageStruct{
 	hasWrapper: true,
 }
 
-var resourceSpansSlice = &sliceOfPtrs{
-	structName: "ResourceSpansSlice",
-	element:    resourceSpans,
+var resourceSpansSlice = &messageSlice{
+	structName:      "ResourceSpansSlice",
+	elementNullable: true,
+	element:         resourceSpans,
 }
 
 var resourceSpans = &messageStruct{
@@ -96,9 +101,10 @@ var resourceSpans = &messageStruct{
 	},
 }
 
-var scopeSpansSlice = &sliceOfPtrs{
-	structName: "ScopeSpansSlice",
-	element:    scopeSpans,
+var scopeSpansSlice = &messageSlice{
+	structName:      "ScopeSpansSlice",
+	elementNullable: true,
+	element:         scopeSpans,
 }
 
 var scopeSpans = &messageStruct{
@@ -125,9 +131,10 @@ var scopeSpans = &messageStruct{
 	},
 }
 
-var spanSlice = &sliceOfPtrs{
-	structName: "SpanSlice",
-	element:    span,
+var spanSlice = &messageSlice{
+	structName:      "SpanSlice",
+	elementNullable: true,
+	element:         span,
 }
 
 var span = &messageStruct{
@@ -233,9 +240,10 @@ var span = &messageStruct{
 	},
 }
 
-var spanEventSlice = &sliceOfPtrs{
-	structName: "SpanEventSlice",
-	element:    spanEvent,
+var spanEventSlice = &messageSlice{
+	structName:      "SpanEventSlice",
+	elementNullable: true,
+	element:         spanEvent,
 }
 
 var spanEvent = &messageStruct{
@@ -269,9 +277,10 @@ var spanEvent = &messageStruct{
 	},
 }
 
-var spanLinkSlice = &sliceOfPtrs{
-	structName: "SpanLinkSlice",
-	element:    spanLink,
+var spanLinkSlice = &messageSlice{
+	structName:      "SpanLinkSlice",
+	elementNullable: true,
+	element:         spanLink,
 }
 
 var spanLink = &messageStruct{

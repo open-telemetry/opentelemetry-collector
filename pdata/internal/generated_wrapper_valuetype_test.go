@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigValueType(t *testing.T) {
-	src := &otlpprofiles.ValueType{}
-	dest := &otlpprofiles.ValueType{}
+	src := NewOrigPtrValueType()
+	dest := NewOrigPtrValueType()
 	CopyOrigValueType(dest, src)
-	assert.Equal(t, &otlpprofiles.ValueType{}, dest)
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 	FillOrigTestValueType(src)
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigValueType(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.ValueType{}
+	dest := NewOrigPtrValueType()
 	UnmarshalJSONOrigValueType(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpprofiles.ValueType{}, dest)
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpprofiles.ValueType{}
+			dest := NewOrigPtrValueType()
 			UnmarshalJSONOrigValueType(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
+	dest := NewOrigPtrValueType()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 			gotSize := MarshalProtoOrigValueType(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpprofiles.ValueType{}
+			dest := NewOrigPtrValueType()
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
+	for name, src := range getEncodingTestValuesValueType() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigValueType(src))
+			gotSize := MarshalProtoOrigValueType(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.ValueType{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrValueType()
+			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 
 func getEncodingTestValuesValueType() map[string]*otlpprofiles.ValueType {
 	return map[string]*otlpprofiles.ValueType{
-		"empty": {},
+		"empty": NewOrigPtrValueType(),
 		"fill_test": func() *otlpprofiles.ValueType {
-			src := &otlpprofiles.ValueType{}
+			src := NewOrigPtrValueType()
 			FillOrigTestValueType(src)
 			return src
 		}(),
