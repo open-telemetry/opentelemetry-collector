@@ -4,6 +4,7 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
@@ -82,6 +83,10 @@ func (ss *messageSlice) getElementOriginName() string {
 
 func (ss *messageSlice) getElementNullable() bool {
 	return ss.elementNullable
+}
+
+func (ss *messageSlice) toProtoMessage() *proto.Message {
+	return nil
 }
 
 var _ baseStruct = (*messageSlice)(nil)

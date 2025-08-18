@@ -7,10 +7,19 @@
 package pcommon
 
 import (
+	"encoding/binary"
+	"fmt"
 	"iter"
-
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 // Slice logically represents a slice of Value.
@@ -43,11 +52,10 @@ func (es Slice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//
-//	for i := 0; i < es.Len(); i++ {
-//	    e := es.At(i)
-//	    ... // Do something with the element
-//	}
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es Slice) At(i int) Value {
 	return newValue(&(*es.getOrig())[i], es.getState())
 }
@@ -72,13 +80,12 @@ func (es Slice) All() iter.Seq2[int, Value] {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new Slice can be initialized:
-//
-//	es := NewSlice()
-//	es.EnsureCapacity(4)
-//	for i := 0; i < 4; i++ {
-//	    e := es.AppendEmpty()
-//	    // Here should set all the values for e.
-//	}
+//   es := NewSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
 func (es Slice) EnsureCapacity(newCap int) {
 	es.getState().AssertMutable()
 	oldCap := cap(*es.getOrig())
@@ -95,7 +102,7 @@ func (es Slice) EnsureCapacity(newCap int) {
 // It returns the newly added Value.
 func (es Slice) AppendEmpty() Value {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), otlpcommon.AnyValue{})
+	*es.getOrig() = append(*es.getOrig(),otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
@@ -139,11 +146,14 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
+
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es Slice) CopyTo(dest Slice) {
 	dest.getState().AssertMutable()
 	*dest.getOrig() = internal.CopyOrigAnyValueSlice(*dest.getOrig(), *es.getOrig())
 }
+
+
 
 func (ms Slice) getOrig() *[]otlpcommon.AnyValue {
 	return internal.GetOrigSlice(internal.Slice(ms))

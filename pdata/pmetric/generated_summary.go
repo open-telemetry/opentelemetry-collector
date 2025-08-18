@@ -7,8 +7,20 @@
 package pmetric
 
 import (
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.

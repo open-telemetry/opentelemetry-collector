@@ -10,8 +10,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
 func TestExportResponse_MoveTo(t *testing.T) {

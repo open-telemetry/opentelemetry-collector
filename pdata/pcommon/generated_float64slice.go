@@ -7,10 +7,19 @@
 package pcommon
 
 import (
+	"encoding/binary"
+	"fmt"
 	"iter"
-	"slices"
-
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 // Float64Slice represents a []float64 slice.
@@ -76,11 +85,11 @@ func (ms Float64Slice) SetAt(i int, val float64) {
 }
 
 // EnsureCapacity ensures Float64Slice has at least the specified capacity.
-//  1. If the newCap <= cap, then is no change in capacity.
-//  2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
-//     buf := make([]float64, len(float64Slice), newCap)
-//     copy(buf, float64Slice)
-//     float64Slice = buf
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//	buf := make([]float64, len(float64Slice), newCap)
+//	copy(buf, float64Slice)
+//	float64Slice = buf
 func (ms Float64Slice) EnsureCapacity(newCap int) {
 	ms.getState().AssertMutable()
 	oldCap := cap(*ms.getOrig())
@@ -116,15 +125,15 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (ms Float64Slice) MoveAndAppendTo(dest Float64Slice) {
-	ms.getState().AssertMutable()
-	dest.getState().AssertMutable()
-	if *dest.getOrig() == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *ms.getOrig()
-	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
-	}
-	*ms.getOrig() = nil
+  ms.getState().AssertMutable()
+  dest.getState().AssertMutable()
+  if *dest.getOrig() == nil {
+    // We can simply move the entire vector and avoid any allocations.
+    *dest.getOrig() = *ms.getOrig()
+  } else {
+    *dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+  }
+  *ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.

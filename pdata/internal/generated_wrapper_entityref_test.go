@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
-	"google.golang.org/protobuf/proto"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"

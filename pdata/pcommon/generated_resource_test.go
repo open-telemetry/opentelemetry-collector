@@ -8,11 +8,18 @@ package pcommon
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestResource_MoveTo(t *testing.T) {
@@ -42,6 +49,7 @@ func TestResource_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResource(internal.NewOrigPtrResource(), sharedState)) })
 }
 
+
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, NewMap(), ms.Attributes())
@@ -59,6 +67,9 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
+
+
+
 func generateTestResource() Resource {
-	return Resource(internal.GenerateTestResource())
+    return Resource(internal.GenerateTestResource())
 }

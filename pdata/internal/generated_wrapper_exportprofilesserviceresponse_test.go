@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportProfilesServiceResponse(t *testing.T) {

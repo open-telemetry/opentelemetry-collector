@@ -8,11 +8,18 @@ package pcommon
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
@@ -42,6 +49,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(internal.NewOrigPtrInstrumentationScope(), sharedState)) })
 }
 
+
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Empty(t, ms.Name())
@@ -59,9 +67,7 @@ func TestInstrumentationScope_Version(t *testing.T) {
 	assert.Equal(t, "test_version", ms.Version())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetVersion("test_version")
-	})
+	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetVersion("test_version") })
 }
 
 func TestInstrumentationScope_Attributes(t *testing.T) {
@@ -78,11 +84,10 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetDroppedAttributesCount(uint32(13))
-	})
+	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
+
 func generateTestInstrumentationScope() InstrumentationScope {
-	return InstrumentationScope(internal.GenerateTestInstrumentationScope())
+    return InstrumentationScope(internal.GenerateTestInstrumentationScope())
 }

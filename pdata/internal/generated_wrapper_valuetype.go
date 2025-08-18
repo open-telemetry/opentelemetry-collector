@@ -7,8 +7,16 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,25 +42,6 @@ func FillOrigTestValueType(orig *otlpprofiles.ValueType) {
 	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.TypeStrindex != int32(0) {
-		dest.WriteObjectField("typeStrindex")
-		dest.WriteInt32(orig.TypeStrindex)
-	}
-	if orig.UnitStrindex != int32(0) {
-		dest.WriteObjectField("unitStrindex")
-		dest.WriteInt32(orig.UnitStrindex)
-	}
-
-	if int32(orig.AggregationTemporality) != 0 {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(orig.AggregationTemporality))
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigValueType unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -68,102 +57,4 @@ func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterato
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {
-	var n int
-	var l int
-	_ = l
-	if orig.TypeStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.TypeStrindex))
-	}
-	if orig.UnitStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.UnitStrindex))
-	}
-	if orig.AggregationTemporality != 0 {
-		n += 1 + proto.Sov(uint64(orig.AggregationTemporality))
-	}
-	return n
-}
-
-func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	if orig.TypeStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.TypeStrindex))
-		pos--
-		buf[pos] = 0x8
-	}
-	if orig.UnitStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.UnitStrindex))
-		pos--
-		buf[pos] = 0x10
-	}
-	if orig.AggregationTemporality != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
-		pos--
-		buf[pos] = 0x18
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field TypeStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.TypeStrindex = int32(num)
-
-		case 2:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field UnitStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.UnitStrindex = int32(num)
-
-		case 3:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field AggregationTemporality", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.AggregationTemporality = otlpprofiles.AggregationTemporality(num)
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

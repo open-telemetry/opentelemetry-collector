@@ -8,27 +8,35 @@ package pcommon
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestNewUInt64Slice(t *testing.T) {
 	ms := NewUInt64Slice()
 	assert.Equal(t, 0, ms.Len())
-	ms.FromRaw([]uint64{1, 2, 3})
+	ms.FromRaw([]uint64{ 1, 2, 3 })
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, []uint64{1, 2, 3}, ms.AsRaw())
-	ms.SetAt(1, uint64(5))
-	assert.Equal(t, []uint64{1, 5, 3}, ms.AsRaw())
-	ms.FromRaw([]uint64{3})
+	assert.Equal(t, []uint64{ 1, 2, 3 }, ms.AsRaw())
+	ms.SetAt(1, uint64( 5 ))
+	assert.Equal(t, []uint64{ 1, 5, 3 }, ms.AsRaw())
+	ms.FromRaw([]uint64{ 3 })
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, uint64(3), ms.At(0))
 
 	cp := NewUInt64Slice()
 	ms.CopyTo(cp)
-	ms.SetAt(0, uint64(2))
+	ms.SetAt(0, uint64( 2 ))
 	assert.Equal(t, uint64(2), ms.At(0))
 	assert.Equal(t, uint64(3), cp.At(0))
 	ms.CopyTo(cp)
@@ -39,7 +47,7 @@ func TestNewUInt64Slice(t *testing.T) {
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
 	assert.Equal(t, uint64(2), mv.At(0))
-	ms.FromRaw([]uint64{1, 2, 3})
+	ms.FromRaw([]uint64{ 1, 2, 3 })
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
@@ -49,7 +57,7 @@ func TestNewUInt64Slice(t *testing.T) {
 }
 
 func TestUInt64SliceReadOnly(t *testing.T) {
-	raw := []uint64{1, 2, 3}
+	raw := []uint64{ 1, 2, 3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	ms := UInt64Slice(internal.NewUInt64Slice(&raw, sharedState))
@@ -72,7 +80,7 @@ func TestUInt64SliceReadOnly(t *testing.T) {
 
 func TestUInt64SliceAppend(t *testing.T) {
 	ms := NewUInt64Slice()
-	ms.FromRaw([]uint64{1, 2, 3})
+	ms.FromRaw([]uint64{ 1, 2, 3 })
 	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
 	assert.Equal(t, uint64(5), ms.At(4))
@@ -88,7 +96,7 @@ func TestUInt64SliceEnsureCapacity(t *testing.T) {
 
 func TestUInt64SliceAll(t *testing.T) {
 	ms := NewUInt64Slice()
-	ms.FromRaw([]uint64{1, 2, 3})
+	ms.FromRaw([]uint64{ 1, 2, 3 })
 	assert.NotEmpty(t, ms.Len())
 
 	var c int
@@ -99,23 +107,24 @@ func TestUInt64SliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+
 func TestUInt64SliceMoveAndAppendTo(t *testing.T) {
-	// Test moving from an empty slice
-	ms := NewUInt64Slice()
-	ms2 := NewUInt64Slice()
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, NewUInt64Slice(), ms2)
-	assert.Equal(t, ms.Len(), 0)
+  // Test moving from an empty slice
+  ms := NewUInt64Slice()
+  ms2 := NewUInt64Slice()
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, NewUInt64Slice(), ms2)
+  assert.Equal(t, ms.Len(), 0)
 
-	// Test moving to empty slice
-	ms.FromRaw([]uint64{1, 2, 3})
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, ms2.Len(), 3)
+  // Test moving to empty slice
+  ms.FromRaw([]uint64{ 1, 2, 3 })
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, ms2.Len(), 3)
 
-	// Test moving to a non empty slice
-	ms.FromRaw([]uint64{1, 2, 3})
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, ms2.Len(), 6)
+  // Test moving to a non empty slice
+  ms.FromRaw([]uint64{ 1, 2, 3 })
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, ms2.Len(), 6)
 }
 
 func TestUInt64SliceEqual(t *testing.T) {

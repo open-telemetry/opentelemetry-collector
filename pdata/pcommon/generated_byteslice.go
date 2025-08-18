@@ -7,10 +7,19 @@
 package pcommon
 
 import (
+	"encoding/binary"
+	"fmt"
 	"iter"
-	"slices"
-
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 // ByteSlice represents a []byte slice.
@@ -76,11 +85,11 @@ func (ms ByteSlice) SetAt(i int, val byte) {
 }
 
 // EnsureCapacity ensures ByteSlice has at least the specified capacity.
-//  1. If the newCap <= cap, then is no change in capacity.
-//  2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
-//     buf := make([]byte, len(byteSlice), newCap)
-//     copy(buf, byteSlice)
-//     byteSlice = buf
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//	buf := make([]byte, len(byteSlice), newCap)
+//	copy(buf, byteSlice)
+//	byteSlice = buf
 func (ms ByteSlice) EnsureCapacity(newCap int) {
 	ms.getState().AssertMutable()
 	oldCap := cap(*ms.getOrig())
@@ -116,15 +125,15 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (ms ByteSlice) MoveAndAppendTo(dest ByteSlice) {
-	ms.getState().AssertMutable()
-	dest.getState().AssertMutable()
-	if *dest.getOrig() == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *ms.getOrig()
-	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
-	}
-	*ms.getOrig() = nil
+  ms.getState().AssertMutable()
+  dest.getState().AssertMutable()
+  if *dest.getOrig() == nil {
+    // We can simply move the entire vector and avoid any allocations.
+    *dest.getOrig() = *ms.getOrig()
+  } else {
+    *dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+  }
+  *ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.

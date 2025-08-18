@@ -217,3 +217,7 @@ func (pf *Field) GenMarshalProto() string {
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }
+
+func (pf *Field) GenerateMarshalProto(*Message) string {
+	return pf.GenMarshalProto()
+}

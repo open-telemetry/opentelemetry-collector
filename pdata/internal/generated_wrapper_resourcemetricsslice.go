@@ -7,8 +7,18 @@
 package internal
 
 import (
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*otlpmetrics.ResourceMetrics {

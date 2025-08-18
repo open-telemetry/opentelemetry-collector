@@ -4,6 +4,7 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -98,6 +99,37 @@ func (p *Package) GenerateInternalTestsFiles() error {
 			return err
 		}
 		p.info.testImports = saveTestImports
+	}
+	return nil
+}
+
+// GenerateProtoFiles generates files with base proto data for this Package.
+func (p *Package) GenerateProtoFiles() error {
+	for _, s := range p.structs {
+		pm := s.toProtoMessage()
+		if pm == nil {
+			continue
+		}
+		path := filepath.Join("pdata", "internal", "datagen", "generated_proto_"+strings.ToLower(s.getOriginName())+".go")
+		if err := os.WriteFile(path, pm.GenerateProtoFile(), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GenerateProtoTestFiles generates files with base proto test for this Package.
+func (p *Package) GenerateProtoTestFiles() error {
+	for _, s := range p.structs {
+		pm := s.toProtoMessage()
+		if pm == nil {
+			continue
+		}
+		log.Println(pm)
+		path := filepath.Join("pdata", "internal", "datagen", "generated_proto_"+strings.ToLower(s.getOriginName())+"_test.go")
+		if err := os.WriteFile(path, pm.GenerateProtoTestsFile(), 0o600); err != nil {
+			return err
+		}
 	}
 	return nil
 }

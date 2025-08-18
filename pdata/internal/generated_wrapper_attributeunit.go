@@ -7,8 +7,16 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -32,20 +40,6 @@ func FillOrigTestAttributeUnit(orig *otlpprofiles.AttributeUnit) {
 	orig.UnitStrindex = int32(13)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.AttributeKeyStrindex != int32(0) {
-		dest.WriteObjectField("attributeKeyStrindex")
-		dest.WriteInt32(orig.AttributeKeyStrindex)
-	}
-	if orig.UnitStrindex != int32(0) {
-		dest.WriteObjectField("unitStrindex")
-		dest.WriteInt32(orig.UnitStrindex)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigAttributeUnit unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -59,82 +53,4 @@ func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {
-	var n int
-	var l int
-	_ = l
-	if orig.AttributeKeyStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.AttributeKeyStrindex))
-	}
-	if orig.UnitStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.UnitStrindex))
-	}
-	return n
-}
-
-func MarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	if orig.AttributeKeyStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeKeyStrindex))
-		pos--
-		buf[pos] = 0x8
-	}
-	if orig.UnitStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.UnitStrindex))
-		pos--
-		buf[pos] = 0x10
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field AttributeKeyStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.AttributeKeyStrindex = int32(num)
-
-		case 2:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field UnitStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.UnitStrindex = int32(num)
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

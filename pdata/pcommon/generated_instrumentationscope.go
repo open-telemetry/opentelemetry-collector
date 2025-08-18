@@ -7,8 +7,19 @@
 package pcommon
 
 import (
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 // InstrumentationScope is a message representing the instrumentation scope information.
@@ -55,7 +66,6 @@ func (ms InstrumentationScope) SetName(v string) {
 	ms.getState().AssertMutable()
 	ms.getOrig().Name = v
 }
-
 // Version returns the version associated with this InstrumentationScope.
 func (ms InstrumentationScope) Version() string {
 	return ms.getOrig().Version
@@ -66,12 +76,10 @@ func (ms InstrumentationScope) SetVersion(v string) {
 	ms.getState().AssertMutable()
 	ms.getOrig().Version = v
 }
-
 // Attributes returns the Attributes associated with this InstrumentationScope.
 func (ms InstrumentationScope) Attributes() Map {
 	return Map(internal.NewMap(&ms.getOrig().Attributes, ms.getState()))
 }
-
 // DroppedAttributesCount returns the droppedattributescount associated with this InstrumentationScope.
 func (ms InstrumentationScope) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
@@ -83,10 +91,11 @@ func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.getState().AssertMutable()
-	internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
+    internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
 }
 
 func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {

@@ -7,11 +7,14 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func NewOrigExportTraceServiceResponse() otlpcollectortrace.ExportTraceServiceResponse {
@@ -30,14 +33,6 @@ func FillOrigTestExportTraceServiceResponse(orig *otlpcollectortrace.ExportTrace
 	FillOrigTestExportTracePartialSuccess(&orig.PartialSuccess)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("partialSuccess")
-	MarshalJSONOrigExportTracePartialSuccess(&orig.PartialSuccess, dest)
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -49,67 +44,4 @@ func UnmarshalJSONOrigExportTraceServiceResponse(orig *otlpcollectortrace.Export
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse) int {
-	var n int
-	var l int
-	_ = l
-	l = SizeProtoOrigExportTracePartialSuccess(&orig.PartialSuccess)
-	n += 1 + proto.Sov(uint64(l)) + l
-	return n
-}
-
-func MarshalProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-
-	l = MarshalProtoOrigExportTracePartialSuccess(&orig.PartialSuccess, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0xa
-
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field PartialSuccess", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigExportTracePartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

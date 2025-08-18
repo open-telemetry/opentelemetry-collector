@@ -8,14 +8,17 @@ package internal
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
-
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestCopyOrigInstrumentationScope(t *testing.T) {
@@ -64,7 +67,7 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
-	for name, src := range getEncodingTestValuesInstrumentationScope() {
+	for name, src := range getEncodingTestValuesInstrumentationScope(){
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
 			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
@@ -78,7 +81,7 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
-	for name, src := range getEncodingTestValuesInstrumentationScope() {
+	for name, src := range getEncodingTestValuesInstrumentationScope(){
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
 			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
@@ -104,6 +107,6 @@ func getEncodingTestValuesInstrumentationScope() map[string]*otlpcommon.Instrume
 			src := NewOrigPtrInstrumentationScope()
 			FillOrigTestInstrumentationScope(src)
 			return src
-		}(),
+		}(), 
 	}
 }

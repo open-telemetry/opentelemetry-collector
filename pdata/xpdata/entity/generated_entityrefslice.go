@@ -7,11 +7,17 @@
 package entity
 
 import (
+	"encoding/binary"
+	"fmt"
 	"iter"
+	"math"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // EntityRefSlice logically represents a slice of EntityRef.

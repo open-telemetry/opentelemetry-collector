@@ -7,7 +7,13 @@
 package pmetricotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 )
 

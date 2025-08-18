@@ -3,6 +3,10 @@
 
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
+import (
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
+)
+
 type Field interface {
 	GenerateAccessors(ms *messageStruct) string
 
@@ -14,15 +18,9 @@ type Field interface {
 
 	GenerateCopyOrig(ms *messageStruct) string
 
-	GenerateMarshalJSON(ms *messageStruct) string
-
 	GenerateUnmarshalJSON(ms *messageStruct) string
 
-	GenerateSizeProto(ms *messageStruct) string
-
-	GenerateMarshalProto(ms *messageStruct) string
-
-	GenerateUnmarshalProto(*messageStruct) string
+	toProtoField(ms *messageStruct) *proto.Field
 }
 
 func origAccessor(hasWrapper bool) string {

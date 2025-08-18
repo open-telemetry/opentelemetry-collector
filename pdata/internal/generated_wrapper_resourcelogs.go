@@ -7,8 +7,15 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,28 +41,6 @@ func FillOrigTestResourceLogs(orig *otlplogs.ResourceLogs) {
 	orig.SchemaUrl = "test_schemaurl"
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("resource")
-	MarshalJSONOrigResource(&orig.Resource, dest)
-	if len(orig.ScopeLogs) > 0 {
-		dest.WriteObjectField("scopeLogs")
-		dest.WriteArrayStart()
-		MarshalJSONOrigScopeLogs(orig.ScopeLogs[0], dest)
-		for i := 1; i < len(orig.ScopeLogs); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigScopeLogs(orig.ScopeLogs[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigResourceLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -71,118 +56,4 @@ func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Itera
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) int {
-	var n int
-	var l int
-	_ = l
-	l = SizeProtoOrigResource(&orig.Resource)
-	n += 1 + proto.Sov(uint64(l)) + l
-	for i := range orig.ScopeLogs {
-		l = SizeProtoOrigScopeLogs(orig.ScopeLogs[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	l = len(orig.SchemaUrl)
-	if l > 0 {
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-
-	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0xa
-
-	for i := len(orig.ScopeLogs) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigScopeLogs(orig.ScopeLogs[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x12
-	}
-	l = len(orig.SchemaUrl)
-	if l > 0 {
-		pos -= l
-		copy(buf[pos:], orig.SchemaUrl)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x1a
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Resource", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigResource(&orig.Resource, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ScopeLogs", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ScopeLogs = append(orig.ScopeLogs, NewOrigPtrScopeLogs())
-			err = UnmarshalProtoOrigScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 3:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

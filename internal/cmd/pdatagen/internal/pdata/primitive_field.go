@@ -82,28 +82,12 @@ func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateMarshalJSON(*messageStruct) string {
-	return pf.toProtoField().GenMarshalJSON()
-}
-
 func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Parse("primitiveUnmarshalJSONTemplate", []byte(primitiveUnmarshalJSONTemplate))
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {
-	return pf.toProtoField().GenSizeProto()
-}
-
-func (pf *PrimitiveField) GenerateMarshalProto(*messageStruct) string {
-	return pf.toProtoField().GenMarshalProto()
-}
-
-func (pf *PrimitiveField) GenerateUnmarshalProto(*messageStruct) string {
-	return pf.toProtoField().GenUnmarshalProto()
-}
-
-func (pf *PrimitiveField) toProtoField() *proto.Field {
+func (pf *PrimitiveField) toProtoField(*messageStruct) *proto.Field {
 	return &proto.Field{
 		Type: pf.protoType,
 		ID:   pf.protoID,
@@ -112,7 +96,7 @@ func (pf *PrimitiveField) toProtoField() *proto.Field {
 }
 
 func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
-	prf := pf.toProtoField()
+	prf := pf.toProtoField(ms)
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",

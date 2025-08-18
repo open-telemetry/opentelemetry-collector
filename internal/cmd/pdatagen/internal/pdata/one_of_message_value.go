@@ -116,29 +116,32 @@ func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) st
 	return template.Execute(t, omv.templateFields(ms, of))
 }
 
-func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenMarshalJSON()
-}
-
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
 	t := template.Parse("oneOfMessageUnmarshalJSONTemplate", []byte(oneOfMessageUnmarshalJSONTemplate))
 	return template.Execute(t, omv.templateFields(ms, of))
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenSizeProto()
+	return omv.toProtoFieldOld(ms, of).GenSizeProto()
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenMarshalProto()
+	return omv.toProtoFieldOld(ms, of).GenMarshalProto()
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenUnmarshalProto()
+	return omv.toProtoField(ms, of).GenUnmarshalProto()
 }
 
-func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, oldOneOf bool) *proto.Field {
-	pf := &proto.Field{
+// TODO: Cleanup this by moving everyone to the new OneOfGroup
+func (omv *OneOfMessageValue) toProtoFieldOld(ms *messageStruct, of *OneOfField) *proto.Field {
+	pf := omv.toProtoField(ms, of)
+	pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName
+	return pf
+}
+
+func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) *proto.Field {
+	return &proto.Field{
 		Type:                 proto.TypeMessage,
 		ID:                   omv.protoID,
 		OneOfGroup:           of.originFieldName,
@@ -147,11 +150,6 @@ func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, ol
 		MessageFullName:      omv.returnMessage.getOriginName(),
 		Nullable:             true,
 	}
-	// TODO: Cleanup this by moving everyone to the new OneOfGroup
-	if oldOneOf {
-		pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName
-	}
-	return pf
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
