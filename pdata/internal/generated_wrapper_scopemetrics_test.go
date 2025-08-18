@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeMetrics(t *testing.T) {
-	src := &otlpmetrics.ScopeMetrics{}
-	dest := &otlpmetrics.ScopeMetrics{}
+	src := NewOrigPtrScopeMetrics()
+	dest := NewOrigPtrScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
-	assert.Equal(t, &otlpmetrics.ScopeMetrics{}, dest)
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
 	FillOrigTestScopeMetrics(src)
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrScopeMetrics()
+	UnmarshalJSONOrigScopeMetrics(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
-	src := &otlpmetrics.ScopeMetrics{}
-	FillOrigTestScopeMetrics(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigScopeMetrics(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigScopeMetrics(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.ScopeMetrics{}
-	UnmarshalJSONOrigScopeMetrics(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrScopeMetrics()
+			UnmarshalJSONOrigScopeMetrics(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
+	dest := NewOrigPtrScopeMetrics()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
-	src := &otlpmetrics.ScopeMetrics{}
-	FillOrigTestScopeMetrics(src)
-	buf, err := MarshalProtoOrigScopeMetrics(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeMetrics(src))
+	for name, src := range getEncodingTestValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
+			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.ScopeMetrics{}
-	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrScopeMetrics()
+			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyScopeMetrics(t *testing.T) {
-	src := &otlpmetrics.ScopeMetrics{}
-	buf, err := MarshalProtoOrigScopeMetrics(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeMetrics(src))
+func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
+	for name, src := range getEncodingTestValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
+			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.ScopeMetrics{}
-	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpmetrics.ScopeMetrics{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrScopeMetrics()
+			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
+	return map[string]*otlpmetrics.ScopeMetrics{
+		"empty": NewOrigPtrScopeMetrics(),
+		"fill_test": func() *otlpmetrics.ScopeMetrics {
+			src := NewOrigPtrScopeMetrics()
+			FillOrigTestScopeMetrics(src)
+			return src
+		}(),
+	}
 }

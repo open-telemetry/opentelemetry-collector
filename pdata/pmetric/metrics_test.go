@@ -7,11 +7,8 @@ import (
 	"testing"
 	"time"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goproto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
@@ -25,39 +22,6 @@ const (
 	startTime = uint64(12578940000000012345)
 	endTime   = uint64(12578940000000054321)
 )
-
-func TestResourceMetricsWireCompatibility(t *testing.T) {
-	// This test verifies that OTLP ProtoBufs generated using goproto lib in
-	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
-	// this repository are wire compatible.
-
-	// Generate ResourceMetrics as pdata struct.
-	md := generateTestMetrics()
-
-	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(md.getOrig())
-	require.NoError(t, err)
-	assert.NotNil(t, wire1)
-
-	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoMessage emptypb.Empty
-	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	require.NoError(t, err)
-
-	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoMessage)
-	require.NoError(t, err)
-	assert.NotNil(t, wire2)
-
-	// Unmarshal from the wire into gogoproto's representation.
-	var gogoprotoRM otlpcollectormetrics.ExportMetricsServiceRequest
-	err = gogoproto.Unmarshal(wire2, &gogoprotoRM)
-	require.NoError(t, err)
-
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.Equal(t, md.getOrig(), &gogoprotoRM))
-}
 
 func TestMetricCount(t *testing.T) {
 	md := NewMetrics()
@@ -197,7 +161,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	assert.Equal(t, 1, resourceMetrics.Len())
 
@@ -285,7 +249,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	// Test that nothing changed
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -317,7 +281,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -399,7 +363,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -483,7 +447,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -566,7 +530,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -660,10 +624,11 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -685,10 +650,11 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -712,10 +678,11 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -739,10 +706,11 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -893,7 +861,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 func generateMetricsEmptyResource() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
@@ -903,7 +871,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyMetrics() Metrics {
@@ -917,7 +885,7 @@ func generateMetricsEmptyMetrics() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
@@ -941,7 +909,7 @@ func generateMetricsEmptyDataPoints() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func BenchmarkMetricsUsage(b *testing.B) {
@@ -1008,10 +976,4 @@ func BenchmarkMetricsMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestMetrics() Metrics {
-	md := NewMetrics()
-	md.getOrig().ResourceMetrics = internal.GenerateOrigTestResourceMetricsSlice()
-	return md
 }

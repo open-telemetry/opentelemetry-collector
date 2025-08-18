@@ -34,8 +34,7 @@ func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHisto
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
 	orig := []*otlpmetrics.ExponentialHistogramDataPoint(nil)
-	state := internal.StateMutable
-	return newExponentialHistogramDataPointSlice(&orig, &state)
+	return newExponentialHistogramDataPointSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ExponentialHistogramDataPoint.
 func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ExponentialHistogramDataPoint{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrExponentialHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 

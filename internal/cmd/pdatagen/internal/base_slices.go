@@ -5,142 +5,79 @@ package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/
 
 type baseSlice interface {
 	getName() string
-	getOriginName() string
-	getElementProtoType() ProtoType
+	getHasWrapper() bool
 	getElementOriginName() string
+	getElementNullable() bool
 	getPackageName() string
 }
 
-// sliceOfPtrs generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
-type sliceOfPtrs struct {
-	structName  string
-	packageName string
-	element     *messageStruct
+// messageSlice generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
+type messageSlice struct {
+	structName      string
+	packageName     string
+	elementNullable bool
+	element         *messageStruct
 }
 
-func (ss *sliceOfPtrs) getName() string {
+func (ss *messageSlice) getName() string {
 	return ss.structName
 }
 
-func (ss *sliceOfPtrs) getPackageName() string {
+func (ss *messageSlice) getPackageName() string {
 	return ss.packageName
 }
 
-func (ss *sliceOfPtrs) generate(packageInfo *PackageInfo) []byte {
+func (ss *messageSlice) generate(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceTemplate, ss.templateFields(packageInfo)))
 }
 
-func (ss *sliceOfPtrs) generateTests(packageInfo *PackageInfo) []byte {
+func (ss *messageSlice) generateTests(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceTestTemplate, ss.templateFields(packageInfo)))
 }
 
-func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
+func (ss *messageSlice) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
-func (ss *sliceOfPtrs) generateInternalTests(packageInfo *PackageInfo) []byte {
+func (ss *messageSlice) generateInternalTests(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTestTemplate, ss.templateFields(packageInfo)))
 }
 
-func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
-	orig := origAccessor(ss.packageName)
-	state := stateAccessor(ss.packageName)
+func (ss *messageSlice) templateFields(packageInfo *PackageInfo) map[string]any {
+	hasWrapper := usedByOtherDataTypes(ss.packageName)
 	return map[string]any{
-		"type":                  "sliceOfPtrs",
-		"isCommon":              usedByOtherDataTypes(ss.packageName),
+		"hasWrapper":            usedByOtherDataTypes(ss.packageName),
 		"structName":            ss.structName,
 		"elementName":           ss.element.getName(),
 		"elementOriginFullName": ss.element.originFullName,
 		"elementOriginName":     ss.getElementOriginName(),
-		"originElementType":     "*" + ss.element.originFullName,
-		"originElementPtr":      "",
-		"emptyOriginElement":    "&" + ss.element.originFullName + "{}",
-		"newElement":            "new" + ss.element.getName() + "((*es." + orig + ")[i], es." + state + ")",
-		"origAccessor":          orig,
-		"stateAccessor":         state,
+		"elementNullable":       ss.elementNullable,
+		"origAccessor":          origAccessor(hasWrapper),
+		"stateAccessor":         stateAccessor(hasWrapper),
 		"packageName":           packageInfo.name,
 		"imports":               packageInfo.imports,
 		"testImports":           packageInfo.testImports,
 	}
 }
 
-func (ss *sliceOfPtrs) getOriginName() string {
+func (ss *messageSlice) getOriginName() string {
 	return ss.element.getOriginName() + "Slice"
 }
 
-func (ss *sliceOfPtrs) getElementProtoType() ProtoType {
-	return ProtoTypeMessage
+func (ss *messageSlice) getOriginFullName() string {
+	return ss.element.getOriginFullName()
 }
 
-func (ss *sliceOfPtrs) getElementOriginName() string {
+func (ss *messageSlice) getHasWrapper() bool {
+	return usedByOtherDataTypes(ss.packageName)
+}
+
+func (ss *messageSlice) getElementOriginName() string {
 	return ss.element.getOriginName()
 }
 
-var _ baseStruct = (*sliceOfPtrs)(nil)
-
-// sliceOfValues generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
-type sliceOfValues struct {
-	structName  string
-	packageName string
-	element     *messageStruct
+func (ss *messageSlice) getElementNullable() bool {
+	return ss.elementNullable
 }
 
-func (ss *sliceOfValues) getName() string {
-	return ss.structName
-}
-
-func (ss *sliceOfValues) getPackageName() string {
-	return ss.packageName
-}
-
-func (ss *sliceOfValues) generate(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceTemplate, ss.templateFields(packageInfo)))
-}
-
-func (ss *sliceOfValues) generateTests(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceTestTemplate, ss.templateFields(packageInfo)))
-}
-
-func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
-}
-
-func (ss *sliceOfValues) generateInternalTests(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTestTemplate, ss.templateFields(packageInfo)))
-}
-
-func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any {
-	orig := origAccessor(ss.packageName)
-	state := stateAccessor(ss.packageName)
-	return map[string]any{
-		"type":                  "sliceOfValues",
-		"isCommon":              usedByOtherDataTypes(ss.packageName),
-		"structName":            ss.getName(),
-		"elementName":           ss.element.getName(),
-		"elementOriginFullName": ss.element.originFullName,
-		"elementOriginName":     ss.getElementOriginName(),
-		"originElementType":     ss.element.originFullName,
-		"originElementPtr":      "&",
-		"emptyOriginElement":    ss.element.originFullName + "{}",
-		"newElement":            "new" + ss.element.getName() + "(&(*es." + orig + ")[i], es." + state + ")",
-		"origAccessor":          orig,
-		"stateAccessor":         state,
-		"packageName":           packageInfo.name,
-		"imports":               packageInfo.imports,
-		"testImports":           packageInfo.testImports,
-	}
-}
-
-func (ss *sliceOfValues) getOriginName() string {
-	return ss.element.getOriginName() + "Slice"
-}
-
-func (ss *sliceOfValues) getElementProtoType() ProtoType {
-	return ProtoTypeMessage
-}
-
-func (ss *sliceOfValues) getElementOriginName() string {
-	return ss.element.getOriginName()
-}
-
-var _ baseSlice = (*sliceOfValues)(nil)
+var _ baseStruct = (*messageSlice)(nil)

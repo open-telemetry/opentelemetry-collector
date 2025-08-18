@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigProfilesDictionary(t *testing.T) {
-	src := &otlpprofiles.ProfilesDictionary{}
-	dest := &otlpprofiles.ProfilesDictionary{}
+	src := NewOrigPtrProfilesDictionary()
+	dest := NewOrigPtrProfilesDictionary()
 	CopyOrigProfilesDictionary(dest, src)
-	assert.Equal(t, &otlpprofiles.ProfilesDictionary{}, dest)
+	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
 	FillOrigTestProfilesDictionary(src)
 	CopyOrigProfilesDictionary(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrProfilesDictionary()
+	UnmarshalJSONOrigProfilesDictionary(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
-	src := &otlpprofiles.ProfilesDictionary{}
-	FillOrigTestProfilesDictionary(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigProfilesDictionary(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesProfilesDictionary() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigProfilesDictionary(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.ProfilesDictionary{}
-	UnmarshalJSONOrigProfilesDictionary(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrProfilesDictionary()
+			UnmarshalJSONOrigProfilesDictionary(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
+	dest := NewOrigPtrProfilesDictionary()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
-	src := &otlpprofiles.ProfilesDictionary{}
-	FillOrigTestProfilesDictionary(src)
-	buf, err := MarshalProtoOrigProfilesDictionary(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigProfilesDictionary(src))
+	for name, src := range getEncodingTestValuesProfilesDictionary() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
+			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.ProfilesDictionary{}
-	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrProfilesDictionary()
+			require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyProfilesDictionary(t *testing.T) {
-	src := &otlpprofiles.ProfilesDictionary{}
-	buf, err := MarshalProtoOrigProfilesDictionary(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigProfilesDictionary(src))
+func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
+	for name, src := range getEncodingTestValuesProfilesDictionary() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
+			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.ProfilesDictionary{}
-	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpprofiles.ProfilesDictionary{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrProfilesDictionary()
+			require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesProfilesDictionary() map[string]*otlpprofiles.ProfilesDictionary {
+	return map[string]*otlpprofiles.ProfilesDictionary{
+		"empty": NewOrigPtrProfilesDictionary(),
+		"fill_test": func() *otlpprofiles.ProfilesDictionary {
+			src := NewOrigPtrProfilesDictionary()
+			FillOrigTestProfilesDictionary(src)
+			return src
+		}(),
+	}
 }

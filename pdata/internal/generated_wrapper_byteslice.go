@@ -31,8 +31,7 @@ func NewByteSlice(orig *[]byte, state *State) ByteSlice {
 
 func GenerateTestByteSlice() ByteSlice {
 	orig := GenerateOrigTestByteSlice()
-	state := StateMutable
-	return NewByteSlice(&orig, &state)
+	return NewByteSlice(&orig, NewState())
 }
 
 func CopyOrigByteSlice(dst, src []byte) []byte {
@@ -41,11 +40,6 @@ func CopyOrigByteSlice(dst, src []byte) []byte {
 
 func GenerateOrigTestByteSlice() []byte {
 	return []byte{1, 2, 3}
-}
-
-// MarshalJSONOrigByteSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigByteSlice(orig []byte, dest *json.Stream) {
-	dest.WriteString(base64.StdEncoding.EncodeToString(orig))
 }
 
 // UnmarshalJSONOrigByteSlice unmarshals all properties from the current struct from the source iterator.

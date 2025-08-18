@@ -7,10 +7,22 @@
 package internal
 
 import (
+	"encoding/binary"
+	"fmt"
+	"math"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigNumberDataPoint() otlpmetrics.NumberDataPoint {
+	return otlpmetrics.NumberDataPoint{}
+}
+
+func NewOrigPtrNumberDataPoint() *otlpmetrics.NumberDataPoint {
+	return &otlpmetrics.NumberDataPoint{}
+}
 
 func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
@@ -40,29 +52,41 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch ov := orig.Value.(type) {
+	switch orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(ov.AsDouble)
+		dest.WriteFloat64(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble)
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(ov.AsInt)
+		dest.WriteInt64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt)
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
-		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		for i := 1; i < len(orig.Exemplars); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
@@ -129,10 +153,172 @@ func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 	return n
 }
 
-func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x3a
+	}
+	if orig.StartTimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.StartTimeUnixNano))
+		pos--
+		buf[pos] = 0x11
+	}
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x19
+	}
+	switch orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble))
+		pos--
+		buf[pos] = 0x21
+
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt))
+		pos--
+		buf[pos] = 0x31
+
+	}
+	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+	}
+	if orig.Flags != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Flags))
+		pos--
+		buf[pos] = 0x40
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.StartTimeUnixNano = uint64(num)
+
+		case 3:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.TimeUnixNano = uint64(num)
+
+		case 4:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ofv := &otlpmetrics.NumberDataPoint_AsDouble{}
+			ofv.AsDouble = math.Float64frombits(num)
+			orig.Value = ofv
+
+		case 6:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AsInt", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ofv := &otlpmetrics.NumberDataPoint_AsInt{}
+			ofv.AsInt = int64(num)
+			orig.Value = ofv
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exemplars", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Exemplars = append(orig.Exemplars, NewOrigExemplar())
+			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 8:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Flags = uint32(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -19,7 +19,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigPtrAttributeUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigPtrAttributeUnit()
 		}
 	}
 	for i := range src {
@@ -41,32 +41,22 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 }
 
 func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
-	orig := make([]*otlpprofiles.AttributeUnit, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.AttributeUnit{}
-		FillOrigTestAttributeUnit(orig[i])
-	}
+	orig := make([]*otlpprofiles.AttributeUnit, 5)
+	orig[0] = NewOrigPtrAttributeUnit()
+	orig[1] = NewOrigPtrAttributeUnit()
+	FillOrigTestAttributeUnit(orig[1])
+	orig[2] = NewOrigPtrAttributeUnit()
+	orig[3] = NewOrigPtrAttributeUnit()
+	FillOrigTestAttributeUnit(orig[3])
+	orig[4] = NewOrigPtrAttributeUnit()
 	return orig
-}
-
-// MarshalJSONOrigAttributeUnitSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAttributeUnitSlice(orig []*otlpprofiles.AttributeUnit, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigAttributeUnit(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigAttributeUnit(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigAttributeUnitSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
 	var orig []*otlpprofiles.AttributeUnit
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.AttributeUnit{})
+		orig = append(orig, NewOrigPtrAttributeUnit())
 		UnmarshalJSONOrigAttributeUnit(orig[len(orig)-1], iter)
 		return true
 	})

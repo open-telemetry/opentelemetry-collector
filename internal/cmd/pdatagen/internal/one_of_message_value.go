@@ -41,14 +41,22 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 	internal.FillOrigTest{{ .returnType }}(ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }})
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).SetEmpty{{ .fieldName }}() })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, sharedState).SetEmpty{{ .fieldName }}() })
 }
 `
 
-const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .fieldName -}}{ 
+const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{ 
 {{- .fieldName }}: &{{ .originFieldPackageName }}.{{ .fieldName }}{}}
 FillOrigTest{{ .fieldOriginName }}(orig.Get{{ .returnType }}())`
+
+const oneOfMessageTestValuesTemplate = `
+"oneof_{{ .lowerFieldName }}": { {{ .originOneOfFieldName }}: func() *{{ .originStructType }}{
+	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
+	FillOrigTest{{ .fieldOriginName }}(val)
+	return &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
+}()},`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
@@ -57,12 +65,8 @@ const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 			{{ .fieldName }}: {{ .lowerFieldName }},
 		}`
 
-const oneOfMessageTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+const oneOfMessageTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
-
-const oneOfMessageMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
-	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-	MarshalJSONOrig{{ .fieldOriginName }}(ov.{{ .fieldName }}, dest)`
 
 const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
@@ -95,6 +99,11 @@ func (omv *OneOfMessageValue) GenerateSetWithTestValue(ms *messageStruct, of *On
 	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
+func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfMessageTestValuesTemplate").Parse(oneOfMessageTestValuesTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
+}
+
 func (omv *OneOfMessageValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
 	t := template.Must(templateNew("oneOfMessageCopyOrigTemplate").Parse(oneOfMessageCopyOrigTemplate))
 	return executeTemplate(t, omv.templateFields(ms, of))
@@ -106,8 +115,7 @@ func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) st
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
-	t := template.Must(templateNew("oneOfMessageMarshalJSONTemplate").Parse(oneOfMessageMarshalJSONTemplate))
-	return executeTemplate(t, omv.templateFields(ms, of))
+	return omv.toProtoField(ms, of, true).genMarshalJSON()
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
@@ -116,14 +124,32 @@ func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOf
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, true).genSizeProto()
+}
+
+func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, true).genMarshalProto()
+}
+
+func (omv *OneOfMessageValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, false).genUnmarshalProto()
+}
+
+func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, oldOneOf bool) *ProtoField {
 	pf := &ProtoField{
-		Type:        ProtoTypeMessage,
-		ID:          omv.protoID,
-		Name:        of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
-		MessageName: omv.returnMessage.getOriginName(),
-		Nullable:    true,
+		Type:                 ProtoTypeMessage,
+		ID:                   omv.protoID,
+		OneOfGroup:           of.originFieldName,
+		OneOfMessageFullName: ms.originFullName + "_" + omv.fieldName,
+		Name:                 omv.fieldName,
+		MessageFullName:      omv.returnMessage.getOriginName(),
+		Nullable:             true,
 	}
-	return pf.genSizeProto()
+	// TODO: Cleanup this by moving everyone to the new OneOfGroup
+	if oldOneOf {
+		pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName
+	}
+	return pf
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {

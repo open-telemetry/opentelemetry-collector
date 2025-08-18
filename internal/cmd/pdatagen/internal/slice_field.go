@@ -9,7 +9,7 @@ import (
 
 const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	{{- if .isCommon }}
+	{{- if .elementHasWrapper }}
 	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
@@ -20,7 +20,7 @@ const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}(), ms.{{ .fieldName }}())
 	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
-	{{- if .isCommon }}
+	{{- if .elementHasWrapper }}
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
@@ -30,11 +30,6 @@ const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .elementOriginName }}Slice()`
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
-
-const sliceMarshalJSONTemplate = `if len(orig.{{ .originFieldName }}) > 0 {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		MarshalJSONOrig{{ .elementOriginName }}Slice(orig.{{ .originFieldName }}, dest)
-	}`
 
 const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 	orig.{{ .originFieldName }} = UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)`
@@ -68,14 +63,15 @@ func (sf *SliceField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
+func (sf *SliceField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("sliceCopyOrigTemplate").Parse(sliceCopyOrigTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("sliceMarshalJSONTemplate").Parse(sliceMarshalJSONTemplate))
-	return executeTemplate(t, sf.templateFields(ms))
+func (sf *SliceField) GenerateMarshalJSON(*messageStruct) string {
+	return sf.toProtoField().genMarshalJSON()
 }
 
 func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -84,16 +80,26 @@ func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
-	_, nullable := sf.returnSlice.(*sliceOfPtrs)
-	pf := &ProtoField{
-		Type:        sf.protoType,
-		ID:          sf.protoID,
-		Name:        sf.fieldName,
-		MessageName: sf.returnSlice.getElementOriginName(),
-		Repeated:    sf.protoType != ProtoTypeBytes,
-		Nullable:    nullable,
+	return sf.toProtoField().genSizeProto()
+}
+
+func (sf *SliceField) GenerateMarshalProto(*messageStruct) string {
+	return sf.toProtoField().genMarshalProto()
+}
+
+func (sf *SliceField) GenerateUnmarshalProto(*messageStruct) string {
+	return sf.toProtoField().genUnmarshalProto()
+}
+
+func (sf *SliceField) toProtoField() *ProtoField {
+	return &ProtoField{
+		Type:            sf.protoType,
+		ID:              sf.protoID,
+		Name:            sf.fieldName,
+		MessageFullName: sf.returnSlice.getElementOriginName(),
+		Repeated:        sf.protoType != ProtoTypeBytes,
+		Nullable:        sf.returnSlice.getElementNullable(),
 	}
-	return pf.genSizeProto()
 }
 
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
@@ -108,10 +114,10 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"returnType":    sf.returnSlice.getName(),
-		"origAccessor":  origAccessor(ms.packageName),
-		"stateAccessor": stateAccessor(ms.packageName),
-		"isCommon":      usedByOtherDataTypes(sf.returnSlice.getPackageName()),
+		"returnType":        sf.returnSlice.getName(),
+		"origAccessor":      origAccessor(ms.getHasWrapper()),
+		"stateAccessor":     stateAccessor(ms.getHasWrapper()),
+		"elementHasWrapper": sf.returnSlice.getHasWrapper(),
 	}
 }
 

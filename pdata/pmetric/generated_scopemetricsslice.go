@@ -34,8 +34,7 @@ func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics, state *internal.Sta
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeMetricsSlice() ScopeMetricsSlice {
 	orig := []*otlpmetrics.ScopeMetrics(nil)
-	state := internal.StateMutable
-	return newScopeMetricsSlice(&orig, &state)
+	return newScopeMetricsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeMetrics.
 func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ScopeMetrics{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeMetrics())
 	return es.At(es.Len() - 1)
 }
 

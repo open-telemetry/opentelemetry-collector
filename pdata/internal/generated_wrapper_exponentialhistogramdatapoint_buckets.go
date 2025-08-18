@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigExponentialHistogramDataPoint_Buckets() otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+}
+
+func NewOrigPtrExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+}
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
 	dest.Offset = src.Offset
@@ -31,7 +41,13 @@ func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expo
 	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
-		MarshalJSONOrigUint64Slice(orig.BucketCounts, dest)
+		dest.WriteArrayStart()
+		dest.WriteUint64(orig.BucketCounts[0])
+		for i := 1; i < len(orig.BucketCounts); i++ {
+			dest.WriteMore()
+			dest.WriteUint64(orig.BucketCounts[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
@@ -68,10 +84,81 @@ func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expone
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Offset != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64((uint32(orig.Offset)<<1)^uint32(orig.Offset>>31)))
+		pos--
+		buf[pos] = 0x8
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.BucketCounts[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x12
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Offset = int32(uint32(num>>1) ^ uint32(int32((num&1)<<31)>>31))
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

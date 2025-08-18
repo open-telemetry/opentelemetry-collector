@@ -19,7 +19,7 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Event{}
+			newDest[i] = NewOrigPtrSpan_Event()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Event{}
+			newDest[i] = NewOrigPtrSpan_Event()
 		}
 	}
 	for i := range src {
@@ -41,32 +41,22 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 }
 
 func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
-	orig := make([]*otlptrace.Span_Event, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlptrace.Span_Event{}
-		FillOrigTestSpan_Event(orig[i])
-	}
+	orig := make([]*otlptrace.Span_Event, 5)
+	orig[0] = NewOrigPtrSpan_Event()
+	orig[1] = NewOrigPtrSpan_Event()
+	FillOrigTestSpan_Event(orig[1])
+	orig[2] = NewOrigPtrSpan_Event()
+	orig[3] = NewOrigPtrSpan_Event()
+	FillOrigTestSpan_Event(orig[3])
+	orig[4] = NewOrigPtrSpan_Event()
 	return orig
-}
-
-// MarshalJSONOrigSpan_EventSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSpan_EventSlice(orig []*otlptrace.Span_Event, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSpan_Event(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSpan_Event(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigSpan_EventSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpan_EventSlice(iter *json.Iterator) []*otlptrace.Span_Event {
 	var orig []*otlptrace.Span_Event
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlptrace.Span_Event{})
+		orig = append(orig, NewOrigPtrSpan_Event())
 		UnmarshalJSONOrigSpan_Event(orig[len(orig)-1], iter)
 		return true
 	})

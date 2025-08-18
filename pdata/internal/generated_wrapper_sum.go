@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigSum() otlpmetrics.Sum {
+	return otlpmetrics.Sum{}
+}
+
+func NewOrigPtrSum() *otlpmetrics.Sum {
+	return &otlpmetrics.Sum{}
+}
 
 func CopyOrigSum(dest, src *otlpmetrics.Sum) {
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
@@ -29,9 +39,16 @@ func MarshalJSONOrigSum(orig *otlpmetrics.Sum, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
-		MarshalJSONOrigNumberDataPointSlice(orig.DataPoints, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigNumberDataPoint(orig.DataPoints[0], dest)
+		for i := 1; i < len(orig.DataPoints); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigNumberDataPoint(orig.DataPoints[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+
+	if int32(orig.AggregationTemporality) != 0 {
 		dest.WriteObjectField("aggregationTemporality")
 		dest.WriteInt32(int32(orig.AggregationTemporality))
 	}
@@ -76,10 +93,95 @@ func SizeProtoOrigSum(orig *otlpmetrics.Sum) int {
 	return n
 }
 
-func MarshalProtoOrigSum(orig *otlpmetrics.Sum) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.AggregationTemporality != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.IsMonotonic {
+		pos--
+		if orig.IsMonotonic {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x18
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.DataPoints = append(orig.DataPoints, NewOrigPtrNumberDataPoint())
+			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field AggregationTemporality", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(num)
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsMonotonic", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.IsMonotonic = num != 0
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

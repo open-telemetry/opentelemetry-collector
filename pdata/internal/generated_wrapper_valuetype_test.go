@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigValueType(t *testing.T) {
-	src := &otlpprofiles.ValueType{}
-	dest := &otlpprofiles.ValueType{}
+	src := NewOrigPtrValueType()
+	dest := NewOrigPtrValueType()
 	CopyOrigValueType(dest, src)
-	assert.Equal(t, &otlpprofiles.ValueType{}, dest)
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 	FillOrigTestValueType(src)
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrValueType()
+	UnmarshalJSONOrigValueType(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
-	src := &otlpprofiles.ValueType{}
-	FillOrigTestValueType(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigValueType(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesValueType() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigValueType(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.ValueType{}
-	UnmarshalJSONOrigValueType(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrValueType()
+			UnmarshalJSONOrigValueType(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
+	dest := NewOrigPtrValueType()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
-	src := &otlpprofiles.ValueType{}
-	FillOrigTestValueType(src)
-	buf, err := MarshalProtoOrigValueType(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigValueType(src))
+	for name, src := range getEncodingTestValuesValueType() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigValueType(src))
+			gotSize := MarshalProtoOrigValueType(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.ValueType{}
-	require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrValueType()
+			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyValueType(t *testing.T) {
-	src := &otlpprofiles.ValueType{}
-	buf, err := MarshalProtoOrigValueType(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigValueType(src))
+func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
+	for name, src := range getEncodingTestValuesValueType() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigValueType(src))
+			gotSize := MarshalProtoOrigValueType(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.ValueType{}
-	require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpprofiles.ValueType{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrValueType()
+			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesValueType() map[string]*otlpprofiles.ValueType {
+	return map[string]*otlpprofiles.ValueType{
+		"empty": NewOrigPtrValueType(),
+		"fill_test": func() *otlpprofiles.ValueType {
+			src := NewOrigPtrValueType()
+			FillOrigTestValueType(src)
+			return src
+		}(),
+	}
 }

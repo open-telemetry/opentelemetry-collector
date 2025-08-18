@@ -7,6 +7,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var _ component.Host = (*nopHost)(nil)
+
 // nopHost mocks a [component.Host] for testing purposes.
 type nopHost struct{}
 
@@ -15,10 +17,6 @@ type nopHost struct{}
 // where a bare-minimum host is desired.
 func NewNopHost() component.Host {
 	return &nopHost{}
-}
-
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
 }
 
 // GetExtensions returns a `nil` extensions map.

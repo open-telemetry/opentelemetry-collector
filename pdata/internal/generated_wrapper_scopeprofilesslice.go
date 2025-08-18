@@ -19,7 +19,7 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ScopeProfiles{}
+			newDest[i] = NewOrigPtrScopeProfiles()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ScopeProfiles{}
+			newDest[i] = NewOrigPtrScopeProfiles()
 		}
 	}
 	for i := range src {
@@ -41,32 +41,22 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 }
 
 func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
-	orig := make([]*otlpprofiles.ScopeProfiles, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.ScopeProfiles{}
-		FillOrigTestScopeProfiles(orig[i])
-	}
+	orig := make([]*otlpprofiles.ScopeProfiles, 5)
+	orig[0] = NewOrigPtrScopeProfiles()
+	orig[1] = NewOrigPtrScopeProfiles()
+	FillOrigTestScopeProfiles(orig[1])
+	orig[2] = NewOrigPtrScopeProfiles()
+	orig[3] = NewOrigPtrScopeProfiles()
+	FillOrigTestScopeProfiles(orig[3])
+	orig[4] = NewOrigPtrScopeProfiles()
 	return orig
-}
-
-// MarshalJSONOrigScopeProfilesSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigScopeProfilesSlice(orig []*otlpprofiles.ScopeProfiles, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigScopeProfiles(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigScopeProfiles(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigScopeProfilesSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeProfilesSlice(iter *json.Iterator) []*otlpprofiles.ScopeProfiles {
 	var orig []*otlpprofiles.ScopeProfiles
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.ScopeProfiles{})
+		orig = append(orig, NewOrigPtrScopeProfiles())
 		UnmarshalJSONOrigScopeProfiles(orig[len(orig)-1], iter)
 		return true
 	})

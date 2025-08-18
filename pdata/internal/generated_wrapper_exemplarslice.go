@@ -20,7 +20,7 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpmetrics.Exemplar{}
+			dest[i].Reset()
 		}
 	}
 	for i := range src {
@@ -30,25 +30,10 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 }
 
 func GenerateOrigTestExemplarSlice() []otlpmetrics.Exemplar {
-	orig := make([]otlpmetrics.Exemplar, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = otlpmetrics.Exemplar{}
-		FillOrigTestExemplar(&orig[i])
-	}
+	orig := make([]otlpmetrics.Exemplar, 5)
+	FillOrigTestExemplar(&orig[1])
+	FillOrigTestExemplar(&orig[3])
 	return orig
-}
-
-// MarshalJSONOrigExemplarSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExemplarSlice(orig []otlpmetrics.Exemplar, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigExemplar(&orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigExemplar(&orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigExemplarSlice unmarshals all properties from the current struct from the source iterator.

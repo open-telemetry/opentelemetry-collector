@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan_Link(t *testing.T) {
-	src := &otlptrace.Span_Link{}
-	dest := &otlptrace.Span_Link{}
+	src := NewOrigPtrSpan_Link()
+	dest := NewOrigPtrSpan_Link()
 	CopyOrigSpan_Link(dest, src)
-	assert.Equal(t, &otlptrace.Span_Link{}, dest)
+	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
 	FillOrigTestSpan_Link(src)
 	CopyOrigSpan_Link(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrSpan_Link()
+	UnmarshalJSONOrigSpan_Link(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
-	src := &otlptrace.Span_Link{}
-	FillOrigTestSpan_Link(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSpan_Link(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesSpan_Link() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSpan_Link(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlptrace.Span_Link{}
-	UnmarshalJSONOrigSpan_Link(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrSpan_Link()
+			UnmarshalJSONOrigSpan_Link(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
+	dest := NewOrigPtrSpan_Link()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
-	src := &otlptrace.Span_Link{}
-	FillOrigTestSpan_Link(src)
-	buf, err := MarshalProtoOrigSpan_Link(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSpan_Link(src))
+	for name, src := range getEncodingTestValuesSpan_Link() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan_Link(src))
+			gotSize := MarshalProtoOrigSpan_Link(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlptrace.Span_Link{}
-	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrSpan_Link()
+			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySpan_Link(t *testing.T) {
-	src := &otlptrace.Span_Link{}
-	buf, err := MarshalProtoOrigSpan_Link(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSpan_Link(src))
+func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
+	for name, src := range getEncodingTestValuesSpan_Link() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan_Link(src))
+			gotSize := MarshalProtoOrigSpan_Link(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlptrace.Span_Link{}
-	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlptrace.Span_Link{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSpan_Link()
+			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesSpan_Link() map[string]*otlptrace.Span_Link {
+	return map[string]*otlptrace.Span_Link{
+		"empty": NewOrigPtrSpan_Link(),
+		"fill_test": func() *otlptrace.Span_Link {
+			src := NewOrigPtrSpan_Link()
+			FillOrigTestSpan_Link(src)
+			return src
+		}(),
+	}
 }

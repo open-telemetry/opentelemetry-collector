@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSummaryDataPoint(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint{}
-	dest := &otlpmetrics.SummaryDataPoint{}
+	src := NewOrigPtrSummaryDataPoint()
+	dest := NewOrigPtrSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 	FillOrigTestSummaryDataPoint(src)
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrSummaryDataPoint()
+	UnmarshalJSONOrigSummaryDataPoint(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint{}
-	FillOrigTestSummaryDataPoint(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSummaryDataPoint(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSummaryDataPoint(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.SummaryDataPoint{}
-	UnmarshalJSONOrigSummaryDataPoint(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrSummaryDataPoint()
+			UnmarshalJSONOrigSummaryDataPoint(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
+	dest := NewOrigPtrSummaryDataPoint()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint{}
-	FillOrigTestSummaryDataPoint(src)
-	buf, err := MarshalProtoOrigSummaryDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint(src))
+	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.SummaryDataPoint{}
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrSummaryDataPoint()
+			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySummaryDataPoint(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint{}
-	buf, err := MarshalProtoOrigSummaryDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint(src))
+func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.SummaryDataPoint{}
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpmetrics.SummaryDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSummaryDataPoint()
+			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
+	return map[string]*otlpmetrics.SummaryDataPoint{
+		"empty": NewOrigPtrSummaryDataPoint(),
+		"fill_test": func() *otlpmetrics.SummaryDataPoint {
+			src := NewOrigPtrSummaryDataPoint()
+			FillOrigTestSummaryDataPoint(src)
+			return src
+		}(),
+	}
 }

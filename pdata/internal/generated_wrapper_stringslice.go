@@ -29,8 +29,7 @@ func NewStringSlice(orig *[]string, state *State) StringSlice {
 
 func GenerateTestStringSlice() StringSlice {
 	orig := GenerateOrigTestStringSlice()
-	state := StateMutable
-	return NewStringSlice(&orig, &state)
+	return NewStringSlice(&orig, NewState())
 }
 
 func CopyOrigStringSlice(dst, src []string) []string {
@@ -39,19 +38,6 @@ func CopyOrigStringSlice(dst, src []string) []string {
 
 func GenerateOrigTestStringSlice() []string {
 	return []string{"a", "b", "c"}
-}
-
-// MarshalJSONOrigStringSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigStringSlice(orig []string, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		dest.WriteString(orig[0])
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		dest.WriteString(orig[i])
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigStringSlice unmarshals all properties from the current struct from the source iterator.

@@ -8,13 +8,17 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -24,15 +28,20 @@ var plog = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectorlogs "go.opentelemetry.io/proto/slim/otlp/collector/logs/v1"`,
+			`gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		logs,
 		resourceLogsSlice,
 		resourceLogs,
 		scopeLogsSlice,
@@ -42,9 +51,25 @@ var plog = &Package{
 	},
 }
 
-var resourceLogsSlice = &sliceOfPtrs{
-	structName: "ResourceLogsSlice",
-	element:    resourceLogs,
+var logs = &messageStruct{
+	structName:     "Logs",
+	description:    "// Logs is the top-level struct that is propagated through the logs pipeline.\n// Use NewLogs to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectorlogs.ExportLogsServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceLogs",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceLogsSlice,
+		},
+	},
+	hasWrapper: true,
+}
+
+var resourceLogsSlice = &messageSlice{
+	structName:      "ResourceLogsSlice",
+	elementNullable: true,
+	element:         resourceLogs,
 }
 
 var resourceLogs = &messageStruct{
@@ -71,9 +96,10 @@ var resourceLogs = &messageStruct{
 	},
 }
 
-var scopeLogsSlice = &sliceOfPtrs{
-	structName: "ScopeLogsSlice",
-	element:    scopeLogs,
+var scopeLogsSlice = &messageSlice{
+	structName:      "ScopeLogsSlice",
+	elementNullable: true,
+	element:         scopeLogs,
 }
 
 var scopeLogs = &messageStruct{
@@ -100,9 +126,10 @@ var scopeLogs = &messageStruct{
 	},
 }
 
-var logSlice = &sliceOfPtrs{
-	structName: "LogRecordSlice",
-	element:    logRecord,
+var logSlice = &messageSlice{
+	structName:      "LogRecordSlice",
+	elementNullable: true,
+	element:         logRecord,
 }
 
 var logRecord = &messageStruct{

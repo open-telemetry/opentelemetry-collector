@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	dest := &otlplogs.LogRecord{}
+	src := NewOrigPtrLogRecord()
+	dest := NewOrigPtrLogRecord()
 	CopyOrigLogRecord(dest, src)
-	assert.Equal(t, &otlplogs.LogRecord{}, dest)
+	assert.Equal(t, NewOrigPtrLogRecord(), dest)
 	FillOrigTestLogRecord(src)
 	CopyOrigLogRecord(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrLogRecord()
+	UnmarshalJSONOrigLogRecord(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	FillOrigTestLogRecord(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigLogRecord(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesLogRecord() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigLogRecord(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlplogs.LogRecord{}
-	UnmarshalJSONOrigLogRecord(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrLogRecord()
+			UnmarshalJSONOrigLogRecord(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigLogRecordUnknown(t *testing.T) {
+	dest := NewOrigPtrLogRecord()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	FillOrigTestLogRecord(src)
-	buf, err := MarshalProtoOrigLogRecord(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLogRecord(src))
+	for name, src := range getEncodingTestValuesLogRecord() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLogRecord(src))
+			gotSize := MarshalProtoOrigLogRecord(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlplogs.LogRecord{}
-	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrLogRecord()
+			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	buf, err := MarshalProtoOrigLogRecord(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLogRecord(src))
+func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
+	for name, src := range getEncodingTestValuesLogRecord() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLogRecord(src))
+			gotSize := MarshalProtoOrigLogRecord(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlplogs.LogRecord{}
-	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlplogs.LogRecord{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrLogRecord()
+			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesLogRecord() map[string]*otlplogs.LogRecord {
+	return map[string]*otlplogs.LogRecord{
+		"empty": NewOrigPtrLogRecord(),
+		"fill_test": func() *otlplogs.LogRecord {
+			src := NewOrigPtrLogRecord()
+			FillOrigTestLogRecord(src)
+			return src
+		}(),
+	}
 }

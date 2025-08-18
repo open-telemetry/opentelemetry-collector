@@ -33,8 +33,7 @@ func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, state *internal
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogramDataPoint() HistogramDataPoint {
-	state := internal.StateMutable
-	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &state)
+	return newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

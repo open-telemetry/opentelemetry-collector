@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigAttributeUnit() otlpprofiles.AttributeUnit {
+	return otlpprofiles.AttributeUnit{}
+}
+
+func NewOrigPtrAttributeUnit() *otlpprofiles.AttributeUnit {
+	return &otlpprofiles.AttributeUnit{}
+}
 
 func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
@@ -64,10 +74,67 @@ func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {
 	return n
 }
 
-func MarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.AttributeKeyStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeKeyStrindex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.UnitStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.UnitStrindex))
+		pos--
+		buf[pos] = 0x10
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeKeyStrindex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.AttributeKeyStrindex = int32(num)
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnitStrindex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.UnitStrindex = int32(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

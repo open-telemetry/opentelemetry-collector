@@ -19,7 +19,7 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ResourceMetrics{}
+			newDest[i] = NewOrigPtrResourceMetrics()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ResourceMetrics{}
+			newDest[i] = NewOrigPtrResourceMetrics()
 		}
 	}
 	for i := range src {
@@ -41,32 +41,22 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 }
 
 func GenerateOrigTestResourceMetricsSlice() []*otlpmetrics.ResourceMetrics {
-	orig := make([]*otlpmetrics.ResourceMetrics, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.ResourceMetrics{}
-		FillOrigTestResourceMetrics(orig[i])
-	}
+	orig := make([]*otlpmetrics.ResourceMetrics, 5)
+	orig[0] = NewOrigPtrResourceMetrics()
+	orig[1] = NewOrigPtrResourceMetrics()
+	FillOrigTestResourceMetrics(orig[1])
+	orig[2] = NewOrigPtrResourceMetrics()
+	orig[3] = NewOrigPtrResourceMetrics()
+	FillOrigTestResourceMetrics(orig[3])
+	orig[4] = NewOrigPtrResourceMetrics()
 	return orig
-}
-
-// MarshalJSONOrigResourceMetricsSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceMetricsSlice(orig []*otlpmetrics.ResourceMetrics, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigResourceMetrics(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigResourceMetrics(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigResourceMetricsSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceMetricsSlice(iter *json.Iterator) []*otlpmetrics.ResourceMetrics {
 	var orig []*otlpmetrics.ResourceMetrics
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.ResourceMetrics{})
+		orig = append(orig, NewOrigPtrResourceMetrics())
 		UnmarshalJSONOrigResourceMetrics(orig[len(orig)-1], iter)
 		return true
 	})

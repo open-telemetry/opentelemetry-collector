@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigResourceProfiles() otlpprofiles.ResourceProfiles {
+	return otlpprofiles.ResourceProfiles{}
+}
+
+func NewOrigPtrResourceProfiles() *otlpprofiles.ResourceProfiles {
+	return &otlpprofiles.ResourceProfiles{}
+}
 
 func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
@@ -31,7 +41,13 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 	MarshalJSONOrigResource(&orig.Resource, dest)
 	if len(orig.ScopeProfiles) > 0 {
 		dest.WriteObjectField("scopeProfiles")
-		MarshalJSONOrigScopeProfilesSlice(orig.ScopeProfiles, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[0], dest)
+		for i := 1; i < len(orig.ScopeProfiles); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
@@ -74,10 +90,99 @@ func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
 	return n
 }
 
-func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	for i := len(orig.ScopeProfiles) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigScopeProfiles(orig.ScopeProfiles[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Resource", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigResource(&orig.Resource, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopeProfiles", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigPtrScopeProfiles())
+			err = UnmarshalProtoOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.SchemaUrl = string(buf[startPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

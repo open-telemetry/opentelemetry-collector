@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceProfilesSlice(t *testing.T) {
@@ -39,20 +37,4 @@ func TestCopyOrigResourceProfilesSlice(t *testing.T) {
 	// Test CopyTo larger slice with enough capacity
 	dest = CopyOrigResourceProfilesSlice(dest, src)
 	assert.Equal(t, GenerateOrigTestResourceProfilesSlice(), dest)
-}
-
-func TestMarshalAndUnmarshalJSONOrigResourceProfilesSlice(t *testing.T) {
-	src := GenerateOrigTestResourceProfilesSlice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigResourceProfilesSlice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrigResourceProfilesSlice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }

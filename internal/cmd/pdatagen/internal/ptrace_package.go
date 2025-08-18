@@ -8,13 +8,17 @@ var ptrace = &Package{
 		name: "ptrace",
 		path: "ptrace",
 		imports: []string{
+			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -24,15 +28,20 @@ var ptrace = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"`,
+			`gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		traces,
 		resourceSpansSlice,
 		resourceSpans,
 		scopeSpansSlice,
@@ -47,9 +56,25 @@ var ptrace = &Package{
 	},
 }
 
-var resourceSpansSlice = &sliceOfPtrs{
-	structName: "ResourceSpansSlice",
-	element:    resourceSpans,
+var traces = &messageStruct{
+	structName:     "Traces",
+	description:    "// Traces is the top-level struct that is propagated through the traces pipeline.\n// Use NewTraces to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectortrace.ExportTraceServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceSpans",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceSpansSlice,
+		},
+	},
+	hasWrapper: true,
+}
+
+var resourceSpansSlice = &messageSlice{
+	structName:      "ResourceSpansSlice",
+	elementNullable: true,
+	element:         resourceSpans,
 }
 
 var resourceSpans = &messageStruct{
@@ -76,9 +101,10 @@ var resourceSpans = &messageStruct{
 	},
 }
 
-var scopeSpansSlice = &sliceOfPtrs{
-	structName: "ScopeSpansSlice",
-	element:    scopeSpans,
+var scopeSpansSlice = &messageSlice{
+	structName:      "ScopeSpansSlice",
+	elementNullable: true,
+	element:         scopeSpans,
 }
 
 var scopeSpans = &messageStruct{
@@ -105,9 +131,10 @@ var scopeSpans = &messageStruct{
 	},
 }
 
-var spanSlice = &sliceOfPtrs{
-	structName: "SpanSlice",
-	element:    span,
+var spanSlice = &messageSlice{
+	structName:      "SpanSlice",
+	elementNullable: true,
+	element:         span,
 }
 
 var span = &messageStruct{
@@ -213,9 +240,10 @@ var span = &messageStruct{
 	},
 }
 
-var spanEventSlice = &sliceOfPtrs{
-	structName: "SpanEventSlice",
-	element:    spanEvent,
+var spanEventSlice = &messageSlice{
+	structName:      "SpanEventSlice",
+	elementNullable: true,
+	element:         spanEvent,
 }
 
 var spanEvent = &messageStruct{
@@ -249,9 +277,10 @@ var spanEvent = &messageStruct{
 	},
 }
 
-var spanLinkSlice = &sliceOfPtrs{
-	structName: "SpanLinkSlice",
-	element:    spanLink,
+var spanLinkSlice = &messageSlice{
+	structName:      "SpanLinkSlice",
+	elementNullable: true,
+	element:         spanLink,
 }
 
 var spanLink = &messageStruct{

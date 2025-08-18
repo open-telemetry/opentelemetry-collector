@@ -19,7 +19,7 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigPtrSample()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigPtrSample()
 		}
 	}
 	for i := range src {
@@ -41,32 +41,22 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 }
 
 func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
-	orig := make([]*otlpprofiles.Sample, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.Sample{}
-		FillOrigTestSample(orig[i])
-	}
+	orig := make([]*otlpprofiles.Sample, 5)
+	orig[0] = NewOrigPtrSample()
+	orig[1] = NewOrigPtrSample()
+	FillOrigTestSample(orig[1])
+	orig[2] = NewOrigPtrSample()
+	orig[3] = NewOrigPtrSample()
+	FillOrigTestSample(orig[3])
+	orig[4] = NewOrigPtrSample()
 	return orig
-}
-
-// MarshalJSONOrigSampleSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSampleSlice(orig []*otlpprofiles.Sample, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSample(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSample(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigSampleSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSampleSlice(iter *json.Iterator) []*otlpprofiles.Sample {
 	var orig []*otlpprofiles.Sample
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.Sample{})
+		orig = append(orig, NewOrigPtrSample())
 		UnmarshalJSONOrigSample(orig[len(orig)-1], iter)
 		return true
 	})

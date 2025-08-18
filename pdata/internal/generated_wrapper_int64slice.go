@@ -29,8 +29,7 @@ func NewInt64Slice(orig *[]int64, state *State) Int64Slice {
 
 func GenerateTestInt64Slice() Int64Slice {
 	orig := GenerateOrigTestInt64Slice()
-	state := StateMutable
-	return NewInt64Slice(&orig, &state)
+	return NewInt64Slice(&orig, NewState())
 }
 
 func CopyOrigInt64Slice(dst, src []int64) []int64 {
@@ -39,19 +38,6 @@ func CopyOrigInt64Slice(dst, src []int64) []int64 {
 
 func GenerateOrigTestInt64Slice() []int64 {
 	return []int64{1, 2, 3}
-}
-
-// MarshalJSONOrigInt64Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigInt64Slice(orig []int64, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		dest.WriteInt64(orig[0])
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		dest.WriteInt64(orig[i])
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigInt64Slice unmarshals all properties from the current struct from the source iterator.

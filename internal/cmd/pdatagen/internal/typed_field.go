@@ -31,17 +31,6 @@ const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const typedMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defaultVal }} {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		{{- if .isType }}
-		orig.{{ .originFieldName }}.MarshalJSONStream(dest)
-		{{- else if .isEnum }}
-		dest.WriteInt32(int32(orig.{{ .originFieldName }}))
-		{{- else }}	
-		dest.Write{{ upperFirst .rawType }}(orig.{{ .originFieldName }})
-		{{- end }}
-	}`
-
 const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		{{- if .isType }}
 		orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
@@ -85,14 +74,18 @@ func (ptf *TypedField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *TypedField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("typedCopyOrigTemplate").Parse(typedCopyOrigTemplate))
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("typedMarshalJSONTemplate").Parse(typedMarshalJSONTemplate))
-	return executeTemplate(t, ptf.templateFields(ms))
+func (ptf *TypedField) GenerateMarshalJSON(*messageStruct) string {
+	if strings.HasPrefix(ptf.returnType.messageName, "data.") {
+		return "if orig." + ptf.getOriginFieldName() + " != " + ptf.returnType.defaultVal + "{\n" + ptf.toProtoField().genMarshalJSON() + "\n}"
+	}
+	return ptf.toProtoField().genMarshalJSON()
 }
 
 func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -101,13 +94,24 @@ func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
-	pf := &ProtoField{
-		Type:        ptf.returnType.protoType,
-		ID:          ptf.protoID,
-		Name:        ptf.getOriginFieldName(),
-		MessageName: ptf.returnType.structName,
+	return ptf.toProtoField().genSizeProto()
+}
+
+func (ptf *TypedField) GenerateMarshalProto(*messageStruct) string {
+	return ptf.toProtoField().genMarshalProto()
+}
+
+func (ptf *TypedField) GenerateUnmarshalProto(*messageStruct) string {
+	return ptf.toProtoField().genUnmarshalProto()
+}
+
+func (ptf *TypedField) toProtoField() *ProtoField {
+	return &ProtoField{
+		Type:            ptf.returnType.protoType,
+		ID:              ptf.protoID,
+		Name:            ptf.getOriginFieldName(),
+		MessageFullName: ptf.returnType.messageName,
 	}
-	return pf.genSizeProto()
 }
 
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
@@ -120,7 +124,7 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":        usedByOtherDataTypes(ptf.returnType.packageName),
+		"hasWrapper":      usedByOtherDataTypes(ptf.returnType.packageName),
 		"returnType":      ptf.returnType.structName,
 		"fieldName":       ptf.fieldName,
 		"lowerFieldName":  strings.ToLower(ptf.fieldName),

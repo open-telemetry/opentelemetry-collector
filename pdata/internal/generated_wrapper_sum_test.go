@@ -11,61 +11,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	dest := &otlpmetrics.Sum{}
+	src := NewOrigPtrSum()
+	dest := NewOrigPtrSum()
 	CopyOrigSum(dest, src)
-	assert.Equal(t, &otlpmetrics.Sum{}, dest)
+	assert.Equal(t, NewOrigPtrSum(), dest)
 	FillOrigTestSum(src)
 	CopyOrigSum(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigSumUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrSum()
+	UnmarshalJSONOrigSum(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrSum(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	FillOrigTestSum(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSum(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSum(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Sum{}
-	UnmarshalJSONOrigSum(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrSum()
+			UnmarshalJSONOrigSum(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSumUnknown(t *testing.T) {
+	dest := NewOrigPtrSum()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSum(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSum(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	FillOrigTestSum(src)
-	buf, err := MarshalProtoOrigSum(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSum(src))
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Sum{}
-	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrSum()
+			require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	buf, err := MarshalProtoOrigSum(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSum(src))
+func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Sum{}
-	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpmetrics.Sum{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSum()
+			require.NoError(t, UnmarshalProtoOrigSum(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesSum() map[string]*otlpmetrics.Sum {
+	return map[string]*otlpmetrics.Sum{
+		"empty": NewOrigPtrSum(),
+		"fill_test": func() *otlpmetrics.Sum {
+			src := NewOrigPtrSum()
+			FillOrigTestSum(src)
+			return src
+		}(),
+	}
 }

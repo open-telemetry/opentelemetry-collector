@@ -8,12 +8,10 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element "\"go.opentelemetry.io/collector/pdata/internal\"" }}
 	{{ $element }}
-	{{- end }}
-	{{- end }}
+	{{ end }}
 )
-{{ if .isCommon }}
+{{ if .hasWrapper }}
 
 type {{ .structName }} struct {
 	orig *{{ .originFullName }}
@@ -33,13 +31,20 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 }
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := {{ .originFullName }}{}
-	FillOrigTest{{ .originName }}(&orig)
-	state := StateMutable
-	return New{{ .structName }}(&orig, &state)
+	orig := NewOrigPtr{{ .originName }}()
+	FillOrigTest{{ .originName }}(orig)
+	return New{{ .structName }}(orig, NewState())
 }
 
 {{ end }}
+
+func NewOrig{{ .originName }}() {{ .originFullName }} {
+	return {{ .originFullName }}{}
+}
+
+func NewOrigPtr{{ .originName }}() *{{ .originFullName }} {
+	return &{{ .originFullName }}{}
+}
 
 func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
 	{{- range .fields }}
@@ -86,10 +91,39 @@ func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
 	return n
 }
 
-func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	{{ range .fields -}}
+	{{ .GenerateMarshalProto $.messageStruct }}
+	{{ end -}}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+			{{ range .fields -}}
+			{{ .GenerateUnmarshalProto $.messageStruct }}
+			{{ end -}}
+			default:
+				pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+				if err != nil {
+					return err
+				}
+		}
+	}
+	return nil
 }

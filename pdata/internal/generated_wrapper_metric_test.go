@@ -11,61 +11,124 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigMetric(t *testing.T) {
-	src := &otlpmetrics.Metric{}
-	dest := &otlpmetrics.Metric{}
+	src := NewOrigPtrMetric()
+	dest := NewOrigPtrMetric()
 	CopyOrigMetric(dest, src)
-	assert.Equal(t, &otlpmetrics.Metric{}, dest)
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 	FillOrigTestMetric(src)
 	CopyOrigMetric(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigMetricUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrMetric()
+	UnmarshalJSONOrigMetric(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
-	src := &otlpmetrics.Metric{}
-	FillOrigTestMetric(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigMetric(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range getEncodingTestValuesMetric() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigMetric(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Metric{}
-	UnmarshalJSONOrigMetric(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrMetric()
+			UnmarshalJSONOrigMetric(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigMetricUnknown(t *testing.T) {
+	dest := NewOrigPtrMetric()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigMetric(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
-	src := &otlpmetrics.Metric{}
-	FillOrigTestMetric(src)
-	buf, err := MarshalProtoOrigMetric(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigMetric(src))
+	for name, src := range getEncodingTestValuesMetric() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMetric(src))
+			gotSize := MarshalProtoOrigMetric(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Metric{}
-	require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigPtrMetric()
+			require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyMetric(t *testing.T) {
-	src := &otlpmetrics.Metric{}
-	buf, err := MarshalProtoOrigMetric(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigMetric(src))
+func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
+	for name, src := range getEncodingTestValuesMetric() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMetric(src))
+			gotSize := MarshalProtoOrigMetric(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Metric{}
-	require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpmetrics.Metric{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrMetric()
+			require.NoError(t, UnmarshalProtoOrigMetric(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesMetric() map[string]*otlpmetrics.Metric {
+	return map[string]*otlpmetrics.Metric{
+		"empty": NewOrigPtrMetric(),
+		"fill_test": func() *otlpmetrics.Metric {
+			src := NewOrigPtrMetric()
+			FillOrigTestMetric(src)
+			return src
+		}(),
+		"oneof_gauge": {Data: func() *otlpmetrics.Metric_Gauge {
+			val := &otlpmetrics.Gauge{}
+			FillOrigTestGauge(val)
+			return &otlpmetrics.Metric_Gauge{Gauge: val}
+		}()},
+		"oneof_sum": {Data: func() *otlpmetrics.Metric_Sum {
+			val := &otlpmetrics.Sum{}
+			FillOrigTestSum(val)
+			return &otlpmetrics.Metric_Sum{Sum: val}
+		}()},
+		"oneof_histogram": {Data: func() *otlpmetrics.Metric_Histogram {
+			val := &otlpmetrics.Histogram{}
+			FillOrigTestHistogram(val)
+			return &otlpmetrics.Metric_Histogram{Histogram: val}
+		}()},
+		"oneof_exponentialhistogram": {Data: func() *otlpmetrics.Metric_ExponentialHistogram {
+			val := &otlpmetrics.ExponentialHistogram{}
+			FillOrigTestExponentialHistogram(val)
+			return &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+		}()},
+		"oneof_summary": {Data: func() *otlpmetrics.Metric_Summary {
+			val := &otlpmetrics.Summary{}
+			FillOrigTestSummary(val)
+			return &otlpmetrics.Metric_Summary{Summary: val}
+		}()},
+	}
 }

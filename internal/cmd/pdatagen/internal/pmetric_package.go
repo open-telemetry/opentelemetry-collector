@@ -8,13 +8,17 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"encoding/binary"`,
+			`"fmt"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -24,15 +28,20 @@ var pmetric = &Package{
 			``,
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
+			`"google.golang.org/protobuf/proto"`,
+			`gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"`,
+			`gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		metrics,
 		resourceMetricsSlice,
 		resourceMetrics,
 		scopeMetricsSlice,
@@ -60,9 +69,25 @@ var pmetric = &Package{
 	},
 }
 
-var resourceMetricsSlice = &sliceOfPtrs{
-	structName: "ResourceMetricsSlice",
-	element:    resourceMetrics,
+var metrics = &messageStruct{
+	structName:     "Metrics",
+	description:    "// Metrics is the top-level struct that is propagated through the metrics pipeline.\n// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectormetrics.ExportMetricsServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceMetrics",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceMetricsSlice,
+		},
+	},
+	hasWrapper: true,
+}
+
+var resourceMetricsSlice = &messageSlice{
+	structName:      "ResourceMetricsSlice",
+	elementNullable: true,
+	element:         resourceMetrics,
 }
 
 var resourceMetrics = &messageStruct{
@@ -89,9 +114,10 @@ var resourceMetrics = &messageStruct{
 	},
 }
 
-var scopeMetricsSlice = &sliceOfPtrs{
-	structName: "ScopeMetricsSlice",
-	element:    scopeMetrics,
+var scopeMetricsSlice = &messageSlice{
+	structName:      "ScopeMetricsSlice",
+	elementNullable: true,
+	element:         scopeMetrics,
 }
 
 var scopeMetrics = &messageStruct{
@@ -118,9 +144,10 @@ var scopeMetrics = &messageStruct{
 	},
 }
 
-var metricSlice = &sliceOfPtrs{
-	structName: "MetricSlice",
-	element:    metric,
+var metricSlice = &messageSlice{
+	structName:      "MetricSlice",
+	elementNullable: true,
+	element:         metric,
 }
 
 var metric = &messageStruct{
@@ -282,9 +309,10 @@ var summary = &messageStruct{
 	},
 }
 
-var numberDataPointSlice = &sliceOfPtrs{
-	structName: "NumberDataPointSlice",
-	element:    numberDataPoint,
+var numberDataPointSlice = &messageSlice{
+	structName:      "NumberDataPointSlice",
+	elementNullable: true,
+	element:         numberDataPoint,
 }
 
 var numberDataPoint = &messageStruct{
@@ -348,9 +376,10 @@ var numberDataPoint = &messageStruct{
 	},
 }
 
-var histogramDataPointSlice = &sliceOfPtrs{
-	structName: "HistogramDataPointSlice",
-	element:    histogramDataPoint,
+var histogramDataPointSlice = &messageSlice{
+	structName:      "HistogramDataPointSlice",
+	elementNullable: true,
+	element:         histogramDataPoint,
 }
 
 var histogramDataPoint = &messageStruct{
@@ -395,7 +424,7 @@ var histogramDataPoint = &messageStruct{
 		&SliceField{
 			fieldName:   "ExplicitBounds",
 			protoID:     7,
-			protoType:   ProtoTypeFixed64,
+			protoType:   ProtoTypeDouble,
 			returnSlice: float64Slice,
 		},
 		&SliceField{
@@ -427,9 +456,10 @@ var histogramDataPoint = &messageStruct{
 	},
 }
 
-var exponentialHistogramDataPointSlice = &sliceOfPtrs{
-	structName: "ExponentialHistogramDataPointSlice",
-	element:    exponentialHistogramDataPoint,
+var exponentialHistogramDataPointSlice = &messageSlice{
+	structName:      "ExponentialHistogramDataPointSlice",
+	elementNullable: true,
+	element:         exponentialHistogramDataPoint,
 }
 
 var exponentialHistogramDataPoint = &messageStruct{
@@ -541,9 +571,10 @@ var bucketsValues = &messageStruct{
 	},
 }
 
-var summaryDataPointSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointSlice",
-	element:    summaryDataPoint,
+var summaryDataPointSlice = &messageSlice{
+	structName:      "SummaryDataPointSlice",
+	elementNullable: true,
+	element:         summaryDataPoint,
 }
 
 var summaryDataPoint = &messageStruct{
@@ -598,9 +629,10 @@ var summaryDataPoint = &messageStruct{
 	},
 }
 
-var quantileValuesSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointValueAtQuantileSlice",
-	element:    quantileValues,
+var quantileValuesSlice = &messageSlice{
+	structName:      "SummaryDataPointValueAtQuantileSlice",
+	elementNullable: true,
+	element:         quantileValues,
 }
 
 var quantileValues = &messageStruct{
@@ -621,9 +653,10 @@ var quantileValues = &messageStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfValues{
-	structName: "ExemplarSlice",
-	element:    exemplar,
+var exemplarSlice = &messageSlice{
+	structName:      "ExemplarSlice",
+	elementNullable: false,
+	element:         exemplar,
 }
 
 var exemplar = &messageStruct{

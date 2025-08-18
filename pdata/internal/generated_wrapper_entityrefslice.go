@@ -30,8 +30,7 @@ func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSli
 
 func GenerateTestEntityRefSlice() EntityRefSlice {
 	orig := GenerateOrigTestEntityRefSlice()
-	state := StateMutable
-	return NewEntityRefSlice(&orig, &state)
+	return NewEntityRefSlice(&orig, NewState())
 }
 
 func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
@@ -42,7 +41,7 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpcommon.EntityRef{}
+			newDest[i] = NewOrigPtrEntityRef()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -54,7 +53,7 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpcommon.EntityRef{}
+			newDest[i] = NewOrigPtrEntityRef()
 		}
 	}
 	for i := range src {
@@ -64,32 +63,22 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 }
 
 func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
-	orig := make([]*otlpcommon.EntityRef, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpcommon.EntityRef{}
-		FillOrigTestEntityRef(orig[i])
-	}
+	orig := make([]*otlpcommon.EntityRef, 5)
+	orig[0] = NewOrigPtrEntityRef()
+	orig[1] = NewOrigPtrEntityRef()
+	FillOrigTestEntityRef(orig[1])
+	orig[2] = NewOrigPtrEntityRef()
+	orig[3] = NewOrigPtrEntityRef()
+	FillOrigTestEntityRef(orig[3])
+	orig[4] = NewOrigPtrEntityRef()
 	return orig
-}
-
-// MarshalJSONOrigEntityRefSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigEntityRefSlice(orig []*otlpcommon.EntityRef, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigEntityRef(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigEntityRef(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrigEntityRefSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigEntityRefSlice(iter *json.Iterator) []*otlpcommon.EntityRef {
 	var orig []*otlpcommon.EntityRef
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpcommon.EntityRef{})
+		orig = append(orig, NewOrigPtrEntityRef())
 		UnmarshalJSONOrigEntityRef(orig[len(orig)-1], iter)
 		return true
 	})

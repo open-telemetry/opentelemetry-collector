@@ -7,9 +7,22 @@
 package internal
 
 import (
+	"encoding/binary"
+	"fmt"
+	"math"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigSummaryDataPoint_ValueAtQuantile() otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+}
+
+func NewOrigPtrSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+}
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
 	dest.Quantile = src.Quantile
@@ -63,10 +76,69 @@ func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryData
 	return n
 }
 
-func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Quantile != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Quantile))
+		pos--
+		buf[pos] = 0x9
+	}
+	if orig.Value != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value))
+		pos--
+		buf[pos] = 0x11
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Quantile", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Quantile = math.Float64frombits(num)
+
+		case 2:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Value = math.Float64frombits(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
