@@ -31,12 +31,6 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-func GenerateTestMetrics() Metrics {
-	orig := NewOrigPtrExportMetricsServiceRequest()
-	FillOrigTestExportMetricsServiceRequest(orig)
-	return NewMetrics(orig, NewState())
-}
-
 func NewOrigExportMetricsServiceRequest() otlpcollectormetrics.ExportMetricsServiceRequest {
 	return otlpcollectormetrics.ExportMetricsServiceRequest{}
 }
@@ -49,8 +43,10 @@ func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportM
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 
-func FillOrigTestExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) {
+func GenTestOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	orig := NewOrigPtrExportMetricsServiceRequest()
 	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

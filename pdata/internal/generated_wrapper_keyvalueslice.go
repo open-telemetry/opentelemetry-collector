@@ -31,8 +31,8 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 
 func GenerateOrigTestKeyValueSlice() []otlpcommon.KeyValue {
 	orig := make([]otlpcommon.KeyValue, 5)
-	FillOrigTestKeyValue(&orig[1])
-	FillOrigTestKeyValue(&orig[3])
+	orig[1] = *GenTestOrigKeyValue()
+	orig[3] = *GenTestOrigKeyValue()
 	return orig
 }
 

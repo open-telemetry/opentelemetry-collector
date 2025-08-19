@@ -68,7 +68,6 @@ func TestSum_IsMonotonic(t *testing.T) {
 }
 
 func generateTestSum() Sum {
-	ms := NewSum()
-	internal.FillOrigTestSum(ms.orig)
+	ms := newSum(internal.GenTestOrigSum(), internal.NewState())
 	return ms
 }

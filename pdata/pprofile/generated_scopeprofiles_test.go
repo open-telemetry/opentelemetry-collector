@@ -46,8 +46,8 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
@@ -68,7 +68,6 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	ms := NewScopeProfiles()
-	internal.FillOrigTestScopeProfiles(ms.orig)
+	ms := newScopeProfiles(internal.GenTestOrigScopeProfiles(), internal.NewState())
 	return ms
 }

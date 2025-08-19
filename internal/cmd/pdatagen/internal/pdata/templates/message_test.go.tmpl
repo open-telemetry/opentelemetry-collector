@@ -44,11 +44,6 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 {{ end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-    {{- if .hasWrapper }}
-    return {{ .structName }}(internal.GenerateTest{{ .structName }}())
-    {{- else }}
-	ms := New{{ .structName }}()
-	internal.FillOrigTest{{ .originName }}(ms.orig)
+	ms := new{{ .structName }}(internal.GenTestOrig{{ .originName }}(), internal.NewState())
 	return ms
-	{{- end }}
 }

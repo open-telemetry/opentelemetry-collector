@@ -77,15 +77,13 @@ func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}
     {{ if .elementNullable -}}
     orig := make([]*{{ .elementOriginFullName }}, 5)
 	orig[0] = NewOrigPtr{{ .elementOriginName }}()
-	orig[1] = NewOrigPtr{{ .elementOriginName }}()
-	FillOrigTest{{ .elementOriginName }}(orig[1])
+	orig[1] = GenTestOrig{{ .elementOriginName }}()
     orig[2] = NewOrigPtr{{ .elementOriginName }}()
-	orig[3] = NewOrigPtr{{ .elementOriginName }}()
-	FillOrigTest{{ .elementOriginName }}(orig[3])
+	orig[3] = GenTestOrig{{ .elementOriginName }}()
     orig[4] = NewOrigPtr{{ .elementOriginName }}(){{ else -}}
     orig := make([]{{ .elementOriginFullName }}, 5)
-    FillOrigTest{{ .elementOriginName }}(&orig[1])
-    FillOrigTest{{ .elementOriginName }}(&orig[3])
+    orig[1] = *GenTestOrig{{ .elementOriginName }}()
+    orig[3] = *GenTestOrig{{ .elementOriginName }}()
     {{- end }}
 	return orig
 }

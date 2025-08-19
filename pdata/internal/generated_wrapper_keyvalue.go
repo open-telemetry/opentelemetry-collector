@@ -27,9 +27,11 @@ func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }
 
-func FillOrigTestKeyValue(orig *otlpcommon.KeyValue) {
+func GenTestOrigKeyValue() *otlpcommon.KeyValue {
+	orig := NewOrigPtrKeyValue()
 	orig.Key = "test_key"
-	FillOrigTestAnyValue(&orig.Value)
+	orig.Value = *GenTestOrigAnyValue()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

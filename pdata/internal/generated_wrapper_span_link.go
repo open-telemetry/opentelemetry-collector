@@ -33,13 +33,15 @@ func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
 	dest.Flags = src.Flags
 }
 
-func FillOrigTestSpan_Link(orig *otlptrace.Span_Link) {
+func GenTestOrigSpan_Link() *otlptrace.Span_Link {
+	orig := NewOrigPtrSpan_Link()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	FillOrigTestTraceState(&orig.TraceState)
+	orig.TraceState = *GenTestOrigTraceState()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = uint32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

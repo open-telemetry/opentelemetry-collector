@@ -23,7 +23,7 @@ func TestCopyOrigResourceProfiles(t *testing.T) {
 	dest := NewOrigPtrResourceProfiles()
 	CopyOrigResourceProfiles(dest, src)
 	assert.Equal(t, NewOrigPtrResourceProfiles(), dest)
-	FillOrigTestResourceProfiles(src)
+	*src = *GenTestOrigResourceProfiles()
 	CopyOrigResourceProfiles(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfilesUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceProfiles() {
+	for name, src := range genTestEncodingValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigResourceProfilesFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesResourceProfiles() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrResourceProfiles()
+			require.Error(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigResourceProfilesUnknown(t *testing.T) {
 	dest := NewOrigPtrResourceProfiles()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfilesUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceProfiles() {
+	for name, src := range genTestEncodingValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceProfiles(src))
 			gotSize := MarshalProtoOrigResourceProfiles(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResourceProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceProfiles() {
+	for name, src := range genTestEncodingValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceProfiles(src))
 			gotSize := MarshalProtoOrigResourceProfiles(src, buf)
@@ -97,13 +106,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceProfiles(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesResourceProfiles() map[string]*otlpprofiles.ResourceProfiles {
+func genTestFailingUnmarshalProtoValuesResourceProfiles() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                 {0x02},
+		"Resource/wrong_wire_type":      {0xc},
+		"Resource/missing_value":        {0xa},
+		"ScopeProfiles/wrong_wire_type": {0x14},
+		"ScopeProfiles/missing_value":   {0x12},
+		"SchemaUrl/wrong_wire_type":     {0x1c},
+		"SchemaUrl/missing_value":       {0x1a},
+	}
+}
+
+func genTestEncodingValuesResourceProfiles() map[string]*otlpprofiles.ResourceProfiles {
 	return map[string]*otlpprofiles.ResourceProfiles{
-		"empty": NewOrigPtrResourceProfiles(),
-		"fill_test": func() *otlpprofiles.ResourceProfiles {
-			src := NewOrigPtrResourceProfiles()
-			FillOrigTestResourceProfiles(src)
-			return src
-		}(),
+		"empty":                          NewOrigPtrResourceProfiles(),
+		"Resource/test":                  {Resource: *GenTestOrigResource()},
+		"ScopeProfiles/default_and_test": {ScopeProfiles: []*otlpprofiles.ScopeProfiles{{}, GenTestOrigScopeProfiles()}},
+		"SchemaUrl/test":                 {SchemaUrl: "test_schemaurl"},
 	}
 }

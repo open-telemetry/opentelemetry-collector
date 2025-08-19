@@ -46,12 +46,11 @@ func TestExportResponse_CopyTo(t *testing.T) {
 func TestExportResponse_PartialSuccess(t *testing.T) {
 	ms := NewExportResponse()
 	assert.Equal(t, NewExportPartialSuccess(), ms.PartialSuccess())
-	internal.FillOrigTestExportProfilesPartialSuccess(&ms.orig.PartialSuccess)
+	ms.orig.PartialSuccess = *internal.GenTestOrigExportProfilesPartialSuccess()
 	assert.Equal(t, generateTestExportPartialSuccess(), ms.PartialSuccess())
 }
 
 func generateTestExportResponse() ExportResponse {
-	ms := NewExportResponse()
-	internal.FillOrigTestExportProfilesServiceResponse(ms.orig)
+	ms := newExportResponse(internal.GenTestOrigExportProfilesServiceResponse(), internal.NewState())
 	return ms
 }

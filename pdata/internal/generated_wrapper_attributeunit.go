@@ -27,9 +27,11 @@ func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.UnitStrindex = src.UnitStrindex
 }
 
-func FillOrigTestAttributeUnit(orig *otlpprofiles.AttributeUnit) {
+func GenTestOrigAttributeUnit() *otlpprofiles.AttributeUnit {
+	orig := NewOrigPtrAttributeUnit()
 	orig.AttributeKeyStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

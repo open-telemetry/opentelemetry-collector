@@ -14,6 +14,7 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigSummaryDataPoint(t *testing.T) {
 	dest := NewOrigPtrSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
-	FillOrigTestSummaryDataPoint(src)
+	*src = *GenTestOrigSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPointFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSummaryDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrSummaryDataPoint()
+			require.Error(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
 	dest := NewOrigPtrSummaryDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
@@ -97,13 +107,35 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
+func genTestFailingUnmarshalProtoValuesSummaryDataPoint() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                     {0x02},
+		"Attributes/wrong_wire_type":        {0x3c},
+		"Attributes/missing_value":          {0x3a},
+		"StartTimeUnixNano/wrong_wire_type": {0x14},
+		"StartTimeUnixNano/missing_value":   {0x11},
+		"TimeUnixNano/wrong_wire_type":      {0x1c},
+		"TimeUnixNano/missing_value":        {0x19},
+		"Count/wrong_wire_type":             {0x24},
+		"Count/missing_value":               {0x21},
+		"Sum/wrong_wire_type":               {0x2c},
+		"Sum/missing_value":                 {0x29},
+		"QuantileValues/wrong_wire_type":    {0x34},
+		"QuantileValues/missing_value":      {0x32},
+		"Flags/wrong_wire_type":             {0x44},
+		"Flags/missing_value":               {0x40},
+	}
+}
+
+func genTestEncodingValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
 	return map[string]*otlpmetrics.SummaryDataPoint{
-		"empty": NewOrigPtrSummaryDataPoint(),
-		"fill_test": func() *otlpmetrics.SummaryDataPoint {
-			src := NewOrigPtrSummaryDataPoint()
-			FillOrigTestSummaryDataPoint(src)
-			return src
-		}(),
+		"empty":                           NewOrigPtrSummaryDataPoint(),
+		"Attributes/default_and_test":     {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"StartTimeUnixNano/test":          {StartTimeUnixNano: uint64(13)},
+		"TimeUnixNano/test":               {TimeUnixNano: uint64(13)},
+		"Count/test":                      {Count: uint64(13)},
+		"Sum/test":                        {Sum: float64(3.1415926)},
+		"QuantileValues/default_and_test": {QuantileValues: []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{{}, GenTestOrigSummaryDataPoint_ValueAtQuantile()}},
+		"Flags/test":                      {Flags: uint32(13)},
 	}
 }

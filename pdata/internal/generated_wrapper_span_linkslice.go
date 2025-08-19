@@ -43,11 +43,9 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 func GenerateOrigTestSpan_LinkSlice() []*otlptrace.Span_Link {
 	orig := make([]*otlptrace.Span_Link, 5)
 	orig[0] = NewOrigPtrSpan_Link()
-	orig[1] = NewOrigPtrSpan_Link()
-	FillOrigTestSpan_Link(orig[1])
+	orig[1] = GenTestOrigSpan_Link()
 	orig[2] = NewOrigPtrSpan_Link()
-	orig[3] = NewOrigPtrSpan_Link()
-	FillOrigTestSpan_Link(orig[3])
+	orig[3] = GenTestOrigSpan_Link()
 	orig[4] = NewOrigPtrSpan_Link()
 	return orig
 }

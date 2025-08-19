@@ -27,7 +27,7 @@ func TestResourceLogsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestResourceLogs((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigResourceLogs()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())

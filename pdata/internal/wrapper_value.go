@@ -15,6 +15,10 @@ type Value struct {
 	state *State
 }
 
+func NewOrigPtrAnyValue() *otlpcommon.AnyValue {
+	return &otlpcommon.AnyValue{}
+}
+
 func GetOrigValue(ms Value) *otlpcommon.AnyValue {
 	return ms.orig
 }
@@ -63,12 +67,6 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = sv
 	}
-}
-
-func GenerateTestValue() Value {
-	var orig otlpcommon.AnyValue
-	FillOrigTestAnyValue(&orig)
-	return NewValue(&orig, NewState())
 }
 
 // MarshalJSONOrigAnyValue marshals all properties from the current struct to the destination stream.
@@ -195,8 +193,10 @@ func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
 	return v
 }
 
-func FillOrigTestAnyValue(orig *otlpcommon.AnyValue) {
+func GenTestOrigAnyValue() *otlpcommon.AnyValue {
+	orig := NewOrigPtrAnyValue()
 	orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
+	return orig
 }
 
 func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {

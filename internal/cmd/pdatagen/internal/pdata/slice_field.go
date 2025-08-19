@@ -59,12 +59,18 @@ func (sf *SliceField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (sf *SliceField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("sliceSetTestTemplate", []byte(sliceSetTestTemplate))
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateTestValue(*messageStruct) string { return "" }
+func (sf *SliceField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
+	return sf.toProtoField().GenTestFailingUnmarshalProtoValues()
+}
+
+func (sf *SliceField) GenerateTestEncodingValues(*messageStruct) string {
+	return sf.toProtoField().GenTestEncodingValues()
+}
 
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("sliceCopyOrigTemplate", []byte(sliceCopyOrigTemplate))
@@ -97,7 +103,7 @@ func (sf *SliceField) toProtoField() *proto.Field {
 		Type:            sf.protoType,
 		ID:              sf.protoID,
 		Name:            sf.fieldName,
-		MessageFullName: sf.returnSlice.getElementOriginName(),
+		MessageFullName: sf.returnSlice.getOriginFullName(),
 		Repeated:        sf.protoType != proto.TypeBytes,
 		Nullable:        sf.returnSlice.getElementNullable(),
 	}

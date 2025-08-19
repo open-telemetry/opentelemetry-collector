@@ -26,8 +26,10 @@ func CopyOrigExportProfilesServiceResponse(dest, src *otlpcollectorprofiles.Expo
 	CopyOrigExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func FillOrigTestExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) {
-	FillOrigTestExportProfilesPartialSuccess(&orig.PartialSuccess)
+func GenTestOrigExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
+	orig := NewOrigPtrExportProfilesServiceResponse()
+	orig.PartialSuccess = *GenTestOrigExportProfilesPartialSuccess()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

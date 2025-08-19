@@ -28,10 +28,12 @@ func CopyOrigSum(dest, src *otlpmetrics.Sum) {
 	dest.IsMonotonic = src.IsMonotonic
 }
 
-func FillOrigTestSum(orig *otlpmetrics.Sum) {
+func GenTestOrigSum() *otlpmetrics.Sum {
+	orig := NewOrigPtrSum()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.IsMonotonic = true
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

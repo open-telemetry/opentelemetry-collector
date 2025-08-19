@@ -43,11 +43,9 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
 	orig := make([]*otlptrace.Span_Event, 5)
 	orig[0] = NewOrigPtrSpan_Event()
-	orig[1] = NewOrigPtrSpan_Event()
-	FillOrigTestSpan_Event(orig[1])
+	orig[1] = GenTestOrigSpan_Event()
 	orig[2] = NewOrigPtrSpan_Event()
-	orig[3] = NewOrigPtrSpan_Event()
-	FillOrigTestSpan_Event(orig[3])
+	orig[3] = GenTestOrigSpan_Event()
 	orig[4] = NewOrigPtrSpan_Event()
 	return orig
 }

@@ -60,5 +60,6 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestResource() Resource {
-	return Resource(internal.GenerateTestResource())
+	ms := newResource(internal.GenTestOrigResource(), internal.NewState())
+	return ms
 }

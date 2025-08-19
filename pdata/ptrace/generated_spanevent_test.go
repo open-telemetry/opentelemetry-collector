@@ -79,7 +79,6 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	ms := NewSpanEvent()
-	internal.FillOrigTestSpan_Event(ms.orig)
+	ms := newSpanEvent(internal.GenTestOrigSpan_Event(), internal.NewState())
 	return ms
 }

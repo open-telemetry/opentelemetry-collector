@@ -43,11 +43,9 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 func GenerateOrigTestResourceLogsSlice() []*otlplogs.ResourceLogs {
 	orig := make([]*otlplogs.ResourceLogs, 5)
 	orig[0] = NewOrigPtrResourceLogs()
-	orig[1] = NewOrigPtrResourceLogs()
-	FillOrigTestResourceLogs(orig[1])
+	orig[1] = GenTestOrigResourceLogs()
 	orig[2] = NewOrigPtrResourceLogs()
-	orig[3] = NewOrigPtrResourceLogs()
-	FillOrigTestResourceLogs(orig[3])
+	orig[3] = GenTestOrigResourceLogs()
 	orig[4] = NewOrigPtrResourceLogs()
 	return orig
 }

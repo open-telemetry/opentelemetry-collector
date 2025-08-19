@@ -125,14 +125,14 @@ func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
 func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Positive())
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Positive)
+	ms.orig.Positive = *internal.GenTestOrigExponentialHistogramDataPoint_Buckets()
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Positive())
 }
 
 func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Negative())
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Negative)
+	ms.orig.Negative = *internal.GenTestOrigExponentialHistogramDataPoint_Buckets()
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Negative())
 }
 
@@ -192,7 +192,6 @@ func TestExponentialHistogramDataPoint_ZeroThreshold(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	ms := NewExponentialHistogramDataPoint()
-	internal.FillOrigTestExponentialHistogramDataPoint(ms.orig)
+	ms := newExponentialHistogramDataPoint(internal.GenTestOrigExponentialHistogramDataPoint(), internal.NewState())
 	return ms
 }

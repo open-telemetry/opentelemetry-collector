@@ -38,12 +38,14 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TraceId = src.TraceId
 }
 
-func FillOrigTestExemplar(orig *otlpmetrics.Exemplar) {
+func GenTestOrigExemplar() *otlpmetrics.Exemplar {
+	orig := NewOrigPtrExemplar()
 	orig.FilteredAttributes = GenerateOrigTestKeyValueSlice()
 	orig.TimeUnixNano = 1234567890
 	orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

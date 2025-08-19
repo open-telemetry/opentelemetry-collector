@@ -23,7 +23,7 @@ func TestCopyOrigGauge(t *testing.T) {
 	dest := NewOrigPtrGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, NewOrigPtrGauge(), dest)
-	FillOrigTestGauge(src)
+	*src = *GenTestOrigGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigGaugeFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesGauge() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrGauge()
+			require.Error(t, UnmarshalProtoOrigGauge(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
 	dest := NewOrigPtrGauge()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
@@ -97,13 +106,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesGauge() map[string]*otlpmetrics.Gauge {
+func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":              {0x02},
+		"DataPoints/wrong_wire_type": {0xc},
+		"DataPoints/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesGauge() map[string]*otlpmetrics.Gauge {
 	return map[string]*otlpmetrics.Gauge{
-		"empty": NewOrigPtrGauge(),
-		"fill_test": func() *otlpmetrics.Gauge {
-			src := NewOrigPtrGauge()
-			FillOrigTestGauge(src)
-			return src
-		}(),
+		"empty":                       NewOrigPtrGauge(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
 	}
 }

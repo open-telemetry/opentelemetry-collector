@@ -23,7 +23,7 @@ func TestCopyOrigKeyValue(t *testing.T) {
 	dest := NewOrigPtrKeyValue()
 	CopyOrigKeyValue(dest, src)
 	assert.Equal(t, NewOrigPtrKeyValue(), dest)
-	FillOrigTestKeyValue(src)
+	*src = *GenTestOrigKeyValue()
 	CopyOrigKeyValue(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigKeyValueFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesKeyValue() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrKeyValue()
+			require.Error(t, UnmarshalProtoOrigKeyValue(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
 	dest := NewOrigPtrKeyValue()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesKeyValue() map[string]*otlpcommon.KeyValue {
+func genTestFailingUnmarshalProtoValuesKeyValue() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":         {0x02},
+		"Key/wrong_wire_type":   {0xc},
+		"Key/missing_value":     {0xa},
+		"Value/wrong_wire_type": {0x14},
+		"Value/missing_value":   {0x12},
+	}
+}
+
+func genTestEncodingValuesKeyValue() map[string]*otlpcommon.KeyValue {
 	return map[string]*otlpcommon.KeyValue{
-		"empty": NewOrigPtrKeyValue(),
-		"fill_test": func() *otlpcommon.KeyValue {
-			src := NewOrigPtrKeyValue()
-			FillOrigTestKeyValue(src)
-			return src
-		}(),
+		"empty":      NewOrigPtrKeyValue(),
+		"Key/test":   {Key: "test_key"},
+		"Value/test": {Value: *GenTestOrigAnyValue()},
 	}
 }

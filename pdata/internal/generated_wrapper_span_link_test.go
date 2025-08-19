@@ -14,6 +14,7 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigSpan_Link(t *testing.T) {
 	dest := NewOrigPtrSpan_Link()
 	CopyOrigSpan_Link(dest, src)
 	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
-	FillOrigTestSpan_Link(src)
+	*src = *GenTestOrigSpan_Link()
 	CopyOrigSpan_Link(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Link() {
+	for name, src := range genTestEncodingValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSpan_LinkFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSpan_Link() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrSpan_Link()
+			require.Error(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
 	dest := NewOrigPtrSpan_Link()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Link() {
+	for name, src := range genTestEncodingValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan_Link(src))
 			gotSize := MarshalProtoOrigSpan_Link(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Link() {
+	for name, src := range genTestEncodingValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan_Link(src))
 			gotSize := MarshalProtoOrigSpan_Link(src, buf)
@@ -97,13 +107,32 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSpan_Link() map[string]*otlptrace.Span_Link {
+func genTestFailingUnmarshalProtoValuesSpan_Link() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"TraceId/wrong_wire_type":                {0xc},
+		"TraceId/missing_value":                  {0xa},
+		"SpanId/wrong_wire_type":                 {0x14},
+		"SpanId/missing_value":                   {0x12},
+		"TraceState/wrong_wire_type":             {0x1c},
+		"TraceState/missing_value":               {0x1a},
+		"Attributes/wrong_wire_type":             {0x24},
+		"Attributes/missing_value":               {0x22},
+		"DroppedAttributesCount/wrong_wire_type": {0x2c},
+		"DroppedAttributesCount/missing_value":   {0x28},
+		"Flags/wrong_wire_type":                  {0x34},
+		"Flags/missing_value":                    {0x35},
+	}
+}
+
+func genTestEncodingValuesSpan_Link() map[string]*otlptrace.Span_Link {
 	return map[string]*otlptrace.Span_Link{
-		"empty": NewOrigPtrSpan_Link(),
-		"fill_test": func() *otlptrace.Span_Link {
-			src := NewOrigPtrSpan_Link()
-			FillOrigTestSpan_Link(src)
-			return src
-		}(),
+		"empty":                       NewOrigPtrSpan_Link(),
+		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"TraceState/test":             {TraceState: "test_tracestate"},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
+		"Flags/test":                  {Flags: uint32(13)},
 	}
 }

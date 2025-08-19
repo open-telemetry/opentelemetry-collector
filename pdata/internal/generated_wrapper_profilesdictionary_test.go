@@ -14,6 +14,7 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigProfilesDictionary(t *testing.T) {
 	dest := NewOrigPtrProfilesDictionary()
 	CopyOrigProfilesDictionary(dest, src)
 	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
-	FillOrigTestProfilesDictionary(src)
+	*src = *GenTestOrigProfilesDictionary()
 	CopyOrigProfilesDictionary(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
+	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesProfilesDictionary() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrProfilesDictionary()
+			require.Error(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
 	dest := NewOrigPtrProfilesDictionary()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
+	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
 			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
+	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
 			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
@@ -97,13 +107,35 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesProfilesDictionary() map[string]*otlpprofiles.ProfilesDictionary {
+func genTestFailingUnmarshalProtoValuesProfilesDictionary() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                  {0x02},
+		"MappingTable/wrong_wire_type":   {0xc},
+		"MappingTable/missing_value":     {0xa},
+		"LocationTable/wrong_wire_type":  {0x14},
+		"LocationTable/missing_value":    {0x12},
+		"FunctionTable/wrong_wire_type":  {0x1c},
+		"FunctionTable/missing_value":    {0x1a},
+		"LinkTable/wrong_wire_type":      {0x24},
+		"LinkTable/missing_value":        {0x22},
+		"StringTable/wrong_wire_type":    {0x2c},
+		"StringTable/missing_value":      {0x2a},
+		"AttributeTable/wrong_wire_type": {0x34},
+		"AttributeTable/missing_value":   {0x32},
+		"AttributeUnits/wrong_wire_type": {0x3c},
+		"AttributeUnits/missing_value":   {0x3a},
+	}
+}
+
+func genTestEncodingValuesProfilesDictionary() map[string]*otlpprofiles.ProfilesDictionary {
 	return map[string]*otlpprofiles.ProfilesDictionary{
-		"empty": NewOrigPtrProfilesDictionary(),
-		"fill_test": func() *otlpprofiles.ProfilesDictionary {
-			src := NewOrigPtrProfilesDictionary()
-			FillOrigTestProfilesDictionary(src)
-			return src
-		}(),
+		"empty":                           NewOrigPtrProfilesDictionary(),
+		"MappingTable/default_and_test":   {MappingTable: []*otlpprofiles.Mapping{{}, GenTestOrigMapping()}},
+		"LocationTable/default_and_test":  {LocationTable: []*otlpprofiles.Location{{}, GenTestOrigLocation()}},
+		"FunctionTable/default_and_test":  {FunctionTable: []*otlpprofiles.Function{{}, GenTestOrigFunction()}},
+		"LinkTable/default_and_test":      {LinkTable: []*otlpprofiles.Link{{}, GenTestOrigLink()}},
+		"StringTable/default_and_test":    {StringTable: []string{"", "test_stringtable"}},
+		"AttributeTable/default_and_test": {AttributeTable: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"AttributeUnits/default_and_test": {AttributeUnits: []*otlpprofiles.AttributeUnit{{}, GenTestOrigAttributeUnit()}},
 	}
 }

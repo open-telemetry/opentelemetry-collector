@@ -23,7 +23,7 @@ func TestCopyOrigAttributeUnit(t *testing.T) {
 	dest := NewOrigPtrAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, NewOrigPtrAttributeUnit(), dest)
-	FillOrigTestAttributeUnit(src)
+	*src = *GenTestOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnitUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
+	for name, src := range genTestEncodingValuesAttributeUnit() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigAttributeUnitFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesAttributeUnit() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrAttributeUnit()
+			require.Error(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
 	dest := NewOrigPtrAttributeUnit()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
+	for name, src := range genTestEncodingValuesAttributeUnit() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
 			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
+	for name, src := range genTestEncodingValuesAttributeUnit() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
 			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
+func genTestFailingUnmarshalProtoValuesAttributeUnit() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                        {0x02},
+		"AttributeKeyStrindex/wrong_wire_type": {0xc},
+		"AttributeKeyStrindex/missing_value":   {0x8},
+		"UnitStrindex/wrong_wire_type":         {0x14},
+		"UnitStrindex/missing_value":           {0x10},
+	}
+}
+
+func genTestEncodingValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
 	return map[string]*otlpprofiles.AttributeUnit{
-		"empty": NewOrigPtrAttributeUnit(),
-		"fill_test": func() *otlpprofiles.AttributeUnit {
-			src := NewOrigPtrAttributeUnit()
-			FillOrigTestAttributeUnit(src)
-			return src
-		}(),
+		"empty":                     NewOrigPtrAttributeUnit(),
+		"AttributeKeyStrindex/test": {AttributeKeyStrindex: int32(13)},
+		"UnitStrindex/test":         {UnitStrindex: int32(13)},
 	}
 }
