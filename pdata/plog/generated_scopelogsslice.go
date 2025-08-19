@@ -99,7 +99,7 @@ func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeLogs.
 func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrScopeLogs())
+	*es.orig = append(*es.orig, internal.NewOrigScopeLogs())
 	return es.At(es.Len() - 1)
 }
 

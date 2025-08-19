@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportLogsPartialSuccess() otlpcollectorlogs.ExportLogsPartialSuccess {
-	return otlpcollectorlogs.ExportLogsPartialSuccess{}
-}
-
-func NewOrigPtrExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+func NewOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
 	return &otlpcollectorlogs.ExportLogsPartialSuccess{}
 }
 
@@ -27,9 +23,11 @@ func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPar
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func FillOrigTestExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) {
+func GenTestOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+	orig := NewOrigExportLogsPartialSuccess()
 	orig.RejectedLogRecords = int64(13)
 	orig.ErrorMessage = "test_errormessage"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -48,7 +46,7 @@ func MarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsP
 
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedLogRecords", "rejected_log_records":
 			orig.RejectedLogRecords = iter.ReadInt64()
@@ -57,8 +55,7 @@ func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLog
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) int {

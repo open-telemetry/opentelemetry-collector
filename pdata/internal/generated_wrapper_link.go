@@ -15,11 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLink() otlpprofiles.Link {
-	return otlpprofiles.Link{}
-}
-
-func NewOrigPtrLink() *otlpprofiles.Link {
+func NewOrigLink() *otlpprofiles.Link {
 	return &otlpprofiles.Link{}
 }
 
@@ -28,9 +24,11 @@ func CopyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.SpanId = src.SpanId
 }
 
-func FillOrigTestLink(orig *otlpprofiles.Link) {
+func GenTestOrigLink() *otlpprofiles.Link {
+	orig := NewOrigLink()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -49,17 +47,16 @@ func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
 
 // UnmarshalJSONOrigLink unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLink(orig *otlpprofiles.Link) int {

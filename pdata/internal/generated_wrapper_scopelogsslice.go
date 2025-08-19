@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLogs {
@@ -19,7 +18,7 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrScopeLogs()
+			newDest[i] = NewOrigScopeLogs()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrScopeLogs()
+			newDest[i] = NewOrigScopeLogs()
 		}
 	}
 	for i := range src {
@@ -42,23 +41,10 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 
 func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
 	orig := make([]*otlplogs.ScopeLogs, 5)
-	orig[0] = NewOrigPtrScopeLogs()
-	orig[1] = NewOrigPtrScopeLogs()
-	FillOrigTestScopeLogs(orig[1])
-	orig[2] = NewOrigPtrScopeLogs()
-	orig[3] = NewOrigPtrScopeLogs()
-	FillOrigTestScopeLogs(orig[3])
-	orig[4] = NewOrigPtrScopeLogs()
-	return orig
-}
-
-// UnmarshalJSONOrigScopeLogsSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigScopeLogsSlice(iter *json.Iterator) []*otlplogs.ScopeLogs {
-	var orig []*otlplogs.ScopeLogs
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrScopeLogs())
-		UnmarshalJSONOrigScopeLogs(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigScopeLogs()
+	orig[1] = GenTestOrigScopeLogs()
+	orig[2] = NewOrigScopeLogs()
+	orig[3] = GenTestOrigScopeLogs()
+	orig[4] = NewOrigScopeLogs()
 	return orig
 }

@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
@@ -19,7 +18,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrAttributeUnit()
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrAttributeUnit()
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	}
 	for i := range src {
@@ -42,23 +41,10 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 
 func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
 	orig := make([]*otlpprofiles.AttributeUnit, 5)
-	orig[0] = NewOrigPtrAttributeUnit()
-	orig[1] = NewOrigPtrAttributeUnit()
-	FillOrigTestAttributeUnit(orig[1])
-	orig[2] = NewOrigPtrAttributeUnit()
-	orig[3] = NewOrigPtrAttributeUnit()
-	FillOrigTestAttributeUnit(orig[3])
-	orig[4] = NewOrigPtrAttributeUnit()
-	return orig
-}
-
-// UnmarshalJSONOrigAttributeUnitSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
-	var orig []*otlpprofiles.AttributeUnit
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrAttributeUnit())
-		UnmarshalJSONOrigAttributeUnit(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigAttributeUnit()
+	orig[1] = GenTestOrigAttributeUnit()
+	orig[2] = NewOrigAttributeUnit()
+	orig[3] = GenTestOrigAttributeUnit()
+	orig[4] = NewOrigAttributeUnit()
 	return orig
 }

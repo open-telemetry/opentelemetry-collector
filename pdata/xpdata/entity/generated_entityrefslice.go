@@ -96,7 +96,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 // It returns the newly added EntityRef.
 func (es EntityRefSlice) AppendEmpty() EntityRef {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), internal.NewOrigPtrEntityRef())
+	*es.getOrig() = append(*es.getOrig(), internal.NewOrigEntityRef())
 	return es.At(es.Len() - 1)
 }
 

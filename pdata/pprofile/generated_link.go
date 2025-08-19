@@ -34,7 +34,7 @@ func newLink(orig *otlpprofiles.Link, state *internal.State) Link {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLink() Link {
-	return newLink(internal.NewOrigPtrLink(), internal.NewState())
+	return newLink(internal.NewOrigLink(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

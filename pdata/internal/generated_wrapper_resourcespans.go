@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceSpans() otlptrace.ResourceSpans {
-	return otlptrace.ResourceSpans{}
-}
-
-func NewOrigPtrResourceSpans() *otlptrace.ResourceSpans {
+func NewOrigResourceSpans() *otlptrace.ResourceSpans {
 	return &otlptrace.ResourceSpans{}
 }
 
@@ -28,10 +24,12 @@ func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceSpans(orig *otlptrace.ResourceSpans) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceSpans() *otlptrace.ResourceSpans {
+	orig := NewOrigResourceSpans()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +56,22 @@ func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stre
 
 // UnmarshalJSONOrigResourceSpans unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeSpans", "scope_spans":
-			orig.ScopeSpans = UnmarshalJSONOrigScopeSpansSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
+				UnmarshalJSONOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) int {
@@ -160,7 +161,7 @@ func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) 
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigPtrScopeSpans())
+			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
 			err = UnmarshalProtoOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

@@ -66,10 +66,10 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Logs as pdata struct.
-	td := NewExportRequestFromLogs(plog.Logs(internal.GenerateTestLogs()))
+	ld := NewExportRequestFromLogs(plog.Logs(internal.NewLogs(internal.GenTestOrigExportLogsServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := td.MarshalProto()
+	wire1, err := ld.MarshalProto()
 	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -90,5 +90,5 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, td, td2)
+	assert.Equal(t, ld, td2)
 }

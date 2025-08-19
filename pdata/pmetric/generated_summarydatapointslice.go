@@ -99,7 +99,7 @@ func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SummaryDataPoint.
 func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrSummaryDataPoint())
+	*es.orig = append(*es.orig, internal.NewOrigSummaryDataPoint())
 	return es.At(es.Len() - 1)
 }
 

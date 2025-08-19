@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigScopeProfiles(t *testing.T) {
-	src := NewOrigPtrScopeProfiles()
-	dest := NewOrigPtrScopeProfiles()
+	src := NewOrigScopeProfiles()
+	dest := NewOrigScopeProfiles()
 	CopyOrigScopeProfiles(dest, src)
-	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
-	FillOrigTestScopeProfiles(src)
+	assert.Equal(t, NewOrigScopeProfiles(), dest)
+	*src = *GenTestOrigScopeProfiles()
 	CopyOrigScopeProfiles(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigScopeProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrScopeProfiles()
+	dest := NewOrigScopeProfiles()
 	UnmarshalJSONOrigScopeProfiles(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
+	assert.Equal(t, NewOrigScopeProfiles(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeProfiles() {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrScopeProfiles()
+			dest := NewOrigScopeProfiles()
 			UnmarshalJSONOrigScopeProfiles(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigScopeProfilesFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigScopeProfiles()
+			require.Error(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigScopeProfilesUnknown(t *testing.T) {
-	dest := NewOrigPtrScopeProfiles()
+	dest := NewOrigScopeProfiles()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
+	assert.Equal(t, NewOrigScopeProfiles(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeProfiles() {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
 			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrScopeProfiles()
+			dest := NewOrigScopeProfiles()
 			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeProfiles() {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
 			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
@@ -90,20 +99,30 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrScopeProfiles()
+			dest := NewOrigScopeProfiles()
 			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesScopeProfiles() map[string]*otlpprofiles.ScopeProfiles {
+func genTestFailingUnmarshalProtoValuesScopeProfiles() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Profiles/wrong_wire_type":  {0x14},
+		"Profiles/missing_value":    {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeProfiles() map[string]*otlpprofiles.ScopeProfiles {
 	return map[string]*otlpprofiles.ScopeProfiles{
-		"empty": NewOrigPtrScopeProfiles(),
-		"fill_test": func() *otlpprofiles.ScopeProfiles {
-			src := NewOrigPtrScopeProfiles()
-			FillOrigTestScopeProfiles(src)
-			return src
-		}(),
+		"empty":                     NewOrigScopeProfiles(),
+		"Scope/test":                {Scope: *GenTestOrigInstrumentationScope()},
+		"Profiles/default_and_test": {Profiles: []*otlpprofiles.Profile{{}, GenTestOrigProfile()}},
+		"SchemaUrl/test":            {SchemaUrl: "test_schemaurl"},
 	}
 }

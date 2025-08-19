@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigFunction() otlpprofiles.Function {
-	return otlpprofiles.Function{}
-}
-
-func NewOrigPtrFunction() *otlpprofiles.Function {
+func NewOrigFunction() *otlpprofiles.Function {
 	return &otlpprofiles.Function{}
 }
 
@@ -29,11 +25,13 @@ func CopyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.StartLine = src.StartLine
 }
 
-func FillOrigTestFunction(orig *otlpprofiles.Function) {
+func GenTestOrigFunction() *otlpprofiles.Function {
+	orig := NewOrigFunction()
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)
 	orig.StartLine = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -60,7 +58,7 @@ func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
 
 // UnmarshalJSONOrigFunction unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "nameStrindex", "name_strindex":
 			orig.NameStrindex = iter.ReadInt32()
@@ -73,8 +71,7 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
