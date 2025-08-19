@@ -603,7 +603,6 @@ func TestSendMetrics(t *testing.T) {
 			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 			assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
-
 		})
 	}
 }
