@@ -50,8 +50,9 @@ func TestNewFloat64Slice(t *testing.T) {
 
 func TestFloat64SliceReadOnly(t *testing.T) {
 	raw := []float64{1.1, 2.2, 3.3}
-	state := internal.StateReadOnly
-	ms := Float64Slice(internal.NewFloat64Slice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := Float64Slice(internal.NewFloat64Slice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.InDelta(t, float64(1.1), ms.At(0), 0.01)

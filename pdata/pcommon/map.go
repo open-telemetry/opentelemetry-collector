@@ -21,8 +21,7 @@ type Map internal.Map
 // NewMap creates a Map with 0 elements.
 func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	state := internal.StateMutable
-	return Map(internal.NewMap(&orig, &state))
+	return Map(internal.NewMap(&orig, internal.NewState()))
 }
 
 func (m Map) getOrig() *[]otlpcommon.KeyValue {
@@ -130,7 +129,7 @@ func (m Map) PutStr(k, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v, m.getState()))
 	}
 }
 
@@ -142,7 +141,7 @@ func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v, m.getState()))
 	}
 }
 
@@ -154,7 +153,7 @@ func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v, m.getState()))
 	}
 }
 
@@ -166,7 +165,7 @@ func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v, m.getState()))
 	}
 }
 
@@ -316,4 +315,32 @@ func (m Map) Equal(val Map) bool {
 		return fullEqual
 	})
 	return fullEqual
+}
+
+func newKeyValueString(k, v string, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetStr(v)
+	return orig
+}
+
+func newKeyValueInt(k string, v int64, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetInt(v)
+	return orig
+}
+
+func newKeyValueDouble(k string, v float64, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetDouble(v)
+	return orig
+}
+
+func newKeyValueBool(k string, v bool, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetBool(v)
+	return orig
 }

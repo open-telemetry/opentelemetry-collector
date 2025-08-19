@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigNumberDataPoint(t *testing.T) {
-	src := &otlpmetrics.NumberDataPoint{}
-	dest := &otlpmetrics.NumberDataPoint{}
+	src := NewOrigPtrNumberDataPoint()
+	dest := NewOrigPtrNumberDataPoint()
 	CopyOrigNumberDataPoint(dest, src)
-	assert.Equal(t, &otlpmetrics.NumberDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrNumberDataPoint(), dest)
 	FillOrigTestNumberDataPoint(src)
 	CopyOrigNumberDataPoint(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigNumberDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.NumberDataPoint{}
+	dest := NewOrigPtrNumberDataPoint()
 	UnmarshalJSONOrigNumberDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.NumberDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrNumberDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.NumberDataPoint{}
+			dest := NewOrigPtrNumberDataPoint()
 			UnmarshalJSONOrigNumberDataPoint(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
+	dest := NewOrigPtrNumberDataPoint()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrNumberDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.NumberDataPoint{}
+			dest := NewOrigPtrNumberDataPoint()
 			require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesNumberDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
+			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.NumberDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrNumberDataPoint()
+			require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 
 func getEncodingTestValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
 	return map[string]*otlpmetrics.NumberDataPoint{
-		"empty": {},
+		"empty": NewOrigPtrNumberDataPoint(),
 		"fill_test": func() *otlpmetrics.NumberDataPoint {
-			src := &otlpmetrics.NumberDataPoint{}
+			src := NewOrigPtrNumberDataPoint()
 			FillOrigTestNumberDataPoint(src)
 			return src
 		}(),

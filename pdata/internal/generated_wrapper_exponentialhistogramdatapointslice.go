@@ -19,7 +19,7 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+			newDest[i] = NewOrigPtrExponentialHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+			newDest[i] = NewOrigPtrExponentialHistogramDataPoint()
 		}
 	}
 	for i := range src {
@@ -41,11 +41,14 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 }
 
 func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
-	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		FillOrigTestExponentialHistogramDataPoint(orig[i])
-	}
+	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 5)
+	orig[0] = NewOrigPtrExponentialHistogramDataPoint()
+	orig[1] = NewOrigPtrExponentialHistogramDataPoint()
+	FillOrigTestExponentialHistogramDataPoint(orig[1])
+	orig[2] = NewOrigPtrExponentialHistogramDataPoint()
+	orig[3] = NewOrigPtrExponentialHistogramDataPoint()
+	FillOrigTestExponentialHistogramDataPoint(orig[3])
+	orig[4] = NewOrigPtrExponentialHistogramDataPoint()
 	return orig
 }
 
@@ -53,7 +56,7 @@ func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.Exponen
 func UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.ExponentialHistogramDataPoint {
 	var orig []*otlpmetrics.ExponentialHistogramDataPoint
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.ExponentialHistogramDataPoint{})
+		orig = append(orig, NewOrigPtrExponentialHistogramDataPoint())
 		UnmarshalJSONOrigExponentialHistogramDataPoint(orig[len(orig)-1], iter)
 		return true
 	})

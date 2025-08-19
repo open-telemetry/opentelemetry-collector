@@ -34,8 +34,7 @@ func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles, state *int
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceProfilesSlice() ResourceProfilesSlice {
 	orig := []*otlpprofiles.ResourceProfiles(nil)
-	state := internal.StateMutable
-	return newResourceProfilesSlice(&orig, &state)
+	return newResourceProfilesSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceProfiles.
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ResourceProfiles{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceProfiles())
 	return es.At(es.Len() - 1)
 }
 

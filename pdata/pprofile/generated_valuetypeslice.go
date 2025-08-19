@@ -34,8 +34,7 @@ func newValueTypeSlice(orig *[]*otlpprofiles.ValueType, state *internal.State) V
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewValueTypeSlice() ValueTypeSlice {
 	orig := []*otlpprofiles.ValueType(nil)
-	state := internal.StateMutable
-	return newValueTypeSlice(&orig, &state)
+	return newValueTypeSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ValueType.
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ValueType{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrValueType())
 	return es.At(es.Len() - 1)
 }
 

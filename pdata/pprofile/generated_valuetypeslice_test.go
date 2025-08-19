@@ -19,8 +19,7 @@ import (
 func TestValueTypeSlice(t *testing.T) {
 	es := NewValueTypeSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &state)
+	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueType()
@@ -35,8 +34,9 @@ func TestValueTypeSlice(t *testing.T) {
 }
 
 func TestValueTypeSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestValueTypeSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ValueType) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestValueTypeSlice_RemoveIfAll(t *testing.T) {

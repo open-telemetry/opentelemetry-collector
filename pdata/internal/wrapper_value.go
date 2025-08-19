@@ -68,8 +68,7 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 func GenerateTestValue() Value {
 	var orig otlpcommon.AnyValue
 	FillOrigTestAnyValue(&orig)
-	state := StateMutable
-	return NewValue(&orig, &state)
+	return NewValue(&orig, NewState())
 }
 
 // MarshalJSONOrigAnyValue marshals all properties from the current struct to the destination stream.
@@ -207,4 +206,8 @@ func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {
 func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 	size, _ := orig.MarshalToSizedBuffer(buf)
 	return size
+}
+
+func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

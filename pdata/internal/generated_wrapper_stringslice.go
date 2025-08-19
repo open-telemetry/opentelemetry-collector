@@ -29,8 +29,7 @@ func NewStringSlice(orig *[]string, state *State) StringSlice {
 
 func GenerateTestStringSlice() StringSlice {
 	orig := GenerateOrigTestStringSlice()
-	state := StateMutable
-	return NewStringSlice(&orig, &state)
+	return NewStringSlice(&orig, NewState())
 }
 
 func CopyOrigStringSlice(dst, src []string) []string {

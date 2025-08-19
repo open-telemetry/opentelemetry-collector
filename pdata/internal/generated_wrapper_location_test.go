@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigLocation(t *testing.T) {
-	src := &otlpprofiles.Location{}
-	dest := &otlpprofiles.Location{}
+	src := NewOrigPtrLocation()
+	dest := NewOrigPtrLocation()
 	CopyOrigLocation(dest, src)
-	assert.Equal(t, &otlpprofiles.Location{}, dest)
+	assert.Equal(t, NewOrigPtrLocation(), dest)
 	FillOrigTestLocation(src)
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigLocation(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLocationUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.Location{}
+	dest := NewOrigPtrLocation()
 	UnmarshalJSONOrigLocation(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpprofiles.Location{}, dest)
+	assert.Equal(t, NewOrigPtrLocation(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpprofiles.Location{}
+			dest := NewOrigPtrLocation()
 			UnmarshalJSONOrigLocation(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
+	dest := NewOrigPtrLocation()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigLocation(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrLocation(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 			gotSize := MarshalProtoOrigLocation(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpprofiles.Location{}
+			dest := NewOrigPtrLocation()
 			require.NoError(t, UnmarshalProtoOrigLocation(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
+	for name, src := range getEncodingTestValuesLocation() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLocation(src))
+			gotSize := MarshalProtoOrigLocation(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.Location{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrLocation()
+			require.NoError(t, UnmarshalProtoOrigLocation(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 
 func getEncodingTestValuesLocation() map[string]*otlpprofiles.Location {
 	return map[string]*otlpprofiles.Location{
-		"empty": {},
+		"empty": NewOrigPtrLocation(),
 		"fill_test": func() *otlpprofiles.Location {
-			src := &otlpprofiles.Location{}
+			src := NewOrigPtrLocation()
 			FillOrigTestLocation(src)
 			return src
 		}(),

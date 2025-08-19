@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigProfilesDictionary() otlpprofiles.ProfilesDictionary {
+	return otlpprofiles.ProfilesDictionary{}
+}
+
+func NewOrigPtrProfilesDictionary() *otlpprofiles.ProfilesDictionary {
+	return &otlpprofiles.ProfilesDictionary{}
+}
 
 func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.MappingTable = CopyOrigMappingSlice(dest.MappingTable, src.MappingTable)
@@ -172,28 +182,28 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.MappingTable {
+	for i := len(orig.MappingTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigMapping(orig.MappingTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0xa
 	}
-	for i := range orig.LocationTable {
+	for i := len(orig.LocationTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLocation(orig.LocationTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x12
 	}
-	for i := range orig.FunctionTable {
+	for i := len(orig.FunctionTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigFunction(orig.FunctionTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x1a
 	}
-	for i := range orig.LinkTable {
+	for i := len(orig.LinkTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLink(orig.LinkTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -208,14 +218,14 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 		pos--
 		buf[pos] = 0x2a
 	}
-	for i := range orig.AttributeTable {
+	for i := len(orig.AttributeTable) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.AttributeTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x32
 	}
-	for i := range orig.AttributeUnits {
+	for i := len(orig.AttributeUnits) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigAttributeUnit(orig.AttributeUnits[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -226,5 +236,133 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 }
 
 func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field MappingTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.MappingTable = append(orig.MappingTable, NewOrigPtrMapping())
+			err = UnmarshalProtoOrigMapping(orig.MappingTable[len(orig.MappingTable)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocationTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.LocationTable = append(orig.LocationTable, NewOrigPtrLocation())
+			err = UnmarshalProtoOrigLocation(orig.LocationTable[len(orig.LocationTable)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.FunctionTable = append(orig.FunctionTable, NewOrigPtrFunction())
+			err = UnmarshalProtoOrigFunction(orig.FunctionTable[len(orig.FunctionTable)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field LinkTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.LinkTable = append(orig.LinkTable, NewOrigPtrLink())
+			err = UnmarshalProtoOrigLink(orig.LinkTable[len(orig.LinkTable)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field StringTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.StringTable = append(orig.StringTable, string(buf[startPos:pos]))
+
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeTable", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.AttributeTable = append(orig.AttributeTable, NewOrigKeyValue())
+			err = UnmarshalProtoOrigKeyValue(&orig.AttributeTable[len(orig.AttributeTable)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeUnits", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.AttributeUnits = append(orig.AttributeUnits, NewOrigPtrAttributeUnit())
+			err = UnmarshalProtoOrigAttributeUnit(orig.AttributeUnits[len(orig.AttributeUnits)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

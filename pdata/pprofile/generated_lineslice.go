@@ -34,8 +34,7 @@ func newLineSlice(orig *[]*otlpprofiles.Line, state *internal.State) LineSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLineSlice() LineSlice {
 	orig := []*otlpprofiles.Line(nil)
-	state := internal.StateMutable
-	return newLineSlice(&orig, &state)
+	return newLineSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LineSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Line.
 func (es LineSlice) AppendEmpty() Line {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Line{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLine())
 	return es.At(es.Len() - 1)
 }
 

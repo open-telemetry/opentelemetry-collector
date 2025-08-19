@@ -19,7 +19,7 @@ func CopyOrigScopeMetricsSlice(dest, src []*otlpmetrics.ScopeMetrics) []*otlpmet
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ScopeMetrics{}
+			newDest[i] = NewOrigPtrScopeMetrics()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigScopeMetricsSlice(dest, src []*otlpmetrics.ScopeMetrics) []*otlpmet
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ScopeMetrics{}
+			newDest[i] = NewOrigPtrScopeMetrics()
 		}
 	}
 	for i := range src {
@@ -41,11 +41,14 @@ func CopyOrigScopeMetricsSlice(dest, src []*otlpmetrics.ScopeMetrics) []*otlpmet
 }
 
 func GenerateOrigTestScopeMetricsSlice() []*otlpmetrics.ScopeMetrics {
-	orig := make([]*otlpmetrics.ScopeMetrics, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.ScopeMetrics{}
-		FillOrigTestScopeMetrics(orig[i])
-	}
+	orig := make([]*otlpmetrics.ScopeMetrics, 5)
+	orig[0] = NewOrigPtrScopeMetrics()
+	orig[1] = NewOrigPtrScopeMetrics()
+	FillOrigTestScopeMetrics(orig[1])
+	orig[2] = NewOrigPtrScopeMetrics()
+	orig[3] = NewOrigPtrScopeMetrics()
+	FillOrigTestScopeMetrics(orig[3])
+	orig[4] = NewOrigPtrScopeMetrics()
 	return orig
 }
 
@@ -53,7 +56,7 @@ func GenerateOrigTestScopeMetricsSlice() []*otlpmetrics.ScopeMetrics {
 func UnmarshalJSONOrigScopeMetricsSlice(iter *json.Iterator) []*otlpmetrics.ScopeMetrics {
 	var orig []*otlpmetrics.ScopeMetrics
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.ScopeMetrics{})
+		orig = append(orig, NewOrigPtrScopeMetrics())
 		UnmarshalJSONOrigScopeMetrics(orig[len(orig)-1], iter)
 		return true
 	})

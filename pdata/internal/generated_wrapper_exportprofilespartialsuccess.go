@@ -7,23 +7,33 @@
 package internal
 
 import (
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"fmt"
+
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {
+func NewOrigExportProfilesPartialSuccess() otlpcollectorprofiles.ExportProfilesPartialSuccess {
+	return otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+}
+
+func NewOrigPtrExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
+	return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+}
+
+func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.ExportProfilesPartialSuccess) {
 	dest.RejectedProfiles = src.RejectedProfiles
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func FillOrigTestExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) {
+func FillOrigTestExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess) {
 	orig.RejectedProfiles = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, dest *json.Stream) {
+func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.RejectedProfiles != int64(0) {
 		dest.WriteObjectField("rejectedProfiles")
@@ -37,7 +47,7 @@ func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Expo
 }
 
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, iter *json.Iterator) {
+func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "rejectedProfiles", "rejected_profiles":
@@ -51,7 +61,7 @@ func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Ex
 	})
 }
 
-func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) int {
+func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess) int {
 	var n int
 	var l int
 	_ = l
@@ -65,7 +75,7 @@ func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Export
 	return n
 }
 
-func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, buf []byte) int {
+func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -85,6 +95,50 @@ func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Exp
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, buf []byte) error {
-	return orig.Unmarshal(buf)
+func UnmarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field RejectedProfiles", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.RejectedProfiles = int64(num)
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.ErrorMessage = string(buf[startPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

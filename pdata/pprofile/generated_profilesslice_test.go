@@ -19,8 +19,7 @@ import (
 func TestProfilesSlice(t *testing.T) {
 	es := NewProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newProfilesSlice(&[]*otlpprofiles.Profile{}, &state)
+	es = newProfilesSlice(&[]*otlpprofiles.Profile{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewProfile()
@@ -35,8 +34,9 @@ func TestProfilesSlice(t *testing.T) {
 }
 
 func TestProfilesSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newProfilesSlice(&[]*otlpprofiles.Profile{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newProfilesSlice(&[]*otlpprofiles.Profile{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestProfilesSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Profile) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestProfilesSlice_RemoveIfAll(t *testing.T) {

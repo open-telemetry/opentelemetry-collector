@@ -36,8 +36,7 @@ func newSpanLink(orig *otlptrace.Span_Link, state *internal.State) SpanLink {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanLink() SpanLink {
-	state := internal.StateMutable
-	return newSpanLink(&otlptrace.Span_Link{}, &state)
+	return newSpanLink(internal.NewOrigPtrSpan_Link(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

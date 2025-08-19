@@ -31,8 +31,7 @@ func (ms Float64Slice) getState() *internal.State {
 // NewFloat64Slice creates a new empty Float64Slice.
 func NewFloat64Slice() Float64Slice {
 	orig := []float64(nil)
-	state := internal.StateMutable
-	return Float64Slice(internal.NewFloat64Slice(&orig, &state))
+	return Float64Slice(internal.NewFloat64Slice(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []float64 slice.

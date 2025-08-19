@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	src := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
 	FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 	UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, dest)
+	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 			UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
+	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
+			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 
 func getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{
-		"empty": {},
+		"empty": NewOrigPtrSummaryDataPoint_ValueAtQuantile(),
 		"fill_test": func() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-			src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			src := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 			FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
 			return src
 		}(),

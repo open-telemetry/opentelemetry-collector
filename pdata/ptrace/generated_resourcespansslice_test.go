@@ -19,8 +19,7 @@ import (
 func TestResourceSpansSlice(t *testing.T) {
 	es := NewResourceSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, &state)
+	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceSpans()
@@ -35,8 +34,9 @@ func TestResourceSpansSlice(t *testing.T) {
 }
 
 func TestResourceSpansSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ResourceSpans) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestResourceSpansSlice_RemoveIfAll(t *testing.T) {

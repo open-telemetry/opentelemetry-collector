@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectorlogs "go.opentelemetry.io/proto/slim/otlp/collector/logs/v1"
+	"google.golang.org/protobuf/proto"
 
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportLogsServiceResponse(t *testing.T) {
-	src := &otlpcollectorlog.ExportLogsServiceResponse{}
-	dest := &otlpcollectorlog.ExportLogsServiceResponse{}
+	src := NewOrigPtrExportLogsServiceResponse()
+	dest := NewOrigPtrExportLogsServiceResponse()
 	CopyOrigExportLogsServiceResponse(dest, src)
-	assert.Equal(t, &otlpcollectorlog.ExportLogsServiceResponse{}, dest)
+	assert.Equal(t, NewOrigPtrExportLogsServiceResponse(), dest)
 	FillOrigTestExportLogsServiceResponse(src)
 	CopyOrigExportLogsServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigExportLogsServiceResponse(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponseUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectorlog.ExportLogsServiceResponse{}
+	dest := NewOrigPtrExportLogsServiceResponse()
 	UnmarshalJSONOrigExportLogsServiceResponse(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectorlog.ExportLogsServiceResponse{}, dest)
+	assert.Equal(t, NewOrigPtrExportLogsServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponse(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponse(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectorlog.ExportLogsServiceResponse{}
+			dest := NewOrigPtrExportLogsServiceResponse()
 			UnmarshalJSONOrigExportLogsServiceResponse(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponseUnknown(t *testing.T) {
+	dest := NewOrigPtrExportLogsServiceResponse()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportLogsServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrExportLogsServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponse(t *testing.T) {
@@ -61,18 +70,38 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponse(t *testing.T) {
 			gotSize := MarshalProtoOrigExportLogsServiceResponse(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectorlog.ExportLogsServiceResponse{}
+			dest := NewOrigPtrExportLogsServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportLogsServiceResponse(dest, buf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesExportLogsServiceResponse() map[string]*otlpcollectorlog.ExportLogsServiceResponse {
-	return map[string]*otlpcollectorlog.ExportLogsServiceResponse{
-		"empty": {},
-		"fill_test": func() *otlpcollectorlog.ExportLogsServiceResponse {
-			src := &otlpcollectorlog.ExportLogsServiceResponse{}
+func TestMarshalAndUnmarshalProtoViaProtobufExportLogsServiceResponse(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportLogsServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportLogsServiceResponse(src))
+			gotSize := MarshalProtoOrigExportLogsServiceResponse(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectorlogs.ExportLogsServiceResponse{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrExportLogsServiceResponse()
+			require.NoError(t, UnmarshalProtoOrigExportLogsServiceResponse(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func getEncodingTestValuesExportLogsServiceResponse() map[string]*otlpcollectorlogs.ExportLogsServiceResponse {
+	return map[string]*otlpcollectorlogs.ExportLogsServiceResponse{
+		"empty": NewOrigPtrExportLogsServiceResponse(),
+		"fill_test": func() *otlpcollectorlogs.ExportLogsServiceResponse {
+			src := NewOrigPtrExportLogsServiceResponse()
 			FillOrigTestExportLogsServiceResponse(src)
 			return src
 		}(),

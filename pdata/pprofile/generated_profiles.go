@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // Profiles is the top-level struct that is propagated through the profiles pipeline.
@@ -21,7 +21,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Profiles internal.Profiles
 
-func newProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest, state *internal.State) Profiles {
+func newProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state *internal.State) Profiles {
 	return Profiles(internal.NewProfiles(orig, state))
 }
 
@@ -30,8 +30,7 @@ func newProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest, state 
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfiles() Profiles {
-	state := internal.StateMutable
-	return newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{}, &state)
+	return newProfiles(internal.NewOrigPtrExportProfilesServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +43,7 @@ func (ms Profiles) MoveTo(dest Profiles) {
 		return
 	}
 	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorprofile.ExportProfilesServiceRequest{}
+	*ms.getOrig() = otlpcollectorprofiles.ExportProfilesServiceRequest{}
 }
 
 // ResourceProfiles returns the ResourceProfiles associated with this Profiles.
@@ -52,8 +51,8 @@ func (ms Profiles) ResourceProfiles() ResourceProfilesSlice {
 	return newResourceProfilesSlice(&ms.getOrig().ResourceProfiles, ms.getState())
 }
 
-// ProfilesDictionary returns the profilesdictionary associated with this Profiles.
-func (ms Profiles) ProfilesDictionary() ProfilesDictionary {
+// Dictionary returns the dictionary associated with this Profiles.
+func (ms Profiles) Dictionary() ProfilesDictionary {
 	return newProfilesDictionary(&ms.getOrig().Dictionary, ms.getState())
 }
 
@@ -63,7 +62,7 @@ func (ms Profiles) CopyTo(dest Profiles) {
 	internal.CopyOrigExportProfilesServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Profiles) getOrig() *otlpcollectorprofile.ExportProfilesServiceRequest {
+func (ms Profiles) getOrig() *otlpcollectorprofiles.ExportProfilesServiceRequest {
 	return internal.GetOrigProfiles(internal.Profiles(ms))
 }
 

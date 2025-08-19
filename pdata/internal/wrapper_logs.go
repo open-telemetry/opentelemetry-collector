@@ -22,8 +22,7 @@ func LogsToProto(l Logs) otlplogs.LogsData {
 // LogsFromProto internal helper to convert protobuf representation to Logs.
 // This function set exclusive state assuming that it's called only once per Logs.
 func LogsFromProto(orig otlplogs.LogsData) Logs {
-	state := StateMutable
 	return NewLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: orig.ResourceLogs,
-	}, &state)
+	}, NewState())
 }

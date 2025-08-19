@@ -19,8 +19,7 @@ import (
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, &state)
+	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewHistogramDataPoint()
@@ -35,8 +34,9 @@ func TestHistogramDataPointSlice(t *testing.T) {
 }
 
 func TestHistogramDataPointSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el HistogramDataPoint) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestHistogramDataPointSlice_RemoveIfAll(t *testing.T) {

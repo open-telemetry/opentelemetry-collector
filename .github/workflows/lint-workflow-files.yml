@@ -1,10 +1,14 @@
 name: Lint GitHub Workflow YAML Files
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     paths:
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
+      - '.github/actionlint.yaml'
 
 permissions:
   contents: read

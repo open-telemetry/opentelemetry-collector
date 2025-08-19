@@ -50,8 +50,9 @@ func TestNewInt32Slice(t *testing.T) {
 
 func TestInt32SliceReadOnly(t *testing.T) {
 	raw := []int32{1, 2, 3}
-	state := internal.StateReadOnly
-	ms := Int32Slice(internal.NewInt32Slice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := Int32Slice(internal.NewInt32Slice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, int32(1), ms.At(0))

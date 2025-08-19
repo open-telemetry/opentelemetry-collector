@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan_Event(t *testing.T) {
-	src := &otlptrace.Span_Event{}
-	dest := &otlptrace.Span_Event{}
+	src := NewOrigPtrSpan_Event()
+	dest := NewOrigPtrSpan_Event()
 	CopyOrigSpan_Event(dest, src)
-	assert.Equal(t, &otlptrace.Span_Event{}, dest)
+	assert.Equal(t, NewOrigPtrSpan_Event(), dest)
 	FillOrigTestSpan_Event(src)
 	CopyOrigSpan_Event(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigSpan_Event(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlptrace.Span_Event{}
+	dest := NewOrigPtrSpan_Event()
 	UnmarshalJSONOrigSpan_Event(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlptrace.Span_Event{}, dest)
+	assert.Equal(t, NewOrigPtrSpan_Event(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlptrace.Span_Event{}
+			dest := NewOrigPtrSpan_Event()
 			UnmarshalJSONOrigSpan_Event(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSpan_EventUnknown(t *testing.T) {
+	dest := NewOrigPtrSpan_Event()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSpan_Event(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 			gotSize := MarshalProtoOrigSpan_Event(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlptrace.Span_Event{}
+			dest := NewOrigPtrSpan_Event()
 			require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSpan_Event(t *testing.T) {
+	for name, src := range getEncodingTestValuesSpan_Event() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan_Event(src))
+			gotSize := MarshalProtoOrigSpan_Event(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlptrace.Span_Event{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSpan_Event()
+			require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 
 func getEncodingTestValuesSpan_Event() map[string]*otlptrace.Span_Event {
 	return map[string]*otlptrace.Span_Event{
-		"empty": {},
+		"empty": NewOrigPtrSpan_Event(),
 		"fill_test": func() *otlptrace.Span_Event {
-			src := &otlptrace.Span_Event{}
+			src := NewOrigPtrSpan_Event()
 			FillOrigTestSpan_Event(src)
 			return src
 		}(),

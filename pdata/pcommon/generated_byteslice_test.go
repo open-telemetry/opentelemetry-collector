@@ -50,8 +50,9 @@ func TestNewByteSlice(t *testing.T) {
 
 func TestByteSliceReadOnly(t *testing.T) {
 	raw := []byte{1, 2, 3}
-	state := internal.StateReadOnly
-	ms := ByteSlice(internal.NewByteSlice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := ByteSlice(internal.NewByteSlice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, byte(1), ms.At(0))

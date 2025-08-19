@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
-	src := &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	src := NewOrigPtrExportMetricsServiceRequest()
+	dest := NewOrigPtrExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, dest)
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 	FillOrigTestExportMetricsServiceRequest(src)
 	CopyOrigExportMetricsServiceRequest(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	dest := NewOrigPtrExportMetricsServiceRequest()
 	UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, dest)
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			dest := NewOrigPtrExportMetricsServiceRequest()
 			UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testing.T) {
+	dest := NewOrigPtrExportMetricsServiceRequest()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			dest := NewOrigPtrExportMetricsServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportMetricsServiceRequest() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
+			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectormetrics.ExportMetricsServiceRequest{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrExportMetricsServiceRequest()
+			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 
 func getEncodingTestValuesExportMetricsServiceRequest() map[string]*otlpcollectormetrics.ExportMetricsServiceRequest {
 	return map[string]*otlpcollectormetrics.ExportMetricsServiceRequest{
-		"empty": {},
+		"empty": NewOrigPtrExportMetricsServiceRequest(),
 		"fill_test": func() *otlpcollectormetrics.ExportMetricsServiceRequest {
-			src := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+			src := NewOrigPtrExportMetricsServiceRequest()
 			FillOrigTestExportMetricsServiceRequest(src)
 			return src
 		}(),

@@ -50,8 +50,9 @@ func TestNewStringSlice(t *testing.T) {
 
 func TestStringSliceReadOnly(t *testing.T) {
 	raw := []string{"a", "b", "c"}
-	state := internal.StateReadOnly
-	ms := StringSlice(internal.NewStringSlice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := StringSlice(internal.NewStringSlice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, string("a"), ms.At(0))

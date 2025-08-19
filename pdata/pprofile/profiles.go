@@ -3,18 +3,19 @@
 
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
-import (
-	"go.opentelemetry.io/collector/pdata/internal"
-)
+// Deprecated: [v0.133.0] use Dictionary().
+func (ms Profiles) ProfilesDictionary() ProfilesDictionary {
+	return ms.Dictionary()
+}
 
 // MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
 func (ms Profiles) MarkReadOnly() {
-	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
+	ms.getState().MarkReadOnly()
 }
 
 // IsReadOnly returns true if this ResourceProfiles instance is read-only.
 func (ms Profiles) IsReadOnly() bool {
-	return *ms.getState() == internal.StateReadOnly
+	return ms.getState().IsReadOnly()
 }
 
 // SampleCount calculates the total number of samples.

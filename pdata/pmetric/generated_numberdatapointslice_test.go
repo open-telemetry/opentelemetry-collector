@@ -19,8 +19,7 @@ import (
 func TestNumberDataPointSlice(t *testing.T) {
 	es := NewNumberDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, &state)
+	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewNumberDataPoint()
@@ -35,8 +34,9 @@ func TestNumberDataPointSlice(t *testing.T) {
 }
 
 func TestNumberDataPointSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el NumberDataPoint) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestNumberDataPointSlice_RemoveIfAll(t *testing.T) {

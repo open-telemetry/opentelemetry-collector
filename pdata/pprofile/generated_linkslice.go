@@ -34,8 +34,7 @@ func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
 	orig := []*otlpprofiles.Link(nil)
-	state := internal.StateMutable
-	return newLinkSlice(&orig, &state)
+	return newLinkSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Link{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLink())
 	return es.At(es.Len() - 1)
 }
 

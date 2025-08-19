@@ -29,8 +29,7 @@ func NewInt32Slice(orig *[]int32, state *State) Int32Slice {
 
 func GenerateTestInt32Slice() Int32Slice {
 	orig := GenerateOrigTestInt32Slice()
-	state := StateMutable
-	return NewInt32Slice(&orig, &state)
+	return NewInt32Slice(&orig, NewState())
 }
 
 func CopyOrigInt32Slice(dst, src []int32) []int32 {

@@ -31,8 +31,7 @@ func NewByteSlice(orig *[]byte, state *State) ByteSlice {
 
 func GenerateTestByteSlice() ByteSlice {
 	orig := GenerateOrigTestByteSlice()
-	state := StateMutable
-	return NewByteSlice(&orig, &state)
+	return NewByteSlice(&orig, NewState())
 }
 
 func CopyOrigByteSlice(dst, src []byte) []byte {

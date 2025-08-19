@@ -209,8 +209,8 @@ For security and performance reasons, it would not be appropriate to log the con
 It's very easy for logs to become too noisy. Even if errors are occurring frequently in the data pipeline, only the errors that are not
 handled automatically will be of interest to most users.
 
-With the above considerations, this proposal includes only that we add a DEBUG log for each individual outcome. This should be sufficient for
-detailed troubleshooting but does not impact users otherwise.
+With the above considerations, this proposal includes only that we add a DEBUG log for each error, with the attributes from the corresponding 
+metrics as well as the error message and item count. This should be sufficient for detailed troubleshooting but does not impact users otherwise.
 
 In the future, it may be helpful to define triggers for reporting repeated failures at a higher severity level. e.g. N number of failures in
 a row, or a moving average success %. For now, the criteria and necessary configurability is unclear so this is mentioned only as an example
