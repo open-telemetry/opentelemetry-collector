@@ -43,11 +43,9 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
 	orig := make([]*otlplogs.ScopeLogs, 5)
 	orig[0] = NewOrigPtrScopeLogs()
-	orig[1] = NewOrigPtrScopeLogs()
-	FillOrigTestScopeLogs(orig[1])
+	orig[1] = GenTestOrigScopeLogs()
 	orig[2] = NewOrigPtrScopeLogs()
-	orig[3] = NewOrigPtrScopeLogs()
-	FillOrigTestScopeLogs(orig[3])
+	orig[3] = GenTestOrigScopeLogs()
 	orig[4] = NewOrigPtrScopeLogs()
 	return orig
 }

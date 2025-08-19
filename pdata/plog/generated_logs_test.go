@@ -49,5 +49,6 @@ func TestLogs_ResourceLogs(t *testing.T) {
 }
 
 func generateTestLogs() Logs {
-	return Logs(internal.GenerateTestLogs())
+	ms := newLogs(internal.GenTestOrigExportLogsServiceRequest(), internal.NewState())
+	return ms
 }

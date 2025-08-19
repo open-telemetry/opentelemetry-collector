@@ -23,7 +23,7 @@ func TestCopyOrigScopeMetrics(t *testing.T) {
 	dest := NewOrigPtrScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
-	FillOrigTestScopeMetrics(src)
+	*src = *GenTestOrigScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigScopeMetricsFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrScopeMetrics()
+			require.Error(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
 	dest := NewOrigPtrScopeMetrics()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
 			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
 			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
@@ -97,13 +106,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
+func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Metrics/wrong_wire_type":   {0x14},
+		"Metrics/missing_value":     {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
 	return map[string]*otlpmetrics.ScopeMetrics{
-		"empty": NewOrigPtrScopeMetrics(),
-		"fill_test": func() *otlpmetrics.ScopeMetrics {
-			src := NewOrigPtrScopeMetrics()
-			FillOrigTestScopeMetrics(src)
-			return src
-		}(),
+		"empty":                    NewOrigPtrScopeMetrics(),
+		"Scope/test":               {Scope: *GenTestOrigInstrumentationScope()},
+		"Metrics/default_and_test": {Metrics: []*otlpmetrics.Metric{{}, GenTestOrigMetric()}},
+		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},
 	}
 }

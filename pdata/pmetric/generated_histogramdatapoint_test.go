@@ -148,7 +148,6 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	ms := NewHistogramDataPoint()
-	internal.FillOrigTestHistogramDataPoint(ms.orig)
+	ms := newHistogramDataPoint(internal.GenTestOrigHistogramDataPoint(), internal.NewState())
 	return ms
 }

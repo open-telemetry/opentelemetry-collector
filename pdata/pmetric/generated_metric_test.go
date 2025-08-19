@@ -82,7 +82,7 @@ func TestMetric_Gauge(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyGauge()
 	assert.Equal(t, NewGauge(), ms.Gauge())
-	internal.FillOrigTestGauge(ms.orig.GetData().(*otlpmetrics.Metric_Gauge).Gauge)
+	ms.orig.GetData().(*otlpmetrics.Metric_Gauge).Gauge = internal.GenTestOrigGauge()
 	assert.Equal(t, MetricTypeGauge, ms.Type())
 	assert.Equal(t, generateTestGauge(), ms.Gauge())
 	sharedState := internal.NewState()
@@ -94,7 +94,7 @@ func TestMetric_Sum(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySum()
 	assert.Equal(t, NewSum(), ms.Sum())
-	internal.FillOrigTestSum(ms.orig.GetData().(*otlpmetrics.Metric_Sum).Sum)
+	ms.orig.GetData().(*otlpmetrics.Metric_Sum).Sum = internal.GenTestOrigSum()
 	assert.Equal(t, MetricTypeSum, ms.Type())
 	assert.Equal(t, generateTestSum(), ms.Sum())
 	sharedState := internal.NewState()
@@ -106,7 +106,7 @@ func TestMetric_Histogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyHistogram()
 	assert.Equal(t, NewHistogram(), ms.Histogram())
-	internal.FillOrigTestHistogram(ms.orig.GetData().(*otlpmetrics.Metric_Histogram).Histogram)
+	ms.orig.GetData().(*otlpmetrics.Metric_Histogram).Histogram = internal.GenTestOrigHistogram()
 	assert.Equal(t, MetricTypeHistogram, ms.Type())
 	assert.Equal(t, generateTestHistogram(), ms.Histogram())
 	sharedState := internal.NewState()
@@ -118,7 +118,7 @@ func TestMetric_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyExponentialHistogram()
 	assert.Equal(t, NewExponentialHistogram(), ms.ExponentialHistogram())
-	internal.FillOrigTestExponentialHistogram(ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+	ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram = internal.GenTestOrigExponentialHistogram()
 	assert.Equal(t, MetricTypeExponentialHistogram, ms.Type())
 	assert.Equal(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
 	sharedState := internal.NewState()
@@ -130,7 +130,7 @@ func TestMetric_Summary(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySummary()
 	assert.Equal(t, NewSummary(), ms.Summary())
-	internal.FillOrigTestSummary(ms.orig.GetData().(*otlpmetrics.Metric_Summary).Summary)
+	ms.orig.GetData().(*otlpmetrics.Metric_Summary).Summary = internal.GenTestOrigSummary()
 	assert.Equal(t, MetricTypeSummary, ms.Type())
 	assert.Equal(t, generateTestSummary(), ms.Summary())
 	sharedState := internal.NewState()
@@ -146,7 +146,6 @@ func TestMetric_Metadata(t *testing.T) {
 }
 
 func generateTestMetric() Metric {
-	ms := NewMetric()
-	internal.FillOrigTestMetric(ms.orig)
+	ms := newMetric(internal.GenTestOrigMetric(), internal.NewState())
 	return ms
 }

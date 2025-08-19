@@ -23,7 +23,7 @@ func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
 	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
-	FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
+	*src = *GenTestOrigSummaryDataPoint_ValueAtQuantile()
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *t
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			require.Error(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
 	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *
 	}
 }
 
-func getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":            {0x02},
+		"Quantile/wrong_wire_type": {0xc},
+		"Quantile/missing_value":   {0x9},
+		"Value/wrong_wire_type":    {0x14},
+		"Value/missing_value":      {0x11},
+	}
+}
+
+func genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{
-		"empty": NewOrigPtrSummaryDataPoint_ValueAtQuantile(),
-		"fill_test": func() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-			src := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-			FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
-			return src
-		}(),
+		"empty":         NewOrigPtrSummaryDataPoint_ValueAtQuantile(),
+		"Quantile/test": {Quantile: float64(3.1415926)},
+		"Value/test":    {Value: float64(3.1415926)},
 	}
 }

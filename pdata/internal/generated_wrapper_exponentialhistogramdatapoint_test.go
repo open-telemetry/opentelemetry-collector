@@ -14,6 +14,7 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
 	dest := NewOrigPtrExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
-	FillOrigTestExponentialHistogramDataPoint(src)
+	*src = *GenTestOrigExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPointUnknown(t *test
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
+	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) 
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExponentialHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrExponentialHistogramDataPoint()
+			require.Error(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointUnknown(t *testing.T) {
 	dest := NewOrigPtrExponentialHistogramDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointUnknown(t *tes
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
+	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T)
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
+	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
@@ -97,16 +107,56 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *tes
 	}
 }
 
-func getEncodingTestValuesExponentialHistogramDataPoint() map[string]*otlpmetrics.ExponentialHistogramDataPoint {
+func genTestFailingUnmarshalProtoValuesExponentialHistogramDataPoint() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                     {0x02},
+		"Attributes/wrong_wire_type":        {0xc},
+		"Attributes/missing_value":          {0xa},
+		"StartTimeUnixNano/wrong_wire_type": {0x14},
+		"StartTimeUnixNano/missing_value":   {0x11},
+		"TimeUnixNano/wrong_wire_type":      {0x1c},
+		"TimeUnixNano/missing_value":        {0x19},
+		"Count/wrong_wire_type":             {0x24},
+		"Count/missing_value":               {0x21},
+		"Sum/wrong_wire_type":               {0x2c},
+		"Sum/missing_value":                 {0x29},
+		"Scale/wrong_wire_type":             {0x34},
+		"Scale/missing_value":               {0x30},
+		"ZeroCount/wrong_wire_type":         {0x3c},
+		"ZeroCount/missing_value":           {0x39},
+		"Positive/wrong_wire_type":          {0x44},
+		"Positive/missing_value":            {0x42},
+		"Negative/wrong_wire_type":          {0x4c},
+		"Negative/missing_value":            {0x4a},
+		"Flags/wrong_wire_type":             {0x54},
+		"Flags/missing_value":               {0x50},
+		"Exemplars/wrong_wire_type":         {0x5c},
+		"Exemplars/missing_value":           {0x5a},
+		"Min/wrong_wire_type":               {0x64},
+		"Min/missing_value":                 {0x61},
+		"Max/wrong_wire_type":               {0x6c},
+		"Max/missing_value":                 {0x69},
+		"ZeroThreshold/wrong_wire_type":     {0x74},
+		"ZeroThreshold/missing_value":       {0x71},
+	}
+}
+
+func genTestEncodingValuesExponentialHistogramDataPoint() map[string]*otlpmetrics.ExponentialHistogramDataPoint {
 	return map[string]*otlpmetrics.ExponentialHistogramDataPoint{
-		"empty": NewOrigPtrExponentialHistogramDataPoint(),
-		"fill_test": func() *otlpmetrics.ExponentialHistogramDataPoint {
-			src := NewOrigPtrExponentialHistogramDataPoint()
-			FillOrigTestExponentialHistogramDataPoint(src)
-			return src
-		}(),
-		"default_sum": {Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(0)}},
-		"default_min": {Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(0)}},
-		"default_max": {Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(0)}},
+		"empty":                       NewOrigPtrExponentialHistogramDataPoint(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
+		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
+		"Count/test":                  {Count: uint64(13)}, "Sum/default": {Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(0)}},
+		"Sum/test":                   {Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		"Scale/test":                 {Scale: int32(13)},
+		"ZeroCount/test":             {ZeroCount: uint64(13)},
+		"Positive/test":              {Positive: *GenTestOrigExponentialHistogramDataPoint_Buckets()},
+		"Negative/test":              {Negative: *GenTestOrigExponentialHistogramDataPoint_Buckets()},
+		"Flags/test":                 {Flags: uint32(13)},
+		"Exemplars/default_and_test": {Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}}, "Min/default": {Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(0)}},
+		"Min/test": {Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}}, "Max/default": {Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(0)}},
+		"Max/test":           {Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}},
+		"ZeroThreshold/test": {ZeroThreshold: float64(3.1415926)},
 	}
 }

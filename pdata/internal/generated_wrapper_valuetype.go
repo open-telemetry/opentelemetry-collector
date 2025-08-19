@@ -28,10 +28,12 @@ func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestValueType(orig *otlpprofiles.ValueType) {
+func GenTestOrigValueType() *otlpprofiles.ValueType {
+	orig := NewOrigPtrValueType()
 	orig.TypeStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
 	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

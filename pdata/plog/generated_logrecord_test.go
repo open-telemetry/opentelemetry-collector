@@ -81,8 +81,8 @@ func TestLogRecord_SeverityText(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
-	internal.FillOrigTestAnyValue(&ms.orig.Body)
-	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Body())
+	ms.orig.Body = *internal.GenTestOrigAnyValue()
+	assert.Equal(t, pcommon.Value(internal.NewValue(internal.GenTestOrigAnyValue(), ms.state)), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
@@ -137,7 +137,6 @@ func TestLogRecord_EventName(t *testing.T) {
 }
 
 func generateTestLogRecord() LogRecord {
-	ms := NewLogRecord()
-	internal.FillOrigTestLogRecord(ms.orig)
+	ms := newLogRecord(internal.GenTestOrigLogRecord(), internal.NewState())
 	return ms
 }

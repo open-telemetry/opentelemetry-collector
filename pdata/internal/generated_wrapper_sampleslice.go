@@ -43,11 +43,9 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
 	orig := make([]*otlpprofiles.Sample, 5)
 	orig[0] = NewOrigPtrSample()
-	orig[1] = NewOrigPtrSample()
-	FillOrigTestSample(orig[1])
+	orig[1] = GenTestOrigSample()
 	orig[2] = NewOrigPtrSample()
-	orig[3] = NewOrigPtrSample()
-	FillOrigTestSample(orig[3])
+	orig[3] = GenTestOrigSample()
 	orig[4] = NewOrigPtrSample()
 	return orig
 }

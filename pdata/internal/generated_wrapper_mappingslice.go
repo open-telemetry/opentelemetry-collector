@@ -43,11 +43,9 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
 	orig := make([]*otlpprofiles.Mapping, 5)
 	orig[0] = NewOrigPtrMapping()
-	orig[1] = NewOrigPtrMapping()
-	FillOrigTestMapping(orig[1])
+	orig[1] = GenTestOrigMapping()
 	orig[2] = NewOrigPtrMapping()
-	orig[3] = NewOrigPtrMapping()
-	FillOrigTestMapping(orig[3])
+	orig[3] = GenTestOrigMapping()
 	orig[4] = NewOrigPtrMapping()
 	return orig
 }

@@ -14,6 +14,7 @@ import (
 	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigResource(t *testing.T) {
 	dest := NewOrigPtrResource()
 	CopyOrigResource(dest, src)
 	assert.Equal(t, NewOrigPtrResource(), dest)
-	FillOrigTestResource(src)
+	*src = *GenTestOrigResource()
 	CopyOrigResource(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigResourceUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
-	for name, src := range getEncodingTestValuesResource() {
+	for name, src := range genTestEncodingValuesResource() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigResourceFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesResource() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrResource()
+			require.Error(t, UnmarshalProtoOrigResource(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
 	dest := NewOrigPtrResource()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
-	for name, src := range getEncodingTestValuesResource() {
+	for name, src := range genTestEncodingValuesResource() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResource(src))
 			gotSize := MarshalProtoOrigResource(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
-	for name, src := range getEncodingTestValuesResource() {
+	for name, src := range genTestEncodingValuesResource() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResource(src))
 			gotSize := MarshalProtoOrigResource(src, buf)
@@ -97,13 +107,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesResource() map[string]*otlpresource.Resource {
+func genTestFailingUnmarshalProtoValuesResource() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"Attributes/wrong_wire_type":             {0xc},
+		"Attributes/missing_value":               {0xa},
+		"DroppedAttributesCount/wrong_wire_type": {0x14},
+		"DroppedAttributesCount/missing_value":   {0x10},
+		"EntityRefs/wrong_wire_type":             {0x1c},
+		"EntityRefs/missing_value":               {0x1a},
+	}
+}
+
+func genTestEncodingValuesResource() map[string]*otlpresource.Resource {
 	return map[string]*otlpresource.Resource{
-		"empty": NewOrigPtrResource(),
-		"fill_test": func() *otlpresource.Resource {
-			src := NewOrigPtrResource()
-			FillOrigTestResource(src)
-			return src
-		}(),
+		"empty":                       NewOrigPtrResource(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
+		"EntityRefs/default_and_test": {EntityRefs: []*otlpcommon.EntityRef{{}, GenTestOrigEntityRef()}},
 	}
 }

@@ -40,13 +40,14 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func FillOrigTestProfile(orig *otlpprofiles.Profile) {
+func GenTestOrigProfile() *otlpprofiles.Profile {
+	orig := NewOrigPtrProfile()
 	orig.SampleType = GenerateOrigTestValueTypeSlice()
 	orig.Sample = GenerateOrigTestSampleSlice()
 	orig.LocationIndices = GenerateOrigTestInt32Slice()
 	orig.TimeNanos = 1234567890
 	orig.DurationNanos = 1234567890
-	FillOrigTestValueType(&orig.PeriodType)
+	orig.PeriodType = *GenTestOrigValueType()
 	orig.Period = int64(13)
 	orig.CommentStrindices = GenerateOrigTestInt32Slice()
 	orig.DefaultSampleTypeIndex = int32(13)
@@ -55,6 +56,7 @@ func FillOrigTestProfile(orig *otlpprofiles.Profile) {
 	orig.OriginalPayloadFormat = "test_originalpayloadformat"
 	orig.OriginalPayload = GenerateOrigTestByteSlice()
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

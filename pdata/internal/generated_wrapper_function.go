@@ -29,11 +29,13 @@ func CopyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.StartLine = src.StartLine
 }
 
-func FillOrigTestFunction(orig *otlpprofiles.Function) {
+func GenTestOrigFunction() *otlpprofiles.Function {
+	orig := NewOrigPtrFunction()
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)
 	orig.StartLine = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

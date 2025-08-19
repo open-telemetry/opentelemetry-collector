@@ -49,5 +49,6 @@ func TestTraces_ResourceSpans(t *testing.T) {
 }
 
 func generateTestTraces() Traces {
-	return Traces(internal.GenerateTestTraces())
+	ms := newTraces(internal.GenTestOrigExportTraceServiceRequest(), internal.NewState())
+	return ms
 }

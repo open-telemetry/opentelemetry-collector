@@ -26,8 +26,10 @@ func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func FillOrigTestSummary(orig *otlpmetrics.Summary) {
+func GenTestOrigSummary() *otlpmetrics.Summary {
+	orig := NewOrigPtrSummary()
 	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

@@ -14,6 +14,7 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigNumberDataPoint(t *testing.T) {
 	dest := NewOrigPtrNumberDataPoint()
 	CopyOrigNumberDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrNumberDataPoint(), dest)
-	FillOrigTestNumberDataPoint(src)
+	*src = *GenTestOrigNumberDataPoint()
 	CopyOrigNumberDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
+	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigNumberDataPointFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesNumberDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrNumberDataPoint()
+			require.Error(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
 	dest := NewOrigPtrNumberDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
+	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
 			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
+	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
 			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
@@ -97,15 +107,39 @@ func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
+func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                     {0x02},
+		"Attributes/wrong_wire_type":        {0x3c},
+		"Attributes/missing_value":          {0x3a},
+		"StartTimeUnixNano/wrong_wire_type": {0x14},
+		"StartTimeUnixNano/missing_value":   {0x11},
+		"TimeUnixNano/wrong_wire_type":      {0x1c},
+		"TimeUnixNano/missing_value":        {0x19},
+
+		"AsDouble/wrong_wire_type": {0x24},
+		"AsDouble/missing_value":   {0x21},
+
+		"AsInt/wrong_wire_type":     {0x34},
+		"AsInt/missing_value":       {0x31},
+		"Exemplars/wrong_wire_type": {0x2c},
+		"Exemplars/missing_value":   {0x2a},
+		"Flags/wrong_wire_type":     {0x44},
+		"Flags/missing_value":       {0x40},
+	}
+}
+
+func genTestEncodingValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
 	return map[string]*otlpmetrics.NumberDataPoint{
-		"empty": NewOrigPtrNumberDataPoint(),
-		"fill_test": func() *otlpmetrics.NumberDataPoint {
-			src := NewOrigPtrNumberDataPoint()
-			FillOrigTestNumberDataPoint(src)
-			return src
-		}(),
-		"oneof_double": {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
-		"oneof_int":    {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
+		"empty":                       NewOrigPtrNumberDataPoint(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
+		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
+		"AsDouble/default":            {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
+		"AsDouble/test":               {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}},
+		"AsInt/default":               {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
+		"AsInt/test":                  {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(13)}},
+		"Exemplars/default_and_test":  {Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}},
+		"Flags/test":                  {Flags: uint32(13)},
 	}
 }

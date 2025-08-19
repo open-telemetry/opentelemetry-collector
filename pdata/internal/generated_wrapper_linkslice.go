@@ -43,11 +43,9 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
 	orig := make([]*otlpprofiles.Link, 5)
 	orig[0] = NewOrigPtrLink()
-	orig[1] = NewOrigPtrLink()
-	FillOrigTestLink(orig[1])
+	orig[1] = GenTestOrigLink()
 	orig[2] = NewOrigPtrLink()
-	orig[3] = NewOrigPtrLink()
-	FillOrigTestLink(orig[3])
+	orig[3] = GenTestOrigLink()
 	orig[4] = NewOrigPtrLink()
 	return orig
 }

@@ -71,12 +71,18 @@ func (ptf *TypedField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (ptf *TypedField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("typedSetTestTemplate", []byte(typedSetTestTemplate))
 	return template.Execute(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateTestValue(*messageStruct) string { return "" }
+func (ptf *TypedField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
+	return ptf.toProtoField().GenTestFailingUnmarshalProtoValues()
+}
+
+func (ptf *TypedField) GenerateTestEncodingValues(*messageStruct) string {
+	return ptf.toProtoField().GenTestEncodingValues()
+}
 
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("typedCopyOrigTemplate", []byte(typedCopyOrigTemplate))

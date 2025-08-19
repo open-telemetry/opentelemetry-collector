@@ -23,7 +23,7 @@ func TestCopyOrigStatus(t *testing.T) {
 	dest := NewOrigPtrStatus()
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, NewOrigPtrStatus(), dest)
-	FillOrigTestStatus(src)
+	*src = *GenTestOrigStatus()
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
+	for name, src := range genTestEncodingValuesStatus() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigStatusFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesStatus() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrStatus()
+			require.Error(t, UnmarshalProtoOrigStatus(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
 	dest := NewOrigPtrStatus()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
+	for name, src := range genTestEncodingValuesStatus() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigStatus(src))
 			gotSize := MarshalProtoOrigStatus(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
+	for name, src := range genTestEncodingValuesStatus() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigStatus(src))
 			gotSize := MarshalProtoOrigStatus(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesStatus() map[string]*otlptrace.Status {
+func genTestFailingUnmarshalProtoValuesStatus() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":           {0x02},
+		"Message/wrong_wire_type": {0x14},
+		"Message/missing_value":   {0x12},
+		"Code/wrong_wire_type":    {0x1c},
+		"Code/missing_value":      {0x18},
+	}
+}
+
+func genTestEncodingValuesStatus() map[string]*otlptrace.Status {
 	return map[string]*otlptrace.Status{
-		"empty": NewOrigPtrStatus(),
-		"fill_test": func() *otlptrace.Status {
-			src := NewOrigPtrStatus()
-			FillOrigTestStatus(src)
-			return src
-		}(),
+		"empty":        NewOrigPtrStatus(),
+		"Message/test": {Message: "test_message"},
+		"Code/test":    {Code: otlptrace.Status_StatusCode(13)},
 	}
 }

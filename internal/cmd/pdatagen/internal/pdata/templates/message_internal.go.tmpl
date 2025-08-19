@@ -30,12 +30,6 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := NewOrigPtr{{ .originName }}()
-	FillOrigTest{{ .originName }}(orig)
-	return New{{ .structName }}(orig, NewState())
-}
-
 {{ end }}
 
 func NewOrig{{ .originName }}() {{ .originFullName }} {
@@ -52,10 +46,12 @@ func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
 	{{- end }}
 }
 
-func FillOrigTest{{ .originName }}(orig *{{ .originFullName }}) {
+func GenTestOrig{{ .originName }}() *{{ .originFullName }} {
+	orig := NewOrigPtr{{ .originName }}()
 	{{- range .fields }}
-	{{ .GenerateSetWithTestValue $.messageStruct }}
+	{{ .GenerateTestValue $.messageStruct }}
 	{{- end }}
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

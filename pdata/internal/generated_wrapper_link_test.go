@@ -23,7 +23,7 @@ func TestCopyOrigLink(t *testing.T) {
 	dest := NewOrigPtrLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, NewOrigPtrLink(), dest)
-	FillOrigTestLink(src)
+	*src = *GenTestOrigLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
+	for name, src := range genTestEncodingValuesLink() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigLinkFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesLink() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrLink()
+			require.Error(t, UnmarshalProtoOrigLink(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
 	dest := NewOrigPtrLink()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
+	for name, src := range genTestEncodingValuesLink() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLink(src))
 			gotSize := MarshalProtoOrigLink(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
+	for name, src := range genTestEncodingValuesLink() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLink(src))
 			gotSize := MarshalProtoOrigLink(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLink() map[string]*otlpprofiles.Link {
+func genTestFailingUnmarshalProtoValuesLink() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":           {0x02},
+		"TraceId/wrong_wire_type": {0xc},
+		"TraceId/missing_value":   {0xa},
+		"SpanId/wrong_wire_type":  {0x14},
+		"SpanId/missing_value":    {0x12},
+	}
+}
+
+func genTestEncodingValuesLink() map[string]*otlpprofiles.Link {
 	return map[string]*otlpprofiles.Link{
-		"empty": NewOrigPtrLink(),
-		"fill_test": func() *otlpprofiles.Link {
-			src := NewOrigPtrLink()
-			FillOrigTestLink(src)
-			return src
-		}(),
+		"empty":        NewOrigPtrLink(),
+		"TraceId/test": {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":  {SpanId: *GenTestOrigSpanID()},
 	}
 }

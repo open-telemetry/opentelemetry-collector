@@ -61,13 +61,14 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
 }
 
-func FillOrigTestMetric(orig *otlpmetrics.Metric) {
+func GenTestOrigMetric() *otlpmetrics.Metric {
+	orig := NewOrigPtrMetric()
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
-	orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	FillOrigTestSum(orig.GetSum())
+	orig.Data = &otlpmetrics.Metric_Sum{Sum: GenTestOrigSum()}
 	orig.Metadata = GenerateOrigTestKeyValueSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

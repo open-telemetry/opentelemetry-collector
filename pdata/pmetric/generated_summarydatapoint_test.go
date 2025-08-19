@@ -102,7 +102,6 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	ms := NewSummaryDataPoint()
-	internal.FillOrigTestSummaryDataPoint(ms.orig)
+	ms := newSummaryDataPoint(internal.GenTestOrigSummaryDataPoint(), internal.NewState())
 	return ms
 }

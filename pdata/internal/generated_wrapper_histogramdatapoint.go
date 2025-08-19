@@ -65,7 +65,8 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	}
 }
 
-func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
+func GenTestOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+	orig := NewOrigPtrHistogramDataPoint()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
@@ -77,6 +78,7 @@ func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
 	orig.Flags = 1
 	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

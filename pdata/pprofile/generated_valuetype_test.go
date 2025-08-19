@@ -71,7 +71,6 @@ func TestValueType_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestValueType() ValueType {
-	ms := NewValueType()
-	internal.FillOrigTestValueType(ms.orig)
+	ms := newValueType(internal.GenTestOrigValueType(), internal.NewState())
 	return ms
 }
