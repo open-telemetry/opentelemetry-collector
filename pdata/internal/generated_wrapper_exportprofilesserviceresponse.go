@@ -38,15 +38,14 @@ func MarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.Ex
 
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 			UnmarshalJSONOrigExportProfilesPartialSuccess(&orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) int {

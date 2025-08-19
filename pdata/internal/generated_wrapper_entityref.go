@@ -87,21 +87,26 @@ func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 
 // UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		case "type":
 			orig.Type = iter.ReadString()
 		case "idKeys", "id_keys":
-			orig.IdKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.IdKeys = append(orig.IdKeys, iter.ReadString())
+			}
+
 		case "descriptionKeys", "description_keys":
-			orig.DescriptionKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {

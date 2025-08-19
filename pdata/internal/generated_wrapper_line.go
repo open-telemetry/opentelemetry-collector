@@ -52,7 +52,7 @@ func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
 
 // UnmarshalJSONOrigLine unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "functionIndex", "function_index":
 			orig.FunctionIndex = iter.ReadInt32()
@@ -63,8 +63,7 @@ func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLine(orig *otlpprofiles.Line) int {

@@ -46,7 +46,7 @@ func MarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, dest *json.S
 
 // UnmarshalJSONOrigAttributeUnit unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributeKeyStrindex", "attribute_key_strindex":
 			orig.AttributeKeyStrindex = iter.ReadInt32()
@@ -55,8 +55,7 @@ func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {

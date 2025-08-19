@@ -94,7 +94,7 @@ func MarshalJSONOrigMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
 
 // UnmarshalJSONOrigMapping unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "memoryStart", "memory_start":
 			orig.MemoryStart = iter.ReadUint64()
@@ -105,7 +105,10 @@ func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
 		case "filenameStrindex", "filename_strindex":
 			orig.FilenameStrindex = iter.ReadInt32()
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		case "hasFunctions", "has_functions":
 			orig.HasFunctions = iter.ReadBool()
 		case "hasFilenames", "has_filenames":
@@ -117,8 +120,7 @@ func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigMapping(orig *otlpprofiles.Mapping) int {

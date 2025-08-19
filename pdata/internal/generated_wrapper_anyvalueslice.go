@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Slice struct {
@@ -55,16 +54,5 @@ func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
 	orig := make([]otlpcommon.AnyValue, 5)
 	orig[1] = *GenTestOrigAnyValue()
 	orig[3] = *GenTestOrigAnyValue()
-	return orig
-}
-
-// UnmarshalJSONOrigAnyValueSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
-	var orig []otlpcommon.AnyValue
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, otlpcommon.AnyValue{})
-		UnmarshalJSONOrigAnyValue(&orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

@@ -69,9 +69,6 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 	dest.{{ .fieldName }}_ = nil
 }`
 
-const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
-		orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
-
 type OptionalPrimitiveField struct {
 	fieldName string
 	protoID   uint32
@@ -111,8 +108,7 @@ func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string
 }
 
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("optionalPrimitiveUnmarshalJSONTemplate", []byte(optionalPrimitiveUnmarshalJSONTemplate))
-	return template.Execute(t, opv.templateFields(ms))
+	return opv.toProtoField(ms, false).GenUnmarshalJSON()
 }
 
 func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {

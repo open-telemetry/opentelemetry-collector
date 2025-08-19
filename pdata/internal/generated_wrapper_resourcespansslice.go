@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptrace.ResourceSpans {
@@ -47,16 +46,5 @@ func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 	orig[2] = NewOrigResourceSpans()
 	orig[3] = GenTestOrigResourceSpans()
 	orig[4] = NewOrigResourceSpans()
-	return orig
-}
-
-// UnmarshalJSONOrigResourceSpansSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigResourceSpansSlice(iter *json.Iterator) []*otlptrace.ResourceSpans {
-	var orig []*otlptrace.ResourceSpans
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigResourceSpans())
-		UnmarshalJSONOrigResourceSpans(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

@@ -85,23 +85,34 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 
 // UnmarshalJSONOrigLocation unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingIndex", "mapping_index":
-			orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
+			{
+				ofm := &otlpprofiles.Location_MappingIndex{}
+				ofm.MappingIndex = iter.ReadInt32()
+				orig.MappingIndex_ = ofm
+			}
+
 		case "address":
 			orig.Address = iter.ReadUint64()
 		case "line":
-			orig.Line = UnmarshalJSONOrigLineSlice(iter)
+			for iter.ReadArray() {
+				orig.Line = append(orig.Line, NewOrigLine())
+				UnmarshalJSONOrigLine(orig.Line[len(orig.Line)-1], iter)
+			}
+
 		case "isFolded", "is_folded":
 			orig.IsFolded = iter.ReadBool()
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {

@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
@@ -47,16 +46,5 @@ func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
 	orig[2] = NewOrigSpan_Event()
 	orig[3] = GenTestOrigSpan_Event()
 	orig[4] = NewOrigSpan_Event()
-	return orig
-}
-
-// UnmarshalJSONOrigSpan_EventSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSpan_EventSlice(iter *json.Iterator) []*otlptrace.Span_Event {
-	var orig []*otlptrace.Span_Event
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigSpan_Event())
-		UnmarshalJSONOrigSpan_Event(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

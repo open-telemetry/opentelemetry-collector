@@ -82,19 +82,26 @@ func MarshalJSONOrigResource(orig *otlpresource.Resource, dest *json.Stream) {
 
 // UnmarshalJSONOrigResource unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResource(orig *otlpresource.Resource, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "entityRefs", "entity_refs":
-			orig.EntityRefs = UnmarshalJSONOrigEntityRefSlice(iter)
+			for iter.ReadArray() {
+				orig.EntityRefs = append(orig.EntityRefs, NewOrigEntityRef())
+				UnmarshalJSONOrigEntityRef(orig.EntityRefs[len(orig.EntityRefs)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResource(orig *otlpresource.Resource) int {

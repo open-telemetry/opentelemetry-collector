@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.Function {
@@ -47,16 +46,5 @@ func GenerateOrigTestFunctionSlice() []*otlpprofiles.Function {
 	orig[2] = NewOrigFunction()
 	orig[3] = GenTestOrigFunction()
 	orig[4] = NewOrigFunction()
-	return orig
-}
-
-// UnmarshalJSONOrigFunctionSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigFunctionSlice(iter *json.Iterator) []*otlpprofiles.Function {
-	var orig []*otlpprofiles.Function
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigFunction())
-		UnmarshalJSONOrigFunction(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

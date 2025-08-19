@@ -53,17 +53,20 @@ func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram,
 
 // UnmarshalJSONOrigExponentialHistogram unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
+				UnmarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {

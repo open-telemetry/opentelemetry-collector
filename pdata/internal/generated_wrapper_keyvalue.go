@@ -44,7 +44,7 @@ func MarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, dest *json.Stream) {
 
 // UnmarshalJSONOrigAttribute unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "key":
 			orig.Key = iter.ReadString()
@@ -53,8 +53,7 @@ func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigKeyValue(orig *otlpcommon.KeyValue) int {

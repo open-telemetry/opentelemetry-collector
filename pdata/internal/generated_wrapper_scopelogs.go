@@ -56,19 +56,22 @@ func MarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, dest *json.Stream) {
 
 // UnmarshalJSONOrigScopeLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
 		case "logRecords", "log_records":
-			orig.LogRecords = UnmarshalJSONOrigLogRecordSlice(iter)
+			for iter.ReadArray() {
+				orig.LogRecords = append(orig.LogRecords, NewOrigLogRecord())
+				UnmarshalJSONOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) int {

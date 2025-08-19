@@ -53,7 +53,7 @@ func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
 
 // UnmarshalJSONOrigValueType unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "typeStrindex", "type_strindex":
 			orig.TypeStrindex = iter.ReadInt32()
@@ -64,8 +64,7 @@ func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterato
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {

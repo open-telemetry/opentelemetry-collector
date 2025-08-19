@@ -52,17 +52,19 @@ func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expo
 
 // UnmarshalJSONOrigExponentialHistogramDataPointBuckets unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "offset":
 			orig.Offset = iter.ReadInt32()
 		case "bucketCounts", "bucket_counts":
-			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
+			for iter.ReadArray() {
+				orig.BucketCounts = append(orig.BucketCounts, iter.ReadUint64())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) int {

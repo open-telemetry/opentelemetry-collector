@@ -94,32 +94,45 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 
 // UnmarshalJSONOrigNumberDataPoint unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "startTimeUnixNano", "start_time_unix_nano":
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 
 		case "asDouble", "as_double":
-			orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
-				AsDouble: iter.ReadFloat64(),
+			{
+				ofm := &otlpmetrics.NumberDataPoint_AsDouble{}
+				ofm.AsDouble = iter.ReadFloat64()
+				orig.Value = ofm
 			}
+
 		case "asInt", "as_int":
-			orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
-				AsInt: iter.ReadInt64(),
+			{
+				ofm := &otlpmetrics.NumberDataPoint_AsInt{}
+				ofm.AsInt = iter.ReadInt64()
+				orig.Value = ofm
 			}
+
 		case "exemplars":
-			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+			for iter.ReadArray() {
+				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
+				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+			}
+
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {

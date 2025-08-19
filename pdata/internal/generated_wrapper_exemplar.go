@@ -83,30 +83,39 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 
 // UnmarshalJSONOrigExemplar unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "filteredAttributes", "filtered_attributes":
-			orig.FilteredAttributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], iter)
+			}
+
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 
 		case "asDouble", "as_double":
-			orig.Value = &otlpmetrics.Exemplar_AsDouble{
-				AsDouble: iter.ReadFloat64(),
+			{
+				ofm := &otlpmetrics.Exemplar_AsDouble{}
+				ofm.AsDouble = iter.ReadFloat64()
+				orig.Value = ofm
 			}
+
 		case "asInt", "as_int":
-			orig.Value = &otlpmetrics.Exemplar_AsInt{
-				AsInt: iter.ReadInt64(),
+			{
+				ofm := &otlpmetrics.Exemplar_AsInt{}
+				ofm.AsInt = iter.ReadInt64()
+				orig.Value = ofm
 			}
+
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {

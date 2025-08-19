@@ -46,15 +46,18 @@ func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
 
 // UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigSummaryDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
+				UnmarshalJSONOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {

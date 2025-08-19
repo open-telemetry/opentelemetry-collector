@@ -148,14 +148,25 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 
 // UnmarshalJSONOrigProfile unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "sampleType", "sample_type":
-			orig.SampleType = UnmarshalJSONOrigValueTypeSlice(iter)
+			for iter.ReadArray() {
+				orig.SampleType = append(orig.SampleType, NewOrigValueType())
+				UnmarshalJSONOrigValueType(orig.SampleType[len(orig.SampleType)-1], iter)
+			}
+
 		case "sample":
-			orig.Sample = UnmarshalJSONOrigSampleSlice(iter)
+			for iter.ReadArray() {
+				orig.Sample = append(orig.Sample, NewOrigSample())
+				UnmarshalJSONOrigSample(orig.Sample[len(orig.Sample)-1], iter)
+			}
+
 		case "locationIndices", "location_indices":
-			orig.LocationIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.LocationIndices = append(orig.LocationIndices, iter.ReadInt32())
+			}
+
 		case "timeNanos", "time_nanos":
 			orig.TimeNanos = iter.ReadInt64()
 		case "durationNanos", "duration_nanos":
@@ -165,24 +176,29 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 		case "period":
 			orig.Period = iter.ReadInt64()
 		case "commentStrindices", "comment_strindices":
-			orig.CommentStrindices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.CommentStrindices = append(orig.CommentStrindices, iter.ReadInt32())
+			}
+
 		case "defaultSampleTypeIndex", "default_sample_type_index":
 			orig.DefaultSampleTypeIndex = iter.ReadInt32()
 		case "profileId", "profile_id":
-			orig.ProfileId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigProfileID(&orig.ProfileId, iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "originalPayloadFormat", "original_payload_format":
 			orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			orig.OriginalPayload = UnmarshalJSONOrigByteSlice(iter)
+			orig.OriginalPayload = iter.ReadBytes()
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {

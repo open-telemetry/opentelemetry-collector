@@ -66,21 +66,24 @@ func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 
 // UnmarshalJSONOrigSpanEvent unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "name":
 			orig.Name = iter.ReadString()
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {

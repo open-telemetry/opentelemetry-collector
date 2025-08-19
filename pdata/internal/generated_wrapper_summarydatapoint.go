@@ -91,10 +91,14 @@ func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *j
 
 // UnmarshalJSONOrigSummaryDataPoint unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "startTimeUnixNano", "start_time_unix_nano":
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
@@ -104,14 +108,17 @@ func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter 
 		case "sum":
 			orig.Sum = iter.ReadFloat64()
 		case "quantileValues", "quantile_values":
-			orig.QuantileValues = UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter)
+			for iter.ReadArray() {
+				orig.QuantileValues = append(orig.QuantileValues, NewOrigSummaryDataPoint_ValueAtQuantile())
+				UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], iter)
+			}
+
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {

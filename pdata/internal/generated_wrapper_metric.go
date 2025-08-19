@@ -125,7 +125,7 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 
 // UnmarshalJSONOrigMetric unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
 			orig.Name = iter.ReadString()
@@ -135,32 +135,55 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 			orig.Unit = iter.ReadString()
 
 		case "gauge":
-			val := &otlpmetrics.Gauge{}
-			orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-			UnmarshalJSONOrigGauge(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Gauge{}
+				ofm.Gauge = NewOrigGauge()
+				UnmarshalJSONOrigGauge(ofm.Gauge, iter)
+				orig.Data = ofm
+			}
+
 		case "sum":
-			val := &otlpmetrics.Sum{}
-			orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
-			UnmarshalJSONOrigSum(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Sum{}
+				ofm.Sum = NewOrigSum()
+				UnmarshalJSONOrigSum(ofm.Sum, iter)
+				orig.Data = ofm
+			}
+
 		case "histogram":
-			val := &otlpmetrics.Histogram{}
-			orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-			UnmarshalJSONOrigHistogram(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Histogram{}
+				ofm.Histogram = NewOrigHistogram()
+				UnmarshalJSONOrigHistogram(ofm.Histogram, iter)
+				orig.Data = ofm
+			}
+
 		case "exponentialHistogram", "exponential_histogram":
-			val := &otlpmetrics.ExponentialHistogram{}
-			orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-			UnmarshalJSONOrigExponentialHistogram(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_ExponentialHistogram{}
+				ofm.ExponentialHistogram = NewOrigExponentialHistogram()
+				UnmarshalJSONOrigExponentialHistogram(ofm.ExponentialHistogram, iter)
+				orig.Data = ofm
+			}
+
 		case "summary":
-			val := &otlpmetrics.Summary{}
-			orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
-			UnmarshalJSONOrigSummary(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Summary{}
+				ofm.Summary = NewOrigSummary()
+				UnmarshalJSONOrigSummary(ofm.Summary, iter)
+				orig.Data = ofm
+			}
+
 		case "metadata":
-			orig.Metadata = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {

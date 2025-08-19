@@ -62,11 +62,6 @@ const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 const oneOfMessageTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
 
-const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
-	orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
-	UnmarshalJSONOrig{{ .fieldOriginName }}(val, iter)`
-
 type OneOfMessageValue struct {
 	fieldName              string
 	protoID                uint32
@@ -116,8 +111,7 @@ func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfFi
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageUnmarshalJSONTemplate", []byte(oneOfMessageUnmarshalJSONTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+	return omv.toProtoField(ms, of, false).GenUnmarshalJSON()
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {

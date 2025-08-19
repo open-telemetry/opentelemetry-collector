@@ -47,17 +47,16 @@ func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
 
 // UnmarshalJSONOrigLink unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLink(orig *otlpprofiles.Link) int {

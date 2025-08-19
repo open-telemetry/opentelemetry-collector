@@ -46,15 +46,18 @@ func MarshalJSONOrigGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
 
 // UnmarshalJSONOrigGauge unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
+				UnmarshalJSONOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigGauge(orig *otlpmetrics.Gauge) int {

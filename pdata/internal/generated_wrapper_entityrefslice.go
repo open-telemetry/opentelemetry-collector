@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type EntityRefSlice struct {
@@ -69,16 +68,5 @@ func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
 	orig[2] = NewOrigEntityRef()
 	orig[3] = GenTestOrigEntityRef()
 	orig[4] = NewOrigEntityRef()
-	return orig
-}
-
-// UnmarshalJSONOrigEntityRefSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigEntityRefSlice(iter *json.Iterator) []*otlpcommon.EntityRef {
-	var orig []*otlpcommon.EntityRef
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigEntityRef())
-		UnmarshalJSONOrigEntityRef(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

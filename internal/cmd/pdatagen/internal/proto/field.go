@@ -126,6 +126,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"jsonTag":              genJSONTag(pf.Name),
 		"fieldName":            pf.Name,
 		"origName":             pf.messageName(),
+		"origFullName":         pf.MessageFullName,
 		"oneOfGroup":           pf.OneOfGroup,
 		"oneOfMessageFullName": pf.OneOfMessageFullName,
 		"repeated":             pf.Repeated,
