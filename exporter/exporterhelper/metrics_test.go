@@ -68,9 +68,9 @@ func TestMetricsEncoding_UnmarshalError(t *testing.T) {
 
 	enc := metricsEncoding{}
 	ctx, req, err := enc.Unmarshal([]byte("!invalid-proto"))
-	assert.Error(t, err)
-	assert.Nil(t, req)
-	assert.NotNil(t, ctx)
+	require.Error(t, err)
+	require.Nil(t, req)
+	require.NotNil(t, ctx)
 }
 
 func TestMetrics_NilConfig(t *testing.T) {

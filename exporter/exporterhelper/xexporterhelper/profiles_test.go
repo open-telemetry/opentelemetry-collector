@@ -57,6 +57,20 @@ func TestProfilesRequest(t *testing.T) {
 	)
 }
 
+func TestProfilesEncoding_UnmarshalError(t *testing.T) {
+	fgOrigReadState := queue.PersistRequestContextOnRead
+	queue.PersistRequestContextOnRead = func() bool { return false }
+	t.Cleanup(func() {
+		queue.PersistRequestContextOnRead = fgOrigReadState
+	})
+
+	enc := profilesEncoding{}
+	ctx, req, err := enc.Unmarshal([]byte("!invalid-proto"))
+	require.Error(t, err)
+	require.Nil(t, req)
+	require.NotNil(t, ctx)
+}
+
 func TestProfilesExporter_InvalidName(t *testing.T) {
 	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushProfilesData(nil))
 	require.Nil(t, le)
