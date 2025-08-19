@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportTracePartialSuccess(t *testing.T) {
-	src := &otlpcollectortrace.ExportTracePartialSuccess{}
-	dest := &otlpcollectortrace.ExportTracePartialSuccess{}
+	src := NewOrigPtrExportTracePartialSuccess()
+	dest := NewOrigPtrExportTracePartialSuccess()
 	CopyOrigExportTracePartialSuccess(dest, src)
-	assert.Equal(t, &otlpcollectortrace.ExportTracePartialSuccess{}, dest)
+	assert.Equal(t, NewOrigPtrExportTracePartialSuccess(), dest)
 	FillOrigTestExportTracePartialSuccess(src)
 	CopyOrigExportTracePartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigExportTracePartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectortrace.ExportTracePartialSuccess{}
+	dest := NewOrigPtrExportTracePartialSuccess()
 	UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectortrace.ExportTracePartialSuccess{}, dest)
+	assert.Equal(t, NewOrigPtrExportTracePartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccess(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccess(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectortrace.ExportTracePartialSuccess{}
+			dest := NewOrigPtrExportTracePartialSuccess()
 			UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccessUnknown(t *testing.T) {
+	dest := NewOrigPtrExportTracePartialSuccess()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrExportTracePartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
 			gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectortrace.ExportTracePartialSuccess{}
+			dest := NewOrigPtrExportTracePartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportTracePartialSuccess(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportTracePartialSuccess() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportTracePartialSuccess(src))
+			gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectortrace.ExportTracePartialSuccess{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrExportTracePartialSuccess()
+			require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
 
 func getEncodingTestValuesExportTracePartialSuccess() map[string]*otlpcollectortrace.ExportTracePartialSuccess {
 	return map[string]*otlpcollectortrace.ExportTracePartialSuccess{
-		"empty": {},
+		"empty": NewOrigPtrExportTracePartialSuccess(),
 		"fill_test": func() *otlpcollectortrace.ExportTracePartialSuccess {
-			src := &otlpcollectortrace.ExportTracePartialSuccess{}
+			src := NewOrigPtrExportTracePartialSuccess()
 			FillOrigTestExportTracePartialSuccess(src)
 			return src
 		}(),

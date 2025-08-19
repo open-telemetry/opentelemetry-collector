@@ -34,8 +34,7 @@ func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint, state *intern
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewNumberDataPointSlice() NumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
-	state := internal.StateMutable
-	return newNumberDataPointSlice(&orig, &state)
+	return newNumberDataPointSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added NumberDataPoint.
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrNumberDataPoint())
 	return es.At(es.Len() - 1)
 }
 

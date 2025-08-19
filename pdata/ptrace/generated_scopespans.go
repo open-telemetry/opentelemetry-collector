@@ -33,8 +33,7 @@ func newScopeSpans(orig *otlptrace.ScopeSpans, state *internal.State) ScopeSpans
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeSpans() ScopeSpans {
-	state := internal.StateMutable
-	return newScopeSpans(&otlptrace.ScopeSpans{}, &state)
+	return newScopeSpans(internal.NewOrigPtrScopeSpans(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

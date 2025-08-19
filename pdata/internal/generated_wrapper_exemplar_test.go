@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExemplar(t *testing.T) {
-	src := &otlpmetrics.Exemplar{}
-	dest := &otlpmetrics.Exemplar{}
+	src := NewOrigPtrExemplar()
+	dest := NewOrigPtrExemplar()
 	CopyOrigExemplar(dest, src)
-	assert.Equal(t, &otlpmetrics.Exemplar{}, dest)
+	assert.Equal(t, NewOrigPtrExemplar(), dest)
 	FillOrigTestExemplar(src)
 	CopyOrigExemplar(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigExemplar(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Exemplar{}
+	dest := NewOrigPtrExemplar()
 	UnmarshalJSONOrigExemplar(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.Exemplar{}, dest)
+	assert.Equal(t, NewOrigPtrExemplar(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.Exemplar{}
+			dest := NewOrigPtrExemplar()
 			UnmarshalJSONOrigExemplar(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExemplarUnknown(t *testing.T) {
+	dest := NewOrigPtrExemplar()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExemplar(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrExemplar(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 			gotSize := MarshalProtoOrigExemplar(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.Exemplar{}
+			dest := NewOrigPtrExemplar()
 			require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
+	for name, src := range getEncodingTestValuesExemplar() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExemplar(src))
+			gotSize := MarshalProtoOrigExemplar(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.Exemplar{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrExemplar()
+			require.NoError(t, UnmarshalProtoOrigExemplar(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 
 func getEncodingTestValuesExemplar() map[string]*otlpmetrics.Exemplar {
 	return map[string]*otlpmetrics.Exemplar{
-		"empty": {},
+		"empty": NewOrigPtrExemplar(),
 		"fill_test": func() *otlpmetrics.Exemplar {
-			src := &otlpmetrics.Exemplar{}
+			src := NewOrigPtrExemplar()
 			FillOrigTestExemplar(src)
 			return src
 		}(),

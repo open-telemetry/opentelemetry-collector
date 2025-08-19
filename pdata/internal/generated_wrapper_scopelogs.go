@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigScopeLogs() otlplogs.ScopeLogs {
+	return otlplogs.ScopeLogs{}
+}
+
+func NewOrigPtrScopeLogs() *otlplogs.ScopeLogs {
+	return &otlplogs.ScopeLogs{}
+}
 
 func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
@@ -91,7 +101,7 @@ func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) int {
 	pos--
 	buf[pos] = 0xa
 
-	for i := range orig.LogRecords {
+	for i := len(orig.LogRecords) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigLogRecord(orig.LogRecords[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -110,5 +120,69 @@ func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) int {
 }
 
 func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field LogRecords", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.LogRecords = append(orig.LogRecords, NewOrigPtrLogRecord())
+			err = UnmarshalProtoOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.SchemaUrl = string(buf[startPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

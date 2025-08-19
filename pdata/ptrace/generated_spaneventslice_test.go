@@ -19,8 +19,7 @@ import (
 func TestSpanEventSlice(t *testing.T) {
 	es := NewSpanEventSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, &state)
+	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpanEvent()
@@ -35,8 +34,9 @@ func TestSpanEventSlice(t *testing.T) {
 }
 
 func TestSpanEventSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -117,9 +117,9 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el SpanEvent) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestSpanEventSlice_RemoveIfAll(t *testing.T) {

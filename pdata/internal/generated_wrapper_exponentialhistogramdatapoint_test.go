@@ -11,16 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogramDataPoint{}
-	dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+	src := NewOrigPtrExponentialHistogramDataPoint()
+	dest := NewOrigPtrExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
-	assert.Equal(t, &otlpmetrics.ExponentialHistogramDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
 	FillOrigTestExponentialHistogramDataPoint(src)
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
@@ -29,10 +31,10 @@ func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+	dest := NewOrigPtrExponentialHistogramDataPoint()
 	UnmarshalJSONOrigExponentialHistogramDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.ExponentialHistogramDataPoint{}, dest)
+	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) {
@@ -45,13 +47,20 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) 
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+			dest := NewOrigPtrExponentialHistogramDataPoint()
 			UnmarshalJSONOrigExponentialHistogramDataPoint(dest, iter)
 			require.NoError(t, iter.Error())
 
 			assert.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointUnknown(t *testing.T) {
+	dest := NewOrigPtrExponentialHistogramDataPoint()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T) {
@@ -61,8 +70,28 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T)
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+			dest := NewOrigPtrExponentialHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint(src))
+			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.ExponentialHistogramDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrExponentialHistogramDataPoint()
+			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -70,9 +99,9 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T)
 
 func getEncodingTestValuesExponentialHistogramDataPoint() map[string]*otlpmetrics.ExponentialHistogramDataPoint {
 	return map[string]*otlpmetrics.ExponentialHistogramDataPoint{
-		"empty": {},
+		"empty": NewOrigPtrExponentialHistogramDataPoint(),
 		"fill_test": func() *otlpmetrics.ExponentialHistogramDataPoint {
-			src := &otlpmetrics.ExponentialHistogramDataPoint{}
+			src := NewOrigPtrExponentialHistogramDataPoint()
 			FillOrigTestExponentialHistogramDataPoint(src)
 			return src
 		}(),
