@@ -1307,7 +1307,7 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
 	var refused, failed int64
 	var outcome string
-	if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() {
+	if telemetry.DistinguishDownstreamErrors.IsEnabled() {
 		refused = rejected
 		outcome = "refused"
 	} else {
@@ -1420,7 +1420,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	var refused, failed int64
 	var outcome string
 	// In this test, the error is not downstream, so it will always be a failure.
-	if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(errors.New("consumer error")) {
+	if telemetry.DistinguishDownstreamErrors.IsEnabled() && consumererror.IsDownstream(errors.New("consumer error")) {
 		refused = rejected
 		outcome = "refused"
 	} else {

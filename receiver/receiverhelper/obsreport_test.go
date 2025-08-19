@@ -45,7 +45,7 @@ type testParams struct {
 func TestReceiveTraceDataOp(t *testing.T) {
 	for _, gateEnabled := range []bool{true, false} {
 		t.Run(fmt.Sprintf("gate_enabled=%v", gateEnabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryReceiverError.ID(), gateEnabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.DistinguishDownstreamErrors.ID(), gateEnabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()

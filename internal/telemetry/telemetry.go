@@ -22,6 +22,14 @@ var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
 )
 
+// DistinguishDownstreamErrors is the feature gate that controls whether to distinguish downstream errors from internal errors in pipeline telemetry.
+var DistinguishDownstreamErrors = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.distinguish_downstream_errors",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.138.0"),
+	featuregate.WithRegisterDescription("Controls whether to distinguish downstream errors from internal errors, changing the 'outcome' for produced telemetry and splitting receiver metrics into 'refused' and 'failed' categories."),
+)
+
 // IMPORTANT: This struct is reexported as part of the public API of
 // go.opentelemetry.io/collector/component, a stable module.
 // DO NOT MAKE BREAKING CHANGES TO EXPORTED FIELDS.

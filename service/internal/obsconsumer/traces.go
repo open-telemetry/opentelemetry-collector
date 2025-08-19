@@ -20,7 +20,7 @@ var (
 )
 
 func NewTraces(cons consumer.Traces, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Traces {
-	if !telemetry.NewPipelineTelemetryReceiverError.IsEnabled() {
+	if !telemetry.DistinguishDownstreamErrors.IsEnabled() || !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
 

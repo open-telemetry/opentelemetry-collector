@@ -165,7 +165,7 @@ func (rec *ObsReport) endOp(
 	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
-		if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(err) {
+		if telemetry.DistinguishDownstreamErrors.IsEnabled() && consumererror.IsDownstream(err) {
 			numRefused = numReceivedItems
 		} else {
 			numFailedErrors = numReceivedItems
@@ -181,7 +181,7 @@ func (rec *ObsReport) endOp(
 	switch {
 	case err == nil:
 		outcome = "success"
-	case telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(err):
+	case telemetry.DistinguishDownstreamErrors.IsEnabled() && consumererror.IsDownstream(err):
 		outcome = "refused"
 	default:
 		outcome = "failure"
