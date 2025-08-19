@@ -34,7 +34,7 @@ More specifically, this RFC aims to:
 
 ### Approach 1 (Recommended): Use yaml tags
 
-The first approach relis on the concept of [yaml tags](https://tutorialreference.com/yaml/yaml-tags). We can specify a custom tag in our configuration files to indicate the lists we want to merge.
+The first approach relies on the concept of [yaml tags](https://tutorialreference.com/yaml/yaml-tags). We can specify a custom tag in our configuration files to indicate the lists we want to merge.
 
 Consider following two configurations:
 
