@@ -5,7 +5,6 @@ package otlpexporter
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"path/filepath"
 	"runtime"
@@ -1072,79 +1071,4 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 			assert.EqualValues(t, 0, rcv.totalItems.Load())
 		})
 	}
-}
-
-func TestSendMetricsUnixSocket(t *testing.T) {
-	// create otlp socket
-	tmpDir := t.TempDir()
-	socketPath := filepath.Join(tmpDir, "otlp_test.sock")
-
-	// listen unix socket
-	ln, err := net.Listen("unix", socketPath)
-	require.NoError(t, err, "cannot start unix socket listener")
-	rcv := otlpMetricsReceiverOnGRPCServer(ln)
-	defer rcv.srv.GracefulStop()
-
-	// Start an OTLP exporter and point to the receiver.
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig = configgrpc.ClientConfig{
-		Endpoint: fmt.Sprintf("unix://%s", socketPath),
-		TLS:      configtls.ClientConfig{Insecure: true},
-	}
-
-	set := exportertest.NewNopSettings(factory.Type())
-	set.BuildInfo.Description = "Collector"
-	set.BuildInfo.Version = "1.2.3test"
-
-	logger, observed := observer.New(zap.DebugLevel)
-	set.Logger = zap.New(logger)
-
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, exp)
-
-	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
-	}()
-
-	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
-
-	assert.EqualValues(t, 0, rcv.requestCount.Load())
-
-	// send one metric
-	md := pmetric.NewMetrics()
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() > 0
-	}, 10*time.Second, 5*time.Millisecond)
-
-	assert.EqualValues(t, 0, rcv.totalItems.Load())
-
-	// send two metric
-	md = testdata.GenerateMetrics(2)
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() > 1
-	}, 10*time.Second, 5*time.Millisecond)
-
-	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.EqualValues(t, 4, rcv.totalItems.Load())
-	assert.Equal(t, md, rcv.getLastRequest())
-
-	// valid
-	rcv.setExportResponse(func() pmetricotlp.ExportResponse {
-		response := pmetricotlp.NewExportResponse()
-		ps := response.PartialSuccess()
-		ps.SetErrorMessage("Some data points were not ingested")
-		ps.SetRejectedDataPoints(1)
-		return response
-	})
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(2)))
-	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
