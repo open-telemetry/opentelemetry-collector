@@ -20,7 +20,7 @@ var (
 )
 
 func NewMetrics(cons consumer.Metrics, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
-	if !telemetry.DistinguishDownstreamErrors.IsEnabled() || !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
 

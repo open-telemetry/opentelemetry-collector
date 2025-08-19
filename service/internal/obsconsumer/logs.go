@@ -20,7 +20,7 @@ var (
 )
 
 func NewLogs(cons consumer.Logs, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Logs {
-	if !telemetry.DistinguishDownstreamErrors.IsEnabled() || !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
 
