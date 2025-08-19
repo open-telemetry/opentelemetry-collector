@@ -34,7 +34,7 @@ func newLogRecord(orig *otlplogs.LogRecord, state *internal.State) LogRecord {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
-	return newLogRecord(internal.NewOrigPtrLogRecord(), internal.NewState())
+	return newLogRecord(internal.NewOrigLogRecord(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

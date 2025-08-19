@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigValueType(t *testing.T) {
-	src := NewOrigPtrValueType()
-	dest := NewOrigPtrValueType()
+	src := NewOrigValueType()
+	dest := NewOrigValueType()
 	CopyOrigValueType(dest, src)
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 	*src = *GenTestOrigValueType()
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigValueType(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	UnmarshalJSONOrigValueType(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			UnmarshalJSONOrigValueType(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigValueTypeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesValueType() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.Error(t, UnmarshalProtoOrigValueType(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 			gotSize := MarshalProtoOrigValueType(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +120,7 @@ func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
 
 func genTestEncodingValuesValueType() map[string]*otlpprofiles.ValueType {
 	return map[string]*otlpprofiles.ValueType{
-		"empty":                       NewOrigPtrValueType(),
+		"empty":                       NewOrigValueType(),
 		"TypeStrindex/test":           {TypeStrindex: int32(13)},
 		"UnitStrindex/test":           {UnitStrindex: int32(13)},
 		"AggregationTemporality/test": {AggregationTemporality: otlpprofiles.AggregationTemporality(13)},

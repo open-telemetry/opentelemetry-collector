@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExponentialHistogram(t *testing.T) {
-	src := NewOrigPtrExponentialHistogram()
-	dest := NewOrigPtrExponentialHistogram()
+	src := NewOrigExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 	*src = *GenTestOrigExponentialHistogram()
 	CopyOrigExponentialHistogram(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExponentialHistogram(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	UnmarshalJSONOrigExponentialHistogram(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			UnmarshalJSONOrigExponentialHistogram(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExponentialHistogram() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			require.Error(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramUnknown(t *testing.T) {
-	dest := NewOrigPtrExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
 			gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogram(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesExponentialHistogram() map[string][]byte 
 
 func genTestEncodingValuesExponentialHistogram() map[string]*otlpmetrics.ExponentialHistogram {
 	return map[string]*otlpmetrics.ExponentialHistogram{
-		"empty":                       NewOrigPtrExponentialHistogram(),
+		"empty":                       NewOrigExponentialHistogram(),
 		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.ExponentialHistogramDataPoint{{}, GenTestOrigExponentialHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 	}

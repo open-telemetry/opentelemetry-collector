@@ -26,8 +26,8 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
-	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {

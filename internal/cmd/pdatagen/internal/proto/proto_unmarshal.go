@@ -233,20 +233,20 @@ const unmarshalProtoMessage = `
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
 		ofv := &{{ .oneOfMessageFullName }}{}
-		ofv.{{ .fieldName }} = NewOrigPtr{{ .origName }}()
+		ofv.{{ .fieldName }} = NewOrig{{ .origName }}()
 		err = UnmarshalProtoOrig{{ .origName }}(ofv.{{ .fieldName }}, buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ofv
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, NewOrig{{ if .nullable }}Ptr{{ end }}{{ .origName }}())
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}NewOrig{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
 		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1], buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 {{- else }}
-		{{ if .nullable }}orig.{{ .fieldName }} = NewOrigPtr{{ .origName }}(){{ end }}
+		{{ if .nullable }}orig.{{ .fieldName }} = NewOrig{{ .origName }}(){{ end }}
 		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[startPos:pos]) 
 		if err != nil {
 			return err

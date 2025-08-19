@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigScopeSpans(t *testing.T) {
-	src := NewOrigPtrScopeSpans()
-	dest := NewOrigPtrScopeSpans()
+	src := NewOrigScopeSpans()
+	dest := NewOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
 	*src = *GenTestOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrScopeSpans()
+	dest := NewOrigScopeSpans()
 	UnmarshalJSONOrigScopeSpans(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrScopeSpans()
+			dest := NewOrigScopeSpans()
 			UnmarshalJSONOrigScopeSpans(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigScopeSpansFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrScopeSpans()
+			dest := NewOrigScopeSpans()
 			require.Error(t, UnmarshalProtoOrigScopeSpans(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
-	dest := NewOrigPtrScopeSpans()
+	dest := NewOrigScopeSpans()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrScopeSpans()
+			dest := NewOrigScopeSpans()
 			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrScopeSpans()
+			dest := NewOrigScopeSpans()
 			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +120,7 @@ func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
 
 func genTestEncodingValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
 	return map[string]*otlptrace.ScopeSpans{
-		"empty":                  NewOrigPtrScopeSpans(),
+		"empty":                  NewOrigScopeSpans(),
 		"Scope/test":             {Scope: *GenTestOrigInstrumentationScope()},
 		"Spans/default_and_test": {Spans: []*otlptrace.Span{{}, GenTestOrigSpan()}},
 		"SchemaUrl/test":         {SchemaUrl: "test_schemaurl"},

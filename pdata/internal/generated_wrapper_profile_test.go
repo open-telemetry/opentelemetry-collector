@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigProfile(t *testing.T) {
-	src := NewOrigPtrProfile()
-	dest := NewOrigPtrProfile()
+	src := NewOrigProfile()
+	dest := NewOrigProfile()
 	CopyOrigProfile(dest, src)
-	assert.Equal(t, NewOrigPtrProfile(), dest)
+	assert.Equal(t, NewOrigProfile(), dest)
 	*src = *GenTestOrigProfile()
 	CopyOrigProfile(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigProfile(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigProfileUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrProfile()
+	dest := NewOrigProfile()
 	UnmarshalJSONOrigProfile(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrProfile(), dest)
+	assert.Equal(t, NewOrigProfile(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrProfile()
+			dest := NewOrigProfile()
 			UnmarshalJSONOrigProfile(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigProfileFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesProfile() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrProfile()
+			dest := NewOrigProfile()
 			require.Error(t, UnmarshalProtoOrigProfile(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfileUnknown(t *testing.T) {
-	dest := NewOrigPtrProfile()
+	dest := NewOrigProfile()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigProfile(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrProfile(), dest)
+	assert.Equal(t, NewOrigProfile(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
 			gotSize := MarshalProtoOrigProfile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrProfile()
+			dest := NewOrigProfile()
 			require.NoError(t, UnmarshalProtoOrigProfile(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrProfile()
+			dest := NewOrigProfile()
 			require.NoError(t, UnmarshalProtoOrigProfile(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -142,7 +142,7 @@ func genTestFailingUnmarshalProtoValuesProfile() map[string][]byte {
 
 func genTestEncodingValuesProfile() map[string]*otlpprofiles.Profile {
 	return map[string]*otlpprofiles.Profile{
-		"empty":                              NewOrigPtrProfile(),
+		"empty":                              NewOrigProfile(),
 		"SampleType/default_and_test":        {SampleType: []*otlpprofiles.ValueType{{}, GenTestOrigValueType()}},
 		"Sample/default_and_test":            {Sample: []*otlpprofiles.Sample{{}, GenTestOrigSample()}},
 		"LocationIndices/default_and_test":   {LocationIndices: []int32{int32(0), int32(13)}},

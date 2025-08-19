@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	src := NewOrigSummaryDataPoint_ValueAtQuantile()
+	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
-	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
+	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
 	*src = *GenTestOrigSummaryDataPoint_ValueAtQuantile()
 	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 	UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
+	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 			UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 			require.Error(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
-	dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSummaryDataPoint_ValueAtQuantile(), dest)
+	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
 			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() map[st
 
 func genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{
-		"empty":         NewOrigPtrSummaryDataPoint_ValueAtQuantile(),
+		"empty":         NewOrigSummaryDataPoint_ValueAtQuantile(),
 		"Quantile/test": {Quantile: float64(3.1415926)},
 		"Value/test":    {Value: float64(3.1415926)},
 	}

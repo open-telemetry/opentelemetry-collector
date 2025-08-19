@@ -26,8 +26,8 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceLogs(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewOrigPtrResourceLogs(), sharedState)) })
-	assert.Panics(t, func() { newResourceLogs(internal.NewOrigPtrResourceLogs(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { newResourceLogs(internal.NewOrigResourceLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewOrigPtrResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
 }
 
 func TestResourceLogs_Resource(t *testing.T) {

@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigInstrumentationScope(t *testing.T) {
-	src := NewOrigPtrInstrumentationScope()
-	dest := NewOrigPtrInstrumentationScope()
+	src := NewOrigInstrumentationScope()
+	dest := NewOrigInstrumentationScope()
 	CopyOrigInstrumentationScope(dest, src)
-	assert.Equal(t, NewOrigPtrInstrumentationScope(), dest)
+	assert.Equal(t, NewOrigInstrumentationScope(), dest)
 	*src = *GenTestOrigInstrumentationScope()
 	CopyOrigInstrumentationScope(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigInstrumentationScope(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrInstrumentationScope()
+	dest := NewOrigInstrumentationScope()
 	UnmarshalJSONOrigInstrumentationScope(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrInstrumentationScope(), dest)
+	assert.Equal(t, NewOrigInstrumentationScope(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrInstrumentationScope()
+			dest := NewOrigInstrumentationScope()
 			UnmarshalJSONOrigInstrumentationScope(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesInstrumentationScope() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrInstrumentationScope()
+			dest := NewOrigInstrumentationScope()
 			require.Error(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeUnknown(t *testing.T) {
-	dest := NewOrigPtrInstrumentationScope()
+	dest := NewOrigInstrumentationScope()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrInstrumentationScope(), dest)
+	assert.Equal(t, NewOrigInstrumentationScope(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
 			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrInstrumentationScope()
+			dest := NewOrigInstrumentationScope()
 			require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrInstrumentationScope()
+			dest := NewOrigInstrumentationScope()
 			require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -122,7 +122,7 @@ func genTestFailingUnmarshalProtoValuesInstrumentationScope() map[string][]byte 
 
 func genTestEncodingValuesInstrumentationScope() map[string]*otlpcommon.InstrumentationScope {
 	return map[string]*otlpcommon.InstrumentationScope{
-		"empty":                       NewOrigPtrInstrumentationScope(),
+		"empty":                       NewOrigInstrumentationScope(),
 		"Name/test":                   {Name: "test_name"},
 		"Version/test":                {Version: "test_version"},
 		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},

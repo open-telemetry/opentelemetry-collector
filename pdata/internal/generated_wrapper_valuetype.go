@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigValueType() otlpprofiles.ValueType {
-	return otlpprofiles.ValueType{}
-}
-
-func NewOrigPtrValueType() *otlpprofiles.ValueType {
+func NewOrigValueType() *otlpprofiles.ValueType {
 	return &otlpprofiles.ValueType{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
 }
 
 func GenTestOrigValueType() *otlpprofiles.ValueType {
-	orig := NewOrigPtrValueType()
+	orig := NewOrigValueType()
 	orig.TypeStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
 	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)

@@ -99,7 +99,7 @@ func (es ScopeProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeProfiles.
 func (es ScopeProfilesSlice) AppendEmpty() ScopeProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrScopeProfiles())
+	*es.orig = append(*es.orig, internal.NewOrigScopeProfiles())
 	return es.At(es.Len() - 1)
 }
 

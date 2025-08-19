@@ -25,8 +25,8 @@ func TestSum_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSum(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSum(internal.NewOrigPtrSum(), sharedState)) })
-	assert.Panics(t, func() { newSum(internal.NewOrigPtrSum(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSum(internal.NewOrigSum(), sharedState)) })
+	assert.Panics(t, func() { newSum(internal.NewOrigSum(), sharedState).MoveTo(dest) })
 }
 
 func TestSum_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestSum_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSum(internal.NewOrigPtrSum(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSum(internal.NewOrigSum(), sharedState)) })
 }
 
 func TestSum_DataPoints(t *testing.T) {

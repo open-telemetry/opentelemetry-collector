@@ -26,8 +26,8 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {

@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigMapping() otlpprofiles.Mapping {
-	return otlpprofiles.Mapping{}
-}
-
-func NewOrigPtrMapping() *otlpprofiles.Mapping {
+func NewOrigMapping() *otlpprofiles.Mapping {
 	return &otlpprofiles.Mapping{}
 }
 
@@ -35,7 +31,7 @@ func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
 }
 
 func GenTestOrigMapping() *otlpprofiles.Mapping {
-	orig := NewOrigPtrMapping()
+	orig := NewOrigMapping()
 	orig.MemoryStart = uint64(13)
 	orig.MemoryLimit = uint64(13)
 	orig.FileOffset = uint64(13)

@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigFunction(t *testing.T) {
-	src := NewOrigPtrFunction()
-	dest := NewOrigPtrFunction()
+	src := NewOrigFunction()
+	dest := NewOrigFunction()
 	CopyOrigFunction(dest, src)
-	assert.Equal(t, NewOrigPtrFunction(), dest)
+	assert.Equal(t, NewOrigFunction(), dest)
 	*src = *GenTestOrigFunction()
 	CopyOrigFunction(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigFunction(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigFunctionUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrFunction()
+	dest := NewOrigFunction()
 	UnmarshalJSONOrigFunction(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrFunction(), dest)
+	assert.Equal(t, NewOrigFunction(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrFunction()
+			dest := NewOrigFunction()
 			UnmarshalJSONOrigFunction(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigFunctionFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesFunction() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrFunction()
+			dest := NewOrigFunction()
 			require.Error(t, UnmarshalProtoOrigFunction(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigFunctionUnknown(t *testing.T) {
-	dest := NewOrigPtrFunction()
+	dest := NewOrigFunction()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigFunction(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrFunction(), dest)
+	assert.Equal(t, NewOrigFunction(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
 			gotSize := MarshalProtoOrigFunction(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrFunction()
+			dest := NewOrigFunction()
 			require.NoError(t, UnmarshalProtoOrigFunction(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrFunction()
+			dest := NewOrigFunction()
 			require.NoError(t, UnmarshalProtoOrigFunction(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -122,7 +122,7 @@ func genTestFailingUnmarshalProtoValuesFunction() map[string][]byte {
 
 func genTestEncodingValuesFunction() map[string]*otlpprofiles.Function {
 	return map[string]*otlpprofiles.Function{
-		"empty":                   NewOrigPtrFunction(),
+		"empty":                   NewOrigFunction(),
 		"NameStrindex/test":       {NameStrindex: int32(13)},
 		"SystemNameStrindex/test": {SystemNameStrindex: int32(13)},
 		"FilenameStrindex/test":   {FilenameStrindex: int32(13)},

@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportMetricsPartialSuccess() otlpcollectormetrics.ExportMetricsPartialSuccess {
-	return otlpcollectormetrics.ExportMetricsPartialSuccess{}
-}
-
-func NewOrigPtrExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
+func NewOrigExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
 	return &otlpcollectormetrics.ExportMetricsPartialSuccess{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportM
 }
 
 func GenTestOrigExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
-	orig := NewOrigPtrExportMetricsPartialSuccess()
+	orig := NewOrigExportMetricsPartialSuccess()
 	orig.RejectedDataPoints = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig

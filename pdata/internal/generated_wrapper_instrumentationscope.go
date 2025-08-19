@@ -31,11 +31,7 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-func NewOrigInstrumentationScope() otlpcommon.InstrumentationScope {
-	return otlpcommon.InstrumentationScope{}
-}
-
-func NewOrigPtrInstrumentationScope() *otlpcommon.InstrumentationScope {
+func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
 	return &otlpcommon.InstrumentationScope{}
 }
 
@@ -47,7 +43,7 @@ func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 }
 
 func GenTestOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
-	orig := NewOrigPtrInstrumentationScope()
+	orig := NewOrigInstrumentationScope()
 	orig.Name = "test_name"
 	orig.Version = "test_version"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
@@ -208,7 +204,7 @@ func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScop
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

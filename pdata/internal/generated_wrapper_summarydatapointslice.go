@@ -19,7 +19,7 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSummaryDataPoint()
+			newDest[i] = NewOrigSummaryDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSummaryDataPoint()
+			newDest[i] = NewOrigSummaryDataPoint()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 
 func GenerateOrigTestSummaryDataPointSlice() []*otlpmetrics.SummaryDataPoint {
 	orig := make([]*otlpmetrics.SummaryDataPoint, 5)
-	orig[0] = NewOrigPtrSummaryDataPoint()
+	orig[0] = NewOrigSummaryDataPoint()
 	orig[1] = GenTestOrigSummaryDataPoint()
-	orig[2] = NewOrigPtrSummaryDataPoint()
+	orig[2] = NewOrigSummaryDataPoint()
 	orig[3] = GenTestOrigSummaryDataPoint()
-	orig[4] = NewOrigPtrSummaryDataPoint()
+	orig[4] = NewOrigSummaryDataPoint()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestSummaryDataPointSlice() []*otlpmetrics.SummaryDataPoint {
 func UnmarshalJSONOrigSummaryDataPointSlice(iter *json.Iterator) []*otlpmetrics.SummaryDataPoint {
 	var orig []*otlpmetrics.SummaryDataPoint
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrSummaryDataPoint())
+		orig = append(orig, NewOrigSummaryDataPoint())
 		UnmarshalJSONOrigSummaryDataPoint(orig[len(orig)-1], iter)
 		return true
 	})

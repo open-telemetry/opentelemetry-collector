@@ -19,7 +19,7 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrExponentialHistogramDataPoint()
+			newDest[i] = NewOrigExponentialHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrExponentialHistogramDataPoint()
+			newDest[i] = NewOrigExponentialHistogramDataPoint()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 
 func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
 	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 5)
-	orig[0] = NewOrigPtrExponentialHistogramDataPoint()
+	orig[0] = NewOrigExponentialHistogramDataPoint()
 	orig[1] = GenTestOrigExponentialHistogramDataPoint()
-	orig[2] = NewOrigPtrExponentialHistogramDataPoint()
+	orig[2] = NewOrigExponentialHistogramDataPoint()
 	orig[3] = GenTestOrigExponentialHistogramDataPoint()
-	orig[4] = NewOrigPtrExponentialHistogramDataPoint()
+	orig[4] = NewOrigExponentialHistogramDataPoint()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.Exponen
 func UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.ExponentialHistogramDataPoint {
 	var orig []*otlpmetrics.ExponentialHistogramDataPoint
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrExponentialHistogramDataPoint())
+		orig = append(orig, NewOrigExponentialHistogramDataPoint())
 		UnmarshalJSONOrigExponentialHistogramDataPoint(orig[len(orig)-1], iter)
 		return true
 	})

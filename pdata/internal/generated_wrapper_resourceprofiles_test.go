@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigResourceProfiles(t *testing.T) {
-	src := NewOrigPtrResourceProfiles()
-	dest := NewOrigPtrResourceProfiles()
+	src := NewOrigResourceProfiles()
+	dest := NewOrigResourceProfiles()
 	CopyOrigResourceProfiles(dest, src)
-	assert.Equal(t, NewOrigPtrResourceProfiles(), dest)
+	assert.Equal(t, NewOrigResourceProfiles(), dest)
 	*src = *GenTestOrigResourceProfiles()
 	CopyOrigResourceProfiles(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigResourceProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigResourceProfilesUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrResourceProfiles()
+	dest := NewOrigResourceProfiles()
 	UnmarshalJSONOrigResourceProfiles(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrResourceProfiles(), dest)
+	assert.Equal(t, NewOrigResourceProfiles(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrResourceProfiles()
+			dest := NewOrigResourceProfiles()
 			UnmarshalJSONOrigResourceProfiles(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigResourceProfilesFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrResourceProfiles()
+			dest := NewOrigResourceProfiles()
 			require.Error(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceProfilesUnknown(t *testing.T) {
-	dest := NewOrigPtrResourceProfiles()
+	dest := NewOrigResourceProfiles()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrResourceProfiles(), dest)
+	assert.Equal(t, NewOrigResourceProfiles(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
 			gotSize := MarshalProtoOrigResourceProfiles(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrResourceProfiles()
+			dest := NewOrigResourceProfiles()
 			require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceProfiles(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrResourceProfiles()
+			dest := NewOrigResourceProfiles()
 			require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +120,7 @@ func genTestFailingUnmarshalProtoValuesResourceProfiles() map[string][]byte {
 
 func genTestEncodingValuesResourceProfiles() map[string]*otlpprofiles.ResourceProfiles {
 	return map[string]*otlpprofiles.ResourceProfiles{
-		"empty":                          NewOrigPtrResourceProfiles(),
+		"empty":                          NewOrigResourceProfiles(),
 		"Resource/test":                  {Resource: *GenTestOrigResource()},
 		"ScopeProfiles/default_and_test": {ScopeProfiles: []*otlpprofiles.ScopeProfiles{{}, GenTestOrigScopeProfiles()}},
 		"SchemaUrl/test":                 {SchemaUrl: "test_schemaurl"},

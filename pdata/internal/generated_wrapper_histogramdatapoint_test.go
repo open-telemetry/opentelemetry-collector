@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigHistogramDataPoint(t *testing.T) {
-	src := NewOrigPtrHistogramDataPoint()
-	dest := NewOrigPtrHistogramDataPoint()
+	src := NewOrigHistogramDataPoint()
+	dest := NewOrigHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
 	*src = *GenTestOrigHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigHistogramDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrHistogramDataPoint()
+	dest := NewOrigHistogramDataPoint()
 	UnmarshalJSONOrigHistogramDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			UnmarshalJSONOrigHistogramDataPoint(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPointFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			require.Error(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
-	dest := NewOrigPtrHistogramDataPoint()
+	dest := NewOrigHistogramDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -137,7 +137,7 @@ func genTestFailingUnmarshalProtoValuesHistogramDataPoint() map[string][]byte {
 
 func genTestEncodingValuesHistogramDataPoint() map[string]*otlpmetrics.HistogramDataPoint {
 	return map[string]*otlpmetrics.HistogramDataPoint{
-		"empty":                       NewOrigPtrHistogramDataPoint(),
+		"empty":                       NewOrigHistogramDataPoint(),
 		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
 		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},

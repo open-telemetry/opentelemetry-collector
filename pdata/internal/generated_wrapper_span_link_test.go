@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigSpan_Link(t *testing.T) {
-	src := NewOrigPtrSpan_Link()
-	dest := NewOrigPtrSpan_Link()
+	src := NewOrigSpan_Link()
+	dest := NewOrigSpan_Link()
 	CopyOrigSpan_Link(dest, src)
-	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
+	assert.Equal(t, NewOrigSpan_Link(), dest)
 	*src = *GenTestOrigSpan_Link()
 	CopyOrigSpan_Link(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigSpan_Link(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSpan_Link()
+	dest := NewOrigSpan_Link()
 	UnmarshalJSONOrigSpan_Link(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
+	assert.Equal(t, NewOrigSpan_Link(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSpan_Link()
+			dest := NewOrigSpan_Link()
 			UnmarshalJSONOrigSpan_Link(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSpan_LinkFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrSpan_Link()
+			dest := NewOrigSpan_Link()
 			require.Error(t, UnmarshalProtoOrigSpan_Link(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
-	dest := NewOrigPtrSpan_Link()
+	dest := NewOrigSpan_Link()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSpan_Link(), dest)
+	assert.Equal(t, NewOrigSpan_Link(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 			gotSize := MarshalProtoOrigSpan_Link(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrSpan_Link()
+			dest := NewOrigSpan_Link()
 			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSpan_Link()
+			dest := NewOrigSpan_Link()
 			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -127,7 +127,7 @@ func genTestFailingUnmarshalProtoValuesSpan_Link() map[string][]byte {
 
 func genTestEncodingValuesSpan_Link() map[string]*otlptrace.Span_Link {
 	return map[string]*otlptrace.Span_Link{
-		"empty":                       NewOrigPtrSpan_Link(),
+		"empty":                       NewOrigSpan_Link(),
 		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
 		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},

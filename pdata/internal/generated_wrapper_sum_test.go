@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigSum(t *testing.T) {
-	src := NewOrigPtrSum()
-	dest := NewOrigPtrSum()
+	src := NewOrigSum()
+	dest := NewOrigSum()
 	CopyOrigSum(dest, src)
-	assert.Equal(t, NewOrigPtrSum(), dest)
+	assert.Equal(t, NewOrigSum(), dest)
 	*src = *GenTestOrigSum()
 	CopyOrigSum(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigSum(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSumUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSum()
+	dest := NewOrigSum()
 	UnmarshalJSONOrigSum(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSum(), dest)
+	assert.Equal(t, NewOrigSum(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSum()
+			dest := NewOrigSum()
 			UnmarshalJSONOrigSum(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSumFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSum() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrSum()
+			dest := NewOrigSum()
 			require.Error(t, UnmarshalProtoOrigSum(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSumUnknown(t *testing.T) {
-	dest := NewOrigPtrSum()
+	dest := NewOrigSum()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSum(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSum(), dest)
+	assert.Equal(t, NewOrigSum(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 			gotSize := MarshalProtoOrigSum(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrSum()
+			dest := NewOrigSum()
 			require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSum()
+			dest := NewOrigSum()
 			require.NoError(t, UnmarshalProtoOrigSum(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +120,7 @@ func genTestFailingUnmarshalProtoValuesSum() map[string][]byte {
 
 func genTestEncodingValuesSum() map[string]*otlpmetrics.Sum {
 	return map[string]*otlpmetrics.Sum{
-		"empty":                       NewOrigPtrSum(),
+		"empty":                       NewOrigSum(),
 		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 		"IsMonotonic/test":            {IsMonotonic: true},

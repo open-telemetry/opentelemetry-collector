@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigGauge(t *testing.T) {
-	src := NewOrigPtrGauge()
-	dest := NewOrigPtrGauge()
+	src := NewOrigGauge()
+	dest := NewOrigGauge()
 	CopyOrigGauge(dest, src)
-	assert.Equal(t, NewOrigPtrGauge(), dest)
+	assert.Equal(t, NewOrigGauge(), dest)
 	*src = *GenTestOrigGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigGauge(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrGauge()
+	dest := NewOrigGauge()
 	UnmarshalJSONOrigGauge(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrGauge(), dest)
+	assert.Equal(t, NewOrigGauge(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrGauge()
+			dest := NewOrigGauge()
 			UnmarshalJSONOrigGauge(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigGaugeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesGauge() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrGauge()
+			dest := NewOrigGauge()
 			require.Error(t, UnmarshalProtoOrigGauge(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
-	dest := NewOrigPtrGauge()
+	dest := NewOrigGauge()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigGauge(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrGauge(), dest)
+	assert.Equal(t, NewOrigGauge(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 			gotSize := MarshalProtoOrigGauge(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrGauge()
+			dest := NewOrigGauge()
 			require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrGauge()
+			dest := NewOrigGauge()
 			require.NoError(t, UnmarshalProtoOrigGauge(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -116,7 +116,7 @@ func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
 
 func genTestEncodingValuesGauge() map[string]*otlpmetrics.Gauge {
 	return map[string]*otlpmetrics.Gauge{
-		"empty":                       NewOrigPtrGauge(),
+		"empty":                       NewOrigGauge(),
 		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
 	}
 }

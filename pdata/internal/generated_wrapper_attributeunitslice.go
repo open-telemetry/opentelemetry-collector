@@ -19,7 +19,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrAttributeUnit()
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrAttributeUnit()
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 
 func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
 	orig := make([]*otlpprofiles.AttributeUnit, 5)
-	orig[0] = NewOrigPtrAttributeUnit()
+	orig[0] = NewOrigAttributeUnit()
 	orig[1] = GenTestOrigAttributeUnit()
-	orig[2] = NewOrigPtrAttributeUnit()
+	orig[2] = NewOrigAttributeUnit()
 	orig[3] = GenTestOrigAttributeUnit()
-	orig[4] = NewOrigPtrAttributeUnit()
+	orig[4] = NewOrigAttributeUnit()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
 func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
 	var orig []*otlpprofiles.AttributeUnit
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrAttributeUnit())
+		orig = append(orig, NewOrigAttributeUnit())
 		UnmarshalJSONOrigAttributeUnit(orig[len(orig)-1], iter)
 		return true
 	})

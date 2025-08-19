@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigLocation(t *testing.T) {
-	src := NewOrigPtrLocation()
-	dest := NewOrigPtrLocation()
+	src := NewOrigLocation()
+	dest := NewOrigLocation()
 	CopyOrigLocation(dest, src)
-	assert.Equal(t, NewOrigPtrLocation(), dest)
+	assert.Equal(t, NewOrigLocation(), dest)
 	*src = *GenTestOrigLocation()
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigLocation(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLocationUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrLocation()
+	dest := NewOrigLocation()
 	UnmarshalJSONOrigLocation(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrLocation(), dest)
+	assert.Equal(t, NewOrigLocation(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrLocation()
+			dest := NewOrigLocation()
 			UnmarshalJSONOrigLocation(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLocationFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLocation() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrLocation()
+			dest := NewOrigLocation()
 			require.Error(t, UnmarshalProtoOrigLocation(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
-	dest := NewOrigPtrLocation()
+	dest := NewOrigLocation()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLocation(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrLocation(), dest)
+	assert.Equal(t, NewOrigLocation(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 			gotSize := MarshalProtoOrigLocation(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrLocation()
+			dest := NewOrigLocation()
 			require.NoError(t, UnmarshalProtoOrigLocation(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrLocation()
+			dest := NewOrigLocation()
 			require.NoError(t, UnmarshalProtoOrigLocation(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -124,7 +124,7 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 
 func genTestEncodingValuesLocation() map[string]*otlpprofiles.Location {
 	return map[string]*otlpprofiles.Location{
-		"empty": NewOrigPtrLocation(), "MappingIndex/default": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
+		"empty": NewOrigLocation(), "MappingIndex/default": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
 		"MappingIndex/test":                 {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}},
 		"Address/test":                      {Address: uint64(13)},
 		"Line/default_and_test":             {Line: []*otlpprofiles.Line{{}, GenTestOrigLine()}},

@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigScopeMetrics(t *testing.T) {
-	src := NewOrigPtrScopeMetrics()
-	dest := NewOrigPtrScopeMetrics()
+	src := NewOrigScopeMetrics()
+	dest := NewOrigScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
-	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+	assert.Equal(t, NewOrigScopeMetrics(), dest)
 	*src = *GenTestOrigScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigScopeMetrics(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrScopeMetrics()
+	dest := NewOrigScopeMetrics()
 	UnmarshalJSONOrigScopeMetrics(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+	assert.Equal(t, NewOrigScopeMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrScopeMetrics()
+			dest := NewOrigScopeMetrics()
 			UnmarshalJSONOrigScopeMetrics(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigScopeMetricsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrScopeMetrics()
+			dest := NewOrigScopeMetrics()
 			require.Error(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
-	dest := NewOrigPtrScopeMetrics()
+	dest := NewOrigScopeMetrics()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+	assert.Equal(t, NewOrigScopeMetrics(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrScopeMetrics()
+			dest := NewOrigScopeMetrics()
 			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrScopeMetrics()
+			dest := NewOrigScopeMetrics()
 			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +120,7 @@ func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
 
 func genTestEncodingValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
 	return map[string]*otlpmetrics.ScopeMetrics{
-		"empty":                    NewOrigPtrScopeMetrics(),
+		"empty":                    NewOrigScopeMetrics(),
 		"Scope/test":               {Scope: *GenTestOrigInstrumentationScope()},
 		"Metrics/default_and_test": {Metrics: []*otlpmetrics.Metric{{}, GenTestOrigMetric()}},
 		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},

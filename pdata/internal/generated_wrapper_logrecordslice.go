@@ -19,7 +19,7 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLogRecord()
+			newDest[i] = NewOrigLogRecord()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLogRecord()
+			newDest[i] = NewOrigLogRecord()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 
 func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
 	orig := make([]*otlplogs.LogRecord, 5)
-	orig[0] = NewOrigPtrLogRecord()
+	orig[0] = NewOrigLogRecord()
 	orig[1] = GenTestOrigLogRecord()
-	orig[2] = NewOrigPtrLogRecord()
+	orig[2] = NewOrigLogRecord()
 	orig[3] = GenTestOrigLogRecord()
-	orig[4] = NewOrigPtrLogRecord()
+	orig[4] = NewOrigLogRecord()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
 func UnmarshalJSONOrigLogRecordSlice(iter *json.Iterator) []*otlplogs.LogRecord {
 	var orig []*otlplogs.LogRecord
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrLogRecord())
+		orig = append(orig, NewOrigLogRecord())
 		UnmarshalJSONOrigLogRecord(orig[len(orig)-1], iter)
 		return true
 	})

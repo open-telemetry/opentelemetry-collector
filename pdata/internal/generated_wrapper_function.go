@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigFunction() otlpprofiles.Function {
-	return otlpprofiles.Function{}
-}
-
-func NewOrigPtrFunction() *otlpprofiles.Function {
+func NewOrigFunction() *otlpprofiles.Function {
 	return &otlpprofiles.Function{}
 }
 
@@ -30,7 +26,7 @@ func CopyOrigFunction(dest, src *otlpprofiles.Function) {
 }
 
 func GenTestOrigFunction() *otlpprofiles.Function {
-	orig := NewOrigPtrFunction()
+	orig := NewOrigFunction()
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)

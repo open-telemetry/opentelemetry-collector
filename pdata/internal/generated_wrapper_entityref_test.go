@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigEntityRef(t *testing.T) {
-	src := NewOrigPtrEntityRef()
-	dest := NewOrigPtrEntityRef()
+	src := NewOrigEntityRef()
+	dest := NewOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
+	assert.Equal(t, NewOrigEntityRef(), dest)
 	*src = *GenTestOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigEntityRef(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrEntityRef()
+	dest := NewOrigEntityRef()
 	UnmarshalJSONOrigEntityRef(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrEntityRef()
+			dest := NewOrigEntityRef()
 			UnmarshalJSONOrigEntityRef(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigEntityRefFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrEntityRef()
+			dest := NewOrigEntityRef()
 			require.Error(t, UnmarshalProtoOrigEntityRef(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
-	dest := NewOrigPtrEntityRef()
+	dest := NewOrigEntityRef()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrEntityRef()
+			dest := NewOrigEntityRef()
 			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrEntityRef()
+			dest := NewOrigEntityRef()
 			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -122,7 +122,7 @@ func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
 
 func genTestEncodingValuesEntityRef() map[string]*otlpcommon.EntityRef {
 	return map[string]*otlpcommon.EntityRef{
-		"empty":                            NewOrigPtrEntityRef(),
+		"empty":                            NewOrigEntityRef(),
 		"SchemaUrl/test":                   {SchemaUrl: "test_schemaurl"},
 		"Type/test":                        {Type: "test_type"},
 		"IdKeys/default_and_test":          {IdKeys: []string{"", "test_idkeys"}},

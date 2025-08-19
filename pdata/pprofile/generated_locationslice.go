@@ -99,7 +99,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrLocation())
+	*es.orig = append(*es.orig, internal.NewOrigLocation())
 	return es.At(es.Len() - 1)
 }
 

@@ -15,11 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigProfile() otlpprofiles.Profile {
-	return otlpprofiles.Profile{}
-}
-
-func NewOrigPtrProfile() *otlpprofiles.Profile {
+func NewOrigProfile() *otlpprofiles.Profile {
 	return &otlpprofiles.Profile{}
 }
 
@@ -41,7 +37,7 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 }
 
 func GenTestOrigProfile() *otlpprofiles.Profile {
-	orig := NewOrigPtrProfile()
+	orig := NewOrigProfile()
 	orig.SampleType = GenerateOrigTestValueTypeSlice()
 	orig.Sample = GenerateOrigTestSampleSlice()
 	orig.LocationIndices = GenerateOrigTestInt32Slice()
@@ -383,7 +379,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SampleType = append(orig.SampleType, NewOrigPtrValueType())
+			orig.SampleType = append(orig.SampleType, NewOrigValueType())
 			err = UnmarshalProtoOrigValueType(orig.SampleType[len(orig.SampleType)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -399,7 +395,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Sample = append(orig.Sample, NewOrigPtrSample())
+			orig.Sample = append(orig.Sample, NewOrigSample())
 			err = UnmarshalProtoOrigSample(orig.Sample[len(orig.Sample)-1], buf[startPos:pos])
 			if err != nil {
 				return err

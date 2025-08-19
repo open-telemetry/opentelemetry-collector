@@ -26,8 +26,8 @@ func TestResourceSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceSpans(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceSpans(internal.NewOrigPtrResourceSpans(), sharedState)) })
-	assert.Panics(t, func() { newResourceSpans(internal.NewOrigPtrResourceSpans(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceSpans(internal.NewOrigResourceSpans(), sharedState)) })
+	assert.Panics(t, func() { newResourceSpans(internal.NewOrigResourceSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceSpans_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(internal.NewOrigPtrResourceSpans(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(internal.NewOrigResourceSpans(), sharedState)) })
 }
 
 func TestResourceSpans_Resource(t *testing.T) {

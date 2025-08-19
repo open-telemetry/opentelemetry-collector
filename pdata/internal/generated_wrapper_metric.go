@@ -9,16 +9,13 @@ package internal
 import (
 	"fmt"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigMetric() otlpmetrics.Metric {
-	return otlpmetrics.Metric{}
-}
-
-func NewOrigPtrMetric() *otlpmetrics.Metric {
+func NewOrigMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{}
 }
 
@@ -62,7 +59,7 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 }
 
 func GenTestOrigMetric() *otlpmetrics.Metric {
-	orig := NewOrigPtrMetric()
+	orig := NewOrigMetric()
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
@@ -348,7 +345,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			ofv := &otlpmetrics.Metric_Gauge{}
-			ofv.Gauge = NewOrigPtrGauge()
+			ofv.Gauge = NewOrigGauge()
 			err = UnmarshalProtoOrigGauge(ofv.Gauge, buf[startPos:pos])
 			if err != nil {
 				return err
@@ -366,7 +363,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			ofv := &otlpmetrics.Metric_Sum{}
-			ofv.Sum = NewOrigPtrSum()
+			ofv.Sum = NewOrigSum()
 			err = UnmarshalProtoOrigSum(ofv.Sum, buf[startPos:pos])
 			if err != nil {
 				return err
@@ -384,7 +381,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			ofv := &otlpmetrics.Metric_Histogram{}
-			ofv.Histogram = NewOrigPtrHistogram()
+			ofv.Histogram = NewOrigHistogram()
 			err = UnmarshalProtoOrigHistogram(ofv.Histogram, buf[startPos:pos])
 			if err != nil {
 				return err
@@ -402,7 +399,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			ofv := &otlpmetrics.Metric_ExponentialHistogram{}
-			ofv.ExponentialHistogram = NewOrigPtrExponentialHistogram()
+			ofv.ExponentialHistogram = NewOrigExponentialHistogram()
 			err = UnmarshalProtoOrigExponentialHistogram(ofv.ExponentialHistogram, buf[startPos:pos])
 			if err != nil {
 				return err
@@ -420,7 +417,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			ofv := &otlpmetrics.Metric_Summary{}
-			ofv.Summary = NewOrigPtrSummary()
+			ofv.Summary = NewOrigSummary()
 			err = UnmarshalProtoOrigSummary(ofv.Summary, buf[startPos:pos])
 			if err != nil {
 				return err
@@ -437,7 +434,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metadata = append(orig.Metadata, NewOrigKeyValue())
+			orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], buf[startPos:pos])
 			if err != nil {
 				return err

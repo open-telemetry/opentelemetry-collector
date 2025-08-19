@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigScopeSpans() otlptrace.ScopeSpans {
-	return otlptrace.ScopeSpans{}
-}
-
-func NewOrigPtrScopeSpans() *otlptrace.ScopeSpans {
+func NewOrigScopeSpans() *otlptrace.ScopeSpans {
 	return &otlptrace.ScopeSpans{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
 }
 
 func GenTestOrigScopeSpans() *otlptrace.ScopeSpans {
-	orig := NewOrigPtrScopeSpans()
+	orig := NewOrigScopeSpans()
 	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.Spans = GenerateOrigTestSpanSlice()
 	orig.SchemaUrl = "test_schemaurl"
@@ -162,7 +158,7 @@ func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = append(orig.Spans, NewOrigPtrSpan())
+			orig.Spans = append(orig.Spans, NewOrigSpan())
 			err = UnmarshalProtoOrigSpan(orig.Spans[len(orig.Spans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

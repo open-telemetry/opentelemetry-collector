@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigStatus() otlptrace.Status {
-	return otlptrace.Status{}
-}
-
-func NewOrigPtrStatus() *otlptrace.Status {
+func NewOrigStatus() *otlptrace.Status {
 	return &otlptrace.Status{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigStatus(dest, src *otlptrace.Status) {
 }
 
 func GenTestOrigStatus() *otlptrace.Status {
-	orig := NewOrigPtrStatus()
+	orig := NewOrigStatus()
 	orig.Message = "test_message"
 	orig.Code = otlptrace.Status_StatusCode(1)
 	return orig

@@ -24,8 +24,8 @@ func TestMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState)) })
-	assert.Panics(t, func() { newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newMetrics(internal.NewOrigExportMetricsServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newMetrics(internal.NewOrigExportMetricsServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestMetrics_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newMetrics(internal.NewOrigPtrExportMetricsServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newMetrics(internal.NewOrigExportMetricsServiceRequest(), sharedState)) })
 }
 
 func TestMetrics_ResourceMetrics(t *testing.T) {

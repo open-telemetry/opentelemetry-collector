@@ -31,11 +31,7 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-func NewOrigEntityRef() otlpcommon.EntityRef {
-	return otlpcommon.EntityRef{}
-}
-
-func NewOrigPtrEntityRef() *otlpcommon.EntityRef {
+func NewOrigEntityRef() *otlpcommon.EntityRef {
 	return &otlpcommon.EntityRef{}
 }
 
@@ -47,7 +43,7 @@ func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 }
 
 func GenTestOrigEntityRef() *otlpcommon.EntityRef {
-	orig := NewOrigPtrEntityRef()
+	orig := NewOrigEntityRef()
 	orig.SchemaUrl = "test_schemaurl"
 	orig.Type = "test_type"
 	orig.IdKeys = GenerateOrigTestStringSlice()

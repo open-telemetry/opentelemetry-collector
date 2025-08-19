@@ -99,7 +99,7 @@ func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
 // It returns the newly added AttributeUnit.
 func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrAttributeUnit())
+	*es.orig = append(*es.orig, internal.NewOrigAttributeUnit())
 	return es.At(es.Len() - 1)
 }
 

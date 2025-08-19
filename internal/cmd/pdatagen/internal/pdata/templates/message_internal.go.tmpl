@@ -32,11 +32,7 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 
 {{ end }}
 
-func NewOrig{{ .originName }}() {{ .originFullName }} {
-	return {{ .originFullName }}{}
-}
-
-func NewOrigPtr{{ .originName }}() *{{ .originFullName }} {
+func NewOrig{{ .originName }}() *{{ .originFullName }} {
     return &{{ .originFullName }}{}
 }
 
@@ -47,7 +43,7 @@ func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
 }
 
 func GenTestOrig{{ .originName }}() *{{ .originFullName }} {
-	orig := NewOrigPtr{{ .originName }}()
+	orig := NewOrig{{ .originName }}()
 	{{- range .fields }}
 	{{ .GenerateTestValue $.messageStruct }}
 	{{- end }}

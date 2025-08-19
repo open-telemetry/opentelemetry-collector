@@ -19,7 +19,7 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceMetrics()
+			newDest[i] = NewOrigResourceMetrics()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceMetrics()
+			newDest[i] = NewOrigResourceMetrics()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*o
 
 func GenerateOrigTestResourceMetricsSlice() []*otlpmetrics.ResourceMetrics {
 	orig := make([]*otlpmetrics.ResourceMetrics, 5)
-	orig[0] = NewOrigPtrResourceMetrics()
+	orig[0] = NewOrigResourceMetrics()
 	orig[1] = GenTestOrigResourceMetrics()
-	orig[2] = NewOrigPtrResourceMetrics()
+	orig[2] = NewOrigResourceMetrics()
 	orig[3] = GenTestOrigResourceMetrics()
-	orig[4] = NewOrigPtrResourceMetrics()
+	orig[4] = NewOrigResourceMetrics()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestResourceMetricsSlice() []*otlpmetrics.ResourceMetrics {
 func UnmarshalJSONOrigResourceMetricsSlice(iter *json.Iterator) []*otlpmetrics.ResourceMetrics {
 	var orig []*otlpmetrics.ResourceMetrics
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrResourceMetrics())
+		orig = append(orig, NewOrigResourceMetrics())
 		UnmarshalJSONOrigResourceMetrics(orig[len(orig)-1], iter)
 		return true
 	})

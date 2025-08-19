@@ -16,11 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummaryDataPoint_ValueAtQuantile() otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-}
-
-func NewOrigPtrSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
@@ -30,7 +26,7 @@ func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryData
 }
 
 func GenTestOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	orig := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	orig := NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig.Quantile = float64(3.1415926)
 	orig.Value = float64(3.1415926)
 	return orig

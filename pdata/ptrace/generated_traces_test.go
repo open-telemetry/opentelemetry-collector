@@ -24,8 +24,8 @@ func TestTraces_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestTraces(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newTraces(internal.NewOrigPtrExportTraceServiceRequest(), sharedState)) })
-	assert.Panics(t, func() { newTraces(internal.NewOrigPtrExportTraceServiceRequest(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestTraces_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestTraces_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newTraces(internal.NewOrigPtrExportTraceServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState)) })
 }
 
 func TestTraces_ResourceSpans(t *testing.T) {

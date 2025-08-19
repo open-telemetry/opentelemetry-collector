@@ -19,7 +19,7 @@ func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptra
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceSpans()
+			newDest[i] = NewOrigResourceSpans()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptra
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceSpans()
+			newDest[i] = NewOrigResourceSpans()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptra
 
 func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 	orig := make([]*otlptrace.ResourceSpans, 5)
-	orig[0] = NewOrigPtrResourceSpans()
+	orig[0] = NewOrigResourceSpans()
 	orig[1] = GenTestOrigResourceSpans()
-	orig[2] = NewOrigPtrResourceSpans()
+	orig[2] = NewOrigResourceSpans()
 	orig[3] = GenTestOrigResourceSpans()
-	orig[4] = NewOrigPtrResourceSpans()
+	orig[4] = NewOrigResourceSpans()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 func UnmarshalJSONOrigResourceSpansSlice(iter *json.Iterator) []*otlptrace.ResourceSpans {
 	var orig []*otlptrace.ResourceSpans
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrResourceSpans())
+		orig = append(orig, NewOrigResourceSpans())
 		UnmarshalJSONOrigResourceSpans(orig[len(orig)-1], iter)
 		return true
 	})

@@ -9,16 +9,13 @@ package internal
 import (
 	"fmt"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigProfilesDictionary() otlpprofiles.ProfilesDictionary {
-	return otlpprofiles.ProfilesDictionary{}
-}
-
-func NewOrigPtrProfilesDictionary() *otlpprofiles.ProfilesDictionary {
+func NewOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
 	return &otlpprofiles.ProfilesDictionary{}
 }
 
@@ -33,7 +30,7 @@ func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 }
 
 func GenTestOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
-	orig := NewOrigPtrProfilesDictionary()
+	orig := NewOrigProfilesDictionary()
 	orig.MappingTable = GenerateOrigTestMappingSlice()
 	orig.LocationTable = GenerateOrigTestLocationSlice()
 	orig.FunctionTable = GenerateOrigTestFunctionSlice()
@@ -262,7 +259,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.MappingTable = append(orig.MappingTable, NewOrigPtrMapping())
+			orig.MappingTable = append(orig.MappingTable, NewOrigMapping())
 			err = UnmarshalProtoOrigMapping(orig.MappingTable[len(orig.MappingTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -278,7 +275,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.LocationTable = append(orig.LocationTable, NewOrigPtrLocation())
+			orig.LocationTable = append(orig.LocationTable, NewOrigLocation())
 			err = UnmarshalProtoOrigLocation(orig.LocationTable[len(orig.LocationTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -294,7 +291,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.FunctionTable = append(orig.FunctionTable, NewOrigPtrFunction())
+			orig.FunctionTable = append(orig.FunctionTable, NewOrigFunction())
 			err = UnmarshalProtoOrigFunction(orig.FunctionTable[len(orig.FunctionTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -310,7 +307,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.LinkTable = append(orig.LinkTable, NewOrigPtrLink())
+			orig.LinkTable = append(orig.LinkTable, NewOrigLink())
 			err = UnmarshalProtoOrigLink(orig.LinkTable[len(orig.LinkTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -338,7 +335,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeTable = append(orig.AttributeTable, NewOrigKeyValue())
+			orig.AttributeTable = append(orig.AttributeTable, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.AttributeTable[len(orig.AttributeTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -354,7 +351,7 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeUnits = append(orig.AttributeUnits, NewOrigPtrAttributeUnit())
+			orig.AttributeUnits = append(orig.AttributeUnits, NewOrigAttributeUnit())
 			err = UnmarshalProtoOrigAttributeUnit(orig.AttributeUnits[len(orig.AttributeUnits)-1], buf[startPos:pos])
 			if err != nil {
 				return err

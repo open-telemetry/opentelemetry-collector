@@ -26,8 +26,8 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {

@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportMetricsPartialSuccess(t *testing.T) {
-	src := NewOrigPtrExportMetricsPartialSuccess()
-	dest := NewOrigPtrExportMetricsPartialSuccess()
+	src := NewOrigExportMetricsPartialSuccess()
+	dest := NewOrigExportMetricsPartialSuccess()
 	CopyOrigExportMetricsPartialSuccess(dest, src)
-	assert.Equal(t, NewOrigPtrExportMetricsPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportMetricsPartialSuccess(), dest)
 	*src = *GenTestOrigExportMetricsPartialSuccess()
 	CopyOrigExportMetricsPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportMetricsPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportMetricsPartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportMetricsPartialSuccess()
+	dest := NewOrigExportMetricsPartialSuccess()
 	UnmarshalJSONOrigExportMetricsPartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportMetricsPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportMetricsPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsPartialSuccess(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsPartialSuccess(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportMetricsPartialSuccess()
+			dest := NewOrigExportMetricsPartialSuccess()
 			UnmarshalJSONOrigExportMetricsPartialSuccess(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccessFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportMetricsPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportMetricsPartialSuccess()
+			dest := NewOrigExportMetricsPartialSuccess()
 			require.Error(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccessUnknown(t *testing.T) {
-	dest := NewOrigPtrExportMetricsPartialSuccess()
+	dest := NewOrigExportMetricsPartialSuccess()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportMetricsPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportMetricsPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccess(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccess(t *testing.T) {
 			gotSize := MarshalProtoOrigExportMetricsPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportMetricsPartialSuccess()
+			dest := NewOrigExportMetricsPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsPartialSuccess(t *testi
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportMetricsPartialSuccess()
+			dest := NewOrigExportMetricsPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesExportMetricsPartialSuccess() map[string]
 
 func genTestEncodingValuesExportMetricsPartialSuccess() map[string]*otlpcollectormetrics.ExportMetricsPartialSuccess {
 	return map[string]*otlpcollectormetrics.ExportMetricsPartialSuccess{
-		"empty":                   NewOrigPtrExportMetricsPartialSuccess(),
+		"empty":                   NewOrigExportMetricsPartialSuccess(),
 		"RejectedDataPoints/test": {RejectedDataPoints: int64(13)},
 		"ErrorMessage/test":       {ErrorMessage: "test_errormessage"},
 	}

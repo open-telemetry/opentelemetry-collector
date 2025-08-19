@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSample() otlpprofiles.Sample {
-	return otlpprofiles.Sample{}
-}
-
-func NewOrigPtrSample() *otlpprofiles.Sample {
+func NewOrigSample() *otlpprofiles.Sample {
 	return &otlpprofiles.Sample{}
 }
 
@@ -41,7 +37,7 @@ func CopyOrigSample(dest, src *otlpprofiles.Sample) {
 }
 
 func GenTestOrigSample() *otlpprofiles.Sample {
-	orig := NewOrigPtrSample()
+	orig := NewOrigSample()
 	orig.LocationsStartIndex = int32(13)
 	orig.LocationsLength = int32(13)
 	orig.Value = GenerateOrigTestInt64Slice()
