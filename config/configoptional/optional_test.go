@@ -557,6 +557,11 @@ func TestOptionalFileValidate(t *testing.T) {
 			variant: "no_default",
 			cfg:     newInvalidDefaultConfig,
 		},
+		{
+			name:    "invalid default invalid default does not throw an error when the value is overridden",
+			variant: "explicit",
+			cfg:     newInvalidDefaultConfig,
+		},
 	}
 
 	for _, tt := range cases {
