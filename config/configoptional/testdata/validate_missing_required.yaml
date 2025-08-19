@@ -1,6 +1,0 @@
-default1:
-  not_required0: yes
-some:
-  nested:
-    required: yes
-    not_required0: yes

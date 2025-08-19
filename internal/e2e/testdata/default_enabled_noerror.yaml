@@ -1,4 +1,0 @@
-string_key: test
-grpc:
-  transport: tcp
-http:

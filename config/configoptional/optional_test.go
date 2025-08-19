@@ -488,99 +488,74 @@ func TestOptionalValidate(t *testing.T) {
 	}))
 }
 
-var _ xconfmap.Validator = (*validatedConfig)(nil)
-
 type validatedConfig struct {
-	Default0         Optional[nestedConfig] `mapstructure:"default0"`
-	Default1         Optional[nestedConfig] `mapstructure:"default1"`
-	Some             Optional[someConfig]   `mapstructure:"some"`
-	ActuallyRequired Optional[nestedConfig] `mapstructure:"actually_required"`
+	Default Optional[optionalConfig] `mapstructure:"default"`
+	Some    Optional[someConfig]     `mapstructure:"some"`
 }
 
-func (v validatedConfig) Validate() error {
-	if !v.ActuallyRequired.HasValue() {
-		return errors.New("field `actually_required` must be set")
+var _ xconfmap.Validator = (*optionalConfig)(nil)
+
+type optionalConfig struct {
+	StringVal string `mapstructure:"string_val"`
+}
+
+func (n optionalConfig) Validate() error {
+	if n.StringVal == "invalid" {
+		return errors.New("field `string_val` cannot be set to `invalid`")
 	}
 
 	return nil
 }
-
-var _ xconfmap.Validator = (*nestedConfig)(nil)
-
-type nestedConfig struct {
-	Required     string `mapstructure:"required"`
-	NotRequired0 string `mapstructure:"not_required0"`
-	NotRequired1 string `mapstructure:"not_required1"`
-}
-
-func (n nestedConfig) Validate() error {
-	if n.Required == "" {
-		return errors.New("field `required` must be set")
-	}
-
-	if n.NotRequired0 == "no" || n.NotRequired1 == "no" {
-		return errors.New("non-required fields cannot be set to 'no'")
-	}
-
-	return nil
-}
-
-var _ xconfmap.Validator = (*someConfig)(nil)
 
 type someConfig struct {
-	Required string                 `mapstructure:"required"`
-	Nested   Optional[nestedConfig] `mapstructure:"nested"`
+	Nested Optional[optionalConfig] `mapstructure:"nested"`
 }
 
-func (s someConfig) Validate() error {
-	if s.Required == "" {
-		return errors.New("field `required` must be set")
+func newDefaultValidatedConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "valid"}),
 	}
+}
 
-	return nil
+func newInvalidDefaultConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "invalid"}),
+	}
 }
 
 func TestOptionalFileValidate(t *testing.T) {
 	cases := []struct {
 		name    string
 		variant string
-		cfg     validatedConfig
+		cfg     func() validatedConfig
 		err     error
 	}{
 		{
-			name:    "valid config",
-			variant: "valid",
-			cfg: validatedConfig{
-				Default0: Default(nestedConfig{Required: "valid value"}),
-				Default1: Default(nestedConfig{Required: "valid value"}),
-			},
+			name:    "valid default with just key set and no subfields",
+			variant: "implicit",
+			cfg:     newDefaultValidatedConfig,
+		},
+		{
+			name:    "valid default with keys set in default",
+			variant: "explicit",
+			cfg:     newDefaultValidatedConfig,
 		},
 		{
 			name:    "invalid config",
-			variant: "missing_required",
-			cfg: validatedConfig{
-				Default0: Default(nestedConfig{Required: "valid value"}),
-				Default1: Default(nestedConfig{Required: "valid value"}),
-			},
-			err: errors.New("field `actually_required` must be set\nsome: field `required` must be set"),
+			variant: "invalid",
+			cfg:     newDefaultValidatedConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`\nsome: nested: field `string_val` cannot be set to `invalid`"),
 		},
 		{
-			name:    "invalid default",
-			variant: "valid",
-			cfg: validatedConfig{
-				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-			},
-			err: errors.New("default1: non-required fields cannot be set to 'no'"),
+			name:    "invalid default throws an error",
+			variant: "implicit",
+			cfg:     newInvalidDefaultConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`"),
 		},
 		{
-			name:    "invalid and valid default",
-			variant: "valid_with_extra",
-			cfg: validatedConfig{
-				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-			},
-			err: errors.New("default0: non-required fields cannot be set to 'no'"),
+			name:    "invalid default does not throw an error when key is not set",
+			variant: "no_default",
+			cfg:     newInvalidDefaultConfig,
 		},
 	}
 
@@ -589,7 +564,7 @@ func TestOptionalFileValidate(t *testing.T) {
 			conf, err := confmaptest.LoadConf(fmt.Sprintf("testdata/validate_%s.yaml", tt.variant))
 			require.NoError(t, err)
 
-			cfg := tt.cfg
+			cfg := tt.cfg()
 
 			err = conf.Unmarshal(&cfg)
 			require.NoError(t, err)
@@ -602,15 +577,4 @@ func TestOptionalFileValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDefaultValueNoUnmarshaling(t *testing.T) {
-	cfg := validatedConfig{
-		Some:     Some(someConfig{}),
-		Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-		Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
-	}
-
-	err := xconfmap.Validate(cfg)
-	require.EqualError(t, err, "field `actually_required` must be set\nsome: field `required` must be set")
 }
