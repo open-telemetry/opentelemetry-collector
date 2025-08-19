@@ -470,111 +470,143 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 }
 
 func TestSendMetrics(t *testing.T) {
-	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	rcv := otlpMetricsReceiverOnGRPCServer(ln)
-	// Also closes the connection.
-	defer rcv.srv.GracefulStop()
-
-	// Start an OTLP exporter and point to the receiver.
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
-	// otherwise we will not see any errors.
-	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig = configgrpc.ClientConfig{
-		Endpoint: ln.Addr().String(),
-		TLS: configtls.ClientConfig{
-			Insecure: true,
+	testCases := []struct {
+		network string
+		address string
+	}{
+		{
+			network: "tcp",
+			address: "localhost:",
 		},
-		Headers: map[string]configopaque.String{
-			"header": "header-value",
+		{
+			network: "unix",
+			address: filepath.Join(t.TempDir(), "otlp_test.sock"),
 		},
 	}
-	set := exportertest.NewNopSettings(factory.Type())
-	set.BuildInfo.Description = "Collector"
-	set.BuildInfo.Version = "1.2.3test"
 
-	// For testing the "Partial success" warning.
-	logger, observed := observer.New(zap.DebugLevel)
-	set.Logger = zap.New(logger)
+	for _, testCase := range testCases {
+		t.Run(testCase.network, func(t *testing.T) {
+			// Start an OTLP-compatible receiver.
+			ln, err := net.Listen(testCase.network, testCase.address)
+			require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, exp)
-	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
-	}()
+			var endpoint string
 
-	host := componenttest.NewNopHost()
+			// gRPC expects Unix Domain Socket endpoints to be prefixed with "unix://"
+			// (e.g. "unix:///tmp/socket") to distinguish them from TCP addresses.
+			// Without this prefix, gRPC will attempt to treat the value as a TCP host:port,
+			// which will cause connection failures when using a UDS path.
+			if testCase.network == "unix" {
+				endpoint = "unix://" + ln.Addr().String()
+			} else {
+				endpoint = ln.Addr().String()
+			}
+			rcv := otlpMetricsReceiverOnGRPCServer(ln)
+			// Also closes the connection.
+			defer rcv.srv.GracefulStop()
 
-	require.NoError(t, exp.Start(context.Background(), host))
+			// Start an OTLP exporter and point to the receiver.
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
+			// otherwise we will not see any errors.
+			cfg.QueueConfig.Enabled = false
+			cfg.ClientConfig = configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Headers: map[string]configopaque.String{
+					"header": "header-value",
+				},
+			}
 
-	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, rcv.requestCount.Load())
+			set := exportertest.NewNopSettings(factory.Type())
+			set.BuildInfo.Description = "Collector"
+			set.BuildInfo.Version = "1.2.3test"
 
-	// Send empty metric.
-	md := pmetric.NewMetrics()
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			// For testing the "Partial success" warning.
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
 
-	// Wait until it is received.
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() > 0
-	}, 10*time.Second, 5*time.Millisecond)
+			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+			require.NoError(t, err)
+			require.NotNil(t, exp)
+			defer func() {
+				assert.NoError(t, exp.Shutdown(context.Background()))
+			}()
 
-	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalItems.Load())
+			host := componenttest.NewNopHost()
 
-	// Send two metrics.
-	md = testdata.GenerateMetrics(2)
+			require.NoError(t, exp.Start(context.Background(), host))
 
-	err = exp.ConsumeMetrics(context.Background(), md)
-	require.NoError(t, err)
+			// Ensure that initially there is no data in the receiver.
+			assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	// Wait until it is received.
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() > 1
-	}, 10*time.Second, 5*time.Millisecond)
+			// Send empty metric.
+			md := pmetric.NewMetrics()
+			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-	expectedHeader := []string{"header-value"}
+			// Wait until it is received.
+			assert.Eventually(t, func() bool {
+				return rcv.requestCount.Load() > 0
+			}, 10*time.Second, 5*time.Millisecond)
 
-	// Verify received metrics.
-	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.EqualValues(t, 4, rcv.totalItems.Load())
-	assert.Equal(t, md, rcv.getLastRequest())
+			// Ensure it was received empty.
+			assert.EqualValues(t, 0, rcv.totalItems.Load())
 
-	mdata := rcv.getMetadata()
-	require.Equal(t, expectedHeader, mdata.Get("header"))
-	require.Len(t, mdata.Get("User-Agent"), 1)
-	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
+			// Send two metrics.
+			md = testdata.GenerateMetrics(2)
 
-	st := status.New(codes.InvalidArgument, "Invalid argument")
-	rcv.setExportError(st.Err())
+			err = exp.ConsumeMetrics(context.Background(), md)
+			require.NoError(t, err)
 
-	// Send two metrics..
-	md = testdata.GenerateMetrics(2)
+			// Wait until it is received.
+			assert.Eventually(t, func() bool {
+				return rcv.requestCount.Load() > 1
+			}, 10*time.Second, 5*time.Millisecond)
 
-	err = exp.ConsumeMetrics(context.Background(), md)
-	require.Error(t, err)
+			expectedHeader := []string{"header-value"}
 
-	rcv.setExportError(nil)
+			// Verify received metrics.
+			assert.EqualValues(t, 2, rcv.requestCount.Load())
+			assert.EqualValues(t, 4, rcv.totalItems.Load())
+			assert.Equal(t, md, rcv.getLastRequest())
 
-	// Return partial success
-	rcv.setExportResponse(func() pmetricotlp.ExportResponse {
-		response := pmetricotlp.NewExportResponse()
-		partialSuccess := response.PartialSuccess()
-		partialSuccess.SetErrorMessage("Some data points were not ingested")
-		partialSuccess.SetRejectedDataPoints(1)
+			mdata := rcv.getMetadata()
+			require.Equal(t, expectedHeader, mdata.Get("header"))
+			require.Len(t, mdata.Get("User-Agent"), 1)
+			require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
-		return response
-	})
+			st := status.New(codes.InvalidArgument, "Invalid argument")
+			rcv.setExportError(st.Err())
 
-	// Send two metrics.
-	md = testdata.GenerateMetrics(2)
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+			// Send two metrics..
+			md = testdata.GenerateMetrics(2)
+
+			err = exp.ConsumeMetrics(context.Background(), md)
+			require.Error(t, err)
+
+			rcv.setExportError(nil)
+
+			// Return partial success
+			rcv.setExportResponse(func() pmetricotlp.ExportResponse {
+				response := pmetricotlp.NewExportResponse()
+				partialSuccess := response.PartialSuccess()
+				partialSuccess.SetErrorMessage("Some data points were not ingested")
+				partialSuccess.SetRejectedDataPoints(1)
+
+				return response
+			})
+
+			// Send two metrics.
+			md = testdata.GenerateMetrics(2)
+			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+			assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+
+		})
+	}
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
