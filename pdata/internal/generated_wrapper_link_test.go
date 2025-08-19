@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigLink(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigLink(t *testing.T) {
 	dest := NewOrigPtrLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, NewOrigPtrLink(), dest)
-	FillOrigTestLink(src)
+	*src = *GenTestOrigLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLink() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigLink(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLink() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLink(src))
 			gotSize := MarshalProtoOrigLink(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLink() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLink(src))
 			gotSize := MarshalProtoOrigLink(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLink() map[string]*otlpprofiles.Link {
-	return map[string]*otlpprofiles.Link{
-		"empty": NewOrigPtrLink(),
-		"fill_test": func() *otlpprofiles.Link {
-			src := NewOrigPtrLink()
-			FillOrigTestLink(src)
-			return src
-		}(),
+func genTestValuesLink() []*otlpprofiles.Link {
+	return []*otlpprofiles.Link{
+		NewOrigPtrLink(),
+
+		{TraceId: *GenTestOrigTraceID()},
+		{SpanId: *GenTestOrigSpanID()},
 	}
 }

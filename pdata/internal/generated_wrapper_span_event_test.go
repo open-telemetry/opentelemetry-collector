@@ -14,8 +14,11 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigSpan_Event(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigSpan_Event(t *testing.T) {
 	dest := NewOrigPtrSpan_Event()
 	CopyOrigSpan_Event(dest, src)
 	assert.Equal(t, NewOrigPtrSpan_Event(), dest)
-	FillOrigTestSpan_Event(src)
+	*src = *GenTestOrigSpan_Event()
 	CopyOrigSpan_Event(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Event() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSpan_Event() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigSpan_Event(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigSpan_EventUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Event() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSpan_Event() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan_Event(src))
 			gotSize := MarshalProtoOrigSpan_Event(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSpan_Event(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan_Event() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSpan_Event() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan_Event(src))
 			gotSize := MarshalProtoOrigSpan_Event(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +100,13 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan_Event(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSpan_Event() map[string]*otlptrace.Span_Event {
-	return map[string]*otlptrace.Span_Event{
-		"empty": NewOrigPtrSpan_Event(),
-		"fill_test": func() *otlptrace.Span_Event {
-			src := NewOrigPtrSpan_Event()
-			FillOrigTestSpan_Event(src)
-			return src
-		}(),
+func genTestValuesSpan_Event() []*otlptrace.Span_Event {
+	return []*otlptrace.Span_Event{
+		NewOrigPtrSpan_Event(),
+
+		{TimeUnixNano: uint64(13)},
+		{Name: "test_name"},
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{DroppedAttributesCount: uint32(13)},
 	}
 }

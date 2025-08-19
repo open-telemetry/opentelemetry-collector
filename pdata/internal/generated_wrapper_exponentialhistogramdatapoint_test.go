@@ -14,8 +14,11 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
 	dest := NewOrigPtrExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
-	FillOrigTestExponentialHistogramDataPoint(src)
+	*src = *GenTestOrigExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPointUnknown(t *test
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigExponentialHistogramDataPoint(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointUnknown(t *tes
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T)
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,16 +100,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *tes
 	}
 }
 
-func getEncodingTestValuesExponentialHistogramDataPoint() map[string]*otlpmetrics.ExponentialHistogramDataPoint {
-	return map[string]*otlpmetrics.ExponentialHistogramDataPoint{
-		"empty": NewOrigPtrExponentialHistogramDataPoint(),
-		"fill_test": func() *otlpmetrics.ExponentialHistogramDataPoint {
-			src := NewOrigPtrExponentialHistogramDataPoint()
-			FillOrigTestExponentialHistogramDataPoint(src)
-			return src
-		}(),
-		"default_sum": {Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(0)}},
-		"default_min": {Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(0)}},
-		"default_max": {Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(0)}},
+func genTestValuesExponentialHistogramDataPoint() []*otlpmetrics.ExponentialHistogramDataPoint {
+	return []*otlpmetrics.ExponentialHistogramDataPoint{
+		NewOrigPtrExponentialHistogramDataPoint(),
+
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{StartTimeUnixNano: uint64(13)},
+		{TimeUnixNano: uint64(13)},
+		{Count: uint64(13)}, {Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		{Sum_: &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(0)}},
+		{Scale: int32(13)},
+		{ZeroCount: uint64(13)},
+		{Positive: *GenTestOrigExponentialHistogramDataPoint_Buckets()},
+		{Negative: *GenTestOrigExponentialHistogramDataPoint_Buckets()},
+		{Flags: uint32(13)},
+		{Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}}, {Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}},
+		{Min_: &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(0)}}, {Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}},
+		{Max_: &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(0)}},
+		{ZeroThreshold: float64(3.1415926)},
 	}
 }

@@ -31,12 +31,6 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
-func GenerateTestLogs() Logs {
-	orig := NewOrigPtrExportLogsServiceRequest()
-	FillOrigTestExportLogsServiceRequest(orig)
-	return NewLogs(orig, NewState())
-}
-
 func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {
 	return otlpcollectorlogs.ExportLogsServiceRequest{}
 }
@@ -49,8 +43,10 @@ func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsSer
 	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 
-func FillOrigTestExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) {
+func GenTestOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+	orig := NewOrigPtrExportLogsServiceRequest()
 	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

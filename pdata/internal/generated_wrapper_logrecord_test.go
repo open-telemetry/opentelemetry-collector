@@ -14,8 +14,11 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigLogRecord(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigLogRecord(t *testing.T) {
 	dest := NewOrigPtrLogRecord()
 	CopyOrigLogRecord(dest, src)
 	assert.Equal(t, NewOrigPtrLogRecord(), dest)
-	FillOrigTestLogRecord(src)
+	*src = *GenTestOrigLogRecord()
 	CopyOrigLogRecord(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
-	for name, src := range getEncodingTestValuesLogRecord() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLogRecord() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigLogRecord(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigLogRecordUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
-	for name, src := range getEncodingTestValuesLogRecord() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLogRecord() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLogRecord(src))
 			gotSize := MarshalProtoOrigLogRecord(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
-	for name, src := range getEncodingTestValuesLogRecord() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLogRecord() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLogRecord(src))
 			gotSize := MarshalProtoOrigLogRecord(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +100,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLogRecord() map[string]*otlplogs.LogRecord {
-	return map[string]*otlplogs.LogRecord{
-		"empty": NewOrigPtrLogRecord(),
-		"fill_test": func() *otlplogs.LogRecord {
-			src := NewOrigPtrLogRecord()
-			FillOrigTestLogRecord(src)
-			return src
-		}(),
+func genTestValuesLogRecord() []*otlplogs.LogRecord {
+	return []*otlplogs.LogRecord{
+		NewOrigPtrLogRecord(),
+
+		{TimeUnixNano: uint64(13)},
+		{ObservedTimeUnixNano: uint64(13)},
+		{SeverityNumber: otlplogs.SeverityNumber(13)},
+		{SeverityText: "test_severitytext"},
+		{Body: *GenTestOrigAnyValue()},
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{DroppedAttributesCount: uint32(13)},
+		{Flags: uint32(13)},
+		{TraceId: *GenTestOrigTraceID()},
+		{SpanId: *GenTestOrigSpanID()},
+		{EventName: "test_eventname"},
 	}
 }

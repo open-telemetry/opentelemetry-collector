@@ -43,11 +43,9 @@ func CopyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.F
 func GenerateOrigTestFunctionSlice() []*otlpprofiles.Function {
 	orig := make([]*otlpprofiles.Function, 5)
 	orig[0] = NewOrigPtrFunction()
-	orig[1] = NewOrigPtrFunction()
-	FillOrigTestFunction(orig[1])
+	orig[1] = GenTestOrigFunction()
 	orig[2] = NewOrigPtrFunction()
-	orig[3] = NewOrigPtrFunction()
-	FillOrigTestFunction(orig[3])
+	orig[3] = GenTestOrigFunction()
 	orig[4] = NewOrigPtrFunction()
 	return orig
 }

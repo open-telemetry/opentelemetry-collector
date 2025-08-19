@@ -14,8 +14,11 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigNumberDataPoint(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigNumberDataPoint(t *testing.T) {
 	dest := NewOrigPtrNumberDataPoint()
 	CopyOrigNumberDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrNumberDataPoint(), dest)
-	FillOrigTestNumberDataPoint(src)
+	*src = *GenTestOrigNumberDataPoint()
 	CopyOrigNumberDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesNumberDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigNumberDataPoint(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesNumberDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
 			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesNumberDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesNumberDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
 			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,15 +100,18 @@ func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
-	return map[string]*otlpmetrics.NumberDataPoint{
-		"empty": NewOrigPtrNumberDataPoint(),
-		"fill_test": func() *otlpmetrics.NumberDataPoint {
-			src := NewOrigPtrNumberDataPoint()
-			FillOrigTestNumberDataPoint(src)
-			return src
-		}(),
-		"oneof_double": {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
-		"oneof_int":    {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
+func genTestValuesNumberDataPoint() []*otlpmetrics.NumberDataPoint {
+	return []*otlpmetrics.NumberDataPoint{
+		NewOrigPtrNumberDataPoint(),
+
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{StartTimeUnixNano: uint64(13)},
+		{TimeUnixNano: uint64(13)},
+		{Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}},
+		{Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
+		{Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(13)}},
+		{Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
+		{Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}},
+		{Flags: uint32(13)},
 	}
 }

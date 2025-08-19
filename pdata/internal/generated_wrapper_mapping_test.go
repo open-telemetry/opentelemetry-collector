@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigMapping(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigMapping(t *testing.T) {
 	dest := NewOrigPtrMapping()
 	CopyOrigMapping(dest, src)
 	assert.Equal(t, NewOrigPtrMapping(), dest)
-	FillOrigTestMapping(src)
+	*src = *GenTestOrigMapping()
 	CopyOrigMapping(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigMappingUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigMapping(t *testing.T) {
-	for name, src := range getEncodingTestValuesMapping() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMapping() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigMapping(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigMappingUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
-	for name, src := range getEncodingTestValuesMapping() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMapping() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigMapping(src))
 			gotSize := MarshalProtoOrigMapping(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
-	for name, src := range getEncodingTestValuesMapping() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMapping() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigMapping(src))
 			gotSize := MarshalProtoOrigMapping(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,18 @@ func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesMapping() map[string]*otlpprofiles.Mapping {
-	return map[string]*otlpprofiles.Mapping{
-		"empty": NewOrigPtrMapping(),
-		"fill_test": func() *otlpprofiles.Mapping {
-			src := NewOrigPtrMapping()
-			FillOrigTestMapping(src)
-			return src
-		}(),
+func genTestValuesMapping() []*otlpprofiles.Mapping {
+	return []*otlpprofiles.Mapping{
+		NewOrigPtrMapping(),
+
+		{MemoryStart: uint64(13)},
+		{MemoryLimit: uint64(13)},
+		{FileOffset: uint64(13)},
+		{FilenameStrindex: int32(13)},
+		{AttributeIndices: []int32{int32(0), int32(13)}},
+		{HasFunctions: true},
+		{HasFilenames: true},
+		{HasLineNumbers: true},
+		{HasInlineFrames: true},
 	}
 }

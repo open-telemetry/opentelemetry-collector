@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigFunction(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigFunction(t *testing.T) {
 	dest := NewOrigPtrFunction()
 	CopyOrigFunction(dest, src)
 	assert.Equal(t, NewOrigPtrFunction(), dest)
-	FillOrigTestFunction(src)
+	*src = *GenTestOrigFunction()
 	CopyOrigFunction(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigFunctionUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesFunction() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigFunction(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigFunctionUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesFunction() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigFunction(src))
 			gotSize := MarshalProtoOrigFunction(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesFunction() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigFunction(src))
 			gotSize := MarshalProtoOrigFunction(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,13 @@ func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesFunction() map[string]*otlpprofiles.Function {
-	return map[string]*otlpprofiles.Function{
-		"empty": NewOrigPtrFunction(),
-		"fill_test": func() *otlpprofiles.Function {
-			src := NewOrigPtrFunction()
-			FillOrigTestFunction(src)
-			return src
-		}(),
+func genTestValuesFunction() []*otlpprofiles.Function {
+	return []*otlpprofiles.Function{
+		NewOrigPtrFunction(),
+
+		{NameStrindex: int32(13)},
+		{SystemNameStrindex: int32(13)},
+		{FilenameStrindex: int32(13)},
+		{StartLine: int64(13)},
 	}
 }

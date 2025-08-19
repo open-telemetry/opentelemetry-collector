@@ -28,10 +28,12 @@ func CopyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.Column = src.Column
 }
 
-func FillOrigTestLine(orig *otlpprofiles.Line) {
+func GenTestOrigLine() *otlpprofiles.Line {
+	orig := NewOrigPtrLine()
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

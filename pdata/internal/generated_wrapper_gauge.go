@@ -26,8 +26,10 @@ func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func FillOrigTestGauge(orig *otlpmetrics.Gauge) {
+func GenTestOrigGauge() *otlpmetrics.Gauge {
+	orig := NewOrigPtrGauge()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

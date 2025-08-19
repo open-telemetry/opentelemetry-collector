@@ -28,10 +28,12 @@ func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceLogs(orig *otlplogs.ResourceLogs) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceLogs() *otlplogs.ResourceLogs {
+	orig := NewOrigPtrResourceLogs()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeLogs = GenerateOrigTestScopeLogsSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

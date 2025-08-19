@@ -39,12 +39,14 @@ func CopyOrigLocation(dest, src *otlpprofiles.Location) {
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func FillOrigTestLocation(orig *otlpprofiles.Location) {
+func GenTestOrigLocation() *otlpprofiles.Location {
+	orig := NewOrigPtrLocation()
 	orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
 	orig.Address = uint64(13)
 	orig.Line = GenerateOrigTestLineSlice()
 	orig.IsFolded = true
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

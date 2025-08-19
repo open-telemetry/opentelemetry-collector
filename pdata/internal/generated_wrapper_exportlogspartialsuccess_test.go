@@ -16,6 +16,8 @@ import (
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigExportLogsPartialSuccess(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigExportLogsPartialSuccess(t *testing.T) {
 	dest := NewOrigPtrExportLogsPartialSuccess()
 	CopyOrigExportLogsPartialSuccess(dest, src)
 	assert.Equal(t, NewOrigPtrExportLogsPartialSuccess(), dest)
-	FillOrigTestExportLogsPartialSuccess(src)
+	*src = *GenTestOrigExportLogsPartialSuccess()
 	CopyOrigExportLogsPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccessUnknown(t *testing.T
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportLogsPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigExportLogsPartialSuccess(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccessUnknown(t *testing.
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportLogsPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportLogsPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportLogsPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccess(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportLogsPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportLogsPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportLogsPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportLogsPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportLogsPartialSuccess(t *testing.
 	}
 }
 
-func getEncodingTestValuesExportLogsPartialSuccess() map[string]*otlpcollectorlogs.ExportLogsPartialSuccess {
-	return map[string]*otlpcollectorlogs.ExportLogsPartialSuccess{
-		"empty": NewOrigPtrExportLogsPartialSuccess(),
-		"fill_test": func() *otlpcollectorlogs.ExportLogsPartialSuccess {
-			src := NewOrigPtrExportLogsPartialSuccess()
-			FillOrigTestExportLogsPartialSuccess(src)
-			return src
-		}(),
+func genTestValuesExportLogsPartialSuccess() []*otlpcollectorlogs.ExportLogsPartialSuccess {
+	return []*otlpcollectorlogs.ExportLogsPartialSuccess{
+		NewOrigPtrExportLogsPartialSuccess(),
+
+		{RejectedLogRecords: int64(13)},
+		{ErrorMessage: "test_errormessage"},
 	}
 }

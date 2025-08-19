@@ -49,7 +49,6 @@ func TestSummary_DataPoints(t *testing.T) {
 }
 
 func generateTestSummary() Summary {
-	ms := NewSummary()
-	internal.FillOrigTestSummary(ms.orig)
+	ms := newSummary(internal.GenTestOrigSummary(), internal.NewState())
 	return ms
 }

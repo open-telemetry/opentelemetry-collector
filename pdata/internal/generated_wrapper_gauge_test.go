@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigGauge(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigGauge(t *testing.T) {
 	dest := NewOrigPtrGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, NewOrigPtrGauge(), dest)
-	FillOrigTestGauge(src)
+	*src = *GenTestOrigGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesGauge() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigGauge(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesGauge() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesGauge() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesGauge() map[string]*otlpmetrics.Gauge {
-	return map[string]*otlpmetrics.Gauge{
-		"empty": NewOrigPtrGauge(),
-		"fill_test": func() *otlpmetrics.Gauge {
-			src := NewOrigPtrGauge()
-			FillOrigTestGauge(src)
-			return src
-		}(),
+func genTestValuesGauge() []*otlpmetrics.Gauge {
+	return []*otlpmetrics.Gauge{
+		NewOrigPtrGauge(),
+
+		{DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
 	}
 }

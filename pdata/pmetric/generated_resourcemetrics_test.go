@@ -46,8 +46,8 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
@@ -68,7 +68,6 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	ms := NewResourceMetrics()
-	internal.FillOrigTestResourceMetrics(ms.orig)
+	ms := newResourceMetrics(internal.GenTestOrigResourceMetrics(), internal.NewState())
 	return ms
 }

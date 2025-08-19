@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigLocation(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigLocation(t *testing.T) {
 	dest := NewOrigPtrLocation()
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, NewOrigPtrLocation(), dest)
-	FillOrigTestLocation(src)
+	*src = *GenTestOrigLocation()
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigLocationUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLocation() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigLocation(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLocation() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLocation(src))
 			gotSize := MarshalProtoOrigLocation(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLocation() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLocation(src))
 			gotSize := MarshalProtoOrigLocation(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,14 +99,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLocation() map[string]*otlpprofiles.Location {
-	return map[string]*otlpprofiles.Location{
-		"empty": NewOrigPtrLocation(),
-		"fill_test": func() *otlpprofiles.Location {
-			src := NewOrigPtrLocation()
-			FillOrigTestLocation(src)
-			return src
-		}(),
-		"default_mappingindex": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
+func genTestValuesLocation() []*otlpprofiles.Location {
+	return []*otlpprofiles.Location{
+		NewOrigPtrLocation(),
+		{MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}},
+		{MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
+		{Address: uint64(13)},
+		{Line: []*otlpprofiles.Line{{}, GenTestOrigLine()}},
+		{IsFolded: true},
+		{AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

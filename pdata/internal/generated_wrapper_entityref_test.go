@@ -16,6 +16,8 @@ import (
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigEntityRef(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigEntityRef(t *testing.T) {
 	dest := NewOrigPtrEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, NewOrigPtrEntityRef(), dest)
-	FillOrigTestEntityRef(src)
+	*src = *GenTestOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesEntityRef() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigEntityRef(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesEntityRef() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigEntityRef(src))
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesEntityRef() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigEntityRef(src))
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,13 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesEntityRef() map[string]*otlpcommon.EntityRef {
-	return map[string]*otlpcommon.EntityRef{
-		"empty": NewOrigPtrEntityRef(),
-		"fill_test": func() *otlpcommon.EntityRef {
-			src := NewOrigPtrEntityRef()
-			FillOrigTestEntityRef(src)
-			return src
-		}(),
+func genTestValuesEntityRef() []*otlpcommon.EntityRef {
+	return []*otlpcommon.EntityRef{
+		NewOrigPtrEntityRef(),
+
+		{SchemaUrl: "test_schemaurl"},
+		{Type: "test_type"},
+		{IdKeys: []string{"", "test_idkeys"}},
+		{DescriptionKeys: []string{"", "test_descriptionkeys"}},
 	}
 }

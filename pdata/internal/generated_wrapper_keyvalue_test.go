@@ -16,6 +16,8 @@ import (
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigKeyValue(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigKeyValue(t *testing.T) {
 	dest := NewOrigPtrKeyValue()
 	CopyOrigKeyValue(dest, src)
 	assert.Equal(t, NewOrigPtrKeyValue(), dest)
-	FillOrigTestKeyValue(src)
+	*src = *GenTestOrigKeyValue()
 	CopyOrigKeyValue(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesKeyValue() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigKeyValue(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesKeyValue() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesKeyValue() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesKeyValue() map[string]*otlpcommon.KeyValue {
-	return map[string]*otlpcommon.KeyValue{
-		"empty": NewOrigPtrKeyValue(),
-		"fill_test": func() *otlpcommon.KeyValue {
-			src := NewOrigPtrKeyValue()
-			FillOrigTestKeyValue(src)
-			return src
-		}(),
+func genTestValuesKeyValue() []*otlpcommon.KeyValue {
+	return []*otlpcommon.KeyValue{
+		NewOrigPtrKeyValue(),
+
+		{Key: "test_key"},
+		{Value: *GenTestOrigAnyValue()},
 	}
 }

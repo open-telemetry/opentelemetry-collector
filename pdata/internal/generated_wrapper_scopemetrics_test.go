@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigScopeMetrics(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigScopeMetrics(t *testing.T) {
 	dest := NewOrigPtrScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
-	FillOrigTestScopeMetrics(src)
+	*src = *GenTestOrigScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigScopeMetrics(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
 			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
 			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
-	return map[string]*otlpmetrics.ScopeMetrics{
-		"empty": NewOrigPtrScopeMetrics(),
-		"fill_test": func() *otlpmetrics.ScopeMetrics {
-			src := NewOrigPtrScopeMetrics()
-			FillOrigTestScopeMetrics(src)
-			return src
-		}(),
+func genTestValuesScopeMetrics() []*otlpmetrics.ScopeMetrics {
+	return []*otlpmetrics.ScopeMetrics{
+		NewOrigPtrScopeMetrics(),
+
+		{Scope: *GenTestOrigInstrumentationScope()},
+		{Metrics: []*otlpmetrics.Metric{{}, GenTestOrigMetric()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

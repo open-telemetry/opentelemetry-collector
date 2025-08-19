@@ -14,8 +14,11 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigProfilesDictionary(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigProfilesDictionary(t *testing.T) {
 	dest := NewOrigPtrProfilesDictionary()
 	CopyOrigProfilesDictionary(dest, src)
 	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
-	FillOrigTestProfilesDictionary(src)
+	*src = *GenTestOrigProfilesDictionary()
 	CopyOrigProfilesDictionary(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfilesDictionary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigProfilesDictionary(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfilesDictionary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
 			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfilesDictionary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
 			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +100,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesProfilesDictionary() map[string]*otlpprofiles.ProfilesDictionary {
-	return map[string]*otlpprofiles.ProfilesDictionary{
-		"empty": NewOrigPtrProfilesDictionary(),
-		"fill_test": func() *otlpprofiles.ProfilesDictionary {
-			src := NewOrigPtrProfilesDictionary()
-			FillOrigTestProfilesDictionary(src)
-			return src
-		}(),
+func genTestValuesProfilesDictionary() []*otlpprofiles.ProfilesDictionary {
+	return []*otlpprofiles.ProfilesDictionary{
+		NewOrigPtrProfilesDictionary(),
+
+		{MappingTable: []*otlpprofiles.Mapping{{}, GenTestOrigMapping()}},
+		{LocationTable: []*otlpprofiles.Location{{}, GenTestOrigLocation()}},
+		{FunctionTable: []*otlpprofiles.Function{{}, GenTestOrigFunction()}},
+		{LinkTable: []*otlpprofiles.Link{{}, GenTestOrigLink()}},
+		{StringTable: []string{"", "test_stringtable"}},
+		{AttributeTable: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{AttributeUnits: []*otlpprofiles.AttributeUnit{{}, GenTestOrigAttributeUnit()}},
 	}
 }

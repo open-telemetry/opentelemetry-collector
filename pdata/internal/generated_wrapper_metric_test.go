@@ -14,8 +14,11 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigMetric(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigMetric(t *testing.T) {
 	dest := NewOrigPtrMetric()
 	CopyOrigMetric(dest, src)
 	assert.Equal(t, NewOrigPtrMetric(), dest)
-	FillOrigTestMetric(src)
+	*src = *GenTestOrigMetric()
 	CopyOrigMetric(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigMetricUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
-	for name, src := range getEncodingTestValuesMetric() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMetric() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigMetric(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigMetricUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
-	for name, src := range getEncodingTestValuesMetric() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMetric() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigMetric(src))
 			gotSize := MarshalProtoOrigMetric(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
-	for name, src := range getEncodingTestValuesMetric() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesMetric() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigMetric(src))
 			gotSize := MarshalProtoOrigMetric(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,38 +100,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesMetric() map[string]*otlpmetrics.Metric {
-	return map[string]*otlpmetrics.Metric{
-		"empty": NewOrigPtrMetric(),
-		"fill_test": func() *otlpmetrics.Metric {
-			src := NewOrigPtrMetric()
-			FillOrigTestMetric(src)
-			return src
-		}(),
-		"oneof_gauge": {Data: func() *otlpmetrics.Metric_Gauge {
-			val := &otlpmetrics.Gauge{}
-			FillOrigTestGauge(val)
-			return &otlpmetrics.Metric_Gauge{Gauge: val}
-		}()},
-		"oneof_sum": {Data: func() *otlpmetrics.Metric_Sum {
-			val := &otlpmetrics.Sum{}
-			FillOrigTestSum(val)
-			return &otlpmetrics.Metric_Sum{Sum: val}
-		}()},
-		"oneof_histogram": {Data: func() *otlpmetrics.Metric_Histogram {
-			val := &otlpmetrics.Histogram{}
-			FillOrigTestHistogram(val)
-			return &otlpmetrics.Metric_Histogram{Histogram: val}
-		}()},
-		"oneof_exponentialhistogram": {Data: func() *otlpmetrics.Metric_ExponentialHistogram {
-			val := &otlpmetrics.ExponentialHistogram{}
-			FillOrigTestExponentialHistogram(val)
-			return &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-		}()},
-		"oneof_summary": {Data: func() *otlpmetrics.Metric_Summary {
-			val := &otlpmetrics.Summary{}
-			FillOrigTestSummary(val)
-			return &otlpmetrics.Metric_Summary{Summary: val}
-		}()},
+func genTestValuesMetric() []*otlpmetrics.Metric {
+	return []*otlpmetrics.Metric{
+		NewOrigPtrMetric(),
+
+		{Name: "test_name"},
+		{Description: "test_description"},
+		{Unit: "test_unit"},
+		{Data: &otlpmetrics.Metric_Gauge{Gauge: GenTestOrigGauge()}},
+		{Data: &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}},
+		{Data: &otlpmetrics.Metric_Sum{Sum: GenTestOrigSum()}},
+		{Data: &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}},
+		{Data: &otlpmetrics.Metric_Histogram{Histogram: GenTestOrigHistogram()}},
+		{Data: &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}},
+		{Data: &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: GenTestOrigExponentialHistogram()}},
+		{Data: &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}},
+		{Data: &otlpmetrics.Metric_Summary{Summary: GenTestOrigSummary()}},
+		{Data: &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}},
+		{Metadata: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
 	}
 }

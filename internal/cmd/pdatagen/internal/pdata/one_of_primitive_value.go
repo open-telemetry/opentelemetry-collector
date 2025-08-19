@@ -50,9 +50,6 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 {{- .originFieldName }}: {{ .testValue }}}`
 
-const oneOfPrimitiveTestValuesTemplate = `
-"oneof_{{ .lowerFieldName }}": { {{ .originOneOfFieldName }}: &{{ .originStructType }}{{ "{" }}{{ .originFieldName }}: {{ .defaultVal }}} },`
-
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructType }}:
 	dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 {{- .originFieldName }}: t.{{ .originFieldName }}}`
@@ -86,14 +83,13 @@ func (opv *OneOfPrimitiveValue) GenerateTests(ms *messageStruct, of *OneOfField)
 	return template.Execute(t, opv.templateFields(ms, of))
 }
 
-func (opv *OneOfPrimitiveValue) GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string {
+func (opv *OneOfPrimitiveValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
 	t := template.Parse("oneOfPrimitiveSetTestTemplate", []byte(oneOfPrimitiveSetTestTemplate))
 	return template.Execute(t, opv.templateFields(ms, of))
 }
 
-func (opv *OneOfPrimitiveValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveTestValuesTemplate", []byte(oneOfPrimitiveTestValuesTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+func (opv *OneOfPrimitiveValue) GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of, false).GenTestEncodingValues()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {

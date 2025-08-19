@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigLine(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigLine(t *testing.T) {
 	dest := NewOrigPtrLine()
 	CopyOrigLine(dest, src)
 	assert.Equal(t, NewOrigPtrLine(), dest)
-	FillOrigTestLine(src)
+	*src = *GenTestOrigLine()
 	CopyOrigLine(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigLineUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLine() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigLine(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigLineUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLine() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLine(src))
 			gotSize := MarshalProtoOrigLine(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesLine() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLine(src))
 			gotSize := MarshalProtoOrigLine(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLine() map[string]*otlpprofiles.Line {
-	return map[string]*otlpprofiles.Line{
-		"empty": NewOrigPtrLine(),
-		"fill_test": func() *otlpprofiles.Line {
-			src := NewOrigPtrLine()
-			FillOrigTestLine(src)
-			return src
-		}(),
+func genTestValuesLine() []*otlpprofiles.Line {
+	return []*otlpprofiles.Line{
+		NewOrigPtrLine(),
+
+		{FunctionIndex: int32(13)},
+		{Line: int64(13)},
+		{Column: int64(13)},
 	}
 }

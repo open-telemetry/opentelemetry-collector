@@ -16,6 +16,8 @@ import (
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigScopeSpans(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 	dest := NewOrigPtrScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
-	FillOrigTestScopeSpans(src)
+	*src = *GenTestOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigScopeSpans(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeSpans(src))
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeSpans(src))
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
-	return map[string]*otlptrace.ScopeSpans{
-		"empty": NewOrigPtrScopeSpans(),
-		"fill_test": func() *otlptrace.ScopeSpans {
-			src := NewOrigPtrScopeSpans()
-			FillOrigTestScopeSpans(src)
-			return src
-		}(),
+func genTestValuesScopeSpans() []*otlptrace.ScopeSpans {
+	return []*otlptrace.ScopeSpans{
+		NewOrigPtrScopeSpans(),
+
+		{Scope: *GenTestOrigInstrumentationScope()},
+		{Spans: []*otlptrace.Span{{}, GenTestOrigSpan()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

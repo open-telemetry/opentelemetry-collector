@@ -16,6 +16,8 @@ import (
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigResourceLogs(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigResourceLogs(t *testing.T) {
 	dest := NewOrigPtrResourceLogs()
 	CopyOrigResourceLogs(dest, src)
 	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
-	FillOrigTestResourceLogs(src)
+	*src = *GenTestOrigResourceLogs()
 	CopyOrigResourceLogs(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigResourceLogs(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceLogs(src))
 			gotSize := MarshalProtoOrigResourceLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceLogs(src))
 			gotSize := MarshalProtoOrigResourceLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
-	return map[string]*otlplogs.ResourceLogs{
-		"empty": NewOrigPtrResourceLogs(),
-		"fill_test": func() *otlplogs.ResourceLogs {
-			src := NewOrigPtrResourceLogs()
-			FillOrigTestResourceLogs(src)
-			return src
-		}(),
+func genTestValuesResourceLogs() []*otlplogs.ResourceLogs {
+	return []*otlplogs.ResourceLogs{
+		NewOrigPtrResourceLogs(),
+
+		{Resource: *GenTestOrigResource()},
+		{ScopeLogs: []*otlplogs.ScopeLogs{{}, GenTestOrigScopeLogs()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

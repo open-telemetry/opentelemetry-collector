@@ -103,7 +103,6 @@ func TestExemplar_TraceID(t *testing.T) {
 }
 
 func generateTestExemplar() Exemplar {
-	ms := NewExemplar()
-	internal.FillOrigTestExemplar(ms.orig)
+	ms := newExemplar(internal.GenTestOrigExemplar(), internal.NewState())
 	return ms
 }

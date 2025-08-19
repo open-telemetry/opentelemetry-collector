@@ -40,7 +40,7 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 	ms := New{{ .structName }}()
 	ms.SetEmpty{{ .fieldName }}()
 	assert.Equal(t, New{{ .returnType }}(), ms.{{ .fieldName }}())
-	internal.FillOrigTest{{ .returnType }}(ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }})
+	ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }} = internal.GenTestOrig{{ .returnType }}()
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	sharedState := internal.NewState()
@@ -50,15 +50,7 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 `
 
 const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{ 
-{{- .fieldName }}: &{{ .originFieldPackageName }}.{{ .fieldName }}{}}
-FillOrigTest{{ .fieldOriginName }}(orig.Get{{ .returnType }}())`
-
-const oneOfMessageTestValuesTemplate = `
-"oneof_{{ .lowerFieldName }}": { {{ .originOneOfFieldName }}: func() *{{ .originStructType }}{
-	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
-	FillOrigTest{{ .fieldOriginName }}(val)
-	return &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
-}()},`
+{{- .fieldName }}: GenTestOrig{{ .fieldOriginName }}() }`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
@@ -96,14 +88,13 @@ func (omv *OneOfMessageValue) GenerateTests(ms *messageStruct, of *OneOfField) s
 	return template.Execute(t, omv.templateFields(ms, of))
 }
 
-func (omv *OneOfMessageValue) GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string {
+func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
 	t := template.Parse("oneOfMessageSetTestTemplate", []byte(oneOfMessageSetTestTemplate))
 	return template.Execute(t, omv.templateFields(ms, of))
 }
 
-func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageTestValuesTemplate", []byte(oneOfMessageTestValuesTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+func (omv *OneOfMessageValue) GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, false).GenTestEncodingValues()
 }
 
 func (omv *OneOfMessageValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
@@ -144,7 +135,7 @@ func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, ol
 		OneOfGroup:           of.originFieldName,
 		OneOfMessageFullName: ms.originFullName + "_" + omv.fieldName,
 		Name:                 omv.fieldName,
-		MessageFullName:      omv.returnMessage.getOriginName(),
+		MessageFullName:      omv.returnMessage.getOriginFullName(),
 		Nullable:             true,
 	}
 	// TODO: Cleanup this by moving everyone to the new OneOfGroup

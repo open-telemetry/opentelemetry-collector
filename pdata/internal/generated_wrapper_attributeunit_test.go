@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigAttributeUnit(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigAttributeUnit(t *testing.T) {
 	dest := NewOrigPtrAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, NewOrigPtrAttributeUnit(), dest)
-	FillOrigTestAttributeUnit(src)
+	*src = *GenTestOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnitUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesAttributeUnit() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigAttributeUnit(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesAttributeUnit() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
 			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
-	for name, src := range getEncodingTestValuesAttributeUnit() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesAttributeUnit() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
 			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
-	return map[string]*otlpprofiles.AttributeUnit{
-		"empty": NewOrigPtrAttributeUnit(),
-		"fill_test": func() *otlpprofiles.AttributeUnit {
-			src := NewOrigPtrAttributeUnit()
-			FillOrigTestAttributeUnit(src)
-			return src
-		}(),
+func genTestValuesAttributeUnit() []*otlpprofiles.AttributeUnit {
+	return []*otlpprofiles.AttributeUnit{
+		NewOrigPtrAttributeUnit(),
+
+		{AttributeKeyStrindex: int32(13)},
+		{UnitStrindex: int32(13)},
 	}
 }

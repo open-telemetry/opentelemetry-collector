@@ -38,18 +38,20 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.EventName = src.EventName
 }
 
-func FillOrigTestLogRecord(orig *otlplogs.LogRecord) {
+func GenTestOrigLogRecord() *otlplogs.LogRecord {
+	orig := NewOrigPtrLogRecord()
 	orig.TimeUnixNano = 1234567890
 	orig.ObservedTimeUnixNano = 1234567890
 	orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	orig.SeverityText = "test_severitytext"
-	FillOrigTestAnyValue(&orig.Body)
+	orig.Body = *GenTestOrigAnyValue()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = 1
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.EventName = "test_eventname"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

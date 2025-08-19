@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigSum(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigSum(t *testing.T) {
 	dest := NewOrigPtrSum()
 	CopyOrigSum(dest, src)
 	assert.Equal(t, NewOrigPtrSum(), dest)
-	FillOrigTestSum(src)
+	*src = *GenTestOrigSum()
 	CopyOrigSum(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigSumUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
-	for name, src := range getEncodingTestValuesSum() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSum() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigSum(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigSumUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
-	for name, src := range getEncodingTestValuesSum() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSum() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSum(src))
 			gotSize := MarshalProtoOrigSum(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
-	for name, src := range getEncodingTestValuesSum() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSum() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSum(src))
 			gotSize := MarshalProtoOrigSum(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSum() map[string]*otlpmetrics.Sum {
-	return map[string]*otlpmetrics.Sum{
-		"empty": NewOrigPtrSum(),
-		"fill_test": func() *otlpmetrics.Sum {
-			src := NewOrigPtrSum()
-			FillOrigTestSum(src)
-			return src
-		}(),
+func genTestValuesSum() []*otlpmetrics.Sum {
+	return []*otlpmetrics.Sum{
+		NewOrigPtrSum(),
+
+		{DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
+		{AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
+		{IsMonotonic: true},
 	}
 }

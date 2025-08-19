@@ -46,8 +46,8 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceSpans_ScopeSpans(t *testing.T) {
@@ -68,7 +68,6 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceSpans() ResourceSpans {
-	ms := NewResourceSpans()
-	internal.FillOrigTestResourceSpans(ms.orig)
+	ms := newResourceSpans(internal.GenTestOrigResourceSpans(), internal.NewState())
 	return ms
 }

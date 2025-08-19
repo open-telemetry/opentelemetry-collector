@@ -16,6 +16,8 @@ import (
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigStatus(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigStatus(t *testing.T) {
 	dest := NewOrigPtrStatus()
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, NewOrigPtrStatus(), dest)
-	FillOrigTestStatus(src)
+	*src = *GenTestOrigStatus()
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesStatus() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigStatus(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesStatus() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigStatus(src))
 			gotSize := MarshalProtoOrigStatus(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
-	for name, src := range getEncodingTestValuesStatus() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesStatus() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigStatus(src))
 			gotSize := MarshalProtoOrigStatus(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesStatus() map[string]*otlptrace.Status {
-	return map[string]*otlptrace.Status{
-		"empty": NewOrigPtrStatus(),
-		"fill_test": func() *otlptrace.Status {
-			src := NewOrigPtrStatus()
-			FillOrigTestStatus(src)
-			return src
-		}(),
+func genTestValuesStatus() []*otlptrace.Status {
+	return []*otlptrace.Status{
+		NewOrigPtrStatus(),
+
+		{Message: "test_message"},
+		{Code: otlptrace.Status_StatusCode(13)},
 	}
 }

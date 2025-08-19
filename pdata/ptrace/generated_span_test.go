@@ -63,8 +63,8 @@ func TestSpan_SpanID(t *testing.T) {
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
-	internal.FillOrigTestTraceState(&ms.orig.TraceState)
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
+	ms.orig.TraceState = *internal.GenTestOrigTraceState()
+	assert.Equal(t, pcommon.TraceState(internal.NewTraceState(internal.GenTestOrigTraceState(), ms.state)), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -173,12 +173,11 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewStatus(), ms.Status())
-	internal.FillOrigTestStatus(&ms.orig.Status)
+	ms.orig.Status = *internal.GenTestOrigStatus()
 	assert.Equal(t, generateTestStatus(), ms.Status())
 }
 
 func generateTestSpan() Span {
-	ms := NewSpan()
-	internal.FillOrigTestSpan(ms.orig)
+	ms := newSpan(internal.GenTestOrigSpan(), internal.NewState())
 	return ms
 }

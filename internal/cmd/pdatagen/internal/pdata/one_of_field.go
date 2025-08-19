@@ -34,7 +34,10 @@ const oneOfAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncName }
 {{ end }}
 `
 
-const oneOfTestValuesTemplate = `{{- range .values }}{{ .GenerateTestValue $.baseStruct $.OneOfField }}{{- end }}`
+const oneOfTestValuesTemplate = `
+	{{- range .values }}
+	{{ .GenerateTestEncodingValues $.baseStruct $.OneOfField }}
+	{{- end }}`
 
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- range .values }}
@@ -97,11 +100,11 @@ func (of *OneOfField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfAccessorTestTemplate", []byte(oneOfAccessorTestTemplate)), of.templateFields(ms))
 }
 
-func (of *OneOfField) GenerateSetWithTestValue(ms *messageStruct) string {
-	return of.values[of.testValueIdx].GenerateSetWithTestValue(ms, of)
+func (of *OneOfField) GenerateTestValue(ms *messageStruct) string {
+	return of.values[of.testValueIdx].GenerateTestValue(ms, of)
 }
 
-func (of *OneOfField) GenerateTestValue(ms *messageStruct) string {
+func (of *OneOfField) GenerateTestEncodingValues(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields(ms))
 }
 
@@ -155,8 +158,8 @@ type oneOfValue interface {
 	GetOriginFieldName() string
 	GenerateAccessors(ms *messageStruct, of *OneOfField) string
 	GenerateTests(ms *messageStruct, of *OneOfField) string
-	GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateTestValue(ms *messageStruct, of *OneOfField) string
+	GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string

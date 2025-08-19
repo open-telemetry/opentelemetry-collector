@@ -14,8 +14,11 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigHistogramDataPoint(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigHistogramDataPoint(t *testing.T) {
 	dest := NewOrigPtrHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
-	FillOrigTestHistogramDataPoint(src)
+	*src = *GenTestOrigHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigHistogramDataPoint(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogramDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
 			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,16 +100,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesHistogramDataPoint() map[string]*otlpmetrics.HistogramDataPoint {
-	return map[string]*otlpmetrics.HistogramDataPoint{
-		"empty": NewOrigPtrHistogramDataPoint(),
-		"fill_test": func() *otlpmetrics.HistogramDataPoint {
-			src := NewOrigPtrHistogramDataPoint()
-			FillOrigTestHistogramDataPoint(src)
-			return src
-		}(),
-		"default_sum": {Sum_: &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(0)}},
-		"default_min": {Min_: &otlpmetrics.HistogramDataPoint_Min{Min: float64(0)}},
-		"default_max": {Max_: &otlpmetrics.HistogramDataPoint_Max{Max: float64(0)}},
+func genTestValuesHistogramDataPoint() []*otlpmetrics.HistogramDataPoint {
+	return []*otlpmetrics.HistogramDataPoint{
+		NewOrigPtrHistogramDataPoint(),
+
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{StartTimeUnixNano: uint64(13)},
+		{TimeUnixNano: uint64(13)},
+		{Count: uint64(13)}, {Sum_: &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		{Sum_: &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(0)}},
+		{BucketCounts: []uint64{uint64(0), uint64(13)}},
+		{ExplicitBounds: []float64{float64(0), float64(3.1415926)}},
+		{Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}},
+		{Flags: uint32(13)}, {Min_: &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}},
+		{Min_: &otlpmetrics.HistogramDataPoint_Min{Min: float64(0)}}, {Max_: &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}},
+		{Max_: &otlpmetrics.HistogramDataPoint_Max{Max: float64(0)}},
 	}
 }

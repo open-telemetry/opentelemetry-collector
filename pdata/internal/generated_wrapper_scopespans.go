@@ -28,10 +28,12 @@ func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestScopeSpans(orig *otlptrace.ScopeSpans) {
-	FillOrigTestInstrumentationScope(&orig.Scope)
+func GenTestOrigScopeSpans() *otlptrace.ScopeSpans {
+	orig := NewOrigPtrScopeSpans()
+	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.Spans = GenerateOrigTestSpanSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

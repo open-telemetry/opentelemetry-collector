@@ -31,12 +31,6 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-func GenerateTestResource() Resource {
-	orig := NewOrigPtrResource()
-	FillOrigTestResource(orig)
-	return NewResource(orig, NewState())
-}
-
 func NewOrigResource() otlpresource.Resource {
 	return otlpresource.Resource{}
 }
@@ -51,10 +45,12 @@ func CopyOrigResource(dest, src *otlpresource.Resource) {
 	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
 }
 
-func FillOrigTestResource(orig *otlpresource.Resource) {
+func GenTestOrigResource() *otlpresource.Resource {
+	orig := NewOrigPtrResource()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.EntityRefs = GenerateOrigTestEntityRefSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

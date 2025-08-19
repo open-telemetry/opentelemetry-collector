@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigHistogram(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigHistogram(t *testing.T) {
 	dest := NewOrigPtrHistogram()
 	CopyOrigHistogram(dest, src)
 	assert.Equal(t, NewOrigPtrHistogram(), dest)
-	FillOrigTestHistogram(src)
+	*src = *GenTestOrigHistogram()
 	CopyOrigHistogram(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigHistogramUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogram() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigHistogram(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigHistogramUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogram() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogram(src))
 			gotSize := MarshalProtoOrigHistogram(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesHistogram() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogram(src))
 			gotSize := MarshalProtoOrigHistogram(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesHistogram() map[string]*otlpmetrics.Histogram {
-	return map[string]*otlpmetrics.Histogram{
-		"empty": NewOrigPtrHistogram(),
-		"fill_test": func() *otlpmetrics.Histogram {
-			src := NewOrigPtrHistogram()
-			FillOrigTestHistogram(src)
-			return src
-		}(),
+func genTestValuesHistogram() []*otlpmetrics.Histogram {
+	return []*otlpmetrics.Histogram{
+		NewOrigPtrHistogram(),
+
+		{DataPoints: []*otlpmetrics.HistogramDataPoint{{}, GenTestOrigHistogramDataPoint()}},
+		{AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 	}
 }

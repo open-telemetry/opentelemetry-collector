@@ -14,8 +14,11 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigSummaryDataPoint(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigSummaryDataPoint(t *testing.T) {
 	dest := NewOrigPtrSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, NewOrigPtrSummaryDataPoint(), dest)
-	FillOrigTestSummaryDataPoint(src)
+	*src = *GenTestOrigSummaryDataPoint()
 	CopyOrigSummaryDataPoint(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummaryDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigSummaryDataPoint(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummaryDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummaryDataPoint() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummaryDataPoint() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
 			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +100,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
-	return map[string]*otlpmetrics.SummaryDataPoint{
-		"empty": NewOrigPtrSummaryDataPoint(),
-		"fill_test": func() *otlpmetrics.SummaryDataPoint {
-			src := NewOrigPtrSummaryDataPoint()
-			FillOrigTestSummaryDataPoint(src)
-			return src
-		}(),
+func genTestValuesSummaryDataPoint() []*otlpmetrics.SummaryDataPoint {
+	return []*otlpmetrics.SummaryDataPoint{
+		NewOrigPtrSummaryDataPoint(),
+
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{StartTimeUnixNano: uint64(13)},
+		{TimeUnixNano: uint64(13)},
+		{Count: uint64(13)},
+		{Sum: float64(3.1415926)},
+		{QuantileValues: []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{{}, GenTestOrigSummaryDataPoint_ValueAtQuantile()}},
+		{Flags: uint32(13)},
 	}
 }

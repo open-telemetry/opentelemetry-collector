@@ -60,7 +60,6 @@ func TestLink_SpanID(t *testing.T) {
 }
 
 func generateTestLink() Link {
-	ms := NewLink()
-	internal.FillOrigTestLink(ms.orig)
+	ms := newLink(internal.GenTestOrigLink(), internal.NewState())
 	return ms
 }

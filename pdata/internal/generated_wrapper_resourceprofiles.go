@@ -28,10 +28,12 @@ func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceProfiles(orig *otlpprofiles.ResourceProfiles) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
+	orig := NewOrigPtrResourceProfiles()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

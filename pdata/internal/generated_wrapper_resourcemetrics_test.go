@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigResourceMetrics(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigResourceMetrics(t *testing.T) {
 	dest := NewOrigPtrResourceMetrics()
 	CopyOrigResourceMetrics(dest, src)
 	assert.Equal(t, NewOrigPtrResourceMetrics(), dest)
-	FillOrigTestResourceMetrics(src)
+	*src = *GenTestOrigResourceMetrics()
 	CopyOrigResourceMetrics(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigResourceMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigResourceMetrics(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceMetricsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceMetrics(src))
 			gotSize := MarshalProtoOrigResourceMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceMetrics() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceMetrics() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceMetrics(src))
 			gotSize := MarshalProtoOrigResourceMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesResourceMetrics() map[string]*otlpmetrics.ResourceMetrics {
-	return map[string]*otlpmetrics.ResourceMetrics{
-		"empty": NewOrigPtrResourceMetrics(),
-		"fill_test": func() *otlpmetrics.ResourceMetrics {
-			src := NewOrigPtrResourceMetrics()
-			FillOrigTestResourceMetrics(src)
-			return src
-		}(),
+func genTestValuesResourceMetrics() []*otlpmetrics.ResourceMetrics {
+	return []*otlpmetrics.ResourceMetrics{
+		NewOrigPtrResourceMetrics(),
+
+		{Resource: *GenTestOrigResource()},
+		{ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}, GenTestOrigScopeMetrics()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

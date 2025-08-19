@@ -73,7 +73,6 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := NewExportPartialSuccess()
-	internal.FillOrigTestExportProfilesPartialSuccess(ms.orig)
+	ms := newExportPartialSuccess(internal.GenTestOrigExportProfilesPartialSuccess(), internal.NewState())
 	return ms
 }

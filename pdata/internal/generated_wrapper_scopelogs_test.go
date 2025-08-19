@@ -16,6 +16,8 @@ import (
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigScopeLogs(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigScopeLogs(t *testing.T) {
 	dest := NewOrigPtrScopeLogs()
 	CopyOrigScopeLogs(dest, src)
 	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
-	FillOrigTestScopeLogs(src)
+	*src = *GenTestOrigScopeLogs()
 	CopyOrigScopeLogs(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigScopeLogs(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeLogs(src))
 			gotSize := MarshalProtoOrigScopeLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeLogs() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesScopeLogs() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeLogs(src))
 			gotSize := MarshalProtoOrigScopeLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesScopeLogs() map[string]*otlplogs.ScopeLogs {
-	return map[string]*otlplogs.ScopeLogs{
-		"empty": NewOrigPtrScopeLogs(),
-		"fill_test": func() *otlplogs.ScopeLogs {
-			src := NewOrigPtrScopeLogs()
-			FillOrigTestScopeLogs(src)
-			return src
-		}(),
+func genTestValuesScopeLogs() []*otlplogs.ScopeLogs {
+	return []*otlplogs.ScopeLogs{
+		NewOrigPtrScopeLogs(),
+
+		{Scope: *GenTestOrigInstrumentationScope()},
+		{LogRecords: []*otlplogs.LogRecord{{}, GenTestOrigLogRecord()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

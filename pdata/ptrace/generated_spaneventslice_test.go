@@ -27,7 +27,7 @@ func TestSpanEventSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSpan_Event((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSpan_Event()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())

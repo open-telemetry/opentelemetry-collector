@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigSample(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigSample(t *testing.T) {
 	dest := NewOrigPtrSample()
 	CopyOrigSample(dest, src)
 	assert.Equal(t, NewOrigPtrSample(), dest)
-	FillOrigTestSample(src)
+	*src = *GenTestOrigSample()
 	CopyOrigSample(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigSampleUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSample() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigSample(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigSampleUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSample() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSample(src))
 			gotSize := MarshalProtoOrigSample(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigSample(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSample() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSample(src))
 			gotSize := MarshalProtoOrigSample(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,14 +99,15 @@ func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSample() map[string]*otlpprofiles.Sample {
-	return map[string]*otlpprofiles.Sample{
-		"empty": NewOrigPtrSample(),
-		"fill_test": func() *otlpprofiles.Sample {
-			src := NewOrigPtrSample()
-			FillOrigTestSample(src)
-			return src
-		}(),
-		"default_linkindex": {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(0)}},
+func genTestValuesSample() []*otlpprofiles.Sample {
+	return []*otlpprofiles.Sample{
+		NewOrigPtrSample(),
+
+		{LocationsStartIndex: int32(13)},
+		{LocationsLength: int32(13)},
+		{Value: []int64{int64(0), int64(13)}},
+		{AttributeIndices: []int32{int32(0), int32(13)}}, {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}},
+		{LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(0)}},
+		{TimestampsUnixNano: []uint64{uint64(0), uint64(13)}},
 	}
 }

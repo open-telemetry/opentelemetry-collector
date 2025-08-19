@@ -46,8 +46,8 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
@@ -68,7 +68,6 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceLogs() ResourceLogs {
-	ms := NewResourceLogs()
-	internal.FillOrigTestResourceLogs(ms.orig)
+	ms := newResourceLogs(internal.GenTestOrigResourceLogs(), internal.NewState())
 	return ms
 }

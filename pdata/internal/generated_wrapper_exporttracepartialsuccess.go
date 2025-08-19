@@ -27,9 +27,11 @@ func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTrace
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func FillOrigTestExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) {
+func GenTestOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
+	orig := NewOrigPtrExportTracePartialSuccess()
 	orig.RejectedSpans = int64(13)
 	orig.ErrorMessage = "test_errormessage"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

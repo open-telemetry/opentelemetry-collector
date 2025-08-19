@@ -16,6 +16,8 @@ import (
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
 	dest := NewOrigPtrExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
 	assert.Equal(t, NewOrigPtrExportProfilesPartialSuccess(), dest)
-	FillOrigTestExportProfilesPartialSuccess(src)
+	*src = *GenTestOrigExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testi
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportProfilesPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigExportProfilesPartialSuccess(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *test
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportProfilesPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) 
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportProfilesPartialSuccess() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *test
 	}
 }
 
-func getEncodingTestValuesExportProfilesPartialSuccess() map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess {
-	return map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess{
-		"empty": NewOrigPtrExportProfilesPartialSuccess(),
-		"fill_test": func() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
-			src := NewOrigPtrExportProfilesPartialSuccess()
-			FillOrigTestExportProfilesPartialSuccess(src)
-			return src
-		}(),
+func genTestValuesExportProfilesPartialSuccess() []*otlpcollectorprofiles.ExportProfilesPartialSuccess {
+	return []*otlpcollectorprofiles.ExportProfilesPartialSuccess{
+		NewOrigPtrExportProfilesPartialSuccess(),
+
+		{RejectedProfiles: int64(13)},
+		{ErrorMessage: "test_errormessage"},
 	}
 }

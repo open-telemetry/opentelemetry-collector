@@ -15,7 +15,10 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
@@ -23,7 +26,7 @@ func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
 	dest := NewOrigPtrExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
 	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
-	FillOrigTestExportMetricsServiceRequest(src)
+	*src = *GenTestOrigExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +41,8 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testin
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceRequest() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportMetricsServiceRequest() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigExportMetricsServiceRequest(src, stream)
@@ -64,8 +67,8 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testi
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceRequest() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportMetricsServiceRequest() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
 			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +81,8 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceRequest() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExportMetricsServiceRequest() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
 			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +100,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 	}
 }
 
-func getEncodingTestValuesExportMetricsServiceRequest() map[string]*otlpcollectormetrics.ExportMetricsServiceRequest {
-	return map[string]*otlpcollectormetrics.ExportMetricsServiceRequest{
-		"empty": NewOrigPtrExportMetricsServiceRequest(),
-		"fill_test": func() *otlpcollectormetrics.ExportMetricsServiceRequest {
-			src := NewOrigPtrExportMetricsServiceRequest()
-			FillOrigTestExportMetricsServiceRequest(src)
-			return src
-		}(),
+func genTestValuesExportMetricsServiceRequest() []*otlpcollectormetrics.ExportMetricsServiceRequest {
+	return []*otlpcollectormetrics.ExportMetricsServiceRequest{
+		NewOrigPtrExportMetricsServiceRequest(),
+
+		{ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}, GenTestOrigResourceMetrics()}},
 	}
 }

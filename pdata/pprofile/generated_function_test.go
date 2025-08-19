@@ -83,7 +83,6 @@ func TestFunction_StartLine(t *testing.T) {
 }
 
 func generateTestFunction() Function {
-	ms := NewFunction()
-	internal.FillOrigTestFunction(ms.orig)
+	ms := newFunction(internal.GenTestOrigFunction(), internal.NewState())
 	return ms
 }

@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigValueType(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigValueType(t *testing.T) {
 	dest := NewOrigPtrValueType()
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, NewOrigPtrValueType(), dest)
-	FillOrigTestValueType(src)
+	*src = *GenTestOrigValueType()
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesValueType() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigValueType(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesValueType() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigValueType(src))
 			gotSize := MarshalProtoOrigValueType(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesValueType() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigValueType(src))
 			gotSize := MarshalProtoOrigValueType(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesValueType() map[string]*otlpprofiles.ValueType {
-	return map[string]*otlpprofiles.ValueType{
-		"empty": NewOrigPtrValueType(),
-		"fill_test": func() *otlpprofiles.ValueType {
-			src := NewOrigPtrValueType()
-			FillOrigTestValueType(src)
-			return src
-		}(),
+func genTestValuesValueType() []*otlpprofiles.ValueType {
+	return []*otlpprofiles.ValueType{
+		NewOrigPtrValueType(),
+
+		{TypeStrindex: int32(13)},
+		{UnitStrindex: int32(13)},
+		{AggregationTemporality: otlpprofiles.AggregationTemporality(13)},
 	}
 }

@@ -58,7 +58,6 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestExponentialHistogram() ExponentialHistogram {
-	ms := NewExponentialHistogram()
-	internal.FillOrigTestExponentialHistogram(ms.orig)
+	ms := newExponentialHistogram(internal.GenTestOrigExponentialHistogram(), internal.NewState())
 	return ms
 }

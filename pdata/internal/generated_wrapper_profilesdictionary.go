@@ -32,7 +32,8 @@ func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.AttributeUnits = CopyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
 }
 
-func FillOrigTestProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) {
+func GenTestOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
+	orig := NewOrigPtrProfilesDictionary()
 	orig.MappingTable = GenerateOrigTestMappingSlice()
 	orig.LocationTable = GenerateOrigTestLocationSlice()
 	orig.FunctionTable = GenerateOrigTestFunctionSlice()
@@ -40,6 +41,7 @@ func FillOrigTestProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) {
 	orig.StringTable = GenerateOrigTestStringSlice()
 	orig.AttributeTable = GenerateOrigTestKeyValueSlice()
 	orig.AttributeUnits = GenerateOrigTestAttributeUnitSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

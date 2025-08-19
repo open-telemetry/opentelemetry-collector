@@ -49,5 +49,6 @@ func TestMetrics_ResourceMetrics(t *testing.T) {
 }
 
 func generateTestMetrics() Metrics {
-	return Metrics(internal.GenerateTestMetrics())
+	ms := newMetrics(internal.GenTestOrigExportMetricsServiceRequest(), internal.NewState())
+	return ms
 }

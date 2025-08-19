@@ -16,6 +16,8 @@ import (
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigInstrumentationScope(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigInstrumentationScope(t *testing.T) {
 	dest := NewOrigPtrInstrumentationScope()
 	CopyOrigInstrumentationScope(dest, src)
 	assert.Equal(t, NewOrigPtrInstrumentationScope(), dest)
-	FillOrigTestInstrumentationScope(src)
+	*src = *GenTestOrigInstrumentationScope()
 	CopyOrigInstrumentationScope(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
-	for name, src := range getEncodingTestValuesInstrumentationScope() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesInstrumentationScope() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigInstrumentationScope(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
-	for name, src := range getEncodingTestValuesInstrumentationScope() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesInstrumentationScope() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
 			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
-	for name, src := range getEncodingTestValuesInstrumentationScope() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesInstrumentationScope() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
 			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,13 @@ func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesInstrumentationScope() map[string]*otlpcommon.InstrumentationScope {
-	return map[string]*otlpcommon.InstrumentationScope{
-		"empty": NewOrigPtrInstrumentationScope(),
-		"fill_test": func() *otlpcommon.InstrumentationScope {
-			src := NewOrigPtrInstrumentationScope()
-			FillOrigTestInstrumentationScope(src)
-			return src
-		}(),
+func genTestValuesInstrumentationScope() []*otlpcommon.InstrumentationScope {
+	return []*otlpcommon.InstrumentationScope{
+		NewOrigPtrInstrumentationScope(),
+
+		{Name: "test_name"},
+		{Version: "test_version"},
+		{Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		{DroppedAttributesCount: uint32(13)},
 	}
 }

@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	dest := NewOrigPtrExponentialHistogramDataPoint_Buckets()
 	CopyOrigExponentialHistogramDataPoint_Buckets(dest, src)
 	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint_Buckets(), dest)
-	FillOrigTestExponentialHistogramDataPoint_Buckets(src)
+	*src = *GenTestOrigExponentialHistogramDataPoint_Buckets()
 	CopyOrigExponentialHistogramDataPoint_Buckets(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_BucketsUnknown
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint_Buckets() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint_Buckets() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigExponentialHistogramDataPoint_Buckets(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_BucketsUnknow
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint_Buckets() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint_Buckets() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint_Buckets(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint_Buckets(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(t *te
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint_Buckets(t *testing.T) {
-	for name, src := range getEncodingTestValuesExponentialHistogramDataPoint_Buckets() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesExponentialHistogramDataPoint_Buckets() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExponentialHistogramDataPoint_Buckets(src))
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint_Buckets(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,11 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint_Bucket
 	}
 }
 
-func getEncodingTestValuesExponentialHistogramDataPoint_Buckets() map[string]*otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return map[string]*otlpmetrics.ExponentialHistogramDataPoint_Buckets{
-		"empty": NewOrigPtrExponentialHistogramDataPoint_Buckets(),
-		"fill_test": func() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-			src := NewOrigPtrExponentialHistogramDataPoint_Buckets()
-			FillOrigTestExponentialHistogramDataPoint_Buckets(src)
-			return src
-		}(),
+func genTestValuesExponentialHistogramDataPoint_Buckets() []*otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return []*otlpmetrics.ExponentialHistogramDataPoint_Buckets{
+		NewOrigPtrExponentialHistogramDataPoint_Buckets(),
+
+		{Offset: int32(13)},
+		{BucketCounts: []uint64{uint64(0), uint64(13)}},
 	}
 }

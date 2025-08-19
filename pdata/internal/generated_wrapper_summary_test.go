@@ -16,6 +16,8 @@ import (
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigSummary(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigSummary(t *testing.T) {
 	dest := NewOrigPtrSummary()
 	CopyOrigSummary(dest, src)
 	assert.Equal(t, NewOrigPtrSummary(), dest)
-	FillOrigTestSummary(src)
+	*src = *GenTestOrigSummary()
 	CopyOrigSummary(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigSummaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummary(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigSummary(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigSummaryUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummary(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummary(src))
 			gotSize := MarshalProtoOrigSummary(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigSummary(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSummary(t *testing.T) {
-	for name, src := range getEncodingTestValuesSummary() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesSummary() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSummary(src))
 			gotSize := MarshalProtoOrigSummary(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummary(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSummary() map[string]*otlpmetrics.Summary {
-	return map[string]*otlpmetrics.Summary{
-		"empty": NewOrigPtrSummary(),
-		"fill_test": func() *otlpmetrics.Summary {
-			src := NewOrigPtrSummary()
-			FillOrigTestSummary(src)
-			return src
-		}(),
+func genTestValuesSummary() []*otlpmetrics.Summary {
+	return []*otlpmetrics.Summary{
+		NewOrigPtrSummary(),
+
+		{DataPoints: []*otlpmetrics.SummaryDataPoint{{}, GenTestOrigSummaryDataPoint()}},
 	}
 }

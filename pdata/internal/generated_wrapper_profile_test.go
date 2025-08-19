@@ -16,6 +16,8 @@ import (
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigProfile(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigProfile(t *testing.T) {
 	dest := NewOrigPtrProfile()
 	CopyOrigProfile(dest, src)
 	assert.Equal(t, NewOrigPtrProfile(), dest)
-	FillOrigTestProfile(src)
+	*src = *GenTestOrigProfile()
 	CopyOrigProfile(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigProfileUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfile() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigProfile(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigProfileUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfile() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfile(src))
 			gotSize := MarshalProtoOrigProfile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesProfile() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfile(src))
 			gotSize := MarshalProtoOrigProfile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesProfile() map[string]*otlpprofiles.Profile {
-	return map[string]*otlpprofiles.Profile{
-		"empty": NewOrigPtrProfile(),
-		"fill_test": func() *otlpprofiles.Profile {
-			src := NewOrigPtrProfile()
-			FillOrigTestProfile(src)
-			return src
-		}(),
+func genTestValuesProfile() []*otlpprofiles.Profile {
+	return []*otlpprofiles.Profile{
+		NewOrigPtrProfile(),
+
+		{SampleType: []*otlpprofiles.ValueType{{}, GenTestOrigValueType()}},
+		{Sample: []*otlpprofiles.Sample{{}, GenTestOrigSample()}},
+		{LocationIndices: []int32{int32(0), int32(13)}},
+		{TimeNanos: int64(13)},
+		{DurationNanos: int64(13)},
+		{PeriodType: *GenTestOrigValueType()},
+		{Period: int64(13)},
+		{CommentStrindices: []int32{int32(0), int32(13)}},
+		{DefaultSampleTypeIndex: int32(13)},
+		{ProfileId: *GenTestOrigProfileID()},
+		{DroppedAttributesCount: uint32(13)},
+		{OriginalPayloadFormat: "test_originalpayloadformat"},
+		{OriginalPayload: []byte{1, 2, 3}},
+		{AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

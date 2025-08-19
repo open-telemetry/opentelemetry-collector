@@ -70,12 +70,14 @@ func (pf *PrimitiveField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (pf *PrimitiveField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("primitiveSetTestTemplate", []byte(primitiveSetTestTemplate))
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateTestValue(*messageStruct) string { return "" }
+func (pf *PrimitiveField) GenerateTestEncodingValues(*messageStruct) string {
+	return pf.toProtoField().GenTestEncodingValues()
+}
 
 func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("primitiveCopyOrigTemplate", []byte(primitiveCopyOrigTemplate))

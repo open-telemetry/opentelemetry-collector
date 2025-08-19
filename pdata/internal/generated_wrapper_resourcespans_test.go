@@ -16,6 +16,8 @@ import (
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+
+	"strconv"
 )
 
 func TestCopyOrigResourceSpans(t *testing.T) {
@@ -23,7 +25,7 @@ func TestCopyOrigResourceSpans(t *testing.T) {
 	dest := NewOrigPtrResourceSpans()
 	CopyOrigResourceSpans(dest, src)
 	assert.Equal(t, NewOrigPtrResourceSpans(), dest)
-	FillOrigTestResourceSpans(src)
+	*src = *GenTestOrigResourceSpans()
 	CopyOrigResourceSpans(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,8 +40,8 @@ func TestMarshalAndUnmarshalJSONOrigResourceSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
 			MarshalJSONOrigResourceSpans(src, stream)
@@ -64,8 +66,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceSpans(src))
 			gotSize := MarshalProtoOrigResourceSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -78,8 +80,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceSpans(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResourceSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceSpans() {
-		t.Run(name, func(t *testing.T) {
+	for i, src := range genTestValuesResourceSpans() {
+		t.Run("value_"+strconv.Itoa(i), func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceSpans(src))
 			gotSize := MarshalProtoOrigResourceSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
@@ -97,13 +99,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceSpans(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesResourceSpans() map[string]*otlptrace.ResourceSpans {
-	return map[string]*otlptrace.ResourceSpans{
-		"empty": NewOrigPtrResourceSpans(),
-		"fill_test": func() *otlptrace.ResourceSpans {
-			src := NewOrigPtrResourceSpans()
-			FillOrigTestResourceSpans(src)
-			return src
-		}(),
+func genTestValuesResourceSpans() []*otlptrace.ResourceSpans {
+	return []*otlptrace.ResourceSpans{
+		NewOrigPtrResourceSpans(),
+
+		{Resource: *GenTestOrigResource()},
+		{ScopeSpans: []*otlptrace.ScopeSpans{{}, GenTestOrigScopeSpans()}},
+		{SchemaUrl: "test_schemaurl"},
 	}
 }

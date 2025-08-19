@@ -31,12 +31,6 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-func GenerateTestTraces() Traces {
-	orig := NewOrigPtrExportTraceServiceRequest()
-	FillOrigTestExportTraceServiceRequest(orig)
-	return NewTraces(orig, NewState())
-}
-
 func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
 	return otlpcollectortrace.ExportTraceServiceRequest{}
 }
@@ -49,8 +43,10 @@ func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTrace
 	dest.ResourceSpans = CopyOrigResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
 }
 
-func FillOrigTestExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) {
+func GenTestOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+	orig := NewOrigPtrExportTraceServiceRequest()
 	orig.ResourceSpans = GenerateOrigTestResourceSpansSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

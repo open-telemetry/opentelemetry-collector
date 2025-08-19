@@ -84,5 +84,6 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestInstrumentationScope() InstrumentationScope {
-	return InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	ms := newInstrumentationScope(internal.GenTestOrigInstrumentationScope(), internal.NewState())
+	return ms
 }

@@ -22,15 +22,15 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
-	internal.FillOrigTest{{ .fieldOriginName }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }})
+	ms.{{ .origAccessor }}.{{ .fieldOriginFullName }} = *internal.GenTestOrig{{ .fieldOriginName }}()
 	{{- if .messageHasWrapper }}
-	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
+	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(internal.GenTestOrig{{ .fieldOriginName }}(), ms.{{ .stateAccessor }})), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const messageSetTestTemplate = `FillOrigTest{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }})`
+const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTestOrig{{ .fieldOriginName }}()`
 
 const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
@@ -53,16 +53,14 @@ func (mf *MessageField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (mf *MessageField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("messageSetTestTemplate", []byte(messageSetTestTemplate))
 	return template.Execute(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateTestValue(*messageStruct) string { return "" }
-
-func (mf *MessageField) GenerateOneOfPools(*messageStruct) string { return "" }
-
-func (mf *MessageField) GenerateReleaseOrig(*messageStruct) string { return "" }
+func (mf *MessageField) GenerateTestEncodingValues(*messageStruct) string {
+	return mf.toProtoField().GenTestEncodingValues()
+}
 
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("messageCopyOrigTemplate", []byte(messageCopyOrigTemplate))
@@ -100,6 +98,7 @@ func (mf *MessageField) toProtoField() *proto.Field {
 		ID:              mf.protoID,
 		Name:            mf.fieldName,
 		MessageFullName: mf.returnMessage.getOriginFullName(),
+		Nullable:        false,
 	}
 }
 
