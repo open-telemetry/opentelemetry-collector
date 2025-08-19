@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.38.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
-	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/exporter v0.132.0
 	go.opentelemetry.io/collector/featuregate v1.38.0
 	go.opentelemetry.io/collector/pdata v1.38.0
 	go.opentelemetry.io/collector/pdata/testdata v0.132.0
@@ -114,3 +114,23 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telem
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
+
+replace go.opentelemetry.io/collector/extension => ../../extension
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
+
+replace go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
+
+replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
