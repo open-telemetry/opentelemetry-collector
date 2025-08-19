@@ -55,6 +55,20 @@ func TestTracesRequest(t *testing.T) {
 	assert.Equal(t, newTracesRequest(ptrace.NewTraces()), mr.(RequestErrorHandler).OnError(traceErr))
 }
 
+func TestTracesEncoding_UnmarshalError(t *testing.T) {
+	fgOrigReadState := queue.PersistRequestContextOnRead
+	queue.PersistRequestContextOnRead = func() bool { return false }
+	t.Cleanup(func() {
+		queue.PersistRequestContextOnRead = fgOrigReadState
+	})
+
+	enc := tracesEncoding{}
+	ctx, req, err := enc.Unmarshal([]byte("!invalid-proto"))
+	assert.Error(t, err)
+	assert.Nil(t, req)
+	assert.NotNil(t, ctx)
+}
+
 func TestTraces_InvalidName(t *testing.T) {
 	te, err := NewTraces(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newTraceDataPusher(nil))
 	require.Nil(t, te)

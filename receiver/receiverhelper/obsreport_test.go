@@ -503,6 +503,15 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
@@ -537,6 +546,15 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverFailedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
@@ -563,6 +581,15 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverFailedLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
