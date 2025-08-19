@@ -101,7 +101,7 @@ func (v UnixValidator) Validate(ep string) error {
 	if strings.HasPrefix(ep, "unix://") {
 		path := strings.TrimPrefix(ep, "unix://")
 		if path == "" {
-			return fmt.Errorf("empty unix socket path")
+			return errors.New("empty unix socket path")
 		}
 		return nil
 	} else if strings.HasPrefix(ep, "unix:@") {
