@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sample {
@@ -19,7 +18,7 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigSample()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigSample()
 		}
 	}
 	for i := range src {
@@ -41,21 +40,11 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 }
 
 func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
-	orig := make([]*otlpprofiles.Sample, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.Sample{}
-		FillOrigTestSample(orig[i])
-	}
-	return orig
-}
-
-// UnmarshalJSONOrigSampleSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSampleSlice(iter *json.Iterator) []*otlpprofiles.Sample {
-	var orig []*otlpprofiles.Sample
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.Sample{})
-		UnmarshalJSONOrigSample(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlpprofiles.Sample, 5)
+	orig[0] = NewOrigSample()
+	orig[1] = GenTestOrigSample()
+	orig[2] = NewOrigSample()
+	orig[3] = GenTestOrigSample()
+	orig[4] = NewOrigSample()
 	return orig
 }

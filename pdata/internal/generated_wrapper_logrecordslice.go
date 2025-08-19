@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
@@ -19,7 +18,7 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.LogRecord{}
+			newDest[i] = NewOrigLogRecord()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.LogRecord{}
+			newDest[i] = NewOrigLogRecord()
 		}
 	}
 	for i := range src {
@@ -41,21 +40,11 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 }
 
 func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
-	orig := make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlplogs.LogRecord{}
-		FillOrigTestLogRecord(orig[i])
-	}
-	return orig
-}
-
-// UnmarshalJSONOrigLogRecordSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLogRecordSlice(iter *json.Iterator) []*otlplogs.LogRecord {
-	var orig []*otlplogs.LogRecord
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlplogs.LogRecord{})
-		UnmarshalJSONOrigLogRecord(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlplogs.LogRecord, 5)
+	orig[0] = NewOrigLogRecord()
+	orig[1] = GenTestOrigLogRecord()
+	orig[2] = NewOrigLogRecord()
+	orig[3] = GenTestOrigLogRecord()
+	orig[4] = NewOrigLogRecord()
 	return orig
 }

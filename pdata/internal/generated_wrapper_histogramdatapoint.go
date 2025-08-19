@@ -8,12 +8,18 @@ package internal
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+	return &otlpmetrics.HistogramDataPoint{}
+}
 
 func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
@@ -56,7 +62,8 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	}
 }
 
-func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
+func GenTestOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+	orig := NewOrigHistogramDataPoint()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
@@ -68,6 +75,7 @@ func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
 	orig.Flags = 1
 	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -146,10 +154,14 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 
 // UnmarshalJSONOrigHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "startTimeUnixNano", "start_time_unix_nano":
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
@@ -157,24 +169,48 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 		case "count":
 			orig.Count = iter.ReadUint64()
 		case "sum":
-			orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.HistogramDataPoint_Sum{}
+				ofm.Sum = iter.ReadFloat64()
+				orig.Sum_ = ofm
+			}
+
 		case "bucketCounts", "bucket_counts":
-			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
+			for iter.ReadArray() {
+				orig.BucketCounts = append(orig.BucketCounts, iter.ReadUint64())
+			}
+
 		case "explicitBounds", "explicit_bounds":
-			orig.ExplicitBounds = UnmarshalJSONOrigFloat64Slice(iter)
+			for iter.ReadArray() {
+				orig.ExplicitBounds = append(orig.ExplicitBounds, iter.ReadFloat64())
+			}
+
 		case "exemplars":
-			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+			for iter.ReadArray() {
+				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
+				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+			}
+
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "min":
-			orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.HistogramDataPoint_Min{}
+				ofm.Min = iter.ReadFloat64()
+				orig.Min_ = ofm
+			}
+
 		case "max":
-			orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.HistogramDataPoint_Max{}
+				ofm.Max = iter.ReadFloat64()
+				orig.Max_ = ofm
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
@@ -227,7 +263,7 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.Attributes {
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -279,7 +315,7 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		pos--
 		buf[pos] = 0x3a
 	}
-	for i := range orig.Exemplars {
+	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -309,5 +345,190 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 }
 
 func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 9:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.StartTimeUnixNano = uint64(num)
+
+		case 3:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.TimeUnixNano = uint64(num)
+
+		case 4:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Count", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Count = uint64(num)
+
+		case 5:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sum", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ofv := &otlpmetrics.HistogramDataPoint_Sum{}
+			ofv.Sum = math.Float64frombits(num)
+			orig.Sum_ = ofv
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			size := length / 8
+			orig.BucketCounts = make([]uint64, size)
+			var num uint64
+			for i := 0; i < size; i++ {
+				num, startPos, err = proto.ConsumeI64(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.BucketCounts[i] = uint64(num)
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
+			}
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			size := length / 8
+			orig.ExplicitBounds = make([]float64, size)
+			var num uint64
+			for i := 0; i < size; i++ {
+				num, startPos, err = proto.ConsumeI64(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.ExplicitBounds[i] = math.Float64frombits(num)
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field ExplicitBounds", pos-startPos)
+			}
+
+		case 8:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exemplars", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
+			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 10:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Flags = uint32(num)
+
+		case 11:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ofv := &otlpmetrics.HistogramDataPoint_Min{}
+			ofv.Min = math.Float64frombits(num)
+			orig.Min_ = ofv
+
+		case 12:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ofv := &otlpmetrics.HistogramDataPoint_Max{}
+			ofv.Max = math.Float64frombits(num)
+			orig.Max_ = ofv
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

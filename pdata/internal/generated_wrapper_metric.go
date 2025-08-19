@@ -7,10 +7,17 @@
 package internal
 
 import (
+	"fmt"
+
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigMetric() *otlpmetrics.Metric {
+	return &otlpmetrics.Metric{}
+}
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Name = src.Name
@@ -51,13 +58,14 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
 }
 
-func FillOrigTestMetric(orig *otlpmetrics.Metric) {
+func GenTestOrigMetric() *otlpmetrics.Metric {
+	orig := NewOrigMetric()
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
-	orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	FillOrigTestSum(orig.GetSum())
+	orig.Data = &otlpmetrics.Metric_Sum{Sum: GenTestOrigSum()}
 	orig.Metadata = GenerateOrigTestKeyValueSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -117,7 +125,7 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 
 // UnmarshalJSONOrigMetric unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
 			orig.Name = iter.ReadString()
@@ -127,32 +135,55 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 			orig.Unit = iter.ReadString()
 
 		case "gauge":
-			val := &otlpmetrics.Gauge{}
-			orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-			UnmarshalJSONOrigGauge(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Gauge{}
+				ofm.Gauge = NewOrigGauge()
+				UnmarshalJSONOrigGauge(ofm.Gauge, iter)
+				orig.Data = ofm
+			}
+
 		case "sum":
-			val := &otlpmetrics.Sum{}
-			orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
-			UnmarshalJSONOrigSum(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Sum{}
+				ofm.Sum = NewOrigSum()
+				UnmarshalJSONOrigSum(ofm.Sum, iter)
+				orig.Data = ofm
+			}
+
 		case "histogram":
-			val := &otlpmetrics.Histogram{}
-			orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-			UnmarshalJSONOrigHistogram(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Histogram{}
+				ofm.Histogram = NewOrigHistogram()
+				UnmarshalJSONOrigHistogram(ofm.Histogram, iter)
+				orig.Data = ofm
+			}
+
 		case "exponentialHistogram", "exponential_histogram":
-			val := &otlpmetrics.ExponentialHistogram{}
-			orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-			UnmarshalJSONOrigExponentialHistogram(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_ExponentialHistogram{}
+				ofm.ExponentialHistogram = NewOrigExponentialHistogram()
+				UnmarshalJSONOrigExponentialHistogram(ofm.ExponentialHistogram, iter)
+				orig.Data = ofm
+			}
+
 		case "summary":
-			val := &otlpmetrics.Summary{}
-			orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
-			UnmarshalJSONOrigSummary(val, iter)
+			{
+				ofm := &otlpmetrics.Metric_Summary{}
+				ofm.Summary = NewOrigSummary()
+				UnmarshalJSONOrigSummary(ofm.Summary, iter)
+				orig.Data = ofm
+			}
+
 		case "metadata":
-			orig.Metadata = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
@@ -265,7 +296,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 		buf[pos] = 0x5a
 
 	}
-	for i := range orig.Metadata {
+	for i := len(orig.Metadata) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigKeyValue(&orig.Metadata[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -276,5 +307,167 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 }
 
 func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Name = string(buf[startPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Description = string(buf[startPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Unit", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Unit = string(buf[startPos:pos])
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Gauge", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ofv := &otlpmetrics.Metric_Gauge{}
+			ofv.Gauge = NewOrigGauge()
+			err = UnmarshalProtoOrigGauge(ofv.Gauge, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Data = ofv
+
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sum", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ofv := &otlpmetrics.Metric_Sum{}
+			ofv.Sum = NewOrigSum()
+			err = UnmarshalProtoOrigSum(ofv.Sum, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Data = ofv
+
+		case 9:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Histogram", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ofv := &otlpmetrics.Metric_Histogram{}
+			ofv.Histogram = NewOrigHistogram()
+			err = UnmarshalProtoOrigHistogram(ofv.Histogram, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Data = ofv
+
+		case 10:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExponentialHistogram", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ofv := &otlpmetrics.Metric_ExponentialHistogram{}
+			ofv.ExponentialHistogram = NewOrigExponentialHistogram()
+			err = UnmarshalProtoOrigExponentialHistogram(ofv.ExponentialHistogram, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Data = ofv
+
+		case 11:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ofv := &otlpmetrics.Metric_Summary{}
+			ofv.Summary = NewOrigSummary()
+			err = UnmarshalProtoOrigSummary(ofv.Summary, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Data = ofv
+
+		case 12:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
+			err = UnmarshalProtoOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

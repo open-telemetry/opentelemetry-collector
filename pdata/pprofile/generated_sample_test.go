@@ -24,9 +24,10 @@ func TestSample_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSample(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSample(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewOrigSample(), sharedState)) })
+	assert.Panics(t, func() { newSample(internal.NewOrigSample(), sharedState).MoveTo(dest) })
 }
 
 func TestSample_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestSample_CopyTo(t *testing.T) {
 	orig = generateTestSample()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigSample(), sharedState)) })
 }
 
 func TestSample_LocationsStartIndex(t *testing.T) {
@@ -46,8 +48,9 @@ func TestSample_LocationsStartIndex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.LocationsStartIndex())
 	ms.SetLocationsStartIndex(int32(13))
 	assert.Equal(t, int32(13), ms.LocationsStartIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsStartIndex(int32(13)) })
 }
 
 func TestSample_LocationsLength(t *testing.T) {
@@ -55,8 +58,9 @@ func TestSample_LocationsLength(t *testing.T) {
 	assert.Equal(t, int32(0), ms.LocationsLength())
 	ms.SetLocationsLength(int32(13))
 	assert.Equal(t, int32(13), ms.LocationsLength())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsLength(int32(13)) })
 }
 
 func TestSample_Value(t *testing.T) {
@@ -95,7 +99,6 @@ func TestSample_TimestampsUnixNano(t *testing.T) {
 }
 
 func generateTestSample() Sample {
-	ms := NewSample()
-	internal.FillOrigTestSample(ms.orig)
+	ms := newSample(internal.GenTestOrigSample(), internal.NewState())
 	return ms
 }

@@ -24,9 +24,10 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState)) })
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestSummaryDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
@@ -69,8 +71,9 @@ func TestSummaryDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(13))
 	assert.Equal(t, uint64(13), ms.Count())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetCount(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, sharedState).SetCount(uint64(13)) })
 }
 
 func TestSummaryDataPoint_Sum(t *testing.T) {
@@ -78,8 +81,9 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
 	ms.SetSum(float64(3.1415926))
 	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetSum(float64(3.1415926)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, sharedState).SetSum(float64(3.1415926)) })
 }
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
@@ -98,7 +102,6 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	ms := NewSummaryDataPoint()
-	internal.FillOrigTestSummaryDataPoint(ms.orig)
+	ms := newSummaryDataPoint(internal.GenTestOrigSummaryDataPoint(), internal.NewState())
 	return ms
 }

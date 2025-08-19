@@ -11,61 +11,113 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportTraceServiceRequest(t *testing.T) {
-	src := &otlpcollectortrace.ExportTraceServiceRequest{}
-	dest := &otlpcollectortrace.ExportTraceServiceRequest{}
+	src := NewOrigExportTraceServiceRequest()
+	dest := NewOrigExportTraceServiceRequest()
 	CopyOrigExportTraceServiceRequest(dest, src)
-	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceRequest{}, dest)
-	FillOrigTestExportTraceServiceRequest(src)
+	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
+	*src = *GenTestOrigExportTraceServiceRequest()
 	CopyOrigExportTraceServiceRequest(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequestUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigExportTraceServiceRequest()
+	UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequest(t *testing.T) {
-	src := &otlpcollectortrace.ExportTraceServiceRequest{}
-	FillOrigTestExportTraceServiceRequest(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExportTraceServiceRequest(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigExportTraceServiceRequest(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpcollectortrace.ExportTraceServiceRequest{}
-	UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigExportTraceServiceRequest()
+			UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequestFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExportTraceServiceRequest()
+			require.Error(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequestUnknown(t *testing.T) {
+	dest := NewOrigExportTraceServiceRequest()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequest(t *testing.T) {
-	src := &otlpcollectortrace.ExportTraceServiceRequest{}
-	FillOrigTestExportTraceServiceRequest(src)
-	buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
-	gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
+			gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcollectortrace.ExportTraceServiceRequest{}
-	require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigExportTraceServiceRequest()
+			require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyExportTraceServiceRequest(t *testing.T) {
-	src := &otlpcollectortrace.ExportTraceServiceRequest{}
-	buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
-	gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceRequest(t *testing.T) {
+	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
+			gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcollectortrace.ExportTraceServiceRequest{}
-	require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpcollectortrace.ExportTraceServiceRequest{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigExportTraceServiceRequest()
+			require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                 {0x02},
+		"ResourceSpans/wrong_wire_type": {0xc},
+		"ResourceSpans/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesExportTraceServiceRequest() map[string]*otlpcollectortrace.ExportTraceServiceRequest {
+	return map[string]*otlpcollectortrace.ExportTraceServiceRequest{
+		"empty":                          NewOrigExportTraceServiceRequest(),
+		"ResourceSpans/default_and_test": {ResourceSpans: []*otlptrace.ResourceSpans{{}, GenTestOrigResourceSpans()}},
+	}
 }

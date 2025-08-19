@@ -30,8 +30,7 @@ func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *i
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetrics() Metrics {
-	state := internal.StateMutable
-	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{}, &state)
+	return newMetrics(internal.NewOrigExportMetricsServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

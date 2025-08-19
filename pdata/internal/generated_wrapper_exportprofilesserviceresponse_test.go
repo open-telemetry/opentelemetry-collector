@@ -11,61 +11,112 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectorprofiles "go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportProfilesServiceResponse(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	dest := &otlpcollectorprofile.ExportProfilesServiceResponse{}
+	src := NewOrigExportProfilesServiceResponse()
+	dest := NewOrigExportProfilesServiceResponse()
 	CopyOrigExportProfilesServiceResponse(dest, src)
-	assert.Equal(t, &otlpcollectorprofile.ExportProfilesServiceResponse{}, dest)
-	FillOrigTestExportProfilesServiceResponse(src)
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
+	*src = *GenTestOrigExportProfilesServiceResponse()
 	CopyOrigExportProfilesServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponseUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigExportProfilesServiceResponse()
+	UnmarshalJSONOrigExportProfilesServiceResponse(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponse(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	FillOrigTestExportProfilesServiceResponse(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExportProfilesServiceResponse(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesExportProfilesServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigExportProfilesServiceResponse(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	UnmarshalJSONOrigExportProfilesServiceResponse(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigExportProfilesServiceResponse()
+			UnmarshalJSONOrigExportProfilesServiceResponse(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponseFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportProfilesServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExportProfilesServiceResponse()
+			require.Error(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponseUnknown(t *testing.T) {
+	dest := NewOrigExportProfilesServiceResponse()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponse(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	FillOrigTestExportProfilesServiceResponse(src)
-	buf := make([]byte, SizeProtoOrigExportProfilesServiceResponse(src))
-	gotSize := MarshalProtoOrigExportProfilesServiceResponse(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesExportProfilesServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportProfilesServiceResponse(src))
+			gotSize := MarshalProtoOrigExportProfilesServiceResponse(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigExportProfilesServiceResponse()
+			require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyExportProfilesServiceResponse(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	buf := make([]byte, SizeProtoOrigExportProfilesServiceResponse(src))
-	gotSize := MarshalProtoOrigExportProfilesServiceResponse(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesServiceResponse(t *testing.T) {
+	for name, src := range genTestEncodingValuesExportProfilesServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportProfilesServiceResponse(src))
+			gotSize := MarshalProtoOrigExportProfilesServiceResponse(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcollectorprofile.ExportProfilesServiceResponse{}
-	require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpcollectorprofiles.ExportProfilesServiceResponse{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigExportProfilesServiceResponse()
+			require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesExportProfilesServiceResponse() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                  {0x02},
+		"PartialSuccess/wrong_wire_type": {0xc},
+		"PartialSuccess/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesExportProfilesServiceResponse() map[string]*otlpcollectorprofiles.ExportProfilesServiceResponse {
+	return map[string]*otlpcollectorprofiles.ExportProfilesServiceResponse{
+		"empty":               NewOrigExportProfilesServiceResponse(),
+		"PartialSuccess/test": {PartialSuccess: *GenTestOrigExportProfilesPartialSuccess()},
+	}
 }

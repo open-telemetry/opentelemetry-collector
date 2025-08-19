@@ -7,17 +7,25 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+func NewOrigGauge() *otlpmetrics.Gauge {
+	return &otlpmetrics.Gauge{}
+}
+
 func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func FillOrigTestGauge(orig *otlpmetrics.Gauge) {
+func GenTestOrigGauge() *otlpmetrics.Gauge {
+	orig := NewOrigGauge()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -38,15 +46,18 @@ func MarshalJSONOrigGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
 
 // UnmarshalJSONOrigGauge unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
+				UnmarshalJSONOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigGauge(orig *otlpmetrics.Gauge) int {
@@ -64,7 +75,7 @@ func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	for i := range orig.DataPoints {
+	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
 		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
@@ -75,5 +86,41 @@ func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) int {
 }
 
 func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
+			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -7,19 +7,27 @@
 package internal
 
 import (
+	"fmt"
+
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigStatus() *otlptrace.Status {
+	return &otlptrace.Status{}
+}
 
 func CopyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Message = src.Message
 	dest.Code = src.Code
 }
 
-func FillOrigTestStatus(orig *otlptrace.Status) {
+func GenTestOrigStatus() *otlptrace.Status {
+	orig := NewOrigStatus()
 	orig.Message = "test_message"
 	orig.Code = otlptrace.Status_StatusCode(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -39,7 +47,7 @@ func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
 
 // UnmarshalJSONOrigStatus unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "message":
 			orig.Message = iter.ReadString()
@@ -48,8 +56,7 @@ func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigStatus(orig *otlptrace.Status) int {
@@ -87,5 +94,49 @@ func MarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) int {
 }
 
 func UnmarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Message = string(buf[startPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Code = otlptrace.Status_StatusCode(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
