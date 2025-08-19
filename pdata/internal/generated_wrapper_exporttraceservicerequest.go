@@ -63,15 +63,18 @@ func MarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTra
 
 // UnmarshalJSONOrigTraces unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			orig.ResourceSpans = UnmarshalJSONOrigResourceSpansSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
+				UnmarshalJSONOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) int {

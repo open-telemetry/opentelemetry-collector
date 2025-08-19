@@ -56,19 +56,22 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 
 // UnmarshalJSONOrigResourceProfiles unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeProfiles", "scope_profiles":
-			orig.ScopeProfiles = UnmarshalJSONOrigScopeProfilesSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
+				UnmarshalJSONOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {

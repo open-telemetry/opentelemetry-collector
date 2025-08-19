@@ -46,7 +46,7 @@ func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.Exp
 
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedProfiles", "rejected_profiles":
 			orig.RejectedProfiles = iter.ReadInt64()
@@ -55,8 +55,7 @@ func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.E
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess) int {

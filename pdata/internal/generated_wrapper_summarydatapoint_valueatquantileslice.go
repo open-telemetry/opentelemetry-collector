@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
@@ -47,16 +46,5 @@ func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.Summ
 	orig[2] = NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig[3] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
 	orig[4] = NewOrigSummaryDataPoint_ValueAtQuantile()
-	return orig
-}
-
-// UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter *json.Iterator) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	var orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigSummaryDataPoint_ValueAtQuantile())
-		UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

@@ -119,27 +119,53 @@ func MarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, de
 
 // UnmarshalJSONOrigProfilesDictionary unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingTable", "mapping_table":
-			orig.MappingTable = UnmarshalJSONOrigMappingSlice(iter)
+			for iter.ReadArray() {
+				orig.MappingTable = append(orig.MappingTable, NewOrigMapping())
+				UnmarshalJSONOrigMapping(orig.MappingTable[len(orig.MappingTable)-1], iter)
+			}
+
 		case "locationTable", "location_table":
-			orig.LocationTable = UnmarshalJSONOrigLocationSlice(iter)
+			for iter.ReadArray() {
+				orig.LocationTable = append(orig.LocationTable, NewOrigLocation())
+				UnmarshalJSONOrigLocation(orig.LocationTable[len(orig.LocationTable)-1], iter)
+			}
+
 		case "functionTable", "function_table":
-			orig.FunctionTable = UnmarshalJSONOrigFunctionSlice(iter)
+			for iter.ReadArray() {
+				orig.FunctionTable = append(orig.FunctionTable, NewOrigFunction())
+				UnmarshalJSONOrigFunction(orig.FunctionTable[len(orig.FunctionTable)-1], iter)
+			}
+
 		case "linkTable", "link_table":
-			orig.LinkTable = UnmarshalJSONOrigLinkSlice(iter)
+			for iter.ReadArray() {
+				orig.LinkTable = append(orig.LinkTable, NewOrigLink())
+				UnmarshalJSONOrigLink(orig.LinkTable[len(orig.LinkTable)-1], iter)
+			}
+
 		case "stringTable", "string_table":
-			orig.StringTable = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.StringTable = append(orig.StringTable, iter.ReadString())
+			}
+
 		case "attributeTable", "attribute_table":
-			orig.AttributeTable = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.AttributeTable = append(orig.AttributeTable, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.AttributeTable[len(orig.AttributeTable)-1], iter)
+			}
+
 		case "attributeUnits", "attribute_units":
-			orig.AttributeUnits = UnmarshalJSONOrigAttributeUnitSlice(iter)
+			for iter.ReadArray() {
+				orig.AttributeUnits = append(orig.AttributeUnits, NewOrigAttributeUnit())
+				UnmarshalJSONOrigAttributeUnit(orig.AttributeUnits[len(orig.AttributeUnits)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int {

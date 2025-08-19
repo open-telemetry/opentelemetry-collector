@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
@@ -47,16 +46,5 @@ func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint
 	orig[2] = NewOrigHistogramDataPoint()
 	orig[3] = GenTestOrigHistogramDataPoint()
 	orig[4] = NewOrigHistogramDataPoint()
-	return orig
-}
-
-// UnmarshalJSONOrigHistogramDataPointSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.HistogramDataPoint {
-	var orig []*otlpmetrics.HistogramDataPoint
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigHistogramDataPoint())
-		UnmarshalJSONOrigHistogramDataPoint(orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

@@ -61,7 +61,7 @@ func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.St
 
 // UnmarshalJSONOrig{{ .structName }} unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		{{ range .fields -}}
 		{{ .GenerateUnmarshalJSON $.messageStruct }}
@@ -69,8 +69,7 @@ func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {

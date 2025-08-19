@@ -156,10 +156,14 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 
 // UnmarshalJSONOrigExponentialHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "startTimeUnixNano", "start_time_unix_nano":
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
@@ -167,7 +171,12 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 		case "count":
 			orig.Count = iter.ReadUint64()
 		case "sum":
-			orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
+				ofm.Sum = iter.ReadFloat64()
+				orig.Sum_ = ofm
+			}
+
 		case "scale":
 			orig.Scale = iter.ReadInt32()
 		case "zeroCount", "zero_count":
@@ -179,18 +188,31 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "exemplars":
-			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+			for iter.ReadArray() {
+				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
+				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+			}
+
 		case "min":
-			orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.ExponentialHistogramDataPoint_Min{}
+				ofm.Min = iter.ReadFloat64()
+				orig.Min_ = ofm
+			}
+
 		case "max":
-			orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: iter.ReadFloat64()}
+			{
+				ofm := &otlpmetrics.ExponentialHistogramDataPoint_Max{}
+				ofm.Max = iter.ReadFloat64()
+				orig.Max_ = ofm
+			}
+
 		case "zeroThreshold", "zero_threshold":
 			orig.ZeroThreshold = iter.ReadFloat64()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) int {

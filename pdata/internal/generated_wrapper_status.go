@@ -47,7 +47,7 @@ func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
 
 // UnmarshalJSONOrigStatus unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "message":
 			orig.Message = iter.ReadString()
@@ -56,8 +56,7 @@ func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigStatus(orig *otlptrace.Status) int {

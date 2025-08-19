@@ -35,6 +35,18 @@ func MarshalJSONOrigProfileID(id *data.ProfileID, dest *json.Stream) {
 	id.MarshalJSONStream(dest)
 }
 
+func UnmarshalJSONOrigTraceID(id *data.TraceID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
+}
+
+func UnmarshalJSONOrigSpanID(id *data.SpanID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
+}
+
+func UnmarshalJSONOrigProfileID(id *data.ProfileID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
+}
+
 func SizeProtoOrigTraceID(id *data.TraceID) int {
 	return id.Size()
 }

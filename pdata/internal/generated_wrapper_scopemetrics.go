@@ -56,19 +56,22 @@ func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stre
 
 // UnmarshalJSONOrigScopeMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
 		case "metrics":
-			orig.Metrics = UnmarshalJSONOrigMetricSlice(iter)
+			for iter.ReadArray() {
+				orig.Metrics = append(orig.Metrics, NewOrigMetric())
+				UnmarshalJSONOrigMetric(orig.Metrics[len(orig.Metrics)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {

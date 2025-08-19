@@ -87,14 +87,3 @@ func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}
     {{- end }}
 	return orig
 }
-
-// UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
-	var orig []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, {{- if .elementNullable }}NewOrig{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
-		UnmarshalJSONOrig{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}orig[len(orig)-1], iter)
-		return true
-	})
-	return orig
-}

@@ -63,15 +63,18 @@ func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expor
 
 // UnmarshalJSONOrigMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
-			orig.ResourceMetrics = UnmarshalJSONOrigResourceMetricsSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
+				UnmarshalJSONOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {

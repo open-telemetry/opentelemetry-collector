@@ -150,16 +150,16 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 
 // UnmarshalJSONOrigSpan unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		case "traceState", "trace_state":
-			UnmarshalJSONOrigTraceState(&orig.TraceState, iter)
+			orig.TraceState = iter.ReadString()
 		case "parentSpanId", "parent_span_id":
-			orig.ParentSpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.ParentSpanId, iter)
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "name":
@@ -171,15 +171,27 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 		case "endTimeUnixNano", "end_time_unix_nano":
 			orig.EndTimeUnixNano = iter.ReadUint64()
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "events":
-			orig.Events = UnmarshalJSONOrigSpan_EventSlice(iter)
+			for iter.ReadArray() {
+				orig.Events = append(orig.Events, NewOrigSpan_Event())
+				UnmarshalJSONOrigSpan_Event(orig.Events[len(orig.Events)-1], iter)
+			}
+
 		case "droppedEventsCount", "dropped_events_count":
 			orig.DroppedEventsCount = iter.ReadUint32()
 		case "links":
-			orig.Links = UnmarshalJSONOrigSpan_LinkSlice(iter)
+			for iter.ReadArray() {
+				orig.Links = append(orig.Links, NewOrigSpan_Link())
+				UnmarshalJSONOrigSpan_Link(orig.Links[len(orig.Links)-1], iter)
+			}
+
 		case "droppedLinksCount", "dropped_links_count":
 			orig.DroppedLinksCount = iter.ReadUint32()
 		case "status":
@@ -187,8 +199,7 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSpan(orig *otlptrace.Span) int {

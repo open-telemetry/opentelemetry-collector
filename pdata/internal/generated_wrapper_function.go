@@ -58,7 +58,7 @@ func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
 
 // UnmarshalJSONOrigFunction unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "nameStrindex", "name_strindex":
 			orig.NameStrindex = iter.ReadInt32()
@@ -71,8 +71,7 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
