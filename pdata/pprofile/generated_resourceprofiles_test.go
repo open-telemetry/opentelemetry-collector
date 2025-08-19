@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestResourceProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState)) })
+	assert.Panics(t, func() { newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceProfiles_CopyTo(t *testing.T) {
@@ -39,46 +38,16 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	orig = generateTestResourceProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
-}
-
-func TestResourceProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceProfiles()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewResourceProfiles()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(internal.NewOrigPtrResourceProfiles(), sharedState)) })
 }
 
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceProfiles_SchemaUrl(t *testing.T) {
-	ms := NewResourceProfiles()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("test_schemaurl")
-	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl")
-	})
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
@@ -88,8 +57,19 @@ func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
-func generateTestResourceProfiles() ResourceProfiles {
+func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	ms := NewResourceProfiles()
-	internal.FillOrigTestResourceProfiles(ms.orig)
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() {
+		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState).SetSchemaUrl("test_schemaurl")
+	})
+}
+
+func generateTestResourceProfiles() ResourceProfiles {
+	ms := newResourceProfiles(internal.GenTestOrigResourceProfiles(), internal.NewState())
 	return ms
 }

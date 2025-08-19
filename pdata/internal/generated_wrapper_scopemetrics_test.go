@@ -10,16 +10,119 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeMetrics(t *testing.T) {
-	src := &otlpmetrics.ScopeMetrics{}
-	dest := &otlpmetrics.ScopeMetrics{}
+	src := NewOrigPtrScopeMetrics()
+	dest := NewOrigPtrScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
-	assert.Equal(t, &otlpmetrics.ScopeMetrics{}, dest)
-	FillOrigTestScopeMetrics(src)
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+	*src = *GenTestOrigScopeMetrics()
 	CopyOrigScopeMetrics(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrScopeMetrics()
+	UnmarshalJSONOrigScopeMetrics(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigScopeMetrics(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrScopeMetrics()
+			UnmarshalJSONOrigScopeMetrics(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeMetricsFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrScopeMetrics()
+			require.Error(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
+	dest := NewOrigPtrScopeMetrics()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrScopeMetrics(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
+			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			dest := NewOrigPtrScopeMetrics()
+			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeMetrics() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
+			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.ScopeMetrics{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrScopeMetrics()
+			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Metrics/wrong_wire_type":   {0x14},
+		"Metrics/missing_value":     {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
+	return map[string]*otlpmetrics.ScopeMetrics{
+		"empty":                    NewOrigPtrScopeMetrics(),
+		"Scope/test":               {Scope: *GenTestOrigInstrumentationScope()},
+		"Metrics/default_and_test": {Metrics: []*otlpmetrics.Metric{{}, GenTestOrigMetric()}},
+		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},
+	}
 }

@@ -11,18 +11,15 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestMetricSlice(t *testing.T) {
 	es := NewMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newMetricSlice(&[]*otlpmetrics.Metric{}, &state)
+	es = newMetricSlice(&[]*otlpmetrics.Metric{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMetric()
@@ -30,15 +27,16 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestMetric((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigMetric()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestMetricSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newMetricSlice(&[]*otlpmetrics.Metric{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newMetricSlice(&[]*otlpmetrics.Metric{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -119,9 +117,9 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Metric) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestMetricSlice_RemoveIfAll(t *testing.T) {
@@ -142,22 +140,6 @@ func TestMetricSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestMetricSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestMetricSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewMetricSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestMetricSlice_Sort(t *testing.T) {

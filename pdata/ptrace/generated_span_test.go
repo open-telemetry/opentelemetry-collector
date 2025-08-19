@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -27,9 +25,10 @@ func TestSpan_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpan(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSpan(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSpan(&otlptrace.Span{}, &sharedState)) })
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSpan(internal.NewOrigPtrSpan(), sharedState)) })
+	assert.Panics(t, func() { newSpan(internal.NewOrigPtrSpan(), sharedState).MoveTo(dest) })
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -40,28 +39,9 @@ func TestSpan_CopyTo(t *testing.T) {
 	orig = generateTestSpan()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSpan(&otlptrace.Span{}, &sharedState)) })
-}
-
-func TestSpan_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpan()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSpan()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSpan(internal.NewOrigPtrSpan(), sharedState)) })
 }
 
 func TestSpan_TraceID(t *testing.T) {
@@ -83,8 +63,8 @@ func TestSpan_SpanID(t *testing.T) {
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
-	internal.FillOrigTestTraceState(&ms.orig.TraceState)
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
+	ms.orig.TraceState = *internal.GenTestOrigTraceState()
+	assert.Equal(t, pcommon.TraceState(internal.NewTraceState(internal.GenTestOrigTraceState(), ms.state)), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -95,22 +75,24 @@ func TestSpan_ParentSpanID(t *testing.T) {
 	assert.Equal(t, testValParentSpanID, ms.ParentSpanID())
 }
 
-func TestSpan_Name(t *testing.T) {
-	ms := NewSpan()
-	assert.Empty(t, ms.Name())
-	ms.SetName("test_name")
-	assert.Equal(t, "test_name", ms.Name())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetName("test_name") })
-}
-
 func TestSpan_Flags(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, uint32(0), ms.Flags())
 	ms.SetFlags(uint32(13))
 	assert.Equal(t, uint32(13), ms.Flags())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetFlags(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetFlags(uint32(13)) })
+}
+
+func TestSpan_Name(t *testing.T) {
+	ms := NewSpan()
+	assert.Empty(t, ms.Name())
+	ms.SetName("test_name")
+	assert.Equal(t, "test_name", ms.Name())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetName("test_name") })
 }
 
 func TestSpan_Kind(t *testing.T) {
@@ -149,8 +131,9 @@ func TestSpan_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(13))
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func TestSpan_Events(t *testing.T) {
@@ -165,8 +148,9 @@ func TestSpan_DroppedEventsCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedEventsCount())
 	ms.SetDroppedEventsCount(uint32(13))
 	assert.Equal(t, uint32(13), ms.DroppedEventsCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetDroppedEventsCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedEventsCount(uint32(13)) })
 }
 
 func TestSpan_Links(t *testing.T) {
@@ -181,19 +165,19 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedLinksCount())
 	ms.SetDroppedLinksCount(uint32(13))
 	assert.Equal(t, uint32(13), ms.DroppedLinksCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetDroppedLinksCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedLinksCount(uint32(13)) })
 }
 
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewStatus(), ms.Status())
-	internal.FillOrigTestStatus(&ms.orig.Status)
+	ms.orig.Status = *internal.GenTestOrigStatus()
 	assert.Equal(t, generateTestStatus(), ms.Status())
 }
 
 func generateTestSpan() Span {
-	ms := NewSpan()
-	internal.FillOrigTestSpan(ms.orig)
+	ms := newSpan(internal.GenTestOrigSpan(), internal.NewState())
 	return ms
 }

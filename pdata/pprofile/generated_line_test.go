@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestLine_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestLine_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLine(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLine(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLine(internal.NewOrigPtrLine(), sharedState)) })
+	assert.Panics(t, func() { newLine(internal.NewOrigPtrLine(), sharedState).MoveTo(dest) })
 }
 
 func TestLine_CopyTo(t *testing.T) {
@@ -38,28 +37,9 @@ func TestLine_CopyTo(t *testing.T) {
 	orig = generateTestLine()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
-}
-
-func TestLine_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLine()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewLine()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLine(internal.NewOrigPtrLine(), sharedState)) })
 }
 
 func TestLine_FunctionIndex(t *testing.T) {
@@ -67,8 +47,9 @@ func TestLine_FunctionIndex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.FunctionIndex())
 	ms.SetFunctionIndex(int32(13))
 	assert.Equal(t, int32(13), ms.FunctionIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetFunctionIndex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetFunctionIndex(int32(13)) })
 }
 
 func TestLine_Line(t *testing.T) {
@@ -76,8 +57,9 @@ func TestLine_Line(t *testing.T) {
 	assert.Equal(t, int64(0), ms.Line())
 	ms.SetLine(int64(13))
 	assert.Equal(t, int64(13), ms.Line())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetLine(int64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetLine(int64(13)) })
 }
 
 func TestLine_Column(t *testing.T) {
@@ -85,12 +67,12 @@ func TestLine_Column(t *testing.T) {
 	assert.Equal(t, int64(0), ms.Column())
 	ms.SetColumn(int64(13))
 	assert.Equal(t, int64(13), ms.Column())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetColumn(int64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetColumn(int64(13)) })
 }
 
 func generateTestLine() Line {
-	ms := NewLine()
-	internal.FillOrigTestLine(ms.orig)
+	ms := newLine(internal.GenTestOrigLine(), internal.NewState())
 	return ms
 }

@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
@@ -34,8 +33,7 @@ func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, state *inte
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogram() ExponentialHistogram {
-	state := internal.StateMutable
-	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &state)
+	return newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -51,6 +49,11 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	*ms.orig = otlpmetrics.ExponentialHistogram{}
 }
 
+// DataPoints returns the DataPoints associated with this ExponentialHistogram.
+func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
+	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -62,42 +65,8 @@ func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporalit
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// DataPoints returns the DataPoints associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExponentialHistogram(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExponentialHistogram) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
-	}
-	if len(ms.orig.DataPoints) > 0 {
-		dest.WriteObjectField("dataPoints")
-		ms.DataPoints().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExponentialHistogram) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "aggregationTemporality", "aggregation_temporality":
-			ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
-		case "dataPoints", "data_points":
-			ms.DataPoints().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

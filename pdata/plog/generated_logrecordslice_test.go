@@ -11,18 +11,15 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestLogRecordSlice(t *testing.T) {
 	es := NewLogRecordSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, &state)
+	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLogRecord()
@@ -30,15 +27,16 @@ func TestLogRecordSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLogRecord((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLogRecord()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestLogRecordSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -119,9 +117,9 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestLogRecordSlice_RemoveIfAll(t *testing.T) {
@@ -142,22 +140,6 @@ func TestLogRecordSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestLogRecordSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLogRecordSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewLogRecordSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestLogRecordSlice_Sort(t *testing.T) {

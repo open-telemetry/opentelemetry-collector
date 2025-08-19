@@ -7,17 +7,184 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigScopeProfiles() otlpprofiles.ScopeProfiles {
+	return otlpprofiles.ScopeProfiles{}
+}
+
+func NewOrigPtrScopeProfiles() *otlpprofiles.ScopeProfiles {
+	return &otlpprofiles.ScopeProfiles{}
+}
 
 func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.Profiles = CopyOrigProfileSlice(dest.Profiles, src.Profiles)
+	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestScopeProfiles(orig *otlpprofiles.ScopeProfiles) {
-	FillOrigTestInstrumentationScope(&orig.Scope)
-	orig.SchemaUrl = "test_schemaurl"
+func GenTestOrigScopeProfiles() *otlpprofiles.ScopeProfiles {
+	orig := NewOrigPtrScopeProfiles()
+	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.Profiles = GenerateOrigTestProfileSlice()
+	orig.SchemaUrl = "test_schemaurl"
+	return orig
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("scope")
+	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
+	if len(orig.Profiles) > 0 {
+		dest.WriteObjectField("profiles")
+		dest.WriteArrayStart()
+		MarshalJSONOrigProfile(orig.Profiles[0], dest)
+		for i := 1; i < len(orig.Profiles); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigProfile(orig.Profiles[i], dest)
+		}
+		dest.WriteArrayEnd()
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigScopeProfiles unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "scope":
+			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
+		case "profiles":
+			orig.Profiles = UnmarshalJSONOrigProfileSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.Profiles {
+		l = SizeProtoOrigProfile(orig.Profiles[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	for i := len(orig.Profiles) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigProfile(orig.Profiles[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Profiles", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Profiles = append(orig.Profiles, NewOrigPtrProfile())
+			err = UnmarshalProtoOrigProfile(orig.Profiles[len(orig.Profiles)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.SchemaUrl = string(buf[startPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

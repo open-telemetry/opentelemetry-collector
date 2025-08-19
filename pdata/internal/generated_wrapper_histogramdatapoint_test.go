@@ -10,16 +10,144 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigHistogramDataPoint(t *testing.T) {
-	src := &otlpmetrics.HistogramDataPoint{}
-	dest := &otlpmetrics.HistogramDataPoint{}
+	src := NewOrigPtrHistogramDataPoint()
+	dest := NewOrigPtrHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, &otlpmetrics.HistogramDataPoint{}, dest)
-	FillOrigTestHistogramDataPoint(src)
+	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	*src = *GenTestOrigHistogramDataPoint()
 	CopyOrigHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrHistogramDataPoint()
+	UnmarshalJSONOrigHistogramDataPoint(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
+	for name, src := range genTestEncodingValuesHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigHistogramDataPoint(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrHistogramDataPoint()
+			UnmarshalJSONOrigHistogramDataPoint(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigHistogramDataPointFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrHistogramDataPoint()
+			require.Error(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
+	dest := NewOrigPtrHistogramDataPoint()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
+	for name, src := range genTestEncodingValuesHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			dest := NewOrigPtrHistogramDataPoint()
+			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
+	for name, src := range genTestEncodingValuesHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.HistogramDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrHistogramDataPoint()
+			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesHistogramDataPoint() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                     {0x02},
+		"Attributes/wrong_wire_type":        {0x4c},
+		"Attributes/missing_value":          {0x4a},
+		"StartTimeUnixNano/wrong_wire_type": {0x14},
+		"StartTimeUnixNano/missing_value":   {0x11},
+		"TimeUnixNano/wrong_wire_type":      {0x1c},
+		"TimeUnixNano/missing_value":        {0x19},
+		"Count/wrong_wire_type":             {0x24},
+		"Count/missing_value":               {0x21},
+		"Sum/wrong_wire_type":               {0x2c},
+		"Sum/missing_value":                 {0x29},
+		"BucketCounts/wrong_wire_type":      {0x34},
+		"BucketCounts/missing_value":        {0x32},
+		"ExplicitBounds/wrong_wire_type":    {0x3c},
+		"ExplicitBounds/missing_value":      {0x3a},
+		"Exemplars/wrong_wire_type":         {0x44},
+		"Exemplars/missing_value":           {0x42},
+		"Flags/wrong_wire_type":             {0x54},
+		"Flags/missing_value":               {0x50},
+		"Min/wrong_wire_type":               {0x5c},
+		"Min/missing_value":                 {0x59},
+		"Max/wrong_wire_type":               {0x64},
+		"Max/missing_value":                 {0x61},
+	}
+}
+
+func genTestEncodingValuesHistogramDataPoint() map[string]*otlpmetrics.HistogramDataPoint {
+	return map[string]*otlpmetrics.HistogramDataPoint{
+		"empty":                       NewOrigPtrHistogramDataPoint(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
+		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
+		"Count/test":                  {Count: uint64(13)}, "Sum/default": {Sum_: &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(0)}},
+		"Sum/test":                        {Sum_: &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		"BucketCounts/default_and_test":   {BucketCounts: []uint64{uint64(0), uint64(13)}},
+		"ExplicitBounds/default_and_test": {ExplicitBounds: []float64{float64(0), float64(3.1415926)}},
+		"Exemplars/default_and_test":      {Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}},
+		"Flags/test":                      {Flags: uint32(13)}, "Min/default": {Min_: &otlpmetrics.HistogramDataPoint_Min{Min: float64(0)}},
+		"Min/test": {Min_: &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}}, "Max/default": {Max_: &otlpmetrics.HistogramDataPoint_Max{Max: float64(0)}},
+		"Max/test": {Max_: &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}},
+	}
 }

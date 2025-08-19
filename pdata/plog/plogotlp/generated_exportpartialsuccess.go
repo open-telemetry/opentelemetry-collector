@@ -8,8 +8,7 @@ package plogotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -20,11 +19,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectorlog.ExportLogsPartialSuccess
+	orig  *otlpcollectorlogs.ExportLogsPartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 
@@ -33,8 +32,7 @@ func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, st
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	state := internal.StateMutable
-	return newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &state)
+	return newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,7 +45,7 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorlog.ExportLogsPartialSuccess{}
+	*ms.orig = otlpcollectorlogs.ExportLogsPartialSuccess{}
 }
 
 // RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
@@ -76,33 +74,4 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExportLogsPartialSuccess(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.RejectedLogRecords != int64(0) {
-		dest.WriteObjectField("rejectedLogRecords")
-		dest.WriteInt64(ms.orig.RejectedLogRecords)
-	}
-	if ms.orig.ErrorMessage != "" {
-		dest.WriteObjectField("errorMessage")
-		dest.WriteString(ms.orig.ErrorMessage)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "rejectedLogRecords", "rejected_log_records":
-			ms.orig.RejectedLogRecords = iter.ReadInt64()
-		case "errorMessage", "error_message":
-			ms.orig.ErrorMessage = iter.ReadString()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

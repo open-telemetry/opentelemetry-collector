@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -25,12 +23,13 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState))
+		ms.MoveTo(newExportPartialSuccess(internal.NewOrigPtrExportTracePartialSuccess(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigPtrExportTracePartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -42,30 +41,11 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState))
+		ms.CopyTo(newExportPartialSuccess(internal.NewOrigPtrExportTracePartialSuccess(), sharedState))
 	})
-}
-
-func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExportPartialSuccess()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewExportPartialSuccess()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
@@ -73,9 +53,10 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedSpans())
 	ms.SetRejectedSpans(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedSpans())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetRejectedSpans(int64(13))
+		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetRejectedSpans(int64(13))
 	})
 }
 
@@ -84,14 +65,14 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("test_errormessage")
 	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := NewExportPartialSuccess()
-	internal.FillOrigTestExportTracePartialSuccess(ms.orig)
+	ms := newExportPartialSuccess(internal.GenTestOrigExportTracePartialSuccess(), internal.NewState())
 	return ms
 }

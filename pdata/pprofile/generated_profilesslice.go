@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ProfilesSlice logically represents a slice of Profile.
@@ -35,8 +34,7 @@ func newProfilesSlice(orig *[]*otlpprofiles.Profile, state *internal.State) Prof
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfilesSlice() ProfilesSlice {
 	orig := []*otlpprofiles.Profile(nil)
-	state := internal.StateMutable
-	return newProfilesSlice(&orig, &state)
+	return newProfilesSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es ProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Profile.
 func (es ProfilesSlice) AppendEmpty() Profile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Profile{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrProfile())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 func (es ProfilesSlice) Sort(less func(a, b Profile) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ProfilesSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ProfilesSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.Profile{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

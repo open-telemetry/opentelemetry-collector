@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
@@ -18,7 +19,7 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span{}
+			newDest[i] = NewOrigPtrSpan()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,7 +31,7 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span{}
+			newDest[i] = NewOrigPtrSpan()
 		}
 	}
 	for i := range src {
@@ -40,10 +41,22 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 }
 
 func GenerateOrigTestSpanSlice() []*otlptrace.Span {
-	orig := make([]*otlptrace.Span, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlptrace.Span{}
-		FillOrigTestSpan(orig[i])
-	}
+	orig := make([]*otlptrace.Span, 5)
+	orig[0] = NewOrigPtrSpan()
+	orig[1] = GenTestOrigSpan()
+	orig[2] = NewOrigPtrSpan()
+	orig[3] = GenTestOrigSpan()
+	orig[4] = NewOrigPtrSpan()
+	return orig
+}
+
+// UnmarshalJSONOrigSpanSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSpanSlice(iter *json.Iterator) []*otlptrace.Span {
+	var orig []*otlptrace.Span
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, NewOrigPtrSpan())
+		UnmarshalJSONOrigSpan(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

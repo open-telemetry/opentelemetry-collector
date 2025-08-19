@@ -11,18 +11,15 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResourceMetricsSlice(t *testing.T) {
 	es := NewResourceMetricsSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{}, &state)
+	es = newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceMetrics()
@@ -30,15 +27,16 @@ func TestResourceMetricsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestResourceMetrics((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigResourceMetrics()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceMetricsSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -119,9 +117,9 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ResourceMetrics) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestResourceMetricsSlice_RemoveIfAll(t *testing.T) {
@@ -142,22 +140,6 @@ func TestResourceMetricsSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestResourceMetricsSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceMetricsSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceMetricsSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestResourceMetricsSlice_Sort(t *testing.T) {

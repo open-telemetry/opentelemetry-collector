@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -39,28 +38,9 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestNumberDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
-}
-
-func TestNumberDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestNumberDataPoint()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewNumberDataPoint()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState)) })
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
@@ -97,9 +77,10 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms.SetDoubleValue(float64(3.1415926))
 	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
 	assert.Equal(t, NumberDataPointValueTypeDouble, ms.ValueType())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetDoubleValue(float64(3.1415926))
+		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetDoubleValue(float64(3.1415926))
 	})
 }
 
@@ -109,8 +90,9 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms.SetIntValue(int64(13))
 	assert.Equal(t, int64(13), ms.IntValue())
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetIntValue(int64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetIntValue(int64(13)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -129,7 +111,6 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := NewNumberDataPoint()
-	internal.FillOrigTestNumberDataPoint(ms.orig)
+	ms := newNumberDataPoint(internal.GenTestOrigNumberDataPoint(), internal.NewState())
 	return ms
 }

@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExponentialHistogram_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestExponentialHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
-	assert.Panics(t, func() { newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState)) })
+	assert.Panics(t, func() { newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
@@ -38,28 +37,16 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(internal.NewOrigPtrExponentialHistogram(), sharedState)) })
 }
 
-func TestExponentialHistogram_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExponentialHistogram()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewExponentialHistogram()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+func TestExponentialHistogram_DataPoints(t *testing.T) {
+	ms := NewExponentialHistogram()
+	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
@@ -70,15 +57,7 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestExponentialHistogram_DataPoints(t *testing.T) {
-	ms := NewExponentialHistogram()
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestExponentialHistogram() ExponentialHistogram {
-	ms := NewExponentialHistogram()
-	internal.FillOrigTestExponentialHistogram(ms.orig)
+	ms := newExponentialHistogram(internal.GenTestOrigExponentialHistogram(), internal.NewState())
 	return ms
 }

@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
@@ -18,7 +19,7 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
+			newDest[i] = NewOrigPtrValueType()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,7 +31,7 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
+			newDest[i] = NewOrigPtrValueType()
 		}
 	}
 	for i := range src {
@@ -40,10 +41,22 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 }
 
 func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
-	orig := make([]*otlpprofiles.ValueType, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.ValueType{}
-		FillOrigTestValueType(orig[i])
-	}
+	orig := make([]*otlpprofiles.ValueType, 5)
+	orig[0] = NewOrigPtrValueType()
+	orig[1] = GenTestOrigValueType()
+	orig[2] = NewOrigPtrValueType()
+	orig[3] = GenTestOrigValueType()
+	orig[4] = NewOrigPtrValueType()
+	return orig
+}
+
+// UnmarshalJSONOrigValueTypeSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigValueTypeSlice(iter *json.Iterator) []*otlpprofiles.ValueType {
+	var orig []*otlpprofiles.ValueType
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, NewOrigPtrValueType())
+		UnmarshalJSONOrigValueType(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

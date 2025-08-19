@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -39,28 +38,9 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
-}
-
-func TestHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestHistogramDataPoint()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewHistogramDataPoint()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewOrigPtrHistogramDataPoint(), sharedState)) })
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
@@ -91,8 +71,23 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(13))
 	assert.Equal(t, uint64(13), ms.Count())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, sharedState).SetCount(uint64(13)) })
+}
+
+func TestHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.True(t, ms.HasSum())
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+	dest := NewHistogramDataPoint()
+	dest.SetSum(float64(3.1415926))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
 }
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
@@ -124,20 +119,6 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
-func TestHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
-	ms.SetSum(float64(3.1415926))
-	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-	dest := NewHistogramDataPoint()
-	dest.SetSum(float64(3.1415926))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasSum())
-}
-
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.InDelta(t, float64(0), ms.Min(), 0.01)
@@ -167,7 +148,6 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	ms := NewHistogramDataPoint()
-	internal.FillOrigTestHistogramDataPoint(ms.orig)
+	ms := newHistogramDataPoint(internal.GenTestOrigHistogramDataPoint(), internal.NewState())
 	return ms
 }

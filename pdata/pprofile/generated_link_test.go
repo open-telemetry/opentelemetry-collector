@@ -10,12 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -27,9 +24,10 @@ func TestLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLink(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLink(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
-	assert.Panics(t, func() { newLink(&otlpprofiles.Link{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewOrigPtrLink(), sharedState)) })
+	assert.Panics(t, func() { newLink(internal.NewOrigPtrLink(), sharedState).MoveTo(dest) })
 }
 
 func TestLink_CopyTo(t *testing.T) {
@@ -40,28 +38,9 @@ func TestLink_CopyTo(t *testing.T) {
 	orig = generateTestLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
-}
-
-func TestLink_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLink()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewLink()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewOrigPtrLink(), sharedState)) })
 }
 
 func TestLink_TraceID(t *testing.T) {
@@ -81,7 +60,6 @@ func TestLink_SpanID(t *testing.T) {
 }
 
 func generateTestLink() Link {
-	ms := NewLink()
-	internal.FillOrigTestLink(ms.orig)
+	ms := newLink(internal.GenTestOrigLink(), internal.NewState())
 	return ms
 }

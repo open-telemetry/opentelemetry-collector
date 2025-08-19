@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.
@@ -35,8 +34,7 @@ func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans, state *internal.Sta
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
-	state := internal.StateMutable
-	return newResourceSpansSlice(&orig, &state)
+	return newResourceSpansSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceSpans())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ResourceSpansSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ResourceSpansSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlptrace.ResourceSpans{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

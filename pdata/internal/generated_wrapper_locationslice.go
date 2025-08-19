@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.Location {
@@ -18,7 +19,7 @@ func CopyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.L
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Location{}
+			newDest[i] = NewOrigPtrLocation()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,7 +31,7 @@ func CopyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.L
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Location{}
+			newDest[i] = NewOrigPtrLocation()
 		}
 	}
 	for i := range src {
@@ -40,10 +41,22 @@ func CopyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.L
 }
 
 func GenerateOrigTestLocationSlice() []*otlpprofiles.Location {
-	orig := make([]*otlpprofiles.Location, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.Location{}
-		FillOrigTestLocation(orig[i])
-	}
+	orig := make([]*otlpprofiles.Location, 5)
+	orig[0] = NewOrigPtrLocation()
+	orig[1] = GenTestOrigLocation()
+	orig[2] = NewOrigPtrLocation()
+	orig[3] = GenTestOrigLocation()
+	orig[4] = NewOrigPtrLocation()
+	return orig
+}
+
+// UnmarshalJSONOrigLocationSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLocationSlice(iter *json.Iterator) []*otlpprofiles.Location {
+	var orig []*otlpprofiles.Location
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, NewOrigPtrLocation())
+		UnmarshalJSONOrigLocation(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

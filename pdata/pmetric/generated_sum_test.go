@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSum_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestSum_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSum(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSum(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
-	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSum(internal.NewOrigPtrSum(), sharedState)) })
+	assert.Panics(t, func() { newSum(internal.NewOrigPtrSum(), sharedState).MoveTo(dest) })
 }
 
 func TestSum_CopyTo(t *testing.T) {
@@ -38,28 +37,16 @@ func TestSum_CopyTo(t *testing.T) {
 	orig = generateTestSum()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSum(internal.NewOrigPtrSum(), sharedState)) })
 }
 
-func TestSum_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSum()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSum()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+func TestSum_DataPoints(t *testing.T) {
+	ms := NewSum()
+	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
+	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func TestSum_AggregationTemporality(t *testing.T) {
@@ -75,19 +62,12 @@ func TestSum_IsMonotonic(t *testing.T) {
 	assert.False(t, ms.IsMonotonic())
 	ms.SetIsMonotonic(true)
 	assert.True(t, ms.IsMonotonic())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).SetIsMonotonic(true) })
-}
-
-func TestSum_DataPoints(t *testing.T) {
-	ms := NewSum()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
-	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, sharedState).SetIsMonotonic(true) })
 }
 
 func generateTestSum() Sum {
-	ms := NewSum()
-	internal.FillOrigTestSum(ms.orig)
+	ms := newSum(internal.GenTestOrigSum(), internal.NewState())
 	return ms
 }

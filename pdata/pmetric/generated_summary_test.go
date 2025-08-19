@@ -10,11 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummary_MoveTo(t *testing.T) {
@@ -25,9 +22,10 @@ func TestSummary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummary(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSummary(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
-	assert.Panics(t, func() { newSummary(&otlpmetrics.Summary{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSummary(internal.NewOrigPtrSummary(), sharedState)) })
+	assert.Panics(t, func() { newSummary(internal.NewOrigPtrSummary(), sharedState).MoveTo(dest) })
 }
 
 func TestSummary_CopyTo(t *testing.T) {
@@ -38,28 +36,9 @@ func TestSummary_CopyTo(t *testing.T) {
 	orig = generateTestSummary()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
-}
-
-func TestSummary_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSummary()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSummary()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSummary(internal.NewOrigPtrSummary(), sharedState)) })
 }
 
 func TestSummary_DataPoints(t *testing.T) {
@@ -70,7 +49,6 @@ func TestSummary_DataPoints(t *testing.T) {
 }
 
 func generateTestSummary() Summary {
-	ms := NewSummary()
-	internal.FillOrigTestSummary(ms.orig)
+	ms := newSummary(internal.GenTestOrigSummary(), internal.NewState())
 	return ms
 }

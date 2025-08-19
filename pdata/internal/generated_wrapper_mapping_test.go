@@ -10,16 +10,137 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigMapping(t *testing.T) {
-	src := &otlpprofiles.Mapping{}
-	dest := &otlpprofiles.Mapping{}
+	src := NewOrigPtrMapping()
+	dest := NewOrigPtrMapping()
 	CopyOrigMapping(dest, src)
-	assert.Equal(t, &otlpprofiles.Mapping{}, dest)
-	FillOrigTestMapping(src)
+	assert.Equal(t, NewOrigPtrMapping(), dest)
+	*src = *GenTestOrigMapping()
 	CopyOrigMapping(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigMappingUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrMapping()
+	UnmarshalJSONOrigMapping(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrMapping(), dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigMapping(t *testing.T) {
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigMapping(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrMapping()
+			UnmarshalJSONOrigMapping(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigMappingFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrMapping()
+			require.Error(t, UnmarshalProtoOrigMapping(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigMappingUnknown(t *testing.T) {
+	dest := NewOrigPtrMapping()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigMapping(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrMapping(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMapping(src))
+			gotSize := MarshalProtoOrigMapping(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			dest := NewOrigPtrMapping()
+			require.NoError(t, UnmarshalProtoOrigMapping(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMapping(src))
+			gotSize := MarshalProtoOrigMapping(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.Mapping{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrMapping()
+			require.NoError(t, UnmarshalProtoOrigMapping(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesMapping() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                    {0x02},
+		"MemoryStart/wrong_wire_type":      {0xc},
+		"MemoryStart/missing_value":        {0x8},
+		"MemoryLimit/wrong_wire_type":      {0x14},
+		"MemoryLimit/missing_value":        {0x10},
+		"FileOffset/wrong_wire_type":       {0x1c},
+		"FileOffset/missing_value":         {0x18},
+		"FilenameStrindex/wrong_wire_type": {0x24},
+		"FilenameStrindex/missing_value":   {0x20},
+		"AttributeIndices/wrong_wire_type": {0x2c},
+		"AttributeIndices/missing_value":   {0x2a},
+		"HasFunctions/wrong_wire_type":     {0x34},
+		"HasFunctions/missing_value":       {0x30},
+		"HasFilenames/wrong_wire_type":     {0x3c},
+		"HasFilenames/missing_value":       {0x38},
+		"HasLineNumbers/wrong_wire_type":   {0x44},
+		"HasLineNumbers/missing_value":     {0x40},
+		"HasInlineFrames/wrong_wire_type":  {0x4c},
+		"HasInlineFrames/missing_value":    {0x48},
+	}
+}
+
+func genTestEncodingValuesMapping() map[string]*otlpprofiles.Mapping {
+	return map[string]*otlpprofiles.Mapping{
+		"empty":                             NewOrigPtrMapping(),
+		"MemoryStart/test":                  {MemoryStart: uint64(13)},
+		"MemoryLimit/test":                  {MemoryLimit: uint64(13)},
+		"FileOffset/test":                   {FileOffset: uint64(13)},
+		"FilenameStrindex/test":             {FilenameStrindex: int32(13)},
+		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
+		"HasFunctions/test":                 {HasFunctions: true},
+		"HasFilenames/test":                 {HasFilenames: true},
+		"HasLineNumbers/test":               {HasLineNumbers: true},
+		"HasInlineFrames/test":              {HasInlineFrames: true},
+	}
 }

@@ -11,18 +11,15 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestAttributeUnitSlice(t *testing.T) {
 	es := NewAttributeUnitSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &state)
+	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttributeUnit()
@@ -30,15 +27,16 @@ func TestAttributeUnitSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestAttributeUnit((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigAttributeUnit()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestAttributeUnitSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -119,9 +117,9 @@ func TestAttributeUnitSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el AttributeUnit) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestAttributeUnitSlice_RemoveIfAll(t *testing.T) {
@@ -142,22 +140,6 @@ func TestAttributeUnitSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestAttributeUnitSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestAttributeUnitSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewAttributeUnitSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestAttributeUnitSlice_Sort(t *testing.T) {

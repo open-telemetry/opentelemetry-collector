@@ -10,16 +10,119 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeProfiles(t *testing.T) {
-	src := &otlpprofiles.ScopeProfiles{}
-	dest := &otlpprofiles.ScopeProfiles{}
+	src := NewOrigPtrScopeProfiles()
+	dest := NewOrigPtrScopeProfiles()
 	CopyOrigScopeProfiles(dest, src)
-	assert.Equal(t, &otlpprofiles.ScopeProfiles{}, dest)
-	FillOrigTestScopeProfiles(src)
+	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
+	*src = *GenTestOrigScopeProfiles()
 	CopyOrigScopeProfiles(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrScopeProfiles()
+	UnmarshalJSONOrigScopeProfiles(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigScopeProfiles(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrScopeProfiles()
+			UnmarshalJSONOrigScopeProfiles(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeProfilesFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrScopeProfiles()
+			require.Error(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeProfilesUnknown(t *testing.T) {
+	dest := NewOrigPtrScopeProfiles()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrScopeProfiles(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			dest := NewOrigPtrScopeProfiles()
+			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpprofiles.ScopeProfiles{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrScopeProfiles()
+			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesScopeProfiles() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Profiles/wrong_wire_type":  {0x14},
+		"Profiles/missing_value":    {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeProfiles() map[string]*otlpprofiles.ScopeProfiles {
+	return map[string]*otlpprofiles.ScopeProfiles{
+		"empty":                     NewOrigPtrScopeProfiles(),
+		"Scope/test":                {Scope: *GenTestOrigInstrumentationScope()},
+		"Profiles/default_and_test": {Profiles: []*otlpprofiles.Profile{{}, GenTestOrigProfile()}},
+		"SchemaUrl/test":            {SchemaUrl: "test_schemaurl"},
+	}
 }

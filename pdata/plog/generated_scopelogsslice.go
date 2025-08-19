@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ScopeLogsSlice logically represents a slice of ScopeLogs.
@@ -35,8 +34,7 @@ func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs, state *internal.State) Scope
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeLogsSlice() ScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs(nil)
-	state := internal.StateMutable
-	return newScopeLogsSlice(&orig, &state)
+	return newScopeLogsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeLogs.
 func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.ScopeLogs{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeLogs())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ScopeLogsSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ScopeLogsSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlplogs.ScopeLogs{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

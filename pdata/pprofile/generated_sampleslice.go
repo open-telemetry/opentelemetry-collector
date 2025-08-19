@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SampleSlice logically represents a slice of Sample.
@@ -35,8 +34,7 @@ func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleS
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
 	orig := []*otlpprofiles.Sample(nil)
-	state := internal.StateMutable
-	return newSampleSlice(&orig, &state)
+	return newSampleSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSample())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 func (es SampleSlice) Sort(less func(a, b Sample) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms SampleSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms SampleSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.Sample{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

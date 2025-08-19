@@ -29,29 +29,7 @@ func NewFloat64Slice(orig *[]float64, state *State) Float64Slice {
 
 func GenerateTestFloat64Slice() Float64Slice {
 	orig := GenerateOrigTestFloat64Slice()
-	state := StateMutable
-	return NewFloat64Slice(&orig, &state)
-}
-
-// MarshalJSONStreamFloat64Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamFloat64Slice(ms Float64Slice, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		dest.WriteFloat64((*ms.orig)[0])
-	}
-	for i := 1; i < len((*ms.orig)); i++ {
-		dest.WriteMore()
-		dest.WriteFloat64((*ms.orig)[i])
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONIterFloat64Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterFloat64Slice(ms Float64Slice, iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, iter.ReadFloat64())
-		return true
-	})
+	return NewFloat64Slice(&orig, NewState())
 }
 
 func CopyOrigFloat64Slice(dst, src []float64) []float64 {
@@ -60,4 +38,14 @@ func CopyOrigFloat64Slice(dst, src []float64) []float64 {
 
 func GenerateOrigTestFloat64Slice() []float64 {
 	return []float64{1.1, 2.2, 3.3}
+}
+
+// UnmarshalJSONOrigFloat64Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigFloat64Slice(iter *json.Iterator) []float64 {
+	var orig []float64
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, iter.ReadFloat64())
+		return true
+	})
+	return orig
 }

@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
@@ -33,8 +32,7 @@ func newHistogram(orig *otlpmetrics.Histogram, state *internal.State) Histogram 
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogram() Histogram {
-	state := internal.StateMutable
-	return newHistogram(&otlpmetrics.Histogram{}, &state)
+	return newHistogram(internal.NewOrigPtrHistogram(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -50,6 +48,11 @@ func (ms Histogram) MoveTo(dest Histogram) {
 	*ms.orig = otlpmetrics.Histogram{}
 }
 
+// DataPoints returns the DataPoints associated with this Histogram.
+func (ms Histogram) DataPoints() HistogramDataPointSlice {
+	return newHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -61,42 +64,8 @@ func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// DataPoints returns the DataPoints associated with this Histogram.
-func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return newHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
 	dest.state.AssertMutable()
 	internal.CopyOrigHistogram(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Histogram) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
-	}
-	if len(ms.orig.DataPoints) > 0 {
-		dest.WriteObjectField("dataPoints")
-		ms.DataPoints().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Histogram) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "aggregationTemporality", "aggregation_temporality":
-			ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
-		case "dataPoints", "data_points":
-			ms.DataPoints().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

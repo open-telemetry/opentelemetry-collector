@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestStatus_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestStatus_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestStatus(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestStatus(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newStatus(&otlptrace.Status{}, &sharedState)) })
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewOrigPtrStatus(), sharedState)) })
+	assert.Panics(t, func() { newStatus(internal.NewOrigPtrStatus(), sharedState).MoveTo(dest) })
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -38,36 +37,9 @@ func TestStatus_CopyTo(t *testing.T) {
 	orig = generateTestStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
-}
-
-func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestStatus()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewStatus()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
-func TestStatus_Code(t *testing.T) {
-	ms := NewStatus()
-	assert.Equal(t, StatusCode(0), ms.Code())
-	testValCode := StatusCode(1)
-	ms.SetCode(testValCode)
-	assert.Equal(t, testValCode, ms.Code())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewOrigPtrStatus(), sharedState)) })
 }
 
 func TestStatus_Message(t *testing.T) {
@@ -75,12 +47,20 @@ func TestStatus_Message(t *testing.T) {
 	assert.Empty(t, ms.Message())
 	ms.SetMessage("test_message")
 	assert.Equal(t, "test_message", ms.Message())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, sharedState).SetMessage("test_message") })
+}
+
+func TestStatus_Code(t *testing.T) {
+	ms := NewStatus()
+	assert.Equal(t, StatusCode(otlptrace.Status_StatusCode(0)), ms.Code())
+	testValCode := StatusCode(otlptrace.Status_StatusCode(1))
+	ms.SetCode(testValCode)
+	assert.Equal(t, testValCode, ms.Code())
 }
 
 func generateTestStatus() Status {
-	ms := NewStatus()
-	internal.FillOrigTestStatus(ms.orig)
+	ms := newStatus(internal.GenTestOrigStatus(), internal.NewState())
 	return ms
 }

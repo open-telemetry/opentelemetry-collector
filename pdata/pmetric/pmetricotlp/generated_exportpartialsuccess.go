@@ -9,7 +9,6 @@ package pmetricotlp
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -33,8 +32,7 @@ func newExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSucc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	state := internal.StateMutable
-	return newExportPartialSuccess(&otlpcollectormetrics.ExportMetricsPartialSuccess{}, &state)
+	return newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -76,33 +74,4 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExportMetricsPartialSuccess(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.RejectedDataPoints != int64(0) {
-		dest.WriteObjectField("rejectedDataPoints")
-		dest.WriteInt64(ms.orig.RejectedDataPoints)
-	}
-	if ms.orig.ErrorMessage != "" {
-		dest.WriteObjectField("errorMessage")
-		dest.WriteString(ms.orig.ErrorMessage)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "rejectedDataPoints", "rejected_data_points":
-			ms.orig.RejectedDataPoints = iter.ReadInt64()
-		case "errorMessage", "error_message":
-			ms.orig.ErrorMessage = iter.ReadString()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

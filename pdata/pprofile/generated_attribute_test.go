@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestAttribute_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestAttribute(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestAttribute(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
+	assert.Panics(t, func() { newAttribute(internal.NewOrigPtrKeyValue(), sharedState).MoveTo(dest) })
 }
 
 func TestAttribute_CopyTo(t *testing.T) {
@@ -39,28 +38,9 @@ func TestAttribute_CopyTo(t *testing.T) {
 	orig = generateTestAttribute()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
-}
-
-func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestAttribute()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewAttribute()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
 }
 
 func TestAttribute_Key(t *testing.T) {
@@ -68,19 +48,19 @@ func TestAttribute_Key(t *testing.T) {
 	assert.Empty(t, ms.Key())
 	ms.SetKey("test_key")
 	assert.Equal(t, "test_key", ms.Key())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("test_key") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newAttribute(&otlpcommon.KeyValue{}, sharedState).SetKey("test_key") })
 }
 
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
 	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
-	internal.FillOrigTestAnyValue(&ms.orig.Value)
-	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
+	ms.orig.Value = *internal.GenTestOrigAnyValue()
+	assert.Equal(t, pcommon.Value(internal.NewValue(internal.GenTestOrigAnyValue(), ms.state)), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	ms := NewAttribute()
-	internal.FillOrigTestKeyValue(ms.orig)
+	ms := newAttribute(internal.GenTestOrigKeyValue(), internal.NewState())
 	return ms
 }

@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -39,46 +38,16 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	orig = generateTestResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
-}
-
-func TestResourceMetrics_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceMetrics()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewResourceMetrics()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceMetrics_SchemaUrl(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("test_schemaurl")
-	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl")
-	})
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
@@ -88,8 +57,17 @@ func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
-func generateTestResourceMetrics() ResourceMetrics {
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	ms := NewResourceMetrics()
-	internal.FillOrigTestResourceMetrics(ms.orig)
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, sharedState).SetSchemaUrl("test_schemaurl") })
+}
+
+func generateTestResourceMetrics() ResourceMetrics {
+	ms := newResourceMetrics(internal.GenTestOrigResourceMetrics(), internal.NewState())
 	return ms
 }

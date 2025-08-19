@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Line details a specific line in a source code, linked to a function.
@@ -33,8 +32,7 @@ func newLine(orig *otlpprofiles.Line, state *internal.State) Line {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLine() Line {
-	state := internal.StateMutable
-	return newLine(&otlpprofiles.Line{}, &state)
+	return newLine(internal.NewOrigPtrLine(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -87,39 +85,4 @@ func (ms Line) SetColumn(v int64) {
 func (ms Line) CopyTo(dest Line) {
 	dest.state.AssertMutable()
 	internal.CopyOrigLine(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Line) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.FunctionIndex != int32(0) {
-		dest.WriteObjectField("functionIndex")
-		dest.WriteInt32(ms.orig.FunctionIndex)
-	}
-	if ms.orig.Line != int64(0) {
-		dest.WriteObjectField("line")
-		dest.WriteInt64(ms.orig.Line)
-	}
-	if ms.orig.Column != int64(0) {
-		dest.WriteObjectField("column")
-		dest.WriteInt64(ms.orig.Column)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Line) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "functionIndex", "function_index":
-			ms.orig.FunctionIndex = iter.ReadInt32()
-		case "line":
-			ms.orig.Line = iter.ReadInt64()
-		case "column":
-			ms.orig.Column = iter.ReadInt64()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

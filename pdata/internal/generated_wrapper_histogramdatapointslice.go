@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
@@ -18,7 +19,7 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.HistogramDataPoint{}
+			newDest[i] = NewOrigPtrHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,7 +31,7 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.HistogramDataPoint{}
+			newDest[i] = NewOrigPtrHistogramDataPoint()
 		}
 	}
 	for i := range src {
@@ -40,10 +41,22 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 }
 
 func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
-	orig := make([]*otlpmetrics.HistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.HistogramDataPoint{}
-		FillOrigTestHistogramDataPoint(orig[i])
-	}
+	orig := make([]*otlpmetrics.HistogramDataPoint, 5)
+	orig[0] = NewOrigPtrHistogramDataPoint()
+	orig[1] = GenTestOrigHistogramDataPoint()
+	orig[2] = NewOrigPtrHistogramDataPoint()
+	orig[3] = GenTestOrigHistogramDataPoint()
+	orig[4] = NewOrigPtrHistogramDataPoint()
+	return orig
+}
+
+// UnmarshalJSONOrigHistogramDataPointSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.HistogramDataPoint {
+	var orig []*otlpmetrics.HistogramDataPoint
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, NewOrigPtrHistogramDataPoint())
+		UnmarshalJSONOrigHistogramDataPoint(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

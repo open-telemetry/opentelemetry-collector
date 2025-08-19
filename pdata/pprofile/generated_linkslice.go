@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // LinkSlice logically represents a slice of Link.
@@ -35,8 +34,7 @@ func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
 	orig := []*otlpprofiles.Link(nil)
-	state := internal.StateMutable
-	return newLinkSlice(&orig, &state)
+	return newLinkSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Link{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLink())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 func (es LinkSlice) Sort(less func(a, b Link) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms LinkSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms LinkSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.Link{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

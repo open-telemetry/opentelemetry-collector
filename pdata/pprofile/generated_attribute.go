@@ -8,8 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +20,11 @@ import (
 // Must use NewAttribute function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Attribute struct {
-	orig  *v1.KeyValue
+	orig  *otlpcommon.KeyValue
 	state *internal.State
 }
 
-func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
+func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
 	return Attribute{orig: orig, state: state}
 }
 
@@ -34,8 +33,7 @@ func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttribute() Attribute {
-	state := internal.StateMutable
-	return newAttribute(&v1.KeyValue{}, &state)
+	return newAttribute(internal.NewOrigPtrKeyValue(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -48,7 +46,7 @@ func (ms Attribute) MoveTo(dest Attribute) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = v1.KeyValue{}
+	*ms.orig = otlpcommon.KeyValue{}
 }
 
 // Key returns the key associated with this Attribute.
@@ -71,31 +69,4 @@ func (ms Attribute) Value() pcommon.Value {
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
 	internal.CopyOrigKeyValue(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Attribute) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Key != "" {
-		dest.WriteObjectField("key")
-		dest.WriteString(ms.orig.Key)
-	}
-	dest.WriteObjectField("value")
-	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Value, ms.state), dest)
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "key":
-			ms.orig.Key = iter.ReadString()
-		case "value":
-			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

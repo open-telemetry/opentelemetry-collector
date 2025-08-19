@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistog
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	state := internal.StateMutable
-	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &state)
+	return newExponentialHistogramDataPointBuckets(internal.NewOrigPtrExponentialHistogramDataPoint_Buckets(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -71,33 +69,4 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Offset != int32(0) {
-		dest.WriteObjectField("offset")
-		dest.WriteInt32(ms.orig.Offset)
-	}
-	if len(ms.orig.BucketCounts) > 0 {
-		dest.WriteObjectField("bucketCounts")
-		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExponentialHistogramDataPointBuckets) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "offset":
-			ms.orig.Offset = iter.ReadInt32()
-		case "bucketCounts", "bucket_counts":
-			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

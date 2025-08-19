@@ -9,7 +9,6 @@ package ptrace
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newResourceSpans(orig *otlptrace.ResourceSpans, state *internal.State) Reso
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
-	state := internal.StateMutable
-	return newResourceSpans(&otlptrace.ResourceSpans{}, &state)
+	return newResourceSpans(internal.NewOrigPtrResourceSpans(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -56,6 +54,11 @@ func (ms ResourceSpans) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
 }
 
+// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
+	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -67,46 +70,8 @@ func (ms ResourceSpans) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
-func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	dest.state.AssertMutable()
 	internal.CopyOrigResourceSpans(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ResourceSpans) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("resource")
-	internal.MarshalJSONStreamResource(internal.NewResource(&ms.orig.Resource, ms.state), dest)
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if len(ms.orig.ScopeSpans) > 0 {
-		dest.WriteObjectField("scopeSpans")
-		ms.ScopeSpans().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ResourceSpans) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "resource":
-			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
-		case "schemaUrl", "schema_url":
-			ms.orig.SchemaUrl = iter.ReadString()
-		case "scopeSpans", "scope_spans":
-			ms.ScopeSpans().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

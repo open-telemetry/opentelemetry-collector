@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // LineSlice logically represents a slice of Line.
@@ -35,8 +34,7 @@ func newLineSlice(orig *[]*otlpprofiles.Line, state *internal.State) LineSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLineSlice() LineSlice {
 	orig := []*otlpprofiles.Line(nil)
-	state := internal.StateMutable
-	return newLineSlice(&orig, &state)
+	return newLineSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -101,7 +99,7 @@ func (es LineSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Line.
 func (es LineSlice) AppendEmpty() Line {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Line{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLine())
 	return es.At(es.Len() - 1)
 }
 
@@ -157,26 +155,4 @@ func (es LineSlice) CopyTo(dest LineSlice) {
 func (es LineSlice) Sort(less func(a, b Line) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms LineSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms LineSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.Line{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

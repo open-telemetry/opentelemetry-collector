@@ -7,9 +7,21 @@
 package internal
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigProfile() otlpprofiles.Profile {
+	return otlpprofiles.Profile{}
+}
+
+func NewOrigPtrProfile() *otlpprofiles.Profile {
+	return &otlpprofiles.Profile{}
+}
 
 func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.SampleType = CopyOrigValueTypeSlice(dest.SampleType, src.SampleType)
@@ -28,13 +40,14 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func FillOrigTestProfile(orig *otlpprofiles.Profile) {
+func GenTestOrigProfile() *otlpprofiles.Profile {
+	orig := NewOrigPtrProfile()
 	orig.SampleType = GenerateOrigTestValueTypeSlice()
 	orig.Sample = GenerateOrigTestSampleSlice()
 	orig.LocationIndices = GenerateOrigTestInt32Slice()
 	orig.TimeNanos = 1234567890
 	orig.DurationNanos = 1234567890
-	FillOrigTestValueType(&orig.PeriodType)
+	orig.PeriodType = *GenTestOrigValueType()
 	orig.Period = int64(13)
 	orig.CommentStrindices = GenerateOrigTestInt32Slice()
 	orig.DefaultSampleTypeIndex = int32(13)
@@ -43,4 +56,540 @@ func FillOrigTestProfile(orig *otlpprofiles.Profile) {
 	orig.OriginalPayloadFormat = "test_originalpayloadformat"
 	orig.OriginalPayload = GenerateOrigTestByteSlice()
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	return orig
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.SampleType) > 0 {
+		dest.WriteObjectField("sampleType")
+		dest.WriteArrayStart()
+		MarshalJSONOrigValueType(orig.SampleType[0], dest)
+		for i := 1; i < len(orig.SampleType); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigValueType(orig.SampleType[i], dest)
+		}
+		dest.WriteArrayEnd()
+	}
+	if len(orig.Sample) > 0 {
+		dest.WriteObjectField("sample")
+		dest.WriteArrayStart()
+		MarshalJSONOrigSample(orig.Sample[0], dest)
+		for i := 1; i < len(orig.Sample); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSample(orig.Sample[i], dest)
+		}
+		dest.WriteArrayEnd()
+	}
+	if len(orig.LocationIndices) > 0 {
+		dest.WriteObjectField("locationIndices")
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.LocationIndices[0])
+		for i := 1; i < len(orig.LocationIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.LocationIndices[i])
+		}
+		dest.WriteArrayEnd()
+	}
+	if orig.TimeNanos != int64(0) {
+		dest.WriteObjectField("timeNanos")
+		dest.WriteInt64(orig.TimeNanos)
+	}
+	if orig.DurationNanos != int64(0) {
+		dest.WriteObjectField("durationNanos")
+		dest.WriteInt64(orig.DurationNanos)
+	}
+	dest.WriteObjectField("periodType")
+	MarshalJSONOrigValueType(&orig.PeriodType, dest)
+	if orig.Period != int64(0) {
+		dest.WriteObjectField("period")
+		dest.WriteInt64(orig.Period)
+	}
+	if len(orig.CommentStrindices) > 0 {
+		dest.WriteObjectField("commentStrindices")
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.CommentStrindices[0])
+		for i := 1; i < len(orig.CommentStrindices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.CommentStrindices[i])
+		}
+		dest.WriteArrayEnd()
+	}
+	if orig.DefaultSampleTypeIndex != int32(0) {
+		dest.WriteObjectField("defaultSampleTypeIndex")
+		dest.WriteInt32(orig.DefaultSampleTypeIndex)
+	}
+	if orig.ProfileId != data.ProfileID([16]byte{}) {
+		dest.WriteObjectField("profileId")
+		MarshalJSONOrigProfileID(&orig.ProfileId, dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	if orig.OriginalPayloadFormat != "" {
+		dest.WriteObjectField("originalPayloadFormat")
+		dest.WriteString(orig.OriginalPayloadFormat)
+	}
+
+	if len(orig.OriginalPayload) > 0 {
+		dest.WriteObjectField("originalPayload")
+		dest.WriteBytes(orig.OriginalPayload)
+	}
+	if len(orig.AttributeIndices) > 0 {
+		dest.WriteObjectField("attributeIndices")
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.AttributeIndices[0])
+		for i := 1; i < len(orig.AttributeIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.AttributeIndices[i])
+		}
+		dest.WriteArrayEnd()
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigProfile unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "sampleType", "sample_type":
+			orig.SampleType = UnmarshalJSONOrigValueTypeSlice(iter)
+		case "sample":
+			orig.Sample = UnmarshalJSONOrigSampleSlice(iter)
+		case "locationIndices", "location_indices":
+			orig.LocationIndices = UnmarshalJSONOrigInt32Slice(iter)
+		case "timeNanos", "time_nanos":
+			orig.TimeNanos = iter.ReadInt64()
+		case "durationNanos", "duration_nanos":
+			orig.DurationNanos = iter.ReadInt64()
+		case "periodType", "period_type":
+			UnmarshalJSONOrigValueType(&orig.PeriodType, iter)
+		case "period":
+			orig.Period = iter.ReadInt64()
+		case "commentStrindices", "comment_strindices":
+			orig.CommentStrindices = UnmarshalJSONOrigInt32Slice(iter)
+		case "defaultSampleTypeIndex", "default_sample_type_index":
+			orig.DefaultSampleTypeIndex = iter.ReadInt32()
+		case "profileId", "profile_id":
+			orig.ProfileId.UnmarshalJSONIter(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		case "originalPayloadFormat", "original_payload_format":
+			orig.OriginalPayloadFormat = iter.ReadString()
+		case "originalPayload", "original_payload":
+			orig.OriginalPayload = UnmarshalJSONOrigByteSlice(iter)
+		case "attributeIndices", "attribute_indices":
+			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.SampleType {
+		l = SizeProtoOrigValueType(orig.SampleType[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Sample {
+		l = SizeProtoOrigSample(orig.Sample[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.LocationIndices) > 0 {
+		l = 0
+		for _, e := range orig.LocationIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.TimeNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.TimeNanos))
+	}
+	if orig.DurationNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.DurationNanos))
+	}
+	l = SizeProtoOrigValueType(&orig.PeriodType)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.Period != 0 {
+		n += 1 + proto.Sov(uint64(orig.Period))
+	}
+	if len(orig.CommentStrindices) > 0 {
+		l = 0
+		for _, e := range orig.CommentStrindices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DefaultSampleTypeIndex != 0 {
+		n += 1 + proto.Sov(uint64(orig.DefaultSampleTypeIndex))
+	}
+	l = SizeProtoOrigProfileID(&orig.ProfileId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	l = len(orig.OriginalPayloadFormat)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.OriginalPayload)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := len(orig.SampleType) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigValueType(orig.SampleType[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := len(orig.Sample) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigSample(orig.Sample[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.LocationIndices)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.LocationIndices[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.TimeNanos != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.TimeNanos))
+		pos--
+		buf[pos] = 0x20
+	}
+	if orig.DurationNanos != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DurationNanos))
+		pos--
+		buf[pos] = 0x28
+	}
+
+	l = MarshalProtoOrigValueType(&orig.PeriodType, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x32
+
+	if orig.Period != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Period))
+		pos--
+		buf[pos] = 0x38
+	}
+	l = len(orig.CommentStrindices)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.CommentStrindices[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x42
+	}
+	if orig.DefaultSampleTypeIndex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DefaultSampleTypeIndex))
+		pos--
+		buf[pos] = 0x48
+	}
+
+	l = MarshalProtoOrigProfileID(&orig.ProfileId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x52
+
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x58
+	}
+	l = len(orig.OriginalPayloadFormat)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.OriginalPayloadFormat)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x62
+	}
+	l = len(orig.OriginalPayload)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.OriginalPayload)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x6a
+	}
+	l = len(orig.AttributeIndices)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x72
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SampleType", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.SampleType = append(orig.SampleType, NewOrigPtrValueType())
+			err = UnmarshalProtoOrigValueType(orig.SampleType[len(orig.SampleType)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sample", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Sample = append(orig.Sample, NewOrigPtrSample())
+			err = UnmarshalProtoOrigSample(orig.Sample[len(orig.Sample)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocationIndices", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.LocationIndices = append(orig.LocationIndices, int32(num))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field LocationIndices", pos-startPos)
+			}
+
+		case 4:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeNanos", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.TimeNanos = int64(num)
+
+		case 5:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurationNanos", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.DurationNanos = int64(num)
+
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeriodType", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigValueType(&orig.PeriodType, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 7:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Period", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Period = int64(num)
+		case 8:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommentStrindices", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.CommentStrindices = append(orig.CommentStrindices, int32(num))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field CommentStrindices", pos-startPos)
+			}
+
+		case 9:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultSampleTypeIndex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.DefaultSampleTypeIndex = int32(num)
+
+		case 10:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProfileId", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigProfileID(&orig.ProfileId, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 11:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.DroppedAttributesCount = uint32(num)
+
+		case 12:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginalPayloadFormat", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.OriginalPayloadFormat = string(buf[startPos:pos])
+
+		case 13:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginalPayload", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.OriginalPayload = make([]byte, length)
+			copy(orig.OriginalPayload, buf[startPos:pos])
+		case 14:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

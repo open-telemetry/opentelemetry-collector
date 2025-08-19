@@ -10,8 +10,7 @@ import (
 	"iter"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 // AttributeTableSlice logically represents a slice of Attribute.
@@ -22,20 +21,19 @@ import (
 // Must use NewAttributeTableSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type AttributeTableSlice struct {
-	orig  *[]v1.KeyValue
+	orig  *[]otlpcommon.KeyValue
 	state *internal.State
 }
 
-func newAttributeTableSlice(orig *[]v1.KeyValue, state *internal.State) AttributeTableSlice {
+func newAttributeTableSlice(orig *[]otlpcommon.KeyValue, state *internal.State) AttributeTableSlice {
 	return AttributeTableSlice{orig: orig, state: state}
 }
 
 // NewAttributeTableSlice creates a AttributeTableSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeTableSlice() AttributeTableSlice {
-	orig := []v1.KeyValue(nil)
-	state := internal.StateMutable
-	return newAttributeTableSlice(&orig, &state)
+	orig := []otlpcommon.KeyValue(nil)
+	return newAttributeTableSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -91,7 +89,7 @@ func (es AttributeTableSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]v1.KeyValue, len(*es.orig), newCap)
+	newOrig := make([]otlpcommon.KeyValue, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -100,7 +98,7 @@ func (es AttributeTableSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Attribute.
 func (es AttributeTableSlice) AppendEmpty() Attribute {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, v1.KeyValue{})
+	*es.orig = append(*es.orig, otlpcommon.KeyValue{})
 	return es.At(es.Len() - 1)
 }
 
@@ -129,7 +127,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			(*es.orig)[i] = v1.KeyValue{}
+			(*es.orig)[i].Reset()
 			continue
 		}
 		if newLen == i {
@@ -138,7 +136,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		(*es.orig)[i] = v1.KeyValue{}
+		(*es.orig)[i].Reset()
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -148,26 +146,4 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
 	*dest.orig = internal.CopyOrigKeyValueSlice(*dest.orig, *es.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms AttributeTableSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, v1.KeyValue{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
 }

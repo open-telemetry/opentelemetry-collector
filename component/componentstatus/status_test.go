@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewStatusEvent(t *testing.T) {
@@ -29,6 +30,16 @@ func TestNewStatusEvent(t *testing.T) {
 			require.Equal(t, status, ev.Status())
 			require.NoError(t, ev.Err())
 			require.False(t, ev.Timestamp().IsZero())
+			require.Equal(t, pcommon.NewMap(), ev.Attributes())
+		})
+		t.Run(fmt.Sprintf("%s without error and attributes", status), func(t *testing.T) {
+			eventAttrs := pcommon.NewMap()
+			require.NoError(t, eventAttrs.FromRaw(map[string]any{"test": "a"}))
+			ev := NewEvent(status, WithAttributes(eventAttrs))
+			require.Equal(t, status, ev.Status())
+			require.NoError(t, ev.Err())
+			require.False(t, ev.Timestamp().IsZero())
+			require.Equal(t, eventAttrs, ev.Attributes())
 		})
 	}
 }

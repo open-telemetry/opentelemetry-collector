@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint, state *internal.State
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	state := internal.StateMutable
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &state)
+	return newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -136,68 +134,4 @@ func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.state.AssertMutable()
 	internal.CopyOrigNumberDataPoint(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms NumberDataPoint) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(ms.orig.Attributes) > 0 {
-		dest.WriteObjectField("attributes")
-		internal.MarshalJSONStreamMap(internal.NewMap(&ms.orig.Attributes, ms.state), dest)
-	}
-	if ms.orig.StartTimeUnixNano != 0 {
-		dest.WriteObjectField("startTimeUnixNano")
-		dest.WriteUint64(ms.orig.StartTimeUnixNano)
-	}
-	if ms.orig.TimeUnixNano != 0 {
-		dest.WriteObjectField("timeUnixNano")
-		dest.WriteUint64(ms.orig.TimeUnixNano)
-	}
-	switch ov := ms.orig.Value.(type) {
-	case *otlpmetrics.NumberDataPoint_AsDouble:
-		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(ov.AsDouble)
-	case *otlpmetrics.NumberDataPoint_AsInt:
-		dest.WriteObjectField("asInt")
-		dest.WriteInt64(ov.AsInt)
-	}
-	if len(ms.orig.Exemplars) > 0 {
-		dest.WriteObjectField("exemplars")
-		ms.Exemplars().marshalJSONStream(dest)
-	}
-	if ms.orig.Flags != 0 {
-		dest.WriteObjectField("flags")
-		dest.WriteUint32(ms.orig.Flags)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms NumberDataPoint) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "attributes":
-			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
-		case "startTimeUnixNano", "start_time_unix_nano":
-			ms.orig.StartTimeUnixNano = iter.ReadUint64()
-		case "timeUnixNano", "time_unix_nano":
-			ms.orig.TimeUnixNano = iter.ReadUint64()
-
-		case "asDouble", "as_double":
-			ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
-				AsDouble: iter.ReadFloat64(),
-			}
-		case "asInt", "as_int":
-			ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
-				AsInt: iter.ReadInt64(),
-			}
-		case "exemplars":
-			ms.Exemplars().unmarshalJSONIter(iter)
-		case "flags":
-			ms.orig.Flags = iter.ReadUint32()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

@@ -7,8 +7,11 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type InstrumentationScope struct {
@@ -28,52 +31,12 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-func GenerateTestInstrumentationScope() InstrumentationScope {
-	orig := otlpcommon.InstrumentationScope{}
-	FillOrigTestInstrumentationScope(&orig)
-	state := StateMutable
-	return NewInstrumentationScope(&orig, &state)
+func NewOrigInstrumentationScope() otlpcommon.InstrumentationScope {
+	return otlpcommon.InstrumentationScope{}
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamInstrumentationScope(ms InstrumentationScope, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Name != "" {
-		dest.WriteObjectField("name")
-		dest.WriteString(ms.orig.Name)
-	}
-	if ms.orig.Version != "" {
-		dest.WriteObjectField("version")
-		dest.WriteString(ms.orig.Version)
-	}
-	if len(ms.orig.Attributes) > 0 {
-		dest.WriteObjectField("attributes")
-		MarshalJSONStreamMap(NewMap(&ms.orig.Attributes, ms.state), dest)
-	}
-	if ms.orig.DroppedAttributesCount != uint32(0) {
-		dest.WriteObjectField("droppedAttributesCount")
-		dest.WriteUint32(ms.orig.DroppedAttributesCount)
-	}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONIterInstrumentationScope unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "name":
-			ms.orig.Name = iter.ReadString()
-		case "version":
-			ms.orig.Version = iter.ReadString()
-		case "attributes":
-			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
-		case "droppedAttributesCount", "dropped_attributes_count":
-			ms.orig.DroppedAttributesCount = iter.ReadUint32()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
+func NewOrigPtrInstrumentationScope() *otlpcommon.InstrumentationScope {
+	return &otlpcommon.InstrumentationScope{}
 }
 
 func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
@@ -83,9 +46,191 @@ func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func FillOrigTestInstrumentationScope(orig *otlpcommon.InstrumentationScope) {
+func GenTestOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
+	orig := NewOrigPtrInstrumentationScope()
 	orig.Name = "test_name"
 	orig.Version = "test_version"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
+	return orig
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(orig.Name)
+	}
+	if orig.Version != "" {
+		dest.WriteObjectField("version")
+		dest.WriteString(orig.Version)
+	}
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigInstrumentationScope unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			orig.Name = iter.ReadString()
+		case "version":
+			orig.Version = iter.ReadString()
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Version)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	return n
+}
+
+func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	l = len(orig.Name)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Name)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	l = len(orig.Version)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Version)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	for i := len(orig.Attributes) - 1; i >= 0; i-- {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x20
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Name = string(buf[startPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Version = string(buf[startPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 4:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.DroppedAttributesCount = uint32(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -11,18 +11,15 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanSlice(t *testing.T) {
 	es := NewSpanSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSpanSlice(&[]*otlptrace.Span{}, &state)
+	es = newSpanSlice(&[]*otlptrace.Span{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpan()
@@ -30,15 +27,16 @@ func TestSpanSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSpan((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSpan()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSpanSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSpanSlice(&[]*otlptrace.Span{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSpanSlice(&[]*otlptrace.Span{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -119,9 +117,9 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Span) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestSpanSlice_RemoveIfAll(t *testing.T) {
@@ -142,22 +140,6 @@ func TestSpanSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestSpanSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpanSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSpanSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestSpanSlice_Sort(t *testing.T) {

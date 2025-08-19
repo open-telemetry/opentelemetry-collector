@@ -10,16 +10,119 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	dest := &otlpmetrics.Sum{}
+	src := NewOrigPtrSum()
+	dest := NewOrigPtrSum()
 	CopyOrigSum(dest, src)
-	assert.Equal(t, &otlpmetrics.Sum{}, dest)
-	FillOrigTestSum(src)
+	assert.Equal(t, NewOrigPtrSum(), dest)
+	*src = *GenTestOrigSum()
 	CopyOrigSum(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigSumUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigPtrSum()
+	UnmarshalJSONOrigSum(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigPtrSum(), dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
+	for name, src := range genTestEncodingValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSum(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigPtrSum()
+			UnmarshalJSONOrigSum(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSumFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrSum()
+			require.Error(t, UnmarshalProtoOrigSum(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSumUnknown(t *testing.T) {
+	dest := NewOrigPtrSum()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSum(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigPtrSum(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
+	for name, src := range genTestEncodingValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			dest := NewOrigPtrSum()
+			require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
+	for name, src := range genTestEncodingValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.Sum{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigPtrSum()
+			require.NoError(t, UnmarshalProtoOrigSum(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesSum() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
+		"IsMonotonic/wrong_wire_type":            {0x1c},
+		"IsMonotonic/missing_value":              {0x18},
+	}
+}
+
+func genTestEncodingValuesSum() map[string]*otlpmetrics.Sum {
+	return map[string]*otlpmetrics.Sum{
+		"empty":                       NewOrigPtrSum(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
+		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
+		"IsMonotonic/test":            {IsMonotonic: true},
+	}
 }
