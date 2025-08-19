@@ -46,8 +46,8 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.132.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.132.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.132.0
-	go.opentelemetry.io/contrib/otelconf v0.16.0
-	go.opentelemetry.io/contrib/propagators/b3 v1.36.0
+	go.opentelemetry.io/contrib/otelconf v0.17.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.37.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/log v0.13.0
 	go.opentelemetry.io/otel/metric v1.37.0
@@ -122,7 +122,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.37.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.58.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.59.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.13.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.37.0 // indirect
