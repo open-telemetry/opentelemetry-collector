@@ -16,7 +16,7 @@ issues: [12207]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: | 
-  The specified feature is enable through feature-gate flag. Enabled like below:
+  The specified feature is enable through feature-gate flag. Enable with command:
   otelcol --config=config.yaml --feature-gates=+telemetry.newPipelineTelemetry,+telemetry.distinguishDownstreamErrors
 
 # Optional: The change log or logs in which this entry should be included.
