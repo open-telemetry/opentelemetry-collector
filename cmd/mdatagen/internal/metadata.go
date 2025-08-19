@@ -43,6 +43,8 @@ type Metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
+	// PackageName is the name of the package where the component is defined.
+	PackageName string `mapstructure:"package_name"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -318,7 +320,7 @@ func (a Attribute) Name() AttributeName {
 
 func (a Attribute) TestValue() string {
 	if a.Enum != nil {
-		return fmt.Sprintf(`"%s"`, a.Enum[0])
+		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:

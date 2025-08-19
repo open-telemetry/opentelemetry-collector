@@ -34,8 +34,7 @@ func newFunctionSlice(orig *[]*otlpprofiles.Function, state *internal.State) Fun
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewFunctionSlice() FunctionSlice {
 	orig := []*otlpprofiles.Function(nil)
-	state := internal.StateMutable
-	return newFunctionSlice(&orig, &state)
+	return newFunctionSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Function{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrFunction())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigFunctionSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigFunctionSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Function elements within FunctionSlice given the
@@ -154,19 +155,4 @@ func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 func (es FunctionSlice) Sort(less func(a, b Function) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.Function {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Function, len(src))
-		data := make([]otlpprofiles.Function, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigFunction(dest[i], src[i])
-	}
-	return dest
 }

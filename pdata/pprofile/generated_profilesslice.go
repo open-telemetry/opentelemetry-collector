@@ -34,8 +34,7 @@ func newProfilesSlice(orig *[]*otlpprofiles.Profile, state *internal.State) Prof
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfilesSlice() ProfilesSlice {
 	orig := []*otlpprofiles.Profile(nil)
-	state := internal.StateMutable
-	return newProfilesSlice(&orig, &state)
+	return newProfilesSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Profile.
 func (es ProfilesSlice) AppendEmpty() Profile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Profile{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrProfile())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigProfileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Profile elements within ProfilesSlice given the
@@ -154,19 +155,4 @@ func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 func (es ProfilesSlice) Sort(less func(a, b Profile) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigProfilesSlice(dest, src []*otlpprofiles.Profile) []*otlpprofiles.Profile {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Profile, len(src))
-		data := make([]otlpprofiles.Profile, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigProfile(dest[i], src[i])
-	}
-	return dest
 }

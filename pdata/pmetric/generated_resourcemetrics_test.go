@@ -24,9 +24,10 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -37,42 +38,37 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	orig = generateTestResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigPtrResourceMetrics(), sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceMetrics_SchemaUrl(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
-	fillTestScopeMetricsSlice(ms.ScopeMetrics())
+	ms.orig.ScopeMetrics = internal.GenerateOrigTestScopeMetricsSlice()
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
-func generateTestResourceMetrics() ResourceMetrics {
-	tv := NewResourceMetrics()
-	fillTestResourceMetrics(tv)
-	return tv
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestResourceMetrics(tv ResourceMetrics) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeMetricsSlice(newScopeMetricsSlice(&tv.orig.ScopeMetrics, tv.state))
+func generateTestResourceMetrics() ResourceMetrics {
+	ms := NewResourceMetrics()
+	internal.FillOrigTestResourceMetrics(ms.orig)
+	return ms
 }

@@ -34,8 +34,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	state := internal.StateMutable
-	return newProfile(&otlpprofiles.Profile{}, &state)
+	return newProfile(internal.NewOrigPtrProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -166,22 +165,5 @@ func (ms Profile) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	copyOrigProfile(dest.orig, ms.orig)
-}
-
-func copyOrigProfile(dest, src *otlpprofiles.Profile) {
-	dest.SampleType = copyOrigValueTypeSlice(dest.SampleType, src.SampleType)
-	dest.Sample = copyOrigSampleSlice(dest.Sample, src.Sample)
-	dest.LocationIndices = internal.CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
-	dest.TimeNanos = src.TimeNanos
-	dest.DurationNanos = src.DurationNanos
-	copyOrigValueType(&dest.PeriodType, &src.PeriodType)
-	dest.Period = src.Period
-	dest.CommentStrindices = internal.CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
-	dest.DefaultSampleTypeIndex = src.DefaultSampleTypeIndex
-	dest.ProfileId = src.ProfileId
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
-	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	internal.CopyOrigProfile(dest.orig, ms.orig)
 }

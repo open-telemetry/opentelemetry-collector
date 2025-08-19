@@ -34,8 +34,7 @@ func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint, state *
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewHistogramDataPointSlice() HistogramDataPointSlice {
 	orig := []*otlpmetrics.HistogramDataPoint(nil)
-	state := internal.StateMutable
-	return newHistogramDataPointSlice(&orig, &state)
+	return newHistogramDataPointSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added HistogramDataPoint.
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.HistogramDataPoint{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigHistogramDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
@@ -154,19 +155,4 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.HistogramDataPoint, len(src))
-		data := make([]otlpmetrics.HistogramDataPoint, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigHistogramDataPoint(dest[i], src[i])
-	}
-	return dest
 }

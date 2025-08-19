@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +20,11 @@ import (
 // Must use NewAttribute function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Attribute struct {
-	orig  *v1.KeyValue
+	orig  *otlpcommon.KeyValue
 	state *internal.State
 }
 
-func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
+func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
 	return Attribute{orig: orig, state: state}
 }
 
@@ -33,8 +33,7 @@ func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttribute() Attribute {
-	state := internal.StateMutable
-	return newAttribute(&v1.KeyValue{}, &state)
+	return newAttribute(internal.NewOrigPtrKeyValue(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,7 +46,7 @@ func (ms Attribute) MoveTo(dest Attribute) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = v1.KeyValue{}
+	*ms.orig = otlpcommon.KeyValue{}
 }
 
 // Key returns the key associated with this Attribute.
@@ -69,10 +68,5 @@ func (ms Attribute) Value() pcommon.Value {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
-	copyOrigAttribute(dest.orig, ms.orig)
-}
-
-func copyOrigAttribute(dest, src *v1.KeyValue) {
-	dest.Key = src.Key
-	internal.CopyOrigValue(&dest.Value, &src.Value)
+	internal.CopyOrigKeyValue(dest.orig, ms.orig)
 }

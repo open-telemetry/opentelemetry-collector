@@ -27,9 +27,6 @@ var (
 	// that data is being refused due to high memory usage.
 	ErrDataRefused = errors.New("data refused due to high memory usage")
 
-	// ErrShutdownNotStarted indicates no memorylimiter has not start when shutdown
-	ErrShutdownNotStarted = errors.New("no existing monitoring routine is running")
-
 	// GetMemoryFn and ReadMemStatsFn make it overridable by tests
 	GetMemoryFn    = iruntime.TotalMemory
 	ReadMemStatsFn = runtime.ReadMemStats
@@ -121,7 +118,7 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 
 	switch ml.refCounter {
 	case 0:
-		return ErrShutdownNotStarted
+		return nil
 	case 1:
 		ml.ticker.Stop()
 		close(ml.closed)
@@ -131,7 +128,7 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 	return nil
 }
 
-// MustRefuse returns if the caller should deny because memory has reached it's configured limits
+// MustRefuse returns true if memory has reached its configured limits
 func (ml *MemoryLimiter) MustRefuse() bool {
 	return ml.mustRefuse.Load()
 }
@@ -172,7 +169,7 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 	return ms
 }
 
-// CheckMemLimits inspects current memory usage against threshold and toggle mustRefuse when threshold is exceeded
+// CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
 func (ml *MemoryLimiter) CheckMemLimits() {
 	ms := ml.readMemStats()
 
@@ -240,6 +237,6 @@ func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) *memUsageCheck
 	}
 }
 
-func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) *memUsageChecker {
+func newPercentageMemUsageChecker(totalMemory, percentageLimit, percentageSpike uint64) *memUsageChecker {
 	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
 }

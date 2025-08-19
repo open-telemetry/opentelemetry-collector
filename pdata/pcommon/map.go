@@ -21,8 +21,7 @@ type Map internal.Map
 // NewMap creates a Map with 0 elements.
 func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	state := internal.StateMutable
-	return Map(internal.NewMap(&orig, &state))
+	return Map(internal.NewMap(&orig, internal.NewState()))
 }
 
 func (m Map) getOrig() *[]otlpcommon.KeyValue {
@@ -94,8 +93,8 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 	m.getState().AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*m.getOrig()); i++ {
-		akv := &(*m.getOrig())[i]
-		if f(akv.Key, newValue(&akv.Value, m.getState())) {
+		if f((*m.getOrig())[i].Key, newValue(&(*m.getOrig())[i].Value, m.getState())) {
+			(*m.getOrig())[i] = otlpcommon.KeyValue{}
 			continue
 		}
 		if newLen == i {
@@ -104,6 +103,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 			continue
 		}
 		(*m.getOrig())[newLen] = (*m.getOrig())[i]
+		(*m.getOrig())[i] = otlpcommon.KeyValue{}
 		newLen++
 	}
 	*m.getOrig() = (*m.getOrig())[:newLen]
@@ -124,12 +124,12 @@ func (m Map) PutEmpty(k string) Value {
 // PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) PutStr(k string, v string) {
+func (m Map) PutStr(k, v string) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v, m.getState()))
 	}
 }
 
@@ -141,7 +141,7 @@ func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v, m.getState()))
 	}
 }
 
@@ -153,7 +153,7 @@ func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v, m.getState()))
 	}
 }
 
@@ -165,7 +165,7 @@ func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v, m.getState()))
 	}
 }
 
@@ -261,7 +261,7 @@ func (m Map) MoveTo(dest Map) {
 // CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
 	dest.getState().AssertMutable()
-	*dest.getOrig() = internal.CopyOrigMap(*dest.getOrig(), *m.getOrig())
+	*dest.getOrig() = internal.CopyOrigKeyValueSlice(*dest.getOrig(), *m.getOrig())
 }
 
 // AsRaw returns a standard go map representation of this Map.
@@ -315,4 +315,32 @@ func (m Map) Equal(val Map) bool {
 		return fullEqual
 	})
 	return fullEqual
+}
+
+func newKeyValueString(k, v string, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetStr(v)
+	return orig
+}
+
+func newKeyValueInt(k string, v int64, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetInt(v)
+	return orig
+}
+
+func newKeyValueDouble(k string, v float64, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetDouble(v)
+	return orig
+}
+
+func newKeyValueBool(k string, v bool, state *internal.State) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := newValue(&orig.Value, state)
+	akv.SetBool(v)
+	return orig
 }

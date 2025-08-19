@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -24,9 +24,10 @@ func TestAttribute_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestAttribute(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestAttribute(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
+	assert.Panics(t, func() { newAttribute(internal.NewOrigPtrKeyValue(), sharedState).MoveTo(dest) })
 }
 
 func TestAttribute_CopyTo(t *testing.T) {
@@ -37,32 +38,30 @@ func TestAttribute_CopyTo(t *testing.T) {
 	orig = generateTestAttribute()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
 }
 
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())
-	ms.SetKey("key")
-	assert.Equal(t, "key", ms.Key())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("key") })
+	ms.SetKey("test_key")
+	assert.Equal(t, "test_key", ms.Key())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newAttribute(&otlpcommon.KeyValue{}, sharedState).SetKey("test_key") })
 }
 
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
-	internal.FillTestValue(internal.Value(ms.Value()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
+	internal.FillOrigTestAnyValue(&ms.orig.Value)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	tv := NewAttribute()
-	fillTestAttribute(tv)
-	return tv
-}
-
-func fillTestAttribute(tv Attribute) {
-	tv.orig.Key = "key"
-	internal.FillTestValue(internal.NewValue(&tv.orig.Value, tv.state))
+	ms := NewAttribute()
+	internal.FillOrigTestKeyValue(ms.orig)
+	return ms
 }

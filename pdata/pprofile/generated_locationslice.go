@@ -34,8 +34,7 @@ func newLocationSlice(orig *[]*otlpprofiles.Location, state *internal.State) Loc
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
 	orig := []*otlpprofiles.Location(nil)
-	state := internal.StateMutable
-	return newLocationSlice(&orig, &state)
+	return newLocationSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Location{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLocation())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLocationSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the
@@ -154,19 +155,4 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 func (es LocationSlice) Sort(less func(a, b Location) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.Location {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Location, len(src))
-		data := make([]otlpprofiles.Location, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigLocation(dest[i], src[i])
-	}
-	return dest
 }

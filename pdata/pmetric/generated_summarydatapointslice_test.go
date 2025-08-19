@@ -19,24 +19,24 @@ import (
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &state)
+	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPoint()
 	testVal := generateTestSummaryDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSummaryDataPoint(el)
+		internal.FillOrigTestSummaryDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSummaryDataPointSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -49,16 +49,8 @@ func TestSummaryDataPointSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointSlice()
-	// Test CopyTo to empty
-	NewSummaryDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewSummaryDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
-	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
+	src := generateTestSummaryDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 }
 
@@ -125,9 +117,17 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el SummaryDataPoint) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestSummaryDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointSlice()
+	got.RemoveIf(func(el SummaryDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSummaryDataPointSliceAll(t *testing.T) {
@@ -159,15 +159,7 @@ func TestSummaryDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
-	es := NewSummaryDataPointSlice()
-	fillTestSummaryDataPointSlice(es)
-	return es
-}
-
-func fillTestSummaryDataPointSlice(es SummaryDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewSummaryDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestSummaryDataPointSlice()
+	return ms
 }

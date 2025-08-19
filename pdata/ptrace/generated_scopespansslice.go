@@ -34,8 +34,7 @@ func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, state *internal.State) Sc
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	state := internal.StateMutable
-	return newScopeSpansSlice(&orig, &state)
+	return newScopeSpansSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeSpans.
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrScopeSpans())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigScopeSpansSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigScopeSpansSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
@@ -154,19 +155,4 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.ScopeSpans {
-	if cap(dest) < len(src) {
-		dest = make([]*otlptrace.ScopeSpans, len(src))
-		data := make([]otlptrace.ScopeSpans, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigScopeSpans(dest[i], src[i])
-	}
-	return dest
 }

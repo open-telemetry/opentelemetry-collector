@@ -33,8 +33,7 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	state := internal.StateMutable
-	return newSample(&otlpprofiles.Sample{}, &state)
+	return newSample(internal.NewOrigPtrSample(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -113,23 +112,5 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	copyOrigSample(dest.orig, ms.orig)
-}
-
-func copyOrigSample(dest, src *otlpprofiles.Sample) {
-	dest.LocationsStartIndex = src.LocationsStartIndex
-	dest.LocationsLength = src.LocationsLength
-	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	if srcLinkIndex, ok := src.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
-		destLinkIndex, ok := dest.LinkIndex_.(*otlpprofiles.Sample_LinkIndex)
-		if !ok {
-			destLinkIndex = &otlpprofiles.Sample_LinkIndex{}
-			dest.LinkIndex_ = destLinkIndex
-		}
-		destLinkIndex.LinkIndex = srcLinkIndex.LinkIndex
-	} else {
-		dest.LinkIndex_ = nil
-	}
-	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
+	internal.CopyOrigSample(dest.orig, ms.orig)
 }

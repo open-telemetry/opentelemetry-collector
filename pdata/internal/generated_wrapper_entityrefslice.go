@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type EntityRefSlice struct {
@@ -27,33 +28,59 @@ func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSli
 	return EntityRefSlice{orig: orig, state: state}
 }
 
+func GenerateTestEntityRefSlice() EntityRefSlice {
+	orig := GenerateOrigTestEntityRefSlice()
+	return NewEntityRefSlice(&orig, NewState())
+}
+
 func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
+	var newDest []*otlpcommon.EntityRef
 	if cap(dest) < len(src) {
-		dest = make([]*otlpcommon.EntityRef, len(src))
-		data := make([]otlpcommon.EntityRef, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpcommon.EntityRef, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = NewOrigPtrEntityRef()
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = NewOrigPtrEntityRef()
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		CopyOrigEntityRef(dest[i], src[i])
+		CopyOrigEntityRef(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }
 
-func GenerateTestEntityRefSlice() EntityRefSlice {
-	orig := []*otlpcommon.EntityRef(nil)
-	state := StateMutable
-	es := NewEntityRefSlice(&orig, &state)
-	FillTestEntityRefSlice(es)
-	return es
+func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
+	orig := make([]*otlpcommon.EntityRef, 5)
+	orig[0] = NewOrigPtrEntityRef()
+	orig[1] = NewOrigPtrEntityRef()
+	FillOrigTestEntityRef(orig[1])
+	orig[2] = NewOrigPtrEntityRef()
+	orig[3] = NewOrigPtrEntityRef()
+	FillOrigTestEntityRef(orig[3])
+	orig[4] = NewOrigPtrEntityRef()
+	return orig
 }
 
-func FillTestEntityRefSlice(es EntityRefSlice) {
-	*es.orig = make([]*otlpcommon.EntityRef, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpcommon.EntityRef{}
-		FillTestEntityRef(NewEntityRef((*es.orig)[i], es.state))
-	}
+// UnmarshalJSONOrigEntityRefSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigEntityRefSlice(iter *json.Iterator) []*otlpcommon.EntityRef {
+	var orig []*otlpcommon.EntityRef
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, NewOrigPtrEntityRef())
+		UnmarshalJSONOrigEntityRef(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

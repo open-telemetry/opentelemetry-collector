@@ -34,8 +34,7 @@ func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics, state *intern
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceMetricsSlice() ResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
-	state := internal.StateMutable
-	return newResourceMetricsSlice(&orig, &state)
+	return newResourceMetricsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceMetrics())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigResourceMetricsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigResourceMetricsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
@@ -154,19 +155,4 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*otlpmetrics.ResourceMetrics {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.ResourceMetrics, len(src))
-		data := make([]otlpmetrics.ResourceMetrics, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigResourceMetrics(dest[i], src[i])
-	}
-	return dest
 }

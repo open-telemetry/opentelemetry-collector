@@ -37,8 +37,7 @@ func newExemplar(orig *otlpmetrics.Exemplar, state *internal.State) Exemplar {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
-	state := internal.StateMutable
-	return newExemplar(&otlpmetrics.Exemplar{}, &state)
+	return newExemplar(internal.NewOrigPtrExemplar(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -52,6 +51,11 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Exemplar{}
+}
+
+// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+func (ms Exemplar) FilteredAttributes() pcommon.Map {
+	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes, ms.state))
 }
 
 // Timestamp returns the timestamp associated with this Exemplar.
@@ -103,9 +107,15 @@ func (ms Exemplar) SetIntValue(v int64) {
 	}
 }
 
-// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
-func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes, ms.state))
+// SpanID returns the spanid associated with this Exemplar.
+func (ms Exemplar) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.orig.SpanId)
+}
+
+// SetSpanID replaces the spanid associated with this Exemplar.
+func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
+	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceID returns the traceid associated with this Exemplar.
@@ -119,32 +129,8 @@ func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
 	ms.orig.TraceId = data.TraceID(v)
 }
 
-// SpanID returns the spanid associated with this Exemplar.
-func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
-}
-
-// SetSpanID replaces the spanid associated with this Exemplar.
-func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.state.AssertMutable()
-	ms.orig.SpanId = data.SpanID(v)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
-	copyOrigExemplar(dest.orig, ms.orig)
-}
-
-func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
-	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: t.AsDouble}
-	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: t.AsInt}
-	}
-	dest.FilteredAttributes = internal.CopyOrigMap(dest.FilteredAttributes, src.FilteredAttributes)
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
+	internal.CopyOrigExemplar(dest.orig, ms.orig)
 }

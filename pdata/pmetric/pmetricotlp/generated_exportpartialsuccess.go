@@ -32,8 +32,7 @@ func newExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSucc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	state := internal.StateMutable
-	return newExportPartialSuccess(&otlpcollectormetrics.ExportMetricsPartialSuccess{}, &state)
+	return newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -74,10 +73,5 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	copyOrigExportPartialSuccess(dest.orig, ms.orig)
-}
-
-func copyOrigExportPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
-	dest.RejectedDataPoints = src.RejectedDataPoints
-	dest.ErrorMessage = src.ErrorMessage
+	internal.CopyOrigExportMetricsPartialSuccess(dest.orig, ms.orig)
 }

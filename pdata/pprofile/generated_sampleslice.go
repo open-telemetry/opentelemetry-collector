@@ -34,8 +34,7 @@ func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleS
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
 	orig := []*otlpprofiles.Sample(nil)
-	state := internal.StateMutable
-	return newSampleSlice(&orig, &state)
+	return newSampleSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSample())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SampleSlice) CopyTo(dest SampleSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSampleSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSampleSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Sample elements within SampleSlice given the
@@ -154,19 +155,4 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 func (es SampleSlice) Sort(less func(a, b Sample) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sample {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Sample, len(src))
-		data := make([]otlpprofiles.Sample, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigSample(dest[i], src[i])
-	}
-	return dest
 }

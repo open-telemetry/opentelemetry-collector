@@ -34,8 +34,7 @@ func newSpanEvent(orig *otlptrace.Span_Event, state *internal.State) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	state := internal.StateMutable
-	return newSpanEvent(&otlptrace.Span_Event{}, &state)
+	return newSpanEvent(internal.NewOrigPtrSpan_Event(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -92,12 +91,5 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.state.AssertMutable()
-	copyOrigSpanEvent(dest.orig, ms.orig)
-}
-
-func copyOrigSpanEvent(dest, src *otlptrace.Span_Event) {
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Name = src.Name
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
+	internal.CopyOrigSpan_Event(dest.orig, ms.orig)
 }

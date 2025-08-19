@@ -55,7 +55,7 @@ func createDefaultConfig() component.Config {
 // signalOverrideURL is the URL specified in the signal specific configuration (empty if not specified).
 // signalName is the name of the signal, e.g. "traces", "metrics", "logs".
 // signalVersion is the version of the signal, e.g. "v1" or "v1development".
-func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string, signalVersion string) (string, error) {
+func composeSignalURL(oCfg *Config, signalOverrideURL, signalName, signalVersion string) (string, error) {
 	switch {
 	case signalOverrideURL != "":
 		_, err := url.Parse(signalOverrideURL)
@@ -161,7 +161,7 @@ func createProfiles(
 	}
 	oCfg := cfg.(*Config)
 
-	oce.profilesURL, err = composeSignalURL(oCfg, "", "profiles", "v1development")
+	oce.profilesURL, err = composeSignalURL(oCfg, oCfg.ProfilesEndpoint, "profiles", "v1development")
 	if err != nil {
 		return nil, err
 	}

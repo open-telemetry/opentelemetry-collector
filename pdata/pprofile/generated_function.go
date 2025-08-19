@@ -32,8 +32,7 @@ func newFunction(orig *otlpprofiles.Function, state *internal.State) Function {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewFunction() Function {
-	state := internal.StateMutable
-	return newFunction(&otlpprofiles.Function{}, &state)
+	return newFunction(internal.NewOrigPtrFunction(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -96,12 +95,5 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	copyOrigFunction(dest.orig, ms.orig)
-}
-
-func copyOrigFunction(dest, src *otlpprofiles.Function) {
-	dest.NameStrindex = src.NameStrindex
-	dest.SystemNameStrindex = src.SystemNameStrindex
-	dest.FilenameStrindex = src.FilenameStrindex
-	dest.StartLine = src.StartLine
+	internal.CopyOrigFunction(dest.orig, ms.orig)
 }

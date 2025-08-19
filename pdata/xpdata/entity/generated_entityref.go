@@ -28,8 +28,7 @@ func newEntityRef(orig *otlpcommon.EntityRef, state *internal.State) EntityRef {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewEntityRef() EntityRef {
-	state := internal.StateMutable
-	return newEntityRef(&otlpcommon.EntityRef{}, &state)
+	return newEntityRef(internal.NewOrigPtrEntityRef(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -43,14 +42,6 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcommon.EntityRef{}
-}
-
-func (ms EntityRef) getOrig() *otlpcommon.EntityRef {
-	return internal.GetOrigEntityRef(internal.EntityRef(ms))
-}
-
-func (ms EntityRef) getState() *internal.State {
-	return internal.GetEntityRefState(internal.EntityRef(ms))
 }
 
 // SchemaUrl returns the schemaurl associated with this EntityRef.
@@ -77,16 +68,24 @@ func (ms EntityRef) SetType(v string) {
 
 // IdKeys returns the IdKeys associated with this EntityRef.
 func (ms EntityRef) IdKeys() pcommon.StringSlice {
-	return pcommon.StringSlice(internal.NewStringSlice(&ms.getOrig().IdKeys, internal.GetEntityRefState(internal.EntityRef(ms))))
+	return pcommon.StringSlice(internal.NewStringSlice(&ms.getOrig().IdKeys, ms.getState()))
 }
 
 // DescriptionKeys returns the DescriptionKeys associated with this EntityRef.
 func (ms EntityRef) DescriptionKeys() pcommon.StringSlice {
-	return pcommon.StringSlice(internal.NewStringSlice(&ms.getOrig().DescriptionKeys, internal.GetEntityRefState(internal.EntityRef(ms))))
+	return pcommon.StringSlice(internal.NewStringSlice(&ms.getOrig().DescriptionKeys, ms.getState()))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms EntityRef) CopyTo(dest EntityRef) {
 	dest.getState().AssertMutable()
 	internal.CopyOrigEntityRef(dest.getOrig(), ms.getOrig())
+}
+
+func (ms EntityRef) getOrig() *otlpcommon.EntityRef {
+	return internal.GetOrigEntityRef(internal.EntityRef(ms))
+}
+
+func (ms EntityRef) getState() *internal.State {
+	return internal.GetEntityRefState(internal.EntityRef(ms))
 }

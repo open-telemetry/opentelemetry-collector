@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -23,10 +23,11 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState)) })
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -38,8 +39,9 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewOrigPtrExportLogsPartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
@@ -47,30 +49,27 @@ func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())
 	ms.SetRejectedLogRecords(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedLogRecords())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetRejectedLogRecords(int64(13))
+		newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState).SetRejectedLogRecords(int64(13))
 	})
 }
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
-	sharedState := internal.StateReadOnly
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	tv := NewExportPartialSuccess()
-	fillTestExportPartialSuccess(tv)
-	return tv
-}
-
-func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedLogRecords = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	ms := NewExportPartialSuccess()
+	internal.FillOrigTestExportLogsPartialSuccess(ms.orig)
+	return ms
 }

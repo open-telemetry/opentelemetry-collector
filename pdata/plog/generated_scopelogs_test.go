@@ -24,9 +24,10 @@ func TestScopeLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeLogs(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeLogs(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(internal.NewOrigPtrScopeLogs(), sharedState)) })
+	assert.Panics(t, func() { newScopeLogs(internal.NewOrigPtrScopeLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeLogs_CopyTo(t *testing.T) {
@@ -37,42 +38,37 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 	orig = generateTestScopeLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(internal.NewOrigPtrScopeLogs(), sharedState)) })
 }
 
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
-}
-
-func TestScopeLogs_SchemaUrl(t *testing.T) {
-	ms := NewScopeLogs()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestScopeLogs_LogRecords(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	fillTestLogRecordSlice(ms.LogRecords())
+	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
 	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
-func generateTestScopeLogs() ScopeLogs {
-	tv := NewScopeLogs()
-	fillTestScopeLogs(tv)
-	return tv
+func TestScopeLogs_SchemaUrl(t *testing.T) {
+	ms := NewScopeLogs()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestLogRecordSlice(newLogRecordSlice(&tv.orig.LogRecords, tv.state))
+func generateTestScopeLogs() ScopeLogs {
+	ms := NewScopeLogs()
+	internal.FillOrigTestScopeLogs(ms.orig)
+	return ms
 }

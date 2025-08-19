@@ -24,9 +24,10 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -37,42 +38,37 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	orig = generateTestScopeProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
-}
-
-func TestScopeProfiles_SchemaUrl(t *testing.T) {
-	ms := NewScopeProfiles()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	fillTestProfilesSlice(ms.Profiles())
+	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
 	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
-func generateTestScopeProfiles() ScopeProfiles {
-	tv := NewScopeProfiles()
-	fillTestScopeProfiles(tv)
-	return tv
+func TestScopeProfiles_SchemaUrl(t *testing.T) {
+	ms := NewScopeProfiles()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestScopeProfiles(tv ScopeProfiles) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfilesSlice(newProfilesSlice(&tv.orig.Profiles, tv.state))
+func generateTestScopeProfiles() ScopeProfiles {
+	ms := NewScopeProfiles()
+	internal.FillOrigTestScopeProfiles(ms.orig)
+	return ms
 }

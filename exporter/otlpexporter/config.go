@@ -53,7 +53,7 @@ func (c *Config) sanitizedEndpoint() string {
 	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
 		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
 	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
-		r := regexp.MustCompile("^dns://[/]?")
+		r := regexp.MustCompile(`^dns:///?`)
 		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
 	default:
 		return c.ClientConfig.Endpoint

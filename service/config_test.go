@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -79,8 +79,8 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func TestConfmapMarshalConfig(t *testing.T) {
-	telFactory := telemetry.NewFactory()
-	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+	telFactory := otelconftelemetry.NewFactory(nil, nil)
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 	conf := confmap.New()
 
 	require.NoError(t, conf.Marshal(Config{
@@ -113,6 +113,7 @@ func TestConfmapMarshalConfig(t *testing.T) {
 									"with_resource_constant_labels": map[string]any{
 										"included": []any{},
 									},
+									"without_scope_info":  true,
 									"without_type_suffix": true,
 									"without_units":       true,
 								},
@@ -127,8 +128,8 @@ func TestConfmapMarshalConfig(t *testing.T) {
 
 func generateConfig() *Config {
 	return &Config{
-		Telemetry: telemetry.Config{
-			Logs: telemetry.LogsConfig{
+		Telemetry: otelconftelemetry.Config{
+			Logs: otelconftelemetry.LogsConfig{
 				Level:             zapcore.DebugLevel,
 				Development:       true,
 				Encoding:          "console",
@@ -138,7 +139,7 @@ func generateConfig() *Config {
 				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
 				InitialFields:     map[string]any{"fieldKey": "filed-value"},
 			},
-			Metrics: telemetry.MetricsConfig{
+			Metrics: otelconftelemetry.MetricsConfig{
 				Level: configtelemetry.LevelNormal,
 				MeterProvider: config.MeterProvider{
 					Readers: []config.MetricReader{

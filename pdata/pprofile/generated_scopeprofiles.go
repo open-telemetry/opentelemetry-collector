@@ -33,8 +33,7 @@ func newScopeProfiles(orig *otlpprofiles.ScopeProfiles, state *internal.State) S
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeProfiles() ScopeProfiles {
-	state := internal.StateMutable
-	return newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &state)
+	return newScopeProfiles(internal.NewOrigPtrScopeProfiles(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -55,6 +54,11 @@ func (ms ScopeProfiles) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
 }
 
+// Profiles returns the Profiles associated with this ScopeProfiles.
+func (ms ScopeProfiles) Profiles() ProfilesSlice {
+	return newProfilesSlice(&ms.orig.Profiles, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeProfiles.
 func (ms ScopeProfiles) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -66,19 +70,8 @@ func (ms ScopeProfiles) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// Profiles returns the Profiles associated with this ScopeProfiles.
-func (ms ScopeProfiles) Profiles() ProfilesSlice {
-	return newProfilesSlice(&ms.orig.Profiles, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
-	copyOrigScopeProfiles(dest.orig, ms.orig)
-}
-
-func copyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
-	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.Profiles = copyOrigProfilesSlice(dest.Profiles, src.Profiles)
+	internal.CopyOrigScopeProfiles(dest.orig, ms.orig)
 }

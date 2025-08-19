@@ -33,8 +33,7 @@ func newLocation(orig *otlpprofiles.Location, state *internal.State) Location {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLocation() Location {
-	state := internal.StateMutable
-	return newLocation(&otlpprofiles.Location{}, &state)
+	return newLocation(internal.NewOrigPtrLocation(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -108,22 +107,5 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	copyOrigLocation(dest.orig, ms.orig)
-}
-
-func copyOrigLocation(dest, src *otlpprofiles.Location) {
-	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
-		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
-		if !ok {
-			destMappingIndex = &otlpprofiles.Location_MappingIndex{}
-			dest.MappingIndex_ = destMappingIndex
-		}
-		destMappingIndex.MappingIndex = srcMappingIndex.MappingIndex
-	} else {
-		dest.MappingIndex_ = nil
-	}
-	dest.Address = src.Address
-	dest.Line = copyOrigLineSlice(dest.Line, src.Line)
-	dest.IsFolded = src.IsFolded
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	internal.CopyOrigLocation(dest.orig, ms.orig)
 }

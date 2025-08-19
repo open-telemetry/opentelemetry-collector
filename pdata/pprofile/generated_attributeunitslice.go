@@ -34,8 +34,7 @@ func newAttributeUnitSlice(orig *[]*otlpprofiles.AttributeUnit, state *internal.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeUnitSlice() AttributeUnitSlice {
 	orig := []*otlpprofiles.AttributeUnit(nil)
-	state := internal.StateMutable
-	return newAttributeUnitSlice(&orig, &state)
+	return newAttributeUnitSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
 // It returns the newly added AttributeUnit.
 func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.AttributeUnit{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrAttributeUnit())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
@@ -154,19 +155,4 @@ func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 func (es AttributeUnitSlice) Sort(less func(a, b AttributeUnit) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.AttributeUnit, len(src))
-		data := make([]otlpprofiles.AttributeUnit, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigAttributeUnit(dest[i], src[i])
-	}
-	return dest
 }

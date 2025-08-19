@@ -34,8 +34,7 @@ func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs, state *internal.State)
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceLogsSlice() ResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
-	state := internal.StateMutable
-	return newResourceLogsSlice(&orig, &state)
+	return newResourceLogsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrResourceLogs())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigResourceLogsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigResourceLogsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
@@ -154,19 +155,4 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.ResourceLogs {
-	if cap(dest) < len(src) {
-		dest = make([]*otlplogs.ResourceLogs, len(src))
-		data := make([]otlplogs.ResourceLogs, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigResourceLogs(dest[i], src[i])
-	}
-	return dest
 }

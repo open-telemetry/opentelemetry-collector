@@ -77,7 +77,7 @@ fmt: common/gofmt common/goimports common/gofumpt
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.23.0
+	$(GOCMD) mod tidy -compat=1.24.0
 
 .PHONY: lint
 lint: $(LINT)
@@ -93,7 +93,7 @@ common/goimports: $(GOIMPORTS)
 
 .PHONY: common/gofumpt
 common/gofumpt: $(GOFUMPT)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

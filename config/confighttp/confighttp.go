@@ -119,10 +119,15 @@ type ClientConfig struct {
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
+	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
+	// By default, this is set to true.
+	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
+	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
+
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -141,15 +146,16 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		Headers:         map[string]configopaque.String{},
-		MaxIdleConns:    defaultTransport.MaxIdleConns,
-		IdleConnTimeout: defaultTransport.IdleConnTimeout,
+		Headers:           map[string]configopaque.String{},
+		MaxIdleConns:      defaultTransport.MaxIdleConns,
+		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		ForceAttemptHTTP2: true,
 	}
 }
 
-func (hcs *ClientConfig) Validate() error {
-	if hcs.Compression.IsCompressed() {
-		if err := hcs.Compression.ValidateParams(hcs.CompressionParams); err != nil {
+func (cc *ClientConfig) Validate() error {
+	if cc.Compression.IsCompressed() {
+		if err := cc.Compression.ValidateParams(cc.CompressionParams); err != nil {
 			return err
 		}
 	}
@@ -164,8 +170,8 @@ type ToClientOption interface {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	tlsCfg, err := hcs.TLS.LoadTLSConfig(ctx)
+func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,45 +179,46 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}
-	if hcs.ReadBufferSize > 0 {
-		transport.ReadBufferSize = hcs.ReadBufferSize
+	if cc.ReadBufferSize > 0 {
+		transport.ReadBufferSize = cc.ReadBufferSize
 	}
-	if hcs.WriteBufferSize > 0 {
-		transport.WriteBufferSize = hcs.WriteBufferSize
+	if cc.WriteBufferSize > 0 {
+		transport.WriteBufferSize = cc.WriteBufferSize
 	}
 
-	transport.MaxIdleConns = hcs.MaxIdleConns
-	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
-	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
-	transport.IdleConnTimeout = hcs.IdleConnTimeout
+	transport.MaxIdleConns = cc.MaxIdleConns
+	transport.MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+	transport.MaxConnsPerHost = cc.MaxConnsPerHost
+	transport.IdleConnTimeout = cc.IdleConnTimeout
+	transport.ForceAttemptHTTP2 = cc.ForceAttemptHTTP2
 
 	// Setting the Proxy URL
-	if hcs.ProxyURL != "" {
-		proxyURL, parseErr := url.ParseRequestURI(hcs.ProxyURL)
+	if cc.ProxyURL != "" {
+		proxyURL, parseErr := url.ParseRequestURI(cc.ProxyURL)
 		if parseErr != nil {
 			return nil, parseErr
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
-	transport.DisableKeepAlives = hcs.DisableKeepAlives
+	transport.DisableKeepAlives = cc.DisableKeepAlives
 
-	if hcs.HTTP2ReadIdleTimeout > 0 {
+	if cc.HTTP2ReadIdleTimeout > 0 {
 		transport2, transportErr := http2.ConfigureTransports(transport)
 		if transportErr != nil {
 			return nil, fmt.Errorf("failed to configure http2 transport: %w", transportErr)
 		}
-		transport2.ReadIdleTimeout = hcs.HTTP2ReadIdleTimeout
-		transport2.PingTimeout = hcs.HTTP2PingTimeout
+		transport2.ReadIdleTimeout = cc.HTTP2ReadIdleTimeout
+		transport2.PingTimeout = cc.HTTP2PingTimeout
 	}
 
-	clientTransport := (http.RoundTripper)(transport)
+	clientTransport := http.RoundTripper(transport)
 
 	// Apply middlewares in reverse order so they execute in
 	// forward order. The first middleware runs after authentication.
-	for i := len(hcs.Middlewares) - 1; i >= 0; i-- {
+	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -226,13 +233,13 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// The Auth RoundTripper should always be the innermost to ensure that
 	// request signing-based auth mechanisms operate after compression
 	// and header middleware modifies the request
-	if hcs.Auth.HasValue() {
+	if cc.Auth.HasValue() {
 		ext := host.GetExtensions()
 		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		auth := hcs.Auth.Get()
+		auth := cc.Auth.Get()
 		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
@@ -244,21 +251,21 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		}
 	}
 
-	if len(hcs.Headers) > 0 {
+	if len(cc.Headers) > 0 {
 		clientTransport = &headerRoundTripper{
 			transport: clientTransport,
-			headers:   hcs.Headers,
+			headers:   cc.Headers,
 		}
 	}
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if hcs.Compression.IsCompressed() {
+	if cc.Compression.IsCompressed() {
 		// If the compression level is not set, use the default level.
-		if hcs.CompressionParams.Level == 0 {
-			hcs.CompressionParams.Level = configcompression.DefaultCompressionLevel
+		if cc.CompressionParams.Level == 0 {
+			cc.CompressionParams.Level = configcompression.DefaultCompressionLevel
 		}
-		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionParams)
+		clientTransport, err = newCompressRoundTripper(clientTransport, cc.Compression, cc.CompressionParams)
 		if err != nil {
 			return nil, err
 		}
@@ -275,7 +282,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	var jar http.CookieJar
-	if hcs.Cookies.Enabled {
+	if cc.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
@@ -284,7 +291,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	return &http.Client{
 		Transport: clientTransport,
-		Timeout:   hcs.Timeout,
+		Timeout:   cc.Timeout,
 		Jar:       jar,
 	}, nil
 }
@@ -372,7 +379,7 @@ type ServerConfig struct {
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -398,15 +405,15 @@ type AuthConfig struct {
 }
 
 // ToListener creates a net.Listener.
-func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+	listener, err := net.Listen("tcp", sc.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	if hss.TLS.HasValue() {
+	if sc.TLS.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLS.Get().LoadTLSConfig(ctx)
+		tlsCfg, err = sc.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -445,23 +452,23 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
-	if hss.MaxRequestBodySize <= 0 {
-		hss.MaxRequestBodySize = defaultMaxRequestBodySize
+	if sc.MaxRequestBodySize <= 0 {
+		sc.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 
-	if hss.CompressionAlgorithms == nil {
-		hss.CompressionAlgorithms = defaultCompressionAlgorithms()
+	if sc.CompressionAlgorithms == nil {
+		sc.CompressionAlgorithms = defaultCompressionAlgorithms()
 	}
 
 	// Apply middlewares in reverse order so they execute in
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
-	for i := len(hss.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
+		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -475,19 +482,19 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 
 	handler = httpContentDecompressor(
 		handler,
-		hss.MaxRequestBodySize,
+		sc.MaxRequestBodySize,
 		serverOpts.ErrHandler,
-		hss.CompressionAlgorithms,
+		sc.CompressionAlgorithms,
 		serverOpts.Decoders,
 	)
 
-	if hss.MaxRequestBodySize > 0 {
-		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
+	if sc.MaxRequestBodySize > 0 {
+		handler = maxRequestBodySizeInterceptor(handler, sc.MaxRequestBodySize)
 	}
 
-	if hss.Auth.HasValue() {
-		auth := hss.Auth.Get()
-		server, err := auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+	if sc.Auth.HasValue() {
+		auth := sc.Auth.Get()
+		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
@@ -495,8 +502,8 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		handler = authInterceptor(handler, server, auth.RequestParameters, serverOpts)
 	}
 
-	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) > 0 {
-		corsConfig := hss.CORS.Get()
+	if sc.CORS.HasValue() && len(sc.CORS.Get().AllowedOrigins) > 0 {
+		corsConfig := sc.CORS.Get()
 		co := cors.Options{
 			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
@@ -505,12 +512,12 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) == 0 && len(hss.CORS.Get().AllowedHeaders) > 0 {
+	if sc.CORS.HasValue() && len(sc.CORS.Get().AllowedOrigins) == 0 && len(sc.CORS.Get().AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 
-	if hss.ResponseHeaders != nil {
-		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
+	if sc.ResponseHeaders != nil {
+		handler = responseHeadersHandler(handler, sc.ResponseHeaders)
 	}
 
 	otelOpts := append(
@@ -540,7 +547,7 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
 		next:            handler,
-		includeMetadata: hss.IncludeMetadata,
+		includeMetadata: sc.IncludeMetadata,
 	}
 
 	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
@@ -550,10 +557,10 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 
 	server := &http.Server{
 		Handler:           handler,
-		ReadTimeout:       hss.ReadTimeout,
-		ReadHeaderTimeout: hss.ReadHeaderTimeout,
-		WriteTimeout:      hss.WriteTimeout,
-		IdleTimeout:       hss.IdleTimeout,
+		ReadTimeout:       sc.ReadTimeout,
+		ReadHeaderTimeout: sc.ReadHeaderTimeout,
+		WriteTimeout:      sc.WriteTimeout,
+		IdleTimeout:       sc.IdleTimeout,
 		ErrorLog:          errorLog,
 	}
 

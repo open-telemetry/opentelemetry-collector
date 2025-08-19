@@ -34,8 +34,7 @@ func newSpanEventSlice(orig *[]*otlptrace.Span_Event, state *internal.State) Spa
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanEventSlice() SpanEventSlice {
 	orig := []*otlptrace.Span_Event(nil)
-	state := internal.StateMutable
-	return newSpanEventSlice(&orig, &state)
+	return newSpanEventSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrSpan_Event())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSpanEventSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSpan_EventSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanEvent elements within SpanEventSlice given the
@@ -154,19 +155,4 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigSpanEventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
-	if cap(dest) < len(src) {
-		dest = make([]*otlptrace.Span_Event, len(src))
-		data := make([]otlptrace.Span_Event, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigSpanEvent(dest[i], src[i])
-	}
-	return dest
 }

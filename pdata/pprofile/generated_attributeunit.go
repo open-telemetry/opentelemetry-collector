@@ -32,8 +32,7 @@ func newAttributeUnit(orig *otlpprofiles.AttributeUnit, state *internal.State) A
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttributeUnit() AttributeUnit {
-	state := internal.StateMutable
-	return newAttributeUnit(&otlpprofiles.AttributeUnit{}, &state)
+	return newAttributeUnit(internal.NewOrigPtrAttributeUnit(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -74,10 +73,5 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	copyOrigAttributeUnit(dest.orig, ms.orig)
-}
-
-func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
-	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
-	dest.UnitStrindex = src.UnitStrindex
+	internal.CopyOrigAttributeUnit(dest.orig, ms.orig)
 }

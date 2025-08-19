@@ -32,8 +32,7 @@ func newSum(orig *otlpmetrics.Sum, state *internal.State) Sum {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
-	state := internal.StateMutable
-	return newSum(&otlpmetrics.Sum{}, &state)
+	return newSum(internal.NewOrigPtrSum(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,6 +46,11 @@ func (ms Sum) MoveTo(dest Sum) {
 	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Sum{}
+}
+
+// DataPoints returns the DataPoints associated with this Sum.
+func (ms Sum) DataPoints() NumberDataPointSlice {
+	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
@@ -71,19 +75,8 @@ func (ms Sum) SetIsMonotonic(v bool) {
 	ms.orig.IsMonotonic = v
 }
 
-// DataPoints returns the DataPoints associated with this Sum.
-func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	copyOrigSum(dest.orig, ms.orig)
-}
-
-func copyOrigSum(dest, src *otlpmetrics.Sum) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.IsMonotonic = src.IsMonotonic
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+	internal.CopyOrigSum(dest.orig, ms.orig)
 }

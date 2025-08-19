@@ -33,8 +33,7 @@ func newScopeLogs(orig *otlplogs.ScopeLogs, state *internal.State) ScopeLogs {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeLogs() ScopeLogs {
-	state := internal.StateMutable
-	return newScopeLogs(&otlplogs.ScopeLogs{}, &state)
+	return newScopeLogs(internal.NewOrigPtrScopeLogs(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -55,6 +54,11 @@ func (ms ScopeLogs) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
 }
 
+// LogRecords returns the LogRecords associated with this ScopeLogs.
+func (ms ScopeLogs) LogRecords() LogRecordSlice {
+	return newLogRecordSlice(&ms.orig.LogRecords, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -66,19 +70,8 @@ func (ms ScopeLogs) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// LogRecords returns the LogRecords associated with this ScopeLogs.
-func (ms ScopeLogs) LogRecords() LogRecordSlice {
-	return newLogRecordSlice(&ms.orig.LogRecords, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	dest.state.AssertMutable()
-	copyOrigScopeLogs(dest.orig, ms.orig)
-}
-
-func copyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
-	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.LogRecords = copyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
+	internal.CopyOrigScopeLogs(dest.orig, ms.orig)
 }

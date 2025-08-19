@@ -33,8 +33,7 @@ func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, state *internal.Sta
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
-	state := internal.StateMutable
-	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &state)
+	return newSummaryDataPoint(internal.NewOrigPtrSummaryDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -118,15 +117,5 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigSummaryDataPoint(dest.orig, ms.orig)
-}
-
-func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Count = src.Count
-	dest.Sum = src.Sum
-	dest.QuantileValues = copyOrigSummaryDataPointValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
-	dest.Flags = src.Flags
+	internal.CopyOrigSummaryDataPoint(dest.orig, ms.orig)
 }

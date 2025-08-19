@@ -19,24 +19,24 @@ import (
 func TestAttributeUnitSlice(t *testing.T) {
 	es := NewAttributeUnitSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &state)
+	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttributeUnit()
 	testVal := generateTestAttributeUnit()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestAttributeUnit(el)
+		internal.FillOrigTestAttributeUnit((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestAttributeUnitSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -49,16 +49,8 @@ func TestAttributeUnitSliceReadOnly(t *testing.T) {
 
 func TestAttributeUnitSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeUnitSlice()
-	// Test CopyTo to empty
-	NewAttributeUnitSlice().CopyTo(dest)
-	assert.Equal(t, NewAttributeUnitSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestAttributeUnitSlice().CopyTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestAttributeUnitSlice().CopyTo(dest)
+	src := generateTestAttributeUnitSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
 }
 
@@ -125,9 +117,17 @@ func TestAttributeUnitSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el AttributeUnit) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestAttributeUnitSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestAttributeUnitSlice()
+	got.RemoveIf(func(el AttributeUnit) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestAttributeUnitSliceAll(t *testing.T) {
@@ -159,15 +159,7 @@ func TestAttributeUnitSlice_Sort(t *testing.T) {
 }
 
 func generateTestAttributeUnitSlice() AttributeUnitSlice {
-	es := NewAttributeUnitSlice()
-	fillTestAttributeUnitSlice(es)
-	return es
-}
-
-func fillTestAttributeUnitSlice(es AttributeUnitSlice) {
-	*es.orig = make([]*otlpprofiles.AttributeUnit, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.AttributeUnit{}
-		fillTestAttributeUnit(newAttributeUnit((*es.orig)[i], es.state))
-	}
+	ms := NewAttributeUnitSlice()
+	*ms.orig = internal.GenerateOrigTestAttributeUnitSlice()
+	return ms
 }

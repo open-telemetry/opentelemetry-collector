@@ -32,8 +32,7 @@ func newSummary(orig *otlpmetrics.Summary, state *internal.State) Summary {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
-	state := internal.StateMutable
-	return newSummary(&otlpmetrics.Summary{}, &state)
+	return newSummary(internal.NewOrigPtrSummary(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -57,9 +56,5 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
 	dest.state.AssertMutable()
-	copyOrigSummary(dest.orig, ms.orig)
-}
-
-func copyOrigSummary(dest, src *otlpmetrics.Summary) {
-	dest.DataPoints = copyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
+	internal.CopyOrigSummary(dest.orig, ms.orig)
 }

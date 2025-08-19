@@ -272,7 +272,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = xconfmap.Validate(cfg); err != nil {
+	if err := xconfmap.Validate(cfg); err != nil {
 		return err
 	}
 
@@ -348,7 +348,7 @@ LOOP:
 				col.service.Logger().Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
-			if err = col.reloadConfiguration(ctx); err != nil {
+			if err := col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
 		case err := <-col.asyncErrorChannel:
@@ -368,7 +368,7 @@ LOOP:
 		case <-ctx.Done():
 			col.service.Logger().Info("Context done, terminating process", zap.Error(ctx.Err()))
 			// Call shutdown with background context as the passed in context has been canceled
-			return col.shutdown(context.Background())
+			return col.shutdown(context.Background()) //nolint:contextcheck
 		}
 	}
 	return col.shutdown(ctx)

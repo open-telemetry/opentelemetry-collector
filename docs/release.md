@@ -67,62 +67,11 @@ Before the release, make sure there are no open release blockers in [core](https
 
 ## Releasing opentelemetry-collector-contrib (contrib release manager)
 
-1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers of the current and new beta versions, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
-   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
-   -  🛑 **Do not move forward until this PR is merged.** 🛑
-
-2. Check out main and ensure it has the "Prepare release" commit in your local
-   copy by pulling in the latest from
-   `open-telemetry/opentelemetry-collector-contrib`. Use this commit to create a
-   branch named `release/<release-series>` (e.g. `release/v0.85.x`). Push the
-   new branch to `open-telemetry/opentelemetry-collector-contrib`. Assuming your
-   upstream remote is named `upstream`, you can try the following commands:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
-   - `git push -u upstream release/<release series>`
-
-3. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
-
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
-
-   - `make push-tags MODSET=contrib-base`
-
-4. Wait for the new tag build to pass successfully. A new `v0.85.0` release should be automatically created on Github by now, with the description containing the changelog for the new release.
-
-5. Manually edit the release description, and add a section listing the unmaintained components at the top ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)). The list of unmaintained components can be found by [searching for issues with the "unmaintained" label](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue%20state%3Aopen%20label%3Aunmaintained).
+See the [opentelemetry-collector-contrib release documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/docs/release.md) for the release process in that repository.
 
 ## Producing the artifacts ('releases' release manager)
 
-The last step of the release process creates artifacts for the new version of the Collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
-
-1. Run the GitHub Action workflow "[Update Version in Distributions and Prepare PR](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/update-version.yaml)" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
-   -  🛑 **Do not move forward until this PR is merged.** 🛑
-
-2. Check out main and ensure it has the "Update version from ..." commit in your local
-   copy by pulling in the latest from
-   `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
-   remote is named `upstream`, you can try running:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-
-3. Create a tag for the new release version by running:
-   
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. ⚠️
-   
-   - `make push-tags TAG=v0.85.0`
-
-4. Wait for the new tag build to pass successfully.
-
-5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
-
-    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
-
-    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/release-core.yaml).
-
-    3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
-
-    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
-
-6. Update the release notes with the CHANGELOG.md updates.
+See the [opentelemetry-collector-releases release documentation](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/docs/release.md) for the release process in that repository.
 
 ## Post-release steps (all release managers)
 
@@ -232,17 +181,17 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2025-07-28 | v0.131.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
-| 2025-08-11 | v0.132.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
-| 2025-09-08 | v0.134.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2025-09-08 | v0.134.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
 | 2025-09-22 | v0.135.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2025-10-06 | v0.136.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 | 2025-10-20 | v0.137.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
 | 2025-11-03 | v0.138.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
 | 2025-11-17 | v0.139.0 | [@jade-guiton-dd][10] | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 | 2025-12-01 | v0.140.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
-| 2025-12-14 | v0.141.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
+| 2025-12-15 | v0.141.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
+| 2026-01-05 | v0.142.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
+| 2026-01-19 | v0.142.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
 
 
 [1]: https://github.com/jmacd

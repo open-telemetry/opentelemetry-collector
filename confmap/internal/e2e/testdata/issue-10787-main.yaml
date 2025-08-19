@@ -6,7 +6,7 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 processors:
-  batch:
+  memory_limiter:
 
 exporters:
   ${file:testdata/issue-10787-snippet.yaml}
@@ -18,5 +18,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter]
       exporters: [debug]

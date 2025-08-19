@@ -34,8 +34,7 @@ func newLogRecordSlice(orig *[]*otlplogs.LogRecord, state *internal.State) LogRe
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogRecordSlice() LogRecordSlice {
 	orig := []*otlplogs.LogRecord(nil)
-	state := internal.StateMutable
-	return newLogRecordSlice(&orig, &state)
+	return newLogRecordSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LogRecordSlice) EnsureCapacity(newCap int) {
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
+	*es.orig = append(*es.orig, internal.NewOrigPtrLogRecord())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,6 +128,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +137,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +146,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLogRecordSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLogRecordSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the LogRecord elements within LogRecordSlice given the
@@ -154,19 +155,4 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-func copyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
-	if cap(dest) < len(src) {
-		dest = make([]*otlplogs.LogRecord, len(src))
-		data := make([]otlplogs.LogRecord, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigLogRecord(dest[i], src[i])
-	}
-	return dest
 }

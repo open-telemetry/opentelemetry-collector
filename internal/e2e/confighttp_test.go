@@ -18,9 +18,10 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 	conf := confmap.New()
 	require.NoError(t, conf.Marshal(confighttp.NewDefaultClientConfig()))
 	assert.Equal(t, map[string]any{
-		"headers":           map[string]any{},
-		"idle_conn_timeout": 90 * time.Second,
-		"max_idle_conns":    100,
+		"headers":             map[string]any{},
+		"idle_conn_timeout":   90 * time.Second,
+		"max_idle_conns":      100,
+		"force_attempt_http2": true,
 	}, conf.ToStringMap())
 
 	conf = confmap.New()

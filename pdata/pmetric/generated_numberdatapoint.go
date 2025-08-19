@@ -33,8 +33,7 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint, state *internal.State
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	state := internal.StateMutable
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &state)
+	return newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -134,19 +133,5 @@ func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigNumberDataPoint(dest.orig, ms.orig)
-}
-
-func copyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *otlpmetrics.NumberDataPoint_AsDouble:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: t.AsDouble}
-	case *otlpmetrics.NumberDataPoint_AsInt:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsInt{AsInt: t.AsInt}
-	}
-	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
+	internal.CopyOrigNumberDataPoint(dest.orig, ms.orig)
 }
