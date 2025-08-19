@@ -214,7 +214,7 @@ type ServerConfig struct {
 func NewDefaultServerConfig() ServerConfig {
 	netAddr := confignet.NewDefaultAddrConfig()
 
-	// gRPC conventionally uses HTTP/2, which uses TCP.
+	// We typically want to create a TCP server and listen over a network.
 	netAddr.Transport = confignet.TransportTypeTCP
 
 	return ServerConfig{
