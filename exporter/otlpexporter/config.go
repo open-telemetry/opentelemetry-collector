@@ -28,36 +28,102 @@ type Config struct {
 	_ struct{}
 }
 
-func (c *Config) Validate() error {
-	endpoint := c.sanitizedEndpoint()
-	if endpoint == "" {
-		return errors.New(`requires a non-empty "endpoint"`)
-	}
+type EndpointValidator interface {
+	Match(endpoint string) bool
+	Sanitize(endpoint string) string
+	Validate(endpoint string) error
+}
 
-	// Validate that the port is in the address
-	_, port, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return err
-	}
-	if _, err := strconv.Atoi(port); err != nil {
-		return fmt.Errorf(`invalid port "%s"`, port)
-	}
+type Pipeline struct {
+	validators []EndpointValidator
+}
 
+func (p *Pipeline) Add(v EndpointValidator) {
+	p.validators = append(p.validators, v)
+}
+
+func (p *Pipeline) Run(endpoint string) error {
+	for _, v := range p.validators {
+		if v.Match(endpoint) {
+			sanitized := v.Sanitize(endpoint)
+			return v.Validate(sanitized)
+		}
+	}
 	return nil
 }
 
-func (c *Config) sanitizedEndpoint() string {
-	switch {
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "http://"):
-		return strings.TrimPrefix(c.ClientConfig.Endpoint, "http://")
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
-		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
-		r := regexp.MustCompile(`^dns:///?`)
-		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
-	default:
-		return c.ClientConfig.Endpoint
+type HostPortValidator struct {
+	prefix string
+}
+
+func (v HostPortValidator) Match(ep string) bool {
+	return v.prefix == "" || strings.HasPrefix(ep, v.prefix)
+}
+
+func (v HostPortValidator) Sanitize(ep string) string {
+	if v.prefix == "" {
+		return ep
 	}
+	if strings.HasPrefix(ep, "dns://") {
+		r := regexp.MustCompile(`^dns:///?`)
+		return r.ReplaceAllString(ep, "")
+	}
+	return strings.TrimPrefix(ep, v.prefix)
+}
+
+func (v HostPortValidator) Validate(ep string) error {
+	if ep == "" {
+		return errors.New(`requires a non-empty "endpoint"`)
+	}
+
+	_, port, err := net.SplitHostPort(ep)
+	if err != nil {
+		return err
+	}
+
+	if _, err := strconv.Atoi(port); err != nil {
+		return fmt.Errorf(`invalid port "%s"`, port)
+	}
+	return nil
+}
+
+type UnixValidator struct{}
+
+func (v UnixValidator) Match(ep string) bool {
+	return strings.HasPrefix(ep, "unix:")
+}
+
+func (v UnixValidator) Sanitize(ep string) string {
+	return ep
+}
+
+func (v UnixValidator) Validate(ep string) error {
+	if strings.HasPrefix(ep, "unix://") {
+		path := strings.TrimPrefix(ep, "unix://")
+		if path == "" {
+			return fmt.Errorf("empty unix socket path")
+		}
+		return nil
+	} else if strings.HasPrefix(ep, "unix:@") {
+		path := strings.TrimPrefix(ep, "unix:@")
+		if path == "" {
+			return fmt.Errorf("empty abstract unix socket path")
+		}
+		return nil
+	}
+
+	return fmt.Errorf("invalid unix socket protocol: %s", ep)
+}
+
+func (c *Config) Validate() error {
+	pipeline := Pipeline{}
+	pipeline.Add(HostPortValidator{prefix: "http://"})
+	pipeline.Add(HostPortValidator{prefix: "https://"})
+	pipeline.Add(HostPortValidator{prefix: "dns://"})
+	pipeline.Add(UnixValidator{})
+	pipeline.Add(HostPortValidator{prefix: ""}) // (host:port)
+
+	return pipeline.Run(c.ClientConfig.Endpoint)
 }
 
 var _ component.Config = (*Config)(nil)

@@ -147,13 +147,95 @@ func TestValidDNSEndpoint(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestSanitizeEndpoint(t *testing.T) {
+func TestValid(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.ClientConfig.Endpoint = "dns:///backend.example.com:4317"
-	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.ClientConfig.Endpoint = "dns:////backend.example.com:4317"
-	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+
+	testCases := []struct {
+		endpoint      string
+		expectedError bool
+	}{
+		{"dns://authority/backend.example.com:4317", false},
+		{"dns:///backend.example.com:4317", false},
+		{"http://backend.example.com:4317", false},
+		{"https://backend.example.com:4317", false},
+		{"backend.example.com:4317", false},
+		{"unix:///tmp/otlp.sock", false},
+		{"unix:@abstract-socket", false},
+		{"dns:////backend.example.com:4317", false},
+
+		// ========= invalid cases =========
+		{"unix:/tmp/otlp.sock", true},
+		{"ftp://backend.example.com:21", true},    // Unknow schema
+		{"dns:///backend.example.com", true},      // no port
+		{"dns:///backend.example.com:abcd", true}, // no number port
+		{"backend.example.com", true},             // no port
+		{"backend.example.com:notaport", true},    // no number port
+		{"http://backend.example.com", true},      // http no port
+		{"https://backend.example.com", true},     // https no port
+		{"", true},                                // null endpoint
+
+		// ========= special cases =========
+		{"unix", true},
+		{"unix:", true},
+		{"unix://", true},
+
+		{"http:", true},
+		{"http://", true},
+		{"http:///", true},
+
+		{"https:", true},
+		{"https://", true},
+		{"https:///", true},
+
+		{"dns:", true},
+		{"dns://", true},
+		{"dns:///", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.endpoint, func(t *testing.T) {
+			cfg.ClientConfig.Endpoint = tc.endpoint
+			err := cfg.Validate()
+			if tc.expectedError {
+				assert.Errorf(t, err, "expected error but got none err: %v", err)
+			} else {
+				assert.NoErrorf(t, err, "expected no error but got one: %v", err)
+			}
+		})
+	}
+}
+
+func TestHostPortSanitizeEndpoint(t *testing.T) {
+	testCases := []struct {
+		endpoint         string
+		prefix           string
+		expectedSanitize string
+	}{
+		// ===== DNS =====
+		{"dns://authority/backend.example.com:4317", "dns://", "authority/backend.example.com:4317"},
+		{"dns:///backend.example.com:4317", "dns://", "backend.example.com:4317"},
+		{"dns:////backend.example.com:4317", "dns://", "/backend.example.com:4317"},
+		{"dns:///backend.example.com", "dns://", "backend.example.com"},
+
+		// ===== HTTP =====
+		{"http://backend.example.com:4317", "http://", "backend.example.com:4317"},
+		{"http://backend.example.com", "http://", "backend.example.com"},
+
+		// ===== HTTPS =====
+		{"https://backend.example.com:4317", "https://", "backend.example.com:4317"},
+		{"https://backend.example.com", "https://", "backend.example.com"},
+
+		// ===== Null prefix(host:port)  =====
+		{"backend.example.com:4317", "", "backend.example.com:4317"},
+		{"backend.example.com", "", "backend.example.com"},
+	}
+
+	for _, tc := range testCases {
+		v := HostPortValidator{prefix: tc.prefix}
+		t.Run(tc.endpoint, func(t *testing.T) {
+			sanitized := v.Sanitize(tc.endpoint)
+			assert.Equal(t, tc.expectedSanitize, sanitized)
+		})
+	}
 }
