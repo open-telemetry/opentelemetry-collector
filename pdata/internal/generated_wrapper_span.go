@@ -11,16 +11,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSpan() otlptrace.Span {
-	return otlptrace.Span{}
-}
-
-func NewOrigPtrSpan() *otlptrace.Span {
+func NewOrigSpan() *otlptrace.Span {
 	return &otlptrace.Span{}
 }
 
@@ -44,7 +41,7 @@ func CopyOrigSpan(dest, src *otlptrace.Span) {
 }
 
 func GenTestOrigSpan() *otlptrace.Span {
-	orig := NewOrigPtrSpan()
+	orig := NewOrigSpan()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.TraceState = *GenTestOrigTraceState()
@@ -506,7 +503,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -534,7 +531,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Events = append(orig.Events, NewOrigPtrSpan_Event())
+			orig.Events = append(orig.Events, NewOrigSpan_Event())
 			err = UnmarshalProtoOrigSpan_Event(orig.Events[len(orig.Events)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -562,7 +559,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Links = append(orig.Links, NewOrigPtrSpan_Link())
+			orig.Links = append(orig.Links, NewOrigSpan_Link())
 			err = UnmarshalProtoOrigSpan_Link(orig.Links[len(orig.Links)-1], buf[startPos:pos])
 			if err != nil {
 				return err

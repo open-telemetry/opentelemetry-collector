@@ -19,7 +19,7 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrMapping()
+			newDest[i] = NewOrigMapping()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrMapping()
+			newDest[i] = NewOrigMapping()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 
 func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
 	orig := make([]*otlpprofiles.Mapping, 5)
-	orig[0] = NewOrigPtrMapping()
+	orig[0] = NewOrigMapping()
 	orig[1] = GenTestOrigMapping()
-	orig[2] = NewOrigPtrMapping()
+	orig[2] = NewOrigMapping()
 	orig[3] = GenTestOrigMapping()
-	orig[4] = NewOrigPtrMapping()
+	orig[4] = NewOrigMapping()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
 func UnmarshalJSONOrigMappingSlice(iter *json.Iterator) []*otlpprofiles.Mapping {
 	var orig []*otlpprofiles.Mapping
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrMapping())
+		orig = append(orig, NewOrigMapping())
 		UnmarshalJSONOrigMapping(orig[len(orig)-1], iter)
 		return true
 	})

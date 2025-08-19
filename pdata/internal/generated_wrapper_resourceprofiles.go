@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceProfiles() otlpprofiles.ResourceProfiles {
-	return otlpprofiles.ResourceProfiles{}
-}
-
-func NewOrigPtrResourceProfiles() *otlpprofiles.ResourceProfiles {
+func NewOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
 	return &otlpprofiles.ResourceProfiles{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 }
 
 func GenTestOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
-	orig := NewOrigPtrResourceProfiles()
+	orig := NewOrigResourceProfiles()
 	orig.Resource = *GenTestOrigResource()
 	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
 	orig.SchemaUrl = "test_schemaurl"
@@ -162,7 +158,7 @@ func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigPtrScopeProfiles())
+			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
 			err = UnmarshalProtoOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err

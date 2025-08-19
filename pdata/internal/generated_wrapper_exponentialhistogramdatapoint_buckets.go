@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExponentialHistogramDataPoint_Buckets() otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-}
-
-func NewOrigPtrExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.Expone
 }
 
 func GenTestOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	orig := NewOrigPtrExponentialHistogramDataPoint_Buckets()
+	orig := NewOrigExponentialHistogramDataPoint_Buckets()
 	orig.Offset = int32(13)
 	orig.BucketCounts = GenerateOrigTestUint64Slice()
 	return orig

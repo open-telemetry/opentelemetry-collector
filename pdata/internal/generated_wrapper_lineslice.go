@@ -19,7 +19,7 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLine()
+			newDest[i] = NewOrigLine()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLine()
+			newDest[i] = NewOrigLine()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 
 func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
 	orig := make([]*otlpprofiles.Line, 5)
-	orig[0] = NewOrigPtrLine()
+	orig[0] = NewOrigLine()
 	orig[1] = GenTestOrigLine()
-	orig[2] = NewOrigPtrLine()
+	orig[2] = NewOrigLine()
 	orig[3] = GenTestOrigLine()
-	orig[4] = NewOrigPtrLine()
+	orig[4] = NewOrigLine()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
 func UnmarshalJSONOrigLineSlice(iter *json.Iterator) []*otlpprofiles.Line {
 	var orig []*otlpprofiles.Line
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrLine())
+		orig = append(orig, NewOrigLine())
 		UnmarshalJSONOrigLine(orig[len(orig)-1], iter)
 		return true
 	})

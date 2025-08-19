@@ -11,16 +11,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSpan_Link() otlptrace.Span_Link {
-	return otlptrace.Span_Link{}
-}
-
-func NewOrigPtrSpan_Link() *otlptrace.Span_Link {
+func NewOrigSpan_Link() *otlptrace.Span_Link {
 	return &otlptrace.Span_Link{}
 }
 
@@ -34,7 +31,7 @@ func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
 }
 
 func GenTestOrigSpan_Link() *otlptrace.Span_Link {
-	orig := NewOrigPtrSpan_Link()
+	orig := NewOrigSpan_Link()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.TraceState = *GenTestOrigTraceState()
@@ -243,7 +240,7 @@ func UnmarshalProtoOrigSpan_Link(orig *otlptrace.Span_Link, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

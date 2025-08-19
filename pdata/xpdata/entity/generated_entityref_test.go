@@ -26,8 +26,8 @@ func TestEntityRef_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestEntityRef(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newEntityRef(internal.NewOrigPtrEntityRef(), sharedState)) })
-	assert.Panics(t, func() { newEntityRef(internal.NewOrigPtrEntityRef(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
+	assert.Panics(t, func() { newEntityRef(internal.NewOrigEntityRef(), sharedState).MoveTo(dest) })
 }
 
 func TestEntityRef_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newEntityRef(internal.NewOrigPtrEntityRef(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
 }
 
 func TestEntityRef_SchemaUrl(t *testing.T) {

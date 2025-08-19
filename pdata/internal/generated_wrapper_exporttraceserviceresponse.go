@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportTraceServiceResponse() otlpcollectortrace.ExportTraceServiceResponse {
-	return otlpcollectortrace.ExportTraceServiceResponse{}
-}
-
-func NewOrigPtrExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
+func NewOrigExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
 	return &otlpcollectortrace.ExportTraceServiceResponse{}
 }
 
@@ -27,7 +23,7 @@ func CopyOrigExportTraceServiceResponse(dest, src *otlpcollectortrace.ExportTrac
 }
 
 func GenTestOrigExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
-	orig := NewOrigPtrExportTraceServiceResponse()
+	orig := NewOrigExportTraceServiceResponse()
 	orig.PartialSuccess = *GenTestOrigExportTracePartialSuccess()
 	return orig
 }

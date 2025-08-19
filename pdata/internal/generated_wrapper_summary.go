@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummary() otlpmetrics.Summary {
-	return otlpmetrics.Summary{}
-}
-
-func NewOrigPtrSummary() *otlpmetrics.Summary {
+func NewOrigSummary() *otlpmetrics.Summary {
 	return &otlpmetrics.Summary{}
 }
 
@@ -27,7 +23,7 @@ func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 }
 
 func GenTestOrigSummary() *otlpmetrics.Summary {
-	orig := NewOrigPtrSummary()
+	orig := NewOrigSummary()
 	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
 	return orig
 }
@@ -111,7 +107,7 @@ func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrSummaryDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
 			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
-	src := NewOrigPtrExponentialHistogramDataPoint()
-	dest := NewOrigPtrExponentialHistogramDataPoint()
+	src := NewOrigExponentialHistogramDataPoint()
+	dest := NewOrigExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
-	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigExponentialHistogramDataPoint(), dest)
 	*src = *GenTestOrigExponentialHistogramDataPoint()
 	CopyOrigExponentialHistogramDataPoint(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigExponentialHistogramDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExponentialHistogramDataPoint()
+	dest := NewOrigExponentialHistogramDataPoint()
 	UnmarshalJSONOrigExponentialHistogramDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigExponentialHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) 
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExponentialHistogramDataPoint()
+			dest := NewOrigExponentialHistogramDataPoint()
 			UnmarshalJSONOrigExponentialHistogramDataPoint(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExponentialHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExponentialHistogramDataPoint()
+			dest := NewOrigExponentialHistogramDataPoint()
 			require.Error(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPointUnknown(t *testing.T) {
-	dest := NewOrigPtrExponentialHistogramDataPoint()
+	dest := NewOrigExponentialHistogramDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExponentialHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigExponentialHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T)
 			gotSize := MarshalProtoOrigExponentialHistogramDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExponentialHistogramDataPoint()
+			dest := NewOrigExponentialHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *tes
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExponentialHistogramDataPoint()
+			dest := NewOrigExponentialHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -143,7 +143,7 @@ func genTestFailingUnmarshalProtoValuesExponentialHistogramDataPoint() map[strin
 
 func genTestEncodingValuesExponentialHistogramDataPoint() map[string]*otlpmetrics.ExponentialHistogramDataPoint {
 	return map[string]*otlpmetrics.ExponentialHistogramDataPoint{
-		"empty":                       NewOrigPtrExponentialHistogramDataPoint(),
+		"empty":                       NewOrigExponentialHistogramDataPoint(),
 		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
 		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},

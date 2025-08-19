@@ -9,6 +9,7 @@ package internal
 import (
 	"fmt"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -31,11 +32,7 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-func NewOrigResource() otlpresource.Resource {
-	return otlpresource.Resource{}
-}
-
-func NewOrigPtrResource() *otlpresource.Resource {
+func NewOrigResource() *otlpresource.Resource {
 	return &otlpresource.Resource{}
 }
 
@@ -46,7 +43,7 @@ func CopyOrigResource(dest, src *otlpresource.Resource) {
 }
 
 func GenTestOrigResource() *otlpresource.Resource {
-	orig := NewOrigPtrResource()
+	orig := NewOrigResource()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.EntityRefs = GenerateOrigTestEntityRefSlice()
@@ -169,7 +166,7 @@ func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -197,7 +194,7 @@ func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EntityRefs = append(orig.EntityRefs, NewOrigPtrEntityRef())
+			orig.EntityRefs = append(orig.EntityRefs, NewOrigEntityRef())
 			err = UnmarshalProtoOrigEntityRef(orig.EntityRefs[len(orig.EntityRefs)-1], buf[startPos:pos])
 			if err != nil {
 				return err

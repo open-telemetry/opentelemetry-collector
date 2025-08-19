@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportLogsPartialSuccess() otlpcollectorlogs.ExportLogsPartialSuccess {
-	return otlpcollectorlogs.ExportLogsPartialSuccess{}
-}
-
-func NewOrigPtrExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+func NewOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
 	return &otlpcollectorlogs.ExportLogsPartialSuccess{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPar
 }
 
 func GenTestOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
-	orig := NewOrigPtrExportLogsPartialSuccess()
+	orig := NewOrigExportLogsPartialSuccess()
 	orig.RejectedLogRecords = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig

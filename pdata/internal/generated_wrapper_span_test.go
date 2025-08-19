@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigSpan(t *testing.T) {
-	src := NewOrigPtrSpan()
-	dest := NewOrigPtrSpan()
+	src := NewOrigSpan()
+	dest := NewOrigSpan()
 	CopyOrigSpan(dest, src)
-	assert.Equal(t, NewOrigPtrSpan(), dest)
+	assert.Equal(t, NewOrigSpan(), dest)
 	*src = *GenTestOrigSpan()
 	CopyOrigSpan(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigSpan(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSpan()
+	dest := NewOrigSpan()
 	UnmarshalJSONOrigSpan(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSpan(), dest)
+	assert.Equal(t, NewOrigSpan(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			UnmarshalJSONOrigSpan(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSpanFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			require.Error(t, UnmarshalProtoOrigSpan(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
-	dest := NewOrigPtrSpan()
+	dest := NewOrigSpan()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSpan(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSpan(), dest)
+	assert.Equal(t, NewOrigSpan(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 			gotSize := MarshalProtoOrigSpan(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			require.NoError(t, UnmarshalProtoOrigSpan(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -147,7 +147,7 @@ func genTestFailingUnmarshalProtoValuesSpan() map[string][]byte {
 
 func genTestEncodingValuesSpan() map[string]*otlptrace.Span {
 	return map[string]*otlptrace.Span{
-		"empty":                       NewOrigPtrSpan(),
+		"empty":                       NewOrigSpan(),
 		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
 		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},

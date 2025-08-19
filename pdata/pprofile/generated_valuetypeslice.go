@@ -99,7 +99,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ValueType.
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrValueType())
+	*es.orig = append(*es.orig, internal.NewOrigValueType())
 	return es.At(es.Len() - 1)
 }
 

@@ -99,7 +99,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added HistogramDataPoint.
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrHistogramDataPoint())
+	*es.orig = append(*es.orig, internal.NewOrigHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 

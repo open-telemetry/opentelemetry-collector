@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
-	src := NewOrigPtrExportMetricsServiceRequest()
-	dest := NewOrigPtrExportMetricsServiceRequest()
+	src := NewOrigExportMetricsServiceRequest()
+	dest := NewOrigExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
-	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
+	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
 	*src = *GenTestOrigExportMetricsServiceRequest()
 	CopyOrigExportMetricsServiceRequest(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportMetricsServiceRequest()
+	dest := NewOrigExportMetricsServiceRequest()
 	UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
+	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportMetricsServiceRequest()
+			dest := NewOrigExportMetricsServiceRequest()
 			UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportMetricsServiceRequest() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportMetricsServiceRequest()
+			dest := NewOrigExportMetricsServiceRequest()
 			require.Error(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testing.T) {
-	dest := NewOrigPtrExportMetricsServiceRequest()
+	dest := NewOrigExportMetricsServiceRequest()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportMetricsServiceRequest(), dest)
+	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportMetricsServiceRequest()
+			dest := NewOrigExportMetricsServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportMetricsServiceRequest()
+			dest := NewOrigExportMetricsServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -117,7 +117,7 @@ func genTestFailingUnmarshalProtoValuesExportMetricsServiceRequest() map[string]
 
 func genTestEncodingValuesExportMetricsServiceRequest() map[string]*otlpcollectormetrics.ExportMetricsServiceRequest {
 	return map[string]*otlpcollectormetrics.ExportMetricsServiceRequest{
-		"empty":                            NewOrigPtrExportMetricsServiceRequest(),
+		"empty":                            NewOrigExportMetricsServiceRequest(),
 		"ResourceMetrics/default_and_test": {ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}, GenTestOrigResourceMetrics()}},
 	}
 }

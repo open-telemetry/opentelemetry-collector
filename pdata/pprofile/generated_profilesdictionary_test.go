@@ -25,8 +25,8 @@ func TestProfilesDictionary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfilesDictionary(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState)) })
-	assert.Panics(t, func() { newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(internal.NewOrigProfilesDictionary(), sharedState)) })
+	assert.Panics(t, func() { newProfilesDictionary(internal.NewOrigProfilesDictionary(), sharedState).MoveTo(dest) })
 }
 
 func TestProfilesDictionary_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(internal.NewOrigProfilesDictionary(), sharedState)) })
 }
 
 func TestProfilesDictionary_MappingTable(t *testing.T) {

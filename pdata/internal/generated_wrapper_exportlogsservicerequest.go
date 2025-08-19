@@ -31,11 +31,7 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
-func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {
-	return otlpcollectorlogs.ExportLogsServiceRequest{}
-}
-
-func NewOrigPtrExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
 	return &otlpcollectorlogs.ExportLogsServiceRequest{}
 }
 
@@ -44,7 +40,7 @@ func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsSer
 }
 
 func GenTestOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
-	orig := NewOrigPtrExportLogsServiceRequest()
+	orig := NewOrigExportLogsServiceRequest()
 	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
 	return orig
 }
@@ -128,7 +124,7 @@ func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLo
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigPtrResourceLogs())
+			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigResourceLogs())
 			err = UnmarshalProtoOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
 			if err != nil {
 				return err

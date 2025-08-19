@@ -10,14 +10,13 @@ import (
 	{{ range $index, $element := .testImports -}}
 	{{ $element }}
 	{{ end }}
-    "strconv"
 )
 
 func TestCopyOrig{{ .originName }}(t *testing.T) {
-	src := NewOrigPtr{{ .originName }}()
-	dest := NewOrigPtr{{ .originName }}()
+	src := NewOrig{{ .originName }}()
+	dest := NewOrig{{ .originName }}()
 	CopyOrig{{ .originName }}(dest, src)
-	assert.Equal(t, NewOrigPtr{{ .originName }}(), dest)
+	assert.Equal(t, NewOrig{{ .originName }}(), dest)
     *src = *GenTestOrig{{ .originName }}()
 	CopyOrig{{ .originName }}(dest, src)
 	assert.Equal(t, src, dest)
@@ -26,10 +25,10 @@ func TestCopyOrig{{ .originName }}(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}Unknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtr{{ .originName }}()
+	dest := NewOrig{{ .originName }}()
 	UnmarshalJSONOrig{{ .originName }}(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtr{{ .originName }}(), dest)
+	assert.Equal(t, NewOrig{{ .originName }}(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
@@ -42,7 +41,7 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtr{{ .originName }}()
+			dest := NewOrig{{ .originName }}()
 			UnmarshalJSONOrig{{ .originName }}(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -54,17 +53,17 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}Failing(t *testing.T) {
     for name, buf := range genTestFailingUnmarshalProtoValues{{ .originName }}() {
         t.Run(name, func(t *testing.T) {
-            dest := NewOrigPtr{{ .originName }}()
+            dest := NewOrig{{ .originName }}()
             require.Error(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
         })
     }
 }
 
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}Unknown(t *testing.T) {
-	dest := NewOrigPtr{{ .originName }}()
+	dest := NewOrig{{ .originName }}()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtr{{ .originName }}(), dest)
+	assert.Equal(t, NewOrig{{ .originName }}(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
@@ -74,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
 			gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtr{{ .originName }}()
+			dest := NewOrig{{ .originName }}()
 			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -94,7 +93,7 @@ func TestMarshalAndUnmarshalProtoViaProtobuf{{ .originName }}(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtr{{ .originName }}()
+			dest := NewOrig{{ .originName }}()
 			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -110,7 +109,7 @@ func genTestFailingUnmarshalProtoValues{{ .originName }}() map[string][]byte {
 
 func genTestEncodingValues{{ .originName }}() map[string]*{{ .originFullName }} {
 	return map[string]*{{ .originFullName }}{
-		"empty": NewOrigPtr{{ .originName }}(),
+		"empty": NewOrig{{ .originName }}(),
 		{{- range .fields }}{{ .GenerateTestEncodingValues $.messageStruct }}{{- end }}
 	}
 }

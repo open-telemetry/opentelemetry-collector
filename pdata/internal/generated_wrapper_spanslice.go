@@ -19,7 +19,7 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan()
+			newDest[i] = NewOrigSpan()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan()
+			newDest[i] = NewOrigSpan()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 
 func GenerateOrigTestSpanSlice() []*otlptrace.Span {
 	orig := make([]*otlptrace.Span, 5)
-	orig[0] = NewOrigPtrSpan()
+	orig[0] = NewOrigSpan()
 	orig[1] = GenTestOrigSpan()
-	orig[2] = NewOrigPtrSpan()
+	orig[2] = NewOrigSpan()
 	orig[3] = GenTestOrigSpan()
-	orig[4] = NewOrigPtrSpan()
+	orig[4] = NewOrigSpan()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestSpanSlice() []*otlptrace.Span {
 func UnmarshalJSONOrigSpanSlice(iter *json.Iterator) []*otlptrace.Span {
 	var orig []*otlptrace.Span
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrSpan())
+		orig = append(orig, NewOrigSpan())
 		UnmarshalJSONOrigSpan(orig[len(orig)-1], iter)
 		return true
 	})

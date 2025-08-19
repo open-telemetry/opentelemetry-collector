@@ -19,7 +19,7 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 
 func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	orig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 5)
-	orig[0] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	orig[0] = NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig[1] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
-	orig[2] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	orig[2] = NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig[3] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
-	orig[4] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	orig[4] = NewOrigSummaryDataPoint_ValueAtQuantile()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.Summ
 func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter *json.Iterator) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	var orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrSummaryDataPoint_ValueAtQuantile())
+		orig = append(orig, NewOrigSummaryDataPoint_ValueAtQuantile())
 		UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[len(orig)-1], iter)
 		return true
 	})

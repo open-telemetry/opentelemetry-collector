@@ -31,11 +31,7 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
-	return otlpcollectortrace.ExportTraceServiceRequest{}
-}
-
-func NewOrigPtrExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
@@ -44,7 +40,7 @@ func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTrace
 }
 
 func GenTestOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
-	orig := NewOrigPtrExportTraceServiceRequest()
+	orig := NewOrigExportTraceServiceRequest()
 	orig.ResourceSpans = GenerateOrigTestResourceSpansSlice()
 	return orig
 }
@@ -128,7 +124,7 @@ func UnmarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.Export
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigPtrResourceSpans())
+			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
 			err = UnmarshalProtoOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

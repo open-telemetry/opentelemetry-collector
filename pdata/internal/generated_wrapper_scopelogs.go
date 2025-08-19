@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigScopeLogs() otlplogs.ScopeLogs {
-	return otlplogs.ScopeLogs{}
-}
-
-func NewOrigPtrScopeLogs() *otlplogs.ScopeLogs {
+func NewOrigScopeLogs() *otlplogs.ScopeLogs {
 	return &otlplogs.ScopeLogs{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
 }
 
 func GenTestOrigScopeLogs() *otlplogs.ScopeLogs {
-	orig := NewOrigPtrScopeLogs()
+	orig := NewOrigScopeLogs()
 	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.LogRecords = GenerateOrigTestLogRecordSlice()
 	orig.SchemaUrl = "test_schemaurl"
@@ -162,7 +158,7 @@ func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LogRecords = append(orig.LogRecords, NewOrigPtrLogRecord())
+			orig.LogRecords = append(orig.LogRecords, NewOrigLogRecord())
 			err = UnmarshalProtoOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], buf[startPos:pos])
 			if err != nil {
 				return err

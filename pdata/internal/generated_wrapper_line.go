@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLine() otlpprofiles.Line {
-	return otlpprofiles.Line{}
-}
-
-func NewOrigPtrLine() *otlpprofiles.Line {
+func NewOrigLine() *otlpprofiles.Line {
 	return &otlpprofiles.Line{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigLine(dest, src *otlpprofiles.Line) {
 }
 
 func GenTestOrigLine() *otlpprofiles.Line {
-	orig := NewOrigPtrLine()
+	orig := NewOrigLine()
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)

@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExponentialHistogram() otlpmetrics.ExponentialHistogram {
-	return otlpmetrics.ExponentialHistogram{}
-}
-
-func NewOrigPtrExponentialHistogram() *otlpmetrics.ExponentialHistogram {
+func NewOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
 	return &otlpmetrics.ExponentialHistogram{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 }
 
 func GenTestOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
-	orig := NewOrigPtrExponentialHistogram()
+	orig := NewOrigExponentialHistogram()
 	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	return orig
@@ -128,7 +124,7 @@ func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogr
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrExponentialHistogramDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
 			err = UnmarshalProtoOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

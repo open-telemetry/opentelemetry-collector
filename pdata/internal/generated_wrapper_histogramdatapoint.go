@@ -11,16 +11,13 @@ import (
 	"fmt"
 	"math"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigHistogramDataPoint() otlpmetrics.HistogramDataPoint {
-	return otlpmetrics.HistogramDataPoint{}
-}
-
-func NewOrigPtrHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+func NewOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
 	return &otlpmetrics.HistogramDataPoint{}
 }
 
@@ -66,7 +63,7 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 }
 
 func GenTestOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
-	orig := NewOrigPtrHistogramDataPoint()
+	orig := NewOrigHistogramDataPoint()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
@@ -344,7 +341,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -455,7 +452,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = append(orig.Exemplars, NewOrigExemplar())
+			orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
 			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
 			if err != nil {
 				return err

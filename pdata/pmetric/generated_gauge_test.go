@@ -24,8 +24,8 @@ func TestGauge_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestGauge(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newGauge(internal.NewOrigPtrGauge(), sharedState)) })
-	assert.Panics(t, func() { newGauge(internal.NewOrigPtrGauge(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newGauge(internal.NewOrigGauge(), sharedState)) })
+	assert.Panics(t, func() { newGauge(internal.NewOrigGauge(), sharedState).MoveTo(dest) })
 }
 
 func TestGauge_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestGauge_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newGauge(internal.NewOrigPtrGauge(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newGauge(internal.NewOrigGauge(), sharedState)) })
 }
 
 func TestGauge_DataPoints(t *testing.T) {

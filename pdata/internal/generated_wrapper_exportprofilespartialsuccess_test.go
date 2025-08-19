@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
-	src := NewOrigPtrExportProfilesPartialSuccess()
-	dest := NewOrigPtrExportProfilesPartialSuccess()
+	src := NewOrigExportProfilesPartialSuccess()
+	dest := NewOrigExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, NewOrigPtrExportProfilesPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 	*src = *GenTestOrigExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportProfilesPartialSuccess()
+	dest := NewOrigExportProfilesPartialSuccess()
 	UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportProfilesPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportProfilesPartialSuccess()
+			dest := NewOrigExportProfilesPartialSuccess()
 			UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportProfilesPartialSuccess()
+			dest := NewOrigExportProfilesPartialSuccess()
 			require.Error(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
-	dest := NewOrigPtrExportProfilesPartialSuccess()
+	dest := NewOrigExportProfilesPartialSuccess()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportProfilesPartialSuccess(), dest)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) 
 			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportProfilesPartialSuccess()
+			dest := NewOrigExportProfilesPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *test
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportProfilesPartialSuccess()
+			dest := NewOrigExportProfilesPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() map[string
 
 func genTestEncodingValuesExportProfilesPartialSuccess() map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess {
 	return map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess{
-		"empty":                 NewOrigPtrExportProfilesPartialSuccess(),
+		"empty":                 NewOrigExportProfilesPartialSuccess(),
 		"RejectedProfiles/test": {RejectedProfiles: int64(13)},
 		"ErrorMessage/test":     {ErrorMessage: "test_errormessage"},
 	}

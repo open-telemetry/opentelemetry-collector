@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigLogRecord(t *testing.T) {
-	src := NewOrigPtrLogRecord()
-	dest := NewOrigPtrLogRecord()
+	src := NewOrigLogRecord()
+	dest := NewOrigLogRecord()
 	CopyOrigLogRecord(dest, src)
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
+	assert.Equal(t, NewOrigLogRecord(), dest)
 	*src = *GenTestOrigLogRecord()
 	CopyOrigLogRecord(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigLogRecord(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrLogRecord()
+	dest := NewOrigLogRecord()
 	UnmarshalJSONOrigLogRecord(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
+	assert.Equal(t, NewOrigLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			UnmarshalJSONOrigLogRecord(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLogRecordFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLogRecord() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			require.Error(t, UnmarshalProtoOrigLogRecord(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecordUnknown(t *testing.T) {
-	dest := NewOrigPtrLogRecord()
+	dest := NewOrigLogRecord()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
+	assert.Equal(t, NewOrigLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 			gotSize := MarshalProtoOrigLogRecord(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -137,7 +137,7 @@ func genTestFailingUnmarshalProtoValuesLogRecord() map[string][]byte {
 
 func genTestEncodingValuesLogRecord() map[string]*otlplogs.LogRecord {
 	return map[string]*otlplogs.LogRecord{
-		"empty":                       NewOrigPtrLogRecord(),
+		"empty":                       NewOrigLogRecord(),
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"ObservedTimeUnixNano/test":   {ObservedTimeUnixNano: uint64(13)},
 		"SeverityNumber/test":         {SeverityNumber: otlplogs.SeverityNumber(13)},

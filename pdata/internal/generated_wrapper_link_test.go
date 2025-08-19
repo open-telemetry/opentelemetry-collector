@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigLink(t *testing.T) {
-	src := NewOrigPtrLink()
-	dest := NewOrigPtrLink()
+	src := NewOrigLink()
+	dest := NewOrigLink()
 	CopyOrigLink(dest, src)
-	assert.Equal(t, NewOrigPtrLink(), dest)
+	assert.Equal(t, NewOrigLink(), dest)
 	*src = *GenTestOrigLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigLink(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrLink()
+	dest := NewOrigLink()
 	UnmarshalJSONOrigLink(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrLink(), dest)
+	assert.Equal(t, NewOrigLink(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrLink()
+			dest := NewOrigLink()
 			UnmarshalJSONOrigLink(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLinkFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLink() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrLink()
+			dest := NewOrigLink()
 			require.Error(t, UnmarshalProtoOrigLink(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
-	dest := NewOrigPtrLink()
+	dest := NewOrigLink()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLink(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrLink(), dest)
+	assert.Equal(t, NewOrigLink(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 			gotSize := MarshalProtoOrigLink(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrLink()
+			dest := NewOrigLink()
 			require.NoError(t, UnmarshalProtoOrigLink(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrLink()
+			dest := NewOrigLink()
 			require.NoError(t, UnmarshalProtoOrigLink(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesLink() map[string][]byte {
 
 func genTestEncodingValuesLink() map[string]*otlpprofiles.Link {
 	return map[string]*otlpprofiles.Link{
-		"empty":        NewOrigPtrLink(),
+		"empty":        NewOrigLink(),
 		"TraceId/test": {TraceId: *GenTestOrigTraceID()},
 		"SpanId/test":  {SpanId: *GenTestOrigSpanID()},
 	}

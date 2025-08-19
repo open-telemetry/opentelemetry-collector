@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportProfilesServiceResponse(t *testing.T) {
-	src := NewOrigPtrExportProfilesServiceResponse()
-	dest := NewOrigPtrExportProfilesServiceResponse()
+	src := NewOrigExportProfilesServiceResponse()
+	dest := NewOrigExportProfilesServiceResponse()
 	CopyOrigExportProfilesServiceResponse(dest, src)
-	assert.Equal(t, NewOrigPtrExportProfilesServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
 	*src = *GenTestOrigExportProfilesServiceResponse()
 	CopyOrigExportProfilesServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportProfilesServiceResponse(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponseUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportProfilesServiceResponse()
+	dest := NewOrigExportProfilesServiceResponse()
 	UnmarshalJSONOrigExportProfilesServiceResponse(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportProfilesServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponse(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponse(t *testing.T) 
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportProfilesServiceResponse()
+			dest := NewOrigExportProfilesServiceResponse()
 			UnmarshalJSONOrigExportProfilesServiceResponse(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesServiceResponse(t *testing.T) 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponseFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportProfilesServiceResponse() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportProfilesServiceResponse()
+			dest := NewOrigExportProfilesServiceResponse()
 			require.Error(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponseUnknown(t *testing.T) {
-	dest := NewOrigPtrExportProfilesServiceResponse()
+	dest := NewOrigExportProfilesServiceResponse()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportProfilesServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportProfilesServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponse(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesServiceResponse(t *testing.T)
 			gotSize := MarshalProtoOrigExportProfilesServiceResponse(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportProfilesServiceResponse()
+			dest := NewOrigExportProfilesServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesServiceResponse(t *tes
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportProfilesServiceResponse()
+			dest := NewOrigExportProfilesServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesServiceResponse(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -116,7 +116,7 @@ func genTestFailingUnmarshalProtoValuesExportProfilesServiceResponse() map[strin
 
 func genTestEncodingValuesExportProfilesServiceResponse() map[string]*otlpcollectorprofiles.ExportProfilesServiceResponse {
 	return map[string]*otlpcollectorprofiles.ExportProfilesServiceResponse{
-		"empty":               NewOrigPtrExportProfilesServiceResponse(),
+		"empty":               NewOrigExportProfilesServiceResponse(),
 		"PartialSuccess/test": {PartialSuccess: *GenTestOrigExportProfilesPartialSuccess()},
 	}
 }

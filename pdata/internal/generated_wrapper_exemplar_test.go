@@ -20,10 +20,10 @@ import (
 )
 
 func TestCopyOrigExemplar(t *testing.T) {
-	src := NewOrigPtrExemplar()
-	dest := NewOrigPtrExemplar()
+	src := NewOrigExemplar()
+	dest := NewOrigExemplar()
 	CopyOrigExemplar(dest, src)
-	assert.Equal(t, NewOrigPtrExemplar(), dest)
+	assert.Equal(t, NewOrigExemplar(), dest)
 	*src = *GenTestOrigExemplar()
 	CopyOrigExemplar(dest, src)
 	assert.Equal(t, src, dest)
@@ -32,10 +32,10 @@ func TestCopyOrigExemplar(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExemplar()
+	dest := NewOrigExemplar()
 	UnmarshalJSONOrigExemplar(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExemplar(), dest)
+	assert.Equal(t, NewOrigExemplar(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExemplar()
+			dest := NewOrigExemplar()
 			UnmarshalJSONOrigExemplar(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -60,17 +60,17 @@ func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExemplarFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExemplar() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExemplar()
+			dest := NewOrigExemplar()
 			require.Error(t, UnmarshalProtoOrigExemplar(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExemplarUnknown(t *testing.T) {
-	dest := NewOrigPtrExemplar()
+	dest := NewOrigExemplar()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExemplar(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExemplar(), dest)
+	assert.Equal(t, NewOrigExemplar(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
@@ -80,7 +80,7 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 			gotSize := MarshalProtoOrigExemplar(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExemplar()
+			dest := NewOrigExemplar()
 			require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -100,7 +100,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExemplar()
+			dest := NewOrigExemplar()
 			require.NoError(t, UnmarshalProtoOrigExemplar(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -129,7 +129,7 @@ func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 
 func genTestEncodingValuesExemplar() map[string]*otlpmetrics.Exemplar {
 	return map[string]*otlpmetrics.Exemplar{
-		"empty":                               NewOrigPtrExemplar(),
+		"empty":                               NewOrigExemplar(),
 		"FilteredAttributes/default_and_test": {FilteredAttributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
 		"TimeUnixNano/test":                   {TimeUnixNano: uint64(13)},
 		"AsDouble/default":                    {Value: &otlpmetrics.Exemplar_AsDouble{AsDouble: float64(0)}},

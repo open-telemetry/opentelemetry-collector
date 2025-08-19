@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigGauge() otlpmetrics.Gauge {
-	return otlpmetrics.Gauge{}
-}
-
-func NewOrigPtrGauge() *otlpmetrics.Gauge {
+func NewOrigGauge() *otlpmetrics.Gauge {
 	return &otlpmetrics.Gauge{}
 }
 
@@ -27,7 +23,7 @@ func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
 }
 
 func GenTestOrigGauge() *otlpmetrics.Gauge {
-	orig := NewOrigPtrGauge()
+	orig := NewOrigGauge()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
 	return orig
 }
@@ -111,7 +107,7 @@ func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrNumberDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
 			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

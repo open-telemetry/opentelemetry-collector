@@ -12,16 +12,13 @@ import (
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExemplar() otlpmetrics.Exemplar {
-	return otlpmetrics.Exemplar{}
-}
-
-func NewOrigPtrExemplar() *otlpmetrics.Exemplar {
+func NewOrigExemplar() *otlpmetrics.Exemplar {
 	return &otlpmetrics.Exemplar{}
 }
 
@@ -39,7 +36,7 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 }
 
 func GenTestOrigExemplar() *otlpmetrics.Exemplar {
-	orig := NewOrigPtrExemplar()
+	orig := NewOrigExemplar()
 	orig.FilteredAttributes = GenerateOrigTestKeyValueSlice()
 	orig.TimeUnixNano = 1234567890
 	orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
@@ -208,7 +205,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FilteredAttributes = append(orig.FilteredAttributes, NewOrigKeyValue())
+			orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

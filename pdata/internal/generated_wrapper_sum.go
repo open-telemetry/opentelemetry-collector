@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSum() otlpmetrics.Sum {
-	return otlpmetrics.Sum{}
-}
-
-func NewOrigPtrSum() *otlpmetrics.Sum {
+func NewOrigSum() *otlpmetrics.Sum {
 	return &otlpmetrics.Sum{}
 }
 
@@ -29,7 +25,7 @@ func CopyOrigSum(dest, src *otlpmetrics.Sum) {
 }
 
 func GenTestOrigSum() *otlpmetrics.Sum {
-	orig := NewOrigPtrSum()
+	orig := NewOrigSum()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.IsMonotonic = true
@@ -149,7 +145,7 @@ func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrNumberDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
 			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

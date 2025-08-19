@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigAttributeUnit(t *testing.T) {
-	src := NewOrigPtrAttributeUnit()
-	dest := NewOrigPtrAttributeUnit()
+	src := NewOrigAttributeUnit()
+	dest := NewOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
-	assert.Equal(t, NewOrigPtrAttributeUnit(), dest)
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
 	*src = *GenTestOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigAttributeUnit(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigAttributeUnitUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrAttributeUnit()
+	dest := NewOrigAttributeUnit()
 	UnmarshalJSONOrigAttributeUnit(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrAttributeUnit(), dest)
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrAttributeUnit()
+			dest := NewOrigAttributeUnit()
 			UnmarshalJSONOrigAttributeUnit(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigAttributeUnitFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesAttributeUnit() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrAttributeUnit()
+			dest := NewOrigAttributeUnit()
 			require.Error(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
-	dest := NewOrigPtrAttributeUnit()
+	dest := NewOrigAttributeUnit()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrAttributeUnit(), dest)
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
 			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrAttributeUnit()
+			dest := NewOrigAttributeUnit()
 			require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrAttributeUnit()
+			dest := NewOrigAttributeUnit()
 			require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesAttributeUnit() map[string][]byte {
 
 func genTestEncodingValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
 	return map[string]*otlpprofiles.AttributeUnit{
-		"empty":                     NewOrigPtrAttributeUnit(),
+		"empty":                     NewOrigAttributeUnit(),
 		"AttributeKeyStrindex/test": {AttributeKeyStrindex: int32(13)},
 		"UnitStrindex/test":         {UnitStrindex: int32(13)},
 	}

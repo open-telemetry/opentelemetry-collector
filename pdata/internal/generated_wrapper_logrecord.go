@@ -11,16 +11,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLogRecord() otlplogs.LogRecord {
-	return otlplogs.LogRecord{}
-}
-
-func NewOrigPtrLogRecord() *otlplogs.LogRecord {
+func NewOrigLogRecord() *otlplogs.LogRecord {
 	return &otlplogs.LogRecord{}
 }
 
@@ -39,7 +36,7 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 }
 
 func GenTestOrigLogRecord() *otlplogs.LogRecord {
-	orig := NewOrigPtrLogRecord()
+	orig := NewOrigLogRecord()
 	orig.TimeUnixNano = 1234567890
 	orig.ObservedTimeUnixNano = 1234567890
 	orig.SeverityNumber = otlplogs.SeverityNumber(5)
@@ -349,7 +346,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

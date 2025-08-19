@@ -26,8 +26,8 @@ func TestLocation_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLocation(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLocation(internal.NewOrigPtrLocation(), sharedState)) })
-	assert.Panics(t, func() { newLocation(internal.NewOrigPtrLocation(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLocation(internal.NewOrigLocation(), sharedState)) })
+	assert.Panics(t, func() { newLocation(internal.NewOrigLocation(), sharedState).MoveTo(dest) })
 }
 
 func TestLocation_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLocation(internal.NewOrigPtrLocation(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLocation(internal.NewOrigLocation(), sharedState)) })
 }
 
 func TestLocation_MappingIndex(t *testing.T) {

@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigHistogram() otlpmetrics.Histogram {
-	return otlpmetrics.Histogram{}
-}
-
-func NewOrigPtrHistogram() *otlpmetrics.Histogram {
+func NewOrigHistogram() *otlpmetrics.Histogram {
 	return &otlpmetrics.Histogram{}
 }
 
@@ -28,7 +24,7 @@ func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
 }
 
 func GenTestOrigHistogram() *otlpmetrics.Histogram {
-	orig := NewOrigPtrHistogram()
+	orig := NewOrigHistogram()
 	orig.DataPoints = GenerateOrigTestHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	return orig
@@ -128,7 +124,7 @@ func UnmarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrHistogramDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigHistogramDataPoint())
 			err = UnmarshalProtoOrigHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

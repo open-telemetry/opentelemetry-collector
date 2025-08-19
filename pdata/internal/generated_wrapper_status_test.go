@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigStatus(t *testing.T) {
-	src := NewOrigPtrStatus()
-	dest := NewOrigPtrStatus()
+	src := NewOrigStatus()
+	dest := NewOrigStatus()
 	CopyOrigStatus(dest, src)
-	assert.Equal(t, NewOrigPtrStatus(), dest)
+	assert.Equal(t, NewOrigStatus(), dest)
 	*src = *GenTestOrigStatus()
 	CopyOrigStatus(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigStatus(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrStatus()
+	dest := NewOrigStatus()
 	UnmarshalJSONOrigStatus(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrStatus(), dest)
+	assert.Equal(t, NewOrigStatus(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrStatus()
+			dest := NewOrigStatus()
 			UnmarshalJSONOrigStatus(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigStatusFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesStatus() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrStatus()
+			dest := NewOrigStatus()
 			require.Error(t, UnmarshalProtoOrigStatus(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
-	dest := NewOrigPtrStatus()
+	dest := NewOrigStatus()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigStatus(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrStatus(), dest)
+	assert.Equal(t, NewOrigStatus(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 			gotSize := MarshalProtoOrigStatus(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrStatus()
+			dest := NewOrigStatus()
 			require.NoError(t, UnmarshalProtoOrigStatus(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrStatus()
+			dest := NewOrigStatus()
 			require.NoError(t, UnmarshalProtoOrigStatus(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +118,7 @@ func genTestFailingUnmarshalProtoValuesStatus() map[string][]byte {
 
 func genTestEncodingValuesStatus() map[string]*otlptrace.Status {
 	return map[string]*otlptrace.Status{
-		"empty":        NewOrigPtrStatus(),
+		"empty":        NewOrigStatus(),
 		"Message/test": {Message: "test_message"},
 		"Code/test":    {Code: otlptrace.Status_StatusCode(13)},
 	}

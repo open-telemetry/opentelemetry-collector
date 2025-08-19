@@ -26,8 +26,8 @@ func TestMapping_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMapping(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newMapping(internal.NewOrigPtrMapping(), sharedState)) })
-	assert.Panics(t, func() { newMapping(internal.NewOrigPtrMapping(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newMapping(internal.NewOrigMapping(), sharedState)) })
+	assert.Panics(t, func() { newMapping(internal.NewOrigMapping(), sharedState).MoveTo(dest) })
 }
 
 func TestMapping_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestMapping_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newMapping(internal.NewOrigPtrMapping(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newMapping(internal.NewOrigMapping(), sharedState)) })
 }
 
 func TestMapping_MemoryStart(t *testing.T) {

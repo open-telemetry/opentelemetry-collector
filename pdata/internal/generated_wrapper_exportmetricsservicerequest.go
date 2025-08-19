@@ -31,11 +31,7 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-func NewOrigExportMetricsServiceRequest() otlpcollectormetrics.ExportMetricsServiceRequest {
-	return otlpcollectormetrics.ExportMetricsServiceRequest{}
-}
-
-func NewOrigPtrExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
 }
 
@@ -44,7 +40,7 @@ func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportM
 }
 
 func GenTestOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	orig := NewOrigPtrExportMetricsServiceRequest()
+	orig := NewOrigExportMetricsServiceRequest()
 	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
 	return orig
 }
@@ -128,7 +124,7 @@ func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Ex
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigPtrResourceMetrics())
+			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
 			err = UnmarshalProtoOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err

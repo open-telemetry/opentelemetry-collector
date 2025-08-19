@@ -19,10 +19,10 @@ import (
 )
 
 func TestCopyOrigExportTraceServiceResponse(t *testing.T) {
-	src := NewOrigPtrExportTraceServiceResponse()
-	dest := NewOrigPtrExportTraceServiceResponse()
+	src := NewOrigExportTraceServiceResponse()
+	dest := NewOrigExportTraceServiceResponse()
 	CopyOrigExportTraceServiceResponse(dest, src)
-	assert.Equal(t, NewOrigPtrExportTraceServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportTraceServiceResponse(), dest)
 	*src = *GenTestOrigExportTraceServiceResponse()
 	CopyOrigExportTraceServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
@@ -31,10 +31,10 @@ func TestCopyOrigExportTraceServiceResponse(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceResponseUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportTraceServiceResponse()
+	dest := NewOrigExportTraceServiceResponse()
 	UnmarshalJSONOrigExportTraceServiceResponse(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportTraceServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportTraceServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceResponse(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportTraceServiceResponse(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportTraceServiceResponse()
+			dest := NewOrigExportTraceServiceResponse()
 			UnmarshalJSONOrigExportTraceServiceResponse(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -59,17 +59,17 @@ func TestMarshalAndUnmarshalJSONOrigExportTraceServiceResponse(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponseFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportTraceServiceResponse() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportTraceServiceResponse()
+			dest := NewOrigExportTraceServiceResponse()
 			require.Error(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponseUnknown(t *testing.T) {
-	dest := NewOrigPtrExportTraceServiceResponse()
+	dest := NewOrigExportTraceServiceResponse()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportTraceServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportTraceServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponse(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMarshalAndUnmarshalProtoOrigExportTraceServiceResponse(t *testing.T) {
 			gotSize := MarshalProtoOrigExportTraceServiceResponse(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportTraceServiceResponse()
+			dest := NewOrigExportTraceServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceResponse(t *testin
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportTraceServiceResponse()
+			dest := NewOrigExportTraceServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportTraceServiceResponse(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -116,7 +116,7 @@ func genTestFailingUnmarshalProtoValuesExportTraceServiceResponse() map[string][
 
 func genTestEncodingValuesExportTraceServiceResponse() map[string]*otlpcollectortrace.ExportTraceServiceResponse {
 	return map[string]*otlpcollectortrace.ExportTraceServiceResponse{
-		"empty":               NewOrigPtrExportTraceServiceResponse(),
+		"empty":               NewOrigExportTraceServiceResponse(),
 		"PartialSuccess/test": {PartialSuccess: *GenTestOrigExportTracePartialSuccess()},
 	}
 }

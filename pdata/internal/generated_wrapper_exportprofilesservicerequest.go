@@ -31,11 +31,7 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 	return Profiles{orig: orig, state: state}
 }
 
-func NewOrigExportProfilesServiceRequest() otlpcollectorprofiles.ExportProfilesServiceRequest {
-	return otlpcollectorprofiles.ExportProfilesServiceRequest{}
-}
-
-func NewOrigPtrExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
+func NewOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
 	return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
 }
 
@@ -45,7 +41,7 @@ func CopyOrigExportProfilesServiceRequest(dest, src *otlpcollectorprofiles.Expor
 }
 
 func GenTestOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
-	orig := NewOrigPtrExportProfilesServiceRequest()
+	orig := NewOrigExportProfilesServiceRequest()
 	orig.ResourceProfiles = GenerateOrigTestResourceProfilesSlice()
 	orig.Dictionary = *GenTestOrigProfilesDictionary()
 	return orig
@@ -143,7 +139,7 @@ func UnmarshalProtoOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceProfiles = append(orig.ResourceProfiles, NewOrigPtrResourceProfiles())
+			orig.ResourceProfiles = append(orig.ResourceProfiles, NewOrigResourceProfiles())
 			err = UnmarshalProtoOrigResourceProfiles(orig.ResourceProfiles[len(orig.ResourceProfiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err

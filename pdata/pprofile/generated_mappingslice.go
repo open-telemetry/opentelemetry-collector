@@ -99,7 +99,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Mapping.
 func (es MappingSlice) AppendEmpty() Mapping {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrMapping())
+	*es.orig = append(*es.orig, internal.NewOrigMapping())
 	return es.At(es.Len() - 1)
 }
 

@@ -10,16 +10,13 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSpan_Event() otlptrace.Span_Event {
-	return otlptrace.Span_Event{}
-}
-
-func NewOrigPtrSpan_Event() *otlptrace.Span_Event {
+func NewOrigSpan_Event() *otlptrace.Span_Event {
 	return &otlptrace.Span_Event{}
 }
 
@@ -31,7 +28,7 @@ func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
 }
 
 func GenTestOrigSpan_Event() *otlptrace.Span_Event {
-	orig := NewOrigPtrSpan_Event()
+	orig := NewOrigSpan_Event()
 	orig.TimeUnixNano = 1234567890
 	orig.Name = "test_name"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
@@ -189,7 +186,7 @@ func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

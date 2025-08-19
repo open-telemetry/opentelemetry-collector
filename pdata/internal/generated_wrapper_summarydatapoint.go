@@ -11,16 +11,13 @@ import (
 	"fmt"
 	"math"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummaryDataPoint() otlpmetrics.SummaryDataPoint {
-	return otlpmetrics.SummaryDataPoint{}
-}
-
-func NewOrigPtrSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
+func NewOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
 	return &otlpmetrics.SummaryDataPoint{}
 }
 
@@ -35,7 +32,7 @@ func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
 }
 
 func GenTestOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
-	orig := NewOrigPtrSummaryDataPoint()
+	orig := NewOrigSummaryDataPoint()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
@@ -222,7 +219,7 @@ func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf 
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -286,7 +283,7 @@ func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf 
 				return err
 			}
 			startPos := pos - length
-			orig.QuantileValues = append(orig.QuantileValues, NewOrigPtrSummaryDataPoint_ValueAtQuantile())
+			orig.QuantileValues = append(orig.QuantileValues, NewOrigSummaryDataPoint_ValueAtQuantile())
 			err = UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], buf[startPos:pos])
 			if err != nil {
 				return err

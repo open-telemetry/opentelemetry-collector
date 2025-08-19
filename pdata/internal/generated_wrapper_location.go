@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLocation() otlpprofiles.Location {
-	return otlpprofiles.Location{}
-}
-
-func NewOrigPtrLocation() *otlpprofiles.Location {
+func NewOrigLocation() *otlpprofiles.Location {
 	return &otlpprofiles.Location{}
 }
 
@@ -40,7 +36,7 @@ func CopyOrigLocation(dest, src *otlpprofiles.Location) {
 }
 
 func GenTestOrigLocation() *otlpprofiles.Location {
-	orig := NewOrigPtrLocation()
+	orig := NewOrigLocation()
 	orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
 	orig.Address = uint64(13)
 	orig.Line = GenerateOrigTestLineSlice()
@@ -230,7 +226,7 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Line = append(orig.Line, NewOrigPtrLine())
+			orig.Line = append(orig.Line, NewOrigLine())
 			err = UnmarshalProtoOrigLine(orig.Line[len(orig.Line)-1], buf[startPos:pos])
 			if err != nil {
 				return err

@@ -19,7 +19,7 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrHistogramDataPoint()
+			newDest[i] = NewOrigHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +31,7 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrHistogramDataPoint()
+			newDest[i] = NewOrigHistogramDataPoint()
 		}
 	}
 	for i := range src {
@@ -42,11 +42,11 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 
 func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
 	orig := make([]*otlpmetrics.HistogramDataPoint, 5)
-	orig[0] = NewOrigPtrHistogramDataPoint()
+	orig[0] = NewOrigHistogramDataPoint()
 	orig[1] = GenTestOrigHistogramDataPoint()
-	orig[2] = NewOrigPtrHistogramDataPoint()
+	orig[2] = NewOrigHistogramDataPoint()
 	orig[3] = GenTestOrigHistogramDataPoint()
-	orig[4] = NewOrigPtrHistogramDataPoint()
+	orig[4] = NewOrigHistogramDataPoint()
 	return orig
 }
 
@@ -54,7 +54,7 @@ func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint
 func UnmarshalJSONOrigHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.HistogramDataPoint {
 	var orig []*otlpmetrics.HistogramDataPoint
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrHistogramDataPoint())
+		orig = append(orig, NewOrigHistogramDataPoint())
 		UnmarshalJSONOrigHistogramDataPoint(orig[len(orig)-1], iter)
 		return true
 	})
