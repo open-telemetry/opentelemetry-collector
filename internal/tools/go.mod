@@ -10,12 +10,12 @@ require (
 	github.com/jcchavezs/porto v0.7.0
 	github.com/pavius/impi v0.0.3
 	github.com/rhysd/actionlint v1.7.7
-	go.opentelemetry.io/build-tools/checkapi v0.26.1
-	go.opentelemetry.io/build-tools/checkfile v0.26.1
-	go.opentelemetry.io/build-tools/chloggen v0.26.1
-	go.opentelemetry.io/build-tools/crosslink v0.26.1
-	go.opentelemetry.io/build-tools/githubgen v0.26.1
-	go.opentelemetry.io/build-tools/multimod v0.26.1
+	go.opentelemetry.io/build-tools/checkapi v0.26.2
+	go.opentelemetry.io/build-tools/checkfile v0.26.2
+	go.opentelemetry.io/build-tools/chloggen v0.26.2
+	go.opentelemetry.io/build-tools/crosslink v0.26.2
+	go.opentelemetry.io/build-tools/githubgen v0.26.2
+	go.opentelemetry.io/build-tools/multimod v0.26.2
 	go.opentelemetry.io/collector/internal/cmd/pdatagen v0.130.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/tools v0.36.0
