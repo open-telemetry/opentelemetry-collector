@@ -7,11 +7,22 @@
 package internal
 
 import (
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 type UInt64Slice struct {
-	orig  *[]uint64
+	orig *[]uint64
 	state *State
 }
 
@@ -37,11 +48,11 @@ func CopyOrigUint64Slice(dst, src []uint64) []uint64 {
 }
 
 func GenerateOrigTestUint64Slice() []uint64 {
-	return []uint64{1, 2, 3}
+	return []uint64{ 1, 2, 3 }
 }
 
 // UnmarshalJSONOrigUint64Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigUint64Slice(iter *json.Iterator) []uint64 {
+func UnmarshalJSONOrigUint64Slice(iter *json.Iterator) []uint64{
 	var orig []uint64
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		orig = append(orig, iter.ReadUint64())

@@ -7,9 +7,16 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -53,22 +60,6 @@ func FillOrigTestExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMe
 	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.ResourceMetrics) > 0 {
-		dest.WriteObjectField("resourceMetrics")
-		dest.WriteArrayStart()
-		MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[0], dest)
-		for i := 1; i < len(orig.ResourceMetrics); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -80,69 +71,4 @@ func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Exp
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.ResourceMetrics {
-		l = SizeProtoOrigResourceMetrics(orig.ResourceMetrics[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.ResourceMetrics) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigResourceMetrics(orig.ResourceMetrics[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResourceMetrics", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigPtrResourceMetrics())
-			err = UnmarshalProtoOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

@@ -105,3 +105,7 @@ func (pf *Field) GenMarshalJSON() string {
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }
+
+func (pf *Field) GenerateMarshalJSON(*Message) string {
+	return pf.GenMarshalJSON()
+}

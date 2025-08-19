@@ -7,12 +7,23 @@
 package internal
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
+
 type Slice struct {
-	orig  *[]otlpcommon.AnyValue
+	orig *[]otlpcommon.AnyValue
 	state *State
 }
 
@@ -33,6 +44,7 @@ func GenerateTestSlice() Slice {
 	return NewSlice(&orig, NewState())
 }
 
+
 func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
 	var newDest []otlpcommon.AnyValue
 	if cap(dest) < len(src) {
@@ -46,15 +58,15 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		}
 	}
 	for i := range src {
-		CopyOrigAnyValue(&newDest[i], &src[i])
+	    CopyOrigAnyValue(&newDest[i], &src[i])
 	}
 	return newDest
 }
 
 func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
-	orig := make([]otlpcommon.AnyValue, 5)
-	FillOrigTestAnyValue(&orig[1])
-	FillOrigTestAnyValue(&orig[3])
+    orig := make([]otlpcommon.AnyValue, 5)
+    FillOrigTestAnyValue(&orig[1])
+    FillOrigTestAnyValue(&orig[3])
 	return orig
 }
 
@@ -62,7 +74,7 @@ func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
 func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
 	var orig []otlpcommon.AnyValue
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, otlpcommon.AnyValue{})
+		orig = append(orig,otlpcommon.AnyValue{})
 		UnmarshalJSONOrigAnyValue(&orig[len(orig)-1], iter)
 		return true
 	})

@@ -7,9 +7,16 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -53,22 +60,6 @@ func FillOrigTestExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServ
 	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.ResourceLogs) > 0 {
-		dest.WriteObjectField("resourceLogs")
-		dest.WriteArrayStart()
-		MarshalJSONOrigResourceLogs(orig.ResourceLogs[0], dest)
-		for i := 1; i < len(orig.ResourceLogs); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigResourceLogs(orig.ResourceLogs[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -80,69 +71,4 @@ func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLog
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.ResourceLogs {
-		l = SizeProtoOrigResourceLogs(orig.ResourceLogs[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.ResourceLogs) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigResourceLogs(orig.ResourceLogs[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResourceLogs", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigPtrResourceLogs())
-			err = UnmarshalProtoOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

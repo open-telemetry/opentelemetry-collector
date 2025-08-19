@@ -8,11 +8,18 @@ package pcommon
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestSlice(t *testing.T) {
@@ -140,6 +147,8 @@ func TestSliceAll(t *testing.T) {
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
+
+
 
 func generateTestSlice() Slice {
 	ms := NewSlice()

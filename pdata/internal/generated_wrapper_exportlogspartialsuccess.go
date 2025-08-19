@@ -7,11 +7,14 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func NewOrigExportLogsPartialSuccess() otlpcollectorlogs.ExportLogsPartialSuccess {
@@ -32,20 +35,6 @@ func FillOrigTestExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPart
 	orig.ErrorMessage = "test_errormessage"
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.RejectedLogRecords != int64(0) {
-		dest.WriteObjectField("rejectedLogRecords")
-		dest.WriteInt64(orig.RejectedLogRecords)
-	}
-	if orig.ErrorMessage != "" {
-		dest.WriteObjectField("errorMessage")
-		dest.WriteString(orig.ErrorMessage)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -59,86 +48,4 @@ func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLog
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) int {
-	var n int
-	var l int
-	_ = l
-	if orig.RejectedLogRecords != 0 {
-		n += 1 + proto.Sov(uint64(orig.RejectedLogRecords))
-	}
-	l = len(orig.ErrorMessage)
-	if l > 0 {
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	if orig.RejectedLogRecords != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.RejectedLogRecords))
-		pos--
-		buf[pos] = 0x8
-	}
-	l = len(orig.ErrorMessage)
-	if l > 0 {
-		pos -= l
-		copy(buf[pos:], orig.ErrorMessage)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x12
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field RejectedLogRecords", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.RejectedLogRecords = int64(num)
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ErrorMessage = string(buf[startPos:pos])
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

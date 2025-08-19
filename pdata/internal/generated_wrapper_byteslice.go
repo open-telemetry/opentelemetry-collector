@@ -7,13 +7,22 @@
 package internal
 
 import (
-	"encoding/base64"
-
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 type ByteSlice struct {
-	orig  *[]byte
+	orig *[]byte
 	state *State
 }
 
@@ -39,11 +48,11 @@ func CopyOrigByteSlice(dst, src []byte) []byte {
 }
 
 func GenerateOrigTestByteSlice() []byte {
-	return []byte{1, 2, 3}
+	return []byte{ 1, 2, 3 }
 }
 
 // UnmarshalJSONOrigByteSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigByteSlice(iter *json.Iterator) []byte {
+func UnmarshalJSONOrigByteSlice(iter *json.Iterator) []byte{
 	buf := iter.ReadStringAsSlice()
 	orig := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 	n, err := base64.StdEncoding.Decode(orig, buf)

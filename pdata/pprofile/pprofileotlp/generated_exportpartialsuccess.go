@@ -7,7 +7,13 @@
 package pprofileotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 

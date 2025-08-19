@@ -7,7 +7,13 @@
 package ptraceotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 

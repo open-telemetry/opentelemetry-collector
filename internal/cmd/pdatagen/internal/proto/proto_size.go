@@ -127,3 +127,7 @@ func (pf *Field) GenSizeProto() string {
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }
+
+func (pf *Field) GenerateSizeProto(*Message) string {
+	return pf.GenSizeProto()
+}

@@ -8,13 +8,17 @@ package internal
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gootlpcollectorlogs "go.opentelemetry.io/proto/slim/otlp/collector/logs/v1"
+	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 

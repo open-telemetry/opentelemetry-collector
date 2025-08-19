@@ -71,28 +71,12 @@ func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateMarshalJSON(*messageStruct) string {
-	return sf.toProtoField().GenMarshalJSON()
-}
-
 func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Parse("sliceUnmarshalJSONTemplate", []byte(sliceUnmarshalJSONTemplate))
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
-	return sf.toProtoField().GenSizeProto()
-}
-
-func (sf *SliceField) GenerateMarshalProto(*messageStruct) string {
-	return sf.toProtoField().GenMarshalProto()
-}
-
-func (sf *SliceField) GenerateUnmarshalProto(*messageStruct) string {
-	return sf.toProtoField().GenUnmarshalProto()
-}
-
-func (sf *SliceField) toProtoField() *proto.Field {
+func (sf *SliceField) toProtoField(*messageStruct) *proto.Field {
 	return &proto.Field{
 		Type:            sf.protoType,
 		ID:              sf.protoID,

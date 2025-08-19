@@ -7,8 +7,15 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -30,22 +37,6 @@ func FillOrigTestSummary(orig *otlpmetrics.Summary) {
 	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.DataPoints) > 0 {
-		dest.WriteObjectField("dataPoints")
-		dest.WriteArrayStart()
-		MarshalJSONOrigSummaryDataPoint(orig.DataPoints[0], dest)
-		for i := 1; i < len(orig.DataPoints); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigSummaryDataPoint(orig.DataPoints[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -57,69 +48,4 @@ func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.DataPoints {
-		l = SizeProtoOrigSummaryDataPoint(orig.DataPoints[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSummaryDataPoint(orig.DataPoints[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrSummaryDataPoint())
-			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

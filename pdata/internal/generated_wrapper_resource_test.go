@@ -8,14 +8,17 @@ package internal
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
 	"google.golang.org/protobuf/proto"
-
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestCopyOrigResource(t *testing.T) {
@@ -64,7 +67,7 @@ func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
-	for name, src := range getEncodingTestValuesResource() {
+	for name, src := range getEncodingTestValuesResource(){
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResource(src))
 			gotSize := MarshalProtoOrigResource(src, buf)
@@ -78,7 +81,7 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
-	for name, src := range getEncodingTestValuesResource() {
+	for name, src := range getEncodingTestValuesResource(){
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResource(src))
 			gotSize := MarshalProtoOrigResource(src, buf)
@@ -104,6 +107,6 @@ func getEncodingTestValuesResource() map[string]*otlpresource.Resource {
 			src := NewOrigPtrResource()
 			FillOrigTestResource(src)
 			return src
-		}(),
+		}(), 
 	}
 }

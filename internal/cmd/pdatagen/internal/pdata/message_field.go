@@ -62,15 +62,9 @@ func (mf *MessageField) GenerateTestValue(*messageStruct) string { return "" }
 
 func (mf *MessageField) GenerateOneOfPools(*messageStruct) string { return "" }
 
-func (mf *MessageField) GenerateReleaseOrig(*messageStruct) string { return "" }
-
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("messageCopyOrigTemplate", []byte(messageCopyOrigTemplate))
 	return template.Execute(t, mf.templateFields(ms))
-}
-
-func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
-	return mf.toProtoField().GenMarshalJSON()
 }
 
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -78,19 +72,7 @@ func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return template.Execute(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
-	return mf.toProtoField().GenSizeProto()
-}
-
-func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
-	return mf.toProtoField().GenMarshalProto()
-}
-
-func (mf *MessageField) GenerateUnmarshalProto(*messageStruct) string {
-	return mf.toProtoField().GenUnmarshalProto()
-}
-
-func (mf *MessageField) toProtoField() *proto.Field {
+func (mf *MessageField) toProtoField(*messageStruct) *proto.Field {
 	pt := proto.TypeMessage
 	if mf.returnMessage.getName() == "TraceState" {
 		pt = proto.TypeString

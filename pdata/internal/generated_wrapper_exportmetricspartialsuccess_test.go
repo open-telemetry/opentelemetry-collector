@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportMetricsPartialSuccess(t *testing.T) {

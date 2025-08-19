@@ -7,11 +7,14 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func NewOrigExportMetricsPartialSuccess() otlpcollectormetrics.ExportMetricsPartialSuccess {
@@ -32,20 +35,6 @@ func FillOrigTestExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMe
 	orig.ErrorMessage = "test_errormessage"
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.RejectedDataPoints != int64(0) {
-		dest.WriteObjectField("rejectedDataPoints")
-		dest.WriteInt64(orig.RejectedDataPoints)
-	}
-	if orig.ErrorMessage != "" {
-		dest.WriteObjectField("errorMessage")
-		dest.WriteString(orig.ErrorMessage)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -59,86 +48,4 @@ func UnmarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.Exp
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) int {
-	var n int
-	var l int
-	_ = l
-	if orig.RejectedDataPoints != 0 {
-		n += 1 + proto.Sov(uint64(orig.RejectedDataPoints))
-	}
-	l = len(orig.ErrorMessage)
-	if l > 0 {
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	if orig.RejectedDataPoints != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.RejectedDataPoints))
-		pos--
-		buf[pos] = 0x8
-	}
-	l = len(orig.ErrorMessage)
-	if l > 0 {
-		pos -= l
-		copy(buf[pos:], orig.ErrorMessage)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x12
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field RejectedDataPoints", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.RejectedDataPoints = int64(num)
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ErrorMessage = string(buf[startPos:pos])
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

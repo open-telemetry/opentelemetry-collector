@@ -7,9 +7,17 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -32,18 +40,6 @@ func FillOrigTestKeyValue(orig *otlpcommon.KeyValue) {
 	FillOrigTestAnyValue(&orig.Value)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.Key != "" {
-		dest.WriteObjectField("key")
-		dest.WriteString(orig.Key)
-	}
-	dest.WriteObjectField("value")
-	MarshalJSONOrigAnyValue(&orig.Value, dest)
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigAttribute unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -57,91 +53,4 @@ func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigKeyValue(orig *otlpcommon.KeyValue) int {
-	var n int
-	var l int
-	_ = l
-	l = len(orig.Key)
-	if l > 0 {
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	l = SizeProtoOrigAnyValue(&orig.Value)
-	n += 1 + proto.Sov(uint64(l)) + l
-	return n
-}
-
-func MarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	l = len(orig.Key)
-	if l > 0 {
-		pos -= l
-		copy(buf[pos:], orig.Key)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-
-	l = MarshalProtoOrigAnyValue(&orig.Value, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0x12
-
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.Key = string(buf[startPos:pos])
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigAnyValue(&orig.Value, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

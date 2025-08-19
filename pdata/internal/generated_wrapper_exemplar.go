@@ -9,9 +9,13 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"iter"
 	"math"
+	"sort"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -46,42 +50,6 @@ func FillOrigTestExemplar(orig *otlpmetrics.Exemplar) {
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.FilteredAttributes) > 0 {
-		dest.WriteObjectField("filteredAttributes")
-		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.FilteredAttributes[0], dest)
-		for i := 1; i < len(orig.FilteredAttributes); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.FilteredAttributes[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	if orig.TimeUnixNano != uint64(0) {
-		dest.WriteObjectField("timeUnixNano")
-		dest.WriteUint64(orig.TimeUnixNano)
-	}
-	switch orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble)
-	case *otlpmetrics.Exemplar_AsInt:
-		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt)
-	}
-	if orig.SpanId != data.SpanID([8]byte{}) {
-		dest.WriteObjectField("spanId")
-		MarshalJSONOrigSpanID(&orig.SpanId, dest)
-	}
-	if orig.TraceId != data.TraceID([16]byte{}) {
-		dest.WriteObjectField("traceId")
-		MarshalJSONOrigTraceID(&orig.TraceId, dest)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigExemplar unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -108,185 +76,4 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.FilteredAttributes {
-		l = SizeProtoOrigKeyValue(&orig.FilteredAttributes[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	if orig.TimeUnixNano != 0 {
-		n += 9
-	}
-	switch orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		n += 9
-	case *otlpmetrics.Exemplar_AsInt:
-		n += 9
-	}
-	l = SizeProtoOrigSpanID(&orig.SpanId)
-	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigTraceID(&orig.TraceId)
-	n += 1 + proto.Sov(uint64(l)) + l
-	return n
-}
-
-func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.FilteredAttributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.FilteredAttributes[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x3a
-	}
-	if orig.TimeUnixNano != 0 {
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
-		pos--
-		buf[pos] = 0x11
-	}
-	switch orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble))
-		pos--
-		buf[pos] = 0x19
-
-	case *otlpmetrics.Exemplar_AsInt:
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt))
-		pos--
-		buf[pos] = 0x31
-
-	}
-
-	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0x22
-
-	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0x2a
-
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 7:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field FilteredAttributes", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.FilteredAttributes = append(orig.FilteredAttributes, NewOrigKeyValue())
-			err = UnmarshalProtoOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 2:
-			if wireType != proto.WireTypeI64 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeI64(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.TimeUnixNano = uint64(num)
-
-		case 3:
-			if wireType != proto.WireTypeI64 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeI64(buf, pos)
-			if err != nil {
-				return err
-			}
-			ofv := &otlpmetrics.Exemplar_AsDouble{}
-			ofv.AsDouble = math.Float64frombits(num)
-			orig.Value = ofv
-
-		case 6:
-			if wireType != proto.WireTypeI64 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AsInt", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeI64(buf, pos)
-			if err != nil {
-				return err
-			}
-			ofv := &otlpmetrics.Exemplar_AsInt{}
-			ofv.AsInt = int64(num)
-			orig.Value = ofv
-
-		case 4:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 5:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

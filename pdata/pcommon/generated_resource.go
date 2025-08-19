@@ -7,8 +7,19 @@
 package pcommon
 
 import (
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	
 )
 
 // Resource is a message representing the resource information.
@@ -49,7 +60,6 @@ func (ms Resource) MoveTo(dest Resource) {
 func (ms Resource) Attributes() Map {
 	return Map(internal.NewMap(&ms.getOrig().Attributes, ms.getState()))
 }
-
 // DroppedAttributesCount returns the droppedattributescount associated with this Resource.
 func (ms Resource) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
@@ -61,10 +71,12 @@ func (ms Resource) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
+
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Resource) CopyTo(dest Resource) {
 	dest.getState().AssertMutable()
-	internal.CopyOrigResource(dest.getOrig(), ms.getOrig())
+    internal.CopyOrigResource(dest.getOrig(), ms.getOrig())
 }
 
 func (ms Resource) getOrig() *otlpresource.Resource {

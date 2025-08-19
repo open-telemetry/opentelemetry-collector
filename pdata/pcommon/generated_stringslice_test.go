@@ -8,27 +8,35 @@ package pcommon
 
 import (
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"
+	
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	
 )
 
 func TestNewStringSlice(t *testing.T) {
 	ms := NewStringSlice()
 	assert.Equal(t, 0, ms.Len())
-	ms.FromRaw([]string{"a", "b", "c"})
+	ms.FromRaw([]string{ "a", "b", "c" })
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, []string{"a", "b", "c"}, ms.AsRaw())
-	ms.SetAt(1, string("d"))
-	assert.Equal(t, []string{"a", "d", "c"}, ms.AsRaw())
-	ms.FromRaw([]string{"c"})
+	assert.Equal(t, []string{ "a", "b", "c" }, ms.AsRaw())
+	ms.SetAt(1, string( "d" ))
+	assert.Equal(t, []string{ "a", "d", "c" }, ms.AsRaw())
+	ms.FromRaw([]string{ "c" })
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, string("c"), ms.At(0))
 
 	cp := NewStringSlice()
 	ms.CopyTo(cp)
-	ms.SetAt(0, string("b"))
+	ms.SetAt(0, string( "b" ))
 	assert.Equal(t, string("b"), ms.At(0))
 	assert.Equal(t, string("c"), cp.At(0))
 	ms.CopyTo(cp)
@@ -39,7 +47,7 @@ func TestNewStringSlice(t *testing.T) {
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
 	assert.Equal(t, string("b"), mv.At(0))
-	ms.FromRaw([]string{"a", "b", "c"})
+	ms.FromRaw([]string{ "a", "b", "c" })
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, string("a"), mv.At(0))
@@ -49,7 +57,7 @@ func TestNewStringSlice(t *testing.T) {
 }
 
 func TestStringSliceReadOnly(t *testing.T) {
-	raw := []string{"a", "b", "c"}
+	raw := []string{ "a", "b", "c"}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	ms := StringSlice(internal.NewStringSlice(&raw, sharedState))
@@ -72,7 +80,7 @@ func TestStringSliceReadOnly(t *testing.T) {
 
 func TestStringSliceAppend(t *testing.T) {
 	ms := NewStringSlice()
-	ms.FromRaw([]string{"a", "b", "c"})
+	ms.FromRaw([]string{ "a", "b", "c" })
 	ms.Append("d", "d")
 	assert.Equal(t, 5, ms.Len())
 	assert.Equal(t, string("d"), ms.At(4))
@@ -88,7 +96,7 @@ func TestStringSliceEnsureCapacity(t *testing.T) {
 
 func TestStringSliceAll(t *testing.T) {
 	ms := NewStringSlice()
-	ms.FromRaw([]string{"a", "b", "c"})
+	ms.FromRaw([]string{ "a", "b", "c" })
 	assert.NotEmpty(t, ms.Len())
 
 	var c int
@@ -99,23 +107,24 @@ func TestStringSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+
 func TestStringSliceMoveAndAppendTo(t *testing.T) {
-	// Test moving from an empty slice
-	ms := NewStringSlice()
-	ms2 := NewStringSlice()
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, NewStringSlice(), ms2)
-	assert.Equal(t, ms.Len(), 0)
+  // Test moving from an empty slice
+  ms := NewStringSlice()
+  ms2 := NewStringSlice()
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, NewStringSlice(), ms2)
+  assert.Equal(t, ms.Len(), 0)
 
-	// Test moving to empty slice
-	ms.FromRaw([]string{"a", "b", "c"})
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, ms2.Len(), 3)
+  // Test moving to empty slice
+  ms.FromRaw([]string{ "a", "b", "c" })
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, ms2.Len(), 3)
 
-	// Test moving to a non empty slice
-	ms.FromRaw([]string{"a", "b", "c"})
-	ms.MoveAndAppendTo(ms2)
-	assert.Equal(t, ms2.Len(), 6)
+  // Test moving to a non empty slice
+  ms.FromRaw([]string{ "a", "b", "c" })
+  ms.MoveAndAppendTo(ms2)
+  assert.Equal(t, ms2.Len(), 6)
 }
 
 func TestStringSliceEqual(t *testing.T) {

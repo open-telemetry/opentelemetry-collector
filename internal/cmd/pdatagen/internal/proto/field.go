@@ -130,6 +130,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"bitSize":              bitSize,
 		"goType":               pf.GoType(),
 		"defaultValue":         pf.DefaultValue(),
+		"testValue":            pf.TestValue(),
 	}
 }
 

@@ -7,8 +7,16 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -36,28 +44,6 @@ func FillOrigTestFunction(orig *otlpprofiles.Function) {
 	orig.StartLine = int64(13)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if orig.NameStrindex != int32(0) {
-		dest.WriteObjectField("nameStrindex")
-		dest.WriteInt32(orig.NameStrindex)
-	}
-	if orig.SystemNameStrindex != int32(0) {
-		dest.WriteObjectField("systemNameStrindex")
-		dest.WriteInt32(orig.SystemNameStrindex)
-	}
-	if orig.FilenameStrindex != int32(0) {
-		dest.WriteObjectField("filenameStrindex")
-		dest.WriteInt32(orig.FilenameStrindex)
-	}
-	if orig.StartLine != int64(0) {
-		dest.WriteObjectField("startLine")
-		dest.WriteInt64(orig.StartLine)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigFunction unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -75,122 +61,4 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
-	var n int
-	var l int
-	_ = l
-	if orig.NameStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.NameStrindex))
-	}
-	if orig.SystemNameStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.SystemNameStrindex))
-	}
-	if orig.FilenameStrindex != 0 {
-		n += 1 + proto.Sov(uint64(orig.FilenameStrindex))
-	}
-	if orig.StartLine != 0 {
-		n += 1 + proto.Sov(uint64(orig.StartLine))
-	}
-	return n
-}
-
-func MarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	if orig.NameStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.NameStrindex))
-		pos--
-		buf[pos] = 0x8
-	}
-	if orig.SystemNameStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.SystemNameStrindex))
-		pos--
-		buf[pos] = 0x10
-	}
-	if orig.FilenameStrindex != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.FilenameStrindex))
-		pos--
-		buf[pos] = 0x18
-	}
-	if orig.StartLine != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.StartLine))
-		pos--
-		buf[pos] = 0x20
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field NameStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.NameStrindex = int32(num)
-
-		case 2:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field SystemNameStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.SystemNameStrindex = int32(num)
-
-		case 3:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field FilenameStrindex", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.FilenameStrindex = int32(num)
-
-		case 4:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field StartLine", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-
-			orig.StartLine = int64(num)
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

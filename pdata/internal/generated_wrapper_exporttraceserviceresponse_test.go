@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportTraceServiceResponse(t *testing.T) {

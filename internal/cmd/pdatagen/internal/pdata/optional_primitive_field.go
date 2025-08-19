@@ -106,28 +106,27 @@ func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(t, opv.templateFields(ms))
 }
 
-func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).GenMarshalJSON() + "\n}"
-}
-
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Parse("optionalPrimitiveUnmarshalJSONTemplate", []byte(optionalPrimitiveUnmarshalJSONTemplate))
 	return template.Execute(t, opv.templateFields(ms))
 }
 
 func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).GenSizeProto() + "\n}"
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoFieldOld(ms).GenSizeProto() + "\n}"
 }
 
 func (opv *OptionalPrimitiveField) GenerateMarshalProto(ms *messageStruct) string {
-	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms, true).GenMarshalProto() + "\n}"
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoFieldOld(ms).GenMarshalProto() + "\n}"
 }
 
-func (opv *OptionalPrimitiveField) GenerateUnmarshalProto(ms *messageStruct) string {
-	return opv.toProtoField(ms, false).GenUnmarshalProto()
+// TODO: Cleanup this by moving everyone to the new OneOfGroup
+func (opv *OptionalPrimitiveField) toProtoFieldOld(ms *messageStruct) *proto.Field {
+	pf := opv.toProtoField(ms)
+	pf.Name = opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName
+	return pf
 }
 
-func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct, oldOneOf bool) *proto.Field {
+func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct) *proto.Field {
 	pf := &proto.Field{
 		Type:                 opv.protoType,
 		ID:                   opv.protoID,
@@ -136,15 +135,11 @@ func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct, oldOneOf bool
 		OneOfMessageFullName: ms.originFullName + "_" + opv.fieldName,
 		Nullable:             true,
 	}
-	// TODO: Cleanup this by moving everyone to the new OneOfGroup
-	if oldOneOf {
-		pf.Name = opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName
-	}
 	return pf
 }
 
 func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]any {
-	pf := opv.toProtoField(ms, false)
+	pf := opv.toProtoField(ms)
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",

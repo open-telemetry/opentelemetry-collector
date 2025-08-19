@@ -7,11 +7,14 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func NewOrigExportProfilesServiceResponse() otlpcollectorprofiles.ExportProfilesServiceResponse {
@@ -30,14 +33,6 @@ func FillOrigTestExportProfilesServiceResponse(orig *otlpcollectorprofiles.Expor
 	FillOrigTestExportProfilesPartialSuccess(&orig.PartialSuccess)
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("partialSuccess")
-	MarshalJSONOrigExportProfilesPartialSuccess(&orig.PartialSuccess, dest)
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -49,67 +44,4 @@ func UnmarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) int {
-	var n int
-	var l int
-	_ = l
-	l = SizeProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess)
-	n += 1 + proto.Sov(uint64(l)) + l
-	return n
-}
-
-func MarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-
-	l = MarshalProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0xa
-
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field PartialSuccess", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

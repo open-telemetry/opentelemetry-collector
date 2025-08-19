@@ -7,8 +7,15 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,28 +41,6 @@ func FillOrigTestScopeLogs(orig *otlplogs.ScopeLogs) {
 	orig.SchemaUrl = "test_schemaurl"
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("scope")
-	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
-	if len(orig.LogRecords) > 0 {
-		dest.WriteObjectField("logRecords")
-		dest.WriteArrayStart()
-		MarshalJSONOrigLogRecord(orig.LogRecords[0], dest)
-		for i := 1; i < len(orig.LogRecords); i++ {
-			dest.WriteMore()
-			MarshalJSONOrigLogRecord(orig.LogRecords[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
-	dest.WriteObjectEnd()
-}
-
 // UnmarshalJSONOrigScopeLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
@@ -71,118 +56,4 @@ func UnmarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func SizeProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) int {
-	var n int
-	var l int
-	_ = l
-	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
-	n += 1 + proto.Sov(uint64(l)) + l
-	for i := range orig.LogRecords {
-		l = SizeProtoOrigLogRecord(orig.LogRecords[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	l = len(orig.SchemaUrl)
-	if l > 0 {
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-
-	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0xa
-
-	for i := len(orig.LogRecords) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigLogRecord(orig.LogRecords[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x12
-	}
-	l = len(orig.SchemaUrl)
-	if l > 0 {
-		pos -= l
-		copy(buf[pos:], orig.SchemaUrl)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0x1a
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field LogRecords", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.LogRecords = append(orig.LogRecords, NewOrigPtrLogRecord())
-			err = UnmarshalProtoOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 3:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

@@ -4,6 +4,8 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"log"
+
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
@@ -17,6 +19,7 @@ type baseStruct interface {
 	generateTests(packageInfo *PackageInfo) []byte
 	generateInternal(packageInfo *PackageInfo) []byte
 	generateInternalTests(packageInfo *PackageInfo) []byte
+	toProtoMessage() *proto.Message
 }
 
 // messageStruct generates a struct for a proto message. The struct can be generated both as a common struct
@@ -76,6 +79,22 @@ func (ms *messageStruct) getHasWrapper() bool {
 		return true
 	}
 	return usedByOtherDataTypes(ms.packageName)
+}
+
+func (ms *messageStruct) toProtoMessage() *proto.Message {
+	pms := &proto.Message{
+		Name:          ms.getName(),
+		AliasFullName: ms.getOriginFullName(),
+	}
+	for i := range ms.fields {
+		pf := ms.fields[i].toProtoField(ms)
+		if pf == nil {
+			log.Println(ms.getName())
+			continue
+		}
+		pms.Fields = append(pms.Fields, pf)
+	}
+	return pms
 }
 
 func (ms *messageStruct) getOriginName() string {

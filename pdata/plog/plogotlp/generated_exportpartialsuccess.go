@@ -7,7 +7,13 @@
 package plogotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/binary"
+	"fmt"
+	"iter"
+	"math"
+	"sort"
+	"sync"
+
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 

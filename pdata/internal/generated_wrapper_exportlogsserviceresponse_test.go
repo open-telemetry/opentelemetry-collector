@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportLogsServiceResponse(t *testing.T) {

@@ -83,31 +83,12 @@ func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateMarshalJSON(*messageStruct) string {
-	if strings.HasPrefix(ptf.returnType.messageName, "data.") {
-		return "if orig." + ptf.getOriginFieldName() + " != " + ptf.returnType.defaultVal + "{\n" + ptf.toProtoField().GenMarshalJSON() + "\n}"
-	}
-	return ptf.toProtoField().GenMarshalJSON()
-}
-
 func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Parse("typedUnmarshalJSONTemplate", []byte(typedUnmarshalJSONTemplate))
 	return template.Execute(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
-	return ptf.toProtoField().GenSizeProto()
-}
-
-func (ptf *TypedField) GenerateMarshalProto(*messageStruct) string {
-	return ptf.toProtoField().GenMarshalProto()
-}
-
-func (ptf *TypedField) GenerateUnmarshalProto(*messageStruct) string {
-	return ptf.toProtoField().GenUnmarshalProto()
-}
-
-func (ptf *TypedField) toProtoField() *proto.Field {
+func (ptf *TypedField) toProtoField(ms *messageStruct) *proto.Field {
 	return &proto.Field{
 		Type:            ptf.returnType.protoType,
 		ID:              ptf.protoID,
@@ -117,7 +98,7 @@ func (ptf *TypedField) toProtoField() *proto.Field {
 }
 
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
-	pf := ptf.toProtoField()
+	pf := ptf.toProtoField(ms)
 	return map[string]any{
 		"structName": ms.getName(),
 		"defaultVal": ptf.returnType.defaultVal,

@@ -6,6 +6,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"strings"
 
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
@@ -40,13 +41,6 @@ const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- range .values }}
 {{ .GenerateCopyOrig $.baseStruct $.OneOfField }}
 {{- end }}
-}`
-
-const oneOfMarshalJSONTemplate = `switch orig.{{ .originFieldName }}.(type) {
-	{{- range .values }}
-	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
-		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
-	{{- end }}
 }`
 
 const oneOfUnmarshalJSONTemplate = `
@@ -109,10 +103,6 @@ func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfCopyOrigTemplate", []byte(oneOfCopyOrigTemplate)), of.templateFields(ms))
 }
 
-func (of *OneOfField) GenerateMarshalJSON(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfMarshalJSONTemplate", []byte(oneOfMarshalJSONTemplate)), of.templateFields(ms))
-}
-
 func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfUnmarshalJSONTemplate", []byte(oneOfUnmarshalJSONTemplate)), of.templateFields(ms))
 }
@@ -130,6 +120,10 @@ func (of *OneOfField) GenerateMarshalProto(ms *messageStruct) string {
 func (of *OneOfField) GenerateUnmarshalProto(ms *messageStruct) string {
 	t := template.Parse("oneOfUnmarshalProtoTemplate", []byte(oneOfUnmarshalProtoTemplate))
 	return template.Execute(t, of.templateFields(ms))
+}
+
+func (of *OneOfField) toProtoField(ms *messageStruct) *proto.Field {
+	return of.values[0].toProtoField(ms, of)
 }
 
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
@@ -159,9 +153,9 @@ type oneOfValue interface {
 	GenerateTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
-	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateSizeProto(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalProto(ms *messageStruct, of *OneOfField) string
 	GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string
+	toProtoField(ms *messageStruct, of *OneOfField) *proto.Field
 }
