@@ -435,3 +435,60 @@ func TestPrintInitialConfigWithSensitiveData(t *testing.T) {
 	assert.Contains(t, output, "exporters:")
 	assert.Contains(t, output, "service:")
 }
+
+func TestPrintConfigCommandUnredactedMode(t *testing.T) {
+	// Test that unredacted mode shows sensitive data for validated configuration
+	factories, err := otlpFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:testdata/config_with_sensitive_data.yaml"},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+				DefaultScheme:     "file",
+			},
+		},
+	}
+
+	// Capture output (both stdout and stderr for warning)
+	var buf bytes.Buffer
+	var errBuf bytes.Buffer
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	rErr, wErr, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = wErr
+
+	cmd := newPrintConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	cmd.SetArgs([]string{"--mode", "unredacted"})
+	err = cmd.Execute()
+
+	// Restore stdout/stderr and get output
+	w.Close()
+	wErr.Close()
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+	buf.ReadFrom(r)
+	errBuf.ReadFrom(rErr)
+	output := buf.String()
+	errorOutput := errBuf.String()
+
+	// Should succeed with OTLP factories and show unredacted sensitive data
+	require.NoError(t, err, "Command should execute successfully with OTLP factories")
+
+	// Verify warning message is shown
+	assert.Contains(t, errorOutput, "Warning: unredacted mode shows all sensitive configuration values")
+
+	// Verify that sensitive data is NOT redacted (unredacted mode)
+	assert.Contains(t, output, "Bearer secret-token")
+	assert.Contains(t, output, "super-secret-key")
+	assert.NotContains(t, output, "[REDACTED]")
+
+	// Verify basic structure is still there
+	assert.Contains(t, output, "receivers:")
+	assert.Contains(t, output, "exporters:")
+	assert.Contains(t, output, "service:")
+}

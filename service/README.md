@@ -167,6 +167,7 @@ This command validates the configuration through the full component pipeline and
 
 ## Available print-config modes
 
-- `--mode=raw`: Shows resolved configuration before validation (may contain sensitive values, requires feature gate)
+- `--mode=initial`: Shows configuration as loaded from files without any resolution (literal file contents with no environment variable substitution or file references processed)
+- `--mode=raw`: Shows resolved configuration before validation (after merging configs and resolving environment variables, but before component validation; may contain sensitive values, requires feature gate)
 - `--mode=redacted`: Shows validated configuration with sensitive data redacted (default, safe for sharing)  
-- `--mode=unredacted`: Shows validated configuration with all sensitive data visible (most dangerous, not yet implemented)
+- `--mode=unredacted`: Shows validated configuration with all sensitive data visible (most dangerous, use with extreme caution)
