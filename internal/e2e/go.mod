@@ -23,7 +23,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.38.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.38.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.38.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0
 	go.opentelemetry.io/collector/connector v0.132.0
 	go.opentelemetry.io/collector/connector/connectortest v0.132.0
 	go.opentelemetry.io/collector/consumer v1.38.0
@@ -102,6 +101,7 @@ require (
 	go.opentelemetry.io/collector/client v1.38.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.38.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.132.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.132.0 // indirect
