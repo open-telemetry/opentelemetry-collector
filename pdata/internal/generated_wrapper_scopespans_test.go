@@ -23,7 +23,7 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 	dest := NewOrigPtrScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
-	FillOrigTestScopeSpans(src)
+	*src = *GenTestOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
+	for name, src := range genTestEncodingValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigScopeSpansFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeSpans() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrScopeSpans()
+			require.Error(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
 	dest := NewOrigPtrScopeSpans()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
+	for name, src := range genTestEncodingValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeSpans(src))
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
+	for name, src := range genTestEncodingValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeSpans(src))
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
@@ -97,13 +106,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
+func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Spans/wrong_wire_type":     {0x14},
+		"Spans/missing_value":       {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
 	return map[string]*otlptrace.ScopeSpans{
-		"empty": NewOrigPtrScopeSpans(),
-		"fill_test": func() *otlptrace.ScopeSpans {
-			src := NewOrigPtrScopeSpans()
-			FillOrigTestScopeSpans(src)
-			return src
-		}(),
+		"empty":                  NewOrigPtrScopeSpans(),
+		"Scope/test":             {Scope: *GenTestOrigInstrumentationScope()},
+		"Spans/default_and_test": {Spans: []*otlptrace.Span{{}, GenTestOrigSpan()}},
+		"SchemaUrl/test":         {SchemaUrl: "test_schemaurl"},
 	}
 }

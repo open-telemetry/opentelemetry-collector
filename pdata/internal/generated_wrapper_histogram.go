@@ -27,9 +27,11 @@ func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestHistogram(orig *otlpmetrics.Histogram) {
+func GenTestOrigHistogram() *otlpmetrics.Histogram {
+	orig := NewOrigPtrHistogram()
 	orig.DataPoints = GenerateOrigTestHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

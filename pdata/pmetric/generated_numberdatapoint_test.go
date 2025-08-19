@@ -111,7 +111,6 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := NewNumberDataPoint()
-	internal.FillOrigTestNumberDataPoint(ms.orig)
+	ms := newNumberDataPoint(internal.GenTestOrigNumberDataPoint(), internal.NewState())
 	return ms
 }

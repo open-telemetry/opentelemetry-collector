@@ -69,7 +69,6 @@ func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	ms := NewExponentialHistogramDataPointBuckets()
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(ms.orig)
+	ms := newExponentialHistogramDataPointBuckets(internal.GenTestOrigExponentialHistogramDataPoint_Buckets(), internal.NewState())
 	return ms
 }

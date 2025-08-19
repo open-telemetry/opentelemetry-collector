@@ -43,11 +43,9 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	orig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 5)
 	orig[0] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-	orig[1] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-	FillOrigTestSummaryDataPoint_ValueAtQuantile(orig[1])
+	orig[1] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
 	orig[2] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-	orig[3] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
-	FillOrigTestSummaryDataPoint_ValueAtQuantile(orig[3])
+	orig[3] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
 	orig[4] = NewOrigPtrSummaryDataPoint_ValueAtQuantile()
 	return orig
 }

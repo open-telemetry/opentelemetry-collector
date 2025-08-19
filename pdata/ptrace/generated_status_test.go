@@ -61,7 +61,6 @@ func TestStatus_Code(t *testing.T) {
 }
 
 func generateTestStatus() Status {
-	ms := NewStatus()
-	internal.FillOrigTestStatus(ms.orig)
+	ms := newStatus(internal.GenTestOrigStatus(), internal.NewState())
 	return ms
 }

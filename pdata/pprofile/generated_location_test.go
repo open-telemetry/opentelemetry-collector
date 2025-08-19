@@ -92,7 +92,6 @@ func TestLocation_AttributeIndices(t *testing.T) {
 }
 
 func generateTestLocation() Location {
-	ms := NewLocation()
-	internal.FillOrigTestLocation(ms.orig)
+	ms := newLocation(internal.GenTestOrigLocation(), internal.NewState())
 	return ms
 }

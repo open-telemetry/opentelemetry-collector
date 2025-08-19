@@ -23,7 +23,7 @@ func TestCopyOrigLine(t *testing.T) {
 	dest := NewOrigPtrLine()
 	CopyOrigLine(dest, src)
 	assert.Equal(t, NewOrigPtrLine(), dest)
-	FillOrigTestLine(src)
+	*src = *GenTestOrigLine()
 	CopyOrigLine(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigLineUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
+	for name, src := range genTestEncodingValuesLine() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigLineFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesLine() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrLine()
+			require.Error(t, UnmarshalProtoOrigLine(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigLineUnknown(t *testing.T) {
 	dest := NewOrigPtrLine()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigLineUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
+	for name, src := range genTestEncodingValuesLine() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLine(src))
 			gotSize := MarshalProtoOrigLine(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
-	for name, src := range getEncodingTestValuesLine() {
+	for name, src := range genTestEncodingValuesLine() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLine(src))
 			gotSize := MarshalProtoOrigLine(src, buf)
@@ -97,13 +106,23 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLine() map[string]*otlpprofiles.Line {
+func genTestFailingUnmarshalProtoValuesLine() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                 {0x02},
+		"FunctionIndex/wrong_wire_type": {0xc},
+		"FunctionIndex/missing_value":   {0x8},
+		"Line/wrong_wire_type":          {0x14},
+		"Line/missing_value":            {0x10},
+		"Column/wrong_wire_type":        {0x1c},
+		"Column/missing_value":          {0x18},
+	}
+}
+
+func genTestEncodingValuesLine() map[string]*otlpprofiles.Line {
 	return map[string]*otlpprofiles.Line{
-		"empty": NewOrigPtrLine(),
-		"fill_test": func() *otlpprofiles.Line {
-			src := NewOrigPtrLine()
-			FillOrigTestLine(src)
-			return src
-		}(),
+		"empty":              NewOrigPtrLine(),
+		"FunctionIndex/test": {FunctionIndex: int32(13)},
+		"Line/test":          {Line: int64(13)},
+		"Column/test":        {Column: int64(13)},
 	}
 }

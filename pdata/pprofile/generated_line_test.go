@@ -73,7 +73,6 @@ func TestLine_Column(t *testing.T) {
 }
 
 func generateTestLine() Line {
-	ms := NewLine()
-	internal.FillOrigTestLine(ms.orig)
+	ms := newLine(internal.GenTestOrigLine(), internal.NewState())
 	return ms
 }

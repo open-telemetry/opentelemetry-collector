@@ -23,7 +23,7 @@ func TestCopyOrigProfile(t *testing.T) {
 	dest := NewOrigPtrProfile()
 	CopyOrigProfile(dest, src)
 	assert.Equal(t, NewOrigPtrProfile(), dest)
-	FillOrigTestProfile(src)
+	*src = *GenTestOrigProfile()
 	CopyOrigProfile(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigProfileUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
+	for name, src := range genTestEncodingValuesProfile() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigProfileFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesProfile() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrProfile()
+			require.Error(t, UnmarshalProtoOrigProfile(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigProfileUnknown(t *testing.T) {
 	dest := NewOrigPtrProfile()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigProfileUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
+	for name, src := range genTestEncodingValuesProfile() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfile(src))
 			gotSize := MarshalProtoOrigProfile(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
-	for name, src := range getEncodingTestValuesProfile() {
+	for name, src := range genTestEncodingValuesProfile() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigProfile(src))
 			gotSize := MarshalProtoOrigProfile(src, buf)
@@ -97,13 +106,56 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesProfile() map[string]*otlpprofiles.Profile {
+func genTestFailingUnmarshalProtoValuesProfile() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"SampleType/wrong_wire_type":             {0xc},
+		"SampleType/missing_value":               {0xa},
+		"Sample/wrong_wire_type":                 {0x14},
+		"Sample/missing_value":                   {0x12},
+		"LocationIndices/wrong_wire_type":        {0x1c},
+		"LocationIndices/missing_value":          {0x1a},
+		"TimeNanos/wrong_wire_type":              {0x24},
+		"TimeNanos/missing_value":                {0x20},
+		"DurationNanos/wrong_wire_type":          {0x2c},
+		"DurationNanos/missing_value":            {0x28},
+		"PeriodType/wrong_wire_type":             {0x34},
+		"PeriodType/missing_value":               {0x32},
+		"Period/wrong_wire_type":                 {0x3c},
+		"Period/missing_value":                   {0x38},
+		"CommentStrindices/wrong_wire_type":      {0x44},
+		"CommentStrindices/missing_value":        {0x42},
+		"DefaultSampleTypeIndex/wrong_wire_type": {0x4c},
+		"DefaultSampleTypeIndex/missing_value":   {0x48},
+		"ProfileId/wrong_wire_type":              {0x54},
+		"ProfileId/missing_value":                {0x52},
+		"DroppedAttributesCount/wrong_wire_type": {0x5c},
+		"DroppedAttributesCount/missing_value":   {0x58},
+		"OriginalPayloadFormat/wrong_wire_type":  {0x64},
+		"OriginalPayloadFormat/missing_value":    {0x62},
+		"OriginalPayload/wrong_wire_type":        {0x6c},
+		"OriginalPayload/missing_value":          {0x6a},
+		"AttributeIndices/wrong_wire_type":       {0x74},
+		"AttributeIndices/missing_value":         {0x72},
+	}
+}
+
+func genTestEncodingValuesProfile() map[string]*otlpprofiles.Profile {
 	return map[string]*otlpprofiles.Profile{
-		"empty": NewOrigPtrProfile(),
-		"fill_test": func() *otlpprofiles.Profile {
-			src := NewOrigPtrProfile()
-			FillOrigTestProfile(src)
-			return src
-		}(),
+		"empty":                              NewOrigPtrProfile(),
+		"SampleType/default_and_test":        {SampleType: []*otlpprofiles.ValueType{{}, GenTestOrigValueType()}},
+		"Sample/default_and_test":            {Sample: []*otlpprofiles.Sample{{}, GenTestOrigSample()}},
+		"LocationIndices/default_and_test":   {LocationIndices: []int32{int32(0), int32(13)}},
+		"TimeNanos/test":                     {TimeNanos: int64(13)},
+		"DurationNanos/test":                 {DurationNanos: int64(13)},
+		"PeriodType/test":                    {PeriodType: *GenTestOrigValueType()},
+		"Period/test":                        {Period: int64(13)},
+		"CommentStrindices/default_and_test": {CommentStrindices: []int32{int32(0), int32(13)}},
+		"DefaultSampleTypeIndex/test":        {DefaultSampleTypeIndex: int32(13)},
+		"ProfileId/test":                     {ProfileId: *GenTestOrigProfileID()},
+		"DroppedAttributesCount/test":        {DroppedAttributesCount: uint32(13)},
+		"OriginalPayloadFormat/test":         {OriginalPayloadFormat: "test_originalpayloadformat"},
+		"OriginalPayload/test":               {OriginalPayload: []byte{1, 2, 3}},
+		"AttributeIndices/default_and_test":  {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

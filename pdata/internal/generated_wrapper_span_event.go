@@ -30,11 +30,13 @@ func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func FillOrigTestSpan_Event(orig *otlptrace.Span_Event) {
+func GenTestOrigSpan_Event() *otlptrace.Span_Event {
+	orig := NewOrigPtrSpan_Event()
 	orig.TimeUnixNano = 1234567890
 	orig.Name = "test_name"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

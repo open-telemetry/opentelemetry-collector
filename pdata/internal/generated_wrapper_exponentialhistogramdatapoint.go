@@ -68,7 +68,8 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	dest.ZeroThreshold = src.ZeroThreshold
 }
 
-func FillOrigTestExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) {
+func GenTestOrigExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
+	orig := NewOrigPtrExponentialHistogramDataPoint()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
@@ -76,13 +77,14 @@ func FillOrigTestExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHist
 	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
 	orig.Scale = int32(13)
 	orig.ZeroCount = uint64(13)
-	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Positive)
-	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Negative)
+	orig.Positive = *GenTestOrigExponentialHistogramDataPoint_Buckets()
+	orig.Negative = *GenTestOrigExponentialHistogramDataPoint_Buckets()
 	orig.Flags = 1
 	orig.Exemplars = GenerateOrigTestExemplarSlice()
 	orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
 	orig.ZeroThreshold = float64(3.1415926)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

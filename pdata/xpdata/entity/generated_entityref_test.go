@@ -78,5 +78,6 @@ func TestEntityRef_DescriptionKeys(t *testing.T) {
 }
 
 func generateTestEntityRef() EntityRef {
-	return EntityRef(internal.GenerateTestEntityRef())
+	ms := newEntityRef(internal.GenTestOrigEntityRef(), internal.NewState())
+	return ms
 }

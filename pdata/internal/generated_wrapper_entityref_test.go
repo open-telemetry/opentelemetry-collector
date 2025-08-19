@@ -23,7 +23,7 @@ func TestCopyOrigEntityRef(t *testing.T) {
 	dest := NewOrigPtrEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, NewOrigPtrEntityRef(), dest)
-	FillOrigTestEntityRef(src)
+	*src = *GenTestOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
+	for name, src := range genTestEncodingValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigEntityRefFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrEntityRef()
+			require.Error(t, UnmarshalProtoOrigEntityRef(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
 	dest := NewOrigPtrEntityRef()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
+	for name, src := range genTestEncodingValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigEntityRef(src))
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
+	for name, src := range genTestEncodingValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigEntityRef(src))
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
@@ -97,13 +106,26 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesEntityRef() map[string]*otlpcommon.EntityRef {
+func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                   {0x02},
+		"SchemaUrl/wrong_wire_type":       {0xc},
+		"SchemaUrl/missing_value":         {0xa},
+		"Type/wrong_wire_type":            {0x14},
+		"Type/missing_value":              {0x12},
+		"IdKeys/wrong_wire_type":          {0x1c},
+		"IdKeys/missing_value":            {0x1a},
+		"DescriptionKeys/wrong_wire_type": {0x24},
+		"DescriptionKeys/missing_value":   {0x22},
+	}
+}
+
+func genTestEncodingValuesEntityRef() map[string]*otlpcommon.EntityRef {
 	return map[string]*otlpcommon.EntityRef{
-		"empty": NewOrigPtrEntityRef(),
-		"fill_test": func() *otlpcommon.EntityRef {
-			src := NewOrigPtrEntityRef()
-			FillOrigTestEntityRef(src)
-			return src
-		}(),
+		"empty":                            NewOrigPtrEntityRef(),
+		"SchemaUrl/test":                   {SchemaUrl: "test_schemaurl"},
+		"Type/test":                        {Type: "test_type"},
+		"IdKeys/default_and_test":          {IdKeys: []string{"", "test_idkeys"}},
+		"DescriptionKeys/default_and_test": {DescriptionKeys: []string{"", "test_descriptionkeys"}},
 	}
 }

@@ -31,8 +31,8 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 
 func GenerateOrigTestExemplarSlice() []otlpmetrics.Exemplar {
 	orig := make([]otlpmetrics.Exemplar, 5)
-	FillOrigTestExemplar(&orig[1])
-	FillOrigTestExemplar(&orig[3])
+	orig[1] = *GenTestOrigExemplar()
+	orig[3] = *GenTestOrigExemplar()
 	return orig
 }
 

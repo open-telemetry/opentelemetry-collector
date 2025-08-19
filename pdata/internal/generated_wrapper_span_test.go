@@ -14,6 +14,7 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -23,7 +24,7 @@ func TestCopyOrigSpan(t *testing.T) {
 	dest := NewOrigPtrSpan()
 	CopyOrigSpan(dest, src)
 	assert.Equal(t, NewOrigPtrSpan(), dest)
-	FillOrigTestSpan(src)
+	*src = *GenTestOrigSpan()
 	CopyOrigSpan(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +39,7 @@ func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan() {
+	for name, src := range genTestEncodingValuesSpan() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +57,15 @@ func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigSpanFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSpan() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrSpan()
+			require.Error(t, UnmarshalProtoOrigSpan(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
 	dest := NewOrigPtrSpan()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +74,7 @@ func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan() {
+	for name, src := range genTestEncodingValuesSpan() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan(src))
 			gotSize := MarshalProtoOrigSpan(src, buf)
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
-	for name, src := range getEncodingTestValuesSpan() {
+	for name, src := range genTestEncodingValuesSpan() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSpan(src))
 			gotSize := MarshalProtoOrigSpan(src, buf)
@@ -97,13 +107,62 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesSpan() map[string]*otlptrace.Span {
+func genTestFailingUnmarshalProtoValuesSpan() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"TraceId/wrong_wire_type":                {0xc},
+		"TraceId/missing_value":                  {0xa},
+		"SpanId/wrong_wire_type":                 {0x14},
+		"SpanId/missing_value":                   {0x12},
+		"TraceState/wrong_wire_type":             {0x1c},
+		"TraceState/missing_value":               {0x1a},
+		"ParentSpanId/wrong_wire_type":           {0x24},
+		"ParentSpanId/missing_value":             {0x22},
+		"Flags/wrong_wire_type":                  {0x84, 0x1},
+		"Flags/missing_value":                    {0x85, 0x1},
+		"Name/wrong_wire_type":                   {0x2c},
+		"Name/missing_value":                     {0x2a},
+		"Kind/wrong_wire_type":                   {0x34},
+		"Kind/missing_value":                     {0x30},
+		"StartTimeUnixNano/wrong_wire_type":      {0x3c},
+		"StartTimeUnixNano/missing_value":        {0x39},
+		"EndTimeUnixNano/wrong_wire_type":        {0x44},
+		"EndTimeUnixNano/missing_value":          {0x41},
+		"Attributes/wrong_wire_type":             {0x4c},
+		"Attributes/missing_value":               {0x4a},
+		"DroppedAttributesCount/wrong_wire_type": {0x54},
+		"DroppedAttributesCount/missing_value":   {0x50},
+		"Events/wrong_wire_type":                 {0x5c},
+		"Events/missing_value":                   {0x5a},
+		"DroppedEventsCount/wrong_wire_type":     {0x64},
+		"DroppedEventsCount/missing_value":       {0x60},
+		"Links/wrong_wire_type":                  {0x6c},
+		"Links/missing_value":                    {0x6a},
+		"DroppedLinksCount/wrong_wire_type":      {0x74},
+		"DroppedLinksCount/missing_value":        {0x70},
+		"Status/wrong_wire_type":                 {0x7c},
+		"Status/missing_value":                   {0x7a},
+	}
+}
+
+func genTestEncodingValuesSpan() map[string]*otlptrace.Span {
 	return map[string]*otlptrace.Span{
-		"empty": NewOrigPtrSpan(),
-		"fill_test": func() *otlptrace.Span {
-			src := NewOrigPtrSpan()
-			FillOrigTestSpan(src)
-			return src
-		}(),
+		"empty":                       NewOrigPtrSpan(),
+		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"TraceState/test":             {TraceState: "test_tracestate"},
+		"ParentSpanId/test":           {ParentSpanId: *GenTestOrigSpanID()},
+		"Flags/test":                  {Flags: uint32(13)},
+		"Name/test":                   {Name: "test_name"},
+		"Kind/test":                   {Kind: otlptrace.Span_SpanKind(13)},
+		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
+		"EndTimeUnixNano/test":        {EndTimeUnixNano: uint64(13)},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
+		"Events/default_and_test":     {Events: []*otlptrace.Span_Event{{}, GenTestOrigSpan_Event()}},
+		"DroppedEventsCount/test":     {DroppedEventsCount: uint32(13)},
+		"Links/default_and_test":      {Links: []*otlptrace.Span_Link{{}, GenTestOrigSpan_Link()}},
+		"DroppedLinksCount/test":      {DroppedLinksCount: uint32(13)},
+		"Status/test":                 {Status: *GenTestOrigStatus()},
 	}
 }

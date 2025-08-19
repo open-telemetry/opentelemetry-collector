@@ -34,7 +34,8 @@ func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.HasInlineFrames = src.HasInlineFrames
 }
 
-func FillOrigTestMapping(orig *otlpprofiles.Mapping) {
+func GenTestOrigMapping() *otlpprofiles.Mapping {
+	orig := NewOrigPtrMapping()
 	orig.MemoryStart = uint64(13)
 	orig.MemoryLimit = uint64(13)
 	orig.FileOffset = uint64(13)
@@ -44,6 +45,7 @@ func FillOrigTestMapping(orig *otlpprofiles.Mapping) {
 	orig.HasFilenames = true
 	orig.HasLineNumbers = true
 	orig.HasInlineFrames = true
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

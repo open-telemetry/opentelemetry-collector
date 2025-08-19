@@ -23,7 +23,7 @@ func TestCopyOrigLocation(t *testing.T) {
 	dest := NewOrigPtrLocation()
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, NewOrigPtrLocation(), dest)
-	FillOrigTestLocation(src)
+	*src = *GenTestOrigLocation()
 	CopyOrigLocation(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigLocationUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
+	for name, src := range genTestEncodingValuesLocation() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigLocationFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesLocation() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrLocation()
+			require.Error(t, UnmarshalProtoOrigLocation(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
 	dest := NewOrigPtrLocation()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
+	for name, src := range genTestEncodingValuesLocation() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLocation(src))
 			gotSize := MarshalProtoOrigLocation(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
-	for name, src := range getEncodingTestValuesLocation() {
+	for name, src := range genTestEncodingValuesLocation() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLocation(src))
 			gotSize := MarshalProtoOrigLocation(src, buf)
@@ -97,14 +106,29 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesLocation() map[string]*otlpprofiles.Location {
+func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                    {0x02},
+		"MappingIndex/wrong_wire_type":     {0xc},
+		"MappingIndex/missing_value":       {0x8},
+		"Address/wrong_wire_type":          {0x14},
+		"Address/missing_value":            {0x10},
+		"Line/wrong_wire_type":             {0x1c},
+		"Line/missing_value":               {0x1a},
+		"IsFolded/wrong_wire_type":         {0x24},
+		"IsFolded/missing_value":           {0x20},
+		"AttributeIndices/wrong_wire_type": {0x2c},
+		"AttributeIndices/missing_value":   {0x2a},
+	}
+}
+
+func genTestEncodingValuesLocation() map[string]*otlpprofiles.Location {
 	return map[string]*otlpprofiles.Location{
-		"empty": NewOrigPtrLocation(),
-		"fill_test": func() *otlpprofiles.Location {
-			src := NewOrigPtrLocation()
-			FillOrigTestLocation(src)
-			return src
-		}(),
-		"default_mappingindex": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
+		"empty": NewOrigPtrLocation(), "MappingIndex/default": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
+		"MappingIndex/test":                 {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}},
+		"Address/test":                      {Address: uint64(13)},
+		"Line/default_and_test":             {Line: []*otlpprofiles.Line{{}, GenTestOrigLine()}},
+		"IsFolded/test":                     {IsFolded: true},
+		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

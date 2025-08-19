@@ -65,7 +65,6 @@ func TestAttributeUnit_UnitStrindex(t *testing.T) {
 }
 
 func generateTestAttributeUnit() AttributeUnit {
-	ms := NewAttributeUnit()
-	internal.FillOrigTestAttributeUnit(ms.orig)
+	ms := newAttributeUnit(internal.GenTestOrigAttributeUnit(), internal.NewState())
 	return ms
 }

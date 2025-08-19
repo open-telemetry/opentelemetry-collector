@@ -8,9 +8,11 @@ type Field interface {
 
 	GenerateAccessorsTest(ms *messageStruct) string
 
-	GenerateSetWithTestValue(ms *messageStruct) string
-
 	GenerateTestValue(ms *messageStruct) string
+
+	GenerateTestFailingUnmarshalProtoValues(ms *messageStruct) string
+
+	GenerateTestEncodingValues(ms *messageStruct) string
 
 	GenerateCopyOrig(ms *messageStruct) string
 

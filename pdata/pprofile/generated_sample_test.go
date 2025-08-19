@@ -99,7 +99,6 @@ func TestSample_TimestampsUnixNano(t *testing.T) {
 }
 
 func generateTestSample() Sample {
-	ms := NewSample()
-	internal.FillOrigTestSample(ms.orig)
+	ms := newSample(internal.GenTestOrigSample(), internal.NewState())
 	return ms
 }

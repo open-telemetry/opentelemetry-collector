@@ -23,7 +23,7 @@ func TestCopyOrigHistogram(t *testing.T) {
 	dest := NewOrigPtrHistogram()
 	CopyOrigHistogram(dest, src)
 	assert.Equal(t, NewOrigPtrHistogram(), dest)
-	FillOrigTestHistogram(src)
+	*src = *GenTestOrigHistogram()
 	CopyOrigHistogram(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigHistogramUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
+	for name, src := range genTestEncodingValuesHistogram() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigHistogramFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesHistogram() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrHistogram()
+			require.Error(t, UnmarshalProtoOrigHistogram(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigHistogramUnknown(t *testing.T) {
 	dest := NewOrigPtrHistogram()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigHistogramUnknown(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
+	for name, src := range genTestEncodingValuesHistogram() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogram(src))
 			gotSize := MarshalProtoOrigHistogram(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
-	for name, src := range getEncodingTestValuesHistogram() {
+	for name, src := range genTestEncodingValuesHistogram() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigHistogram(src))
 			gotSize := MarshalProtoOrigHistogram(src, buf)
@@ -97,13 +106,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
 	}
 }
 
-func getEncodingTestValuesHistogram() map[string]*otlpmetrics.Histogram {
+func genTestFailingUnmarshalProtoValuesHistogram() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
+	}
+}
+
+func genTestEncodingValuesHistogram() map[string]*otlpmetrics.Histogram {
 	return map[string]*otlpmetrics.Histogram{
-		"empty": NewOrigPtrHistogram(),
-		"fill_test": func() *otlpmetrics.Histogram {
-			src := NewOrigPtrHistogram()
-			FillOrigTestHistogram(src)
-			return src
-		}(),
+		"empty":                       NewOrigPtrHistogram(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.HistogramDataPoint{{}, GenTestOrigHistogramDataPoint()}},
+		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 	}
 }

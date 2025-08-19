@@ -84,7 +84,7 @@ func TestProfile_Duration(t *testing.T) {
 func TestProfile_PeriodType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueType(), ms.PeriodType())
-	internal.FillOrigTestValueType(&ms.orig.PeriodType)
+	ms.orig.PeriodType = *internal.GenTestOrigValueType()
 	assert.Equal(t, generateTestValueType(), ms.PeriodType())
 }
 
@@ -160,7 +160,6 @@ func TestProfile_AttributeIndices(t *testing.T) {
 }
 
 func generateTestProfile() Profile {
-	ms := NewProfile()
-	internal.FillOrigTestProfile(ms.orig)
+	ms := newProfile(internal.GenTestOrigProfile(), internal.NewState())
 	return ms
 }

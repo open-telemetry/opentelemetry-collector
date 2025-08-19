@@ -31,12 +31,6 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-func GenerateTestInstrumentationScope() InstrumentationScope {
-	orig := NewOrigPtrInstrumentationScope()
-	FillOrigTestInstrumentationScope(orig)
-	return NewInstrumentationScope(orig, NewState())
-}
-
 func NewOrigInstrumentationScope() otlpcommon.InstrumentationScope {
 	return otlpcommon.InstrumentationScope{}
 }
@@ -52,11 +46,13 @@ func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func FillOrigTestInstrumentationScope(orig *otlpcommon.InstrumentationScope) {
+func GenTestOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
+	orig := NewOrigPtrInstrumentationScope()
 	orig.Name = "test_name"
 	orig.Version = "test_version"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

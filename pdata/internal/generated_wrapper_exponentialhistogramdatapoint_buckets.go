@@ -27,9 +27,11 @@ func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.Expone
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }
 
-func FillOrigTestExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+func GenTestOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	orig := NewOrigPtrExponentialHistogramDataPoint_Buckets()
 	orig.Offset = int32(13)
 	orig.BucketCounts = GenerateOrigTestUint64Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

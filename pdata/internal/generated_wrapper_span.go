@@ -43,10 +43,11 @@ func CopyOrigSpan(dest, src *otlptrace.Span) {
 	CopyOrigStatus(&dest.Status, &src.Status)
 }
 
-func FillOrigTestSpan(orig *otlptrace.Span) {
+func GenTestOrigSpan() *otlptrace.Span {
+	orig := NewOrigPtrSpan()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	FillOrigTestTraceState(&orig.TraceState)
+	orig.TraceState = *GenTestOrigTraceState()
 	orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.Flags = uint32(13)
 	orig.Name = "test_name"
@@ -59,7 +60,8 @@ func FillOrigTestSpan(orig *otlptrace.Span) {
 	orig.DroppedEventsCount = uint32(13)
 	orig.Links = GenerateOrigTestSpan_LinkSlice()
 	orig.DroppedLinksCount = uint32(13)
-	FillOrigTestStatus(&orig.Status)
+	orig.Status = *GenTestOrigStatus()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

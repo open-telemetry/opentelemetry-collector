@@ -92,7 +92,6 @@ func TestProfilesDictionary_AttributeUnits(t *testing.T) {
 }
 
 func generateTestProfilesDictionary() ProfilesDictionary {
-	ms := NewProfilesDictionary()
-	internal.FillOrigTestProfilesDictionary(ms.orig)
+	ms := newProfilesDictionary(internal.GenTestOrigProfilesDictionary(), internal.NewState())
 	return ms
 }

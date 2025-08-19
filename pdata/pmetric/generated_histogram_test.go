@@ -58,7 +58,6 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestHistogram() Histogram {
-	ms := NewHistogram()
-	internal.FillOrigTestHistogram(ms.orig)
+	ms := newHistogram(internal.GenTestOrigHistogram(), internal.NewState())
 	return ms
 }

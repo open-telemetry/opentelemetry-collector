@@ -27,9 +27,11 @@ func CopyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 }
 
-func FillOrigTestStatus(orig *otlptrace.Status) {
+func GenTestOrigStatus() *otlptrace.Status {
+	orig := NewOrigPtrStatus()
 	orig.Message = "test_message"
 	orig.Code = otlptrace.Status_StatusCode(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.

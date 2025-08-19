@@ -23,7 +23,7 @@ func TestCopyOrigExportLogsServiceResponse(t *testing.T) {
 	dest := NewOrigPtrExportLogsServiceResponse()
 	CopyOrigExportLogsServiceResponse(dest, src)
 	assert.Equal(t, NewOrigPtrExportLogsServiceResponse(), dest)
-	FillOrigTestExportLogsServiceResponse(src)
+	*src = *GenTestOrigExportLogsServiceResponse()
 	CopyOrigExportLogsServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponseUnknown(t *testing.
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportLogsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -56,6 +56,15 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsServiceResponse(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponseFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportLogsServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigPtrExportLogsServiceResponse()
+			require.Error(t, UnmarshalProtoOrigExportLogsServiceResponse(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponseUnknown(t *testing.T) {
 	dest := NewOrigPtrExportLogsServiceResponse()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
@@ -64,7 +73,7 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponseUnknown(t *testing
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportLogsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportLogsServiceResponse(src))
 			gotSize := MarshalProtoOrigExportLogsServiceResponse(src, buf)
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigExportLogsServiceResponse(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportLogsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportLogsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportLogsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportLogsServiceResponse(src))
 			gotSize := MarshalProtoOrigExportLogsServiceResponse(src, buf)
@@ -97,13 +106,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportLogsServiceResponse(t *testing
 	}
 }
 
-func getEncodingTestValuesExportLogsServiceResponse() map[string]*otlpcollectorlogs.ExportLogsServiceResponse {
+func genTestFailingUnmarshalProtoValuesExportLogsServiceResponse() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                  {0x02},
+		"PartialSuccess/wrong_wire_type": {0xc},
+		"PartialSuccess/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesExportLogsServiceResponse() map[string]*otlpcollectorlogs.ExportLogsServiceResponse {
 	return map[string]*otlpcollectorlogs.ExportLogsServiceResponse{
-		"empty": NewOrigPtrExportLogsServiceResponse(),
-		"fill_test": func() *otlpcollectorlogs.ExportLogsServiceResponse {
-			src := NewOrigPtrExportLogsServiceResponse()
-			FillOrigTestExportLogsServiceResponse(src)
-			return src
-		}(),
+		"empty":               NewOrigPtrExportLogsServiceResponse(),
+		"PartialSuccess/test": {PartialSuccess: *GenTestOrigExportLogsPartialSuccess()},
 	}
 }

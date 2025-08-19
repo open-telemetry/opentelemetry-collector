@@ -49,7 +49,6 @@ func TestGauge_DataPoints(t *testing.T) {
 }
 
 func generateTestGauge() Gauge {
-	ms := NewGauge()
-	internal.FillOrigTestGauge(ms.orig)
+	ms := newGauge(internal.GenTestOrigGauge(), internal.NewState())
 	return ms
 }

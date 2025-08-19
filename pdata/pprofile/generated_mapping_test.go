@@ -131,7 +131,6 @@ func TestMapping_HasInlineFrames(t *testing.T) {
 }
 
 func generateTestMapping() Mapping {
-	ms := NewMapping()
-	internal.FillOrigTestMapping(ms.orig)
+	ms := newMapping(internal.GenTestOrigMapping(), internal.NewState())
 	return ms
 }

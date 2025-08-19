@@ -43,11 +43,9 @@ func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptra
 func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 	orig := make([]*otlptrace.ResourceSpans, 5)
 	orig[0] = NewOrigPtrResourceSpans()
-	orig[1] = NewOrigPtrResourceSpans()
-	FillOrigTestResourceSpans(orig[1])
+	orig[1] = GenTestOrigResourceSpans()
 	orig[2] = NewOrigPtrResourceSpans()
-	orig[3] = NewOrigPtrResourceSpans()
-	FillOrigTestResourceSpans(orig[3])
+	orig[3] = GenTestOrigResourceSpans()
 	orig[4] = NewOrigPtrResourceSpans()
 	return orig
 }
