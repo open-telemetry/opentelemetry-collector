@@ -14,6 +14,7 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -40,20 +41,29 @@ func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSpan(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigSpan()
-			UnmarshalJSONOrigSpan(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSpan(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSpan()
+				UnmarshalJSONOrigSpan(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +85,25 @@ func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan(src))
-			gotSize := MarshalProtoOrigSpan(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigSpan()
-			require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSpan(src))
+				gotSize := MarshalProtoOrigSpan(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSpan()
+				require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
 	}
 }
 

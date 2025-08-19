@@ -8,14 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolExportProfilesPartialSuccess = sync.Pool{
+	New: func() any {
+		return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	},
+}
+
 func NewOrigExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
-	return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	}
+	return protoPoolExportProfilesPartialSuccess.Get().(*otlpcollectorprofiles.ExportProfilesPartialSuccess)
+}
+
+func DeleteOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportProfilesPartialSuccess.Put(orig)
+	}
 }
 
 func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.ExportProfilesPartialSuccess) {

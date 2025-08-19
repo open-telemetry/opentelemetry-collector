@@ -55,6 +55,7 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 		// This can happen when len(src) < len(dest) < cap(dest).
 		{{ if .elementNullable -}}
 		for i := len(src); i < len(dest); i++ {
+            DeleteOrig{{ .elementOriginName }}(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
@@ -63,7 +64,7 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 			newDest[i] = NewOrig{{ .elementOriginName }}()
 		}{{ else -}}
 		for i := len(src); i < len(dest); i++ {
-			dest[i].Reset()
+            DeleteOrig{{ .elementOriginName }}(&dest[i], false)
 		}
         {{- end }}
 	}

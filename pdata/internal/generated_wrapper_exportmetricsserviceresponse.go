@@ -8,14 +8,42 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolExportMetricsServiceResponse = sync.Pool{
+	New: func() any {
+		return &otlpcollectormetrics.ExportMetricsServiceResponse{}
+	},
+}
+
 func NewOrigExportMetricsServiceResponse() *otlpcollectormetrics.ExportMetricsServiceResponse {
-	return &otlpcollectormetrics.ExportMetricsServiceResponse{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectormetrics.ExportMetricsServiceResponse{}
+	}
+	return protoPoolExportMetricsServiceResponse.Get().(*otlpcollectormetrics.ExportMetricsServiceResponse)
+}
+
+func DeleteOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigExportMetricsPartialSuccess(&orig.PartialSuccess, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportMetricsServiceResponse.Put(orig)
+	}
 }
 
 func CopyOrigExportMetricsServiceResponse(dest, src *otlpcollectormetrics.ExportMetricsServiceResponse) {

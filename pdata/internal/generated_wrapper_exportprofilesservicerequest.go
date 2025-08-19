@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,8 +32,38 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 	return Profiles{orig: orig, state: state}
 }
 
+var protoPoolExportProfilesServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
+	},
+}
+
 func NewOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
-	return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
+	}
+	return protoPoolExportProfilesServiceRequest.Get().(*otlpcollectorprofiles.ExportProfilesServiceRequest)
+}
+
+func DeleteOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceProfiles {
+		DeleteOrigResourceProfiles(orig.ResourceProfiles[i], true)
+	}
+	DeleteOrigProfilesDictionary(&orig.Dictionary, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportProfilesServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportProfilesServiceRequest(dest, src *otlpcollectorprofiles.ExportProfilesServiceRequest) {
