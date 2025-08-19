@@ -15,7 +15,9 @@ issues: [12207]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: | 
+  The specified feature is enable through feature-gate flag. Enabled like below:
+  otelcol --config=config.yaml --feature-gates=+telemetry.newPipelineTelemetry,+telemetry.distinguishDownstreamErrors
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
