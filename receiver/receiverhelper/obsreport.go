@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
@@ -163,7 +165,7 @@ func (rec *ObsReport) endOp(
 	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
-		if IsDownstreamError(err) {
+		if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(err) {
 			numRefused = numReceivedItems
 		} else {
 			numFailedErrors = numReceivedItems
@@ -179,7 +181,7 @@ func (rec *ObsReport) endOp(
 	switch {
 	case err == nil:
 		outcome = "success"
-	case IsDownstreamError(err):
+	case telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(err):
 		outcome = "refused"
 	default:
 		outcome = "failure"

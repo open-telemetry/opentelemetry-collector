@@ -41,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -50,7 +51,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -654,9 +654,9 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 			sink.SetConsumeError(nil)
 		} else {
 			if ingestionState.permanent {
-				sink.SetConsumeError(receiverhelper.WrapDownstreamError(consumererror.NewPermanent(errors.New("consumer error"))))
+				sink.SetConsumeError(consumererror.NewPermanent(errors.New("consumer error")))
 			} else {
-				sink.SetConsumeError(receiverhelper.WrapDownstreamError(errors.New("consumer error")))
+				sink.SetConsumeError(errors.New("consumer error"))
 			}
 		}
 
@@ -694,13 +694,13 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:         false,
-			err:                receiverhelper.WrapDownstreamError(consumererror.NewPermanent(errors.New("consumer error"))),
+			err:                consumererror.NewPermanent(errors.New("consumer error")),
 			expectedCode:       codes.Internal,
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
 			okToIngest:         false,
-			err:                receiverhelper.WrapDownstreamError(errors.New("consumer error")),
+			err:                errors.New("consumer error"),
 			expectedCode:       codes.Unavailable,
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
@@ -1304,7 +1304,17 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	}
 }
 
-func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, failed int64) {
+func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
+	var refused, failed int64
+	var outcome string
+	if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() {
+		refused = rejected
+		outcome = "refused"
+	} else {
+		failed = rejected
+		outcome = "failure"
+	}
+
 	got, err := tt.GetMetric("otelcol_receiver_failed_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -1320,7 +1330,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: 0, // No internal receiver failures in these tests
+						Value: failed,
 					},
 				},
 			},
@@ -1362,7 +1372,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: failed,
+						Value: refused,
 					},
 				},
 			},
@@ -1383,13 +1393,13 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			Value: accepted,
 		})
 	}
-	if failed > 0 {
+	if rejected > 0 {
 		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 			Attributes: attribute.NewSet(
 				attribute.String("receiver", id.String()),
 				attribute.String("transport", transport),
-				attribute.String("outcome", "refused")),
-			Value: failed, // Number of refused requests (downstream errors)
+				attribute.String("outcome", outcome)),
+			Value: rejected,
 		})
 	}
 
@@ -1406,7 +1416,18 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
-func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, failed int64) {
+func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
+	var refused, failed int64
+	var outcome string
+	// In this test, the error is not downstream, so it will always be a failure.
+	if telemetry.NewPipelineTelemetryReceiverError.IsEnabled() && consumererror.IsDownstream(errors.New("consumer error")) {
+		refused = rejected
+		outcome = "refused"
+	} else {
+		failed = rejected
+		outcome = "failure"
+	}
+
 	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -1422,7 +1443,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: failed, // Consumer errors are now categorized as failed
+						Value: failed,
 					},
 				},
 			},
@@ -1464,7 +1485,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: 0, // No refused metric points in current implementation
+						Value: refused,
 					},
 				},
 			},
@@ -1485,12 +1506,12 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 			Value: accepted,
 		})
 	}
-	if failed > 0 {
+	if rejected > 0 {
 		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 			Attributes: attribute.NewSet(
 				attribute.String("receiver", id.String()),
 				attribute.String("transport", transport),
-				attribute.String("outcome", "failure")),
+				attribute.String("outcome", outcome)),
 			Value: 1, // One request failed
 		})
 	}

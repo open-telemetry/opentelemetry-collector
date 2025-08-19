@@ -14,7 +14,6 @@ import (
 
 func GetStatusFromError(err error) error {
 	s, ok := status.FromError(err)
-
 	if !ok {
 		// Default to a retryable error
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
@@ -25,7 +24,6 @@ func GetStatusFromError(err error) error {
 		}
 		s = status.New(code, err.Error())
 	}
-
 	return s.Err()
 }
 
