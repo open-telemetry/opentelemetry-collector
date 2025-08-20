@@ -41,8 +41,9 @@ func (pf *Field) wireType() WireType {
 		return WireTypeI64
 	case TypeBytes, TypeMessage, TypeString:
 		return WireTypeLen
+	default:
+		panic("unsupported field type")
 	}
-	panic("unreachable")
 }
 
 func (pf *Field) DefaultValue() string {
@@ -58,7 +59,7 @@ func (pf *Field) DefaultValue() string {
 	case TypeMessage:
 		return pf.MessageFullName + `{}`
 	default:
-		panic("unreachable")
+		panic("unsupported field type")
 	}
 }
 
@@ -74,8 +75,10 @@ func (pf *Field) TestValue() string {
 		return `[]byte{1, 2, 3}`
 	case TypeString:
 		return `"test_` + strings.ToLower(pf.Name) + `"`
+	case TypeMessage:
+		return `GenTestOrig` + pf.messageName() + `()`
 	default:
-		panic("unreachable")
+		panic("unsupported field type")
 	}
 }
 
@@ -102,7 +105,7 @@ func (pf *Field) GoType() string {
 	case TypeMessage, TypeEnum:
 		return pf.MessageFullName
 	default:
-		panic("unreachable")
+		panic("unsupported field type")
 	}
 }
 
@@ -123,6 +126,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"jsonTag":              genJSONTag(pf.Name),
 		"fieldName":            pf.Name,
 		"origName":             pf.messageName(),
+		"origFullName":         pf.MessageFullName,
 		"oneOfGroup":           pf.OneOfGroup,
 		"oneOfMessageFullName": pf.OneOfMessageFullName,
 		"repeated":             pf.Repeated,
@@ -130,6 +134,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"bitSize":              bitSize,
 		"goType":               pf.GoType(),
 		"defaultValue":         pf.DefaultValue(),
+		"testValue":            pf.TestValue(),
 	}
 }
 

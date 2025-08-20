@@ -58,9 +58,6 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
-const optionalPrimitiveTestValuesTemplate = `
-"default_{{ .lowerFieldName }}": { {{ .fieldName }}_: &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: {{ .defaultVal }}} },`
-
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
 	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
 	if !ok {
@@ -71,9 +68,6 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 } else {
 	dest.{{ .fieldName }}_ = nil
 }`
-
-const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
-		orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
 
 type OptionalPrimitiveField struct {
 	fieldName string
@@ -91,14 +85,17 @@ func (opv *OptionalPrimitiveField) GenerateAccessorsTest(ms *messageStruct) stri
 	return template.Execute(t, opv.templateFields(ms))
 }
 
-func (opv *OptionalPrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (opv *OptionalPrimitiveField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("optionalPrimitiveSetTestTemplate", []byte(optionalPrimitiveSetTestTemplate))
 	return template.Execute(t, opv.templateFields(ms))
 }
 
-func (opv *OptionalPrimitiveField) GenerateTestValue(ms *messageStruct) string {
-	t := template.Parse("optionalPrimitiveTestValuesTemplate", []byte(optionalPrimitiveTestValuesTemplate))
-	return template.Execute(t, opv.templateFields(ms))
+func (opv *OptionalPrimitiveField) GenerateTestFailingUnmarshalProtoValues(ms *messageStruct) string {
+	return opv.toProtoField(ms, false).GenTestFailingUnmarshalProtoValues()
+}
+
+func (opv *OptionalPrimitiveField) GenerateTestEncodingValues(ms *messageStruct) string {
+	return opv.toProtoField(ms, false).GenTestEncodingValues()
 }
 
 func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
@@ -111,8 +108,7 @@ func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string
 }
 
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("optionalPrimitiveUnmarshalJSONTemplate", []byte(optionalPrimitiveUnmarshalJSONTemplate))
-	return template.Execute(t, opv.templateFields(ms))
+	return opv.toProtoField(ms, false).GenUnmarshalJSON()
 }
 
 func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {
@@ -147,7 +143,6 @@ func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]
 	pf := opv.toProtoField(ms, false)
 	return map[string]any{
 		"structName":       ms.getName(),
-		"packageName":      "",
 		"defaultVal":       pf.DefaultValue(),
 		"fieldName":        opv.fieldName,
 		"lowerFieldName":   strings.ToLower(opv.fieldName),

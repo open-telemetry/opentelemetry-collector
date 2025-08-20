@@ -24,14 +24,14 @@ func Test{{ .structName }}(t *testing.T) {
 	emptyVal := New{{ .elementName }}()
 	{{- end }}
 	{{- if .hasWrapper }}
-	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
+	testVal := {{ .elementName }}(internal.New{{ .elementName }}(internal.GenTestOrig{{ .elementOriginName }}(), internal.NewState()))
 	{{- else }}
 	testVal := generateTest{{ .elementName }}()
 	{{- end }}
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTest{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}(*es.{{ .origAccessor }})[i])
+        (*es.{{ .origAccessor }})[i] = {{ if not .elementNullable }}*{{ end }}internal.GenTestOrig{{ .elementOriginName }}()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())

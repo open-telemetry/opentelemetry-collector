@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSum() otlpmetrics.Sum {
-	return otlpmetrics.Sum{}
-}
-
-func NewOrigPtrSum() *otlpmetrics.Sum {
+func NewOrigSum() *otlpmetrics.Sum {
 	return &otlpmetrics.Sum{}
 }
 
@@ -28,10 +24,12 @@ func CopyOrigSum(dest, src *otlpmetrics.Sum) {
 	dest.IsMonotonic = src.IsMonotonic
 }
 
-func FillOrigTestSum(orig *otlpmetrics.Sum) {
+func GenTestOrigSum() *otlpmetrics.Sum {
+	orig := NewOrigSum()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.IsMonotonic = true
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -61,10 +59,14 @@ func MarshalJSONOrigSum(orig *otlpmetrics.Sum, dest *json.Stream) {
 
 // UnmarshalJSONOrigSum unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSum(orig *otlpmetrics.Sum, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
+				UnmarshalJSONOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		case "isMonotonic", "is_monotonic":
@@ -72,8 +74,7 @@ func UnmarshalJSONOrigSum(orig *otlpmetrics.Sum, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSum(orig *otlpmetrics.Sum) int {
@@ -147,7 +148,7 @@ func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrNumberDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
 			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

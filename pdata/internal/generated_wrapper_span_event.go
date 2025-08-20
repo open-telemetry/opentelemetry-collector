@@ -10,16 +10,13 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSpan_Event() otlptrace.Span_Event {
-	return otlptrace.Span_Event{}
-}
-
-func NewOrigPtrSpan_Event() *otlptrace.Span_Event {
+func NewOrigSpan_Event() *otlptrace.Span_Event {
 	return &otlptrace.Span_Event{}
 }
 
@@ -30,11 +27,13 @@ func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func FillOrigTestSpan_Event(orig *otlptrace.Span_Event) {
+func GenTestOrigSpan_Event() *otlptrace.Span_Event {
+	orig := NewOrigSpan_Event()
 	orig.TimeUnixNano = 1234567890
 	orig.Name = "test_name"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -67,21 +66,24 @@ func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 
 // UnmarshalJSONOrigSpanEvent unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "name":
 			orig.Name = iter.ReadString()
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
@@ -187,7 +189,7 @@ func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

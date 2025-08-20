@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExponentialHistogramDataPoint_Buckets() otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-}
-
-func NewOrigPtrExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
@@ -27,9 +23,11 @@ func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.Expone
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }
 
-func FillOrigTestExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+func GenTestOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	orig := NewOrigExponentialHistogramDataPoint_Buckets()
 	orig.Offset = int32(13)
 	orig.BucketCounts = GenerateOrigTestUint64Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -54,17 +52,19 @@ func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expo
 
 // UnmarshalJSONOrigExponentialHistogramDataPointBuckets unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "offset":
 			orig.Offset = iter.ReadInt32()
 		case "bucketCounts", "bucket_counts":
-			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
+			for iter.ReadArray() {
+				orig.BucketCounts = append(orig.BucketCounts, iter.ReadUint64())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) int {

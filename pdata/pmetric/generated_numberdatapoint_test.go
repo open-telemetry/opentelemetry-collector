@@ -26,8 +26,8 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewOrigPtrNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
@@ -111,7 +111,6 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := NewNumberDataPoint()
-	internal.FillOrigTestNumberDataPoint(ms.orig)
+	ms := newNumberDataPoint(internal.GenTestOrigNumberDataPoint(), internal.NewState())
 	return ms
 }

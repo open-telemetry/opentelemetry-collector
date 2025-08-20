@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigValueType() otlpprofiles.ValueType {
-	return otlpprofiles.ValueType{}
-}
-
-func NewOrigPtrValueType() *otlpprofiles.ValueType {
+func NewOrigValueType() *otlpprofiles.ValueType {
 	return &otlpprofiles.ValueType{}
 }
 
@@ -28,10 +24,12 @@ func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestValueType(orig *otlpprofiles.ValueType) {
+func GenTestOrigValueType() *otlpprofiles.ValueType {
+	orig := NewOrigValueType()
 	orig.TypeStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
 	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -55,7 +53,7 @@ func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
 
 // UnmarshalJSONOrigValueType unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "typeStrindex", "type_strindex":
 			orig.TypeStrindex = iter.ReadInt32()
@@ -66,8 +64,7 @@ func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterato
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {

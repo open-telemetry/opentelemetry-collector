@@ -32,9 +32,6 @@ const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
-const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	orig.{{ .originFieldName }} = UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)`
-
 type SliceField struct {
 	fieldName     string
 	protoType     proto.Type
@@ -59,12 +56,18 @@ func (sf *SliceField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (sf *SliceField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("sliceSetTestTemplate", []byte(sliceSetTestTemplate))
 	return template.Execute(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateTestValue(*messageStruct) string { return "" }
+func (sf *SliceField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
+	return sf.toProtoField().GenTestFailingUnmarshalProtoValues()
+}
+
+func (sf *SliceField) GenerateTestEncodingValues(*messageStruct) string {
+	return sf.toProtoField().GenTestEncodingValues()
+}
 
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("sliceCopyOrigTemplate", []byte(sliceCopyOrigTemplate))
@@ -75,9 +78,8 @@ func (sf *SliceField) GenerateMarshalJSON(*messageStruct) string {
 	return sf.toProtoField().GenMarshalJSON()
 }
 
-func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("sliceUnmarshalJSONTemplate", []byte(sliceUnmarshalJSONTemplate))
-	return template.Execute(t, sf.templateFields(ms))
+func (sf *SliceField) GenerateUnmarshalJSON(*messageStruct) string {
+	return sf.toProtoField().GenUnmarshalJSON()
 }
 
 func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
@@ -97,7 +99,7 @@ func (sf *SliceField) toProtoField() *proto.Field {
 		Type:            sf.protoType,
 		ID:              sf.protoID,
 		Name:            sf.fieldName,
-		MessageFullName: sf.returnSlice.getElementOriginName(),
+		MessageFullName: sf.returnSlice.getOriginFullName(),
 		Repeated:        sf.protoType != proto.TypeBytes,
 		Nullable:        sf.returnSlice.getElementNullable(),
 	}

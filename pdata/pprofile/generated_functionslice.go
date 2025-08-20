@@ -99,7 +99,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrFunction())
+	*es.orig = append(*es.orig, internal.NewOrigFunction())
 	return es.At(es.Len() - 1)
 }
 

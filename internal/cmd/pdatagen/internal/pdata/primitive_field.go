@@ -51,9 +51,6 @@ const primitiveSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}
 
 const primitiveCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
-
 type PrimitiveField struct {
 	fieldName string
 	protoType proto.Type
@@ -70,12 +67,18 @@ func (pf *PrimitiveField) GenerateAccessorsTest(ms *messageStruct) string {
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
+func (pf *PrimitiveField) GenerateTestValue(ms *messageStruct) string {
 	t := template.Parse("primitiveSetTestTemplate", []byte(primitiveSetTestTemplate))
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateTestValue(*messageStruct) string { return "" }
+func (pf *PrimitiveField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
+	return pf.toProtoField().GenTestFailingUnmarshalProtoValues()
+}
+
+func (pf *PrimitiveField) GenerateTestEncodingValues(*messageStruct) string {
+	return pf.toProtoField().GenTestEncodingValues()
+}
 
 func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("primitiveCopyOrigTemplate", []byte(primitiveCopyOrigTemplate))
@@ -86,9 +89,8 @@ func (pf *PrimitiveField) GenerateMarshalJSON(*messageStruct) string {
 	return pf.toProtoField().GenMarshalJSON()
 }
 
-func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("primitiveUnmarshalJSONTemplate", []byte(primitiveUnmarshalJSONTemplate))
-	return template.Execute(t, pf.templateFields(ms))
+func (pf *PrimitiveField) GenerateUnmarshalJSON(*messageStruct) string {
+	return pf.toProtoField().GenUnmarshalJSON()
 }
 
 func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {

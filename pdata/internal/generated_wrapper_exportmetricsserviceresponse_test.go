@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigExportMetricsServiceResponse(t *testing.T) {
-	src := NewOrigPtrExportMetricsServiceResponse()
-	dest := NewOrigPtrExportMetricsServiceResponse()
+	src := NewOrigExportMetricsServiceResponse()
+	dest := NewOrigExportMetricsServiceResponse()
 	CopyOrigExportMetricsServiceResponse(dest, src)
-	assert.Equal(t, NewOrigPtrExportMetricsServiceResponse(), dest)
-	FillOrigTestExportMetricsServiceResponse(src)
+	assert.Equal(t, NewOrigExportMetricsServiceResponse(), dest)
+	*src = *GenTestOrigExportMetricsServiceResponse()
 	CopyOrigExportMetricsServiceResponse(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigExportMetricsServiceResponse(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceResponseUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportMetricsServiceResponse()
+	dest := NewOrigExportMetricsServiceResponse()
 	UnmarshalJSONOrigExportMetricsServiceResponse(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportMetricsServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportMetricsServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportMetricsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceResponse(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportMetricsServiceResponse()
+			dest := NewOrigExportMetricsServiceResponse()
 			UnmarshalJSONOrigExportMetricsServiceResponse(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceResponse(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponseFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportMetricsServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExportMetricsServiceResponse()
+			require.Error(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponseUnknown(t *testing.T) {
-	dest := NewOrigPtrExportMetricsServiceResponse()
+	dest := NewOrigExportMetricsServiceResponse()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportMetricsServiceResponse(), dest)
+	assert.Equal(t, NewOrigExportMetricsServiceResponse(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportMetricsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportMetricsServiceResponse(src))
 			gotSize := MarshalProtoOrigExportMetricsServiceResponse(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := NewOrigPtrExportMetricsServiceResponse()
+			dest := NewOrigExportMetricsServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponse(t *testing.T) 
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceResponse(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportMetricsServiceResponse() {
+	for name, src := range genTestEncodingValuesExportMetricsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportMetricsServiceResponse(src))
 			gotSize := MarshalProtoOrigExportMetricsServiceResponse(src, buf)
@@ -90,20 +99,24 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceResponse(t *test
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportMetricsServiceResponse()
+			dest := NewOrigExportMetricsServiceResponse()
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesExportMetricsServiceResponse() map[string]*otlpcollectormetrics.ExportMetricsServiceResponse {
+func genTestFailingUnmarshalProtoValuesExportMetricsServiceResponse() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                  {0x02},
+		"PartialSuccess/wrong_wire_type": {0xc},
+		"PartialSuccess/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesExportMetricsServiceResponse() map[string]*otlpcollectormetrics.ExportMetricsServiceResponse {
 	return map[string]*otlpcollectormetrics.ExportMetricsServiceResponse{
-		"empty": NewOrigPtrExportMetricsServiceResponse(),
-		"fill_test": func() *otlpcollectormetrics.ExportMetricsServiceResponse {
-			src := NewOrigPtrExportMetricsServiceResponse()
-			FillOrigTestExportMetricsServiceResponse(src)
-			return src
-		}(),
+		"empty":               NewOrigExportMetricsServiceResponse(),
+		"PartialSuccess/test": {PartialSuccess: *GenTestOrigExportMetricsPartialSuccess()},
 	}
 }
