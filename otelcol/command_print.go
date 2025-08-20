@@ -50,12 +50,12 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			pc := printContext{
-				cmd: cmd,
-				stdout: stdout,
-				stderr: stderr,
-				set: set,
+				cmd:          cmd,
+				stdout:       stdout,
+				stderr:       stderr,
+				set:          set,
 				outputFormat: outputFormat,
-				validate: validate,
+				validate:     validate,
 			}
 			return pc.configPrintSubCommand(flagSet, mode)
 		},
@@ -69,7 +69,7 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 	modeHelp := "Operating mode: redacted (default), unredacted"
 	cmd.Flags().StringVar(&mode, "mode", "redacted", modeHelp)
 
-	validateHelp:= "Validation mode: true (default), false"
+	validateHelp := "Validation mode: true (default), false"
 	cmd.Flags().BoolVar(&validate, "validate", true, validateHelp)
 
 	cmd.Flags().AddGoFlagSet(flagSet)
@@ -77,12 +77,12 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 }
 
 type printContext struct {
-	cmd *cobra.Command
-	stdout io.Writer
-	stderr io.Writer
-	set CollectorSettings
+	cmd          *cobra.Command
+	stdout       io.Writer
+	stderr       io.Writer
+	set          CollectorSettings
 	outputFormat string
-	validate bool
+	validate     bool
 }
 
 func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
@@ -116,7 +116,7 @@ func (pctx *printContext) printConfigData(data map[string]any) error {
 	}
 
 	if strings.EqualFold(format, "json") {
-		// Note that JSON does 
+		// Note that JSON does
 		fmt.Fprintf(pctx.stderr, "Warning: JSON output format is unstable. Use with caution.\n")
 		encoder := json.NewEncoder(pctx.stdout)
 		encoder.SetIndent("", "  ")
@@ -159,7 +159,7 @@ func (pctx *printContext) printConfiguration() (any, error) {
 // printUnredactedConfig prints resolved configuration before interpreting
 // with the intended types for each component, thus it shows the full
 // configuration without considering configuopaque. Use with caution.
-func  (pctx *printContext) printUnredactedConfig() error {
+func (pctx *printContext) printUnredactedConfig() error {
 	var conf *confmap.Conf
 	if pctx.validate {
 		cfg, err := pctx.printConfiguration()
@@ -169,9 +169,9 @@ func  (pctx *printContext) printUnredactedConfig() error {
 		if err = xconfmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
-		
+
 		// Note: we discard the validated configuration.
-	} 
+	}
 	resolver, err := confmap.NewResolver(pctx.set.ConfigProviderSettings.ResolverSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create new resolver: %w", err)
@@ -186,7 +186,7 @@ func  (pctx *printContext) printUnredactedConfig() error {
 // printRedactedConfig prints resolved configuration with its assigned
 // types, but without validation. Notably, configopaque strings are printed
 // as "[redacted]". This is the default.
-func  (pctx *printContext) printRedactedConfig() error {
+func (pctx *printContext) printRedactedConfig() error {
 	cfg, err := pctx.printConfiguration()
 	if err != nil {
 		return err

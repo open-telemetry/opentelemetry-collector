@@ -15,18 +15,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 func TestPrintCommand(t *testing.T) {
-
 	const nonexistentConfig = "file:nope.yaml"
 
 	invalidConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_invalid.yaml"))
@@ -41,8 +40,8 @@ func TestPrintCommand(t *testing.T) {
 		outString map[string]string
 	}{
 		{
-			name: "file not found",
-			path: nonexistentConfig,
+			name:      "file not found",
+			path:      nonexistentConfig,
 			errString: "cannot retrieve the configuration: unable to read the file",
 		},
 		{
@@ -50,15 +49,15 @@ func TestPrintCommand(t *testing.T) {
 			path: validConfig,
 		},
 		{
-			name: "invalid field",
-			path: invalidConfig,
+			name:      "invalid field",
+			path:      invalidConfig,
 			errString: "'timeout' time: invalid duration",
 		},
 		{
 			name: "field is set yaml",
 			path: validConfig,
 			outString: map[string]string{
-				"redacted": `timeout: 5s`,
+				"redacted":   `timeout: 5s`,
 				"unredacted": `timeout: 5s`,
 			},
 		},
@@ -89,7 +88,7 @@ func TestPrintCommand(t *testing.T) {
 			name: "opaque field",
 			path: validConfig,
 			outString: map[string]string{
-				"redacted": `opaque: '[REDACTED]'`,
+				"redacted":   `opaque: '[REDACTED]'`,
 				"unredacted": `opaque: OOO`,
 			},
 		},
@@ -117,10 +116,10 @@ func TestPrintCommand(t *testing.T) {
 					func() component.Config {
 						return struct {
 							Opaque configopaque.String `mapstructure:"opaque"`
-							Other string `mapstructure:"other,omitempty"`
+							Other  string              `mapstructure:"other,omitempty"`
 						}{
 							Opaque: "1234",
-							Other: "",
+							Other:  "",
 						}
 					},
 					xreceiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
@@ -178,10 +177,6 @@ func TestPrintCommand(t *testing.T) {
 				})
 				err := cmd.Execute()
 
-				fmt.Println("ERR", err)
-				fmt.Println("STDOUT", stdout.String())
-				fmt.Println("STDERR", stderr.String())
-				
 				if test.errString != "" {
 					require.ErrorContains(t, err, test.errString)
 				} else {

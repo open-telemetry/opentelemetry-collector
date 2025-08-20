@@ -151,7 +151,7 @@ extensions:
 
 ## How to examine the final configuration after resolving, parsing and validating?
 
-Use `print-config` in the default mode (`--mode=redacted`):
+Use `print-config` in the default mode (`--mode=redacted`) and `--feature-gates=otelcol.printInitialConfig`:
 
 ```bash
    ./otelcorecol print-config --config=file:examples/local/otel-config.yaml
@@ -163,7 +163,7 @@ potentially invalid configuration, use `--validate=false`.
 
 ## How to examine the final configuration including sensitive fields?
 
-Use `print-conig` with `--mode=unredacted`:
+Use `print-conig` with `--mode=unredacted` and `--feature-gates=otelcol.printInitialConfig`:
 
 ```bash
    ./otelcorecol print-config --mode=unredacted --config=file:examples/local/otel-config.yaml
@@ -175,7 +175,9 @@ valid.  To print a potentially invalid configuration, use
 
 ## How to print the final configuration in JSON format?
 
-Use `print-conig` with `--format=json`. Note that JSON format is considered unstable.
+Use `print-conig` with `--format=json` and
+`--feature-gates=otelcol.printInitialConfig`. Note that JSON format is
+considered unstable.
 
 ```bash
    ./otelcorecol print-config --format=json --config=file:examples/local/otel-config.yaml
