@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Config[T any] struct {
@@ -457,6 +460,126 @@ func TestComparePointerMarshal(t *testing.T) {
 			require.NoError(t, confOptional.Marshal(wrapOptional))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
+		})
+	}
+}
+
+type invalid struct{}
+
+func (invalid) Validate() error {
+	return errors.New("invalid")
+}
+
+var _ xconfmap.Validator = invalid{}
+
+type hasNested struct {
+	CouldBe Optional[invalid]
+}
+
+func TestOptionalValidate(t *testing.T) {
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: None[invalid](),
+	}))
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: Default(invalid{}),
+	}))
+	require.Error(t, xconfmap.Validate(hasNested{
+		CouldBe: Some(invalid{}),
+	}))
+}
+
+type validatedConfig struct {
+	Default Optional[optionalConfig] `mapstructure:"default"`
+	Some    Optional[someConfig]     `mapstructure:"some"`
+}
+
+var _ xconfmap.Validator = (*optionalConfig)(nil)
+
+type optionalConfig struct {
+	StringVal string `mapstructure:"string_val"`
+}
+
+func (n optionalConfig) Validate() error {
+	if n.StringVal == "invalid" {
+		return errors.New("field `string_val` cannot be set to `invalid`")
+	}
+
+	return nil
+}
+
+type someConfig struct {
+	Nested Optional[optionalConfig] `mapstructure:"nested"`
+}
+
+func newDefaultValidatedConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "valid"}),
+	}
+}
+
+func newInvalidDefaultConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "invalid"}),
+	}
+}
+
+func TestOptionalFileValidate(t *testing.T) {
+	cases := []struct {
+		name    string
+		variant string
+		cfg     func() validatedConfig
+		err     error
+	}{
+		{
+			name:    "valid default with just key set and no subfields",
+			variant: "implicit",
+			cfg:     newDefaultValidatedConfig,
+		},
+		{
+			name:    "valid default with keys set in default",
+			variant: "explicit",
+			cfg:     newDefaultValidatedConfig,
+		},
+		{
+			name:    "invalid config",
+			variant: "invalid",
+			cfg:     newDefaultValidatedConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`\nsome: nested: field `string_val` cannot be set to `invalid`"),
+		},
+		{
+			name:    "invalid default throws an error",
+			variant: "implicit",
+			cfg:     newInvalidDefaultConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`"),
+		},
+		{
+			name:    "invalid default does not throw an error when key is not set",
+			variant: "no_default",
+			cfg:     newInvalidDefaultConfig,
+		},
+		{
+			name:    "invalid default invalid default does not throw an error when the value is overridden",
+			variant: "explicit",
+			cfg:     newInvalidDefaultConfig,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(fmt.Sprintf("testdata/validate_%s.yaml", tt.variant))
+			require.NoError(t, err)
+
+			cfg := tt.cfg()
+
+			err = conf.Unmarshal(&cfg)
+			require.NoError(t, err)
+
+			err = xconfmap.Validate(cfg)
+			if tt.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tt.err.Error())
+			}
 		})
 	}
 }
