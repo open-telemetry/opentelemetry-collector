@@ -6,9 +6,8 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
