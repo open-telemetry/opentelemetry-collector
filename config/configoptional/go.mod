@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/confmap v1.38.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -29,3 +30,5 @@ require (
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap

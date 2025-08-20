@@ -45,6 +45,7 @@ require (
 	go.opentelemetry.io/collector/client v1.38.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v0.132.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.38.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0 // indirect
@@ -134,3 +135,5 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
