@@ -21,12 +21,6 @@ type Config struct {
 	_ struct{}
 }
 
-type EndpointValidator interface {
-	Match(endpoint string) bool
-	Sanitize(endpoint string) string
-	Validate(endpoint string) error
-}
-
 func (c *Config) Validate() error {
 	return c.ClientConfig.Validate()
 }
