@@ -1308,12 +1308,13 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	var refused, failed int64
 	var outcome string
 	gateEnabled := receiverhelper.NewReceiverMetricsGate.IsEnabled()
+	// The errors in the OTLP tests are not downstream, so they should be "failed" when the gate is enabled.
 	if gateEnabled {
-		refused = rejected
-		outcome = "refused"
-	} else {
 		failed = rejected
 		outcome = "failure"
+	} else {
+		// When the gate is disabled, all errors are "refused".
+		refused = rejected
 	}
 
 	got, err := tt.GetMetric("otelcol_receiver_failed_spans")
@@ -1426,12 +1427,13 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	var refused, failed int64
 	var outcome string
 	gateEnabled := receiverhelper.NewReceiverMetricsGate.IsEnabled()
-	if gateEnabled && consumererror.IsDownstream(errors.New("consumer error")) {
-		refused = rejected
-		outcome = "refused"
-	} else {
+	// The error used in the metrics test is not downstream.
+	if gateEnabled {
 		failed = rejected
 		outcome = "failure"
+	} else {
+		// When the gate is disabled, all errors are "refused".
+		refused = rejected
 	}
 
 	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
