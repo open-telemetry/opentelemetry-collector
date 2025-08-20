@@ -11,61 +11,115 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigAttributeUnit(t *testing.T) {
-	src := &otlpprofiles.AttributeUnit{}
-	dest := &otlpprofiles.AttributeUnit{}
+	src := NewOrigAttributeUnit()
+	dest := NewOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
-	assert.Equal(t, &otlpprofiles.AttributeUnit{}, dest)
-	FillOrigTestAttributeUnit(src)
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
+	*src = *GenTestOrigAttributeUnit()
 	CopyOrigAttributeUnit(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigAttributeUnitUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigAttributeUnit()
+	UnmarshalJSONOrigAttributeUnit(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
-	src := &otlpprofiles.AttributeUnit{}
-	FillOrigTestAttributeUnit(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigAttributeUnit(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesAttributeUnit() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigAttributeUnit(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.AttributeUnit{}
-	UnmarshalJSONOrigAttributeUnit(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigAttributeUnit()
+			UnmarshalJSONOrigAttributeUnit(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigAttributeUnitFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesAttributeUnit() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigAttributeUnit()
+			require.Error(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
+	dest := NewOrigAttributeUnit()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigAttributeUnit(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
-	src := &otlpprofiles.AttributeUnit{}
-	FillOrigTestAttributeUnit(src)
-	buf, err := MarshalProtoOrigAttributeUnit(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigAttributeUnit(src))
+	for name, src := range genTestEncodingValuesAttributeUnit() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
+			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.AttributeUnit{}
-	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigAttributeUnit()
+			require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyAttributeUnit(t *testing.T) {
-	src := &otlpprofiles.AttributeUnit{}
-	buf, err := MarshalProtoOrigAttributeUnit(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigAttributeUnit(src))
+func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
+	for name, src := range genTestEncodingValuesAttributeUnit() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
+			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.AttributeUnit{}
-	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpprofiles.AttributeUnit{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigAttributeUnit()
+			require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesAttributeUnit() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                        {0x02},
+		"AttributeKeyStrindex/wrong_wire_type": {0xc},
+		"AttributeKeyStrindex/missing_value":   {0x8},
+		"UnitStrindex/wrong_wire_type":         {0x14},
+		"UnitStrindex/missing_value":           {0x10},
+	}
+}
+
+func genTestEncodingValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
+	return map[string]*otlpprofiles.AttributeUnit{
+		"empty":                     NewOrigAttributeUnit(),
+		"AttributeKeyStrindex/test": {AttributeKeyStrindex: int32(13)},
+		"UnitStrindex/test":         {UnitStrindex: int32(13)},
+	}
 }

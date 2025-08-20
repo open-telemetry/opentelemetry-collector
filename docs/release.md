@@ -181,9 +181,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2025-08-11 | v0.132.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
-| 2025-09-08 | v0.134.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2025-09-08 | v0.134.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
 | 2025-09-22 | v0.135.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2025-10-06 | v0.136.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 | 2025-10-20 | v0.137.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
@@ -192,6 +191,7 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-12-01 | v0.140.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
 | 2025-12-15 | v0.141.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 | 2026-01-05 | v0.142.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
+| 2026-01-19 | v0.142.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
 
 
 [1]: https://github.com/jmacd

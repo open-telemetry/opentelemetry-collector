@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan_EventSlice(t *testing.T) {
@@ -39,20 +37,4 @@ func TestCopyOrigSpan_EventSlice(t *testing.T) {
 	// Test CopyTo larger slice with enough capacity
 	dest = CopyOrigSpan_EventSlice(dest, src)
 	assert.Equal(t, GenerateOrigTestSpan_EventSlice(), dest)
-}
-
-func TestMarshalAndUnmarshalJSONOrigSpan_EventSlice(t *testing.T) {
-	src := GenerateOrigTestSpan_EventSlice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSpan_EventSlice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrigSpan_EventSlice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }

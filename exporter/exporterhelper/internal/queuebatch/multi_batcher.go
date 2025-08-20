@@ -21,6 +21,7 @@ type multiBatcher struct {
 	wp          *workerPool
 	sizer       request.Sizer[request.Request]
 	partitioner Partitioner[request.Request]
+	mergeCtx    func(context.Context, context.Context) context.Context
 	consumeFunc sender.SendFunc[request.Request]
 	shards      sync.Map
 	logger      *zap.Logger
@@ -31,6 +32,7 @@ func newMultiBatcher(
 	sizer request.Sizer[request.Request],
 	wp *workerPool,
 	partitioner Partitioner[request.Request],
+	mergeCtx func(context.Context, context.Context) context.Context,
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
 ) *multiBatcher {
@@ -39,6 +41,7 @@ func newMultiBatcher(
 		wp:          wp,
 		sizer:       sizer,
 		partitioner: partitioner,
+		mergeCtx:    mergeCtx,
 		consumeFunc: next,
 		logger:      logger,
 	}
@@ -51,7 +54,8 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	if found {
 		return s.(*partitionBatcher)
 	}
-	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.wp, mb.consumeFunc, mb.logger)
+
+	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
 	_ = newS.Start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.

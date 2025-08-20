@@ -126,12 +126,6 @@ func run(ymlPath string) error {
 		}
 	}
 
-	// TODO: Remove this after version v0.122.0 when all the deprecated code should be deleted.
-	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12067
-	if err = os.Remove(filepath.Join(ymlDir, "generated_component_telemetry_test.go")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("unable to remove generated file \"generated_component_telemetry_test.go\": %w", err)
-	}
-
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
 		testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
 		if err = os.MkdirAll(testDir, 0o700); err != nil {

@@ -34,8 +34,7 @@ func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics, state *intern
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceMetricsSlice() ResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
-	state := internal.StateMutable
-	return newResourceMetricsSlice(&orig, &state)
+	return newResourceMetricsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
+	*es.orig = append(*es.orig, internal.NewOrigResourceMetrics())
 	return es.At(es.Len() - 1)
 }
 

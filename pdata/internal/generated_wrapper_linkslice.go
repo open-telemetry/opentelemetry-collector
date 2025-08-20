@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
@@ -19,7 +18,7 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigLink()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigLink()
 		}
 	}
 	for i := range src {
@@ -41,34 +40,11 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 }
 
 func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
-	orig := make([]*otlpprofiles.Link, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.Link{}
-		FillOrigTestLink(orig[i])
-	}
-	return orig
-}
-
-// MarshalJSONOrigLinkSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLinkSlice(orig []*otlpprofiles.Link, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigLink(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigLink(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONOrigLinkSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLinkSlice(iter *json.Iterator) []*otlpprofiles.Link {
-	var orig []*otlpprofiles.Link
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.Link{})
-		UnmarshalJSONOrigLink(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlpprofiles.Link, 5)
+	orig[0] = NewOrigLink()
+	orig[1] = GenTestOrigLink()
+	orig[2] = NewOrigLink()
+	orig[3] = GenTestOrigLink()
+	orig[4] = NewOrigLink()
 	return orig
 }

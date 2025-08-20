@@ -31,8 +31,7 @@ func (ms StringSlice) getState() *internal.State {
 // NewStringSlice creates a new empty StringSlice.
 func NewStringSlice() StringSlice {
 	orig := []string(nil)
-	state := internal.StateMutable
-	return StringSlice(internal.NewStringSlice(&orig, &state))
+	return StringSlice(internal.NewStringSlice(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []string slice.

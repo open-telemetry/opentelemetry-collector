@@ -34,8 +34,7 @@ func newMetricSlice(orig *[]*otlpmetrics.Metric, state *internal.State) MetricSl
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMetricSlice() MetricSlice {
 	orig := []*otlpmetrics.Metric(nil)
-	state := internal.StateMutable
-	return newMetricSlice(&orig, &state)
+	return newMetricSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es MetricSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Metric.
 func (es MetricSlice) AppendEmpty() Metric {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
+	*es.orig = append(*es.orig, internal.NewOrigMetric())
 	return es.At(es.Len() - 1)
 }
 

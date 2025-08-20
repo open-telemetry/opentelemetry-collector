@@ -10,18 +10,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestCopyOrigKeyValueSlice(t *testing.T) {
-	src := []v1.KeyValue{}
-	dest := []v1.KeyValue{}
+	src := []otlpcommon.KeyValue{}
+	dest := []otlpcommon.KeyValue{}
 	// Test CopyTo empty
 	dest = CopyOrigKeyValueSlice(dest, src)
-	assert.Equal(t, []v1.KeyValue{}, dest)
+	assert.Equal(t, []otlpcommon.KeyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenerateOrigTestKeyValueSlice()
@@ -33,26 +31,10 @@ func TestCopyOrigKeyValueSlice(t *testing.T) {
 	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigKeyValueSlice(dest, []v1.KeyValue{})
+	dest = CopyOrigKeyValueSlice(dest, []otlpcommon.KeyValue{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
 	dest = CopyOrigKeyValueSlice(dest, src)
 	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
-}
-
-func TestMarshalAndUnmarshalJSONOrigKeyValueSlice(t *testing.T) {
-	src := GenerateOrigTestKeyValueSlice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigKeyValueSlice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrigKeyValueSlice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }

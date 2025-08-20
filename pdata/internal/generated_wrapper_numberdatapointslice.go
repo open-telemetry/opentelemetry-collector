@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*otlpmetrics.NumberDataPoint {
@@ -19,7 +18,7 @@ func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*o
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.NumberDataPoint{}
+			newDest[i] = NewOrigNumberDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*o
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.NumberDataPoint{}
+			newDest[i] = NewOrigNumberDataPoint()
 		}
 	}
 	for i := range src {
@@ -41,34 +40,11 @@ func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*o
 }
 
 func GenerateOrigTestNumberDataPointSlice() []*otlpmetrics.NumberDataPoint {
-	orig := make([]*otlpmetrics.NumberDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.NumberDataPoint{}
-		FillOrigTestNumberDataPoint(orig[i])
-	}
-	return orig
-}
-
-// MarshalJSONOrigNumberDataPointSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigNumberDataPointSlice(orig []*otlpmetrics.NumberDataPoint, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigNumberDataPoint(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigNumberDataPoint(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONOrigNumberDataPointSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigNumberDataPointSlice(iter *json.Iterator) []*otlpmetrics.NumberDataPoint {
-	var orig []*otlpmetrics.NumberDataPoint
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.NumberDataPoint{})
-		UnmarshalJSONOrigNumberDataPoint(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlpmetrics.NumberDataPoint, 5)
+	orig[0] = NewOrigNumberDataPoint()
+	orig[1] = GenTestOrigNumberDataPoint()
+	orig[2] = NewOrigNumberDataPoint()
+	orig[3] = GenTestOrigNumberDataPoint()
+	orig[4] = NewOrigNumberDataPoint()
 	return orig
 }

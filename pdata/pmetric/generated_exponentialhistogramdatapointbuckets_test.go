@@ -24,12 +24,13 @@ func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState))
+		ms.MoveTo(newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).MoveTo(dest)
+		newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -41,9 +42,10 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogramDataPointBuckets()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState))
+		ms.CopyTo(newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState))
 	})
 }
 
@@ -52,9 +54,10 @@ func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	assert.Equal(t, int32(0), ms.Offset())
 	ms.SetOffset(int32(13))
 	assert.Equal(t, int32(13), ms.Offset())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(13))
+		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, sharedState).SetOffset(int32(13))
 	})
 }
 
@@ -66,7 +69,6 @@ func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	ms := NewExponentialHistogramDataPointBuckets()
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(ms.orig)
+	ms := newExponentialHistogramDataPointBuckets(internal.GenTestOrigExponentialHistogramDataPoint_Buckets(), internal.NewState())
 	return ms
 }

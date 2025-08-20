@@ -34,8 +34,7 @@ func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans, state *internal.Sta
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
-	state := internal.StateMutable
-	return newResourceSpansSlice(&orig, &state)
+	return newResourceSpansSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	*es.orig = append(*es.orig, internal.NewOrigResourceSpans())
 	return es.At(es.Len() - 1)
 }
 

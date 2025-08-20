@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExponentialHistogramDataPointSlice(t *testing.T) {
@@ -39,20 +37,4 @@ func TestCopyOrigExponentialHistogramDataPointSlice(t *testing.T) {
 	// Test CopyTo larger slice with enough capacity
 	dest = CopyOrigExponentialHistogramDataPointSlice(dest, src)
 	assert.Equal(t, GenerateOrigTestExponentialHistogramDataPointSlice(), dest)
-}
-
-func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPointSlice(t *testing.T) {
-	src := GenerateOrigTestExponentialHistogramDataPointSlice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExponentialHistogramDataPointSlice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }

@@ -11,61 +11,121 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	dest := &otlpcommon.EntityRef{}
+	src := NewOrigEntityRef()
+	dest := NewOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
-	assert.Equal(t, &otlpcommon.EntityRef{}, dest)
-	FillOrigTestEntityRef(src)
+	assert.Equal(t, NewOrigEntityRef(), dest)
+	*src = *GenTestOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigEntityRef()
+	UnmarshalJSONOrigEntityRef(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigEntityRef(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigEntityRef(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpcommon.EntityRef{}
-	UnmarshalJSONOrigEntityRef(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigEntityRef()
+			UnmarshalJSONOrigEntityRef(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigEntityRefFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigEntityRef()
+			require.Error(t, UnmarshalProtoOrigEntityRef(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
+	dest := NewOrigEntityRef()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(src)
-	buf, err := MarshalProtoOrigEntityRef(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigEntityRef(src))
+	for name, src := range genTestEncodingValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigEntityRef(src))
+			gotSize := MarshalProtoOrigEntityRef(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcommon.EntityRef{}
-	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigEntityRef()
+			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	buf, err := MarshalProtoOrigEntityRef(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigEntityRef(src))
+func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
+	for name, src := range genTestEncodingValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigEntityRef(src))
+			gotSize := MarshalProtoOrigEntityRef(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcommon.EntityRef{}
-	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpcommon.EntityRef{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigEntityRef()
+			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                   {0x02},
+		"SchemaUrl/wrong_wire_type":       {0xc},
+		"SchemaUrl/missing_value":         {0xa},
+		"Type/wrong_wire_type":            {0x14},
+		"Type/missing_value":              {0x12},
+		"IdKeys/wrong_wire_type":          {0x1c},
+		"IdKeys/missing_value":            {0x1a},
+		"DescriptionKeys/wrong_wire_type": {0x24},
+		"DescriptionKeys/missing_value":   {0x22},
+	}
+}
+
+func genTestEncodingValuesEntityRef() map[string]*otlpcommon.EntityRef {
+	return map[string]*otlpcommon.EntityRef{
+		"empty":                            NewOrigEntityRef(),
+		"SchemaUrl/test":                   {SchemaUrl: "test_schemaurl"},
+		"Type/test":                        {Type: "test_type"},
+		"IdKeys/default_and_test":          {IdKeys: []string{"", "test_idkeys"}},
+		"DescriptionKeys/default_and_test": {DescriptionKeys: []string{"", "test_descriptionkeys"}},
+	}
 }
