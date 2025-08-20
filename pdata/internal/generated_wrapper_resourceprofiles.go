@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceProfiles() otlpprofiles.ResourceProfiles {
-	return otlpprofiles.ResourceProfiles{}
-}
-
-func NewOrigPtrResourceProfiles() *otlpprofiles.ResourceProfiles {
+func NewOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
 	return &otlpprofiles.ResourceProfiles{}
 }
 
@@ -28,10 +24,12 @@ func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceProfiles(orig *otlpprofiles.ResourceProfiles) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
+	orig := NewOrigResourceProfiles()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +56,22 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 
 // UnmarshalJSONOrigResourceProfiles unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeProfiles", "scope_profiles":
-			orig.ScopeProfiles = UnmarshalJSONOrigScopeProfilesSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
+				UnmarshalJSONOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
@@ -160,7 +161,7 @@ func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigPtrScopeProfiles())
+			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
 			err = UnmarshalProtoOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err

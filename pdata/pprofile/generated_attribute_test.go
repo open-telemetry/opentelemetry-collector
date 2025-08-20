@@ -26,8 +26,8 @@ func TestAttribute_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestAttribute(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
-	assert.Panics(t, func() { newAttribute(internal.NewOrigPtrKeyValue(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newAttribute(internal.NewOrigKeyValue(), sharedState)) })
+	assert.Panics(t, func() { newAttribute(internal.NewOrigKeyValue(), sharedState).MoveTo(dest) })
 }
 
 func TestAttribute_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestAttribute_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newAttribute(internal.NewOrigPtrKeyValue(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newAttribute(internal.NewOrigKeyValue(), sharedState)) })
 }
 
 func TestAttribute_Key(t *testing.T) {
@@ -56,12 +56,11 @@ func TestAttribute_Key(t *testing.T) {
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
 	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
-	internal.FillOrigTestAnyValue(&ms.orig.Value)
-	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
+	ms.orig.Value = *internal.GenTestOrigAnyValue()
+	assert.Equal(t, pcommon.Value(internal.NewValue(internal.GenTestOrigAnyValue(), ms.state)), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	ms := NewAttribute()
-	internal.FillOrigTestKeyValue(ms.orig)
+	ms := newAttribute(internal.GenTestOrigKeyValue(), internal.NewState())
 	return ms
 }

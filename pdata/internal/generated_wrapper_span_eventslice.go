@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
@@ -19,7 +18,7 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan_Event()
+			newDest[i] = NewOrigSpan_Event()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan_Event()
+			newDest[i] = NewOrigSpan_Event()
 		}
 	}
 	for i := range src {
@@ -42,23 +41,10 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 
 func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
 	orig := make([]*otlptrace.Span_Event, 5)
-	orig[0] = NewOrigPtrSpan_Event()
-	orig[1] = NewOrigPtrSpan_Event()
-	FillOrigTestSpan_Event(orig[1])
-	orig[2] = NewOrigPtrSpan_Event()
-	orig[3] = NewOrigPtrSpan_Event()
-	FillOrigTestSpan_Event(orig[3])
-	orig[4] = NewOrigPtrSpan_Event()
-	return orig
-}
-
-// UnmarshalJSONOrigSpan_EventSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSpan_EventSlice(iter *json.Iterator) []*otlptrace.Span_Event {
-	var orig []*otlptrace.Span_Event
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrSpan_Event())
-		UnmarshalJSONOrigSpan_Event(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigSpan_Event()
+	orig[1] = GenTestOrigSpan_Event()
+	orig[2] = NewOrigSpan_Event()
+	orig[3] = GenTestOrigSpan_Event()
+	orig[4] = NewOrigSpan_Event()
 	return orig
 }

@@ -99,7 +99,7 @@ func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SummaryDataPointValueAtQuantile.
 func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrSummaryDataPoint_ValueAtQuantile())
+	*es.orig = append(*es.orig, internal.NewOrigSummaryDataPoint_ValueAtQuantile())
 	return es.At(es.Len() - 1)
 }
 

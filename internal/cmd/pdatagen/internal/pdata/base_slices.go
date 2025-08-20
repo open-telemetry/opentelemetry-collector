@@ -10,6 +10,7 @@ import (
 type baseSlice interface {
 	getName() string
 	getHasWrapper() bool
+	getOriginFullName() string
 	getElementOriginName() string
 	getElementNullable() bool
 	getPackageName() string

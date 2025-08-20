@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummary() otlpmetrics.Summary {
-	return otlpmetrics.Summary{}
-}
-
-func NewOrigPtrSummary() *otlpmetrics.Summary {
+func NewOrigSummary() *otlpmetrics.Summary {
 	return &otlpmetrics.Summary{}
 }
 
@@ -26,8 +22,10 @@ func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func FillOrigTestSummary(orig *otlpmetrics.Summary) {
+func GenTestOrigSummary() *otlpmetrics.Summary {
+	orig := NewOrigSummary()
 	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -48,15 +46,18 @@ func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
 
 // UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigSummaryDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
+				UnmarshalJSONOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {
@@ -109,7 +110,7 @@ func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrSummaryDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
 			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

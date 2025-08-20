@@ -25,8 +25,8 @@ func TestFunction_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestFunction(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newFunction(internal.NewOrigPtrFunction(), sharedState)) })
-	assert.Panics(t, func() { newFunction(internal.NewOrigPtrFunction(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newFunction(internal.NewOrigFunction(), sharedState)) })
+	assert.Panics(t, func() { newFunction(internal.NewOrigFunction(), sharedState).MoveTo(dest) })
 }
 
 func TestFunction_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestFunction_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newFunction(internal.NewOrigPtrFunction(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newFunction(internal.NewOrigFunction(), sharedState)) })
 }
 
 func TestFunction_NameStrindex(t *testing.T) {
@@ -83,7 +83,6 @@ func TestFunction_StartLine(t *testing.T) {
 }
 
 func generateTestFunction() Function {
-	ms := NewFunction()
-	internal.FillOrigTestFunction(ms.orig)
+	ms := newFunction(internal.GenTestOrigFunction(), internal.NewState())
 	return ms
 }

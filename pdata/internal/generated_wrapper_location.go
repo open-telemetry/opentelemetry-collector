@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLocation() otlpprofiles.Location {
-	return otlpprofiles.Location{}
-}
-
-func NewOrigPtrLocation() *otlpprofiles.Location {
+func NewOrigLocation() *otlpprofiles.Location {
 	return &otlpprofiles.Location{}
 }
 
@@ -39,12 +35,14 @@ func CopyOrigLocation(dest, src *otlpprofiles.Location) {
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func FillOrigTestLocation(orig *otlpprofiles.Location) {
+func GenTestOrigLocation() *otlpprofiles.Location {
+	orig := NewOrigLocation()
 	orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
 	orig.Address = uint64(13)
 	orig.Line = GenerateOrigTestLineSlice()
 	orig.IsFolded = true
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -87,23 +85,34 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 
 // UnmarshalJSONOrigLocation unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingIndex", "mapping_index":
-			orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
+			{
+				ofm := &otlpprofiles.Location_MappingIndex{}
+				ofm.MappingIndex = iter.ReadInt32()
+				orig.MappingIndex_ = ofm
+			}
+
 		case "address":
 			orig.Address = iter.ReadUint64()
 		case "line":
-			orig.Line = UnmarshalJSONOrigLineSlice(iter)
+			for iter.ReadArray() {
+				orig.Line = append(orig.Line, NewOrigLine())
+				UnmarshalJSONOrigLine(orig.Line[len(orig.Line)-1], iter)
+			}
+
 		case "isFolded", "is_folded":
 			orig.IsFolded = iter.ReadBool()
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
@@ -228,7 +237,7 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Line = append(orig.Line, NewOrigPtrLine())
+			orig.Line = append(orig.Line, NewOrigLine())
 			err = UnmarshalProtoOrigLine(orig.Line[len(orig.Line)-1], buf[startPos:pos])
 			if err != nil {
 				return err

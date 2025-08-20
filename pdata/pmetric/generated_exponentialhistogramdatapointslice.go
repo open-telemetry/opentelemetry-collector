@@ -99,7 +99,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ExponentialHistogramDataPoint.
 func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrExponentialHistogramDataPoint())
+	*es.orig = append(*es.orig, internal.NewOrigExponentialHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 

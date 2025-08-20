@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExponentialHistogram() otlpmetrics.ExponentialHistogram {
-	return otlpmetrics.ExponentialHistogram{}
-}
-
-func NewOrigPtrExponentialHistogram() *otlpmetrics.ExponentialHistogram {
+func NewOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
 	return &otlpmetrics.ExponentialHistogram{}
 }
 
@@ -27,9 +23,11 @@ func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) {
+func GenTestOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
+	orig := NewOrigExponentialHistogram()
 	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -55,17 +53,20 @@ func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram,
 
 // UnmarshalJSONOrigExponentialHistogram unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
+				UnmarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {
@@ -126,7 +127,7 @@ func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogr
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrExponentialHistogramDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
 			err = UnmarshalProtoOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

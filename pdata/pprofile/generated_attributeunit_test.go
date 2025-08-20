@@ -25,8 +25,8 @@ func TestAttributeUnit_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestAttributeUnit(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newAttributeUnit(internal.NewOrigPtrAttributeUnit(), sharedState)) })
-	assert.Panics(t, func() { newAttributeUnit(internal.NewOrigPtrAttributeUnit(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newAttributeUnit(internal.NewOrigAttributeUnit(), sharedState)) })
+	assert.Panics(t, func() { newAttributeUnit(internal.NewOrigAttributeUnit(), sharedState).MoveTo(dest) })
 }
 
 func TestAttributeUnit_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestAttributeUnit_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newAttributeUnit(internal.NewOrigPtrAttributeUnit(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newAttributeUnit(internal.NewOrigAttributeUnit(), sharedState)) })
 }
 
 func TestAttributeUnit_AttributeKeyStrindex(t *testing.T) {
@@ -65,7 +65,6 @@ func TestAttributeUnit_UnitStrindex(t *testing.T) {
 }
 
 func generateTestAttributeUnit() AttributeUnit {
-	ms := NewAttributeUnit()
-	internal.FillOrigTestAttributeUnit(ms.orig)
+	ms := newAttributeUnit(internal.GenTestOrigAttributeUnit(), internal.NewState())
 	return ms
 }

@@ -45,7 +45,7 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtr{{ .elementOriginName }}()
+			newDest[i] = NewOrig{{ .elementOriginName }}()
 		}{{ else -}}
 		newDest = make([]{{ .elementOriginFullName }}, len(src))
         {{- end }}
@@ -60,7 +60,7 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtr{{ .elementOriginName }}()
+			newDest[i] = NewOrig{{ .elementOriginName }}()
 		}{{ else -}}
 		for i := len(src); i < len(dest); i++ {
 			dest[i].Reset()
@@ -76,27 +76,14 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
     {{ if .elementNullable -}}
     orig := make([]*{{ .elementOriginFullName }}, 5)
-	orig[0] = NewOrigPtr{{ .elementOriginName }}()
-	orig[1] = NewOrigPtr{{ .elementOriginName }}()
-	FillOrigTest{{ .elementOriginName }}(orig[1])
-    orig[2] = NewOrigPtr{{ .elementOriginName }}()
-	orig[3] = NewOrigPtr{{ .elementOriginName }}()
-	FillOrigTest{{ .elementOriginName }}(orig[3])
-    orig[4] = NewOrigPtr{{ .elementOriginName }}(){{ else -}}
+	orig[0] = NewOrig{{ .elementOriginName }}()
+	orig[1] = GenTestOrig{{ .elementOriginName }}()
+    orig[2] = NewOrig{{ .elementOriginName }}()
+	orig[3] = GenTestOrig{{ .elementOriginName }}()
+    orig[4] = NewOrig{{ .elementOriginName }}(){{ else -}}
     orig := make([]{{ .elementOriginFullName }}, 5)
-    FillOrigTest{{ .elementOriginName }}(&orig[1])
-    FillOrigTest{{ .elementOriginName }}(&orig[3])
+    orig[1] = *GenTestOrig{{ .elementOriginName }}()
+    orig[3] = *GenTestOrig{{ .elementOriginName }}()
     {{- end }}
-	return orig
-}
-
-// UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
-	var orig []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, {{- if .elementNullable }}NewOrigPtr{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
-		UnmarshalJSONOrig{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

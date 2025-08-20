@@ -29,7 +29,7 @@ func newResource(orig *otlpresource.Resource, state *internal.State) Resource {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResource() Resource {
-	return newResource(internal.NewOrigPtrResource(), internal.NewState())
+	return newResource(internal.NewOrigResource(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

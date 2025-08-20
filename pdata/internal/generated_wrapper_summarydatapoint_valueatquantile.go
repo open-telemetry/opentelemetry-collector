@@ -16,11 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummaryDataPoint_ValueAtQuantile() otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-}
-
-func NewOrigPtrSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
@@ -29,9 +25,11 @@ func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryData
 	dest.Value = src.Value
 }
 
-func FillOrigTestSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+func GenTestOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	orig := NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig.Quantile = float64(3.1415926)
 	orig.Value = float64(3.1415926)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -50,7 +48,7 @@ func MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDa
 
 // UnmarshalJSONOrigSummaryDataPointValueAtQuantile unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "quantile":
 			orig.Quantile = iter.ReadFloat64()
@@ -59,8 +57,7 @@ func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.Summary
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {

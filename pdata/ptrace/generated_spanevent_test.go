@@ -26,8 +26,8 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanEvent(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewOrigPtrSpan_Event(), sharedState)) })
-	assert.Panics(t, func() { newSpanEvent(internal.NewOrigPtrSpan_Event(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewOrigSpan_Event(), sharedState)) })
+	assert.Panics(t, func() { newSpanEvent(internal.NewOrigSpan_Event(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewOrigPtrSpan_Event(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewOrigSpan_Event(), sharedState)) })
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
@@ -79,7 +79,6 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	ms := NewSpanEvent()
-	internal.FillOrigTestSpan_Event(ms.orig)
+	ms := newSpanEvent(internal.GenTestOrigSpan_Event(), internal.NewState())
 	return ms
 }

@@ -12,16 +12,13 @@ import (
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExemplar() otlpmetrics.Exemplar {
-	return otlpmetrics.Exemplar{}
-}
-
-func NewOrigPtrExemplar() *otlpmetrics.Exemplar {
+func NewOrigExemplar() *otlpmetrics.Exemplar {
 	return &otlpmetrics.Exemplar{}
 }
 
@@ -38,12 +35,14 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TraceId = src.TraceId
 }
 
-func FillOrigTestExemplar(orig *otlpmetrics.Exemplar) {
+func GenTestOrigExemplar() *otlpmetrics.Exemplar {
+	orig := NewOrigExemplar()
 	orig.FilteredAttributes = GenerateOrigTestKeyValueSlice()
 	orig.TimeUnixNano = 1234567890
 	orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -84,30 +83,39 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 
 // UnmarshalJSONOrigExemplar unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "filteredAttributes", "filtered_attributes":
-			orig.FilteredAttributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], iter)
+			}
+
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 
 		case "asDouble", "as_double":
-			orig.Value = &otlpmetrics.Exemplar_AsDouble{
-				AsDouble: iter.ReadFloat64(),
+			{
+				ofm := &otlpmetrics.Exemplar_AsDouble{}
+				ofm.AsDouble = iter.ReadFloat64()
+				orig.Value = ofm
 			}
+
 		case "asInt", "as_int":
-			orig.Value = &otlpmetrics.Exemplar_AsInt{
-				AsInt: iter.ReadInt64(),
+			{
+				ofm := &otlpmetrics.Exemplar_AsInt{}
+				ofm.AsInt = iter.ReadInt64()
+				orig.Value = ofm
 			}
+
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
@@ -206,7 +214,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FilteredAttributes = append(orig.FilteredAttributes, NewOrigKeyValue())
+			orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

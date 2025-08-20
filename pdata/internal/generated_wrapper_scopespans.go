@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigScopeSpans() otlptrace.ScopeSpans {
-	return otlptrace.ScopeSpans{}
-}
-
-func NewOrigPtrScopeSpans() *otlptrace.ScopeSpans {
+func NewOrigScopeSpans() *otlptrace.ScopeSpans {
 	return &otlptrace.ScopeSpans{}
 }
 
@@ -28,10 +24,12 @@ func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestScopeSpans(orig *otlptrace.ScopeSpans) {
-	FillOrigTestInstrumentationScope(&orig.Scope)
+func GenTestOrigScopeSpans() *otlptrace.ScopeSpans {
+	orig := NewOrigScopeSpans()
+	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.Spans = GenerateOrigTestSpanSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +56,22 @@ func MarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, dest *json.Stream) {
 
 // UnmarshalJSONOrigScopeSpans unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
 		case "spans":
-			orig.Spans = UnmarshalJSONOrigSpanSlice(iter)
+			for iter.ReadArray() {
+				orig.Spans = append(orig.Spans, NewOrigSpan())
+				UnmarshalJSONOrigSpan(orig.Spans[len(orig.Spans)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
@@ -160,7 +161,7 @@ func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = append(orig.Spans, NewOrigPtrSpan())
+			orig.Spans = append(orig.Spans, NewOrigSpan())
 			err = UnmarshalProtoOrigSpan(orig.Spans[len(orig.Spans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

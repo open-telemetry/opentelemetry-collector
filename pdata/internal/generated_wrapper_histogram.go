@@ -14,11 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigHistogram() otlpmetrics.Histogram {
-	return otlpmetrics.Histogram{}
-}
-
-func NewOrigPtrHistogram() *otlpmetrics.Histogram {
+func NewOrigHistogram() *otlpmetrics.Histogram {
 	return &otlpmetrics.Histogram{}
 }
 
@@ -27,9 +23,11 @@ func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestHistogram(orig *otlpmetrics.Histogram) {
+func GenTestOrigHistogram() *otlpmetrics.Histogram {
+	orig := NewOrigHistogram()
 	orig.DataPoints = GenerateOrigTestHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -55,17 +53,20 @@ func MarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, dest *json.Stream) {
 
 // UnmarshalJSONOrigHistogram unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigHistogramDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigHistogramDataPoint())
+				UnmarshalJSONOrigHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigHistogram(orig *otlpmetrics.Histogram) int {
@@ -126,7 +127,7 @@ func UnmarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrHistogramDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigHistogramDataPoint())
 			err = UnmarshalProtoOrigHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err
