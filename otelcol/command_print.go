@@ -8,7 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,9 +27,10 @@ var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
-func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
+func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet, stdout, stderr io.Writer) *cobra.Command {
 	var outputFormat string
 	var mode string
+	var validate bool
 
 	cmd := &cobra.Command{
 		Use:     "print-config",
@@ -38,57 +39,86 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cob
 		Long: `Prints the Collector's configuration with different levels of processing:
 
 - redacted: Shows the resolved configuration with sensitive data redacted (default)
-- validated: Shows the resolved and validated configuration (shows only valid configurations)
-- unredacted: Shows the validated configuration with all sensitive data visible (shows complete data)
+- unredacted: Shows the resolved configuration with all sensitive data visible (shows complete data)
+
+The output prints in YAML by default. To print JSON use --format=json,
+however this is considered unstable.
+
+Validation is enabled by default, as a safety measure.
 
 All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return configPrintSubCommand(cmd, set, flagSet, mode, outputFormat)
+			pc := printContext{
+				cmd: cmd,
+				stdout: stdout,
+				stderr: stderr,
+				set: set,
+				outputFormat: outputFormat,
+				validate: validate,
+			}
+			return pc.configPrintSubCommand(flagSet, mode)
 		},
 	}
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
 
-	formatHelp := fmt.Sprintf("Output format. Available: yaml,json (defaults to yaml)")
+	formatHelp := "Output format: yaml (default), json)"
 	cmd.Flags().StringVar(&outputFormat, "format", "yaml", formatHelp)
 
-	modeHelp := fmt.Sprintf("Configuration processing mode. Available: initial,raw,redacted,unredacted (defaults to redacted)")
+	modeHelp := "Operating mode: redacted (default), unredacted"
 	cmd.Flags().StringVar(&mode, "mode", "redacted", modeHelp)
+
+	validateHelp:= "Validation mode: true (default), false"
+	cmd.Flags().BoolVar(&validate, "validate", true, validateHelp)
 
 	cmd.Flags().AddGoFlagSet(flagSet)
 	return cmd
 }
 
-func configPrintSubCommand(cmd *cobra.Command, set CollectorSettings, flagSet *flag.FlagSet, mode, outputFormat string) error {
+type printContext struct {
+	cmd *cobra.Command
+	stdout io.Writer
+	stderr io.Writer
+	set CollectorSettings
+	outputFormat string
+	validate bool
+}
+
+func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
 	if !printCommandFeatureFlag.IsEnabled() {
 		return errors.New("print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 	}
-	err := updateSettingsUsingFlags(&set, flagSet)
+	err := updateSettingsUsingFlags(&pctx.set, flagSet)
 	if err != nil {
 		return err
 	}
 
+	if !pctx.validate {
+		fmt.Fprintf(pctx.stderr, "Warning: redacted mode hides sensitive fields but does not validate. Use with caution.\n")
+	}
 	switch strings.ToLower(mode) {
-	case "validated":
-		return printRedactedConfig(cmd, set, true, outputFormat)
 	case "redacted":
-		fmt.Fprintf(os.Stderr, "Warning: redacted mode hides sensitive fields but does not validate. Use with caution.\n")
-		return printRedactedConfig(cmd, set, false, outputFormat)
+		return pctx.printRedactedConfig()
 	case "unredacted":
-		fmt.Fprintf(os.Stderr, "Warning: unredacted mode shows the complete configuration. Use with caution.\n")
-		return printUnredactedConfig(cmd, set, outputFormat)
+		fmt.Fprintf(pctx.stderr, "Warning: unredacted mode shows the complete configuration. Use with caution.\n")
+		return pctx.printUnredactedConfig()
 	default:
-		return fmt.Errorf("invalid mode %q. Valid modes are: redacted, validated, unredacted", mode)
+		return fmt.Errorf("invalid mode %q. Valid modes are: redacted, unredacted", mode)
 	}
 }
 
 // printConfigData formats and prints configuration data in yaml or json format.
-func printConfigData(data map[string]any, format string) error {
+func (pctx *printContext) printConfigData(data map[string]any) error {
+	format := pctx.outputFormat
 	if format == "" {
 		format = "yaml"
 	}
 
 	if strings.EqualFold(format, "json") {
-		encoder := json.NewEncoder(os.Stdout)
+		// Note that JSON does 
+		fmt.Fprintf(pctx.stderr, "Warning: JSON output format is unstable. Use with caution.\n")
+		encoder := json.NewEncoder(pctx.stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(data)
 	}
@@ -98,31 +128,30 @@ func printConfigData(data map[string]any, format string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s\n", b)
+		fmt.Fprintf(pctx.stdout, "%s\n", b)
 		return nil
 	}
 	return fmt.Errorf("Unrecognized print-format value: %s", format)
 }
 
-func printConfiguration(cmd *cobra.Command, set CollectorSettings) (any, error) {
+func (pctx *printContext) printConfiguration() (any, error) {
 	var factories Factories
-	if set.Factories != nil {
+	if pctx.set.Factories != nil {
 		// TODO: Note that because Factories is a bare function, we have to
-		// check for nil. This goes against the functional interface pattern
-		// 
+		// check for nil. This goes against the functional interface pattern.
 		var err error
-		factories, err = set.Factories()
+		factories, err = pctx.set.Factories()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get factories: %w", err)
 		}
 	}
 
-	configProvider, err := NewConfigProvider(set.ConfigProviderSettings)
+	configProvider, err := NewConfigProvider(pctx.set.ConfigProviderSettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create config provider: %w", err)
 	}
 
-	cfg, err := configProvider.Get(cmd.Context(), factories)
+	cfg, err := configProvider.Get(pctx.cmd.Context(), factories)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
 	}
@@ -132,28 +161,42 @@ func printConfiguration(cmd *cobra.Command, set CollectorSettings) (any, error) 
 // printUnredactedConfig prints resolved configuration before interpreting
 // with the intended types for each component, thus it shows the full
 // configuration without considering configuopaque. Use with caution.
-func printUnredactedConfig(cmd *cobra.Command, set CollectorSettings, outputFormat string) error {
-	resolver, err := confmap.NewResolver(set.ConfigProviderSettings.ResolverSettings)
+func  (pctx *printContext) printUnredactedConfig() error {
+	var conf *confmap.Conf
+	if pctx.validate {
+		cfg, err := pctx.printConfiguration()
+		if err != nil {
+			return err
+		}
+		if err = xconfmap.Validate(cfg); err != nil {
+			return fmt.Errorf("invalid configuration: %w", err)
+		}
+		
+		// Note: we discard the validated configuration, once
+		// it's in the form where it can be validated, it
+		// can't be unredacted.
+	} 
+	resolver, err := confmap.NewResolver(pctx.set.ConfigProviderSettings.ResolverSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create new resolver: %w", err)
 	}
-	conf, err := resolver.Resolve(cmd.Context())
+	conf, err = resolver.Resolve(pctx.cmd.Context())
 	if err != nil {
 		return fmt.Errorf("error while resolving config: %w", err)
 	}
-	return printConfigData(conf.ToStringMap(), outputFormat)
+	return pctx.printConfigData(conf.ToStringMap())
 }
 
 // printRedactedConfig prints resolved configuration with its assigned
 // types, but without validation. Notably, configopaque strings are printed
 // as "[redacted]". This is the default.
-func printRedactedConfig(cmd *cobra.Command, set CollectorSettings, validate bool, outputFormat string) error {
-	cfg, err := printConfiguration(cmd, set)
+func  (pctx *printContext) printRedactedConfig() error {
+	cfg, err := pctx.printConfiguration()
 	if err != nil {
 		return err
 	}
 
-	if validate {
+	if pctx.validate {
 		if err = xconfmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
@@ -163,5 +206,5 @@ func printRedactedConfig(cmd *cobra.Command, set CollectorSettings, validate boo
 	if err := confMap.Marshal(cfg); err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	return printConfigData(confMap.ToStringMap(), outputFormat)
+	return pctx.printConfigData(confMap.ToStringMap())
 }
