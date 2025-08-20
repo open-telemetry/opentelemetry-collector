@@ -23,7 +23,7 @@ var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 	"otelcol.printInitialConfig",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.120.0"),
-	featuregate.WithRegisterDescription("if set to true, turns on the raw mode of the print-config command"),
+	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
@@ -39,7 +39,7 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet, stdo
 		Long: `Prints the Collector's configuration with different levels of processing:
 
 - redacted: Shows the resolved configuration with sensitive data redacted (default)
-- unredacted: Shows the resolved configuration with all sensitive data visible (shows complete data)
+- unredacted: Shows the resolved configuration with all sensitive data visible
 
 The output prints in YAML by default. To print JSON use --format=json,
 however this is considered unstable.
@@ -63,7 +63,7 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
 
-	formatHelp := "Output format: yaml (default), json)"
+	formatHelp := "Output format: yaml (default), json (unstable))"
 	cmd.Flags().StringVar(&outputFormat, "format", "yaml", formatHelp)
 
 	modeHelp := "Operating mode: redacted (default), unredacted"
@@ -87,7 +87,7 @@ type printContext struct {
 
 func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
 	if !printCommandFeatureFlag.IsEnabled() {
-		return errors.New("print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
+		return errors.New("print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 	}
 	err := updateSettingsUsingFlags(&pctx.set, flagSet)
 	if err != nil {
@@ -137,8 +137,6 @@ func (pctx *printContext) printConfigData(data map[string]any) error {
 func (pctx *printContext) printConfiguration() (any, error) {
 	var factories Factories
 	if pctx.set.Factories != nil {
-		// TODO: Note that because Factories is a bare function, we have to
-		// check for nil. This goes against the functional interface pattern.
 		var err error
 		factories, err = pctx.set.Factories()
 		if err != nil {
@@ -172,9 +170,7 @@ func  (pctx *printContext) printUnredactedConfig() error {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 		
-		// Note: we discard the validated configuration, once
-		// it's in the form where it can be validated, it
-		// can't be unredacted.
+		// Note: we discard the validated configuration.
 	} 
 	resolver, err := confmap.NewResolver(pctx.set.ConfigProviderSettings.ResolverSettings)
 	if err != nil {

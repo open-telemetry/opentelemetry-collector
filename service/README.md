@@ -149,25 +149,35 @@ extensions:
    ./otelcorecol validate --config=file:examples/local/otel-config.yaml
 ```
 
-## How to examine the final configuration after merging and resolving from various sources?
+## How to examine the final configuration after resolving, parsing and validating?
+
+Use `print-config` in the default mode (`--mode=redacted`):
 
 ```bash
-   ./otelcorecol print-config --mode=raw --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
+   ./otelcorecol print-config --config=file:examples/local/otel-config.yaml
 ```
 
-This command shows the resolved configuration before validation, which may contain sensitive values. The raw mode requires the `otelcol.printInitialConfig` feature gate.
+Note that by default the configuration will only print when it is
+valid, and that sensitive information will be redacted.  To print a
+potentially invalid configuration, use `--validate=false`.
 
-## How to examine the validated configuration with component defaults applied?
+## How to examine the final configuration including sensitive fields?
+
+Use `print-conig` with `--mode=unredacted`:
 
 ```bash
-   ./otelcorecol print-config --config=file:examples/local/otel-config.yaml --format=yaml
+   ./otelcorecol print-config --mode=unredacted --config=file:examples/local/otel-config.yaml
 ```
 
-This command validates the configuration through the full component pipeline and shows the final configuration with all component defaults resolved. Sensitive values (like headers and certificates) are redacted for security. Supports both `--format=yaml` and `--format=json` output. The default mode is `redacted` which is safe for sharing.
+Note that by default the configuration will only print when it is
+valid.  To print a potentially invalid configuration, use
+`--validate=false`.
 
-## Available print-config modes
+## How to print the final configuration in JSON format?
 
-- `--mode=initial`: Shows configuration as loaded from files without any resolution (literal file contents with no environment variable substitution or file references processed)
-- `--mode=raw`: Shows resolved configuration before validation (after merging configs and resolving environment variables, but before component validation; may contain sensitive values, requires feature gate)
-- `--mode=redacted`: Shows validated configuration with sensitive data redacted (default, safe for sharing)  
-- `--mode=unredacted`: Shows validated configuration with all sensitive data visible (most dangerous, use with extreme caution)
+Use `print-conig` with `--format=json`. Note that JSON format is considered unstable.
+
+```bash
+   ./otelcorecol print-config --format=json --config=file:examples/local/otel-config.yaml
+```
+
