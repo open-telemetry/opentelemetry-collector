@@ -105,9 +105,16 @@ func printConfigData(data map[string]any, format string) error {
 }
 
 func printConfiguration(cmd *cobra.Command, set CollectorSettings) (any, error) {
-	factories, err := set.Factories()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get factories: %w", err)
+	var factories Factories
+	if set.Factories != nil {
+		// TODO: Note that because Factories is a bare function, we have to
+		// check for nil. This goes against the functional interface pattern
+		// 
+		var err error
+		factories, err = set.Factories()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get factories: %w", err)
+		}
 	}
 
 	configProvider, err := NewConfigProvider(set.ConfigProviderSettings)

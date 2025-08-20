@@ -4,22 +4,24 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	//"bytes"
-	//"os"
+	"context"
 	"testing"
+	"time"
 
-	//"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	//yaml "go.yaml.in/yaml/v3"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -54,19 +56,19 @@ func otlpFactories() (Factories, error) {
 func TestPrintCommand(t *testing.T) {
 	tests := []struct {
 		name      string
-		mode string
+		mode      string
 		set       confmap.ResolverSettings
 		errString string
 	}{
 		{
-			name:      "no URIs",
+			name:      "no config",
 			set:       confmap.ResolverSettings{},
 			errString: "at least one config flag must be provided",
 		},
 		{
-			name: "valid URI - file not found",
+			name: "file not found",
 			set: confmap.ResolverSettings{
-				URIs: []string{"file:blabla.yaml"},
+				URIs: []string{"file:nope.yaml"},
 				ProviderFactories: []confmap.ProviderFactory{
 					fileprovider.NewFactory(),
 				},
@@ -75,7 +77,7 @@ func TestPrintCommand(t *testing.T) {
 			errString: "cannot retrieve the configuration: unable to read the file",
 		},
 		{
-			name: "valid URI",
+			name: "valid yaml",
 			set: confmap.ResolverSettings{
 				URIs: []string{"yaml:processors::test/foo::timeout: 3s"},
 				ProviderFactories: []confmap.ProviderFactory{
@@ -85,7 +87,7 @@ func TestPrintCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "valid URI - no provider set",
+			name: "no factory",
 			set: confmap.ResolverSettings{
 				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 				DefaultScheme: "yaml",
@@ -93,7 +95,7 @@ func TestPrintCommand(t *testing.T) {
 			errString: "at least one Provider must be supplied",
 		},
 		{
-			name: "valid URI - invalid scheme name",
+			name: "invalid scheme",
 			set: confmap.ResolverSettings{
 				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 				DefaultScheme: "foo",
@@ -111,10 +113,31 @@ func TestPrintCommand(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
 			}()
 
-			set := ConfigProviderSettings{
-				ResolverSettings: test.set,
-			}
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			testType := component.MustNewType("test")
+			testFactory := xprocessor.NewFactory(
+				testType,
+				func() component.Config {
+					return struct {
+						Timeout time.Duration `mapstructure:"timeout"`
+					}{}
+				},
+				xprocessor.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
+					return nil, nil
+				}, component.StabilityLevelStable),
+			)
+
+			cmd := newConfigPrintSubCommand(CollectorSettings{
+				Factories: func() (Factories, error) {
+					return Factories{
+						Processors: map[component.Type]processor.Factory{
+							testType: testFactory,
+						},
+					}, nil
+				},
+				ConfigProviderSettings: ConfigProviderSettings{
+					ResolverSettings: test.set,
+				},
+			}, flags(featuregate.GlobalRegistry()))
 			mode := test.mode
 			if mode == "" {
 				mode = "redacted"
