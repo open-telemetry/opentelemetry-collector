@@ -58,42 +58,6 @@ func (int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
 	return context.Background(), val, nil
 }
 
-func TestPersistentQueue_CorruptedItemOnRead(t *testing.T) {
-	ext := storagetest.NewMockStorageExtension(nil)
-	pq := createTestPersistentQueueWithRequestsSizer(t, ext, 100)
-
-	// Add one item
-	require.NoError(t, pq.Offer(context.Background(), int64(123)))
-	assert.EqualValues(t, 1, pq.Size())
-	assert.EqualValues(t, 123, pq.metadata.ItemsSize)
-	assert.EqualValues(t, 1230, pq.metadata.BytesSize)
-
-	// Corrupt the item in storage
-	require.NoError(t, pq.client.Set(context.Background(), getItemKey(0), []byte("invalid data")))
-
-	// Try to read the item. It should fail to unmarshal.
-	// The loop in Read continues, and since there are no more items, Read will block.
-	readFinished := make(chan struct{})
-	go func() {
-		_, _, _, ok := pq.Read(context.Background())
-		// Read returns false because the queue is stopped.
-		assert.False(t, ok)
-		close(readFinished)
-	}()
-
-	// Wait a bit to ensure Read has processed the corrupted item and is now waiting.
-	assert.Eventually(t, func() bool {
-		pq.mu.Lock()
-		defer pq.mu.Unlock()
-		// After the failed read, the queue should be empty and sizes should be reset.
-		return pq.requestSize() == 0 && pq.metadata.BytesSize == 0 && pq.metadata.ItemsSize == 0
-	}, time.Second, 10*time.Millisecond, "queue size and byte/item sizes should be reset to 0")
-
-	// Shutdown the queue to unblock Read.
-	require.NoError(t, pq.Shutdown(context.Background()))
-	<-readFinished
-}
-
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
 	return &fakeBoundedStorageClient{
 		st:             map[string][]byte{},

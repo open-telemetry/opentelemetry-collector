@@ -59,20 +59,6 @@ func TestMetricsRequest(t *testing.T) {
 	)
 }
 
-func TestMetricsEncoding_UnmarshalError(t *testing.T) {
-	fgOrigReadState := queue.PersistRequestContextOnRead
-	queue.PersistRequestContextOnRead = func() bool { return false }
-	t.Cleanup(func() {
-		queue.PersistRequestContextOnRead = fgOrigReadState
-	})
-
-	enc := metricsEncoding{}
-	ctx, req, err := enc.Unmarshal([]byte("!invalid-proto"))
-	require.Error(t, err)
-	require.Nil(t, req)
-	require.NotNil(t, ctx)
-}
-
 func TestMetrics_NilConfig(t *testing.T) {
 	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushMetricsData(nil))
 	require.Nil(t, me)

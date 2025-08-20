@@ -17,7 +17,7 @@ issues: [12207]
 # Use pipe (|) for multiline entries.
 subtext: | 
   The specified feature is enable through feature-gate flag. Enable with command:
-  otelcol --config=config.yaml --feature-gates=+telemetry.newPipelineTelemetry,+telemetry.distinguishDownstreamErrors
+  otelcol --config=config.yaml --feature-gates=+receiverhelper.newReceiverMetrics
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

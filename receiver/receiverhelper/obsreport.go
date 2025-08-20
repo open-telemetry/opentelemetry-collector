@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
@@ -165,7 +164,7 @@ func (rec *ObsReport) endOp(
 	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
-		if telemetry.DistinguishDownstreamErrors.IsEnabled() && consumererror.IsDownstream(err) {
+		if NewReceiverMetricsGate.IsEnabled() && consumererror.IsDownstream(err) {
 			numRefused = numReceivedItems
 		} else {
 			numFailedErrors = numReceivedItems
@@ -181,13 +180,15 @@ func (rec *ObsReport) endOp(
 	switch {
 	case err == nil:
 		outcome = "success"
-	case telemetry.DistinguishDownstreamErrors.IsEnabled() && consumererror.IsDownstream(err):
+	case NewReceiverMetricsGate.IsEnabled() && consumererror.IsDownstream(err):
 		outcome = "refused"
 	default:
 		outcome = "failure"
 	}
-	rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
-
+	// Emit otelcol_receiver_requests only if relevant receiverhelper.newReceiverMetrics is enabled
+	if NewReceiverMetricsGate.IsEnabled() {
+		rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
+	}
 	// end span according to errors
 	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey, failedItemsKey string

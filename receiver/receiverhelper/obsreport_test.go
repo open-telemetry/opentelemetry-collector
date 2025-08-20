@@ -6,7 +6,6 @@ package receiverhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadatatest"
@@ -43,9 +41,17 @@ type testParams struct {
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	for _, gateEnabled := range []bool{true, false} {
-		t.Run(fmt.Sprintf("gate_enabled=%v", gateEnabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.DistinguishDownstreamErrors.ID(), gateEnabled))
+	originalState := NewReceiverMetricsGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+	})
+
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{{"gate_enabled", true}, {"gate_disabled", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -81,7 +87,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
 					case consumererror.IsDownstream(params[i].err):
-						if gateEnabled {
+						if tc.enabled {
 							refusedSpans += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
@@ -135,39 +141,49 @@ func TestReceiveTraceDataOp(t *testing.T) {
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 				// Assert otelcol_receiver_requests metric with outcome attribute
-				outcomes := make(map[string]int64)
-				for _, param := range params {
-					var outcome string
-					switch {
-					case param.err == nil:
-						outcome = "success"
-					case gateEnabled && consumererror.IsDownstream(param.err):
-						outcome = "refused"
-					default:
-						outcome = "failure"
+				if tc.enabled {
+					outcomes := make(map[string]int64)
+					for _, param := range params {
+						var outcome string
+						switch {
+						case param.err == nil:
+							outcome = "success"
+						case tc.enabled && consumererror.IsDownstream(param.err):
+							outcome = "refused"
+						default:
+							outcome = "failure"
+						}
+						outcomes[outcome]++
 					}
-					outcomes[outcome]++
+					var expectedRequests []metricdata.DataPoint[int64]
+					for outcome, count := range outcomes {
+						expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+							Attributes: attribute.NewSet(
+								attribute.String(internal.ReceiverKey, receiverID.String()),
+								attribute.String(internal.TransportKey, transport),
+								attribute.String("outcome", outcome)),
+							Value: count,
+						})
+					}
+					metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 				}
-				var expectedRequests []metricdata.DataPoint[int64]
-				for outcome, count := range outcomes {
-					expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
-						Attributes: attribute.NewSet(
-							attribute.String(internal.ReceiverKey, receiverID.String()),
-							attribute.String(internal.TransportKey, transport),
-							attribute.String("outcome", outcome)),
-						Value: count,
-					})
-				}
-				metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 			})
 		})
 	}
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	for _, gateEnabled := range []bool{true, false} {
-		t.Run(fmt.Sprintf("gate_enabled=%v", gateEnabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.DistinguishDownstreamErrors.ID(), gateEnabled))
+	originalState := NewReceiverMetricsGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+	})
+
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{{"gate_enabled", true}, {"gate_disabled", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -203,7 +219,7 @@ func TestReceiveLogsOp(t *testing.T) {
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedLogRecordsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
 					case consumererror.IsDownstream(params[i].err):
-						if gateEnabled {
+						if tc.enabled {
 							refusedLogRecords += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedLogRecordsKey, Value: attribute.Int64Value(0)})
@@ -255,39 +271,49 @@ func TestReceiveLogsOp(t *testing.T) {
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 				// Assert otelcol_receiver_requests metric with outcome attribute
-				outcomes := make(map[string]int64)
-				for _, param := range params {
-					var outcome string
-					switch {
-					case param.err == nil:
-						outcome = "success"
-					case gateEnabled && consumererror.IsDownstream(param.err):
-						outcome = "refused"
-					default:
-						outcome = "failure"
+				if tc.enabled {
+					outcomes := make(map[string]int64)
+					for _, param := range params {
+						var outcome string
+						switch {
+						case param.err == nil:
+							outcome = "success"
+						case tc.enabled && consumererror.IsDownstream(param.err):
+							outcome = "refused"
+						default:
+							outcome = "failure"
+						}
+						outcomes[outcome]++
 					}
-					outcomes[outcome]++
+					var expectedRequests []metricdata.DataPoint[int64]
+					for outcome, count := range outcomes {
+						expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+							Attributes: attribute.NewSet(
+								attribute.String(internal.ReceiverKey, receiverID.String()),
+								attribute.String(internal.TransportKey, transport),
+								attribute.String("outcome", outcome)),
+							Value: count,
+						})
+					}
+					metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 				}
-				var expectedRequests []metricdata.DataPoint[int64]
-				for outcome, count := range outcomes {
-					expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
-						Attributes: attribute.NewSet(
-							attribute.String(internal.ReceiverKey, receiverID.String()),
-							attribute.String(internal.TransportKey, transport),
-							attribute.String("outcome", outcome)),
-						Value: count,
-					})
-				}
-				metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 			})
 		})
 	}
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	for _, gateEnabled := range []bool{true, false} {
-		t.Run(fmt.Sprintf("gate_enabled=%v", gateEnabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.DistinguishDownstreamErrors.ID(), gateEnabled))
+	originalState := NewReceiverMetricsGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+	})
+
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{{"gate_enabled", true}, {"gate_disabled", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -324,7 +350,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
 					case consumererror.IsDownstream(params[i].err):
-						if gateEnabled {
+						if tc.enabled {
 							refusedMetricPoints += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(0)})
@@ -377,39 +403,49 @@ func TestReceiveMetricsOp(t *testing.T) {
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 				// Assert otelcol_receiver_requests metric with outcome attribute
-				outcomes := make(map[string]int64)
-				for _, param := range params {
-					var outcome string
-					switch {
-					case param.err == nil:
-						outcome = "success"
-					case gateEnabled && consumererror.IsDownstream(param.err):
-						outcome = "refused"
-					default:
-						outcome = "failure"
+				if tc.enabled {
+					outcomes := make(map[string]int64)
+					for _, param := range params {
+						var outcome string
+						switch {
+						case param.err == nil:
+							outcome = "success"
+						case tc.enabled && consumererror.IsDownstream(param.err):
+							outcome = "refused"
+						default:
+							outcome = "failure"
+						}
+						outcomes[outcome]++
 					}
-					outcomes[outcome]++
+					var expectedRequests []metricdata.DataPoint[int64]
+					for outcome, count := range outcomes {
+						expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+							Attributes: attribute.NewSet(
+								attribute.String(internal.ReceiverKey, receiverID.String()),
+								attribute.String(internal.TransportKey, transport),
+								attribute.String("outcome", outcome)),
+							Value: count,
+						})
+					}
+					metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 				}
-				var expectedRequests []metricdata.DataPoint[int64]
-				for outcome, count := range outcomes {
-					expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
-						Attributes: attribute.NewSet(
-							attribute.String(internal.ReceiverKey, receiverID.String()),
-							attribute.String(internal.TransportKey, transport),
-							attribute.String("outcome", outcome)),
-						Value: count,
-					})
-				}
-				metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 			})
 		})
 	}
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	for _, gateEnabled := range []bool{true, false} {
-		t.Run(fmt.Sprintf("gate_enabled=%v", gateEnabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.DistinguishDownstreamErrors.ID(), gateEnabled))
+	originalState := NewReceiverMetricsGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+	})
+
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{{"gate_enabled", true}, {"gate_disabled", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
 			tt := componenttest.NewTelemetry()
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -454,7 +490,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 					assert.Equal(t, codes.Unset, span.Status().Code)
 				case consumererror.IsDownstream(params[i].err):
 					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-					if gateEnabled {
+					if tc.enabled {
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 					} else {

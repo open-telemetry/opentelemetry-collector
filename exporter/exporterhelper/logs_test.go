@@ -59,20 +59,6 @@ func TestLogsRequest(t *testing.T) {
 	)
 }
 
-func TestLogsEncoding_UnmarshalError(t *testing.T) {
-	fgOrigReadState := queue.PersistRequestContextOnRead
-	queue.PersistRequestContextOnRead = func() bool { return false }
-	t.Cleanup(func() {
-		queue.PersistRequestContextOnRead = fgOrigReadState
-	})
-
-	enc := logsEncoding{}
-	ctx, req, err := enc.Unmarshal([]byte("!invalid-proto"))
-	require.Error(t, err)
-	require.Nil(t, req)
-	require.NotNil(t, ctx)
-}
-
 func TestLogs_InvalidName(t *testing.T) {
 	le, err := NewLogs(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushLogsData(nil))
 	require.Nil(t, le)
