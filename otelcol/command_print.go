@@ -104,7 +104,7 @@ func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode stri
 		fmt.Fprintf(pctx.stderr, "Warning: unredacted mode shows the complete configuration. Use with caution.\n")
 		return pctx.printUnredactedConfig()
 	default:
-		return fmt.Errorf("invalid mode %q. Valid modes are: redacted, unredacted", mode)
+		return fmt.Errorf("invalid mode %q: modes are: redacted, unredacted", mode)
 	}
 }
 
@@ -131,7 +131,7 @@ func (pctx *printContext) printConfigData(data map[string]any) error {
 		fmt.Fprintf(pctx.stdout, "%s\n", b)
 		return nil
 	}
-	return fmt.Errorf("Unrecognized print-format value: %s", format)
+	return fmt.Errorf("unrecognized print format: %s", format)
 }
 
 func (pctx *printContext) printConfiguration() (any, error) {
