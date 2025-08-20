@@ -18,7 +18,7 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Line{}
+			newDest[i] = NewOrigLine()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Line{}
+			newDest[i] = NewOrigLine()
 		}
 	}
 	for i := range src {
 		CopyOrigLine(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
+	orig := make([]*otlpprofiles.Line, 5)
+	orig[0] = NewOrigLine()
+	orig[1] = GenTestOrigLine()
+	orig[2] = NewOrigLine()
+	orig[3] = GenTestOrigLine()
+	orig[4] = NewOrigLine()
+	return orig
 }

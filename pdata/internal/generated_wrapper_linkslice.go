@@ -18,7 +18,7 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigLink()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Link{}
+			newDest[i] = NewOrigLink()
 		}
 	}
 	for i := range src {
 		CopyOrigLink(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
+	orig := make([]*otlpprofiles.Link, 5)
+	orig[0] = NewOrigLink()
+	orig[1] = GenTestOrigLink()
+	orig[2] = NewOrigLink()
+	orig[3] = GenTestOrigLink()
+	orig[4] = NewOrigLink()
+	return orig
 }

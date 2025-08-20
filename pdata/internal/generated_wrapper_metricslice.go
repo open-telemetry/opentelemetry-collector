@@ -18,7 +18,7 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
+			newDest[i] = NewOrigMetric()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
+			newDest[i] = NewOrigMetric()
 		}
 	}
 	for i := range src {
 		CopyOrigMetric(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestMetricSlice() []*otlpmetrics.Metric {
+	orig := make([]*otlpmetrics.Metric, 5)
+	orig[0] = NewOrigMetric()
+	orig[1] = GenTestOrigMetric()
+	orig[2] = NewOrigMetric()
+	orig[3] = GenTestOrigMetric()
+	orig[4] = NewOrigMetric()
+	return orig
 }

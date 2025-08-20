@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeSpans(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeSpans(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { newScopeSpans(internal.NewOrigScopeSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -39,34 +38,23 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	orig = generateTestScopeSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
-}
-
-func TestScopeSpans_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeSpans()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewScopeSpans()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+}
+
+func TestScopeSpans_Spans(t *testing.T) {
+	ms := NewScopeSpans()
+	assert.Equal(t, NewSpanSlice(), ms.Spans())
+	ms.orig.Spans = internal.GenerateOrigTestSpanSlice()
+	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
 }
 
 func TestScopeSpans_SchemaUrl(t *testing.T) {
@@ -74,25 +62,12 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeSpans_Spans(t *testing.T) {
-	ms := NewScopeSpans()
-	assert.Equal(t, NewSpanSlice(), ms.Spans())
-	fillTestSpanSlice(ms.Spans())
-	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeSpans() ScopeSpans {
-	tv := NewScopeSpans()
-	fillTestScopeSpans(tv)
-	return tv
-}
-
-func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestSpanSlice(tv.Spans())
+	ms := newScopeSpans(internal.GenTestOrigScopeSpans(), internal.NewState())
+	return ms
 }

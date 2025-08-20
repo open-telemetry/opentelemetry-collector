@@ -23,11 +23,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                  metric.Meter
-	mu                     sync.Mutex
-	registrations          []metric.Registration
-	ProcessorIncomingItems metric.Int64Counter
-	ProcessorOutgoingItems metric.Int64Counter
+	meter                     metric.Meter
+	mu                        sync.Mutex
+	registrations             []metric.Registration
+	ProcessorIncomingItems    metric.Int64Counter
+	ProcessorInternalDuration metric.Float64Histogram
+	ProcessorOutgoingItems    metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -63,6 +64,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_incoming_items",
 		metric.WithDescription("Number of items passed to the processor. [alpha]"),
 		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorInternalDuration, err = builder.meter.Float64Histogram(
+		"otelcol_processor_internal_duration",
+		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the processor. [alpha]"),
+		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(

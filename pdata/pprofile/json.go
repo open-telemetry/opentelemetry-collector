@@ -6,6 +6,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 import (
 	"slices"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -17,8 +18,11 @@ type JSONMarshaler struct{}
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	pd.marshalJSONStream(dest)
-	return slices.Clone(dest.Buffer()), dest.Error()
+	internal.MarshalJSONOrigExportProfilesServiceRequest(pd.getOrig(), dest)
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pprofile.Profiles.
@@ -28,11 +32,11 @@ type JSONUnmarshaler struct{}
 func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
-	td := NewProfiles()
-	td.unmarshalJSONIter(iter)
+	pd := NewProfiles()
+	internal.UnmarshalJSONOrigExportProfilesServiceRequest(pd.getOrig(), iter)
 	if iter.Error() != nil {
 		return Profiles{}, iter.Error()
 	}
-	otlp.MigrateProfiles(td.getOrig().ResourceProfiles)
-	return td, nil
+	otlp.MigrateProfiles(pd.getOrig().ResourceProfiles)
+	return pd, nil
 }

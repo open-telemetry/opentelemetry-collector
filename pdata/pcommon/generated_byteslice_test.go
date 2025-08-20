@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestNewByteSlice(t *testing.T) {
@@ -52,8 +50,9 @@ func TestNewByteSlice(t *testing.T) {
 
 func TestByteSliceReadOnly(t *testing.T) {
 	raw := []byte{1, 2, 3}
-	state := internal.StateReadOnly
-	ms := ByteSlice(internal.NewByteSlice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := ByteSlice(internal.NewByteSlice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, byte(1), ms.At(0))
@@ -129,22 +128,6 @@ func TestByteSliceEqual(t *testing.T) {
 
 	ms2.Append(1, 2, 3)
 	assert.True(t, ms.Equal(ms2))
-}
-
-func TestByteSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := NewByteSlice()
-	internal.FillTestByteSlice(internal.ByteSlice(src))
-	internal.MarshalJSONStreamByteSlice(internal.ByteSlice(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewByteSlice()
-	internal.UnmarshalJSONIterByteSlice(internal.ByteSlice(dest), iter)
-
-	assert.Equal(t, src, dest)
 }
 
 func BenchmarkByteSliceEqual(b *testing.B) {

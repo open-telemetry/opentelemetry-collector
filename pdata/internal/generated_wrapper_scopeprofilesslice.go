@@ -18,7 +18,7 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ScopeProfiles{}
+			newDest[i] = NewOrigScopeProfiles()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ScopeProfiles{}
+			newDest[i] = NewOrigScopeProfiles()
 		}
 	}
 	for i := range src {
 		CopyOrigScopeProfiles(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
+	orig := make([]*otlpprofiles.ScopeProfiles, 5)
+	orig[0] = NewOrigScopeProfiles()
+	orig[1] = GenTestOrigScopeProfiles()
+	orig[2] = NewOrigScopeProfiles()
+	orig[3] = GenTestOrigScopeProfiles()
+	orig[4] = NewOrigScopeProfiles()
+	return orig
 }

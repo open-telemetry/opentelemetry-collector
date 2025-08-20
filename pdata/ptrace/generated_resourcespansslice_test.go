@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResourceSpansSlice(t *testing.T) {
 	es := NewResourceSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, &state)
+	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceSpans()
 	testVal := generateTestResourceSpans()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestResourceSpans(el)
+		(*es.orig)[i] = internal.GenTestOrigResourceSpans()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceSpansSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,24 +49,7 @@ func TestResourceSpansSliceReadOnly(t *testing.T) {
 
 func TestResourceSpansSlice_CopyTo(t *testing.T) {
 	dest := NewResourceSpansSlice()
-	// Test CopyTo empty
-	NewResourceSpansSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceSpansSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestResourceSpansSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceSpansSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceSpansSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewResourceSpansSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceSpansSlice(), dest)
 }
@@ -136,9 +117,9 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ResourceSpans) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestResourceSpansSlice_RemoveIfAll(t *testing.T) {
@@ -161,22 +142,6 @@ func TestResourceSpansSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestResourceSpansSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceSpansSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceSpansSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceSpansSlice_Sort(t *testing.T) {
 	es := generateTestResourceSpansSlice()
 	es.Sort(func(a, b ResourceSpans) bool {
@@ -194,15 +159,7 @@ func TestResourceSpansSlice_Sort(t *testing.T) {
 }
 
 func generateTestResourceSpansSlice() ResourceSpansSlice {
-	es := NewResourceSpansSlice()
-	fillTestResourceSpansSlice(es)
-	return es
-}
-
-func fillTestResourceSpansSlice(es ResourceSpansSlice) {
-	*es.orig = make([]*otlptrace.ResourceSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.ResourceSpans{}
-		fillTestResourceSpans(newResourceSpans((*es.orig)[i], es.state))
-	}
+	ms := NewResourceSpansSlice()
+	*ms.orig = internal.GenerateOrigTestResourceSpansSlice()
+	return ms
 }

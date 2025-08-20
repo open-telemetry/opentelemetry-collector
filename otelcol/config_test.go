@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 var (
@@ -288,8 +288,8 @@ func generateConfig() *Config {
 			component.MustNewID("nop"): &errConfig{},
 		},
 		Service: service.Config{
-			Telemetry: telemetry.Config{
-				Logs: telemetry.LogsConfig{
+			Telemetry: otelconftelemetry.Config{
+				Logs: otelconftelemetry.LogsConfig{
 					Level:             zapcore.DebugLevel,
 					Development:       true,
 					Encoding:          "console",
@@ -299,7 +299,7 @@ func generateConfig() *Config {
 					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
-				Metrics: telemetry.MetricsConfig{
+				Metrics: otelconftelemetry.MetricsConfig{
 					Level: configtelemetry.LevelNormal,
 					MeterProvider: config.MeterProvider{
 						Readers: []config.MetricReader{

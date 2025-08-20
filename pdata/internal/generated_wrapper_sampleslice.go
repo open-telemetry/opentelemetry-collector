@@ -18,7 +18,7 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigSample()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Sample{}
+			newDest[i] = NewOrigSample()
 		}
 	}
 	for i := range src {
 		CopyOrigSample(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
+	orig := make([]*otlpprofiles.Sample, 5)
+	orig[0] = NewOrigSample()
+	orig[1] = GenTestOrigSample()
+	orig[2] = NewOrigSample()
+	orig[3] = GenTestOrigSample()
+	orig[4] = NewOrigSample()
+	return orig
 }

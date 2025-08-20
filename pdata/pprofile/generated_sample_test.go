@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestSample_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSample(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSample(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewOrigSample(), sharedState)) })
+	assert.Panics(t, func() { newSample(internal.NewOrigSample(), sharedState).MoveTo(dest) })
 }
 
 func TestSample_CopyTo(t *testing.T) {
@@ -39,28 +38,9 @@ func TestSample_CopyTo(t *testing.T) {
 	orig = generateTestSample()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
-}
-
-func TestSample_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSample()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSample()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigSample(), sharedState)) })
 }
 
 func TestSample_LocationsStartIndex(t *testing.T) {
@@ -68,8 +48,9 @@ func TestSample_LocationsStartIndex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.LocationsStartIndex())
 	ms.SetLocationsStartIndex(int32(13))
 	assert.Equal(t, int32(13), ms.LocationsStartIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsStartIndex(int32(13)) })
 }
 
 func TestSample_LocationsLength(t *testing.T) {
@@ -77,21 +58,22 @@ func TestSample_LocationsLength(t *testing.T) {
 	assert.Equal(t, int32(0), ms.LocationsLength())
 	ms.SetLocationsLength(int32(13))
 	assert.Equal(t, int32(13), ms.LocationsLength())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsLength(int32(13)) })
 }
 
 func TestSample_Value(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewInt64Slice(), ms.Value())
-	internal.FillTestInt64Slice(internal.Int64Slice(ms.Value()))
+	ms.orig.Value = internal.GenerateOrigTestInt64Slice()
 	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Value())
 }
 
 func TestSample_AttributeIndices(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
@@ -112,21 +94,11 @@ func TestSample_LinkIndex(t *testing.T) {
 func TestSample_TimestampsUnixNano(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.TimestampsUnixNano())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.TimestampsUnixNano()))
+	ms.orig.TimestampsUnixNano = internal.GenerateOrigTestUint64Slice()
 	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.TimestampsUnixNano())
 }
 
 func generateTestSample() Sample {
-	tv := NewSample()
-	fillTestSample(tv)
-	return tv
-}
-
-func fillTestSample(tv Sample) {
-	tv.orig.LocationsStartIndex = int32(13)
-	tv.orig.LocationsLength = int32(13)
-	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Value, tv.state))
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
-	tv.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.TimestampsUnixNano, tv.state))
+	ms := newSample(internal.GenTestOrigSample(), internal.NewState())
+	return ms
 }

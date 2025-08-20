@@ -18,7 +18,7 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
+			newDest[i] = NewOrigScopeLogs()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
+			newDest[i] = NewOrigScopeLogs()
 		}
 	}
 	for i := range src {
 		CopyOrigScopeLogs(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
+	orig := make([]*otlplogs.ScopeLogs, 5)
+	orig[0] = NewOrigScopeLogs()
+	orig[1] = GenTestOrigScopeLogs()
+	orig[2] = NewOrigScopeLogs()
+	orig[3] = GenTestOrigScopeLogs()
+	orig[4] = NewOrigScopeLogs()
+	return orig
 }

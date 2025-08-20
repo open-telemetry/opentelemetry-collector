@@ -18,7 +18,7 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint{}
+			newDest[i] = NewOrigSummaryDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint{}
+			newDest[i] = NewOrigSummaryDataPoint()
 		}
 	}
 	for i := range src {
 		CopyOrigSummaryDataPoint(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSummaryDataPointSlice() []*otlpmetrics.SummaryDataPoint {
+	orig := make([]*otlpmetrics.SummaryDataPoint, 5)
+	orig[0] = NewOrigSummaryDataPoint()
+	orig[1] = GenTestOrigSummaryDataPoint()
+	orig[2] = NewOrigSummaryDataPoint()
+	orig[3] = GenTestOrigSummaryDataPoint()
+	orig[4] = NewOrigSummaryDataPoint()
+	return orig
 }

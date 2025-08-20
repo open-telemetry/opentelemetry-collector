@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestScopeLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeLogs(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeLogs(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(internal.NewOrigScopeLogs(), sharedState)) })
+	assert.Panics(t, func() { newScopeLogs(internal.NewOrigScopeLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeLogs_CopyTo(t *testing.T) {
@@ -39,34 +38,23 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 	orig = generateTestScopeLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState)) })
-}
-
-func TestScopeLogs_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeLogs()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewScopeLogs()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(internal.NewOrigScopeLogs(), sharedState)) })
 }
 
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+}
+
+func TestScopeLogs_LogRecords(t *testing.T) {
+	ms := NewScopeLogs()
+	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
+	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
+	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
 func TestScopeLogs_SchemaUrl(t *testing.T) {
@@ -74,25 +62,12 @@ func TestScopeLogs_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeLogs_LogRecords(t *testing.T) {
-	ms := NewScopeLogs()
-	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	fillTestLogRecordSlice(ms.LogRecords())
-	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeLogs() ScopeLogs {
-	tv := NewScopeLogs()
-	fillTestScopeLogs(tv)
-	return tv
-}
-
-func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestLogRecordSlice(tv.LogRecords())
+	ms := newScopeLogs(internal.GenTestOrigScopeLogs(), internal.NewState())
+	return ms
 }

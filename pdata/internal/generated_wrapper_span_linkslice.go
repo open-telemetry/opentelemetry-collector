@@ -18,7 +18,7 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
+			newDest[i] = NewOrigSpan_Link()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
+			newDest[i] = NewOrigSpan_Link()
 		}
 	}
 	for i := range src {
 		CopyOrigSpan_Link(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSpan_LinkSlice() []*otlptrace.Span_Link {
+	orig := make([]*otlptrace.Span_Link, 5)
+	orig[0] = NewOrigSpan_Link()
+	orig[1] = GenTestOrigSpan_Link()
+	orig[2] = NewOrigSpan_Link()
+	orig[3] = GenTestOrigSpan_Link()
+	orig[4] = NewOrigSpan_Link()
+	return orig
 }

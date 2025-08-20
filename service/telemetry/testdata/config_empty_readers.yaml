@@ -1,5 +1,0 @@
-logs:
-  level: "info"
-metrics:
-  level: "basic"
-  readers: []

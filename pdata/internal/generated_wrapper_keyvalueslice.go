@@ -6,22 +6,31 @@
 
 package internal
 
-import v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+import (
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+)
 
-func CopyOrigKeyValueSlice(dest, src []v1.KeyValue) []v1.KeyValue {
-	var newDest []v1.KeyValue
+func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
+	var newDest []otlpcommon.KeyValue
 	if cap(dest) < len(src) {
-		newDest = make([]v1.KeyValue, len(src))
+		newDest = make([]otlpcommon.KeyValue, len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = v1.KeyValue{}
+			dest[i].Reset()
 		}
 	}
 	for i := range src {
 		CopyOrigKeyValue(&newDest[i], &src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestKeyValueSlice() []otlpcommon.KeyValue {
+	orig := make([]otlpcommon.KeyValue, 5)
+	orig[1] = *GenTestOrigKeyValue()
+	orig[3] = *GenTestOrigKeyValue()
+	return orig
 }

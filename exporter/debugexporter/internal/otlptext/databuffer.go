@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 )
 
 type dataBuffer struct {
@@ -44,6 +45,39 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 
 	for k, v := range m.All() {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
+	}
+}
+
+func (b *dataBuffer) logEntityRefs(resource pcommon.Resource) {
+	entityRefs := entity.ResourceEntityRefs(resource)
+	if entityRefs.Len() == 0 {
+		return
+	}
+
+	b.logEntry("Resource entity refs:")
+	for i := 0; i < entityRefs.Len(); i++ {
+		entityRef := entityRefs.At(i)
+		b.logEntry("     -> Entity ref #%d:", i)
+		b.logEntry("          -> Type: %s", entityRef.Type())
+		if entityRef.SchemaUrl() != "" {
+			b.logEntry("          -> Schema URL: %s", entityRef.SchemaUrl())
+		}
+
+		idKeys := entityRef.IdKeys()
+		if idKeys.Len() > 0 {
+			b.logEntry("          -> ID keys:")
+			for j := 0; j < idKeys.Len(); j++ {
+				b.logEntry("               -> %s", idKeys.At(j))
+			}
+		}
+
+		descKeys := entityRef.DescriptionKeys()
+		if descKeys.Len() > 0 {
+			b.logEntry("          -> Description keys:")
+			for j := 0; j < descKeys.Len(); j++ {
+				b.logEntry("               -> %s", descKeys.At(j))
+			}
+		}
 	}
 }
 

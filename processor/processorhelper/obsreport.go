@@ -5,6 +5,7 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -39,4 +40,9 @@ func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, e
 func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), or.otelAttrs)
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), or.otelAttrs)
+}
+
+func (or *obsReport) recordInternalDuration(ctx context.Context, startTime time.Time) {
+	duration := time.Since(startTime)
+	or.telemetryBuilder.ProcessorInternalDuration.Record(ctx, duration.Seconds(), or.otelAttrs)
 }

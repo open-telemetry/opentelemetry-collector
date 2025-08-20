@@ -18,7 +18,7 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	}
 	for i := range src {
 		CopyOrigAttributeUnit(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
+	orig := make([]*otlpprofiles.AttributeUnit, 5)
+	orig[0] = NewOrigAttributeUnit()
+	orig[1] = GenTestOrigAttributeUnit()
+	orig[2] = NewOrigAttributeUnit()
+	orig[3] = GenTestOrigAttributeUnit()
+	orig[4] = NewOrigAttributeUnit()
+	return orig
 }

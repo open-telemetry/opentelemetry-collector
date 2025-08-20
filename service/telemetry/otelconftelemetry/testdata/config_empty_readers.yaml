@@ -1,0 +1,3 @@
+metrics:
+  level: "basic"
+  readers: []

@@ -10,34 +10,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSlice(&[]otlpcommon.AnyValue{}, &state)
+	es = newSlice(&[]otlpcommon.AnyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueEmpty()
-	testVal := Value(internal.GenerateTestValue())
+	testVal := Value(internal.NewValue(internal.GenTestOrigAnyValue(), internal.NewState()))
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillTestValue(internal.Value(el))
+		(*es.getOrig())[i] = *internal.GenTestOrigAnyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSlice(&[]otlpcommon.AnyValue{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSlice(&[]otlpcommon.AnyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -50,24 +48,7 @@ func TestSliceReadOnly(t *testing.T) {
 
 func TestSlice_CopyTo(t *testing.T) {
 	dest := NewSlice()
-	// Test CopyTo empty
-	NewSlice().CopyTo(dest)
-	assert.Equal(t, NewSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSlice(), dest)
 }
@@ -135,9 +116,9 @@ func TestSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Value) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestSlice_RemoveIfAll(t *testing.T) {
@@ -160,22 +141,8 @@ func TestSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSlice()
-	internal.MarshalJSONStreamSlice(internal.Slice(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSlice()
-	internal.UnmarshalJSONIterSlice(internal.Slice(dest), iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func generateTestSlice() Slice {
-	return Slice(internal.GenerateTestSlice())
+	ms := NewSlice()
+	*ms.getOrig() = internal.GenerateOrigTestAnyValueSlice()
+	return ms
 }

@@ -27,7 +27,7 @@ func TestMarshalProfiles(t *testing.T) {
 			name: "one profile",
 			input: func() pprofile.Profiles {
 				profiles := pprofile.NewProfiles()
-				dic := profiles.ProfilesDictionary()
+				dic := profiles.Dictionary()
 				a := dic.AttributeTable().AppendEmpty()
 				a.SetKey("key1")
 				a.Value().SetStr("value1")

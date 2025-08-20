@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -39,34 +38,23 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	orig = generateTestScopeProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
-}
-
-func TestScopeProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeProfiles()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewScopeProfiles()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+}
+
+func TestScopeProfiles_Profiles(t *testing.T) {
+	ms := NewScopeProfiles()
+	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
+	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
+	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func TestScopeProfiles_SchemaUrl(t *testing.T) {
@@ -74,25 +62,12 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeProfiles_Profiles(t *testing.T) {
-	ms := NewScopeProfiles()
-	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	fillTestProfilesSlice(ms.Profiles())
-	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	tv := NewScopeProfiles()
-	fillTestScopeProfiles(tv)
-	return tv
-}
-
-func fillTestScopeProfiles(tv ScopeProfiles) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestProfilesSlice(tv.Profiles())
+	ms := newScopeProfiles(internal.GenTestOrigScopeProfiles(), internal.NewState())
+	return ms
 }

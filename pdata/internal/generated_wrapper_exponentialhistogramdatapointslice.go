@@ -18,7 +18,7 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+			newDest[i] = NewOrigExponentialHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+			newDest[i] = NewOrigExponentialHistogramDataPoint()
 		}
 	}
 	for i := range src {
 		CopyOrigExponentialHistogramDataPoint(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
+	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 5)
+	orig[0] = NewOrigExponentialHistogramDataPoint()
+	orig[1] = GenTestOrigExponentialHistogramDataPoint()
+	orig[2] = NewOrigExponentialHistogramDataPoint()
+	orig[3] = GenTestOrigExponentialHistogramDataPoint()
+	orig[4] = NewOrigExponentialHistogramDataPoint()
+	return orig
 }

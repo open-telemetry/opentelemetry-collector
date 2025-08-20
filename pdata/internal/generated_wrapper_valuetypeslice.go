@@ -18,7 +18,7 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
+			newDest[i] = NewOrigValueType()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
+			newDest[i] = NewOrigValueType()
 		}
 	}
 	for i := range src {
 		CopyOrigValueType(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
+	orig := make([]*otlpprofiles.ValueType, 5)
+	orig[0] = NewOrigValueType()
+	orig[1] = GenTestOrigValueType()
+	orig[2] = NewOrigValueType()
+	orig[3] = GenTestOrigValueType()
+	orig[4] = NewOrigValueType()
+	return orig
 }

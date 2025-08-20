@@ -1,0 +1,3 @@
+metrics:
+  level: "none"
+  readers: []

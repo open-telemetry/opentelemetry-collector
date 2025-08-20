@@ -32,7 +32,7 @@ func newObsReport(set processor.Settings) (*obsReport, error) {
 	}, nil
 }
 
-// refused reports that the num data that was refused.
+// accepted reports that the num data was accepted.
 func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:
@@ -44,7 +44,7 @@ func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Sign
 	}
 }
 
-// refused reports that the num data that was refused.
+// refused reports that the num data was refused.
 func (or *obsReport) refused(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:

@@ -31,10 +31,9 @@ func parentsFromContext(ctx context.Context) []trace.Link {
 	return LinksFromContext(ctx)
 }
 
-func contextWithMergedLinks(ctx1, ctx2 context.Context) context.Context {
+func contextWithMergedLinks(mergedCtx, ctx1, ctx2 context.Context) context.Context {
 	return context.WithValue(
-		context.Background(),
+		mergedCtx,
 		batchSpanLinksKey,
-		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...),
-	)
+		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...))
 }

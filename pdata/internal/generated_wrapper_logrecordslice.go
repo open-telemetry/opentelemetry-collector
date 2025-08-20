@@ -18,7 +18,7 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.LogRecord{}
+			newDest[i] = NewOrigLogRecord()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.LogRecord{}
+			newDest[i] = NewOrigLogRecord()
 		}
 	}
 	for i := range src {
 		CopyOrigLogRecord(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
+	orig := make([]*otlplogs.LogRecord, 5)
+	orig[0] = NewOrigLogRecord()
+	orig[1] = GenTestOrigLogRecord()
+	orig[2] = NewOrigLogRecord()
+	orig[3] = GenTestOrigLogRecord()
+	orig[4] = NewOrigLogRecord()
+	return orig
 }

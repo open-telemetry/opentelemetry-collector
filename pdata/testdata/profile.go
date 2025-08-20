@@ -21,7 +21,7 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	initResource(td.ResourceProfiles().AppendEmpty().Resource())
 	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
 
-	dic := td.ProfilesDictionary()
+	dic := td.Dictionary()
 	dic.StringTable().Append("")
 	attr := dic.AttributeTable().AppendEmpty()
 	attr.SetKey("key")

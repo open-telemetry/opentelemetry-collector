@@ -18,7 +18,7 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Event{}
+			newDest[i] = NewOrigSpan_Event()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Event{}
+			newDest[i] = NewOrigSpan_Event()
 		}
 	}
 	for i := range src {
 		CopyOrigSpan_Event(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
+	orig := make([]*otlptrace.Span_Event, 5)
+	orig[0] = NewOrigSpan_Event()
+	orig[1] = GenTestOrigSpan_Event()
+	orig[2] = NewOrigSpan_Event()
+	orig[3] = GenTestOrigSpan_Event()
+	orig[4] = NewOrigSpan_Event()
+	return orig
 }

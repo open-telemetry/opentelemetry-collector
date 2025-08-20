@@ -18,7 +18,7 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	}
 	for i := range src {
 		CopyOrigSummaryDataPoint_ValueAtQuantile(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	orig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 5)
+	orig[0] = NewOrigSummaryDataPoint_ValueAtQuantile()
+	orig[1] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
+	orig[2] = NewOrigSummaryDataPoint_ValueAtQuantile()
+	orig[3] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
+	orig[4] = NewOrigSummaryDataPoint_ValueAtQuantile()
+	return orig
 }

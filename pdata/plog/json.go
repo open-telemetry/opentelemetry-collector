@@ -6,6 +6,7 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"slices"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -17,8 +18,11 @@ type JSONMarshaler struct{}
 func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	ld.marshalJSONStream(dest)
-	return slices.Clone(dest.Buffer()), dest.Error()
+	internal.MarshalJSONOrigExportLogsServiceRequest(ld.getOrig(), dest)
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
 }
 
 var _ Unmarshaler = (*JSONUnmarshaler)(nil)
@@ -31,7 +35,7 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	ld := NewLogs()
-	ld.unmarshalJSONIter(iter)
+	internal.UnmarshalJSONOrigExportLogsServiceRequest(ld.getOrig(), iter)
 	if iter.Error() != nil {
 		return Logs{}, iter.Error()
 	}

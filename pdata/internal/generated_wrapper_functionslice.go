@@ -18,7 +18,7 @@ func CopyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.F
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Function{}
+			newDest[i] = NewOrigFunction()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -30,11 +30,21 @@ func CopyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.F
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Function{}
+			newDest[i] = NewOrigFunction()
 		}
 	}
 	for i := range src {
 		CopyOrigFunction(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestFunctionSlice() []*otlpprofiles.Function {
+	orig := make([]*otlpprofiles.Function, 5)
+	orig[0] = NewOrigFunction()
+	orig[1] = GenTestOrigFunction()
+	orig[2] = NewOrigFunction()
+	orig[3] = GenTestOrigFunction()
+	orig[4] = NewOrigFunction()
+	return orig
 }
