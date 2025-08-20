@@ -19,8 +19,7 @@ import (
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &state)
+	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPoint()
@@ -28,15 +27,16 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSummaryDataPoint((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSummaryDataPointSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

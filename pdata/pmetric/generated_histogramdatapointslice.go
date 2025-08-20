@@ -34,8 +34,7 @@ func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint, state *
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewHistogramDataPointSlice() HistogramDataPointSlice {
 	orig := []*otlpmetrics.HistogramDataPoint(nil)
-	state := internal.StateMutable
-	return newHistogramDataPointSlice(&orig, &state)
+	return newHistogramDataPointSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added HistogramDataPoint.
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.HistogramDataPoint{})
+	*es.orig = append(*es.orig, internal.NewOrigHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 

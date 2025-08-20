@@ -19,8 +19,7 @@ import (
 func TestMetricSlice(t *testing.T) {
 	es := NewMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newMetricSlice(&[]*otlpmetrics.Metric{}, &state)
+	es = newMetricSlice(&[]*otlpmetrics.Metric{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMetric()
@@ -28,15 +27,16 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestMetric((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigMetric()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestMetricSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newMetricSlice(&[]*otlpmetrics.Metric{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newMetricSlice(&[]*otlpmetrics.Metric{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

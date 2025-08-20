@@ -18,8 +18,7 @@ import (
 func TestAttributeTableSlice(t *testing.T) {
 	es := NewAttributeTableSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newAttributeTableSlice(&[]otlpcommon.KeyValue{}, &state)
+	es = newAttributeTableSlice(&[]otlpcommon.KeyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttribute()
@@ -27,15 +26,16 @@ func TestAttributeTableSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestKeyValue(&(*es.orig)[i])
+		(*es.orig)[i] = *internal.GenTestOrigKeyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestAttributeTableSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newAttributeTableSlice(&[]otlpcommon.KeyValue{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newAttributeTableSlice(&[]otlpcommon.KeyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

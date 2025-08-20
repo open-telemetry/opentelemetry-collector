@@ -31,18 +31,7 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-func GenerateTestMetrics() Metrics {
-	orig := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	FillOrigTestExportMetricsServiceRequest(&orig)
-	state := StateMutable
-	return NewMetrics(&orig, &state)
-}
-
-func NewOrigExportMetricsServiceRequest() otlpcollectormetrics.ExportMetricsServiceRequest {
-	return otlpcollectormetrics.ExportMetricsServiceRequest{}
-}
-
-func NewOrigPtrExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
 }
 
@@ -50,8 +39,10 @@ func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportM
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 
-func FillOrigTestExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) {
+func GenTestOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	orig := NewOrigExportMetricsServiceRequest()
 	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -72,15 +63,18 @@ func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expor
 
 // UnmarshalJSONOrigMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
-			orig.ResourceMetrics = UnmarshalJSONOrigResourceMetricsSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
+				UnmarshalJSONOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
@@ -133,7 +127,7 @@ func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Ex
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigPtrResourceMetrics())
+			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
 			err = UnmarshalProtoOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err

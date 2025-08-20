@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
@@ -20,7 +19,7 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpcommon.KeyValue{}
+			dest[i].Reset()
 		}
 	}
 	for i := range src {
@@ -31,23 +30,7 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 
 func GenerateOrigTestKeyValueSlice() []otlpcommon.KeyValue {
 	orig := make([]otlpcommon.KeyValue, 5)
-	orig[0] = otlpcommon.KeyValue{}
-	orig[1] = otlpcommon.KeyValue{}
-	FillOrigTestKeyValue(&orig[1])
-	orig[2] = otlpcommon.KeyValue{}
-	orig[3] = otlpcommon.KeyValue{}
-	FillOrigTestKeyValue(&orig[1])
-	orig[4] = otlpcommon.KeyValue{}
-	return orig
-}
-
-// UnmarshalJSONOrigKeyValueSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigKeyValueSlice(iter *json.Iterator) []otlpcommon.KeyValue {
-	var orig []otlpcommon.KeyValue
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, otlpcommon.KeyValue{})
-		UnmarshalJSONOrigKeyValue(&orig[len(orig)-1], iter)
-		return true
-	})
+	orig[1] = *GenTestOrigKeyValue()
+	orig[3] = *GenTestOrigKeyValue()
 	return orig
 }

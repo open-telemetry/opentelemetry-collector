@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
-	src := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
-	dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	src := NewOrigExportProfilesPartialSuccess()
+	dest := NewOrigExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, &otlpcollectorprofiles.ExportProfilesPartialSuccess{}, dest)
-	FillOrigTestExportProfilesPartialSuccess(src)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
+	*src = *GenTestOrigExportProfilesPartialSuccess()
 	CopyOrigExportProfilesPartialSuccess(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	dest := NewOrigExportProfilesPartialSuccess()
 	UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcollectorprofiles.ExportProfilesPartialSuccess{}, dest)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+			dest := NewOrigExportProfilesPartialSuccess()
 			UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExportProfilesPartialSuccess()
+			require.Error(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
-	dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	dest := NewOrigExportProfilesPartialSuccess()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpcollectorprofiles.ExportProfilesPartialSuccess{}, dest)
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+			dest := NewOrigExportProfilesPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) 
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *testing.T) {
-	for name, src := range getEncodingTestValuesExportProfilesPartialSuccess() {
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
 			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
@@ -90,20 +99,27 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *test
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+			dest := NewOrigExportProfilesPartialSuccess()
 			require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesExportProfilesPartialSuccess() map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess {
+func genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                    {0x02},
+		"RejectedProfiles/wrong_wire_type": {0xc},
+		"RejectedProfiles/missing_value":   {0x8},
+		"ErrorMessage/wrong_wire_type":     {0x14},
+		"ErrorMessage/missing_value":       {0x12},
+	}
+}
+
+func genTestEncodingValuesExportProfilesPartialSuccess() map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess {
 	return map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess{
-		"empty": {},
-		"fill_test": func() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
-			src := &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
-			FillOrigTestExportProfilesPartialSuccess(src)
-			return src
-		}(),
+		"empty":                 NewOrigExportProfilesPartialSuccess(),
+		"RejectedProfiles/test": {RejectedProfiles: int64(13)},
+		"ErrorMessage/test":     {ErrorMessage: "test_errormessage"},
 	}
 }

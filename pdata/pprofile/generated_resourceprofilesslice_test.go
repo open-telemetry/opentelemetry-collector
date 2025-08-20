@@ -19,8 +19,7 @@ import (
 func TestResourceProfilesSlice(t *testing.T) {
 	es := NewResourceProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, &state)
+	es = newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceProfiles()
@@ -28,15 +27,16 @@ func TestResourceProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestResourceProfiles((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigResourceProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceProfilesSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

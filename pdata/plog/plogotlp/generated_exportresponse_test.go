@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 func TestExportResponse_MoveTo(t *testing.T) {
@@ -23,9 +22,10 @@ func TestExportResponse_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportResponse(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportResponse(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newExportResponse(&otlpcollectorlogs.ExportLogsServiceResponse{}, &sharedState)) })
-	assert.Panics(t, func() { newExportResponse(&otlpcollectorlogs.ExportLogsServiceResponse{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportResponse(internal.NewOrigExportLogsServiceResponse(), sharedState)) })
+	assert.Panics(t, func() { newExportResponse(internal.NewOrigExportLogsServiceResponse(), sharedState).MoveTo(dest) })
 }
 
 func TestExportResponse_CopyTo(t *testing.T) {
@@ -36,19 +36,19 @@ func TestExportResponse_CopyTo(t *testing.T) {
 	orig = generateTestExportResponse()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newExportResponse(&otlpcollectorlogs.ExportLogsServiceResponse{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExportResponse(internal.NewOrigExportLogsServiceResponse(), sharedState)) })
 }
 
 func TestExportResponse_PartialSuccess(t *testing.T) {
 	ms := NewExportResponse()
 	assert.Equal(t, NewExportPartialSuccess(), ms.PartialSuccess())
-	internal.FillOrigTestExportLogsPartialSuccess(&ms.orig.PartialSuccess)
+	ms.orig.PartialSuccess = *internal.GenTestOrigExportLogsPartialSuccess()
 	assert.Equal(t, generateTestExportPartialSuccess(), ms.PartialSuccess())
 }
 
 func generateTestExportResponse() ExportResponse {
-	ms := NewExportResponse()
-	internal.FillOrigTestExportLogsServiceResponse(ms.orig)
+	ms := newExportResponse(internal.GenTestOrigExportLogsServiceResponse(), internal.NewState())
 	return ms
 }

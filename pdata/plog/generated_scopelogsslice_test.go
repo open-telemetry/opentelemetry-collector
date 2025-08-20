@@ -19,8 +19,7 @@ import (
 func TestScopeLogsSlice(t *testing.T) {
 	es := NewScopeLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, &state)
+	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeLogs()
@@ -28,15 +27,16 @@ func TestScopeLogsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestScopeLogs((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigScopeLogs()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestScopeLogsSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

@@ -31,18 +31,7 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 	return Profiles{orig: orig, state: state}
 }
 
-func GenerateTestProfiles() Profiles {
-	orig := otlpcollectorprofiles.ExportProfilesServiceRequest{}
-	FillOrigTestExportProfilesServiceRequest(&orig)
-	state := StateMutable
-	return NewProfiles(&orig, &state)
-}
-
-func NewOrigExportProfilesServiceRequest() otlpcollectorprofiles.ExportProfilesServiceRequest {
-	return otlpcollectorprofiles.ExportProfilesServiceRequest{}
-}
-
-func NewOrigPtrExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
+func NewOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
 	return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
 }
 
@@ -51,9 +40,11 @@ func CopyOrigExportProfilesServiceRequest(dest, src *otlpcollectorprofiles.Expor
 	CopyOrigProfilesDictionary(&dest.Dictionary, &src.Dictionary)
 }
 
-func FillOrigTestExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest) {
+func GenTestOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
+	orig := NewOrigExportProfilesServiceRequest()
 	orig.ResourceProfiles = GenerateOrigTestResourceProfilesSlice()
-	FillOrigTestProfilesDictionary(&orig.Dictionary)
+	orig.Dictionary = *GenTestOrigProfilesDictionary()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -76,17 +67,20 @@ func MarshalJSONOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.Exp
 
 // UnmarshalJSONOrigProfiles unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
-			orig.ResourceProfiles = UnmarshalJSONOrigResourceProfilesSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceProfiles = append(orig.ResourceProfiles, NewOrigResourceProfiles())
+				UnmarshalJSONOrigResourceProfiles(orig.ResourceProfiles[len(orig.ResourceProfiles)-1], iter)
+			}
+
 		case "dictionary":
 			UnmarshalJSONOrigProfilesDictionary(&orig.Dictionary, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest) int {
@@ -148,7 +142,7 @@ func UnmarshalProtoOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceProfiles = append(orig.ResourceProfiles, NewOrigPtrResourceProfiles())
+			orig.ResourceProfiles = append(orig.ResourceProfiles, NewOrigResourceProfiles())
 			err = UnmarshalProtoOrigResourceProfiles(orig.ResourceProfiles[len(orig.ResourceProfiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err

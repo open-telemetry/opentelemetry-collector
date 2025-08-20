@@ -30,8 +30,7 @@ func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *intern
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewTraces() Traces {
-	state := internal.StateMutable
-	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{}, &state)
+	return newTraces(internal.NewOrigExportTraceServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

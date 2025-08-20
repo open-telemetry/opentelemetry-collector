@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigKeyValue(t *testing.T) {
-	src := &otlpcommon.KeyValue{}
-	dest := &otlpcommon.KeyValue{}
+	src := NewOrigKeyValue()
+	dest := NewOrigKeyValue()
 	CopyOrigKeyValue(dest, src)
-	assert.Equal(t, &otlpcommon.KeyValue{}, dest)
-	FillOrigTestKeyValue(src)
+	assert.Equal(t, NewOrigKeyValue(), dest)
+	*src = *GenTestOrigKeyValue()
 	CopyOrigKeyValue(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigKeyValue(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpcommon.KeyValue{}
+	dest := NewOrigKeyValue()
 	UnmarshalJSONOrigKeyValue(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpcommon.KeyValue{}, dest)
+	assert.Equal(t, NewOrigKeyValue(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpcommon.KeyValue{}
+			dest := NewOrigKeyValue()
 			UnmarshalJSONOrigKeyValue(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigKeyValueFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesKeyValue() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigKeyValue()
+			require.Error(t, UnmarshalProtoOrigKeyValue(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
-	dest := &otlpcommon.KeyValue{}
+	dest := NewOrigKeyValue()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpcommon.KeyValue{}, dest)
+	assert.Equal(t, NewOrigKeyValue(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpcommon.KeyValue{}
+			dest := NewOrigKeyValue()
 			require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
-	for name, src := range getEncodingTestValuesKeyValue() {
+	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigKeyValue(src))
 			gotSize := MarshalProtoOrigKeyValue(src, buf)
@@ -90,20 +99,27 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpcommon.KeyValue{}
+			dest := NewOrigKeyValue()
 			require.NoError(t, UnmarshalProtoOrigKeyValue(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesKeyValue() map[string]*otlpcommon.KeyValue {
+func genTestFailingUnmarshalProtoValuesKeyValue() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":         {0x02},
+		"Key/wrong_wire_type":   {0xc},
+		"Key/missing_value":     {0xa},
+		"Value/wrong_wire_type": {0x14},
+		"Value/missing_value":   {0x12},
+	}
+}
+
+func genTestEncodingValuesKeyValue() map[string]*otlpcommon.KeyValue {
 	return map[string]*otlpcommon.KeyValue{
-		"empty": {},
-		"fill_test": func() *otlpcommon.KeyValue {
-			src := &otlpcommon.KeyValue{}
-			FillOrigTestKeyValue(src)
-			return src
-		}(),
+		"empty":      NewOrigKeyValue(),
+		"Key/test":   {Key: "test_key"},
+		"Value/test": {Value: *GenTestOrigAnyValue()},
 	}
 }

@@ -19,8 +19,7 @@ import (
 func TestScopeSpansSlice(t *testing.T) {
 	es := NewScopeSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newScopeSpansSlice(&[]*otlptrace.ScopeSpans{}, &state)
+	es = newScopeSpansSlice(&[]*otlptrace.ScopeSpans{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeSpans()
@@ -28,15 +27,16 @@ func TestScopeSpansSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestScopeSpans((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigScopeSpans()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestScopeSpansSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newScopeSpansSlice(&[]*otlptrace.ScopeSpans{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newScopeSpansSlice(&[]*otlptrace.ScopeSpans{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

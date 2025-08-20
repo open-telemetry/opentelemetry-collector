@@ -19,8 +19,7 @@ import (
 func TestValueTypeSlice(t *testing.T) {
 	es := NewValueTypeSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &state)
+	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueType()
@@ -28,15 +27,16 @@ func TestValueTypeSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestValueType((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigValueType()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestValueTypeSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

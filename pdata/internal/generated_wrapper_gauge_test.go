@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigGauge(t *testing.T) {
-	src := &otlpmetrics.Gauge{}
-	dest := &otlpmetrics.Gauge{}
+	src := NewOrigGauge()
+	dest := NewOrigGauge()
 	CopyOrigGauge(dest, src)
-	assert.Equal(t, &otlpmetrics.Gauge{}, dest)
-	FillOrigTestGauge(src)
+	assert.Equal(t, NewOrigGauge(), dest)
+	*src = *GenTestOrigGauge()
 	CopyOrigGauge(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigGauge(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Gauge{}
+	dest := NewOrigGauge()
 	UnmarshalJSONOrigGauge(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpmetrics.Gauge{}, dest)
+	assert.Equal(t, NewOrigGauge(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpmetrics.Gauge{}
+			dest := NewOrigGauge()
 			UnmarshalJSONOrigGauge(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigGaugeFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesGauge() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigGauge()
+			require.Error(t, UnmarshalProtoOrigGauge(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
-	dest := &otlpmetrics.Gauge{}
+	dest := NewOrigGauge()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigGauge(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpmetrics.Gauge{}, dest)
+	assert.Equal(t, NewOrigGauge(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpmetrics.Gauge{}
+			dest := NewOrigGauge()
 			require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
-	for name, src := range getEncodingTestValuesGauge() {
+	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigGauge(src))
 			gotSize := MarshalProtoOrigGauge(src, buf)
@@ -90,20 +99,24 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpmetrics.Gauge{}
+			dest := NewOrigGauge()
 			require.NoError(t, UnmarshalProtoOrigGauge(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesGauge() map[string]*otlpmetrics.Gauge {
+func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":              {0x02},
+		"DataPoints/wrong_wire_type": {0xc},
+		"DataPoints/missing_value":   {0xa},
+	}
+}
+
+func genTestEncodingValuesGauge() map[string]*otlpmetrics.Gauge {
 	return map[string]*otlpmetrics.Gauge{
-		"empty": {},
-		"fill_test": func() *otlpmetrics.Gauge {
-			src := &otlpmetrics.Gauge{}
-			FillOrigTestGauge(src)
-			return src
-		}(),
+		"empty":                       NewOrigGauge(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
 	}
 }

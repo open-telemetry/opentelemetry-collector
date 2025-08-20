@@ -32,8 +32,7 @@ func newLine(orig *otlpprofiles.Line, state *internal.State) Line {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLine() Line {
-	state := internal.StateMutable
-	return newLine(&otlpprofiles.Line{}, &state)
+	return newLine(internal.NewOrigLine(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

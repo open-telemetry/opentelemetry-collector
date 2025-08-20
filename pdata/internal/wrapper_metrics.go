@@ -22,8 +22,7 @@ func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
 // MetricsFromProto internal helper to convert protobuf representation to Metrics.
 // This function set exclusive state assuming that it's called only once per Metrics.
 func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
-	state := StateMutable
 	return NewMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: orig.ResourceMetrics,
-	}, &state)
+	}, NewState())
 }

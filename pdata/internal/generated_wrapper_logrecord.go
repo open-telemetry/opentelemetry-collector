@@ -11,16 +11,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLogRecord() otlplogs.LogRecord {
-	return otlplogs.LogRecord{}
-}
-
-func NewOrigPtrLogRecord() *otlplogs.LogRecord {
+func NewOrigLogRecord() *otlplogs.LogRecord {
 	return &otlplogs.LogRecord{}
 }
 
@@ -38,18 +35,20 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.EventName = src.EventName
 }
 
-func FillOrigTestLogRecord(orig *otlplogs.LogRecord) {
+func GenTestOrigLogRecord() *otlplogs.LogRecord {
+	orig := NewOrigLogRecord()
 	orig.TimeUnixNano = 1234567890
 	orig.ObservedTimeUnixNano = 1234567890
 	orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	orig.SeverityText = "test_severitytext"
-	FillOrigTestAnyValue(&orig.Body)
+	orig.Body = *GenTestOrigAnyValue()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = 1
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.EventName = "test_eventname"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -109,7 +108,7 @@ func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 
 // UnmarshalJSONOrigLogRecord unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
@@ -122,22 +121,25 @@ func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 		case "body":
 			UnmarshalJSONOrigAnyValue(&orig.Body, iter)
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		case "eventName", "event_name":
 			orig.EventName = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
@@ -347,7 +349,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

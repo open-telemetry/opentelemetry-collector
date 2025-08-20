@@ -18,8 +18,7 @@ func TestMap(t *testing.T) {
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
-	state := internal.StateMutable
-	assert.Equal(t, newValue(nil, &state), val)
+	assert.Equal(t, newValue(nil, internal.NewState()), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
@@ -55,10 +54,11 @@ func TestMap(t *testing.T) {
 }
 
 func TestMapReadOnly(t *testing.T) {
-	state := internal.StateReadOnly
+	state := internal.NewState()
+	state.MarkReadOnly()
 	m := newMap(&[]otlpcommon.KeyValue{
 		{Key: "k1", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}}},
-	}, &state)
+	}, state)
 
 	assert.Equal(t, 1, m.Len())
 
@@ -188,8 +188,7 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	state := internal.StateMutable
-	sm := newMap(&origWithNil, &state)
+	sm := newMap(&origWithNil, internal.NewState())
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.Equal(t, ValueTypeStr, val.Type())

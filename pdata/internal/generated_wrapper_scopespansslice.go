@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.ScopeSpans {
@@ -19,7 +18,7 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ScopeSpans{}
+			newDest[i] = NewOrigScopeSpans()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.ScopeSpans{}
+			newDest[i] = NewOrigScopeSpans()
 		}
 	}
 	for i := range src {
@@ -42,23 +41,10 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 
 func GenerateOrigTestScopeSpansSlice() []*otlptrace.ScopeSpans {
 	orig := make([]*otlptrace.ScopeSpans, 5)
-	orig[0] = &otlptrace.ScopeSpans{}
-	orig[1] = &otlptrace.ScopeSpans{}
-	FillOrigTestScopeSpans(orig[1])
-	orig[2] = &otlptrace.ScopeSpans{}
-	orig[3] = &otlptrace.ScopeSpans{}
-	FillOrigTestScopeSpans(orig[1])
-	orig[4] = &otlptrace.ScopeSpans{}
-	return orig
-}
-
-// UnmarshalJSONOrigScopeSpansSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigScopeSpansSlice(iter *json.Iterator) []*otlptrace.ScopeSpans {
-	var orig []*otlptrace.ScopeSpans
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlptrace.ScopeSpans{})
-		UnmarshalJSONOrigScopeSpans(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigScopeSpans()
+	orig[1] = GenTestOrigScopeSpans()
+	orig[2] = NewOrigScopeSpans()
+	orig[3] = GenTestOrigScopeSpans()
+	orig[4] = NewOrigScopeSpans()
 	return orig
 }

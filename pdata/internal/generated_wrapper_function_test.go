@@ -19,11 +19,11 @@ import (
 )
 
 func TestCopyOrigFunction(t *testing.T) {
-	src := &otlpprofiles.Function{}
-	dest := &otlpprofiles.Function{}
+	src := NewOrigFunction()
+	dest := NewOrigFunction()
 	CopyOrigFunction(dest, src)
-	assert.Equal(t, &otlpprofiles.Function{}, dest)
-	FillOrigTestFunction(src)
+	assert.Equal(t, NewOrigFunction(), dest)
+	*src = *GenTestOrigFunction()
 	CopyOrigFunction(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,14 +31,14 @@ func TestCopyOrigFunction(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigFunctionUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.Function{}
+	dest := NewOrigFunction()
 	UnmarshalJSONOrigFunction(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, &otlpprofiles.Function{}, dest)
+	assert.Equal(t, NewOrigFunction(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
+	for name, src := range genTestEncodingValuesFunction() {
 		t.Run(name, func(t *testing.T) {
 			stream := json.BorrowStream(nil)
 			defer json.ReturnStream(stream)
@@ -47,7 +47,7 @@ func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
 
 			iter := json.BorrowIterator(stream.Buffer())
 			defer json.ReturnIterator(iter)
-			dest := &otlpprofiles.Function{}
+			dest := NewOrigFunction()
 			UnmarshalJSONOrigFunction(dest, iter)
 			require.NoError(t, iter.Error())
 
@@ -56,21 +56,30 @@ func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigFunctionFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesFunction() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigFunction()
+			require.Error(t, UnmarshalProtoOrigFunction(dest, buf))
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalProtoOrigFunctionUnknown(t *testing.T) {
-	dest := &otlpprofiles.Function{}
+	dest := NewOrigFunction()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigFunction(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, &otlpprofiles.Function{}, dest)
+	assert.Equal(t, NewOrigFunction(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
+	for name, src := range genTestEncodingValuesFunction() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigFunction(src))
 			gotSize := MarshalProtoOrigFunction(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			dest := &otlpprofiles.Function{}
+			dest := NewOrigFunction()
 			require.NoError(t, UnmarshalProtoOrigFunction(dest, buf))
 			assert.Equal(t, src, dest)
 		})
@@ -78,7 +87,7 @@ func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
-	for name, src := range getEncodingTestValuesFunction() {
+	for name, src := range genTestEncodingValuesFunction() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigFunction(src))
 			gotSize := MarshalProtoOrigFunction(src, buf)
@@ -90,20 +99,33 @@ func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := &otlpprofiles.Function{}
+			dest := NewOrigFunction()
 			require.NoError(t, UnmarshalProtoOrigFunction(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesFunction() map[string]*otlpprofiles.Function {
+func genTestFailingUnmarshalProtoValuesFunction() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                      {0x02},
+		"NameStrindex/wrong_wire_type":       {0xc},
+		"NameStrindex/missing_value":         {0x8},
+		"SystemNameStrindex/wrong_wire_type": {0x14},
+		"SystemNameStrindex/missing_value":   {0x10},
+		"FilenameStrindex/wrong_wire_type":   {0x1c},
+		"FilenameStrindex/missing_value":     {0x18},
+		"StartLine/wrong_wire_type":          {0x24},
+		"StartLine/missing_value":            {0x20},
+	}
+}
+
+func genTestEncodingValuesFunction() map[string]*otlpprofiles.Function {
 	return map[string]*otlpprofiles.Function{
-		"empty": {},
-		"fill_test": func() *otlpprofiles.Function {
-			src := &otlpprofiles.Function{}
-			FillOrigTestFunction(src)
-			return src
-		}(),
+		"empty":                   NewOrigFunction(),
+		"NameStrindex/test":       {NameStrindex: int32(13)},
+		"SystemNameStrindex/test": {SystemNameStrindex: int32(13)},
+		"FilenameStrindex/test":   {FilenameStrindex: int32(13)},
+		"StartLine/test":          {StartLine: int64(13)},
 	}
 }

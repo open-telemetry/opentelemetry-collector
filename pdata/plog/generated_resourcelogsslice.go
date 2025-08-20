@@ -34,8 +34,7 @@ func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs, state *internal.State)
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceLogsSlice() ResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
-	state := internal.StateMutable
-	return newResourceLogsSlice(&orig, &state)
+	return newResourceLogsSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	*es.orig = append(*es.orig, internal.NewOrigResourceLogs())
 	return es.At(es.Len() - 1)
 }
 

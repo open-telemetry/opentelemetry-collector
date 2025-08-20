@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
@@ -19,7 +18,7 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
+			newDest[i] = NewOrigMetric()
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -31,7 +30,7 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
+			newDest[i] = NewOrigMetric()
 		}
 	}
 	for i := range src {
@@ -42,23 +41,10 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 
 func GenerateOrigTestMetricSlice() []*otlpmetrics.Metric {
 	orig := make([]*otlpmetrics.Metric, 5)
-	orig[0] = &otlpmetrics.Metric{}
-	orig[1] = &otlpmetrics.Metric{}
-	FillOrigTestMetric(orig[1])
-	orig[2] = &otlpmetrics.Metric{}
-	orig[3] = &otlpmetrics.Metric{}
-	FillOrigTestMetric(orig[1])
-	orig[4] = &otlpmetrics.Metric{}
-	return orig
-}
-
-// UnmarshalJSONOrigMetricSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigMetricSlice(iter *json.Iterator) []*otlpmetrics.Metric {
-	var orig []*otlpmetrics.Metric
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.Metric{})
-		UnmarshalJSONOrigMetric(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigMetric()
+	orig[1] = GenTestOrigMetric()
+	orig[2] = NewOrigMetric()
+	orig[3] = GenTestOrigMetric()
+	orig[4] = NewOrigMetric()
 	return orig
 }

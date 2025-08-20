@@ -31,18 +31,7 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-func GenerateTestTraces() Traces {
-	orig := otlpcollectortrace.ExportTraceServiceRequest{}
-	FillOrigTestExportTraceServiceRequest(&orig)
-	state := StateMutable
-	return NewTraces(&orig, &state)
-}
-
-func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
-	return otlpcollectortrace.ExportTraceServiceRequest{}
-}
-
-func NewOrigPtrExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
@@ -50,8 +39,10 @@ func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTrace
 	dest.ResourceSpans = CopyOrigResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
 }
 
-func FillOrigTestExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) {
+func GenTestOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+	orig := NewOrigExportTraceServiceRequest()
 	orig.ResourceSpans = GenerateOrigTestResourceSpansSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -72,15 +63,18 @@ func MarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTra
 
 // UnmarshalJSONOrigTraces unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			orig.ResourceSpans = UnmarshalJSONOrigResourceSpansSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
+				UnmarshalJSONOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) int {
@@ -133,7 +127,7 @@ func UnmarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.Export
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigPtrResourceSpans())
+			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
 			err = UnmarshalProtoOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

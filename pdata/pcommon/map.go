@@ -21,8 +21,7 @@ type Map internal.Map
 // NewMap creates a Map with 0 elements.
 func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	state := internal.StateMutable
-	return Map(internal.NewMap(&orig, &state))
+	return Map(internal.NewMap(&orig, internal.NewState()))
 }
 
 func (m Map) getOrig() *[]otlpcommon.KeyValue {

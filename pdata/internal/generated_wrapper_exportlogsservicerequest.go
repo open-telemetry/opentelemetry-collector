@@ -31,18 +31,7 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
-func GenerateTestLogs() Logs {
-	orig := otlpcollectorlogs.ExportLogsServiceRequest{}
-	FillOrigTestExportLogsServiceRequest(&orig)
-	state := StateMutable
-	return NewLogs(&orig, &state)
-}
-
-func NewOrigExportLogsServiceRequest() otlpcollectorlogs.ExportLogsServiceRequest {
-	return otlpcollectorlogs.ExportLogsServiceRequest{}
-}
-
-func NewOrigPtrExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
 	return &otlpcollectorlogs.ExportLogsServiceRequest{}
 }
 
@@ -50,8 +39,10 @@ func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsSer
 	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 
-func FillOrigTestExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) {
+func GenTestOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+	orig := NewOrigExportLogsServiceRequest()
 	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -72,15 +63,18 @@ func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsS
 
 // UnmarshalJSONOrigLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceLogs", "resource_logs":
-			orig.ResourceLogs = UnmarshalJSONOrigResourceLogsSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceLogs = append(orig.ResourceLogs, NewOrigResourceLogs())
+				UnmarshalJSONOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) int {
@@ -133,7 +127,7 @@ func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLo
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigPtrResourceLogs())
+			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigResourceLogs())
 			err = UnmarshalProtoOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
 			if err != nil {
 				return err
