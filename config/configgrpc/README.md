@@ -93,8 +93,9 @@ Compression ratios will vary in practice as they are highly dependent on the dat
 [Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage server configuration.
 
-Note that transport configuration can also be configured. For more information,
-see [confignet README](../confignet/README.md).
+Note that transport configuration can also be configured. The default transport
+type is TCP. For more information, see [confignet
+README](../confignet/README.md).
 
 - [`keepalive`](https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters)
   - [`enforcement_policy`](https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy)
