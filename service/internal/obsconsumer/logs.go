@@ -8,12 +8,13 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var (
