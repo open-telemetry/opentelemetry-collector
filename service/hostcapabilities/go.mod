@@ -91,8 +91,6 @@ replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
@@ -101,20 +99,4 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
-replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../consumer/consumererror/xconsumererror
-
-replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
-
-replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
-
-replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
-
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
-
-replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
-
-replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../../exporter/exporterhelper/xexporterhelper
-
-replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
-
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
