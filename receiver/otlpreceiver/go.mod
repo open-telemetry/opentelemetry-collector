@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.38.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.132.0
 	go.opentelemetry.io/collector/consumer v1.38.0
-	go.opentelemetry.io/collector/consumer/consumererror v1.38.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.132.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.132.0

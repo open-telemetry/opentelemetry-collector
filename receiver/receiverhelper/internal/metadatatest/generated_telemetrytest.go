@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
@@ -63,7 +62,7 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualReceiverFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_log_records",
-		Description: "The number of log records that failed to be processed by the receiver due to internal errors.",
+		Description: "The number of log records that failed to be processed by the receiver due to internal errors. [alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -79,7 +78,7 @@ func AssertEqualReceiverFailedLogRecords(t *testing.T, tt *componenttest.Telemet
 func AssertEqualReceiverFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_metric_points",
-		Description: "The number of metric points that failed to be processed by the receiver due to internal errors.",
+		Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -95,7 +94,7 @@ func AssertEqualReceiverFailedMetricPoints(t *testing.T, tt *componenttest.Telem
 func AssertEqualReceiverFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_spans",
-		Description: "The number of spans that failed to be processed by the receiver due to internal errors.",
+		Description: "The number of spans that failed to be processed by the receiver due to internal errors. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

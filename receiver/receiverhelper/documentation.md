@@ -32,7 +32,7 @@ Number of spans successfully pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_failed_log_records
 
-The number of log records that failed to be processed by the receiver due to internal errors.
+The number of log records that failed to be processed by the receiver due to internal errors. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +40,7 @@ The number of log records that failed to be processed by the receiver due to int
 
 ### otelcol_receiver_failed_metric_points
 
-The number of metric points that failed to be processed by the receiver due to internal errors.
+The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +48,7 @@ The number of metric points that failed to be processed by the receiver due to i
 
 ### otelcol_receiver_failed_spans
 
-The number of spans that failed to be processed by the receiver due to internal errors.
+The number of spans that failed to be processed by the receiver due to internal errors. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

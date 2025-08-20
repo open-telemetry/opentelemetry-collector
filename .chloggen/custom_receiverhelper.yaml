@@ -16,6 +16,7 @@ issues: [12207]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: | 
+  This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans.
   The specified feature is enable through feature-gate flag. Enable with command:
   otelcol --config=config.yaml --feature-gates=+receiverhelper.newReceiverMetrics
 

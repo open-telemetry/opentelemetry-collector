@@ -164,10 +164,16 @@ func (rec *ObsReport) endOp(
 	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
-		if NewReceiverMetricsGate.IsEnabled() && consumererror.IsDownstream(err) {
-			numRefused = numReceivedItems
+		// If gate is enabled, we distinguish between refused and failed.
+		if NewReceiverMetricsGate.IsEnabled() {
+			if consumererror.IsDownstream(err) {
+				numRefused = numReceivedItems
+			} else {
+				numFailedErrors = numReceivedItems
+			}
 		} else {
-			numFailedErrors = numReceivedItems
+			// When the gate is disabled, all errors are considered "refused".
+			numRefused = numReceivedItems
 		}
 	}
 
@@ -175,20 +181,20 @@ func (rec *ObsReport) endOp(
 
 	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numFailedErrors)
 
-	// Emit otelcol_receiver_requests metric with outcome attribute
-	var outcome string
-	switch {
-	case err == nil:
-		outcome = "success"
-	case NewReceiverMetricsGate.IsEnabled() && consumererror.IsDownstream(err):
-		outcome = "refused"
-	default:
-		outcome = "failure"
-	}
-	// Emit otelcol_receiver_requests only if relevant receiverhelper.newReceiverMetrics is enabled
+	// The new otelcol_receiver_requests metric is only emitted when the feature gate is enabled.
 	if NewReceiverMetricsGate.IsEnabled() {
+		var outcome string
+		switch {
+		case err == nil:
+			outcome = "success"
+		case consumererror.IsDownstream(err):
+			outcome = "refused"
+		default:
+			outcome = "failure"
+		}
 		rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
 	}
+
 	// end span according to errors
 	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey, failedItemsKey string

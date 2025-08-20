@@ -1321,7 +1321,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_failed_spans",
-			Description: "The number of spans that failed to be processed by the receiver due to internal errors.",
+			Description: "The number of spans that failed to be processed by the receiver due to internal errors. [alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -1439,7 +1439,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_failed_metric_points",
-			Description: "The number of metric points that failed to be processed by the receiver due to internal errors.",
+			Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

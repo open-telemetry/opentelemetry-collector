@@ -10,5 +10,5 @@ var NewReceiverMetricsGate = featuregate.GlobalRegistry().MustRegister(
 	"receiverhelper.newReceiverMetrics",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.138.0"),
-	featuregate.WithRegisterDescription("Controls whether to distinguish downstream errors from internal errors, changing the 'outcome' for produced telemetry and splitting receiver metrics into 'refused' and 'failed' categories."),
+	featuregate.WithRegisterDescription("Controls whether receivers emit new metrics and span attributes to distinguish downstream errors from internal errors. This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans."),
 )

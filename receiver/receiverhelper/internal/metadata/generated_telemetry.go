@@ -87,19 +87,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ReceiverFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_failed_log_records",
-		metric.WithDescription("The number of log records that failed to be processed by the receiver due to internal errors."),
+		metric.WithDescription("The number of log records that failed to be processed by the receiver due to internal errors. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_receiver_failed_metric_points",
-		metric.WithDescription("The number of metric points that failed to be processed by the receiver due to internal errors."),
+		metric.WithDescription("The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_failed_spans",
-		metric.WithDescription("The number of spans that failed to be processed by the receiver due to internal errors."),
+		metric.WithDescription("The number of spans that failed to be processed by the receiver due to internal errors. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

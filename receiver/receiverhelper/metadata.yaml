@@ -27,6 +27,8 @@ telemetry:
         monotonic: true
     receiver_failed_spans:
       enabled: true
+      stability:
+        level: alpha
       description: The number of spans that failed to be processed by the receiver due to internal errors.
       unit: "{spans}"
       sum:
@@ -52,6 +54,8 @@ telemetry:
         monotonic: true
     receiver_failed_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: The number of metric points that failed to be processed by the receiver due to internal errors.
       unit: "{datapoints}"
       sum:
@@ -77,6 +81,8 @@ telemetry:
         monotonic: true
     receiver_failed_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: The number of log records that failed to be processed by the receiver due to internal errors.
       unit: "{records}"
       sum:

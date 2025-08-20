@@ -79,15 +79,16 @@ func TestReceiveTraceDataOp(t *testing.T) {
 				var acceptedSpans, refusedSpans, failedSpans int
 				for i, span := range spans {
 					assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
-					switch {
-					case params[i].err == nil:
+					err := params[i].err
+					if err == nil {
 						acceptedSpans += params[i].items
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
-					case consumererror.IsDownstream(params[i].err):
-						if tc.enabled {
+					} else {
+						isDownstream := consumererror.IsDownstream(err)
+						if !tc.enabled || (tc.enabled && isDownstream) {
 							refusedSpans += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
@@ -98,17 +99,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						}
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					case params[i].err != nil && !consumererror.IsDownstream(params[i].err):
-						// Non-downstream error case - this covers the uncovered numFailedErrors path
-						failedSpans += params[i].items
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					default:
-						t.Fatalf("unexpected param: %v", params[i])
+						assert.Equal(t, err.Error(), span.Status().Description)
 					}
 				}
 
@@ -148,7 +139,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						switch {
 						case param.err == nil:
 							outcome = "success"
-						case tc.enabled && consumererror.IsDownstream(param.err):
+						case consumererror.IsDownstream(param.err):
 							outcome = "refused"
 						default:
 							outcome = "failure"
@@ -211,15 +202,16 @@ func TestReceiveLogsOp(t *testing.T) {
 				var acceptedLogRecords, refusedLogRecords, failedLogRecords int
 				for i, span := range spans {
 					assert.Equal(t, "receiver/"+receiverID.String()+"/LogsReceived", span.Name())
-					switch {
-					case params[i].err == nil:
+					err := params[i].err
+					if err == nil {
 						acceptedLogRecords += params[i].items
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedLogRecordsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
-					case consumererror.IsDownstream(params[i].err):
-						if tc.enabled {
+					} else {
+						isDownstream := consumererror.IsDownstream(err)
+						if !tc.enabled || (tc.enabled && isDownstream) {
 							refusedLogRecords += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedLogRecordsKey, Value: attribute.Int64Value(0)})
@@ -230,16 +222,7 @@ func TestReceiveLogsOp(t *testing.T) {
 						}
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					case params[i].err != nil && !consumererror.IsDownstream(params[i].err):
-						failedLogRecords += params[i].items
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					default:
-						t.Fatalf("unexpected param: %v", params[i])
+						assert.Equal(t, err.Error(), span.Status().Description)
 					}
 				}
 				metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
@@ -278,7 +261,7 @@ func TestReceiveLogsOp(t *testing.T) {
 						switch {
 						case param.err == nil:
 							outcome = "success"
-						case tc.enabled && consumererror.IsDownstream(param.err):
+						case consumererror.IsDownstream(param.err):
 							outcome = "refused"
 						default:
 							outcome = "failure"
@@ -342,15 +325,16 @@ func TestReceiveMetricsOp(t *testing.T) {
 				var acceptedMetricPoints, refusedMetricPoints, failedMetricPoints int
 				for i, span := range spans {
 					assert.Equal(t, "receiver/"+receiverID.String()+"/MetricsReceived", span.Name())
-					switch {
-					case params[i].err == nil:
+					err := params[i].err
+					if err == nil {
 						acceptedMetricPoints += params[i].items
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Unset, span.Status().Code)
-					case consumererror.IsDownstream(params[i].err):
-						if tc.enabled {
+					} else {
+						isDownstream := consumererror.IsDownstream(err)
+						if !tc.enabled || (tc.enabled && isDownstream) {
 							refusedMetricPoints += params[i].items
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 							require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(0)})
@@ -361,16 +345,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 						}
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
 						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					case params[i].err != nil && !consumererror.IsDownstream(params[i].err):
-						failedMetricPoints += params[i].items
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-						assert.Equal(t, codes.Error, span.Status().Code)
-						assert.Equal(t, params[i].err.Error(), span.Status().Description)
-					default:
-						t.Fatalf("unexpected param: %v", params[i])
+						assert.Equal(t, err.Error(), span.Status().Description)
 					}
 				}
 
@@ -410,7 +385,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 						switch {
 						case param.err == nil:
 							outcome = "success"
-						case tc.enabled && consumererror.IsDownstream(param.err):
+						case consumererror.IsDownstream(param.err):
 							outcome = "refused"
 						default:
 							outcome = "failure"
@@ -494,8 +469,9 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 					} else {
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+						// When gate is disabled, all errors are refused.
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 					}
 					assert.Equal(t, codes.Error, span.Status().Code)
 					assert.Equal(t, params[i].err.Error(), span.Status().Description)
