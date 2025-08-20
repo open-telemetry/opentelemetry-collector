@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigNumberDataPointSlice(t *testing.T) {
@@ -39,20 +37,4 @@ func TestCopyOrigNumberDataPointSlice(t *testing.T) {
 	// Test CopyTo larger slice with enough capacity
 	dest = CopyOrigNumberDataPointSlice(dest, src)
 	assert.Equal(t, GenerateOrigTestNumberDataPointSlice(), dest)
-}
-
-func TestMarshalAndUnmarshalJSONOrigNumberDataPointSlice(t *testing.T) {
-	src := GenerateOrigTestNumberDataPointSlice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigNumberDataPointSlice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrigNumberDataPointSlice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }

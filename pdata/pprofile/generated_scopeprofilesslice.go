@@ -34,8 +34,7 @@ func newScopeProfilesSlice(orig *[]*otlpprofiles.ScopeProfiles, state *internal.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeProfilesSlice() ScopeProfilesSlice {
 	orig := []*otlpprofiles.ScopeProfiles(nil)
-	state := internal.StateMutable
-	return newScopeProfilesSlice(&orig, &state)
+	return newScopeProfilesSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ScopeProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeProfiles.
 func (es ScopeProfilesSlice) AppendEmpty() ScopeProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ScopeProfiles{})
+	*es.orig = append(*es.orig, internal.NewOrigScopeProfiles())
 	return es.At(es.Len() - 1)
 }
 

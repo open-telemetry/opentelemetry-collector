@@ -34,8 +34,7 @@ func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoi
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
-	state := internal.StateMutable
-	return newSummaryDataPointValueAtQuantileSlice(&orig, &state)
+	return newSummaryDataPointValueAtQuantileSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SummaryDataPointValueAtQuantile.
 func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	*es.orig = append(*es.orig, internal.NewOrigSummaryDataPoint_ValueAtQuantile())
 	return es.At(es.Len() - 1)
 }
 

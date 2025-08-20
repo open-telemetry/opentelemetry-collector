@@ -11,61 +11,136 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigMapping(t *testing.T) {
-	src := &otlpprofiles.Mapping{}
-	dest := &otlpprofiles.Mapping{}
+	src := NewOrigMapping()
+	dest := NewOrigMapping()
 	CopyOrigMapping(dest, src)
-	assert.Equal(t, &otlpprofiles.Mapping{}, dest)
-	FillOrigTestMapping(src)
+	assert.Equal(t, NewOrigMapping(), dest)
+	*src = *GenTestOrigMapping()
 	CopyOrigMapping(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigMappingUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigMapping()
+	UnmarshalJSONOrigMapping(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigMapping(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigMapping(t *testing.T) {
-	src := &otlpprofiles.Mapping{}
-	FillOrigTestMapping(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigMapping(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigMapping(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpprofiles.Mapping{}
-	UnmarshalJSONOrigMapping(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigMapping()
+			UnmarshalJSONOrigMapping(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigMappingFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigMapping()
+			require.Error(t, UnmarshalProtoOrigMapping(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigMappingUnknown(t *testing.T) {
+	dest := NewOrigMapping()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigMapping(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigMapping(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
-	src := &otlpprofiles.Mapping{}
-	FillOrigTestMapping(src)
-	buf := make([]byte, SizeProtoOrigMapping(src))
-	gotSize := MarshalProtoOrigMapping(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMapping(src))
+			gotSize := MarshalProtoOrigMapping(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.Mapping{}
-	require.NoError(t, UnmarshalProtoOrigMapping(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigMapping()
+			require.NoError(t, UnmarshalProtoOrigMapping(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyMapping(t *testing.T) {
-	src := &otlpprofiles.Mapping{}
-	buf := make([]byte, SizeProtoOrigMapping(src))
-	gotSize := MarshalProtoOrigMapping(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
+	for name, src := range genTestEncodingValuesMapping() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigMapping(src))
+			gotSize := MarshalProtoOrigMapping(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.Mapping{}
-	require.NoError(t, UnmarshalProtoOrigMapping(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpprofiles.Mapping{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigMapping()
+			require.NoError(t, UnmarshalProtoOrigMapping(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesMapping() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                    {0x02},
+		"MemoryStart/wrong_wire_type":      {0xc},
+		"MemoryStart/missing_value":        {0x8},
+		"MemoryLimit/wrong_wire_type":      {0x14},
+		"MemoryLimit/missing_value":        {0x10},
+		"FileOffset/wrong_wire_type":       {0x1c},
+		"FileOffset/missing_value":         {0x18},
+		"FilenameStrindex/wrong_wire_type": {0x24},
+		"FilenameStrindex/missing_value":   {0x20},
+		"AttributeIndices/wrong_wire_type": {0x2c},
+		"AttributeIndices/missing_value":   {0x2a},
+		"HasFunctions/wrong_wire_type":     {0x34},
+		"HasFunctions/missing_value":       {0x30},
+		"HasFilenames/wrong_wire_type":     {0x3c},
+		"HasFilenames/missing_value":       {0x38},
+		"HasLineNumbers/wrong_wire_type":   {0x44},
+		"HasLineNumbers/missing_value":     {0x40},
+		"HasInlineFrames/wrong_wire_type":  {0x4c},
+		"HasInlineFrames/missing_value":    {0x48},
+	}
+}
+
+func genTestEncodingValuesMapping() map[string]*otlpprofiles.Mapping {
+	return map[string]*otlpprofiles.Mapping{
+		"empty":                             NewOrigMapping(),
+		"MemoryStart/test":                  {MemoryStart: uint64(13)},
+		"MemoryLimit/test":                  {MemoryLimit: uint64(13)},
+		"FileOffset/test":                   {FileOffset: uint64(13)},
+		"FilenameStrindex/test":             {FilenameStrindex: int32(13)},
+		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
+		"HasFunctions/test":                 {HasFunctions: true},
+		"HasFilenames/test":                 {HasFilenames: true},
+		"HasLineNumbers/test":               {HasLineNumbers: true},
+		"HasInlineFrames/test":              {HasInlineFrames: true},
+	}
 }

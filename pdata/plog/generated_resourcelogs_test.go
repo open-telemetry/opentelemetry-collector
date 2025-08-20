@@ -24,9 +24,10 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceLogs(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceLogs(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { newResourceLogs(internal.NewOrigResourceLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -37,15 +38,16 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	orig = generateTestResourceLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
@@ -60,12 +62,12 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestResourceLogs() ResourceLogs {
-	ms := NewResourceLogs()
-	internal.FillOrigTestResourceLogs(ms.orig)
+	ms := newResourceLogs(internal.GenTestOrigResourceLogs(), internal.NewState())
 	return ms
 }

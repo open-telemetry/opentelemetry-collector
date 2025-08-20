@@ -311,3 +311,24 @@ func TestToZapFields(t *testing.T) {
 		})
 	}
 }
+
+func TestLoggerWith(t *testing.T) {
+	core, observed := createZapCore()
+	logger := zap.New(core)
+	logger = logger.With(zap.String("postexisting", "value"))
+	logger = ZapLoggerWithAttributes(logger, attribute.NewSet(attribute.String("component.attr", "value")))
+	logger.Info("test")
+
+	observedLogs := observed.All()
+	require.Len(t, observedLogs, 1)
+	expectedContext := []string{
+		"preexisting",
+		"component.attr",
+		"postexisting",
+	}
+	require.Equal(t, "test", observedLogs[0].Message)
+	require.Len(t, observedLogs[0].Context, len(expectedContext))
+	for i, field := range observedLogs[0].Context {
+		require.Equal(t, expectedContext[i], field.Key)
+	}
+}

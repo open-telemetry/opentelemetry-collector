@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -29,11 +31,8 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-func GenerateTestEntityRef() EntityRef {
-	orig := otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(&orig)
-	state := StateMutable
-	return NewEntityRef(&orig, &state)
+func NewOrigEntityRef() *otlpcommon.EntityRef {
+	return &otlpcommon.EntityRef{}
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
@@ -43,11 +42,13 @@ func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
 }
 
-func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
+func GenTestOrigEntityRef() *otlpcommon.EntityRef {
+	orig := NewOrigEntityRef()
 	orig.SchemaUrl = "test_schemaurl"
 	orig.Type = "test_type"
 	orig.IdKeys = GenerateOrigTestStringSlice()
 	orig.DescriptionKeys = GenerateOrigTestStringSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -63,32 +64,49 @@ func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 	}
 	if len(orig.IdKeys) > 0 {
 		dest.WriteObjectField("idKeys")
-		MarshalJSONOrigStringSlice(orig.IdKeys, dest)
+		dest.WriteArrayStart()
+		dest.WriteString(orig.IdKeys[0])
+		for i := 1; i < len(orig.IdKeys); i++ {
+			dest.WriteMore()
+			dest.WriteString(orig.IdKeys[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.DescriptionKeys) > 0 {
 		dest.WriteObjectField("descriptionKeys")
-		MarshalJSONOrigStringSlice(orig.DescriptionKeys, dest)
+		dest.WriteArrayStart()
+		dest.WriteString(orig.DescriptionKeys[0])
+		for i := 1; i < len(orig.DescriptionKeys); i++ {
+			dest.WriteMore()
+			dest.WriteString(orig.DescriptionKeys[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
 // UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		case "type":
 			orig.Type = iter.ReadString()
 		case "idKeys", "id_keys":
-			orig.IdKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.IdKeys = append(orig.IdKeys, iter.ReadString())
+			}
+
 		case "descriptionKeys", "description_keys":
-			orig.DescriptionKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
@@ -154,5 +172,73 @@ func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
 }
 
 func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.SchemaUrl = string(buf[startPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.Type = string(buf[startPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdKeys", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.IdKeys = append(orig.IdKeys, string(buf[startPos:pos]))
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DescriptionKeys", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[startPos:pos]))
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

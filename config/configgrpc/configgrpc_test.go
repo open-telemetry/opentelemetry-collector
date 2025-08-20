@@ -100,6 +100,9 @@ func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 func TestNewDefaultServerConfig(t *testing.T) {
 	expected := ServerConfig{
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		NetAddr: confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+		},
 	}
 
 	result := NewDefaultServerConfig()
@@ -114,12 +117,12 @@ var (
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	gcs := &ClientConfig{
+	cc := &ClientConfig{
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+	opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	/* Expecting 2 DialOptions:
 	 * - WithTransportCredentials (TLS)
@@ -129,13 +132,13 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 }
 
 func TestGrpcClientExtraOption(t *testing.T) {
-	gcs := &ClientConfig{
+	cc := &ClientConfig{
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	extraOpt := grpc.WithUserAgent("test-agent")
-	opts, err := gcs.getGrpcDialOptions(
+	opts, err := cc.getGrpcDialOptions(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -549,13 +552,13 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	gcs := &ClientConfig{
+	cc := &ClientConfig{
 		Headers:     nil,
 		Endpoint:    "",
 		Compression: "",
 		TLS:         configtls.ClientConfig{},
 	}
-	dialOpts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+	dialOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }
@@ -1180,13 +1183,13 @@ func (gts *grpcTraceServer) startTestServerWithHostError(_ *testing.T, gss Serve
 }
 
 // sendTestRequest issues a ptraceotlp export request and captures metadata.
-func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse, error) {
-	return sendTestRequestWithHost(t, gcs, componenttest.NewNopHost())
+func sendTestRequest(t *testing.T, cc ClientConfig) (ptraceotlp.ExportResponse, error) {
+	return sendTestRequestWithHost(t, cc, componenttest.NewNopHost())
 }
 
 // sendTestRequestWithHost is similar to sendTestRequest but allows specifying the host
-func sendTestRequestWithHost(t *testing.T, gcs ClientConfig, host component.Host) (ptraceotlp.ExportResponse, error) {
-	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), host, componenttest.NewNopTelemetrySettings())
+func sendTestRequestWithHost(t *testing.T, cc ClientConfig, host component.Host) (ptraceotlp.ExportResponse, error) {
+	grpcClientConn, errClient := cc.ToClientConn(context.Background(), host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, errClient)
 	defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)

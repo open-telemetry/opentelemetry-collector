@@ -11,61 +11,115 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	dest := &otlpmetrics.ExponentialHistogram{}
+	src := NewOrigExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, &otlpmetrics.ExponentialHistogram{}, dest)
-	FillOrigTestExponentialHistogram(src)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
+	*src = *GenTestOrigExponentialHistogram()
 	CopyOrigExponentialHistogram(dest, src)
 	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigExponentialHistogram()
+	UnmarshalJSONOrigExponentialHistogram(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	FillOrigTestExponentialHistogram(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExponentialHistogram(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigExponentialHistogram(src, stream)
+			require.NoError(t, stream.Error())
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.ExponentialHistogram{}
-	UnmarshalJSONOrigExponentialHistogram(dest, iter)
-	require.NoError(t, iter.Error())
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := NewOrigExponentialHistogram()
+			UnmarshalJSONOrigExponentialHistogram(dest, iter)
+			require.NoError(t, iter.Error())
 
-	assert.Equal(t, src, dest)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExponentialHistogram()
+			require.Error(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramUnknown(t *testing.T) {
+	dest := NewOrigExponentialHistogram()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	FillOrigTestExponentialHistogram(src)
-	buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
-	gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
+			gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.ExponentialHistogram{}
-	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := NewOrigExponentialHistogram()
+			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
-	gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogram(t *testing.T) {
+	for name, src := range genTestEncodingValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
+			gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.ExponentialHistogram{}
-	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
-	assert.Equal(t, src, dest)
+			goDest := &gootlpmetrics.ExponentialHistogram{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigExponentialHistogram()
+			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesExponentialHistogram() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
+	}
+}
+
+func genTestEncodingValuesExponentialHistogram() map[string]*otlpmetrics.ExponentialHistogram {
+	return map[string]*otlpmetrics.ExponentialHistogram{
+		"empty":                       NewOrigExponentialHistogram(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.ExponentialHistogramDataPoint{{}, GenTestOrigExponentialHistogramDataPoint()}},
+		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
+	}
 }

@@ -33,8 +33,7 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint, state *internal.State
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	state := internal.StateMutable
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &state)
+	return newNumberDataPoint(internal.NewOrigNumberDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
