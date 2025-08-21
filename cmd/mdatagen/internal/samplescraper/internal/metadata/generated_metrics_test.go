@@ -100,6 +100,8 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			allMetricsCount++
+			mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,12 +110,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			allMetricsCount++
+			mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
+			allMetricsCount++
+			mb.RecordOptionalMetricDataPoint(ts, 3, "string_attr-val-2", true, false)
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
+			allMetricsCount++
+			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", true)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -141,7 +149,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, (allMetricsCount/2)+1, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
@@ -150,20 +158,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, validatedMetrics["default.metric"], "Found a duplicate in the metrics slice: default.metric")
 					validatedMetrics["default.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					if tt.name == "all_set" {
+						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(4), dp.IntValue())
+					}
 					assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					if !mb.config.Attributes.StringAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -171,7 +183,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("state")
 					if !mb.config.Attributes.OverriddenIntAttr.Enabled {
 						assert.False(t, ok)
-						assert.EqualValues(t, "", attrVal.Int())
 					} else {
 						assert.True(t, ok)
 						assert.EqualValues(t, 19, attrVal.Int())
@@ -179,7 +190,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("enum_attr")
 					if !mb.config.Attributes.EnumAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "red", attrVal.Str())
@@ -187,7 +197,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("slice_attr")
 					if !mb.config.Attributes.SliceAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Slice().AsRaw())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
@@ -195,7 +204,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					if !mb.config.Attributes.MapAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Map().AsRaw())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
@@ -204,34 +212,38 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					assert.Equal(t, "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityDelta, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "metric.input_type":
 					assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
 					validatedMetrics["metric.input_type"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					if tt.name == "all_set" {
+						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(4), dp.IntValue())
+					}
 					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					if !mb.config.Attributes.StringAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -239,7 +251,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("state")
 					if !mb.config.Attributes.OverriddenIntAttr.Enabled {
 						assert.False(t, ok)
-						assert.EqualValues(t, "", attrVal.Int())
 					} else {
 						assert.True(t, ok)
 						assert.EqualValues(t, 19, attrVal.Int())
@@ -247,7 +258,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("enum_attr")
 					if !mb.config.Attributes.EnumAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "red", attrVal.Str())
@@ -255,7 +265,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("slice_attr")
 					if !mb.config.Attributes.SliceAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Slice().AsRaw())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
@@ -263,7 +272,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					if !mb.config.Attributes.MapAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Map().AsRaw())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
@@ -272,18 +280,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 					validatedMetrics["optional.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					if tt.name == "all_set" {
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+					}
 					assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					if !mb.config.Attributes.StringAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -291,7 +303,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					if !mb.config.Attributes.BooleanAttr.Enabled {
 						assert.False(t, ok)
-						assert.False(t, attrVal.Bool())
 					} else {
 						assert.True(t, ok)
 						assert.True(t, attrVal.Bool())
@@ -299,7 +310,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr2")
 					if !mb.config.Attributes.BooleanAttr2.Enabled {
 						assert.False(t, ok)
-						assert.False(t, attrVal.Bool())
 					} else {
 						assert.True(t, ok)
 						assert.False(t, attrVal.Bool())
@@ -308,18 +318,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					if tt.name == "all_set" {
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+					}
 					assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
 					assert.Empty(t, ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					if !mb.config.Attributes.StringAttr.Enabled {
 						assert.False(t, ok)
-						assert.Equal(t, "", attrVal.Str())
 					} else {
 						assert.True(t, ok)
 						assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -327,7 +341,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					if !mb.config.Attributes.BooleanAttr.Enabled {
 						assert.False(t, ok)
-						assert.False(t, attrVal.Bool())
 					} else {
 						assert.True(t, ok)
 						assert.True(t, attrVal.Bool())

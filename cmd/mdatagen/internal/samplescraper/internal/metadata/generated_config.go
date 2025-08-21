@@ -84,7 +84,7 @@ func DefaultAttributesConfig() AttributesConfig {
 			Enabled: true,
 		},
 		StringAttr: AttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
