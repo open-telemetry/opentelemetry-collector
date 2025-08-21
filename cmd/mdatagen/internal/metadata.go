@@ -352,7 +352,7 @@ func (a Attribute) TestValue() string {
 }
 
 func (a Attribute) TestValueTwo() string {
-	if a.Enum != nil && len(a.Enum) >= 2 {
+	if len(a.Enum) >= 2 {
 		return fmt.Sprintf(`%q`, a.Enum[1])
 	}
 	switch a.Type.ValueType {
