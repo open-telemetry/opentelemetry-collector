@@ -62,6 +62,10 @@ func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Type = src.Type
 	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)

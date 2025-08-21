@@ -149,6 +149,9 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 

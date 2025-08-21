@@ -45,6 +45,10 @@ func DeleteOrigMapping(orig *otlpprofiles.Mapping, nullable bool) {
 }
 
 func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.MemoryStart = src.MemoryStart
 	dest.MemoryLimit = src.MemoryLimit
 	dest.FileOffset = src.FileOffset

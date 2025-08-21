@@ -49,6 +49,10 @@ func DeleteOrigSum(orig *otlpmetrics.Sum, nullable bool) {
 }
 
 func CopyOrigSum(dest, src *otlpmetrics.Sum) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.IsMonotonic = src.IsMonotonic

@@ -49,6 +49,10 @@ func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
 }
 
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 

@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigStatus(t *testing.T) {
-	src := NewOrigStatus()
-	dest := NewOrigStatus()
-	CopyOrigStatus(dest, src)
-	assert.Equal(t, NewOrigStatus(), dest)
-	*src = *GenTestOrigStatus()
-	CopyOrigStatus(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesStatus() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigStatus()
+				CopyOrigStatus(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigStatus(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 	for name, src := range genTestEncodingValuesStatus() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 	for name, src := range genTestEncodingValuesStatus() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

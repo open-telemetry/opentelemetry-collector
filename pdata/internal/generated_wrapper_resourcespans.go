@@ -50,6 +50,10 @@ func DeleteOrigResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
 }
 
 func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 	dest.SchemaUrl = src.SchemaUrl

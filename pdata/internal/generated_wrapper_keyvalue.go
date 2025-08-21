@@ -47,6 +47,10 @@ func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
 }
 
 func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Key = src.Key
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }

@@ -55,6 +55,10 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 }
 
 func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano

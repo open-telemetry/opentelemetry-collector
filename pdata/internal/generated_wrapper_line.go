@@ -45,6 +45,10 @@ func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
 }
 
 func CopyOrigLine(dest, src *otlpprofiles.Line) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line
 	dest.Column = src.Column

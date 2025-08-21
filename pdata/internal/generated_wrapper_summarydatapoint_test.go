@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,13 +22,23 @@ import (
 )
 
 func TestCopyOrigSummaryDataPoint(t *testing.T) {
-	src := NewOrigSummaryDataPoint()
-	dest := NewOrigSummaryDataPoint()
-	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, NewOrigSummaryDataPoint(), dest)
-	*src = *GenTestOrigSummaryDataPoint()
-	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSummaryDataPoint() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSummaryDataPoint()
+				CopyOrigSummaryDataPoint(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSummaryDataPoint(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
@@ -42,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -86,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

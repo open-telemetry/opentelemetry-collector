@@ -66,6 +66,10 @@ func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nulla
 }
 
 func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Name = src.Name
 	dest.Version = src.Version
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)

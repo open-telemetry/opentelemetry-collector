@@ -160,6 +160,9 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
+	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
+		return
+	}
 	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 }
 

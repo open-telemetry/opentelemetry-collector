@@ -67,6 +67,10 @@ func DeleteOrigExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportPr
 }
 
 func CopyOrigExportProfilesServiceRequest(dest, src *otlpcollectorprofiles.ExportProfilesServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceProfiles = CopyOrigResourceProfilesSlice(dest.ResourceProfiles, src.ResourceProfiles)
 	CopyOrigProfilesDictionary(&dest.Dictionary, &src.Dictionary)
 }

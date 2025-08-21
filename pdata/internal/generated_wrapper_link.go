@@ -49,6 +49,10 @@ func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
 }
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 }

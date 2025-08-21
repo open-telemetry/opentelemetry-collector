@@ -45,6 +45,10 @@ func DeleteOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePar
 }
 
 func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
 }

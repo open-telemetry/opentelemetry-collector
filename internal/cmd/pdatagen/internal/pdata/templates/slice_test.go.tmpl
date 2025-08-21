@@ -56,6 +56,8 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	src := generateTest{{ .structName }}()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
+    dest.CopyTo(dest)
+    assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
 
 func Test{{ .structName }}_EnsureCapacity(t *testing.T) {

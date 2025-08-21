@@ -65,6 +65,10 @@ func DeleteOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullabl
 }
 
 func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.MappingTable = CopyOrigMappingSlice(dest.MappingTable, src.MappingTable)
 	dest.LocationTable = CopyOrigLocationSlice(dest.LocationTable, src.LocationTable)
 	dest.FunctionTable = CopyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)

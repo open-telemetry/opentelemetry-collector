@@ -55,6 +55,10 @@ func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
 }
 
 func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
 	dest.SeverityNumber = src.SeverityNumber
