@@ -50,6 +50,10 @@ func DeleteOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, nullable bool) {
 }
 
 func CopyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.Metrics = CopyOrigMetricSlice(dest.Metrics, src.Metrics)
 	dest.SchemaUrl = src.SchemaUrl

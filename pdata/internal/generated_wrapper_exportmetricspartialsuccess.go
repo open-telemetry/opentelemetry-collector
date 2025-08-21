@@ -45,6 +45,10 @@ func DeleteOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetr
 }
 
 func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedDataPoints = src.RejectedDataPoints
 	dest.ErrorMessage = src.ErrorMessage
 }

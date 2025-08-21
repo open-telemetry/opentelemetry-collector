@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,13 +22,23 @@ import (
 )
 
 func TestCopyOrigExportTraceServiceRequest(t *testing.T) {
-	src := NewOrigExportTraceServiceRequest()
-	dest := NewOrigExportTraceServiceRequest()
-	CopyOrigExportTraceServiceRequest(dest, src)
-	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
-	*src = *GenTestOrigExportTraceServiceRequest()
-	CopyOrigExportTraceServiceRequest(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportTraceServiceRequest()
+				CopyOrigExportTraceServiceRequest(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportTraceServiceRequest(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequestUnknown(t *testing.T) {
@@ -42,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequestUnknown(t *testing.
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -86,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequestUnknown(t *testing
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

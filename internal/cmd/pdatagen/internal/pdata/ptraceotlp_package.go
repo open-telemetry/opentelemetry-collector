@@ -24,6 +24,7 @@ var ptraceotlp = &Package{
 			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,

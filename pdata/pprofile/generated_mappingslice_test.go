@@ -52,6 +52,8 @@ func TestMappingSlice_CopyTo(t *testing.T) {
 	src := generateTestMappingSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestMappingSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestMappingSlice(), dest)
 }
 
 func TestMappingSlice_EnsureCapacity(t *testing.T) {

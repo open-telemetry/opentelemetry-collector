@@ -45,6 +45,10 @@ func DeleteOrigValueType(orig *otlpprofiles.ValueType, nullable bool) {
 }
 
 func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TypeStrindex = src.TypeStrindex
 	dest.UnitStrindex = src.UnitStrindex
 	dest.AggregationTemporality = src.AggregationTemporality

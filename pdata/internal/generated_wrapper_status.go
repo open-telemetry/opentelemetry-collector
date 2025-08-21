@@ -45,6 +45,10 @@ func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
 }
 
 func CopyOrigStatus(dest, src *otlptrace.Status) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Message = src.Message
 	dest.Code = src.Code
 }

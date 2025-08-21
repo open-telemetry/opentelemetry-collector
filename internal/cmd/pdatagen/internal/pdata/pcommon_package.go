@@ -25,6 +25,7 @@ var pcommon = &Package{
 			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,

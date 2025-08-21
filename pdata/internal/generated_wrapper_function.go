@@ -45,6 +45,10 @@ func DeleteOrigFunction(orig *otlpprofiles.Function, nullable bool) {
 }
 
 func CopyOrigFunction(dest, src *otlpprofiles.Function) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex
 	dest.FilenameStrindex = src.FilenameStrindex

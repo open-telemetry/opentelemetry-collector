@@ -50,6 +50,10 @@ func DeleteOrigScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
 }
 
 func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.Spans = CopyOrigSpanSlice(dest.Spans, src.Spans)
 	dest.SchemaUrl = src.SchemaUrl

@@ -51,6 +51,10 @@ func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
 }
 
 func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Name = src.Name
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)

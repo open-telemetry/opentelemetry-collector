@@ -49,6 +49,10 @@ func DeleteOrigHistogram(orig *otlpmetrics.Histogram, nullable bool) {
 }
 
 func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 }

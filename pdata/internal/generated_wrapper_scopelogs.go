@@ -50,6 +50,10 @@ func DeleteOrigScopeLogs(orig *otlplogs.ScopeLogs, nullable bool) {
 }
 
 func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.LogRecords = CopyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
 	dest.SchemaUrl = src.SchemaUrl

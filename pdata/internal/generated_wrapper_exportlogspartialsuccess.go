@@ -45,6 +45,10 @@ func DeleteOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartia
 }
 
 func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedLogRecords = src.RejectedLogRecords
 	dest.ErrorMessage = src.ErrorMessage
 }

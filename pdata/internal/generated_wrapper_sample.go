@@ -45,6 +45,10 @@ func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
 }
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.LocationsStartIndex = src.LocationsStartIndex
 	dest.LocationsLength = src.LocationsLength
 	dest.Value = CopyOrigInt64Slice(dest.Value, src.Value)

@@ -50,6 +50,10 @@ func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
 }
 
 func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.ScopeLogs = CopyOrigScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
 	dest.SchemaUrl = src.SchemaUrl
