@@ -91,6 +91,10 @@ func (opv *OneOfPrimitiveValue) GenerateTestEncodingValues(ms *messageStruct, of
 	return opv.toProtoField(ms, of, false).GenTestEncodingValues()
 }
 
+func (opv *OneOfPrimitiveValue) GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of, false).GenDeleteOrig()
+}
+
 func (opv *OneOfPrimitiveValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
 	t := template.Parse("oneOfPrimitiveCopyOrigTemplate", []byte(oneOfPrimitiveCopyOrigTemplate))
 	return template.Execute(t, opv.templateFields(ms, of))

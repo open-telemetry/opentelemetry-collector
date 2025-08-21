@@ -8,14 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	},
+}
+
 func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	}
+	return protoPoolExponentialHistogramDataPoint_Buckets.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Buckets)
+}
+
+func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExponentialHistogramDataPoint_Buckets.Put(orig)
+	}
 }
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {

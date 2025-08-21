@@ -63,6 +63,10 @@ func (mf *MessageField) GenerateTestEncodingValues(*messageStruct) string {
 	return mf.toProtoField().GenTestEncodingValues()
 }
 
+func (mf *MessageField) GenerateDeleteOrig(*messageStruct) string {
+	return mf.toProtoField().GenDeleteOrig()
+}
+
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("messageCopyOrigTemplate", []byte(messageCopyOrigTemplate))
 	return template.Execute(t, mf.templateFields(ms))

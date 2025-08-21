@@ -19,7 +19,7 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i].Reset()
+			DeleteOrigExemplar(&dest[i], false)
 		}
 	}
 	for i := range src {

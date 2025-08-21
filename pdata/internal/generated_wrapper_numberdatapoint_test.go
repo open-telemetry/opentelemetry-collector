@@ -14,6 +14,7 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -40,20 +41,29 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigNumberDataPoint(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigNumberDataPoint()
-			UnmarshalJSONOrigNumberDataPoint(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigNumberDataPoint(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigNumberDataPoint()
+				UnmarshalJSONOrigNumberDataPoint(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigNumberDataPoint(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +85,25 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
-			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigNumberDataPoint()
-			require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
+				gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigNumberDataPoint()
+				require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigNumberDataPoint(dest, true)
+			})
+		}
 	}
 }
 

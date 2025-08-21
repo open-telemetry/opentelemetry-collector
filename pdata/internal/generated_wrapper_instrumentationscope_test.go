@@ -14,6 +14,7 @@ import (
 	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -39,20 +40,29 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
 	for name, src := range genTestEncodingValuesInstrumentationScope() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigInstrumentationScope(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigInstrumentationScope()
-			UnmarshalJSONOrigInstrumentationScope(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigInstrumentationScope(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigInstrumentationScope()
+				UnmarshalJSONOrigInstrumentationScope(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigInstrumentationScope(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +84,25 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
 	for name, src := range genTestEncodingValuesInstrumentationScope() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
-			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigInstrumentationScope()
-			require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
+				gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigInstrumentationScope()
+				require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigInstrumentationScope(dest, true)
+			})
+		}
 	}
 }
 
