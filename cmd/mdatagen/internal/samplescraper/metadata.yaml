@@ -70,7 +70,7 @@ attributes:
   string_attr:
     description: Attribute with any string value.
     type: string
-    enabled: true
+    enabled: false
 
   overridden_int_attr:
     name_override: state

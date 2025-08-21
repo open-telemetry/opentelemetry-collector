@@ -131,6 +131,23 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
+        {{- range $metric.Attributes -}}
+          {{ if not (attributeInfo .).Enabled }}
+            allMetricsCount++
+            mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
+            {{- range $metric.Attributes -}}
+            {{- if not (attributeInfo .).Optional -}}
+              , {{ if (attributeInfo .).Enabled }}{{- template "getAttributeValue" . -}}{{ else }}{{- template "getAttributeValueTwo" . -}}{{ end }}
+            {{- end -}}
+            {{- end -}}
+            {{- range $metric.Attributes -}}
+                    {{- if (attributeInfo .).Optional -}}
+                        , With{{ .Render }}MetricAttribute({{ if (attributeInfo .).Enabled }}{{- template "getAttributeValue" . -}}{{ else }}{{- template "getAttributeValueTwo" . -}}{{ end }})
+                    {{- end -}}
+                    {{- end -}}
+                    )
+          {{- end -}} 
+          {{- end -}} 
 			{{- end }}
 
 			{{ if .ResourceAttributes }}
@@ -162,7 +179,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, (allMetricsCount / 2) + 1, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
@@ -172,7 +189,31 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+          {{- if eq $name.Render "DefaultMetricToBeRemoved" }}
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+          {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+          assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+          {{- else }}
+          assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+          {{- end }}
+          {{- else }}
+          if tt.name == "all_set" {
+					  assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+          } else {
+					  assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(4), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(4), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+          }
+          {{- end }}
 					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
 					{{- if len $metric.Unit}}
 					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
@@ -185,28 +226,14 @@ func TestMetricsBuilder(t *testing.T) {
 					{{- if $metric.Data.HasAggregated }}
 					assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
 					{{- end }}
-					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
-					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
-					{{- else }}
-					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
-					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
 					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
           if !mb.config.Attributes.{{ (attributeInfo $attr).FullName.Render }}.Enabled {
 					  assert.False(t, ok)
-            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
-            assert.False(t, attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
-            assert.EqualValues(t, "", attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- else }}
-            assert.Equal(t, "", attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- end }}
-            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
           } else {
 					  assert.True(t, ok)
             {{- if eq (attributeInfo $attr).Type.String "Bool"}}

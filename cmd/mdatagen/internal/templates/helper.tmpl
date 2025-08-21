@@ -28,5 +28,8 @@
 {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 {{- end -}}
 
+{{- define "getAttributeValueTwo" -}}
+{{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValueTwo }}{{ end }}
+{{- end -}}
 
 
