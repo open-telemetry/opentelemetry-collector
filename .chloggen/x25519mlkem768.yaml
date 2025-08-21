@@ -7,6 +7,7 @@ change_type: enhancement
 component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+# cspell:ignore MLKEM mlkem
 note: Enable X25519MLKEM768 as per draft-ietf-tls-ecdhe-mlkem 
 
 # One or more tracking issues or pull requests related to the change
