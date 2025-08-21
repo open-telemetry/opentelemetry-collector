@@ -8,14 +8,44 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolSum = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.Sum{}
+	},
+}
+
 func NewOrigSum() *otlpmetrics.Sum {
-	return &otlpmetrics.Sum{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Sum{}
+	}
+	return protoPoolSum.Get().(*otlpmetrics.Sum)
+}
+
+func DeleteOrigSum(orig *otlpmetrics.Sum, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.DataPoints {
+		DeleteOrigNumberDataPoint(orig.DataPoints[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSum.Put(orig)
+	}
 }
 
 func CopyOrigSum(dest, src *otlpmetrics.Sum) {

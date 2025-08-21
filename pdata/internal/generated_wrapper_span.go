@@ -9,6 +9,7 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -17,8 +18,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolSpan = sync.Pool{
+	New: func() any {
+		return &otlptrace.Span{}
+	},
+}
+
 func NewOrigSpan() *otlptrace.Span {
-	return &otlptrace.Span{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Span{}
+	}
+	return protoPoolSpan.Get().(*otlptrace.Span)
+}
+
+func DeleteOrigSpan(orig *otlptrace.Span, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteOrigSpanID(&orig.SpanId, false)
+	DeleteOrigSpanID(&orig.ParentSpanId, false)
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	for i := range orig.Events {
+		DeleteOrigSpan_Event(orig.Events[i], true)
+	}
+	for i := range orig.Links {
+		DeleteOrigSpan_Link(orig.Links[i], true)
+	}
+	DeleteOrigStatus(&orig.Status, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolSpan.Put(orig)
+	}
 }
 
 func CopyOrigSpan(dest, src *otlptrace.Span) {

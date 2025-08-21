@@ -96,6 +96,10 @@ func (omv *OneOfMessageValue) GenerateTestEncodingValues(ms *messageStruct, of *
 	return omv.toProtoField(ms, of, false).GenTestEncodingValues()
 }
 
+func (omv *OneOfMessageValue) GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, false).GenDeleteOrig()
+}
+
 func (omv *OneOfMessageValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
 	t := template.Parse("oneOfMessageCopyOrigTemplate", []byte(oneOfMessageCopyOrigTemplate))
 	return template.Execute(t, omv.templateFields(ms, of))

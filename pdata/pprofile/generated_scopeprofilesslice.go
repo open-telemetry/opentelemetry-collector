@@ -128,7 +128,9 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigScopeProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
