@@ -465,14 +465,9 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 					assert.Equal(t, codes.Unset, span.Status().Code)
 				case consumererror.IsDownstream(params[i].err):
 					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-					if tc.enabled {
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
-					} else {
-						// When gate is disabled, all errors are refused.
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
-					}
+					// For downstream errors
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 					assert.Equal(t, codes.Error, span.Status().Code)
 					assert.Equal(t, params[i].err.Error(), span.Status().Description)
 				default:

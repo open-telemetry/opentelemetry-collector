@@ -100,7 +100,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.132.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.38.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v1.38.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0 // indirect
