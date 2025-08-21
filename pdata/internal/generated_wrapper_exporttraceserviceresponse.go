@@ -8,26 +8,52 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportTraceServiceResponse() otlpcollectortrace.ExportTraceServiceResponse {
-	return otlpcollectortrace.ExportTraceServiceResponse{}
+var protoPoolExportTraceServiceResponse = sync.Pool{
+	New: func() any {
+		return &otlpcollectortrace.ExportTraceServiceResponse{}
+	},
 }
 
-func NewOrigPtrExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
-	return &otlpcollectortrace.ExportTraceServiceResponse{}
+func NewOrigExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectortrace.ExportTraceServiceResponse{}
+	}
+	return protoPoolExportTraceServiceResponse.Get().(*otlpcollectortrace.ExportTraceServiceResponse)
+}
+
+func DeleteOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigExportTracePartialSuccess(&orig.PartialSuccess, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportTraceServiceResponse.Put(orig)
+	}
 }
 
 func CopyOrigExportTraceServiceResponse(dest, src *otlpcollectortrace.ExportTraceServiceResponse) {
 	CopyOrigExportTracePartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func FillOrigTestExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse) {
-	FillOrigTestExportTracePartialSuccess(&orig.PartialSuccess)
+func GenTestOrigExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
+	orig := NewOrigExportTraceServiceResponse()
+	orig.PartialSuccess = *GenTestOrigExportTracePartialSuccess()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -40,15 +66,14 @@ func MarshalJSONOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTr
 
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 			UnmarshalJSONOrigExportTracePartialSuccess(&orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse) int {

@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,26 +32,47 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-func GenerateTestMetrics() Metrics {
-	orig := NewOrigPtrExportMetricsServiceRequest()
-	FillOrigTestExportMetricsServiceRequest(orig)
-	return NewMetrics(orig, NewState())
+var protoPoolExportMetricsServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	},
 }
 
-func NewOrigExportMetricsServiceRequest() otlpcollectormetrics.ExportMetricsServiceRequest {
-	return otlpcollectormetrics.ExportMetricsServiceRequest{}
+func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	}
+	return protoPoolExportMetricsServiceRequest.Get().(*otlpcollectormetrics.ExportMetricsServiceRequest)
 }
 
-func NewOrigPtrExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceMetrics {
+		DeleteOrigResourceMetrics(orig.ResourceMetrics[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportMetricsServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 
-func FillOrigTestExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) {
+func GenTestOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	orig := NewOrigExportMetricsServiceRequest()
 	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -71,15 +93,18 @@ func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expor
 
 // UnmarshalJSONOrigMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
-			orig.ResourceMetrics = UnmarshalJSONOrigResourceMetricsSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
+				UnmarshalJSONOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
@@ -132,7 +157,7 @@ func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Ex
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigPtrResourceMetrics())
+			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
 			err = UnmarshalProtoOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err

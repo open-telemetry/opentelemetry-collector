@@ -9,19 +9,48 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSpan_Link() otlptrace.Span_Link {
-	return otlptrace.Span_Link{}
+var protoPoolSpan_Link = sync.Pool{
+	New: func() any {
+		return &otlptrace.Span_Link{}
+	},
 }
 
-func NewOrigPtrSpan_Link() *otlptrace.Span_Link {
-	return &otlptrace.Span_Link{}
+func NewOrigSpan_Link() *otlptrace.Span_Link {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Span_Link{}
+	}
+	return protoPoolSpan_Link.Get().(*otlptrace.Span_Link)
+}
+
+func DeleteOrigSpan_Link(orig *otlptrace.Span_Link, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteOrigSpanID(&orig.SpanId, false)
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSpan_Link.Put(orig)
+	}
 }
 
 func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
@@ -33,13 +62,15 @@ func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
 	dest.Flags = src.Flags
 }
 
-func FillOrigTestSpan_Link(orig *otlptrace.Span_Link) {
+func GenTestOrigSpan_Link() *otlptrace.Span_Link {
+	orig := NewOrigSpan_Link()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	FillOrigTestTraceState(&orig.TraceState)
+	orig.TraceState = *GenTestOrigTraceState()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = uint32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -80,16 +111,20 @@ func MarshalJSONOrigSpan_Link(orig *otlptrace.Span_Link, dest *json.Stream) {
 
 // UnmarshalJSONOrigSpanLink unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpan_Link(orig *otlptrace.Span_Link, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		case "traceState", "trace_state":
-			UnmarshalJSONOrigTraceState(&orig.TraceState, iter)
+			orig.TraceState = iter.ReadString()
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "flags":
@@ -97,8 +132,7 @@ func UnmarshalJSONOrigSpan_Link(orig *otlptrace.Span_Link, iter *json.Iterator) 
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSpan_Link(orig *otlptrace.Span_Link) int {
@@ -241,7 +275,7 @@ func UnmarshalProtoOrigSpan_Link(orig *otlptrace.Span_Link, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err

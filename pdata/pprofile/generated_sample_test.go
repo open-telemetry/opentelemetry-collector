@@ -26,8 +26,8 @@ func TestSample_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSample(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewOrigPtrSample(), sharedState)) })
-	assert.Panics(t, func() { newSample(internal.NewOrigPtrSample(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewOrigSample(), sharedState)) })
+	assert.Panics(t, func() { newSample(internal.NewOrigSample(), sharedState).MoveTo(dest) })
 }
 
 func TestSample_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSample_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigPtrSample(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigSample(), sharedState)) })
 }
 
 func TestSample_LocationsStartIndex(t *testing.T) {
@@ -99,7 +99,6 @@ func TestSample_TimestampsUnixNano(t *testing.T) {
 }
 
 func generateTestSample() Sample {
-	ms := NewSample()
-	internal.FillOrigTestSample(ms.orig)
+	ms := newSample(internal.GenTestOrigSample(), internal.NewState())
 	return ms
 }

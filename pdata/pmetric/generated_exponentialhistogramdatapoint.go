@@ -36,7 +36,7 @@ func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramData
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint(internal.NewOrigPtrExponentialHistogramDataPoint(), internal.NewState())
+	return newExponentialHistogramDataPoint(internal.NewOrigExponentialHistogramDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

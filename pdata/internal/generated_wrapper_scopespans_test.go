@@ -14,16 +14,17 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeSpans(t *testing.T) {
-	src := NewOrigPtrScopeSpans()
-	dest := NewOrigPtrScopeSpans()
+	src := NewOrigScopeSpans()
+	dest := NewOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
-	FillOrigTestScopeSpans(src)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
+	*src = *GenTestOrigScopeSpans()
 	CopyOrigScopeSpans(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrScopeSpans()
+	dest := NewOrigScopeSpans()
 	UnmarshalJSONOrigScopeSpans(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
+	for name, src := range genTestEncodingValuesScopeSpans() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigScopeSpans(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigScopeSpans()
+				UnmarshalJSONOrigScopeSpans(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeSpans(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeSpansFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigScopeSpans(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrScopeSpans()
-			UnmarshalJSONOrigScopeSpans(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigScopeSpans()
+			require.Error(t, UnmarshalProtoOrigScopeSpans(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
-	dest := NewOrigPtrScopeSpans()
+	dest := NewOrigScopeSpans()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrScopeSpans(), dest)
+	assert.Equal(t, NewOrigScopeSpans(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeSpans(src))
-			gotSize := MarshalProtoOrigScopeSpans(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesScopeSpans() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrScopeSpans()
-			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigScopeSpans(src))
+				gotSize := MarshalProtoOrigScopeSpans(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigScopeSpans()
+				require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeSpans(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
-	for name, src := range getEncodingTestValuesScopeSpans() {
+	for name, src := range genTestEncodingValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigScopeSpans(src))
 			gotSize := MarshalProtoOrigScopeSpans(src, buf)
@@ -90,20 +119,30 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrScopeSpans()
+			dest := NewOrigScopeSpans()
 			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
+func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Spans/wrong_wire_type":     {0x14},
+		"Spans/missing_value":       {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
 	return map[string]*otlptrace.ScopeSpans{
-		"empty": NewOrigPtrScopeSpans(),
-		"fill_test": func() *otlptrace.ScopeSpans {
-			src := NewOrigPtrScopeSpans()
-			FillOrigTestScopeSpans(src)
-			return src
-		}(),
+		"empty":                  NewOrigScopeSpans(),
+		"Scope/test":             {Scope: *GenTestOrigInstrumentationScope()},
+		"Spans/default_and_test": {Spans: []*otlptrace.Span{{}, GenTestOrigSpan()}},
+		"SchemaUrl/test":         {SchemaUrl: "test_schemaurl"},
 	}
 }

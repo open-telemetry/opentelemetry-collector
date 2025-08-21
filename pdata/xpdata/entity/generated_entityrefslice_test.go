@@ -23,11 +23,11 @@ func TestEntityRefSlice(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewEntityRef()
-	testVal := EntityRef(internal.GenerateTestEntityRef())
+	testVal := EntityRef(internal.NewEntityRef(internal.GenTestOrigEntityRef(), internal.NewState()))
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestEntityRef((*es.getOrig())[i])
+		(*es.getOrig())[i] = internal.GenTestOrigEntityRef()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())

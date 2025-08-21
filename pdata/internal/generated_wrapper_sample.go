@@ -8,18 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSample() otlpprofiles.Sample {
-	return otlpprofiles.Sample{}
+var protoPoolSample = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.Sample{}
+	},
 }
 
-func NewOrigPtrSample() *otlpprofiles.Sample {
-	return &otlpprofiles.Sample{}
+func NewOrigSample() *otlpprofiles.Sample {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Sample{}
+	}
+	return protoPoolSample.Get().(*otlpprofiles.Sample)
+}
+
+func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSample.Put(orig)
+	}
 }
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
@@ -40,13 +62,15 @@ func CopyOrigSample(dest, src *otlpprofiles.Sample) {
 	dest.TimestampsUnixNano = CopyOrigUint64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }
 
-func FillOrigTestSample(orig *otlpprofiles.Sample) {
+func GenTestOrigSample() *otlpprofiles.Sample {
+	orig := NewOrigSample()
 	orig.LocationsStartIndex = int32(13)
 	orig.LocationsLength = int32(13)
 	orig.Value = GenerateOrigTestInt64Slice()
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
 	orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}
 	orig.TimestampsUnixNano = GenerateOrigTestUint64Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -99,25 +123,38 @@ func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 
 // UnmarshalJSONOrigSample unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "locationsStartIndex", "locations_start_index":
 			orig.LocationsStartIndex = iter.ReadInt32()
 		case "locationsLength", "locations_length":
 			orig.LocationsLength = iter.ReadInt32()
 		case "value":
-			orig.Value = UnmarshalJSONOrigInt64Slice(iter)
+			for iter.ReadArray() {
+				orig.Value = append(orig.Value, iter.ReadInt64())
+			}
+
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		case "linkIndex", "link_index":
-			orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: iter.ReadInt32()}
+			{
+				ofm := &otlpprofiles.Sample_LinkIndex{}
+				ofm.LinkIndex = iter.ReadInt32()
+				orig.LinkIndex_ = ofm
+			}
+
 		case "timestampsUnixNano", "timestamps_unix_nano":
-			orig.TimestampsUnixNano = UnmarshalJSONOrigUint64Slice(iter)
+			for iter.ReadArray() {
+				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, iter.ReadUint64())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {

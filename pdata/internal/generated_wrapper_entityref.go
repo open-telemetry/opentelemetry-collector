@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,18 +32,33 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-func GenerateTestEntityRef() EntityRef {
-	orig := NewOrigPtrEntityRef()
-	FillOrigTestEntityRef(orig)
-	return NewEntityRef(orig, NewState())
+var protoPoolEntityRef = sync.Pool{
+	New: func() any {
+		return &otlpcommon.EntityRef{}
+	},
 }
 
-func NewOrigEntityRef() otlpcommon.EntityRef {
-	return otlpcommon.EntityRef{}
+func NewOrigEntityRef() *otlpcommon.EntityRef {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.EntityRef{}
+	}
+	return protoPoolEntityRef.Get().(*otlpcommon.EntityRef)
 }
 
-func NewOrigPtrEntityRef() *otlpcommon.EntityRef {
-	return &otlpcommon.EntityRef{}
+func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolEntityRef.Put(orig)
+	}
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
@@ -52,11 +68,13 @@ func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
 }
 
-func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
+func GenTestOrigEntityRef() *otlpcommon.EntityRef {
+	orig := NewOrigEntityRef()
 	orig.SchemaUrl = "test_schemaurl"
 	orig.Type = "test_type"
 	orig.IdKeys = GenerateOrigTestStringSlice()
 	orig.DescriptionKeys = GenerateOrigTestStringSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -95,21 +113,26 @@ func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 
 // UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		case "type":
 			orig.Type = iter.ReadString()
 		case "idKeys", "id_keys":
-			orig.IdKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.IdKeys = append(orig.IdKeys, iter.ReadString())
+			}
+
 		case "descriptionKeys", "description_keys":
-			orig.DescriptionKeys = UnmarshalJSONOrigStringSlice(iter)
+			for iter.ReadArray() {
+				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {

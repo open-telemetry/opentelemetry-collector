@@ -8,18 +8,42 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigKeyValue() otlpcommon.KeyValue {
-	return otlpcommon.KeyValue{}
+var protoPoolKeyValue = sync.Pool{
+	New: func() any {
+		return &otlpcommon.KeyValue{}
+	},
 }
 
-func NewOrigPtrKeyValue() *otlpcommon.KeyValue {
-	return &otlpcommon.KeyValue{}
+func NewOrigKeyValue() *otlpcommon.KeyValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.KeyValue{}
+	}
+	return protoPoolKeyValue.Get().(*otlpcommon.KeyValue)
+}
+
+func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigAnyValue(&orig.Value, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolKeyValue.Put(orig)
+	}
 }
 
 func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
@@ -27,9 +51,11 @@ func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }
 
-func FillOrigTestKeyValue(orig *otlpcommon.KeyValue) {
+func GenTestOrigKeyValue() *otlpcommon.KeyValue {
+	orig := NewOrigKeyValue()
 	orig.Key = "test_key"
-	FillOrigTestAnyValue(&orig.Value)
+	orig.Value = *GenTestOrigAnyValue()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -46,7 +72,7 @@ func MarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, dest *json.Stream) {
 
 // UnmarshalJSONOrigAttribute unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "key":
 			orig.Key = iter.ReadString()
@@ -55,8 +81,7 @@ func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigKeyValue(orig *otlpcommon.KeyValue) int {

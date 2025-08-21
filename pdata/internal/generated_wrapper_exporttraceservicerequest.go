@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,26 +32,47 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-func GenerateTestTraces() Traces {
-	orig := NewOrigPtrExportTraceServiceRequest()
-	FillOrigTestExportTraceServiceRequest(orig)
-	return NewTraces(orig, NewState())
+var protoPoolExportTraceServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectortrace.ExportTraceServiceRequest{}
+	},
 }
 
-func NewOrigExportTraceServiceRequest() otlpcollectortrace.ExportTraceServiceRequest {
-	return otlpcollectortrace.ExportTraceServiceRequest{}
+func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectortrace.ExportTraceServiceRequest{}
+	}
+	return protoPoolExportTraceServiceRequest.Get().(*otlpcollectortrace.ExportTraceServiceRequest)
 }
 
-func NewOrigPtrExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
-	return &otlpcollectortrace.ExportTraceServiceRequest{}
+func DeleteOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceSpans {
+		DeleteOrigResourceSpans(orig.ResourceSpans[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportTraceServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
 	dest.ResourceSpans = CopyOrigResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
 }
 
-func FillOrigTestExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) {
+func GenTestOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
+	orig := NewOrigExportTraceServiceRequest()
 	orig.ResourceSpans = GenerateOrigTestResourceSpansSlice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -71,15 +93,18 @@ func MarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTra
 
 // UnmarshalJSONOrigTraces unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			orig.ResourceSpans = UnmarshalJSONOrigResourceSpansSlice(iter)
+			for iter.ReadArray() {
+				orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
+				UnmarshalJSONOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) int {
@@ -132,7 +157,7 @@ func UnmarshalProtoOrigExportTraceServiceRequest(orig *otlpcollectortrace.Export
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigPtrResourceSpans())
+			orig.ResourceSpans = append(orig.ResourceSpans, NewOrigResourceSpans())
 			err = UnmarshalProtoOrigResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

@@ -14,16 +14,17 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceLogs(t *testing.T) {
-	src := NewOrigPtrResourceLogs()
-	dest := NewOrigPtrResourceLogs()
+	src := NewOrigResourceLogs()
+	dest := NewOrigResourceLogs()
 	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
-	FillOrigTestResourceLogs(src)
+	assert.Equal(t, NewOrigResourceLogs(), dest)
+	*src = *GenTestOrigResourceLogs()
 	CopyOrigResourceLogs(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigResourceLogs(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrResourceLogs()
+	dest := NewOrigResourceLogs()
 	UnmarshalJSONOrigResourceLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
+	assert.Equal(t, NewOrigResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
+	for name, src := range genTestEncodingValuesResourceLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigResourceLogs(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigResourceLogs()
+				UnmarshalJSONOrigResourceLogs(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigResourceLogsFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesResourceLogs() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigResourceLogs(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrResourceLogs()
-			UnmarshalJSONOrigResourceLogs(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigResourceLogs()
+			require.Error(t, UnmarshalProtoOrigResourceLogs(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
-	dest := NewOrigPtrResourceLogs()
+	dest := NewOrigResourceLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
+	assert.Equal(t, NewOrigResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceLogs(src))
-			gotSize := MarshalProtoOrigResourceLogs(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesResourceLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrResourceLogs()
-			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigResourceLogs(src))
+				gotSize := MarshalProtoOrigResourceLogs(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigResourceLogs()
+				require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
-	for name, src := range getEncodingTestValuesResourceLogs() {
+	for name, src := range genTestEncodingValuesResourceLogs() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigResourceLogs(src))
 			gotSize := MarshalProtoOrigResourceLogs(src, buf)
@@ -90,20 +119,30 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrResourceLogs()
+			dest := NewOrigResourceLogs()
 			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
+func genTestFailingUnmarshalProtoValuesResourceLogs() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":             {0x02},
+		"Resource/wrong_wire_type":  {0xc},
+		"Resource/missing_value":    {0xa},
+		"ScopeLogs/wrong_wire_type": {0x14},
+		"ScopeLogs/missing_value":   {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
+	}
+}
+
+func genTestEncodingValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
 	return map[string]*otlplogs.ResourceLogs{
-		"empty": NewOrigPtrResourceLogs(),
-		"fill_test": func() *otlplogs.ResourceLogs {
-			src := NewOrigPtrResourceLogs()
-			FillOrigTestResourceLogs(src)
-			return src
-		}(),
+		"empty":                      NewOrigResourceLogs(),
+		"Resource/test":              {Resource: *GenTestOrigResource()},
+		"ScopeLogs/default_and_test": {ScopeLogs: []*otlplogs.ScopeLogs{{}, GenTestOrigScopeLogs()}},
+		"SchemaUrl/test":             {SchemaUrl: "test_schemaurl"},
 	}
 }

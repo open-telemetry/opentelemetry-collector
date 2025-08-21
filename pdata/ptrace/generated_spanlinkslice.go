@@ -99,7 +99,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrSpan_Link())
+	*es.orig = append(*es.orig, internal.NewOrigSpan_Link())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,9 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigSpan_Link((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}

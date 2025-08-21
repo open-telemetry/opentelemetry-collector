@@ -8,18 +8,45 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceMetrics() otlpmetrics.ResourceMetrics {
-	return otlpmetrics.ResourceMetrics{}
+var protoPoolResourceMetrics = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.ResourceMetrics{}
+	},
 }
 
-func NewOrigPtrResourceMetrics() *otlpmetrics.ResourceMetrics {
-	return &otlpmetrics.ResourceMetrics{}
+func NewOrigResourceMetrics() *otlpmetrics.ResourceMetrics {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.ResourceMetrics{}
+	}
+	return protoPoolResourceMetrics.Get().(*otlpmetrics.ResourceMetrics)
+}
+
+func DeleteOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigResource(&orig.Resource, false)
+	for i := range orig.ScopeMetrics {
+		DeleteOrigScopeMetrics(orig.ScopeMetrics[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResourceMetrics.Put(orig)
+	}
 }
 
 func CopyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
@@ -28,10 +55,12 @@ func CopyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceMetrics(orig *otlpmetrics.ResourceMetrics) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceMetrics() *otlpmetrics.ResourceMetrics {
+	orig := NewOrigResourceMetrics()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeMetrics = GenerateOrigTestScopeMetricsSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +87,22 @@ func MarshalJSONOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, dest *jso
 
 // UnmarshalJSONOrigResourceMetrics unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeMetrics", "scope_metrics":
-			orig.ScopeMetrics = UnmarshalJSONOrigScopeMetricsSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeMetrics = append(orig.ScopeMetrics, NewOrigScopeMetrics())
+				UnmarshalJSONOrigScopeMetrics(orig.ScopeMetrics[len(orig.ScopeMetrics)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics) int {
@@ -160,7 +192,7 @@ func UnmarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, buf []
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeMetrics = append(orig.ScopeMetrics, NewOrigPtrScopeMetrics())
+			orig.ScopeMetrics = append(orig.ScopeMetrics, NewOrigScopeMetrics())
 			err = UnmarshalProtoOrigScopeMetrics(orig.ScopeMetrics[len(orig.ScopeMetrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err

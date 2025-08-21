@@ -14,16 +14,17 @@ import (
 	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigEntityRef(t *testing.T) {
-	src := NewOrigPtrEntityRef()
-	dest := NewOrigPtrEntityRef()
+	src := NewOrigEntityRef()
+	dest := NewOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
-	FillOrigTestEntityRef(src)
+	assert.Equal(t, NewOrigEntityRef(), dest)
+	*src = *GenTestOrigEntityRef()
 	CopyOrigEntityRef(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigEntityRef(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrEntityRef()
+	dest := NewOrigEntityRef()
 	UnmarshalJSONOrigEntityRef(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
+	for name, src := range genTestEncodingValuesEntityRef() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigEntityRef(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigEntityRef()
+				UnmarshalJSONOrigEntityRef(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigEntityRef(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigEntityRefFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigEntityRef(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrEntityRef()
-			UnmarshalJSONOrigEntityRef(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigEntityRef()
+			require.Error(t, UnmarshalProtoOrigEntityRef(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRefUnknown(t *testing.T) {
-	dest := NewOrigPtrEntityRef()
+	dest := NewOrigEntityRef()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrEntityRef(), dest)
+	assert.Equal(t, NewOrigEntityRef(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigEntityRef(src))
-			gotSize := MarshalProtoOrigEntityRef(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesEntityRef() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrEntityRef()
-			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigEntityRef(src))
+				gotSize := MarshalProtoOrigEntityRef(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigEntityRef()
+				require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigEntityRef(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
-	for name, src := range getEncodingTestValuesEntityRef() {
+	for name, src := range genTestEncodingValuesEntityRef() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigEntityRef(src))
 			gotSize := MarshalProtoOrigEntityRef(src, buf)
@@ -90,20 +119,33 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrEntityRef()
+			dest := NewOrigEntityRef()
 			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesEntityRef() map[string]*otlpcommon.EntityRef {
+func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                   {0x02},
+		"SchemaUrl/wrong_wire_type":       {0xc},
+		"SchemaUrl/missing_value":         {0xa},
+		"Type/wrong_wire_type":            {0x14},
+		"Type/missing_value":              {0x12},
+		"IdKeys/wrong_wire_type":          {0x1c},
+		"IdKeys/missing_value":            {0x1a},
+		"DescriptionKeys/wrong_wire_type": {0x24},
+		"DescriptionKeys/missing_value":   {0x22},
+	}
+}
+
+func genTestEncodingValuesEntityRef() map[string]*otlpcommon.EntityRef {
 	return map[string]*otlpcommon.EntityRef{
-		"empty": NewOrigPtrEntityRef(),
-		"fill_test": func() *otlpcommon.EntityRef {
-			src := NewOrigPtrEntityRef()
-			FillOrigTestEntityRef(src)
-			return src
-		}(),
+		"empty":                            NewOrigEntityRef(),
+		"SchemaUrl/test":                   {SchemaUrl: "test_schemaurl"},
+		"Type/test":                        {Type: "test_type"},
+		"IdKeys/default_and_test":          {IdKeys: []string{"", "test_idkeys"}},
+		"DescriptionKeys/default_and_test": {DescriptionKeys: []string{"", "test_descriptionkeys"}},
 	}
 }

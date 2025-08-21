@@ -8,18 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportLogsPartialSuccess() otlpcollectorlogs.ExportLogsPartialSuccess {
-	return otlpcollectorlogs.ExportLogsPartialSuccess{}
+var protoPoolExportLogsPartialSuccess = sync.Pool{
+	New: func() any {
+		return &otlpcollectorlogs.ExportLogsPartialSuccess{}
+	},
 }
 
-func NewOrigPtrExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
-	return &otlpcollectorlogs.ExportLogsPartialSuccess{}
+func NewOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorlogs.ExportLogsPartialSuccess{}
+	}
+	return protoPoolExportLogsPartialSuccess.Get().(*otlpcollectorlogs.ExportLogsPartialSuccess)
+}
+
+func DeleteOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportLogsPartialSuccess.Put(orig)
+	}
 }
 
 func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPartialSuccess) {
@@ -27,9 +49,11 @@ func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPar
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func FillOrigTestExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) {
+func GenTestOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+	orig := NewOrigExportLogsPartialSuccess()
 	orig.RejectedLogRecords = int64(13)
 	orig.ErrorMessage = "test_errormessage"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -48,7 +72,7 @@ func MarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsP
 
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedLogRecords", "rejected_log_records":
 			orig.RejectedLogRecords = iter.ReadInt64()
@@ -57,8 +81,7 @@ func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLog
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) int {

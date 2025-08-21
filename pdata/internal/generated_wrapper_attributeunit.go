@@ -8,18 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigAttributeUnit() otlpprofiles.AttributeUnit {
-	return otlpprofiles.AttributeUnit{}
+var protoPoolAttributeUnit = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.AttributeUnit{}
+	},
 }
 
-func NewOrigPtrAttributeUnit() *otlpprofiles.AttributeUnit {
-	return &otlpprofiles.AttributeUnit{}
+func NewOrigAttributeUnit() *otlpprofiles.AttributeUnit {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.AttributeUnit{}
+	}
+	return protoPoolAttributeUnit.Get().(*otlpprofiles.AttributeUnit)
+}
+
+func DeleteOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolAttributeUnit.Put(orig)
+	}
 }
 
 func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
@@ -27,9 +49,11 @@ func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.UnitStrindex = src.UnitStrindex
 }
 
-func FillOrigTestAttributeUnit(orig *otlpprofiles.AttributeUnit) {
+func GenTestOrigAttributeUnit() *otlpprofiles.AttributeUnit {
+	orig := NewOrigAttributeUnit()
 	orig.AttributeKeyStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -48,7 +72,7 @@ func MarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, dest *json.S
 
 // UnmarshalJSONOrigAttributeUnit unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributeKeyStrindex", "attribute_key_strindex":
 			orig.AttributeKeyStrindex = iter.ReadInt32()
@@ -57,8 +81,7 @@ func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {

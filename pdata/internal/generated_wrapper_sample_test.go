@@ -14,16 +14,17 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSample(t *testing.T) {
-	src := NewOrigPtrSample()
-	dest := NewOrigPtrSample()
+	src := NewOrigSample()
+	dest := NewOrigSample()
 	CopyOrigSample(dest, src)
-	assert.Equal(t, NewOrigPtrSample(), dest)
-	FillOrigTestSample(src)
+	assert.Equal(t, NewOrigSample(), dest)
+	*src = *GenTestOrigSample()
 	CopyOrigSample(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigSample(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSampleUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSample()
+	dest := NewOrigSample()
 	UnmarshalJSONOrigSample(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSample(), dest)
+	assert.Equal(t, NewOrigSample(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
+	for name, src := range genTestEncodingValuesSample() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSample(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSample()
+				UnmarshalJSONOrigSample(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSample(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSampleFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSample() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSample(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSample()
-			UnmarshalJSONOrigSample(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigSample()
+			require.Error(t, UnmarshalProtoOrigSample(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSampleUnknown(t *testing.T) {
-	dest := NewOrigPtrSample()
+	dest := NewOrigSample()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSample(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSample(), dest)
+	assert.Equal(t, NewOrigSample(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSample(src))
-			gotSize := MarshalProtoOrigSample(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesSample() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrSample()
-			require.NoError(t, UnmarshalProtoOrigSample(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSample(src))
+				gotSize := MarshalProtoOrigSample(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSample()
+				require.NoError(t, UnmarshalProtoOrigSample(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSample(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
-	for name, src := range getEncodingTestValuesSample() {
+	for name, src := range genTestEncodingValuesSample() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigSample(src))
 			gotSize := MarshalProtoOrigSample(src, buf)
@@ -90,21 +119,39 @@ func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSample()
+			dest := NewOrigSample()
 			require.NoError(t, UnmarshalProtoOrigSample(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesSample() map[string]*otlpprofiles.Sample {
+func genTestFailingUnmarshalProtoValuesSample() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                       {0x02},
+		"LocationsStartIndex/wrong_wire_type": {0xc},
+		"LocationsStartIndex/missing_value":   {0x8},
+		"LocationsLength/wrong_wire_type":     {0x14},
+		"LocationsLength/missing_value":       {0x10},
+		"Value/wrong_wire_type":               {0x1c},
+		"Value/missing_value":                 {0x1a},
+		"AttributeIndices/wrong_wire_type":    {0x24},
+		"AttributeIndices/missing_value":      {0x22},
+		"LinkIndex/wrong_wire_type":           {0x2c},
+		"LinkIndex/missing_value":             {0x28},
+		"TimestampsUnixNano/wrong_wire_type":  {0x34},
+		"TimestampsUnixNano/missing_value":    {0x32},
+	}
+}
+
+func genTestEncodingValuesSample() map[string]*otlpprofiles.Sample {
 	return map[string]*otlpprofiles.Sample{
-		"empty": NewOrigPtrSample(),
-		"fill_test": func() *otlpprofiles.Sample {
-			src := NewOrigPtrSample()
-			FillOrigTestSample(src)
-			return src
-		}(),
-		"default_linkindex": {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(0)}},
+		"empty":                             NewOrigSample(),
+		"LocationsStartIndex/test":          {LocationsStartIndex: int32(13)},
+		"LocationsLength/test":              {LocationsLength: int32(13)},
+		"Value/default_and_test":            {Value: []int64{int64(0), int64(13)}},
+		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}}, "LinkIndex/default": {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(0)}},
+		"LinkIndex/test":                      {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}},
+		"TimestampsUnixNano/default_and_test": {TimestampsUnixNano: []uint64{uint64(0), uint64(13)}},
 	}
 }

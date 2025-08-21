@@ -8,18 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigLine() otlpprofiles.Line {
-	return otlpprofiles.Line{}
+var protoPoolLine = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.Line{}
+	},
 }
 
-func NewOrigPtrLine() *otlpprofiles.Line {
-	return &otlpprofiles.Line{}
+func NewOrigLine() *otlpprofiles.Line {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Line{}
+	}
+	return protoPoolLine.Get().(*otlpprofiles.Line)
+}
+
+func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolLine.Put(orig)
+	}
 }
 
 func CopyOrigLine(dest, src *otlpprofiles.Line) {
@@ -28,10 +50,12 @@ func CopyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.Column = src.Column
 }
 
-func FillOrigTestLine(orig *otlpprofiles.Line) {
+func GenTestOrigLine() *otlpprofiles.Line {
+	orig := NewOrigLine()
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -54,7 +78,7 @@ func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
 
 // UnmarshalJSONOrigLine unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "functionIndex", "function_index":
 			orig.FunctionIndex = iter.ReadInt32()
@@ -65,8 +89,7 @@ func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigLine(orig *otlpprofiles.Line) int {

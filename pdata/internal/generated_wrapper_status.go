@@ -8,18 +8,40 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigStatus() otlptrace.Status {
-	return otlptrace.Status{}
+var protoPoolStatus = sync.Pool{
+	New: func() any {
+		return &otlptrace.Status{}
+	},
 }
 
-func NewOrigPtrStatus() *otlptrace.Status {
-	return &otlptrace.Status{}
+func NewOrigStatus() *otlptrace.Status {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Status{}
+	}
+	return protoPoolStatus.Get().(*otlptrace.Status)
+}
+
+func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolStatus.Put(orig)
+	}
 }
 
 func CopyOrigStatus(dest, src *otlptrace.Status) {
@@ -27,9 +49,11 @@ func CopyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 }
 
-func FillOrigTestStatus(orig *otlptrace.Status) {
+func GenTestOrigStatus() *otlptrace.Status {
+	orig := NewOrigStatus()
 	orig.Message = "test_message"
 	orig.Code = otlptrace.Status_StatusCode(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -49,7 +73,7 @@ func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
 
 // UnmarshalJSONOrigStatus unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "message":
 			orig.Message = iter.ReadString()
@@ -58,8 +82,7 @@ func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigStatus(orig *otlptrace.Status) int {

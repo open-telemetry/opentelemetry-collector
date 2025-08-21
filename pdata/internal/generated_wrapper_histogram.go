@@ -8,18 +8,44 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigHistogram() otlpmetrics.Histogram {
-	return otlpmetrics.Histogram{}
+var protoPoolHistogram = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.Histogram{}
+	},
 }
 
-func NewOrigPtrHistogram() *otlpmetrics.Histogram {
-	return &otlpmetrics.Histogram{}
+func NewOrigHistogram() *otlpmetrics.Histogram {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Histogram{}
+	}
+	return protoPoolHistogram.Get().(*otlpmetrics.Histogram)
+}
+
+func DeleteOrigHistogram(orig *otlpmetrics.Histogram, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.DataPoints {
+		DeleteOrigHistogramDataPoint(orig.DataPoints[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolHistogram.Put(orig)
+	}
 }
 
 func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
@@ -27,9 +53,11 @@ func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func FillOrigTestHistogram(orig *otlpmetrics.Histogram) {
+func GenTestOrigHistogram() *otlpmetrics.Histogram {
+	orig := NewOrigHistogram()
 	orig.DataPoints = GenerateOrigTestHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -55,17 +83,20 @@ func MarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, dest *json.Stream) {
 
 // UnmarshalJSONOrigHistogram unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigHistogramDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigHistogramDataPoint())
+				UnmarshalJSONOrigHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigHistogram(orig *otlpmetrics.Histogram) int {
@@ -126,7 +157,7 @@ func UnmarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrHistogramDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigHistogramDataPoint())
 			err = UnmarshalProtoOrigHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

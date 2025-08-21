@@ -65,7 +65,7 @@ func TestTracesProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Traces as pdata struct.
-	td := NewExportRequestFromTraces(ptrace.Traces(internal.GenerateTestTraces()))
+	td := NewExportRequestFromTraces(ptrace.Traces(internal.NewTraces(internal.GenTestOrigExportTraceServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := td.MarshalProto()

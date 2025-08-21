@@ -14,16 +14,17 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigLink(t *testing.T) {
-	src := NewOrigPtrLink()
-	dest := NewOrigPtrLink()
+	src := NewOrigLink()
+	dest := NewOrigLink()
 	CopyOrigLink(dest, src)
-	assert.Equal(t, NewOrigPtrLink(), dest)
-	FillOrigTestLink(src)
+	assert.Equal(t, NewOrigLink(), dest)
+	*src = *GenTestOrigLink()
 	CopyOrigLink(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigLink(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrLink()
+	dest := NewOrigLink()
 	UnmarshalJSONOrigLink(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrLink(), dest)
+	assert.Equal(t, NewOrigLink(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
+	for name, src := range genTestEncodingValuesLink() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigLink(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigLink()
+				UnmarshalJSONOrigLink(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigLink(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigLinkFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesLink() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigLink(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrLink()
-			UnmarshalJSONOrigLink(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigLink()
+			require.Error(t, UnmarshalProtoOrigLink(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
-	dest := NewOrigPtrLink()
+	dest := NewOrigLink()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLink(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrLink(), dest)
+	assert.Equal(t, NewOrigLink(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigLink(src))
-			gotSize := MarshalProtoOrigLink(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesLink() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrLink()
-			require.NoError(t, UnmarshalProtoOrigLink(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigLink(src))
+				gotSize := MarshalProtoOrigLink(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigLink()
+				require.NoError(t, UnmarshalProtoOrigLink(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigLink(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
-	for name, src := range getEncodingTestValuesLink() {
+	for name, src := range genTestEncodingValuesLink() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigLink(src))
 			gotSize := MarshalProtoOrigLink(src, buf)
@@ -90,20 +119,27 @@ func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrLink()
+			dest := NewOrigLink()
 			require.NoError(t, UnmarshalProtoOrigLink(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesLink() map[string]*otlpprofiles.Link {
+func genTestFailingUnmarshalProtoValuesLink() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":           {0x02},
+		"TraceId/wrong_wire_type": {0xc},
+		"TraceId/missing_value":   {0xa},
+		"SpanId/wrong_wire_type":  {0x14},
+		"SpanId/missing_value":    {0x12},
+	}
+}
+
+func genTestEncodingValuesLink() map[string]*otlpprofiles.Link {
 	return map[string]*otlpprofiles.Link{
-		"empty": NewOrigPtrLink(),
-		"fill_test": func() *otlpprofiles.Link {
-			src := NewOrigPtrLink()
-			FillOrigTestLink(src)
-			return src
-		}(),
+		"empty":        NewOrigLink(),
+		"TraceId/test": {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":  {SpanId: *GenTestOrigSpanID()},
 	}
 }

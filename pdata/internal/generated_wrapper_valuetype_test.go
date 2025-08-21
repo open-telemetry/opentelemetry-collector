@@ -14,16 +14,17 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigValueType(t *testing.T) {
-	src := NewOrigPtrValueType()
-	dest := NewOrigPtrValueType()
+	src := NewOrigValueType()
+	dest := NewOrigValueType()
 	CopyOrigValueType(dest, src)
-	assert.Equal(t, NewOrigPtrValueType(), dest)
-	FillOrigTestValueType(src)
+	assert.Equal(t, NewOrigValueType(), dest)
+	*src = *GenTestOrigValueType()
 	CopyOrigValueType(dest, src)
 	assert.Equal(t, src, dest)
 }
@@ -31,54 +32,82 @@ func TestCopyOrigValueType(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	UnmarshalJSONOrigValueType(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
+	for name, src := range genTestEncodingValuesValueType() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigValueType(src, stream)
+				require.NoError(t, stream.Error())
+
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigValueType()
+				UnmarshalJSONOrigValueType(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigValueType(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigValueTypeFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesValueType() {
 		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigValueType(src, stream)
-			require.NoError(t, stream.Error())
-
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrValueType()
-			UnmarshalJSONOrigValueType(dest, iter)
-			require.NoError(t, iter.Error())
-
-			assert.Equal(t, src, dest)
+			dest := NewOrigValueType()
+			require.Error(t, UnmarshalProtoOrigValueType(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigValueType(src))
-			gotSize := MarshalProtoOrigValueType(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+	for name, src := range genTestEncodingValuesValueType() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrValueType()
-			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigValueType(src))
+				gotSize := MarshalProtoOrigValueType(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigValueType()
+				require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigValueType(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
-	for name, src := range getEncodingTestValuesValueType() {
+	for name, src := range genTestEncodingValuesValueType() {
 		t.Run(name, func(t *testing.T) {
 			buf := make([]byte, SizeProtoOrigValueType(src))
 			gotSize := MarshalProtoOrigValueType(src, buf)
@@ -90,20 +119,30 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func getEncodingTestValuesValueType() map[string]*otlpprofiles.ValueType {
+func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"TypeStrindex/wrong_wire_type":           {0xc},
+		"TypeStrindex/missing_value":             {0x8},
+		"UnitStrindex/wrong_wire_type":           {0x14},
+		"UnitStrindex/missing_value":             {0x10},
+		"AggregationTemporality/wrong_wire_type": {0x1c},
+		"AggregationTemporality/missing_value":   {0x18},
+	}
+}
+
+func genTestEncodingValuesValueType() map[string]*otlpprofiles.ValueType {
 	return map[string]*otlpprofiles.ValueType{
-		"empty": NewOrigPtrValueType(),
-		"fill_test": func() *otlpprofiles.ValueType {
-			src := NewOrigPtrValueType()
-			FillOrigTestValueType(src)
-			return src
-		}(),
+		"empty":                       NewOrigValueType(),
+		"TypeStrindex/test":           {TypeStrindex: int32(13)},
+		"UnitStrindex/test":           {UnitStrindex: int32(13)},
+		"AggregationTemporality/test": {AggregationTemporality: otlpprofiles.AggregationTemporality(13)},
 	}
 }

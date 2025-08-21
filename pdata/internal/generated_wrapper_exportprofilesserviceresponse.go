@@ -8,26 +8,52 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportProfilesServiceResponse() otlpcollectorprofiles.ExportProfilesServiceResponse {
-	return otlpcollectorprofiles.ExportProfilesServiceResponse{}
+var protoPoolExportProfilesServiceResponse = sync.Pool{
+	New: func() any {
+		return &otlpcollectorprofiles.ExportProfilesServiceResponse{}
+	},
 }
 
-func NewOrigPtrExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
-	return &otlpcollectorprofiles.ExportProfilesServiceResponse{}
+func NewOrigExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorprofiles.ExportProfilesServiceResponse{}
+	}
+	return protoPoolExportProfilesServiceResponse.Get().(*otlpcollectorprofiles.ExportProfilesServiceResponse)
+}
+
+func DeleteOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigExportProfilesPartialSuccess(&orig.PartialSuccess, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportProfilesServiceResponse.Put(orig)
+	}
 }
 
 func CopyOrigExportProfilesServiceResponse(dest, src *otlpcollectorprofiles.ExportProfilesServiceResponse) {
 	CopyOrigExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func FillOrigTestExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) {
-	FillOrigTestExportProfilesPartialSuccess(&orig.PartialSuccess)
+func GenTestOrigExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
+	orig := NewOrigExportProfilesServiceResponse()
+	orig.PartialSuccess = *GenTestOrigExportProfilesPartialSuccess()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -40,15 +66,14 @@ func MarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.Ex
 
 // UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 			UnmarshalJSONOrigExportProfilesPartialSuccess(&orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) int {

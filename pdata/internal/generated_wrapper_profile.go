@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
@@ -15,12 +16,42 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigProfile() otlpprofiles.Profile {
-	return otlpprofiles.Profile{}
+var protoPoolProfile = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.Profile{}
+	},
 }
 
-func NewOrigPtrProfile() *otlpprofiles.Profile {
-	return &otlpprofiles.Profile{}
+func NewOrigProfile() *otlpprofiles.Profile {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Profile{}
+	}
+	return protoPoolProfile.Get().(*otlpprofiles.Profile)
+}
+
+func DeleteOrigProfile(orig *otlpprofiles.Profile, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.SampleType {
+		DeleteOrigValueType(orig.SampleType[i], true)
+	}
+	for i := range orig.Sample {
+		DeleteOrigSample(orig.Sample[i], true)
+	}
+	DeleteOrigValueType(&orig.PeriodType, false)
+	DeleteOrigProfileID(&orig.ProfileId, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolProfile.Put(orig)
+	}
 }
 
 func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
@@ -40,13 +71,14 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func FillOrigTestProfile(orig *otlpprofiles.Profile) {
+func GenTestOrigProfile() *otlpprofiles.Profile {
+	orig := NewOrigProfile()
 	orig.SampleType = GenerateOrigTestValueTypeSlice()
 	orig.Sample = GenerateOrigTestSampleSlice()
 	orig.LocationIndices = GenerateOrigTestInt32Slice()
 	orig.TimeNanos = 1234567890
 	orig.DurationNanos = 1234567890
-	FillOrigTestValueType(&orig.PeriodType)
+	orig.PeriodType = *GenTestOrigValueType()
 	orig.Period = int64(13)
 	orig.CommentStrindices = GenerateOrigTestInt32Slice()
 	orig.DefaultSampleTypeIndex = int32(13)
@@ -55,6 +87,7 @@ func FillOrigTestProfile(orig *otlpprofiles.Profile) {
 	orig.OriginalPayloadFormat = "test_originalpayloadformat"
 	orig.OriginalPayload = GenerateOrigTestByteSlice()
 	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -150,14 +183,25 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 
 // UnmarshalJSONOrigProfile unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "sampleType", "sample_type":
-			orig.SampleType = UnmarshalJSONOrigValueTypeSlice(iter)
+			for iter.ReadArray() {
+				orig.SampleType = append(orig.SampleType, NewOrigValueType())
+				UnmarshalJSONOrigValueType(orig.SampleType[len(orig.SampleType)-1], iter)
+			}
+
 		case "sample":
-			orig.Sample = UnmarshalJSONOrigSampleSlice(iter)
+			for iter.ReadArray() {
+				orig.Sample = append(orig.Sample, NewOrigSample())
+				UnmarshalJSONOrigSample(orig.Sample[len(orig.Sample)-1], iter)
+			}
+
 		case "locationIndices", "location_indices":
-			orig.LocationIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.LocationIndices = append(orig.LocationIndices, iter.ReadInt32())
+			}
+
 		case "timeNanos", "time_nanos":
 			orig.TimeNanos = iter.ReadInt64()
 		case "durationNanos", "duration_nanos":
@@ -167,24 +211,29 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 		case "period":
 			orig.Period = iter.ReadInt64()
 		case "commentStrindices", "comment_strindices":
-			orig.CommentStrindices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.CommentStrindices = append(orig.CommentStrindices, iter.ReadInt32())
+			}
+
 		case "defaultSampleTypeIndex", "default_sample_type_index":
 			orig.DefaultSampleTypeIndex = iter.ReadInt32()
 		case "profileId", "profile_id":
-			orig.ProfileId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigProfileID(&orig.ProfileId, iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "originalPayloadFormat", "original_payload_format":
 			orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			orig.OriginalPayload = UnmarshalJSONOrigByteSlice(iter)
+			orig.OriginalPayload = iter.ReadBytes()
 		case "attributeIndices", "attribute_indices":
-			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+			for iter.ReadArray() {
+				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
@@ -381,7 +430,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SampleType = append(orig.SampleType, NewOrigPtrValueType())
+			orig.SampleType = append(orig.SampleType, NewOrigValueType())
 			err = UnmarshalProtoOrigValueType(orig.SampleType[len(orig.SampleType)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -397,7 +446,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Sample = append(orig.Sample, NewOrigPtrSample())
+			orig.Sample = append(orig.Sample, NewOrigSample())
 			err = UnmarshalProtoOrigSample(orig.Sample[len(orig.Sample)-1], buf[startPos:pos])
 			if err != nil {
 				return err

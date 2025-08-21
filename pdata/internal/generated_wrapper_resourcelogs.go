@@ -8,18 +8,45 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceLogs() otlplogs.ResourceLogs {
-	return otlplogs.ResourceLogs{}
+var protoPoolResourceLogs = sync.Pool{
+	New: func() any {
+		return &otlplogs.ResourceLogs{}
+	},
 }
 
-func NewOrigPtrResourceLogs() *otlplogs.ResourceLogs {
-	return &otlplogs.ResourceLogs{}
+func NewOrigResourceLogs() *otlplogs.ResourceLogs {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlplogs.ResourceLogs{}
+	}
+	return protoPoolResourceLogs.Get().(*otlplogs.ResourceLogs)
+}
+
+func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigResource(&orig.Resource, false)
+	for i := range orig.ScopeLogs {
+		DeleteOrigScopeLogs(orig.ScopeLogs[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResourceLogs.Put(orig)
+	}
 }
 
 func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
@@ -28,10 +55,12 @@ func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestResourceLogs(orig *otlplogs.ResourceLogs) {
-	FillOrigTestResource(&orig.Resource)
+func GenTestOrigResourceLogs() *otlplogs.ResourceLogs {
+	orig := NewOrigResourceLogs()
+	orig.Resource = *GenTestOrigResource()
 	orig.ScopeLogs = GenerateOrigTestScopeLogsSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +87,22 @@ func MarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream)
 
 // UnmarshalJSONOrigResourceLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeLogs", "scope_logs":
-			orig.ScopeLogs = UnmarshalJSONOrigScopeLogsSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeLogs = append(orig.ScopeLogs, NewOrigScopeLogs())
+				UnmarshalJSONOrigScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) int {
@@ -160,7 +192,7 @@ func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) err
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeLogs = append(orig.ScopeLogs, NewOrigPtrScopeLogs())
+			orig.ScopeLogs = append(orig.ScopeLogs, NewOrigScopeLogs())
 			err = UnmarshalProtoOrigScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], buf[startPos:pos])
 			if err != nil {
 				return err

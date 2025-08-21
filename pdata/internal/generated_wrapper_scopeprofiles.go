@@ -8,18 +8,45 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigScopeProfiles() otlpprofiles.ScopeProfiles {
-	return otlpprofiles.ScopeProfiles{}
+var protoPoolScopeProfiles = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.ScopeProfiles{}
+	},
 }
 
-func NewOrigPtrScopeProfiles() *otlpprofiles.ScopeProfiles {
-	return &otlpprofiles.ScopeProfiles{}
+func NewOrigScopeProfiles() *otlpprofiles.ScopeProfiles {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.ScopeProfiles{}
+	}
+	return protoPoolScopeProfiles.Get().(*otlpprofiles.ScopeProfiles)
+}
+
+func DeleteOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigInstrumentationScope(&orig.Scope, false)
+	for i := range orig.Profiles {
+		DeleteOrigProfile(orig.Profiles[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolScopeProfiles.Put(orig)
+	}
 }
 
 func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
@@ -28,10 +55,12 @@ func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func FillOrigTestScopeProfiles(orig *otlpprofiles.ScopeProfiles) {
-	FillOrigTestInstrumentationScope(&orig.Scope)
+func GenTestOrigScopeProfiles() *otlpprofiles.ScopeProfiles {
+	orig := NewOrigScopeProfiles()
+	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.Profiles = GenerateOrigTestProfileSlice()
 	orig.SchemaUrl = "test_schemaurl"
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -58,19 +87,22 @@ func MarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, dest *json.S
 
 // UnmarshalJSONOrigScopeProfiles unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
 		case "profiles":
-			orig.Profiles = UnmarshalJSONOrigProfileSlice(iter)
+			for iter.ReadArray() {
+				orig.Profiles = append(orig.Profiles, NewOrigProfile())
+				UnmarshalJSONOrigProfile(orig.Profiles[len(orig.Profiles)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles) int {
@@ -160,7 +192,7 @@ func UnmarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byt
 				return err
 			}
 			startPos := pos - length
-			orig.Profiles = append(orig.Profiles, NewOrigPtrProfile())
+			orig.Profiles = append(orig.Profiles, NewOrigProfile())
 			err = UnmarshalProtoOrigProfile(orig.Profiles[len(orig.Profiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err

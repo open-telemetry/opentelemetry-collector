@@ -34,7 +34,7 @@ func newMetric(orig *otlpmetrics.Metric, state *internal.State) Metric {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetric() Metric {
-	return newMetric(internal.NewOrigPtrMetric(), internal.NewState())
+	return newMetric(internal.NewOrigMetric(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

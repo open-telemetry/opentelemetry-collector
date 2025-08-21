@@ -26,8 +26,8 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeSpans(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState)) })
-	assert.Panics(t, func() { newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { newScopeSpans(internal.NewOrigScopeSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -40,14 +40,14 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewOrigPtrScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeSpans_Spans(t *testing.T) {
@@ -68,7 +68,6 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 }
 
 func generateTestScopeSpans() ScopeSpans {
-	ms := NewScopeSpans()
-	internal.FillOrigTestScopeSpans(ms.orig)
+	ms := newScopeSpans(internal.GenTestOrigScopeSpans(), internal.NewState())
 	return ms
 }
