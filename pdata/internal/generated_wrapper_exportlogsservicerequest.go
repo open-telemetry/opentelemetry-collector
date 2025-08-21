@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,8 +32,37 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
+var protoPoolExportLogsServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectorlogs.ExportLogsServiceRequest{}
+	},
+}
+
 func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
-	return &otlpcollectorlogs.ExportLogsServiceRequest{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorlogs.ExportLogsServiceRequest{}
+	}
+	return protoPoolExportLogsServiceRequest.Get().(*otlpcollectorlogs.ExportLogsServiceRequest)
+}
+
+func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceLogs {
+		DeleteOrigResourceLogs(orig.ResourceLogs[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportLogsServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {

@@ -8,14 +8,45 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolResourceProfiles = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.ResourceProfiles{}
+	},
+}
+
 func NewOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
-	return &otlpprofiles.ResourceProfiles{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.ResourceProfiles{}
+	}
+	return protoPoolResourceProfiles.Get().(*otlpprofiles.ResourceProfiles)
+}
+
+func DeleteOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigResource(&orig.Resource, false)
+	for i := range orig.ScopeProfiles {
+		DeleteOrigScopeProfiles(orig.ScopeProfiles[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResourceProfiles.Put(orig)
+	}
 }
 
 func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {

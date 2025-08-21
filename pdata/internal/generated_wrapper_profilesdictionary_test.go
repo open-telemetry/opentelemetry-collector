@@ -14,6 +14,7 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -40,20 +41,29 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigProfilesDictionary(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigProfilesDictionary()
-			UnmarshalJSONOrigProfilesDictionary(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigProfilesDictionary(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigProfilesDictionary()
+				UnmarshalJSONOrigProfilesDictionary(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfilesDictionary(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +85,25 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
-			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name, func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigProfilesDictionary()
-			require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
+				gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigProfilesDictionary()
+				require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfilesDictionary(dest, true)
+			})
+		}
 	}
 }
 

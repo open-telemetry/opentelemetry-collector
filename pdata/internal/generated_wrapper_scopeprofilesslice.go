@@ -25,6 +25,7 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigScopeProfiles(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.

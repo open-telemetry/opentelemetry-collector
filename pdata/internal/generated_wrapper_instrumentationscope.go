@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,8 +32,37 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
+var protoPoolInstrumentationScope = sync.Pool{
+	New: func() any {
+		return &otlpcommon.InstrumentationScope{}
+	},
+}
+
 func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
-	return &otlpcommon.InstrumentationScope{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.InstrumentationScope{}
+	}
+	return protoPoolInstrumentationScope.Get().(*otlpcommon.InstrumentationScope)
+}
+
+func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolInstrumentationScope.Put(orig)
+	}
 }
 
 func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {

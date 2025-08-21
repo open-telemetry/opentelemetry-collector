@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -18,8 +19,39 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolExemplar = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.Exemplar{}
+	},
+}
+
 func NewOrigExemplar() *otlpmetrics.Exemplar {
-	return &otlpmetrics.Exemplar{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Exemplar{}
+	}
+	return protoPoolExemplar.Get().(*otlpmetrics.Exemplar)
+}
+
+func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.FilteredAttributes {
+		DeleteOrigKeyValue(&orig.FilteredAttributes[i], false)
+	}
+	DeleteOrigSpanID(&orig.SpanId, false)
+	DeleteOrigTraceID(&orig.TraceId, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExemplar.Put(orig)
+	}
 }
 
 func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {

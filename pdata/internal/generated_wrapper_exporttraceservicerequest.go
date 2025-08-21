@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,8 +32,37 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
+var protoPoolExportTraceServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectortrace.ExportTraceServiceRequest{}
+	},
+}
+
 func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
-	return &otlpcollectortrace.ExportTraceServiceRequest{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectortrace.ExportTraceServiceRequest{}
+	}
+	return protoPoolExportTraceServiceRequest.Get().(*otlpcollectortrace.ExportTraceServiceRequest)
+}
+
+func DeleteOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceSpans {
+		DeleteOrigResourceSpans(orig.ResourceSpans[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportTraceServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
