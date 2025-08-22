@@ -36,6 +36,7 @@ func TestPrintCommand(t *testing.T) {
 		name      string
 		ofmt      string
 		path      string
+		disableFF bool // disable the feature flag
 		errString string
 		outString map[string]string
 	}{
@@ -52,6 +53,12 @@ func TestPrintCommand(t *testing.T) {
 			name:      "invalid field",
 			path:      invalidConfig,
 			errString: "'timeout' time: invalid duration",
+		},
+		{
+			name:      "no feature flag",
+			path:      validConfig,
+			disableFF: true,
+			errString: "print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command",
 		},
 		{
 			name: "field is set yaml",
@@ -109,6 +116,32 @@ func TestPrintCommand(t *testing.T) {
 		testModes := []string{"redacted", "unredacted"}
 		for _, mode := range testModes {
 			t.Run(fmt.Sprint(test.name, "_", mode), func(t *testing.T) {
+				// Save current feature flag state and restore after test
+				fg := featuregate.GlobalRegistry()
+				var gate *featuregate.Gate
+				var originalState bool
+
+				fg.VisitAll(func(g *featuregate.Gate) {
+					if g.ID() == "otelcol.printInitialConfig" {
+						gate = g
+						originalState = g.IsEnabled()
+					}
+				})
+
+				// Set feature flag state for this test
+				if test.disableFF {
+					require.NoError(t, fg.Set("otelcol.printInitialConfig", false))
+				} else {
+					require.NoError(t, fg.Set("otelcol.printInitialConfig", true))
+				}
+
+				// Restore original state after test
+				defer func() {
+					if gate != nil {
+						require.NoError(t, fg.Set("otelcol.printInitialConfig", originalState))
+					}
+				}()
+
 				testR := component.MustNewType("r")
 				testE := component.MustNewType("e")
 				testReceiver := xreceiver.NewFactory(
@@ -163,18 +196,19 @@ func TestPrintCommand(t *testing.T) {
 						ResolverSettings: set,
 					},
 				}, flags(featuregate.GlobalRegistry()), &stdout, &stderr)
-				var validateFlag string
-				if mode == "unredacted" {
-					validateFlag = "--validate=true"
-				} else {
-					validateFlag = "--validate=false"
-				}
-				cmd.SetArgs([]string{
+				args := []string{
 					"--mode", mode,
 					"--format", test.ofmt,
-					"--feature-gates=otelcol.printInitialConfig",
-					validateFlag,
-				})
+				}
+				if !test.disableFF {
+					args = append(args, "--feature-gates=otelcol.printInitialConfig")
+				}
+				if mode == "unredacted" {
+					args = append(args, "--validate=true")
+				} else {
+					args = append(args, "--validate=false")
+				}
+				cmd.SetArgs(args)
 				err := cmd.Execute()
 
 				if test.errString != "" {
