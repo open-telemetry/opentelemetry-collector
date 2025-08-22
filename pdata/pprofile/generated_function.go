@@ -44,8 +44,8 @@ func (ms Function) MoveTo(dest Function) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Function{}
+	internal.DeleteOrigFunction(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // NameStrindex returns the namestrindex associated with this Function.

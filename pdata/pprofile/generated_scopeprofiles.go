@@ -45,8 +45,8 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ScopeProfiles{}
+	internal.DeleteOrigScopeProfiles(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeProfiles.

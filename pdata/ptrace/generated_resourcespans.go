@@ -45,8 +45,8 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ResourceSpans{}
+	internal.DeleteOrigResourceSpans(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceSpans.
