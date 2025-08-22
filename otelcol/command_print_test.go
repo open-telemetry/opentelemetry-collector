@@ -51,13 +51,14 @@ func TestPrintCommand(t *testing.T) {
 	defaultConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_default.yaml"))
 
 	tests := []struct {
-		name      string
-		ofmt      string
-		path      string
-		errString string
-		outString map[string]string
-		disableFF bool // disable the feature flag
-		validate  bool // add validation (even redacted)
+		name            string
+		ofmt            string
+		path            string
+		errString       string
+		outString       map[string]string
+		disableFF       bool // disable the feature flag
+		validate        bool // add validation (even redacted)
+		errOnlyRedacted bool // error applies only in redacted mode
 	}{
 		{
 			name:      "file not found",
@@ -69,9 +70,10 @@ func TestPrintCommand(t *testing.T) {
 			path: validConfig,
 		},
 		{
-			name:      "invalid syntax",
-			path:      invalidConfig1,
-			errString: "'timeout' time: invalid duration",
+			name:            "invalid syntax without validate",
+			path:            invalidConfig1,
+			errString:       "'timeout' time: invalid duration",
+			errOnlyRedacted: true,
 		},
 		{
 			name:      "validation fail",
@@ -138,7 +140,7 @@ func TestPrintCommand(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		testModes := []string{"redacted", "unredacted"}
+		testModes := []string{"redacted", "unredacted", "unrecognized"}
 		for _, mode := range testModes {
 			t.Run(fmt.Sprint(test.name, "_", mode), func(t *testing.T) {
 				// Save current feature flag state and restore after test
@@ -210,7 +212,7 @@ func TestPrintCommand(t *testing.T) {
 					"--mode", mode,
 					"--format", test.ofmt,
 				}
-				if mode == "unredacted" || test.validate {
+				if test.validate {
 					args = append(args, "--validate=true")
 				} else {
 					args = append(args, "--validate=false")
@@ -218,8 +220,28 @@ func TestPrintCommand(t *testing.T) {
 				cmd.SetArgs(args)
 				err := cmd.Execute()
 
-				if test.errString != "" {
-					require.ErrorContains(t, err, test.errString)
+				expectErr := test.errString != ""
+				expectErrMsg := test.errString
+
+				switch mode {
+				case "redacted":
+				case "unredacted":
+					if test.errOnlyRedacted {
+						expectErr = false
+						expectErrMsg = ""
+					}
+				default:
+					expectErr = true
+					if test.disableFF {
+						expectErrMsg = "feature gate"
+					} else {
+						expectErrMsg = "unrecognized"
+					}
+				}
+
+				if expectErr {
+					require.Error(t, err)
+					require.ErrorContains(t, err, expectErrMsg)
 				} else {
 					require.NoError(t, err)
 				}
