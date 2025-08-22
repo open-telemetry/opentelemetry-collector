@@ -58,7 +58,7 @@ func TestPrintCommand(t *testing.T) {
 			name:      "no feature flag",
 			path:      validConfig,
 			disableFF: true,
-			errString: "print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command",
+			errString: "use the otelcol.printInitialConfig feature gate",
 		},
 		{
 			name: "field is set yaml",
@@ -118,29 +118,17 @@ func TestPrintCommand(t *testing.T) {
 			t.Run(fmt.Sprint(test.name, "_", mode), func(t *testing.T) {
 				// Save current feature flag state and restore after test
 				fg := featuregate.GlobalRegistry()
-				var gate *featuregate.Gate
-				var originalState bool
 
 				fg.VisitAll(func(g *featuregate.Gate) {
-					if g.ID() == "otelcol.printInitialConfig" {
-						gate = g
-						originalState = g.IsEnabled()
+					if g.ID() == featureGateName {
+						defer fg.Set(featureGateName, g.IsEnabled())
 					}
 				})
-
-				// Set feature flag state for this test
 				if test.disableFF {
-					require.NoError(t, fg.Set("otelcol.printInitialConfig", false))
+					require.NoError(t, fg.Set(featureGateName, false))
 				} else {
-					require.NoError(t, fg.Set("otelcol.printInitialConfig", true))
+					require.NoError(t, fg.Set(featureGateName, true))
 				}
-
-				// Restore original state after test
-				defer func() {
-					if gate != nil {
-						require.NoError(t, fg.Set("otelcol.printInitialConfig", originalState))
-					}
-				}()
 
 				testR := component.MustNewType("r")
 				testE := component.MustNewType("e")
@@ -199,9 +187,6 @@ func TestPrintCommand(t *testing.T) {
 				args := []string{
 					"--mode", mode,
 					"--format", test.ofmt,
-				}
-				if !test.disableFF {
-					args = append(args, "--feature-gates=otelcol.printInitialConfig")
 				}
 				if mode == "unredacted" {
 					args = append(args, "--validate=true")

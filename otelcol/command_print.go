@@ -19,8 +19,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+const featureGateName = "otelcol.printInitialConfig"
+
 var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
-	"otelcol.printInitialConfig",
+	featureGateName,
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.120.0"),
 	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
