@@ -46,8 +46,8 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.LogRecord{}
+	internal.DeleteOrigLogRecord(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.

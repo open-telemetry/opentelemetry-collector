@@ -45,8 +45,8 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Sample{}
+	internal.DeleteOrigSample(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // LocationsStartIndex returns the locationsstartindex associated with this Sample.

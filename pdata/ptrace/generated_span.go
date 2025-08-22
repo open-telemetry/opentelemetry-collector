@@ -47,8 +47,8 @@ func (ms Span) MoveTo(dest Span) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span{}
+	internal.DeleteOrigSpan(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TraceID returns the traceid associated with this Span.

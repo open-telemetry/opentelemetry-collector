@@ -44,8 +44,8 @@ func (ms Sum) MoveTo(dest Sum) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Sum{}
+	internal.DeleteOrigSum(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
