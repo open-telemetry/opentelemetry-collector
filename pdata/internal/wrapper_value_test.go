@@ -84,7 +84,7 @@ func TestCopyOrigAnyValueAllTypes(t *testing.T) {
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigAnyValueAllTypes(t *testing.T) {
+func TestMarshalAndUnmarshalJSONOrigAnyValue(t *testing.T) {
 	for name, src := range allAnyValues() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -112,7 +112,23 @@ func TestMarshalAndUnmarshalJSONOrigAnyValueAllTypes(t *testing.T) {
 	}
 }
 
-func TestMarshalAndUnmarshalProtoAnyValueAllTypes(t *testing.T) {
+func TestMarshalAndUnmarshalProtoAnyValueUnknown(t *testing.T) {
+	dest := NewOrigAnyValue()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigAnyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigAnyValue(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigAnyValueFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesAnyValue() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigAnyValue()
+			require.Error(t, UnmarshalProtoOrigAnyValue(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoAnyValue(t *testing.T) {
 	for name, src := range allAnyValues() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -133,6 +149,26 @@ func TestMarshalAndUnmarshalProtoAnyValueAllTypes(t *testing.T) {
 				DeleteOrigAnyValue(dest, true)
 			})
 		}
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":               {0x02},
+		"StringValue/wrong_wire_type": {0xc},
+		"StringValue/missing_value":   {0xa},
+		"BoolValue/wrong_wire_type":   {0x14},
+		"BoolValue/missing_value":     {0x10},
+		"IntValue/wrong_wire_type":    {0x1c},
+		"IntValue/missing_value":      {0x18},
+		"DoubleValue/wrong_wire_type": {0x24},
+		"DoubleValue/missing_value":   {0x21},
+		"ArrayValue/wrong_wire_type":  {0x2c},
+		"ArrayValue/missing_value":    {0x2a},
+		"KvlistValue/wrong_wire_type": {0x34},
+		"KvlistValue/missing_value":   {0x30},
+		"BytesValue/wrong_wire_type":  {0x3c},
+		"BytesValue/missing_value":    {0x3a},
 	}
 }
 

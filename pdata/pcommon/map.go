@@ -194,7 +194,7 @@ func (m Map) PutEmptyMap(k string) Map {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyMap()
 	}
-	ov := internal.NewOrigAnyValueKeyValueList()
+	ov := internal.NewOrigAnyValueKvlistValue()
 	ov.KvlistValue = internal.NewOrigKeyValueList()
 	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
 	return Map(internal.NewMap(&ov.KvlistValue.Values, m.getState()))
