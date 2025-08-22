@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
+	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
 const pipelineIDAttrKey = "otelcol.pipeline.id"
@@ -116,24 +117,28 @@ func (n *connectorNode) buildTraces(
 			),
 			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -179,24 +184,28 @@ func (n *connectorNode) buildMetrics(
 			),
 			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -242,24 +251,28 @@ func (n *connectorNode) buildLogs(
 			),
 			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -305,24 +318,28 @@ func (n *connectorNode) buildProfiles(
 			),
 			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	}
 	return nil
 }

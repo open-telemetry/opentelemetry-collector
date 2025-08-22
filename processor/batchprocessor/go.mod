@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
 	go.opentelemetry.io/collector/pdata v1.38.0
 	go.opentelemetry.io/collector/pdata/testdata v0.132.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.132.0
 	go.opentelemetry.io/collector/processor v1.38.0
 	go.opentelemetry.io/collector/processor/processortest v0.132.0
 	go.opentelemetry.io/otel v1.37.0
@@ -76,6 +77,8 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 

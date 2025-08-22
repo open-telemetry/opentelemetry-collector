@@ -68,9 +68,9 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
-
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 

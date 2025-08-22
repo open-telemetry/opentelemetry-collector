@@ -261,8 +261,12 @@ func newWorkerPool(maxWorkers int) *workerPool {
 
 func (wp *workerPool) execute(f func()) {
 	<-wp.workers
-	go f()
-	wp.workers <- struct{}{}
+	go func() {
+		defer func() {
+			wp.workers <- struct{}{}
+		}()
+		f()
+	}()
 }
 
 type multiDone []queue.Done
