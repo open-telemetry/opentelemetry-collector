@@ -12,7 +12,6 @@ func normalizeEndpoint(endpoint string, insecure *bool) *string {
 		} else {
 			endpoint = "https://" + endpoint
 		}
-
 	}
 	return &endpoint
 }
