@@ -57,16 +57,6 @@ var (
 			return &otlpcommon.AnyValue_KvlistValue{}
 		},
 	}
-	protoPoolArrayValue = sync.Pool{
-		New: func() any {
-			return &otlpcommon.ArrayValue{}
-		},
-	}
-	protoPoolKeyValueList = sync.Pool{
-		New: func() any {
-			return &otlpcommon.KeyValueList{}
-		},
-	}
 )
 
 func NewOrigAnyValue() *otlpcommon.AnyValue {
@@ -74,20 +64,6 @@ func NewOrigAnyValue() *otlpcommon.AnyValue {
 		return &otlpcommon.AnyValue{}
 	}
 	return protoPoolAnyValue.Get().(*otlpcommon.AnyValue)
-}
-
-func NewOrigArrayValue() *otlpcommon.ArrayValue {
-	if !UseProtoPooling.IsEnabled() {
-		return &otlpcommon.ArrayValue{}
-	}
-	return protoPoolArrayValue.Get().(*otlpcommon.ArrayValue)
-}
-
-func NewOrigKeyValueList() *otlpcommon.KeyValueList {
-	if !UseProtoPooling.IsEnabled() {
-		return &otlpcommon.KeyValueList{}
-	}
-	return protoPoolKeyValueList.Get().(*otlpcommon.KeyValueList)
 }
 
 func NewOrigAnyValueStringValue() *otlpcommon.AnyValue_StringValue {
@@ -179,38 +155,6 @@ func DeleteOrigAnyValue(orig *otlpcommon.AnyValue, nullable bool) {
 	}
 }
 
-func DeleteOrigArrayValue(orig *otlpcommon.ArrayValue, nullable bool) {
-	if !UseProtoPooling.IsEnabled() {
-		orig.Reset()
-		return
-	}
-
-	for i := range orig.Values {
-		DeleteOrigAnyValue(&orig.Values[i], false)
-	}
-
-	orig.Reset()
-	if nullable {
-		protoPoolArrayValue.Put(orig)
-	}
-}
-
-func DeleteOrigKeyValueList(orig *otlpcommon.KeyValueList, nullable bool) {
-	if !UseProtoPooling.IsEnabled() {
-		orig.Reset()
-		return
-	}
-
-	for i := range orig.Values {
-		DeleteOrigKeyValue(&orig.Values[i], false)
-	}
-
-	orig.Reset()
-	if nullable {
-		protoPoolKeyValueList.Put(orig)
-	}
-}
-
 func GetOrigValue(ms Value) *otlpcommon.AnyValue {
 	return ms.orig
 }
@@ -293,34 +237,10 @@ func MarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
 		dest.WriteBytes(v.BytesValue)
 	case *otlpcommon.AnyValue_ArrayValue:
 		dest.WriteObjectField("arrayValue")
-		dest.WriteObjectStart()
-		values := v.ArrayValue.Values
-		if len(values) > 0 {
-			dest.WriteObjectField("values")
-			dest.WriteArrayStart()
-			MarshalJSONOrigAnyValue(&values[0], dest)
-			for i := 1; i < len(values); i++ {
-				dest.WriteMore()
-				MarshalJSONOrigAnyValue(&values[i], dest)
-			}
-			dest.WriteArrayEnd()
-		}
-		dest.WriteObjectEnd()
+		MarshalJSONOrigArrayValue(v.ArrayValue, dest)
 	case *otlpcommon.AnyValue_KvlistValue:
 		dest.WriteObjectField("kvlistValue")
-		dest.WriteObjectStart()
-		values := v.KvlistValue.Values
-		if len(values) > 0 {
-			dest.WriteObjectField("values")
-			dest.WriteArrayStart()
-			MarshalJSONOrigKeyValue(&values[0], dest)
-			for i := 1; i < len(values); i++ {
-				dest.WriteMore()
-				MarshalJSONOrigKeyValue(&values[i], dest)
-			}
-			dest.WriteArrayEnd()
-		}
-		dest.WriteObjectEnd()
+		MarshalJSONOrigKeyValueList(v.KvlistValue, dest)
 	default:
 		dest.ReportError(fmt.Errorf("invalid value type in the passed attribute value: %T", orig.Value))
 	}
@@ -353,48 +273,18 @@ func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 			orig.Value = ov
 		case "arrayValue", "array_value":
 			ov := NewOrigAnyValueArrayValue()
-			ov.ArrayValue = readArray(iter)
+			ov.ArrayValue = NewOrigArrayValue()
+			UnmarshalJSONOrigArrayValue(ov.ArrayValue, iter)
 			orig.Value = ov
 		case "kvlistValue", "kvlist_value":
 			ov := NewOrigAnyValueKeyValueList()
-			ov.KvlistValue = readKvlistValue(iter)
+			ov.KvlistValue = NewOrigKeyValueList()
+			UnmarshalJSONOrigKeyValueList(ov.KvlistValue, iter)
 			orig.Value = ov
 		default:
 			iter.Skip()
 		}
 	}
-}
-
-func readArray(iter *json.Iterator) *otlpcommon.ArrayValue {
-	v := NewOrigArrayValue()
-	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
-		switch f {
-		case "values":
-			for iter.ReadArray() {
-				v.Values = append(v.Values, otlpcommon.AnyValue{})
-				UnmarshalJSONOrigAnyValue(&v.Values[len(v.Values)-1], iter)
-			}
-		default:
-			iter.Skip()
-		}
-	}
-	return v
-}
-
-func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
-	v := NewOrigKeyValueList()
-	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
-		switch f {
-		case "values":
-			for iter.ReadArray() {
-				v.Values = append(v.Values, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&v.Values[len(v.Values)-1], iter)
-			}
-		default:
-			iter.Skip()
-		}
-	}
-	return v
 }
 
 func GenTestOrigAnyValue() *otlpcommon.AnyValue {
