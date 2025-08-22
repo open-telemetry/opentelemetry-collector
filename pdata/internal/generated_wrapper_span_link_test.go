@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +15,30 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan_Link(t *testing.T) {
-	src := NewOrigSpan_Link()
-	dest := NewOrigSpan_Link()
-	CopyOrigSpan_Link(dest, src)
-	assert.Equal(t, NewOrigSpan_Link(), dest)
-	*src = *GenTestOrigSpan_Link()
-	CopyOrigSpan_Link(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSpan_Link() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSpan_Link()
+				CopyOrigSpan_Link(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSpan_Link(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
@@ -40,20 +52,29 @@ func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSpan_Link(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigSpan_Link()
-			UnmarshalJSONOrigSpan_Link(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSpan_Link(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSpan_Link()
+				UnmarshalJSONOrigSpan_Link(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan_Link(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +96,25 @@ func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan_Link(src))
-			gotSize := MarshalProtoOrigSpan_Link(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigSpan_Link()
-			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSpan_Link(src))
+				gotSize := MarshalProtoOrigSpan_Link(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSpan_Link()
+				require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan_Link(dest, true)
+			})
+		}
 	}
 }
 

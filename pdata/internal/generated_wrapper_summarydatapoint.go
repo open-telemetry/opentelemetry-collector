@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -17,11 +18,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolSummaryDataPoint = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.SummaryDataPoint{}
+	},
+}
+
 func NewOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
-	return &otlpmetrics.SummaryDataPoint{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.SummaryDataPoint{}
+	}
+	return protoPoolSummaryDataPoint.Get().(*otlpmetrics.SummaryDataPoint)
+}
+
+func DeleteOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	for i := range orig.QuantileValues {
+		DeleteOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSummaryDataPoint.Put(orig)
+	}
 }
 
 func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano

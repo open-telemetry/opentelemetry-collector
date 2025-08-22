@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
@@ -15,11 +16,59 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolProfilesDictionary = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.ProfilesDictionary{}
+	},
+}
+
 func NewOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
-	return &otlpprofiles.ProfilesDictionary{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.ProfilesDictionary{}
+	}
+	return protoPoolProfilesDictionary.Get().(*otlpprofiles.ProfilesDictionary)
+}
+
+func DeleteOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.MappingTable {
+		DeleteOrigMapping(orig.MappingTable[i], true)
+	}
+	for i := range orig.LocationTable {
+		DeleteOrigLocation(orig.LocationTable[i], true)
+	}
+	for i := range orig.FunctionTable {
+		DeleteOrigFunction(orig.FunctionTable[i], true)
+	}
+	for i := range orig.LinkTable {
+		DeleteOrigLink(orig.LinkTable[i], true)
+	}
+	for i := range orig.AttributeTable {
+		DeleteOrigKeyValue(&orig.AttributeTable[i], false)
+	}
+	for i := range orig.AttributeUnits {
+		DeleteOrigAttributeUnit(orig.AttributeUnits[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolProfilesDictionary.Put(orig)
+	}
 }
 
 func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.MappingTable = CopyOrigMappingSlice(dest.MappingTable, src.MappingTable)
 	dest.LocationTable = CopyOrigLocationSlice(dest.LocationTable, src.LocationTable)
 	dest.FunctionTable = CopyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)

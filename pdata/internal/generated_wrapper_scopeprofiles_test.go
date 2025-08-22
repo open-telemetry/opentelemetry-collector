@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeProfiles(t *testing.T) {
-	src := NewOrigScopeProfiles()
-	dest := NewOrigScopeProfiles()
-	CopyOrigScopeProfiles(dest, src)
-	assert.Equal(t, NewOrigScopeProfiles(), dest)
-	*src = *GenTestOrigScopeProfiles()
-	CopyOrigScopeProfiles(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesScopeProfiles() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigScopeProfiles()
+				CopyOrigScopeProfiles(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigScopeProfiles(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigScopeProfiles(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigScopeProfiles()
-			UnmarshalJSONOrigScopeProfiles(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigScopeProfiles(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigScopeProfiles()
+				UnmarshalJSONOrigScopeProfiles(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeProfiles(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigScopeProfilesUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
-			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigScopeProfiles()
-			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+				gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigScopeProfiles()
+				require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeProfiles(dest, true)
+			})
+		}
 	}
 }
 

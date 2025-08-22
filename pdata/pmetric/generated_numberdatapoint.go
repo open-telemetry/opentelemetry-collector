@@ -45,8 +45,8 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.NumberDataPoint{}
+	internal.DeleteOrigNumberDataPoint(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Attributes returns the Attributes associated with this NumberDataPoint.

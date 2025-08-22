@@ -13,13 +13,23 @@ import (
 )
 
 func TestCopyOrig{{ .originName }}(t *testing.T) {
-	src := NewOrig{{ .originName }}()
-	dest := NewOrig{{ .originName }}()
-	CopyOrig{{ .originName }}(dest, src)
-	assert.Equal(t, NewOrig{{ .originName }}(), dest)
-    *src = *GenTestOrig{{ .originName }}()
-	CopyOrig{{ .originName }}(dest, src)
-	assert.Equal(t, src, dest)
+    for name, src := range genTestEncodingValues{{ .originName }}() {
+        for _, pooling := range []bool{true, false} {
+            t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+                prevPooling := UseProtoPooling.IsEnabled()
+                require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+                defer func() {
+                    require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+                }()
+
+                dest := NewOrig{{ .originName }}()
+                CopyOrig{{ .originName }}(dest, src)
+                assert.Equal(t, src, dest)
+                CopyOrig{{ .originName }}(dest, dest)
+                assert.Equal(t, src, dest)
+            })
+        }
+    }
 }
 
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}Unknown(t *testing.T) {
@@ -33,20 +43,29 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}Unknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .originName }}() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrig{{ .originName }}(src, stream)
-			require.NoError(t, stream.Error())
+        for _, pooling := range []bool{true, false} {
+            t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+                prevPooling := UseProtoPooling.IsEnabled()
+                require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+                defer func() {
+                    require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+                }()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrig{{ .originName }}()
-			UnmarshalJSONOrig{{ .originName }}(dest, iter)
-			require.NoError(t, iter.Error())
+                stream := json.BorrowStream(nil)
+                defer json.ReturnStream(stream)
+                MarshalJSONOrig{{ .originName }}(src, stream)
+                require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+                iter := json.BorrowIterator(stream.Buffer())
+                defer json.ReturnIterator(iter)
+                dest := NewOrig{{ .originName }}()
+                UnmarshalJSONOrig{{ .originName }}(dest, iter)
+                require.NoError(t, iter.Error())
+
+                assert.Equal(t, src, dest)
+                DeleteOrig{{ .originName }}(dest, true)
+            })
+        }
 	}
 }
 
@@ -68,35 +87,45 @@ func TestMarshalAndUnmarshalProtoOrig{{ .originName }}Unknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .originName }}(){
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
-			gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+        for _, pooling := range []bool{true, false} {
+            t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+                prevPooling := UseProtoPooling.IsEnabled()
+                require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+                defer func() {
+                    require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+                }()
 
-			dest := NewOrig{{ .originName }}()
-			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+                buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
+                gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
+                assert.Equal(t, len(buf), gotSize)
+
+                dest := NewOrig{{ .originName }}()
+                require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
+
+                assert.Equal(t, src, dest)
+                DeleteOrig{{ .originName }}(dest, true)
+            })
+        }
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobuf{{ .originName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .originName }}(){
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
-			gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+            buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
+            gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
+            assert.Equal(t, len(buf), gotSize)
 
-			goDest := &go{{ .originFullName }}{}
-			require.NoError(t, proto.Unmarshal(buf, goDest))
+            goDest := &go{{ .originFullName }}{}
+            require.NoError(t, proto.Unmarshal(buf, goDest))
 
-			goBuf, err := proto.Marshal(goDest)
-			require.NoError(t, err)
+            goBuf, err := proto.Marshal(goDest)
+            require.NoError(t, err)
 
-			dest := NewOrig{{ .originName }}()
-			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, goBuf))
-			assert.Equal(t, src, dest)
-		})
+            dest := NewOrig{{ .originName }}()
+            require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, goBuf))
+            assert.Equal(t, src, dest)
+        })
 	}
 }
 

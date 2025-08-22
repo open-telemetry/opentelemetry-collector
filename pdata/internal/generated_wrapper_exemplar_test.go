@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +15,30 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExemplar(t *testing.T) {
-	src := NewOrigExemplar()
-	dest := NewOrigExemplar()
-	CopyOrigExemplar(dest, src)
-	assert.Equal(t, NewOrigExemplar(), dest)
-	*src = *GenTestOrigExemplar()
-	CopyOrigExemplar(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExemplar() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExemplar()
+				CopyOrigExemplar(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExemplar(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
@@ -40,20 +52,29 @@ func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigExemplar(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigExemplar()
-			UnmarshalJSONOrigExemplar(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExemplar(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExemplar()
+				UnmarshalJSONOrigExemplar(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExemplar(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +96,25 @@ func TestMarshalAndUnmarshalProtoOrigExemplarUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExemplar(src))
-			gotSize := MarshalProtoOrigExemplar(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigExemplar()
-			require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigExemplar(src))
+				gotSize := MarshalProtoOrigExemplar(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExemplar()
+				require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExemplar(dest, true)
+			})
+		}
 	}
 }
 

@@ -42,8 +42,8 @@ func (ms Traces) MoveTo(dest Traces) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
+	internal.DeleteOrigExportTraceServiceRequest(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // ResourceSpans returns the ResourceSpans associated with this Traces.

@@ -41,7 +41,7 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i].Reset()
+			DeleteOrigAnyValue(&dest[i], false)
 		}
 	}
 	for i := range src {

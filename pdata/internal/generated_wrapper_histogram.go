@@ -8,17 +8,51 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolHistogram = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.Histogram{}
+	},
+}
+
 func NewOrigHistogram() *otlpmetrics.Histogram {
-	return &otlpmetrics.Histogram{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Histogram{}
+	}
+	return protoPoolHistogram.Get().(*otlpmetrics.Histogram)
+}
+
+func DeleteOrigHistogram(orig *otlpmetrics.Histogram, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.DataPoints {
+		DeleteOrigHistogramDataPoint(orig.DataPoints[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolHistogram.Put(orig)
+	}
 }
 
 func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 }

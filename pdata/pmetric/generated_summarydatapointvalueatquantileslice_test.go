@@ -52,6 +52,8 @@ func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	src := generateTestSummaryDataPointValueAtQuantileSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_EnsureCapacity(t *testing.T) {

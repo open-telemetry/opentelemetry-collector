@@ -8,10 +8,6 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func SetTracesState(ms Traces, state State) {
-	*ms.state = state
-}
-
 // TracesToProto internal helper to convert Traces to protobuf representation.
 func TracesToProto(l Traces) otlptrace.TracesData {
 	return otlptrace.TracesData{

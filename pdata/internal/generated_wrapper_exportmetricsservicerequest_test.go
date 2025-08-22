@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +15,30 @@ import (
 	gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
-	src := NewOrigExportMetricsServiceRequest()
-	dest := NewOrigExportMetricsServiceRequest()
-	CopyOrigExportMetricsServiceRequest(dest, src)
-	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
-	*src = *GenTestOrigExportMetricsServiceRequest()
-	CopyOrigExportMetricsServiceRequest(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportMetricsServiceRequest()
+				CopyOrigExportMetricsServiceRequest(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportMetricsServiceRequest(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testing.T) {
@@ -40,20 +52,29 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testin
 
 func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigExportMetricsServiceRequest(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigExportMetricsServiceRequest()
-			UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExportMetricsServiceRequest(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExportMetricsServiceRequest()
+				UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportMetricsServiceRequest(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +96,25 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testi
 
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
-			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigExportMetricsServiceRequest()
-			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
+				gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExportMetricsServiceRequest()
+				require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportMetricsServiceRequest(dest, true)
+			})
+		}
 	}
 }
 

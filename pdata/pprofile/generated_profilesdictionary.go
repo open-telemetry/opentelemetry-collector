@@ -45,8 +45,8 @@ func (ms ProfilesDictionary) MoveTo(dest ProfilesDictionary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ProfilesDictionary{}
+	internal.DeleteOrigProfilesDictionary(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingTable returns the MappingTable associated with this ProfilesDictionary.

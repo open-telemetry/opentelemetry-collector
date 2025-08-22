@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +15,30 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan_Event(t *testing.T) {
-	src := NewOrigSpan_Event()
-	dest := NewOrigSpan_Event()
-	CopyOrigSpan_Event(dest, src)
-	assert.Equal(t, NewOrigSpan_Event(), dest)
-	*src = *GenTestOrigSpan_Event()
-	CopyOrigSpan_Event(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSpan_Event() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSpan_Event()
+				CopyOrigSpan_Event(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSpan_Event(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
@@ -40,20 +52,29 @@ func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSpan_Event(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigSpan_Event()
-			UnmarshalJSONOrigSpan_Event(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSpan_Event(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSpan_Event()
+				UnmarshalJSONOrigSpan_Event(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan_Event(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +96,25 @@ func TestMarshalAndUnmarshalProtoOrigSpan_EventUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan_Event(src))
-			gotSize := MarshalProtoOrigSpan_Event(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigSpan_Event()
-			require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSpan_Event(src))
+				gotSize := MarshalProtoOrigSpan_Event(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSpan_Event()
+				require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan_Event(dest, true)
+			})
+		}
 	}
 }
 

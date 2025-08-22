@@ -9,6 +9,7 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
@@ -16,11 +17,44 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolSpan_Event = sync.Pool{
+	New: func() any {
+		return &otlptrace.Span_Event{}
+	},
+}
+
 func NewOrigSpan_Event() *otlptrace.Span_Event {
-	return &otlptrace.Span_Event{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Span_Event{}
+	}
+	return protoPoolSpan_Event.Get().(*otlptrace.Span_Event)
+}
+
+func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSpan_Event.Put(orig)
+	}
 }
 
 func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Name = src.Name
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)

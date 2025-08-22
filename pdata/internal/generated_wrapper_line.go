@@ -8,17 +8,47 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolLine = sync.Pool{
+	New: func() any {
+		return &otlpprofiles.Line{}
+	},
+}
+
 func NewOrigLine() *otlpprofiles.Line {
-	return &otlpprofiles.Line{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Line{}
+	}
+	return protoPoolLine.Get().(*otlpprofiles.Line)
+}
+
+func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolLine.Put(orig)
+	}
 }
 
 func CopyOrigLine(dest, src *otlpprofiles.Line) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line
 	dest.Column = src.Column

@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigKeyValue(t *testing.T) {
-	src := NewOrigKeyValue()
-	dest := NewOrigKeyValue()
-	CopyOrigKeyValue(dest, src)
-	assert.Equal(t, NewOrigKeyValue(), dest)
-	*src = *GenTestOrigKeyValue()
-	CopyOrigKeyValue(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesKeyValue() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigKeyValue()
+				CopyOrigKeyValue(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigKeyValue(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigKeyValue(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigKeyValue()
-			UnmarshalJSONOrigKeyValue(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigKeyValue(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigKeyValue()
+				UnmarshalJSONOrigKeyValue(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigKeyValue(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigKeyValue(src))
-			gotSize := MarshalProtoOrigKeyValue(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigKeyValue()
-			require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigKeyValue(src))
+				gotSize := MarshalProtoOrigKeyValue(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigKeyValue()
+				require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigKeyValue(dest, true)
+			})
+		}
 	}
 }
 

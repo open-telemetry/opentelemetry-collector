@@ -44,8 +44,8 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectortrace.ExportTracePartialSuccess{}
+	internal.DeleteOrigExportTracePartialSuccess(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // RejectedSpans returns the rejectedspans associated with this ExportPartialSuccess.

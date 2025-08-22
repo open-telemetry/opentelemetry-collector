@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +15,30 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSummaryDataPoint(t *testing.T) {
-	src := NewOrigSummaryDataPoint()
-	dest := NewOrigSummaryDataPoint()
-	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, NewOrigSummaryDataPoint(), dest)
-	*src = *GenTestOrigSummaryDataPoint()
-	CopyOrigSummaryDataPoint(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSummaryDataPoint() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSummaryDataPoint()
+				CopyOrigSummaryDataPoint(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSummaryDataPoint(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
@@ -40,20 +52,29 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSummaryDataPoint(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigSummaryDataPoint()
-			UnmarshalJSONOrigSummaryDataPoint(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSummaryDataPoint(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSummaryDataPoint()
+				UnmarshalJSONOrigSummaryDataPoint(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSummaryDataPoint(dest, true)
+			})
+		}
 	}
 }
 
@@ -75,15 +96,25 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
-			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigSummaryDataPoint()
-			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+				gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSummaryDataPoint()
+				require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSummaryDataPoint(dest, true)
+			})
+		}
 	}
 }
 

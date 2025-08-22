@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -15,11 +16,57 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolMetric = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.Metric{}
+	},
+}
+
 func NewOrigMetric() *otlpmetrics.Metric {
-	return &otlpmetrics.Metric{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Metric{}
+	}
+	return protoPoolMetric.Get().(*otlpmetrics.Metric)
+}
+
+func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	switch ov := orig.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+		DeleteOrigGauge(ov.Gauge, true)
+	case *otlpmetrics.Metric_Sum:
+		DeleteOrigSum(ov.Sum, true)
+	case *otlpmetrics.Metric_Histogram:
+		DeleteOrigHistogram(ov.Histogram, true)
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
+	case *otlpmetrics.Metric_Summary:
+		DeleteOrigSummary(ov.Summary, true)
+
+	}
+	for i := range orig.Metadata {
+		DeleteOrigKeyValue(&orig.Metadata[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolMetric.Put(orig)
+	}
 }
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Name = src.Name
 	dest.Description = src.Description
 	dest.Unit = src.Unit

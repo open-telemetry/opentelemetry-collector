@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceLogs(t *testing.T) {
-	src := NewOrigResourceLogs()
-	dest := NewOrigResourceLogs()
-	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, NewOrigResourceLogs(), dest)
-	*src = *GenTestOrigResourceLogs()
-	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesResourceLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigResourceLogs()
+				CopyOrigResourceLogs(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigResourceLogs(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigResourceLogs(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigResourceLogs()
-			UnmarshalJSONOrigResourceLogs(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigResourceLogs(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigResourceLogs()
+				UnmarshalJSONOrigResourceLogs(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceLogs(src))
-			gotSize := MarshalProtoOrigResourceLogs(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigResourceLogs()
-			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigResourceLogs(src))
+				gotSize := MarshalProtoOrigResourceLogs(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigResourceLogs()
+				require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
 	}
 }
 

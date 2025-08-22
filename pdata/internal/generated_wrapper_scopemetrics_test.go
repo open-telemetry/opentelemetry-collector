@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeMetrics(t *testing.T) {
-	src := NewOrigScopeMetrics()
-	dest := NewOrigScopeMetrics()
-	CopyOrigScopeMetrics(dest, src)
-	assert.Equal(t, NewOrigScopeMetrics(), dest)
-	*src = *GenTestOrigScopeMetrics()
-	CopyOrigScopeMetrics(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesScopeMetrics() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigScopeMetrics()
+				CopyOrigScopeMetrics(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigScopeMetrics(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigScopeMetrics(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigScopeMetrics()
-			UnmarshalJSONOrigScopeMetrics(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigScopeMetrics(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigScopeMetrics()
+				UnmarshalJSONOrigScopeMetrics(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeMetrics(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
-			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigScopeMetrics()
-			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigScopeMetrics(src))
+				gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigScopeMetrics()
+				require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeMetrics(dest, true)
+			})
+		}
 	}
 }
 

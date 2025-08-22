@@ -25,6 +25,7 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigResourceLogs(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
