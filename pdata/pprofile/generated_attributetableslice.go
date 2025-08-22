@@ -145,5 +145,8 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigKeyValueSlice(*dest.orig, *es.orig)
 }

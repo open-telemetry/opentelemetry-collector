@@ -50,6 +50,10 @@ func DeleteOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, nullable bool)
 }
 
 func CopyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.ScopeMetrics = CopyOrigScopeMetricsSlice(dest.ScopeMetrics, src.ScopeMetrics)
 	dest.SchemaUrl = src.SchemaUrl

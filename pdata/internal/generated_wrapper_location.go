@@ -49,6 +49,10 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 }
 
 func CopyOrigLocation(dest, src *otlpprofiles.Location) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
 		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
 		if !ok {

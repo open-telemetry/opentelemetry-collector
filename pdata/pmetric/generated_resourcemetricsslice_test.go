@@ -52,6 +52,8 @@ func TestResourceMetricsSlice_CopyTo(t *testing.T) {
 	src := generateTestResourceMetricsSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
 }
 
 func TestResourceMetricsSlice_EnsureCapacity(t *testing.T) {

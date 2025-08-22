@@ -47,6 +47,10 @@ func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoi
 }
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }

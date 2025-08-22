@@ -66,6 +66,10 @@ func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetr
 }
 
 func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 

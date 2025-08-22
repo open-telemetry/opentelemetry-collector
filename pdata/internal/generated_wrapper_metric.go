@@ -63,6 +63,10 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 }
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Name = src.Name
 	dest.Description = src.Description
 	dest.Unit = src.Unit

@@ -44,8 +44,8 @@ func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQua
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	internal.DeleteOrigSummaryDataPoint_ValueAtQuantile(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.

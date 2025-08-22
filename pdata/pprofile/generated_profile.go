@@ -46,8 +46,8 @@ func (ms Profile) MoveTo(dest Profile) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Profile{}
+	internal.DeleteOrigProfile(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // SampleType returns the SampleType associated with this Profile.

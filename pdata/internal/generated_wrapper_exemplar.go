@@ -55,6 +55,10 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 }
 
 func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.FilteredAttributes = CopyOrigKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {

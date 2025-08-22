@@ -44,8 +44,8 @@ func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.AttributeUnit{}
+	internal.DeleteOrigAttributeUnit(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // AttributeKeyStrindex returns the attributekeystrindex associated with this AttributeUnit.

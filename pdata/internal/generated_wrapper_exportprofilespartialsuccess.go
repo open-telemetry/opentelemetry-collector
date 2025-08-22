@@ -45,6 +45,10 @@ func DeleteOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportPr
 }
 
 func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.ExportProfilesPartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedProfiles = src.RejectedProfiles
 	dest.ErrorMessage = src.ErrorMessage
 }

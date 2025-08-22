@@ -45,6 +45,10 @@ func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Exponenti
 }
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Offset = src.Offset
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }

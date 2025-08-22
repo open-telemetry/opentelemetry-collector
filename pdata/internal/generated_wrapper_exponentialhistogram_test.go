@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigExponentialHistogram(t *testing.T) {
-	src := NewOrigExponentialHistogram()
-	dest := NewOrigExponentialHistogram()
-	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, NewOrigExponentialHistogram(), dest)
-	*src = *GenTestOrigExponentialHistogram()
-	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExponentialHistogram() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExponentialHistogram()
+				CopyOrigExponentialHistogram(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExponentialHistogram(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogram() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogram() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

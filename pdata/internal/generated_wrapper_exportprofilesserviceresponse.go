@@ -47,6 +47,10 @@ func DeleteOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportP
 }
 
 func CopyOrigExportProfilesServiceResponse(dest, src *otlpcollectorprofiles.ExportProfilesServiceResponse) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 

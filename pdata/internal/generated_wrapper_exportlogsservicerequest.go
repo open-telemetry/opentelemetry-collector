@@ -66,6 +66,10 @@ func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServic
 }
 
 func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 

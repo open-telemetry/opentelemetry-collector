@@ -149,6 +149,9 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigFunctionSlice(*dest.orig, *es.orig)
 }
 

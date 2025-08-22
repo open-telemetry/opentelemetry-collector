@@ -42,8 +42,8 @@ func (ms Profiles) MoveTo(dest Profiles) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorprofiles.ExportProfilesServiceRequest{}
+	internal.DeleteOrigExportProfilesServiceRequest(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // ResourceProfiles returns the ResourceProfiles associated with this Profiles.

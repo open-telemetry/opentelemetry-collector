@@ -47,6 +47,10 @@ func DeleteOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceSe
 }
 
 func CopyOrigExportTraceServiceResponse(dest, src *otlpcollectortrace.ExportTraceServiceResponse) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigExportTracePartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 

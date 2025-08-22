@@ -54,6 +54,10 @@ func DeleteOrigSpan_Link(orig *otlptrace.Span_Link, nullable bool) {
 }
 
 func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 	CopyOrigTraceState(&dest.TraceState, &src.TraceState)

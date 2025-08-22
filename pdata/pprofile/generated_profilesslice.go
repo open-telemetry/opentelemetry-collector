@@ -149,6 +149,9 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigProfileSlice(*dest.orig, *es.orig)
 }
 

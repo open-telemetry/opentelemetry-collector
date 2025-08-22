@@ -63,6 +63,11 @@ func DeleteOrig{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
 }
 
 func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+    }
+
 	{{- range .fields }}
 	{{ .GenerateCopyOrig $.messageStruct }}
 	{{- end }}

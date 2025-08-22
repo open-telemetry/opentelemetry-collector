@@ -66,6 +66,10 @@ func DeleteOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceSer
 }
 
 func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceSpans = CopyOrigResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
 }
 

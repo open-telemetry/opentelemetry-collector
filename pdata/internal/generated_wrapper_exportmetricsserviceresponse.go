@@ -47,6 +47,10 @@ func DeleteOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMet
 }
 
 func CopyOrigExportMetricsServiceResponse(dest, src *otlpcollectormetrics.ExportMetricsServiceResponse) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigExportMetricsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
