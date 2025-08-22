@@ -6,6 +6,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -25,20 +26,38 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
+type printExporterConfig struct {
+	Timeout time.Duration `mapstructure:"timeout"`
+}
+
+type printReceiverConfig struct {
+	Opaque configopaque.String `mapstructure:"opaque"`
+	Other  string              `mapstructure:"other,omitempty"`
+}
+
+func (c *printExporterConfig) Validate() error {
+	if c.Timeout < 0 {
+		return errors.New("timeout cannot be negative")
+	}
+	return nil
+}
+
 func TestPrintCommand(t *testing.T) {
 	const nonexistentConfig = "file:nope.yaml"
 
-	invalidConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_invalid.yaml"))
 	validConfig := fmt.Sprint("file:", filepath.Join("testdata", "print.yaml"))
+	invalidConfig1 := fmt.Sprint("file:", filepath.Join("testdata", "print_invalid.yaml"))
+	invalidConfig2 := fmt.Sprint("file:", filepath.Join("testdata", "print_negative.yaml"))
 	defaultConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_default.yaml"))
 
 	tests := []struct {
 		name      string
 		ofmt      string
 		path      string
-		disableFF bool // disable the feature flag
 		errString string
 		outString map[string]string
+		disableFF bool // disable the feature flag
+		validate  bool // add validation (even redacted)
 	}{
 		{
 			name:      "file not found",
@@ -50,9 +69,15 @@ func TestPrintCommand(t *testing.T) {
 			path: validConfig,
 		},
 		{
-			name:      "invalid field",
-			path:      invalidConfig,
+			name:      "invalid syntax",
+			path:      invalidConfig1,
 			errString: "'timeout' time: invalid duration",
+		},
+		{
+			name:      "validation fail",
+			path:      invalidConfig2,
+			validate:  true,
+			errString: "timeout cannot be negative",
 		},
 		{
 			name:      "no feature flag",
@@ -121,7 +146,9 @@ func TestPrintCommand(t *testing.T) {
 
 				fg.VisitAll(func(g *featuregate.Gate) {
 					if g.ID() == featureGateName {
-						defer fg.Set(featureGateName, g.IsEnabled())
+						defer func() {
+							_ = fg.Set(featureGateName, g.IsEnabled())
+						}()
 					}
 				})
 				if test.disableFF {
@@ -135,10 +162,7 @@ func TestPrintCommand(t *testing.T) {
 				testReceiver := xreceiver.NewFactory(
 					testR,
 					func() component.Config {
-						return struct {
-							Opaque configopaque.String `mapstructure:"opaque"`
-							Other  string              `mapstructure:"other,omitempty"`
-						}{
+						return printReceiverConfig{
 							Opaque: "1234",
 							Other:  "",
 						}
@@ -150,9 +174,7 @@ func TestPrintCommand(t *testing.T) {
 				testExporter := xexporter.NewFactory(
 					testE,
 					func() component.Config {
-						return struct {
-							Timeout time.Duration `mapstructure:"timeout"`
-						}{
+						return printExporterConfig{
 							Timeout: time.Second,
 						}
 					},
@@ -188,7 +210,7 @@ func TestPrintCommand(t *testing.T) {
 					"--mode", mode,
 					"--format", test.ofmt,
 				}
-				if mode == "unredacted" {
+				if mode == "unredacted" || test.validate {
 					args = append(args, "--validate=true")
 				} else {
 					args = append(args, "--validate=false")
