@@ -262,8 +262,8 @@ func newWorkerPool(maxWorkers int) *workerPool {
 func (wp *workerPool) execute(f func()) {
 	<-wp.workers
 	go func() {
+		defer wp.workers <- struct{}{}
 		f()
-		wp.workers <- struct{}{}
 	}()
 }
 
