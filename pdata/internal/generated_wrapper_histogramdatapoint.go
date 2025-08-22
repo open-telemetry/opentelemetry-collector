@@ -183,9 +183,9 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 		dest.WriteObjectField("count")
 		dest.WriteUint64(orig.Count)
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum)
+		dest.WriteFloat64(orig.Sum)
 	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
@@ -221,13 +221,13 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		dest.WriteObjectField("min")
-		dest.WriteFloat64(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min)
+		dest.WriteFloat64(orig.Min)
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
 		dest.WriteObjectField("max")
-		dest.WriteFloat64(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max)
+		dest.WriteFloat64(orig.Max)
 	}
 	dest.WriteObjectEnd()
 }
@@ -325,7 +325,8 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	if orig.Count != 0 {
 		n += 9
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
+		_ = orig
 		n += 9
 	}
 	l = len(orig.BucketCounts)
@@ -345,10 +346,12 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	if orig.Flags != 0 {
 		n += 1 + proto.Sov(uint64(orig.Flags))
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
+		_ = orig
 		n += 9
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
+		_ = orig
 		n += 9
 	}
 	return n
@@ -383,12 +386,11 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		pos--
 		buf[pos] = 0x21
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum))
 		pos--
 		buf[pos] = 0x29
-
 	}
 	l = len(orig.BucketCounts)
 	if l > 0 {
@@ -422,19 +424,17 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		pos--
 		buf[pos] = 0x50
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min))
 		pos--
 		buf[pos] = 0x59
-
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max))
 		pos--
 		buf[pos] = 0x61
-
 	}
 	return len(buf) - pos
 }

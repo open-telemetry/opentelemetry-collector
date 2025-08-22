@@ -87,7 +87,7 @@ func (ms Sample) LinkIndex() int32 {
 }
 
 // HasLinkIndex returns true if the Sample contains a
-// LinkIndex value, false otherwise.
+// LinkIndex value otherwise.
 func (ms Sample) HasLinkIndex() bool {
 	return ms.orig.LinkIndex_ != nil
 }

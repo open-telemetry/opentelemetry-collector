@@ -187,31 +187,31 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 		dest.WriteObjectField("unit")
 		dest.WriteString(orig.Unit)
 	}
-	switch orig.Data.(type) {
+	switch orig := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		if orig.Data.(*otlpmetrics.Metric_Gauge).Gauge != nil {
+		if orig.Gauge != nil {
 			dest.WriteObjectField("gauge")
-			MarshalJSONOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge, dest)
+			MarshalJSONOrigGauge(orig.Gauge, dest)
 		}
 	case *otlpmetrics.Metric_Sum:
-		if orig.Data.(*otlpmetrics.Metric_Sum).Sum != nil {
+		if orig.Sum != nil {
 			dest.WriteObjectField("sum")
-			MarshalJSONOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum, dest)
+			MarshalJSONOrigSum(orig.Sum, dest)
 		}
 	case *otlpmetrics.Metric_Histogram:
-		if orig.Data.(*otlpmetrics.Metric_Histogram).Histogram != nil {
+		if orig.Histogram != nil {
 			dest.WriteObjectField("histogram")
-			MarshalJSONOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram, dest)
+			MarshalJSONOrigHistogram(orig.Histogram, dest)
 		}
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		if orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram != nil {
+		if orig.ExponentialHistogram != nil {
 			dest.WriteObjectField("exponentialHistogram")
-			MarshalJSONOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, dest)
+			MarshalJSONOrigExponentialHistogram(orig.ExponentialHistogram, dest)
 		}
 	case *otlpmetrics.Metric_Summary:
-		if orig.Data.(*otlpmetrics.Metric_Summary).Summary != nil {
+		if orig.Summary != nil {
 			dest.WriteObjectField("summary")
-			MarshalJSONOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary, dest)
+			MarshalJSONOrigSummary(orig.Summary, dest)
 		}
 	}
 	if len(orig.Metadata) > 0 {
@@ -331,21 +331,24 @@ func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	switch orig.Data.(type) {
+	switch orig := orig.Data.(type) {
+	case nil:
+		_ = orig
+		break
 	case *otlpmetrics.Metric_Gauge:
-		l = SizeProtoOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
+		l = SizeProtoOrigGauge(orig.Gauge)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Sum:
-		l = SizeProtoOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum)
+		l = SizeProtoOrigSum(orig.Sum)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Histogram:
-		l = SizeProtoOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram)
+		l = SizeProtoOrigHistogram(orig.Histogram)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		l = SizeProtoOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+		l = SizeProtoOrigExponentialHistogram(orig.ExponentialHistogram)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Summary:
-		l = SizeProtoOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary)
+		l = SizeProtoOrigSummary(orig.Summary)
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Metadata {
@@ -383,10 +386,10 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 		pos--
 		buf[pos] = 0x1a
 	}
-	switch orig.Data.(type) {
+	switch orig := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 
-		l = MarshalProtoOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge, buf[:pos])
+		l = MarshalProtoOrigGauge(orig.Gauge, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -394,7 +397,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Sum:
 
-		l = MarshalProtoOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum, buf[:pos])
+		l = MarshalProtoOrigSum(orig.Sum, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -402,7 +405,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Histogram:
 
-		l = MarshalProtoOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram, buf[:pos])
+		l = MarshalProtoOrigHistogram(orig.Histogram, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -410,7 +413,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_ExponentialHistogram:
 
-		l = MarshalProtoOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, buf[:pos])
+		l = MarshalProtoOrigExponentialHistogram(orig.ExponentialHistogram, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -418,7 +421,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Summary:
 
-		l = MarshalProtoOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary, buf[:pos])
+		l = MarshalProtoOrigSummary(orig.Summary, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--

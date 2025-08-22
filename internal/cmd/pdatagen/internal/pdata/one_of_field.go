@@ -62,7 +62,7 @@ const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- end }}
 }`
 
-const oneOfMarshalJSONTemplate = `switch orig.{{ .originFieldName }}.(type) {
+const oneOfMarshalJSONTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
 	{{- range .values }}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
@@ -74,14 +74,17 @@ const oneOfUnmarshalJSONTemplate = `
 	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
 	{{- end }}`
 
-const oneOfSizeProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
-	{{- range .values }}
+const oneOfSizeProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
+	case nil:
+		_ = orig
+		break
+	{{ range .values -}}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateSizeProto $.baseStruct $.OneOfField }}
-	{{- end }}
+	{{ end -}}
 }`
 
-const oneOfMarshalProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+const oneOfMarshalProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
 	{{- range .values }}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalProto $.baseStruct $.OneOfField }}

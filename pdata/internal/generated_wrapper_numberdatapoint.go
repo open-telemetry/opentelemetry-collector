@@ -131,13 +131,13 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble)
+		dest.WriteFloat64(orig.AsDouble)
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt)
+		dest.WriteInt64(orig.AsInt)
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
@@ -223,7 +223,10 @@ func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 	if orig.TimeUnixNano != 0 {
 		n += 9
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
+	case nil:
+		_ = orig
+		break
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		n += 9
 	case *otlpmetrics.NumberDataPoint_AsInt:
@@ -262,16 +265,16 @@ func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []by
 		pos--
 		buf[pos] = 0x19
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
 		pos--
 		buf[pos] = 0x21
 
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
 		pos--
 		buf[pos] = 0x31
 

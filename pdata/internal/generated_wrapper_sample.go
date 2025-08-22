@@ -124,9 +124,9 @@ func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
-	if orig.LinkIndex_ != nil {
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
 		dest.WriteObjectField("linkIndex")
-		dest.WriteInt32(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex)
+		dest.WriteInt32(orig.LinkIndex)
 	}
 	if len(orig.TimestampsUnixNano) > 0 {
 		dest.WriteObjectField("timestampsUnixNano")
@@ -206,8 +206,9 @@ func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
 		}
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.LinkIndex_ != nil {
-		n += 1 + proto.Sov(uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		_ = orig
+		n += 1 + proto.Sov(uint64(orig.LinkIndex))
 	}
 	if len(orig.TimestampsUnixNano) > 0 {
 		l = 0
@@ -253,11 +254,10 @@ func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
 		pos--
 		buf[pos] = 0x22
 	}
-	if orig.LinkIndex_ != nil {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.LinkIndex))
 		pos--
 		buf[pos] = 0x28
-
 	}
 	l = len(orig.TimestampsUnixNano)
 	if l > 0 {

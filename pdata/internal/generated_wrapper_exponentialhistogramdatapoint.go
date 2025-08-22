@@ -191,9 +191,9 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 		dest.WriteObjectField("count")
 		dest.WriteUint64(orig.Count)
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum); ok {
 		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum).Sum)
+		dest.WriteFloat64(orig.Sum)
 	}
 	if orig.Scale != int32(0) {
 		dest.WriteObjectField("scale")
@@ -221,13 +221,13 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 		}
 		dest.WriteArrayEnd()
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
 		dest.WriteObjectField("min")
-		dest.WriteFloat64(orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min).Min)
+		dest.WriteFloat64(orig.Min)
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max); ok {
 		dest.WriteObjectField("max")
-		dest.WriteFloat64(orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max).Max)
+		dest.WriteFloat64(orig.Max)
 	}
 	if orig.ZeroThreshold != float64(0) {
 		dest.WriteObjectField("zeroThreshold")
@@ -329,7 +329,8 @@ func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHis
 	if orig.Count != 0 {
 		n += 9
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum); ok {
+		_ = orig
 		n += 9
 	}
 	if orig.Scale != 0 {
@@ -349,10 +350,12 @@ func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHis
 		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
+		_ = orig
 		n += 9
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max); ok {
+		_ = orig
 		n += 9
 	}
 	if orig.ZeroThreshold != 0 {
@@ -390,12 +393,11 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 		pos--
 		buf[pos] = 0x21
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum).Sum))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum))
 		pos--
 		buf[pos] = 0x29
-
 	}
 	if orig.Scale != 0 {
 		pos = proto.EncodeVarint(buf, pos, uint64((uint32(orig.Scale)<<1)^uint32(orig.Scale>>31)))
@@ -433,19 +435,17 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 		pos--
 		buf[pos] = 0x5a
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min).Min))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min))
 		pos--
 		buf[pos] = 0x61
-
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max).Max))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max))
 		pos--
 		buf[pos] = 0x69
-
 	}
 	if orig.ZeroThreshold != 0 {
 		pos -= 8
