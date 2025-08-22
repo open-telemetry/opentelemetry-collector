@@ -64,15 +64,6 @@ func TestSpanCountWithEmpty(t *testing.T) {
 	}, new(internal.State)).SpanCount())
 }
 
-func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	traces := newTraces(otlp, new(internal.State))
-	assert.Equal(t, NewTraces(), traces)
-	assert.Equal(t, otlp, traces.getOrig())
-	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
-	// circular dependency.
-}
-
 func TestTracesCopyTo(t *testing.T) {
 	td := generateTestTraces()
 	tracesCopy := NewTraces()

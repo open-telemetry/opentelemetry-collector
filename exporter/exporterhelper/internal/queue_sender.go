@@ -16,10 +16,11 @@ import (
 
 // QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type QueueBatchSettings[T any] struct {
-	Encoding    queue.Encoding[T]
-	ItemsSizer  request.Sizer[T]
-	BytesSizer  request.Sizer[T]
-	Partitioner queuebatch.Partitioner[T]
+	ReferenceCounter queue.ReferenceCounter[T]
+	Encoding         queue.Encoding[T]
+	ItemsSizer       request.Sizer[T]
+	BytesSizer       request.Sizer[T]
+	Partitioner      queuebatch.Partitioner[T]
 }
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.

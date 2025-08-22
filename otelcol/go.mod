@@ -86,6 +86,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.38.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.132.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.132.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.132.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.132.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.132.0 // indirect

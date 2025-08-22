@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -386,6 +387,7 @@ func newTracesBatchProcessor(set processor.Settings, next consumer.Traces, cfg *
 }
 
 func (t *tracesBatchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	pref.RefTraces(td)
 	return t.batcher.consume(ctx, td)
 }
 
@@ -404,6 +406,7 @@ func newMetricsBatchProcessor(set processor.Settings, next consumer.Metrics, cfg
 
 // ConsumeMetrics implements processor.Metrics
 func (m *metricsBatchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	pref.RefMetrics(md)
 	return m.batcher.consume(ctx, md)
 }
 
@@ -422,6 +425,7 @@ func newLogsBatchProcessor(set processor.Settings, next consumer.Logs, cfg *Conf
 
 // ConsumeLogs implements processor.Logs
 func (l *logsBatchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	pref.RefLogs(ld)
 	return l.batcher.consume(ctx, ld)
 }
 
@@ -445,6 +449,7 @@ func (bt *batchTraces) add(td ptrace.Traces) {
 
 	bt.spanCount += newSpanCount
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
+	pref.UnrefTraces(td)
 }
 
 func (bt *batchTraces) sizeBytes(td ptrace.Traces) int {
@@ -522,6 +527,7 @@ func (bm *batchMetrics) add(md pmetric.Metrics) {
 	}
 	bm.dataPointCount += newDataPointCount
 	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
+	pref.UnrefMetrics(md)
 }
 
 type batchLogs struct {
@@ -571,4 +577,5 @@ func (bl *batchLogs) add(ld plog.Logs) {
 	}
 	bl.logCount += newLogsCount
 	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
+	pref.UnrefLogs(ld)
 }
