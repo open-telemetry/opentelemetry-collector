@@ -33,11 +33,13 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-var protoPoolResource = sync.Pool{
-	New: func() any {
-		return &otlpresource.Resource{}
-	},
-}
+var (
+	protoPoolResource = sync.Pool{
+		New: func() any {
+			return &otlpresource.Resource{}
+		},
+	}
+)
 
 func NewOrigResource() *otlpresource.Resource {
 	if !UseProtoPooling.IsEnabled() {

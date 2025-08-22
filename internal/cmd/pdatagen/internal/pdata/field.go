@@ -14,6 +14,8 @@ type Field interface {
 
 	GenerateTestEncodingValues(ms *messageStruct) string
 
+	GeneratePoolOrig(ms *messageStruct) string
+
 	GenerateDeleteOrig(ms *messageStruct) string
 
 	GenerateCopyOrig(ms *messageStruct) string

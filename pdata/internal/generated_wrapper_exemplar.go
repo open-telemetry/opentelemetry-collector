@@ -19,11 +19,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExemplar = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Exemplar{}
-	},
-}
+var (
+	protoPoolExemplar = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar{}
+		},
+	}
+
+	protoPoolExemplar_AsDouble = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar_AsDouble{}
+		},
+	}
+
+	protoPoolExemplar_AsInt = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar_AsInt{}
+		},
+	}
+)
 
 func NewOrigExemplar() *otlpmetrics.Exemplar {
 	if !UseProtoPooling.IsEnabled() {
@@ -44,6 +58,17 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 
 	for i := range orig.FilteredAttributes {
 		DeleteOrigKeyValue(&orig.FilteredAttributes[i], false)
+	}
+	switch ov := orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolExemplar_AsDouble.Put(ov)
+		}
+	case *otlpmetrics.Exemplar_AsInt:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolExemplar_AsInt.Put(ov)
+		}
+
 	}
 	DeleteOrigSpanID(&orig.SpanId, false)
 	DeleteOrigTraceID(&orig.TraceId, false)
@@ -132,16 +157,26 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 
 		case "asDouble", "as_double":
 			{
-				ofm := &otlpmetrics.Exemplar_AsDouble{}
-				ofm.AsDouble = iter.ReadFloat64()
-				orig.Value = ofm
+				var ov *otlpmetrics.Exemplar_AsDouble
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Exemplar_AsDouble{}
+				} else {
+					ov = protoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+				}
+				ov.AsDouble = iter.ReadFloat64()
+				orig.Value = ov
 			}
 
 		case "asInt", "as_int":
 			{
-				ofm := &otlpmetrics.Exemplar_AsInt{}
-				ofm.AsInt = iter.ReadInt64()
-				orig.Value = ofm
+				var ov *otlpmetrics.Exemplar_AsInt
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Exemplar_AsInt{}
+				} else {
+					ov = protoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+				}
+				ov.AsInt = iter.ReadInt64()
+				orig.Value = ov
 			}
 
 		case "spanId", "span_id":
@@ -277,9 +312,14 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.Exemplar_AsDouble{}
-			ofv.AsDouble = math.Float64frombits(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.Exemplar_AsDouble
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Exemplar_AsDouble{}
+			} else {
+				ov = protoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+			}
+			ov.AsDouble = math.Float64frombits(num)
+			orig.Value = ov
 
 		case 6:
 			if wireType != proto.WireTypeI64 {
@@ -290,9 +330,14 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.Exemplar_AsInt{}
-			ofv.AsInt = int64(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.Exemplar_AsInt
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Exemplar_AsInt{}
+			} else {
+				ov = protoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+			}
+			ov.AsInt = int64(num)
+			orig.Value = ov
 
 		case 4:
 			if wireType != proto.WireTypeLen {

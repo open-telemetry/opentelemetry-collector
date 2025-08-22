@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSpan = sync.Pool{
-	New: func() any {
-		return &otlptrace.Span{}
-	},
-}
+var (
+	protoPoolSpan = sync.Pool{
+		New: func() any {
+			return &otlptrace.Span{}
+		},
+	}
+)
 
 func NewOrigSpan() *otlptrace.Span {
 	if !UseProtoPooling.IsEnabled() {

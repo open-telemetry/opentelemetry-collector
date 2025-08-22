@@ -16,11 +16,43 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolMetric = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Metric{}
-	},
-}
+var (
+	protoPoolMetric = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric{}
+		},
+	}
+
+	protoPoolMetric_Gauge = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric_Gauge{}
+		},
+	}
+
+	protoPoolMetric_Sum = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric_Sum{}
+		},
+	}
+
+	protoPoolMetric_Histogram = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric_Histogram{}
+		},
+	}
+
+	protoPoolMetric_ExponentialHistogram = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric_ExponentialHistogram{}
+		},
+	}
+
+	protoPoolMetric_Summary = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Metric_Summary{}
+		},
+	}
+)
 
 func NewOrigMetric() *otlpmetrics.Metric {
 	if !UseProtoPooling.IsEnabled() {
@@ -41,14 +73,29 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 
 	switch ov := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolMetric_Gauge.Put(ov)
+		}
 		DeleteOrigGauge(ov.Gauge, true)
 	case *otlpmetrics.Metric_Sum:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolMetric_Sum.Put(ov)
+		}
 		DeleteOrigSum(ov.Sum, true)
 	case *otlpmetrics.Metric_Histogram:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolMetric_Histogram.Put(ov)
+		}
 		DeleteOrigHistogram(ov.Histogram, true)
 	case *otlpmetrics.Metric_ExponentialHistogram:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolMetric_ExponentialHistogram.Put(ov)
+		}
 		DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
 	case *otlpmetrics.Metric_Summary:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolMetric_Summary.Put(ov)
+		}
 		DeleteOrigSummary(ov.Summary, true)
 
 	}
@@ -183,42 +230,67 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 
 		case "gauge":
 			{
-				ofm := &otlpmetrics.Metric_Gauge{}
-				ofm.Gauge = NewOrigGauge()
-				UnmarshalJSONOrigGauge(ofm.Gauge, iter)
-				orig.Data = ofm
+				var ov *otlpmetrics.Metric_Gauge
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Metric_Gauge{}
+				} else {
+					ov = protoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
+				}
+				ov.Gauge = NewOrigGauge()
+				UnmarshalJSONOrigGauge(ov.Gauge, iter)
+				orig.Data = ov
 			}
 
 		case "sum":
 			{
-				ofm := &otlpmetrics.Metric_Sum{}
-				ofm.Sum = NewOrigSum()
-				UnmarshalJSONOrigSum(ofm.Sum, iter)
-				orig.Data = ofm
+				var ov *otlpmetrics.Metric_Sum
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Metric_Sum{}
+				} else {
+					ov = protoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
+				}
+				ov.Sum = NewOrigSum()
+				UnmarshalJSONOrigSum(ov.Sum, iter)
+				orig.Data = ov
 			}
 
 		case "histogram":
 			{
-				ofm := &otlpmetrics.Metric_Histogram{}
-				ofm.Histogram = NewOrigHistogram()
-				UnmarshalJSONOrigHistogram(ofm.Histogram, iter)
-				orig.Data = ofm
+				var ov *otlpmetrics.Metric_Histogram
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Metric_Histogram{}
+				} else {
+					ov = protoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
+				}
+				ov.Histogram = NewOrigHistogram()
+				UnmarshalJSONOrigHistogram(ov.Histogram, iter)
+				orig.Data = ov
 			}
 
 		case "exponentialHistogram", "exponential_histogram":
 			{
-				ofm := &otlpmetrics.Metric_ExponentialHistogram{}
-				ofm.ExponentialHistogram = NewOrigExponentialHistogram()
-				UnmarshalJSONOrigExponentialHistogram(ofm.ExponentialHistogram, iter)
-				orig.Data = ofm
+				var ov *otlpmetrics.Metric_ExponentialHistogram
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Metric_ExponentialHistogram{}
+				} else {
+					ov = protoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
+				}
+				ov.ExponentialHistogram = NewOrigExponentialHistogram()
+				UnmarshalJSONOrigExponentialHistogram(ov.ExponentialHistogram, iter)
+				orig.Data = ov
 			}
 
 		case "summary":
 			{
-				ofm := &otlpmetrics.Metric_Summary{}
-				ofm.Summary = NewOrigSummary()
-				UnmarshalJSONOrigSummary(ofm.Summary, iter)
-				orig.Data = ofm
+				var ov *otlpmetrics.Metric_Summary
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Metric_Summary{}
+				} else {
+					ov = protoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
+				}
+				ov.Summary = NewOrigSummary()
+				UnmarshalJSONOrigSummary(ov.Summary, iter)
+				orig.Data = ov
 			}
 
 		case "metadata":
@@ -414,13 +486,18 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			ofv := &otlpmetrics.Metric_Gauge{}
-			ofv.Gauge = NewOrigGauge()
-			err = UnmarshalProtoOrigGauge(ofv.Gauge, buf[startPos:pos])
+			var ov *otlpmetrics.Metric_Gauge
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Metric_Gauge{}
+			} else {
+				ov = protoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
+			}
+			ov.Gauge = NewOrigGauge()
+			err = UnmarshalProtoOrigGauge(ov.Gauge, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ofv
+			orig.Data = ov
 
 		case 7:
 			if wireType != proto.WireTypeLen {
@@ -432,13 +509,18 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			ofv := &otlpmetrics.Metric_Sum{}
-			ofv.Sum = NewOrigSum()
-			err = UnmarshalProtoOrigSum(ofv.Sum, buf[startPos:pos])
+			var ov *otlpmetrics.Metric_Sum
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Metric_Sum{}
+			} else {
+				ov = protoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
+			}
+			ov.Sum = NewOrigSum()
+			err = UnmarshalProtoOrigSum(ov.Sum, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ofv
+			orig.Data = ov
 
 		case 9:
 			if wireType != proto.WireTypeLen {
@@ -450,13 +532,18 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			ofv := &otlpmetrics.Metric_Histogram{}
-			ofv.Histogram = NewOrigHistogram()
-			err = UnmarshalProtoOrigHistogram(ofv.Histogram, buf[startPos:pos])
+			var ov *otlpmetrics.Metric_Histogram
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Metric_Histogram{}
+			} else {
+				ov = protoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
+			}
+			ov.Histogram = NewOrigHistogram()
+			err = UnmarshalProtoOrigHistogram(ov.Histogram, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ofv
+			orig.Data = ov
 
 		case 10:
 			if wireType != proto.WireTypeLen {
@@ -468,13 +555,18 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			ofv := &otlpmetrics.Metric_ExponentialHistogram{}
-			ofv.ExponentialHistogram = NewOrigExponentialHistogram()
-			err = UnmarshalProtoOrigExponentialHistogram(ofv.ExponentialHistogram, buf[startPos:pos])
+			var ov *otlpmetrics.Metric_ExponentialHistogram
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Metric_ExponentialHistogram{}
+			} else {
+				ov = protoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
+			}
+			ov.ExponentialHistogram = NewOrigExponentialHistogram()
+			err = UnmarshalProtoOrigExponentialHistogram(ov.ExponentialHistogram, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ofv
+			orig.Data = ov
 
 		case 11:
 			if wireType != proto.WireTypeLen {
@@ -486,13 +578,18 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			ofv := &otlpmetrics.Metric_Summary{}
-			ofv.Summary = NewOrigSummary()
-			err = UnmarshalProtoOrigSummary(ofv.Summary, buf[startPos:pos])
+			var ov *otlpmetrics.Metric_Summary
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Metric_Summary{}
+			} else {
+				ov = protoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
+			}
+			ov.Summary = NewOrigSummary()
+			err = UnmarshalProtoOrigSummary(ov.Summary, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ofv
+			orig.Data = ov
 
 		case 12:
 			if wireType != proto.WireTypeLen {

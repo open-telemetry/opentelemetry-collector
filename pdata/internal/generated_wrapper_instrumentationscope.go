@@ -32,11 +32,13 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-var protoPoolInstrumentationScope = sync.Pool{
-	New: func() any {
-		return &otlpcommon.InstrumentationScope{}
-	},
-}
+var (
+	protoPoolInstrumentationScope = sync.Pool{
+		New: func() any {
+			return &otlpcommon.InstrumentationScope{}
+		},
+	}
+)
 
 func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
 	if !UseProtoPooling.IsEnabled() {

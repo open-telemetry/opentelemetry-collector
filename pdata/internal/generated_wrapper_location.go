@@ -15,11 +15,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolLocation = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Location{}
-	},
-}
+var (
+	protoPoolLocation = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Location{}
+		},
+	}
+	protoPoolLocation_MappingIndex = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Location_MappingIndex{}
+		},
+	}
+)
 
 func NewOrigLocation() *otlpprofiles.Location {
 	if !UseProtoPooling.IsEnabled() {
@@ -38,6 +45,13 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 		return
 	}
 
+	switch ov := orig.MappingIndex_.(type) {
+	case *otlpprofiles.Location_MappingIndex:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolLocation_MappingIndex.Put(ov)
+		}
+
+	}
 	for i := range orig.Line {
 		DeleteOrigLine(orig.Line[i], true)
 	}
@@ -123,9 +137,14 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 		switch f {
 		case "mappingIndex", "mapping_index":
 			{
-				ofm := &otlpprofiles.Location_MappingIndex{}
-				ofm.MappingIndex = iter.ReadInt32()
-				orig.MappingIndex_ = ofm
+				var ov *otlpprofiles.Location_MappingIndex
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpprofiles.Location_MappingIndex{}
+				} else {
+					ov = protoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+				}
+				ov.MappingIndex = iter.ReadInt32()
+				orig.MappingIndex_ = ov
 			}
 
 		case "address":
@@ -245,9 +264,14 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpprofiles.Location_MappingIndex{}
-			ofv.MappingIndex = int32(num)
-			orig.MappingIndex_ = ofv
+			var ov *otlpprofiles.Location_MappingIndex
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpprofiles.Location_MappingIndex{}
+			} else {
+				ov = protoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+			}
+			ov.MappingIndex = int32(num)
+			orig.MappingIndex_ = ov
 
 		case 2:
 			if wireType != proto.WireTypeVarint {

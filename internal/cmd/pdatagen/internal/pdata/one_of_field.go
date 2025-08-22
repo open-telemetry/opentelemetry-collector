@@ -44,6 +44,11 @@ const oneOfTestValuesTemplate = `
 	{{ .GenerateTestEncodingValues $.baseStruct $.OneOfField }}
 	{{- end }}`
 
+const oneOfPoolOrigTemplate = `
+	{{- range .values }}
+		{{ .GeneratePoolOrig $.baseStruct $.OneOfField }}
+	{{- end }}`
+
 const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
 	{{ range .values -}}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
@@ -124,18 +129,12 @@ func (of *OneOfField) GenerateTestEncodingValues(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields(ms))
 }
 
+func (of *OneOfField) GeneratePoolOrig(ms *messageStruct) string {
+	return template.Execute(template.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields(ms))
+}
+
 func (of *OneOfField) GenerateDeleteOrig(ms *messageStruct) string {
-	atLeastOneMessage := false
-	for i := range of.values {
-		if _, ok := of.values[i].(*OneOfMessageValue); ok {
-			atLeastOneMessage = true
-			break
-		}
-	}
-	if atLeastOneMessage {
-		return template.Execute(template.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields(ms))
-	}
-	return ""
+	return template.Execute(template.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields(ms))
 }
 
 func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
@@ -173,6 +172,7 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"structName":           ms.getName(),
 		"typeFuncName":         of.typeFuncName(),
 		"typeName":             of.typeName,
+		"originName":           ms.getOriginName(),
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
 		"origAccessor":         origAccessor(ms.getHasWrapper()),
@@ -191,6 +191,7 @@ type oneOfValue interface {
 	GenerateTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateTestFailingUnmarshalProtoValues(ms *messageStruct, of *OneOfField) string
 	GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string
+	GeneratePoolOrig(ms *messageStruct, of *OneOfField) string
 	GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
