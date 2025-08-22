@@ -77,6 +77,10 @@ func (ss *messageSlice) getHasWrapper() bool {
 	return usedByOtherDataTypes(ss.packageName)
 }
 
+func (ss *messageSlice) getHasOnlyOrig() bool {
+	return false
+}
+
 func (ss *messageSlice) getElementOriginName() string {
 	return ss.element.getOriginName()
 }
