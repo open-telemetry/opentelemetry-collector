@@ -5,10 +5,12 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
 	"fmt"
+	"math"
 	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type Value struct {
@@ -108,7 +110,7 @@ func NewOrigAnyValueArrayValue() *otlpcommon.AnyValue_ArrayValue {
 	return protoPoolAnyValueArrayValue.Get().(*otlpcommon.AnyValue_ArrayValue)
 }
 
-func NewOrigAnyValueKeyValueList() *otlpcommon.AnyValue_KvlistValue {
+func NewOrigAnyValueKvlistValue() *otlpcommon.AnyValue_KvlistValue {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.AnyValue_KvlistValue{}
 	}
@@ -196,7 +198,7 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 		dv.BytesValue = make([]byte, len(sv.BytesValue))
 		copy(dv.BytesValue, sv.BytesValue)
 	case *otlpcommon.AnyValue_KvlistValue:
-		dv := NewOrigAnyValueKeyValueList()
+		dv := NewOrigAnyValueKvlistValue()
 		dest.Value = dv
 		if sv.KvlistValue == nil {
 			return
@@ -277,7 +279,7 @@ func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 			UnmarshalJSONOrigArrayValue(ov.ArrayValue, iter)
 			orig.Value = ov
 		case "kvlistValue", "kvlist_value":
-			ov := NewOrigAnyValueKeyValueList()
+			ov := NewOrigAnyValueKvlistValue()
 			ov.KvlistValue = NewOrigKeyValueList()
 			UnmarshalJSONOrigKeyValueList(ov.KvlistValue, iter)
 			orig.Value = ov
@@ -305,5 +307,129 @@ func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 }
 
 func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field StringValue", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ov := NewOrigAnyValueStringValue()
+			ov.StringValue = string(buf[startPos:pos])
+			orig.Value = ov
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field BoolValue", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			ov := NewOrigAnyValueBoolValue()
+			ov.BoolValue = num != 0
+			orig.Value = ov
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field IntValue", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			ov := NewOrigAnyValueIntValue()
+			ov.IntValue = int64(num) //nolint:gosec // G115
+			orig.Value = ov
+
+		case 4:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DoubleValue", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			ov := NewOrigAnyValueDoubleValue()
+			ov.DoubleValue = math.Float64frombits(num)
+			orig.Value = ov
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArrayValue", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ov := NewOrigAnyValueArrayValue()
+			ov.ArrayValue = NewOrigArrayValue()
+			err = UnmarshalProtoOrigArrayValue(ov.ArrayValue, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Value = ov
+
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field KvlistValue", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ov := NewOrigAnyValueKvlistValue()
+			ov.KvlistValue = NewOrigKeyValueList()
+			err = UnmarshalProtoOrigKeyValueList(ov.KvlistValue, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.Value = ov
+
+		case 7:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field BytesValue", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ov := NewOrigAnyValueBytesValue()
+			ov.BytesValue = make([]byte, length)
+			copy(ov.BytesValue, buf[startPos:pos])
+			orig.Value = ov
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
