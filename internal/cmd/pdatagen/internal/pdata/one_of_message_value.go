@@ -96,6 +96,10 @@ func (omv *OneOfMessageValue) GenerateTestEncodingValues(ms *messageStruct, of *
 	return omv.toProtoField(ms, of, false).GenTestEncodingValues()
 }
 
+func (omv *OneOfMessageValue) GeneratePoolOrig(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of, false).GenPoolVarOrig()
+}
+
 func (omv *OneOfMessageValue) GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string {
 	return omv.toProtoField(ms, of, false).GenDeleteOrig()
 }

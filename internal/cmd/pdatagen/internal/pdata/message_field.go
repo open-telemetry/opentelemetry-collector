@@ -72,6 +72,10 @@ func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(t, mf.templateFields(ms))
 }
 
+func (mf *MessageField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
 func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
 	return mf.toProtoField().GenMarshalJSON()
 }

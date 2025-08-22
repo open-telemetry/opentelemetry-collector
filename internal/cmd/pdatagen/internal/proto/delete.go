@@ -7,6 +7,12 @@ import (
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
+const deleteOrigOther = `{{ if ne .oneOfGroup "" -}}
+	if UseProtoPooling.IsEnabled() {
+		protoPool{{ .oneOfMessageName }}.Put(ov)
+	}
+{{ end }}`
+
 const deleteOrigMessage = `{{ if .repeated -}}
 	for i := range orig.{{ .fieldName }} {
 	{{ if .nullable -}}
@@ -16,6 +22,9 @@ const deleteOrigMessage = `{{ if .repeated -}}
 	{{- end }}
 	}
 {{- else if ne .oneOfGroup "" -}}
+	if UseProtoPooling.IsEnabled() {
+		protoPool{{ .oneOfMessageName }}.Put(ov)
+	}
 	DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
 {{- else if .nullable -}}
 	DeleteOrig{{ .origName }}(orig.{{ .fieldName }}, true)
@@ -28,6 +37,9 @@ func (pf *Field) GenDeleteOrig() string {
 	tf := pf.getTemplateFields()
 	if pf.Type == TypeMessage {
 		return template.Execute(template.Parse("deleteOrigMessage", []byte(deleteOrigMessage)), tf)
+	}
+	if pf.OneOfGroup != "" {
+		return template.Execute(template.Parse("deleteOrigOther", []byte(deleteOrigOther)), tf)
 	}
 	return ""
 }

@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExportTraceServiceResponse = sync.Pool{
-	New: func() any {
-		return &otlpcollectortrace.ExportTraceServiceResponse{}
-	},
-}
+var (
+	protoPoolExportTraceServiceResponse = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTraceServiceResponse{}
+		},
+	}
+)
 
 func NewOrigExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
 	if !UseProtoPooling.IsEnabled() {

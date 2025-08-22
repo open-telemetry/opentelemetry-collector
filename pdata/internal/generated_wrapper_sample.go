@@ -15,11 +15,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSample = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Sample{}
-	},
-}
+var (
+	protoPoolSample = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Sample{}
+		},
+	}
+	protoPoolSample_LinkIndex = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Sample_LinkIndex{}
+		},
+	}
+)
 
 func NewOrigSample() *otlpprofiles.Sample {
 	if !UseProtoPooling.IsEnabled() {
@@ -36,6 +43,14 @@ func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
 	if !UseProtoPooling.IsEnabled() {
 		orig.Reset()
 		return
+	}
+
+	switch ov := orig.LinkIndex_.(type) {
+	case *otlpprofiles.Sample_LinkIndex:
+		if UseProtoPooling.IsEnabled() {
+			protoPoolSample_LinkIndex.Put(ov)
+		}
+
 	}
 
 	orig.Reset()
@@ -145,9 +160,14 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 
 		case "linkIndex", "link_index":
 			{
-				ofm := &otlpprofiles.Sample_LinkIndex{}
-				ofm.LinkIndex = iter.ReadInt32()
-				orig.LinkIndex_ = ofm
+				var ov *otlpprofiles.Sample_LinkIndex
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpprofiles.Sample_LinkIndex{}
+				} else {
+					ov = protoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+				}
+				ov.LinkIndex = iter.ReadInt32()
+				orig.LinkIndex_ = ov
 			}
 
 		case "timestampsUnixNano", "timestamps_unix_nano":
@@ -341,9 +361,14 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpprofiles.Sample_LinkIndex{}
-			ofv.LinkIndex = int32(num)
-			orig.LinkIndex_ = ofv
+			var ov *otlpprofiles.Sample_LinkIndex
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpprofiles.Sample_LinkIndex{}
+			} else {
+				ov = protoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+			}
+			ov.LinkIndex = int32(num)
+			orig.LinkIndex_ = ov
 		case 6:
 			if wireType != proto.WireTypeLen {
 				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
