@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceProfiles(t *testing.T) {
-	src := NewOrigResourceProfiles()
-	dest := NewOrigResourceProfiles()
-	CopyOrigResourceProfiles(dest, src)
-	assert.Equal(t, NewOrigResourceProfiles(), dest)
-	*src = *GenTestOrigResourceProfiles()
-	CopyOrigResourceProfiles(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesResourceProfiles() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigResourceProfiles()
+				CopyOrigResourceProfiles(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigResourceProfiles(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceProfilesUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfilesUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigResourceProfiles(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigResourceProfiles()
-			UnmarshalJSONOrigResourceProfiles(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigResourceProfiles(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigResourceProfiles()
+				UnmarshalJSONOrigResourceProfiles(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceProfiles(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfilesUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceProfiles(src))
-			gotSize := MarshalProtoOrigResourceProfiles(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigResourceProfiles()
-			require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigResourceProfiles(src))
+				gotSize := MarshalProtoOrigResourceProfiles(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigResourceProfiles()
+				require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceProfiles(dest, true)
+			})
+		}
 	}
 }
 

@@ -24,6 +24,7 @@ var pmetricotlp = &Package{
 			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,

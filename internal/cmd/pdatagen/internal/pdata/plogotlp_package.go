@@ -23,6 +23,7 @@ var plogotlp = &Package{
 			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,

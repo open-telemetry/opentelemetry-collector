@@ -42,8 +42,8 @@ func (ms Metrics) MoveTo(dest Metrics) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectormetrics.ExportMetricsServiceRequest{}
+	internal.DeleteOrigExportMetricsServiceRequest(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // ResourceMetrics returns the ResourceMetrics associated with this Metrics.

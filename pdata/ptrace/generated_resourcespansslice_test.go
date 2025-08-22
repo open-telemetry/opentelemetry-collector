@@ -52,6 +52,8 @@ func TestResourceSpansSlice_CopyTo(t *testing.T) {
 	src := generateTestResourceSpansSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceSpansSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestResourceSpansSlice(), dest)
 }
 
 func TestResourceSpansSlice_EnsureCapacity(t *testing.T) {

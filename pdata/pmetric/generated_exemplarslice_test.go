@@ -51,6 +51,8 @@ func TestExemplarSlice_CopyTo(t *testing.T) {
 	src := generateTestExemplarSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExemplarSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestExemplarSlice(), dest)
 }
 
 func TestExemplarSlice_EnsureCapacity(t *testing.T) {

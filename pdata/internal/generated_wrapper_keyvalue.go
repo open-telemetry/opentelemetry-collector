@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolKeyValue = sync.Pool{
+	New: func() any {
+		return &otlpcommon.KeyValue{}
+	},
+}
+
 func NewOrigKeyValue() *otlpcommon.KeyValue {
-	return &otlpcommon.KeyValue{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.KeyValue{}
+	}
+	return protoPoolKeyValue.Get().(*otlpcommon.KeyValue)
+}
+
+func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigAnyValue(&orig.Value, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolKeyValue.Put(orig)
+	}
 }
 
 func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Key = src.Key
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }

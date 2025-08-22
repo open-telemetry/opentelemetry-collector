@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportTracePartialSuccess(t *testing.T) {
-	src := NewOrigExportTracePartialSuccess()
-	dest := NewOrigExportTracePartialSuccess()
-	CopyOrigExportTracePartialSuccess(dest, src)
-	assert.Equal(t, NewOrigExportTracePartialSuccess(), dest)
-	*src = *GenTestOrigExportTracePartialSuccess()
-	CopyOrigExportTracePartialSuccess(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportTracePartialSuccess()
+				CopyOrigExportTracePartialSuccess(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportTracePartialSuccess(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccessUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccessUnknown(t *testing.
 
 func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigExportTracePartialSuccess(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigExportTracePartialSuccess()
-			UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExportTracePartialSuccess(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExportTracePartialSuccess()
+				UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportTracePartialSuccess(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccessUnknown(t *testing
 
 func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExportTracePartialSuccess(src))
-			gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigExportTracePartialSuccess()
-			require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigExportTracePartialSuccess(src))
+				gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExportTracePartialSuccess()
+				require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportTracePartialSuccess(dest, true)
+			})
+		}
 	}
 }
 

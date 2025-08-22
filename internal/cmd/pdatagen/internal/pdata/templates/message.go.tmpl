@@ -53,8 +53,8 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
-	*ms.{{ .origAccessor }} = {{ .originFullName }}{}
+	internal.DeleteOrig{{ .originName }}(dest.{{ .origAccessor }}, false)
+	*dest.{{ .origAccessor }}, *ms.{{ .origAccessor }} = *ms.{{ .origAccessor }}, *dest.{{ .origAccessor }}
 }
 
 {{ range .fields -}}

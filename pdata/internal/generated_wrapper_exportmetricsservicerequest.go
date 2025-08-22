@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,11 +32,44 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
+var protoPoolExportMetricsServiceRequest = sync.Pool{
+	New: func() any {
+		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	},
+}
+
 func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	}
+	return protoPoolExportMetricsServiceRequest.Get().(*otlpcollectormetrics.ExportMetricsServiceRequest)
+}
+
+func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.ResourceMetrics {
+		DeleteOrigResourceMetrics(orig.ResourceMetrics[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportMetricsServiceRequest.Put(orig)
+	}
 }
 
 func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 

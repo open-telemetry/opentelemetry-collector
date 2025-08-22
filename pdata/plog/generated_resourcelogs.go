@@ -45,8 +45,8 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ResourceLogs{}
+	internal.DeleteOrigResourceLogs(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceLogs.

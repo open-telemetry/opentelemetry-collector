@@ -45,8 +45,8 @@ func (ms Attribute) MoveTo(dest Attribute) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcommon.KeyValue{}
+	internal.DeleteOrigKeyValue(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Key returns the key associated with this Attribute.

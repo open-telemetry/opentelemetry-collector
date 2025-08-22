@@ -75,6 +75,10 @@ func (ptf *TypedField) GenerateTestEncodingValues(*messageStruct) string {
 	return ptf.toProtoField().GenTestEncodingValues()
 }
 
+func (ptf *TypedField) GenerateDeleteOrig(*messageStruct) string {
+	return ptf.toProtoField().GenDeleteOrig()
+}
+
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("typedCopyOrigTemplate", []byte(typedCopyOrigTemplate))
 	return template.Execute(t, ptf.templateFields(ms))

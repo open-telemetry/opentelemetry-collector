@@ -49,8 +49,8 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Exemplar{}
+	internal.DeleteOrigExemplar(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.

@@ -25,6 +25,7 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigScopeSpans(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.

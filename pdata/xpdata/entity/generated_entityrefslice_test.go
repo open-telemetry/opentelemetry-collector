@@ -52,6 +52,8 @@ func TestEntityRefSlice_CopyTo(t *testing.T) {
 	src := generateTestEntityRefSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
 
 func TestEntityRefSlice_EnsureCapacity(t *testing.T) {

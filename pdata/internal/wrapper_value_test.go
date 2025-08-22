@@ -4,11 +4,13 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -216,30 +218,72 @@ func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 
 func TestCopyOrigAnyValueAllTypes(t *testing.T) {
 	for name, src := range allAnyValues() {
-		t.Run(name, func(t *testing.T) {
-			dest := &otlpcommon.AnyValue{}
-			CopyOrigAnyValue(dest, src)
-			assert.Equal(t, src, dest)
-		})
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigAnyValue()
+				CopyOrigAnyValue(dest, src)
+				assert.Equal(t, src, dest)
+				DeleteOrigAnyValue(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigAnyValueAllTypes(t *testing.T) {
 	for name, src := range allAnyValues() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigAnyValue(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := &otlpcommon.AnyValue{}
-			UnmarshalJSONOrigAnyValue(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigAnyValue(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigAnyValue()
+				UnmarshalJSONOrigAnyValue(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigAnyValue(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoAnyValueAllTypes(t *testing.T) {
+	for name, src := range allAnyValues() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigAnyValue(src))
+				gotSize := MarshalProtoOrigAnyValue(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigAnyValue()
+				require.NoError(t, UnmarshalProtoOrigAnyValue(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigAnyValue(dest, true)
+			})
+		}
 	}
 }
 

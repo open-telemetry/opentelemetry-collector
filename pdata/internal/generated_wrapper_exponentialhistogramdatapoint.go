@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -17,11 +18,49 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var protoPoolExponentialHistogramDataPoint = sync.Pool{
+	New: func() any {
+		return &otlpmetrics.ExponentialHistogramDataPoint{}
+	},
+}
+
 func NewOrigExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
-	return &otlpmetrics.ExponentialHistogramDataPoint{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.ExponentialHistogramDataPoint{}
+	}
+	return protoPoolExponentialHistogramDataPoint.Get().(*otlpmetrics.ExponentialHistogramDataPoint)
+}
+
+func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	DeleteOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, false)
+	DeleteOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, false)
+	for i := range orig.Exemplars {
+		DeleteOrigExemplar(&orig.Exemplars[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExponentialHistogramDataPoint.Put(orig)
+	}
 }
 
 func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano

@@ -69,6 +69,10 @@ func (sf *SliceField) GenerateTestEncodingValues(*messageStruct) string {
 	return sf.toProtoField().GenTestEncodingValues()
 }
 
+func (sf *SliceField) GenerateDeleteOrig(*messageStruct) string {
+	return sf.toProtoField().GenDeleteOrig()
+}
+
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("sliceCopyOrigTemplate", []byte(sliceCopyOrigTemplate))
 	return template.Execute(t, sf.templateFields(ms))

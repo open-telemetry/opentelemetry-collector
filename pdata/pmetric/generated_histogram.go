@@ -44,8 +44,8 @@ func (ms Histogram) MoveTo(dest Histogram) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Histogram{}
+	internal.DeleteOrigHistogram(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // DataPoints returns the DataPoints associated with this Histogram.
