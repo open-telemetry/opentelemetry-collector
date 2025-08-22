@@ -614,8 +614,10 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.OriginalPayload = make([]byte, length)
-			copy(orig.OriginalPayload, buf[startPos:pos])
+			if length != 0 {
+				orig.OriginalPayload = make([]byte, length)
+				copy(orig.OriginalPayload, buf[startPos:pos])
+			}
 		case 14:
 			if wireType != proto.WireTypeLen {
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)

@@ -68,6 +68,17 @@ const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 	for iter.ReadArray() {
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, iter.ReadBytes())
 	}
+{{ else if ne .oneOfGroup "" -}}
+	{
+		var ov *{{ .oneOfMessageFullName }}
+		if !UseProtoPooling.IsEnabled() {
+			ov = &{{ .oneOfMessageFullName }}{}
+		} else {
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+		}
+		ov.{{ .fieldName }} = iter.ReadBytes()
+		orig.{{ .oneOfGroup }} = ov
+	}
 {{ else -}}
 	orig.{{ .fieldName }} = iter.ReadBytes()
 {{- end }}`

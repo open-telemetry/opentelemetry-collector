@@ -239,15 +239,23 @@ const unmarshalProtoBytes = `
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
 		}
-		ov.{{ .fieldName }} = make([]byte, length)
-		copy(ofv.{{ .fieldName }}, buf[startPos:pos])
+		if length != 0 {
+			ov.{{ .fieldName }} = make([]byte, length)
+			copy(ov.{{ .fieldName }}, buf[startPos:pos])
+		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, make([]byte, length))
-		copy(orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], buf[startPos:pos])
+		if length != 0 {
+			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, make([]byte, length))
+			copy(orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], buf[startPos:pos])
+		} else {
+			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, nil)
+		}
 {{- else -}}
-		orig.{{ .fieldName }} = make([]byte, length)
-		copy(orig.{{ .fieldName }}, buf[startPos:pos])
+		if length != 0 {
+			orig.{{ .fieldName }} = make([]byte, length)
+			copy(orig.{{ .fieldName }}, buf[startPos:pos])
+		}
 {{- end }}`
 
 const unmarshalProtoMessage = `
