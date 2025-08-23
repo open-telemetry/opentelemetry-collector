@@ -23,7 +23,7 @@ import (
 func TestCopyOrigSample(t *testing.T) {
 	for name, src := range genTestEncodingValuesSample() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -52,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigSampleUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSample(t *testing.T) {
 	for name, src := range genTestEncodingValuesSample() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -96,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigSampleUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSample(t *testing.T) {
 	for name, src := range genTestEncodingValuesSample() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

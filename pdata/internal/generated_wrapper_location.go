@@ -48,6 +48,7 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 	switch ov := orig.MappingIndex_.(type) {
 	case *otlpprofiles.Location_MappingIndex:
 		if UseProtoPooling.IsEnabled() {
+			ov.MappingIndex = int32(0)
 			protoPoolLocation_MappingIndex.Put(ov)
 		}
 

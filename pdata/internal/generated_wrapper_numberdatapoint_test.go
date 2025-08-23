@@ -24,7 +24,7 @@ import (
 func TestCopyOrigNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -53,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -97,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
