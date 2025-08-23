@@ -23,7 +23,7 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 		if !UseProtoPooling.IsEnabled() {
 			ov = &{{ .oneOfMessageFullName }}{}
 		} else {
-			ov = protoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
 		}
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 		orig.{{ .oneOfGroup }} = ov
@@ -53,7 +53,7 @@ const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 		if !UseProtoPooling.IsEnabled() {
 			ov = &{{ .oneOfMessageFullName }}{}
 		} else {
-			ov = protoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
 		}
 		ov.{{ .fieldName }} = NewOrig{{ .origName }}()
 		UnmarshalJSONOrig{{ .origName }}(ov.{{ .fieldName }}, iter)

@@ -24,19 +24,19 @@ var (
 			return &otlpmetrics.HistogramDataPoint{}
 		},
 	}
-	protoPoolHistogramDataPoint_Sum = sync.Pool{
+	ProtoPoolHistogramDataPoint_Sum = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.HistogramDataPoint_Sum{}
 		},
 	}
 
-	protoPoolHistogramDataPoint_Min = sync.Pool{
+	ProtoPoolHistogramDataPoint_Min = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.HistogramDataPoint_Min{}
 		},
 	}
 
-	protoPoolHistogramDataPoint_Max = sync.Pool{
+	ProtoPoolHistogramDataPoint_Max = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.HistogramDataPoint_Max{}
 		},
@@ -67,7 +67,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	case *otlpmetrics.HistogramDataPoint_Sum:
 		if UseProtoPooling.IsEnabled() {
 			ov.Sum = float64(0)
-			protoPoolHistogramDataPoint_Sum.Put(ov)
+			ProtoPoolHistogramDataPoint_Sum.Put(ov)
 		}
 
 	}
@@ -78,7 +78,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	case *otlpmetrics.HistogramDataPoint_Min:
 		if UseProtoPooling.IsEnabled() {
 			ov.Min = float64(0)
-			protoPoolHistogramDataPoint_Min.Put(ov)
+			ProtoPoolHistogramDataPoint_Min.Put(ov)
 		}
 
 	}
@@ -86,7 +86,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	case *otlpmetrics.HistogramDataPoint_Max:
 		if UseProtoPooling.IsEnabled() {
 			ov.Max = float64(0)
-			protoPoolHistogramDataPoint_Max.Put(ov)
+			ProtoPoolHistogramDataPoint_Max.Put(ov)
 		}
 
 	}
@@ -254,7 +254,7 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.HistogramDataPoint_Sum{}
 				} else {
-					ov = protoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
+					ov = ProtoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
 				}
 				ov.Sum = iter.ReadFloat64()
 				orig.Sum_ = ov
@@ -284,7 +284,7 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.HistogramDataPoint_Min{}
 				} else {
-					ov = protoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
+					ov = ProtoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
 				}
 				ov.Min = iter.ReadFloat64()
 				orig.Min_ = ov
@@ -296,7 +296,7 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.HistogramDataPoint_Max{}
 				} else {
-					ov = protoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
+					ov = ProtoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
 				}
 				ov.Max = iter.ReadFloat64()
 				orig.Max_ = ov
@@ -519,7 +519,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.HistogramDataPoint_Sum{}
 			} else {
-				ov = protoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
+				ov = ProtoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
 			}
 			ov.Sum = math.Float64frombits(num)
 			orig.Sum_ = ov
@@ -611,7 +611,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.HistogramDataPoint_Min{}
 			} else {
-				ov = protoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
+				ov = ProtoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
 			}
 			ov.Min = math.Float64frombits(num)
 			orig.Min_ = ov
@@ -629,7 +629,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.HistogramDataPoint_Max{}
 			} else {
-				ov = protoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
+				ov = ProtoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
 			}
 			ov.Max = math.Float64frombits(num)
 			orig.Max_ = ov

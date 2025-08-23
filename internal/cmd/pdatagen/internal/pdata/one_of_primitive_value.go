@@ -18,9 +18,14 @@ func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
 // Set{{ .accessorFieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-		{{ .originFieldName }}: v,
+	var ov *{{ .originStructType }}
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &{{ .originStructType }}{}
+	} else {
+		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
 	}
+	ov.{{ .originFieldName }} = v
+	ms.orig.{{ .originOneOfFieldName }} = ov
 }`
 
 const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .accessorFieldName }}(t *testing.T) {
@@ -51,8 +56,14 @@ const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .o
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructType }}:
-	dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-{{- .originFieldName }}: t.{{ .originFieldName }}}`
+	var ov *{{ .originStructType }}
+	if !UseProtoPooling.IsEnabled() {
+		ov = &{{ .originStructType }}{}
+	} else {
+		ov = ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
+	}
+	ov.{{ .originFieldName }} = t.{{ .originFieldName }}
+	dest.{{ .originOneOfFieldName }} = ov`
 
 const oneOfPrimitiveTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
@@ -161,6 +172,7 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 		"originOneOfFieldName":    of.originFieldName,
 		"originStructName":        ms.originFullName,
 		"originStructType":        ms.originFullName + "_" + opv.originFieldName,
+		"oneOfName":               proto.ExtractNameFromFull(ms.originFullName + "_" + opv.originFieldName),
 	}
 }
 

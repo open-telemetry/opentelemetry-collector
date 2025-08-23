@@ -31,9 +31,15 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 // Calling this function on zero-initialized {{ .structName }} will cause a panic.
 func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	ms.state.AssertMutable()
-	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
-	return new{{ .returnType }}(val, ms.state)
+	var ov *{{ .originStructType }}
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &{{ .originStructType }}{}
+	} else {
+		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
+	}
+	ov.{{ .fieldName }} = internal.NewOrig{{ .fieldOriginName }}()
+	ms.orig.{{ .originOneOfFieldName }} = ov
+	return new{{ .returnType }}(ov.{{ .fieldName }}, ms.state)
 }`
 
 const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
@@ -53,20 +59,23 @@ const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .ori
 {{- .fieldName }}: GenTestOrig{{ .fieldOriginName }}() }`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
-		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
-		CopyOrig{{ .fieldOriginName }}({{ .lowerFieldName }}, t.{{ .fieldName }})
-		dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-			{{ .fieldName }}: {{ .lowerFieldName }},
-		}`
+		var ov *{{ .originStructType }}
+		if !UseProtoPooling.IsEnabled() {
+			ov = &{{ .originStructType }}{}
+		} else {
+			ov = ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
+		}
+		ov.{{ .fieldName }} = NewOrig{{ .fieldOriginName }}()
+		CopyOrig{{ .fieldOriginName }}(ov.{{ .fieldName }}, t.{{ .fieldName }})
+		dest.{{ .originOneOfFieldName }} = ov`
 
 const oneOfMessageTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
 
 type OneOfMessageValue struct {
-	fieldName              string
-	protoID                uint32
-	originFieldPackageName string
-	returnMessage          *messageStruct
+	fieldName     string
+	protoID       uint32
+	returnMessage *messageStruct
 }
 
 func (omv *OneOfMessageValue) GetOriginFieldName() string {
@@ -154,7 +163,6 @@ func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, ol
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
 		"fieldName":               omv.fieldName,
-		"originFieldName":         omv.fieldName,
 		"originOneOfFieldName":    of.originFieldName,
 		"fieldOriginName":         omv.returnMessage.getOriginName(),
 		"typeName":                of.typeName + omv.fieldName,
@@ -162,9 +170,9 @@ func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) 
 		"returnType":              omv.returnMessage.getName(),
 		"originOneOfTypeFuncName": of.typeFuncName(),
 		"lowerFieldName":          strings.ToLower(omv.fieldName),
-		"originFieldPackageName":  omv.originFieldPackageName,
 		"originStructName":        ms.originFullName,
 		"originStructType":        ms.originFullName + "_" + omv.fieldName,
+		"oneOfName":               proto.ExtractNameFromFull(ms.originFullName + "_" + omv.fieldName),
 	}
 }
 

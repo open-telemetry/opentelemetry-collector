@@ -26,13 +26,13 @@ var (
 		},
 	}
 
-	protoPoolExemplar_AsDouble = sync.Pool{
+	ProtoPoolExemplar_AsDouble = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Exemplar_AsDouble{}
 		},
 	}
 
-	protoPoolExemplar_AsInt = sync.Pool{
+	ProtoPoolExemplar_AsInt = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Exemplar_AsInt{}
 		},
@@ -63,12 +63,12 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		if UseProtoPooling.IsEnabled() {
 			ov.AsDouble = float64(0)
-			protoPoolExemplar_AsDouble.Put(ov)
+			ProtoPoolExemplar_AsDouble.Put(ov)
 		}
 	case *otlpmetrics.Exemplar_AsInt:
 		if UseProtoPooling.IsEnabled() {
 			ov.AsInt = int64(0)
-			protoPoolExemplar_AsInt.Put(ov)
+			ProtoPoolExemplar_AsInt.Put(ov)
 		}
 
 	}
@@ -90,9 +90,23 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: t.AsDouble}
+		var ov *otlpmetrics.Exemplar_AsDouble
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Exemplar_AsDouble{}
+		} else {
+			ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+		}
+		ov.AsDouble = t.AsDouble
+		dest.Value = ov
 	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: t.AsInt}
+		var ov *otlpmetrics.Exemplar_AsInt
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Exemplar_AsInt{}
+		} else {
+			ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+		}
+		ov.AsInt = t.AsInt
+		dest.Value = ov
 	}
 	dest.SpanId = src.SpanId
 	dest.TraceId = src.TraceId
@@ -163,7 +177,7 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Exemplar_AsDouble{}
 				} else {
-					ov = protoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+					ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
 				}
 				ov.AsDouble = iter.ReadFloat64()
 				orig.Value = ov
@@ -175,7 +189,7 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Exemplar_AsInt{}
 				} else {
-					ov = protoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+					ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
 				}
 				ov.AsInt = iter.ReadInt64()
 				orig.Value = ov
@@ -318,7 +332,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Exemplar_AsDouble{}
 			} else {
-				ov = protoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+				ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
 			}
 			ov.AsDouble = math.Float64frombits(num)
 			orig.Value = ov
@@ -336,7 +350,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Exemplar_AsInt{}
 			} else {
-				ov = protoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+				ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
 			}
 			ov.AsInt = int64(num)
 			orig.Value = ov

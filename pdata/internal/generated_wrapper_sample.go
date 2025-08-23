@@ -21,7 +21,7 @@ var (
 			return &otlpprofiles.Sample{}
 		},
 	}
-	protoPoolSample_LinkIndex = sync.Pool{
+	ProtoPoolSample_LinkIndex = sync.Pool{
 		New: func() any {
 			return &otlpprofiles.Sample_LinkIndex{}
 		},
@@ -49,7 +49,7 @@ func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
 	case *otlpprofiles.Sample_LinkIndex:
 		if UseProtoPooling.IsEnabled() {
 			ov.LinkIndex = int32(0)
-			protoPoolSample_LinkIndex.Put(ov)
+			ProtoPoolSample_LinkIndex.Put(ov)
 		}
 
 	}
@@ -165,7 +165,7 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpprofiles.Sample_LinkIndex{}
 				} else {
-					ov = protoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+					ov = ProtoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
 				}
 				ov.LinkIndex = iter.ReadInt32()
 				orig.LinkIndex_ = ov
@@ -366,7 +366,7 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpprofiles.Sample_LinkIndex{}
 			} else {
-				ov = protoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+				ov = ProtoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
 			}
 			ov.LinkIndex = int32(num)
 			orig.LinkIndex_ = ov

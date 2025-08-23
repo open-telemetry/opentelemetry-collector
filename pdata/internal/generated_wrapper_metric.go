@@ -23,31 +23,31 @@ var (
 		},
 	}
 
-	protoPoolMetric_Gauge = sync.Pool{
+	ProtoPoolMetric_Gauge = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Metric_Gauge{}
 		},
 	}
 
-	protoPoolMetric_Sum = sync.Pool{
+	ProtoPoolMetric_Sum = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Metric_Sum{}
 		},
 	}
 
-	protoPoolMetric_Histogram = sync.Pool{
+	ProtoPoolMetric_Histogram = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Metric_Histogram{}
 		},
 	}
 
-	protoPoolMetric_ExponentialHistogram = sync.Pool{
+	ProtoPoolMetric_ExponentialHistogram = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Metric_ExponentialHistogram{}
 		},
 	}
 
-	protoPoolMetric_Summary = sync.Pool{
+	ProtoPoolMetric_Summary = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.Metric_Summary{}
 		},
@@ -76,35 +76,35 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 		if UseProtoPooling.IsEnabled() {
 			DeleteOrigGauge(ov.Gauge, true)
 			ov.Gauge = nil
-			protoPoolMetric_Gauge.Put(ov)
+			ProtoPoolMetric_Gauge.Put(ov)
 		}
 		DeleteOrigGauge(ov.Gauge, true)
 	case *otlpmetrics.Metric_Sum:
 		if UseProtoPooling.IsEnabled() {
 			DeleteOrigSum(ov.Sum, true)
 			ov.Sum = nil
-			protoPoolMetric_Sum.Put(ov)
+			ProtoPoolMetric_Sum.Put(ov)
 		}
 		DeleteOrigSum(ov.Sum, true)
 	case *otlpmetrics.Metric_Histogram:
 		if UseProtoPooling.IsEnabled() {
 			DeleteOrigHistogram(ov.Histogram, true)
 			ov.Histogram = nil
-			protoPoolMetric_Histogram.Put(ov)
+			ProtoPoolMetric_Histogram.Put(ov)
 		}
 		DeleteOrigHistogram(ov.Histogram, true)
 	case *otlpmetrics.Metric_ExponentialHistogram:
 		if UseProtoPooling.IsEnabled() {
 			DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
 			ov.ExponentialHistogram = nil
-			protoPoolMetric_ExponentialHistogram.Put(ov)
+			ProtoPoolMetric_ExponentialHistogram.Put(ov)
 		}
 		DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
 	case *otlpmetrics.Metric_Summary:
 		if UseProtoPooling.IsEnabled() {
 			DeleteOrigSummary(ov.Summary, true)
 			ov.Summary = nil
-			protoPoolMetric_Summary.Put(ov)
+			ProtoPoolMetric_Summary.Put(ov)
 		}
 		DeleteOrigSummary(ov.Summary, true)
 
@@ -129,35 +129,55 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Unit = src.Unit
 	switch t := src.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		gauge := &otlpmetrics.Gauge{}
-		CopyOrigGauge(gauge, t.Gauge)
-		dest.Data = &otlpmetrics.Metric_Gauge{
-			Gauge: gauge,
+		var ov *otlpmetrics.Metric_Gauge
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Metric_Gauge{}
+		} else {
+			ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 		}
+		ov.Gauge = NewOrigGauge()
+		CopyOrigGauge(ov.Gauge, t.Gauge)
+		dest.Data = ov
 	case *otlpmetrics.Metric_Sum:
-		sum := &otlpmetrics.Sum{}
-		CopyOrigSum(sum, t.Sum)
-		dest.Data = &otlpmetrics.Metric_Sum{
-			Sum: sum,
+		var ov *otlpmetrics.Metric_Sum
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Metric_Sum{}
+		} else {
+			ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 		}
+		ov.Sum = NewOrigSum()
+		CopyOrigSum(ov.Sum, t.Sum)
+		dest.Data = ov
 	case *otlpmetrics.Metric_Histogram:
-		histogram := &otlpmetrics.Histogram{}
-		CopyOrigHistogram(histogram, t.Histogram)
-		dest.Data = &otlpmetrics.Metric_Histogram{
-			Histogram: histogram,
+		var ov *otlpmetrics.Metric_Histogram
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Metric_Histogram{}
+		} else {
+			ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 		}
+		ov.Histogram = NewOrigHistogram()
+		CopyOrigHistogram(ov.Histogram, t.Histogram)
+		dest.Data = ov
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		exponentialhistogram := &otlpmetrics.ExponentialHistogram{}
-		CopyOrigExponentialHistogram(exponentialhistogram, t.ExponentialHistogram)
-		dest.Data = &otlpmetrics.Metric_ExponentialHistogram{
-			ExponentialHistogram: exponentialhistogram,
+		var ov *otlpmetrics.Metric_ExponentialHistogram
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Metric_ExponentialHistogram{}
+		} else {
+			ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 		}
+		ov.ExponentialHistogram = NewOrigExponentialHistogram()
+		CopyOrigExponentialHistogram(ov.ExponentialHistogram, t.ExponentialHistogram)
+		dest.Data = ov
 	case *otlpmetrics.Metric_Summary:
-		summary := &otlpmetrics.Summary{}
-		CopyOrigSummary(summary, t.Summary)
-		dest.Data = &otlpmetrics.Metric_Summary{
-			Summary: summary,
+		var ov *otlpmetrics.Metric_Summary
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Metric_Summary{}
+		} else {
+			ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 		}
+		ov.Summary = NewOrigSummary()
+		CopyOrigSummary(ov.Summary, t.Summary)
+		dest.Data = ov
 	}
 	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
 }
@@ -244,7 +264,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Metric_Gauge{}
 				} else {
-					ov = protoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
+					ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 				}
 				ov.Gauge = NewOrigGauge()
 				UnmarshalJSONOrigGauge(ov.Gauge, iter)
@@ -257,7 +277,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Metric_Sum{}
 				} else {
-					ov = protoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
+					ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 				}
 				ov.Sum = NewOrigSum()
 				UnmarshalJSONOrigSum(ov.Sum, iter)
@@ -270,7 +290,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Metric_Histogram{}
 				} else {
-					ov = protoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
+					ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 				}
 				ov.Histogram = NewOrigHistogram()
 				UnmarshalJSONOrigHistogram(ov.Histogram, iter)
@@ -283,7 +303,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Metric_ExponentialHistogram{}
 				} else {
-					ov = protoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
+					ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 				}
 				ov.ExponentialHistogram = NewOrigExponentialHistogram()
 				UnmarshalJSONOrigExponentialHistogram(ov.ExponentialHistogram, iter)
@@ -296,7 +316,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.Metric_Summary{}
 				} else {
-					ov = protoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
+					ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 				}
 				ov.Summary = NewOrigSummary()
 				UnmarshalJSONOrigSummary(ov.Summary, iter)
@@ -500,7 +520,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Metric_Gauge{}
 			} else {
-				ov = protoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
+				ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 			}
 			ov.Gauge = NewOrigGauge()
 			err = UnmarshalProtoOrigGauge(ov.Gauge, buf[startPos:pos])
@@ -523,7 +543,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Metric_Sum{}
 			} else {
-				ov = protoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
+				ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 			}
 			ov.Sum = NewOrigSum()
 			err = UnmarshalProtoOrigSum(ov.Sum, buf[startPos:pos])
@@ -546,7 +566,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Metric_Histogram{}
 			} else {
-				ov = protoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
+				ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 			}
 			ov.Histogram = NewOrigHistogram()
 			err = UnmarshalProtoOrigHistogram(ov.Histogram, buf[startPos:pos])
@@ -569,7 +589,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Metric_ExponentialHistogram{}
 			} else {
-				ov = protoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
+				ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 			}
 			ov.ExponentialHistogram = NewOrigExponentialHistogram()
 			err = UnmarshalProtoOrigExponentialHistogram(ov.ExponentialHistogram, buf[startPos:pos])
@@ -592,7 +612,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.Metric_Summary{}
 			} else {
-				ov = protoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
+				ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 			}
 			ov.Summary = NewOrigSummary()
 			err = UnmarshalProtoOrigSummary(ov.Summary, buf[startPos:pos])

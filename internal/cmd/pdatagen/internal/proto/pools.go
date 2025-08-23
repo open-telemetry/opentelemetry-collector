@@ -8,7 +8,7 @@ import (
 )
 
 const poolVarOrigTemplate = `
-	protoPool{{ .oneOfMessageName }} = sync.Pool{
+	ProtoPool{{ .oneOfMessageName }} = sync.Pool{
 		New: func() any {
 			return &{{ .oneOfMessageFullName }}{}
 		},

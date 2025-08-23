@@ -10,7 +10,7 @@ import (
 const deleteOrigOther = `{{ if ne .oneOfGroup "" -}}
 	if UseProtoPooling.IsEnabled() {
 		ov.{{ .fieldName }} = {{ .defaultValue }}
-		protoPool{{ .oneOfMessageName }}.Put(ov)
+		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}
 {{ end }}`
 
@@ -26,7 +26,7 @@ const deleteOrigMessage = `{{ if .repeated -}}
 	if UseProtoPooling.IsEnabled() {
 		DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
 		ov.{{ .fieldName }} = nil
-		protoPool{{ .oneOfMessageName }}.Put(ov)
+		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}
 	DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
 {{- else if .nullable -}}
