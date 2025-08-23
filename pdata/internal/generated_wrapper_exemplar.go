@@ -125,13 +125,13 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble)
+		dest.WriteFloat64(orig.AsDouble)
 	case *otlpmetrics.Exemplar_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt)
+		dest.WriteInt64(orig.AsInt)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
@@ -202,7 +202,10 @@ func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
 	if orig.TimeUnixNano != 0 {
 		n += 9
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
+	case nil:
+		_ = orig
+		break
 	case *otlpmetrics.Exemplar_AsDouble:
 		n += 9
 	case *otlpmetrics.Exemplar_AsInt:
@@ -232,16 +235,16 @@ func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
 		pos--
 		buf[pos] = 0x11
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
 		pos--
 		buf[pos] = 0x19
 
 	case *otlpmetrics.Exemplar_AsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
 		pos--
 		buf[pos] = 0x31
 

@@ -97,9 +97,9 @@ func GenTestOrigLocation() *otlpprofiles.Location {
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
 func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	dest.WriteObjectStart()
-	if orig.MappingIndex_ != nil {
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
 		dest.WriteObjectField("mappingIndex")
-		dest.WriteInt32(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex)
+		dest.WriteInt32(orig.MappingIndex)
 	}
 	if orig.Address != uint64(0) {
 		dest.WriteObjectField("address")
@@ -173,8 +173,9 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 	var n int
 	var l int
 	_ = l
-	if orig.MappingIndex_ != nil {
-		n += 1 + proto.Sov(uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
+		_ = orig
+		n += 1 + proto.Sov(uint64(orig.MappingIndex))
 	}
 	if orig.Address != 0 {
 		n += 1 + proto.Sov(uint64(orig.Address))
@@ -200,11 +201,10 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	if orig.MappingIndex_ != nil {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex))
 		pos--
 		buf[pos] = 0x8
-
 	}
 	if orig.Address != 0 {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.Address))

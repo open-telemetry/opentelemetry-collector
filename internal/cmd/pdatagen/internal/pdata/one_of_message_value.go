@@ -89,19 +89,19 @@ func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfFiel
 }
 
 func (omv *OneOfMessageValue) GenerateTestFailingUnmarshalProtoValues(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenTestFailingUnmarshalProtoValues()
+	return omv.toProtoField(ms, of).GenTestFailingUnmarshalProtoValues()
 }
 
 func (omv *OneOfMessageValue) GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenTestEncodingValues()
+	return omv.toProtoField(ms, of).GenTestEncodingValues()
 }
 
 func (omv *OneOfMessageValue) GeneratePoolOrig(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenPoolVarOrig()
+	return omv.toProtoField(ms, of).GenPoolVarOrig()
 }
 
 func (omv *OneOfMessageValue) GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenDeleteOrig()
+	return omv.toProtoField(ms, of).GenDeleteOrig()
 }
 
 func (omv *OneOfMessageValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
@@ -115,27 +115,27 @@ func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) st
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenMarshalJSON()
+	return omv.toProtoField(ms, of).GenMarshalJSON()
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenUnmarshalJSON()
+	return omv.toProtoField(ms, of).GenUnmarshalJSON()
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenSizeProto()
+	return omv.toProtoField(ms, of).GenSizeProto()
 }
 
 func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, true).GenMarshalProto()
+	return omv.toProtoField(ms, of).GenMarshalProto()
 }
 
 func (omv *OneOfMessageValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
-	return omv.toProtoField(ms, of, false).GenUnmarshalProto()
+	return omv.toProtoField(ms, of).GenUnmarshalProto()
 }
 
-func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, oldOneOf bool) *proto.Field {
-	pf := &proto.Field{
+func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) *proto.Field {
+	return &proto.Field{
 		Type:                 proto.TypeMessage,
 		ID:                   omv.protoID,
 		OneOfGroup:           of.originFieldName,
@@ -144,11 +144,6 @@ func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField, ol
 		MessageFullName:      omv.returnMessage.getOriginFullName(),
 		Nullable:             true,
 	}
-	// TODO: Cleanup this by moving everyone to the new OneOfGroup
-	if oldOneOf {
-		pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName
-	}
-	return pf
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
