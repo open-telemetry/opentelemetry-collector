@@ -119,7 +119,11 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
-const MetadataHostName = "Host"
+const (
+	MetadataHostName       = "Host"
+	MetadataTLSPeerSubject = "tls.subject"
+	MetadataTLSPeerURI     = "tls.uri"
+)
 
 // NewContext takes an existing context and derives a new context with the
 // client.Info value stored on it.
