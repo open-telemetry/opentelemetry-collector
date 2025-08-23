@@ -66,6 +66,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	switch ov := orig.Sum_.(type) {
 	case *otlpmetrics.ExponentialHistogramDataPoint_Sum:
 		if UseProtoPooling.IsEnabled() {
+			ov.Sum = float64(0)
 			protoPoolExponentialHistogramDataPoint_Sum.Put(ov)
 		}
 
@@ -78,6 +79,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	switch ov := orig.Min_.(type) {
 	case *otlpmetrics.ExponentialHistogramDataPoint_Min:
 		if UseProtoPooling.IsEnabled() {
+			ov.Min = float64(0)
 			protoPoolExponentialHistogramDataPoint_Min.Put(ov)
 		}
 
@@ -85,6 +87,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	switch ov := orig.Max_.(type) {
 	case *otlpmetrics.ExponentialHistogramDataPoint_Max:
 		if UseProtoPooling.IsEnabled() {
+			ov.Max = float64(0)
 			protoPoolExponentialHistogramDataPoint_Max.Put(ov)
 		}
 

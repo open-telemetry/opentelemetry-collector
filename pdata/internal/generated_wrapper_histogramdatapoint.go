@@ -66,6 +66,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	switch ov := orig.Sum_.(type) {
 	case *otlpmetrics.HistogramDataPoint_Sum:
 		if UseProtoPooling.IsEnabled() {
+			ov.Sum = float64(0)
 			protoPoolHistogramDataPoint_Sum.Put(ov)
 		}
 
@@ -76,6 +77,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	switch ov := orig.Min_.(type) {
 	case *otlpmetrics.HistogramDataPoint_Min:
 		if UseProtoPooling.IsEnabled() {
+			ov.Min = float64(0)
 			protoPoolHistogramDataPoint_Min.Put(ov)
 		}
 
@@ -83,6 +85,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	switch ov := orig.Max_.(type) {
 	case *otlpmetrics.HistogramDataPoint_Max:
 		if UseProtoPooling.IsEnabled() {
+			ov.Max = float64(0)
 			protoPoolHistogramDataPoint_Max.Put(ov)
 		}
 

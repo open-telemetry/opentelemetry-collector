@@ -61,10 +61,12 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 	switch ov := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		if UseProtoPooling.IsEnabled() {
+			ov.AsDouble = float64(0)
 			protoPoolNumberDataPoint_AsDouble.Put(ov)
 		}
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		if UseProtoPooling.IsEnabled() {
+			ov.AsInt = int64(0)
 			protoPoolNumberDataPoint_AsInt.Put(ov)
 		}
 

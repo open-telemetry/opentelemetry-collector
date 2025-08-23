@@ -62,10 +62,12 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 	switch ov := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		if UseProtoPooling.IsEnabled() {
+			ov.AsDouble = float64(0)
 			protoPoolExemplar_AsDouble.Put(ov)
 		}
 	case *otlpmetrics.Exemplar_AsInt:
 		if UseProtoPooling.IsEnabled() {
+			ov.AsInt = int64(0)
 			protoPoolExemplar_AsInt.Put(ov)
 		}
 

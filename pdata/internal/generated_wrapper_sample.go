@@ -48,6 +48,7 @@ func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
 	switch ov := orig.LinkIndex_.(type) {
 	case *otlpprofiles.Sample_LinkIndex:
 		if UseProtoPooling.IsEnabled() {
+			ov.LinkIndex = int32(0)
 			protoPoolSample_LinkIndex.Put(ov)
 		}
 
