@@ -5,6 +5,9 @@ package confighttp
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"net"
 	"net/http"
@@ -613,10 +616,11 @@ func TestHttpTransportOptions(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		name       string
-		input      *http.Request
-		doMetadata bool
-		expected   client.Info
+		name          string
+		input         *http.Request
+		doMetadata    bool
+		doTLSMetadata bool
+		expected      client.Info
 	}{
 		{
 			name:     "request without client IP or headers",
@@ -639,15 +643,17 @@ func TestContextWithClient(t *testing.T) {
 			input: &http.Request{
 				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 			},
-			doMetadata: false,
-			expected:   client.Info{},
+			doMetadata:    false,
+			doTLSMetadata: false,
+			expected:      client.Info{},
 		},
 		{
 			name: "request with client headers",
 			input: &http.Request{
 				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 			},
-			doMetadata: true,
+			doMetadata:    true,
+			doTLSMetadata: false,
 			expected: client.Info{
 				Metadata: client.NewMetadata(map[string][]string{"x-tt-header": {"tt-value"}}),
 			},
@@ -657,16 +663,48 @@ func TestContextWithClient(t *testing.T) {
 			input: &http.Request{
 				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 				Host:   "localhost:55443",
+				TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{
+					{Subject: pkix.Name{CommonName: "example.com"}},
+				}},
 			},
-			doMetadata: true,
+			doMetadata:    true,
+			doTLSMetadata: false,
 			expected: client.Info{
 				Metadata: client.NewMetadata(map[string][]string{"x-tt-header": {"tt-value"}, "Host": {"localhost:55443"}}),
+			},
+		},
+		{
+			name: "request with client headers and tls peer cert",
+			input: &http.Request{
+				Header: map[string][]string{"x-tt-header": {"tt-value"}},
+				TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{
+					{Subject: pkix.Name{CommonName: "example.com"}},
+				}},
+			},
+			doMetadata:    true,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-tt-header": {"tt-value"}, "tls.subject": {"CN=example.com"}}),
+			},
+		},
+		{
+			name: "request and do only tls peer cert",
+			input: &http.Request{
+				Header: map[string][]string{"x-tt-header": {"tt-value"}},
+				TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{
+					{Subject: pkix.Name{CommonName: "example.com"}},
+				}},
+			},
+			doMetadata:    false,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"tls.subject": {"CN=example.com"}}),
 			},
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := contextWithClient(tt.input, tt.doMetadata)
+			ctx := contextWithClient(tt.input, tt.doMetadata, tt.doTLSMetadata)
 			assert.Equal(t, tt.expected, client.FromContext(ctx))
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // clientInfoHandler is an http.Handler that enhances the incoming request context with client.Info.
@@ -17,18 +18,21 @@ type clientInfoHandler struct {
 
 	// include client metadata or not
 	includeMetadata bool
+
+	// include tls metadata or not
+	includeTLSMetadata bool
 }
 
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
 // a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	req = req.WithContext(contextWithClient(req, h.includeMetadata)) //nolint:contextcheck //context already handled through contextWithClient
+	req = req.WithContext(contextWithClient(req, h.includeMetadata, h.includeTLSMetadata)) //nolint:contextcheck //context already handled through contextWithClient
 	h.next.ServeHTTP(w, req)
 }
 
 // contextWithClient attempts to add the client IP address to the client.Info from the context. When no
 // client.Info exists in the context, one is created.
-func contextWithClient(req *http.Request, includeMetadata bool) context.Context {
+func contextWithClient(req *http.Request, includeMetadata, includeTLSMetadata bool) context.Context {
 	cl := client.FromContext(req.Context())
 
 	ip := parseIP(req.RemoteAddr)
@@ -36,13 +40,27 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 		cl.Addr = ip
 	}
 
+	var md http.Header
 	if includeMetadata {
-		md := req.Header.Clone()
+		md = req.Header.Clone()
 		if md.Get(client.MetadataHostName) == "" && req.Host != "" {
 			md.Add(client.MetadataHostName, req.Host)
 		}
-
 		cl.Metadata = client.NewMetadata(md)
+	}
+	if includeTLSMetadata {
+		if md == nil {
+			md = make(http.Header)
+		}
+		if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
+			tlsMd := configtls.MetadataFromPeerCert(req.TLS.PeerCertificates[0])
+			for key, vals := range tlsMd {
+				for _, v := range vals {
+					md.Add(key, v)
+				}
+			}
+			cl.Metadata = client.NewMetadata(md)
+		}
 	}
 
 	ctx := client.NewContext(req.Context(), cl)
