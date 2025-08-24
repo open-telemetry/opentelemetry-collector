@@ -260,14 +260,8 @@ func (b *shard[T]) resetTimer() {
 func (b *shard[T]) sendItems(trigger trigger) {
 	sent, req := b.batch.split(b.processor.sendBatchMaxSize)
 
-	err := b.batch.export(b.exportCtx, req)
-	if err != nil {
-		b.processor.logger.Warn("Sender failed", zap.Error(err))
-		return
-	}
-	var bytes int
 	bpt := b.processor.telemetry
-
+	var bytes int
 	// Check if the instrument is enabled to calculate the size of the batch in bytes.
 	// See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled
 	batchSendSizeBytes := bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes
@@ -276,6 +270,11 @@ func (b *shard[T]) sendItems(trigger trigger) {
 		bytes = b.batch.sizeBytes(req)
 	}
 
+	err := b.batch.export(b.exportCtx, req)
+	if err != nil {
+		b.processor.logger.Warn("Sender failed", zap.Error(err))
+		return
+	}
 	bpt.record(trigger, int64(sent), int64(bytes))
 }
 
@@ -442,6 +441,7 @@ func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 
 // add updates current batchTraces by adding new TraceData object
 func (bt *batchTraces) add(td ptrace.Traces) {
+	defer pref.UnrefTraces(td)
 	newSpanCount := td.SpanCount()
 	if newSpanCount == 0 {
 		return
@@ -449,7 +449,6 @@ func (bt *batchTraces) add(td ptrace.Traces) {
 
 	bt.spanCount += newSpanCount
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
-	pref.UnrefTraces(td)
 }
 
 func (bt *batchTraces) sizeBytes(td ptrace.Traces) int {
@@ -521,13 +520,13 @@ func (bm *batchMetrics) itemCount() int {
 }
 
 func (bm *batchMetrics) add(md pmetric.Metrics) {
+	defer pref.UnrefMetrics(md)
 	newDataPointCount := md.DataPointCount()
 	if newDataPointCount == 0 {
 		return
 	}
 	bm.dataPointCount += newDataPointCount
 	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
-	pref.UnrefMetrics(md)
 }
 
 type batchLogs struct {
@@ -571,11 +570,11 @@ func (bl *batchLogs) itemCount() int {
 }
 
 func (bl *batchLogs) add(ld plog.Logs) {
+	defer pref.UnrefLogs(ld)
 	newLogsCount := ld.LogRecordCount()
 	if newLogsCount == 0 {
 		return
 	}
 	bl.logCount += newLogsCount
 	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
-	pref.UnrefLogs(ld)
 }
