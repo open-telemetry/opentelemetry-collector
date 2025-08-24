@@ -89,13 +89,14 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	if be.queueCfg.Enabled {
 		qSet := queuebatch.Settings[request.Request]{
-			Signal:      signal,
-			ID:          set.ID,
-			Telemetry:   set.TelemetrySettings,
-			Encoding:    be.queueBatchSettings.Encoding,
-			ItemsSizer:  be.queueBatchSettings.ItemsSizer,
-			BytesSizer:  be.queueBatchSettings.BytesSizer,
-			Partitioner: be.queueBatchSettings.Partitioner,
+			Signal:           signal,
+			ID:               set.ID,
+			Telemetry:        set.TelemetrySettings,
+			ReferenceCounter: be.queueBatchSettings.ReferenceCounter,
+			Encoding:         be.queueBatchSettings.Encoding,
+			ItemsSizer:       be.queueBatchSettings.ItemsSizer,
+			BytesSizer:       be.queueBatchSettings.BytesSizer,
+			Partitioner:      be.queueBatchSettings.Partitioner,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {
