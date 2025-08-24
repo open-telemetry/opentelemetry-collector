@@ -9,8 +9,7 @@ import (
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
 func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
-	dataPoints := src.DataPointCount()
-	if dataPoints <= size {
+	if !hasAtLeastNDataPoints(&src, size+1) {
 		return src
 	}
 	totalCopiedDataPoints := 0
@@ -23,8 +22,8 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 		}
 
 		// If it fully fits
-		srcRsDataPointCount := resourceMetricsDPC(srcRs)
-		if (totalCopiedDataPoints + srcRsDataPointCount) <= size {
+		wontFit, srcRsDataPointCount := resourceMetricsHasAtLeastNDataPoints(srcRs, size-totalCopiedDataPoints+1)
+		if !wontFit {
 			totalCopiedDataPoints += srcRsDataPointCount
 			srcRs.MoveTo(dest.ResourceMetrics().AppendEmpty())
 			return true
@@ -39,8 +38,8 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 			}
 
 			// If possible to move all metrics do that.
-			srcIlmDataPointCount := scopeMetricsDPC(srcIlm)
-			if srcIlmDataPointCount+totalCopiedDataPoints <= size {
+			wontFit, srcIlmDataPointCount := scopeMetricsHasAtLeastNDataPoints(srcIlm, size-totalCopiedDataPoints+1)
+			if !wontFit {
 				totalCopiedDataPoints += srcIlmDataPointCount
 				srcIlm.MoveTo(destRs.ScopeMetrics().AppendEmpty())
 				return true
@@ -75,24 +74,35 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 	return dest
 }
 
-// resourceMetricsDPC calculates the total number of data points in the pmetric.ResourceMetrics.
-func resourceMetricsDPC(rs pmetric.ResourceMetrics) int {
+func resourceMetricsHasAtLeastNDataPoints(rs pmetric.ResourceMetrics, n int) (bool, int) {
 	dataPointCount := 0
 	ilms := rs.ScopeMetrics()
 	for k := 0; k < ilms.Len(); k++ {
-		dataPointCount += scopeMetricsDPC(ilms.At(k))
+		hasAtLeastN, scopeMetricDPC := scopeMetricsHasAtLeastNDataPoints(ilms.At(k), n-dataPointCount+1)
+		if hasAtLeastN {
+			return true, 0
+		}
+		dataPointCount += scopeMetricDPC
 	}
-	return dataPointCount
+	if dataPointCount >= n {
+		return true, 0
+	}
+	return false, dataPointCount
 }
 
-// scopeMetricsDPC calculates the total number of data points in the pmetric.ScopeMetrics.
-func scopeMetricsDPC(ilm pmetric.ScopeMetrics) int {
+func scopeMetricsHasAtLeastNDataPoints(ilm pmetric.ScopeMetrics, n int) (bool, int) {
 	dataPointCount := 0
 	ms := ilm.Metrics()
 	for k := 0; k < ms.Len(); k++ {
 		dataPointCount += metricDPC(ms.At(k))
+		if dataPointCount >= n {
+			return true, 0
+		}
 	}
-	return dataPointCount
+	if dataPointCount >= n {
+		return true, 0
+	}
+	return false, dataPointCount
 }
 
 // metricDPC calculates the total number of data points in the pmetric.Metric.
@@ -195,4 +205,36 @@ func splitSummaryDataPoints(src, dst pmetric.SummaryDataPointSlice, size int) (i
 		return false
 	})
 	return size, false
+}
+
+func hasAtLeastNDataPoints(ms *pmetric.Metrics, n int) bool {
+	dataPointCount := 0
+	rms := ms.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		ilms := rm.ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			ms := ilm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					dataPointCount += m.Gauge().DataPoints().Len()
+				case pmetric.MetricTypeSum:
+					dataPointCount += m.Sum().DataPoints().Len()
+				case pmetric.MetricTypeHistogram:
+					dataPointCount += m.Histogram().DataPoints().Len()
+				case pmetric.MetricTypeExponentialHistogram:
+					dataPointCount += m.ExponentialHistogram().DataPoints().Len()
+				case pmetric.MetricTypeSummary:
+					dataPointCount += m.Summary().DataPoints().Len()
+				}
+				if dataPointCount >= n {
+					return true
+				}
+			}
+		}
+	}
+	return dataPointCount >= n
 }
