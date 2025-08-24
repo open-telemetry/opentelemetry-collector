@@ -24,19 +24,19 @@ var (
 			return &otlpmetrics.ExponentialHistogramDataPoint{}
 		},
 	}
-	protoPoolExponentialHistogramDataPoint_Sum = sync.Pool{
+	ProtoPoolExponentialHistogramDataPoint_Sum = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
 		},
 	}
 
-	protoPoolExponentialHistogramDataPoint_Min = sync.Pool{
+	ProtoPoolExponentialHistogramDataPoint_Min = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.ExponentialHistogramDataPoint_Min{}
 		},
 	}
 
-	protoPoolExponentialHistogramDataPoint_Max = sync.Pool{
+	ProtoPoolExponentialHistogramDataPoint_Max = sync.Pool{
 		New: func() any {
 			return &otlpmetrics.ExponentialHistogramDataPoint_Max{}
 		},
@@ -67,7 +67,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	case *otlpmetrics.ExponentialHistogramDataPoint_Sum:
 		if UseProtoPooling.IsEnabled() {
 			ov.Sum = float64(0)
-			protoPoolExponentialHistogramDataPoint_Sum.Put(ov)
+			ProtoPoolExponentialHistogramDataPoint_Sum.Put(ov)
 		}
 
 	}
@@ -80,7 +80,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	case *otlpmetrics.ExponentialHistogramDataPoint_Min:
 		if UseProtoPooling.IsEnabled() {
 			ov.Min = float64(0)
-			protoPoolExponentialHistogramDataPoint_Min.Put(ov)
+			ProtoPoolExponentialHistogramDataPoint_Min.Put(ov)
 		}
 
 	}
@@ -88,7 +88,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	case *otlpmetrics.ExponentialHistogramDataPoint_Max:
 		if UseProtoPooling.IsEnabled() {
 			ov.Max = float64(0)
-			protoPoolExponentialHistogramDataPoint_Max.Put(ov)
+			ProtoPoolExponentialHistogramDataPoint_Max.Put(ov)
 		}
 
 	}
@@ -258,7 +258,7 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
 				} else {
-					ov = protoPoolExponentialHistogramDataPoint_Sum.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
+					ov = ProtoPoolExponentialHistogramDataPoint_Sum.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
 				}
 				ov.Sum = iter.ReadFloat64()
 				orig.Sum_ = ov
@@ -286,7 +286,7 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.ExponentialHistogramDataPoint_Min{}
 				} else {
-					ov = protoPoolExponentialHistogramDataPoint_Min.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Min)
+					ov = ProtoPoolExponentialHistogramDataPoint_Min.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Min)
 				}
 				ov.Min = iter.ReadFloat64()
 				orig.Min_ = ov
@@ -298,7 +298,7 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpmetrics.ExponentialHistogramDataPoint_Max{}
 				} else {
-					ov = protoPoolExponentialHistogramDataPoint_Max.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Max)
+					ov = ProtoPoolExponentialHistogramDataPoint_Max.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Max)
 				}
 				ov.Max = iter.ReadFloat64()
 				orig.Max_ = ov
@@ -536,7 +536,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
 			} else {
-				ov = protoPoolExponentialHistogramDataPoint_Sum.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
+				ov = ProtoPoolExponentialHistogramDataPoint_Sum.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
 			}
 			ov.Sum = math.Float64frombits(num)
 			orig.Sum_ = ov
@@ -638,7 +638,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.ExponentialHistogramDataPoint_Min{}
 			} else {
-				ov = protoPoolExponentialHistogramDataPoint_Min.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Min)
+				ov = ProtoPoolExponentialHistogramDataPoint_Min.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Min)
 			}
 			ov.Min = math.Float64frombits(num)
 			orig.Min_ = ov
@@ -656,7 +656,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpmetrics.ExponentialHistogramDataPoint_Max{}
 			} else {
-				ov = protoPoolExponentialHistogramDataPoint_Max.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Max)
+				ov = ProtoPoolExponentialHistogramDataPoint_Max.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Max)
 			}
 			ov.Max = math.Float64frombits(num)
 			orig.Max_ = ov

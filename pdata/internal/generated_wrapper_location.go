@@ -21,7 +21,7 @@ var (
 			return &otlpprofiles.Location{}
 		},
 	}
-	protoPoolLocation_MappingIndex = sync.Pool{
+	ProtoPoolLocation_MappingIndex = sync.Pool{
 		New: func() any {
 			return &otlpprofiles.Location_MappingIndex{}
 		},
@@ -49,7 +49,7 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 	case *otlpprofiles.Location_MappingIndex:
 		if UseProtoPooling.IsEnabled() {
 			ov.MappingIndex = int32(0)
-			protoPoolLocation_MappingIndex.Put(ov)
+			ProtoPoolLocation_MappingIndex.Put(ov)
 		}
 
 	}
@@ -142,7 +142,7 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 				if !UseProtoPooling.IsEnabled() {
 					ov = &otlpprofiles.Location_MappingIndex{}
 				} else {
-					ov = protoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+					ov = ProtoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
 				}
 				ov.MappingIndex = iter.ReadInt32()
 				orig.MappingIndex_ = ov
@@ -269,7 +269,7 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 			if !UseProtoPooling.IsEnabled() {
 				ov = &otlpprofiles.Location_MappingIndex{}
 			} else {
-				ov = protoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+				ov = ProtoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
 			}
 			ov.MappingIndex = int32(num)
 			orig.MappingIndex_ = ov
