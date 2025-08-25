@@ -128,6 +128,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"origName":             pf.messageName(),
 		"origFullName":         pf.MessageFullName,
 		"oneOfGroup":           pf.OneOfGroup,
+		"oneOfMessageName":     ExtractNameFromFull(pf.OneOfMessageFullName),
 		"oneOfMessageFullName": pf.OneOfMessageFullName,
 		"repeated":             pf.Repeated,
 		"nullable":             pf.Nullable,

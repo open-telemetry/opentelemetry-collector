@@ -96,7 +96,7 @@ func (ms ExponentialHistogramDataPoint) Sum() float64 {
 }
 
 // HasSum returns true if the ExponentialHistogramDataPoint contains a
-// Sum value, false otherwise.
+// Sum value otherwise.
 func (ms ExponentialHistogramDataPoint) HasSum() bool {
 	return ms.orig.Sum_ != nil
 }
@@ -167,7 +167,7 @@ func (ms ExponentialHistogramDataPoint) Min() float64 {
 }
 
 // HasMin returns true if the ExponentialHistogramDataPoint contains a
-// Min value, false otherwise.
+// Min value otherwise.
 func (ms ExponentialHistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
@@ -190,7 +190,7 @@ func (ms ExponentialHistogramDataPoint) Max() float64 {
 }
 
 // HasMax returns true if the ExponentialHistogramDataPoint contains a
-// Max value, false otherwise.
+// Max value otherwise.
 func (ms ExponentialHistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }

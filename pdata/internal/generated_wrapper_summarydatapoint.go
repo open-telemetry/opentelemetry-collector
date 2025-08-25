@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSummaryDataPoint = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.SummaryDataPoint{}
-	},
-}
+var (
+	protoPoolSummaryDataPoint = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.SummaryDataPoint{}
+		},
+	}
+)
 
 func NewOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
 	if !UseProtoPooling.IsEnabled() {

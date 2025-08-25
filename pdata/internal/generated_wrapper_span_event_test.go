@@ -24,7 +24,7 @@ import (
 func TestCopyOrigSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -53,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -97,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigSpan_EventUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

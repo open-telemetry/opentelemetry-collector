@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolAttributeUnit = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.AttributeUnit{}
-	},
-}
+var (
+	protoPoolAttributeUnit = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.AttributeUnit{}
+		},
+	}
+)
 
 func NewOrigAttributeUnit() *otlpprofiles.AttributeUnit {
 	if !UseProtoPooling.IsEnabled() {

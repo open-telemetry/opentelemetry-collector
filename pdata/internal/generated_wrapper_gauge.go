@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolGauge = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Gauge{}
-	},
-}
+var (
+	protoPoolGauge = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Gauge{}
+		},
+	}
+)
 
 func NewOrigGauge() *otlpmetrics.Gauge {
 	if !UseProtoPooling.IsEnabled() {

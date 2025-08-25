@@ -96,9 +96,14 @@ func (ms NumberDataPoint) DoubleValue() float64 {
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetDoubleValue(v float64) {
 	ms.state.AssertMutable()
-	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
-		AsDouble: v,
+	var ov *otlpmetrics.NumberDataPoint_AsDouble
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &otlpmetrics.NumberDataPoint_AsDouble{}
+	} else {
+		ov = internal.ProtoPoolNumberDataPoint_AsDouble.Get().(*otlpmetrics.NumberDataPoint_AsDouble)
 	}
+	ov.AsDouble = v
+	ms.orig.Value = ov
 }
 
 // IntValue returns the int associated with this NumberDataPoint.
@@ -109,9 +114,14 @@ func (ms NumberDataPoint) IntValue() int64 {
 // SetIntValue replaces the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
-		AsInt: v,
+	var ov *otlpmetrics.NumberDataPoint_AsInt
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &otlpmetrics.NumberDataPoint_AsInt{}
+	} else {
+		ov = internal.ProtoPoolNumberDataPoint_AsInt.Get().(*otlpmetrics.NumberDataPoint_AsInt)
 	}
+	ov.AsInt = v
+	ms.orig.Value = ov
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.

@@ -23,7 +23,7 @@ import (
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -52,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testi
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -96,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *test
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

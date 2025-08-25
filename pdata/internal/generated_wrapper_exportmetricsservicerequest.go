@@ -32,11 +32,13 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-var protoPoolExportMetricsServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	},
-}
+var (
+	protoPoolExportMetricsServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {

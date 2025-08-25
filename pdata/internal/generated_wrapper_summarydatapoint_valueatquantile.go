@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	},
-}
+var (
+	protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		},
+	}
+)
 
 func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	if !UseProtoPooling.IsEnabled() {

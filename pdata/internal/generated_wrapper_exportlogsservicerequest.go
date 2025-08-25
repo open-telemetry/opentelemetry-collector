@@ -32,11 +32,13 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
-var protoPoolExportLogsServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectorlogs.ExportLogsServiceRequest{}
-	},
-}
+var (
+	protoPoolExportLogsServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectorlogs.ExportLogsServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {

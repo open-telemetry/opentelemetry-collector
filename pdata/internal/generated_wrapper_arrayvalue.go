@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolArrayValue = sync.Pool{
-	New: func() any {
-		return &otlpcommon.ArrayValue{}
-	},
-}
+var (
+	protoPoolArrayValue = sync.Pool{
+		New: func() any {
+			return &otlpcommon.ArrayValue{}
+		},
+	}
+)
 
 func NewOrigArrayValue() *otlpcommon.ArrayValue {
 	if !UseProtoPooling.IsEnabled() {
