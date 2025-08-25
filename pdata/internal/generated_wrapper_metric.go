@@ -73,40 +73,25 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 
 	switch ov := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		if UseProtoPooling.IsEnabled() {
-			DeleteOrigGauge(ov.Gauge, true)
-			ov.Gauge = nil
-			ProtoPoolMetric_Gauge.Put(ov)
-		}
 		DeleteOrigGauge(ov.Gauge, true)
+		ov.Gauge = nil
+		ProtoPoolMetric_Gauge.Put(ov)
 	case *otlpmetrics.Metric_Sum:
-		if UseProtoPooling.IsEnabled() {
-			DeleteOrigSum(ov.Sum, true)
-			ov.Sum = nil
-			ProtoPoolMetric_Sum.Put(ov)
-		}
 		DeleteOrigSum(ov.Sum, true)
+		ov.Sum = nil
+		ProtoPoolMetric_Sum.Put(ov)
 	case *otlpmetrics.Metric_Histogram:
-		if UseProtoPooling.IsEnabled() {
-			DeleteOrigHistogram(ov.Histogram, true)
-			ov.Histogram = nil
-			ProtoPoolMetric_Histogram.Put(ov)
-		}
 		DeleteOrigHistogram(ov.Histogram, true)
+		ov.Histogram = nil
+		ProtoPoolMetric_Histogram.Put(ov)
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		if UseProtoPooling.IsEnabled() {
-			DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
-			ov.ExponentialHistogram = nil
-			ProtoPoolMetric_ExponentialHistogram.Put(ov)
-		}
 		DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
+		ov.ExponentialHistogram = nil
+		ProtoPoolMetric_ExponentialHistogram.Put(ov)
 	case *otlpmetrics.Metric_Summary:
-		if UseProtoPooling.IsEnabled() {
-			DeleteOrigSummary(ov.Summary, true)
-			ov.Summary = nil
-			ProtoPoolMetric_Summary.Put(ov)
-		}
 		DeleteOrigSummary(ov.Summary, true)
+		ov.Summary = nil
+		ProtoPoolMetric_Summary.Put(ov)
 
 	}
 	for i := range orig.Metadata {
