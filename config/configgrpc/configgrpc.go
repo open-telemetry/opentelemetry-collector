@@ -18,14 +18,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -36,10 +34,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
-var errMetadataNotFound = errors.New("no request metadata found")
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -347,16 +343,12 @@ func (cc *ClientConfig) getGrpcDialOptions(
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		dOpts, cerr := cc.Auth.Get().GetGRPCDialOptions(ctx, host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
 
-		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
-		if perr != nil {
-			return nil, err
-		}
-		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
+		opts = append(opts, dOpts...)
 	}
 
 	if cc.BalancerName != "" {
@@ -515,27 +507,25 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if sc.Auth.HasValue() {
-		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
+		sOpts, err := sc.Auth.Get().GetGRPCServerOptions(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		uInterceptors = append(uInterceptors, authUnaryServerInterceptor(authenticator))
-		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator)) //nolint:contextcheck // context already handled
-	}
-
-	otelOpts := []otelgrpc.Option{
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
+		opts = append(opts, sOpts...)
 	}
 
 	// Enable OpenTelemetry observability plugin.
+	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
+	)))
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata))
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata)) //nolint:contextcheck // context already handled
 
-	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range sc.Middlewares {
@@ -600,37 +590,4 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 		}
 	}
 	return client.NewContext(ctx, cl)
-}
-
-func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		headers, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, errMetadataNotFound
-		}
-
-		ctx, err := server.Authenticate(ctx, headers)
-		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, err.Error())
-		}
-
-		return handler(ctx, req)
-	}
-}
-
-func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerInterceptor {
-	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		ctx := stream.Context()
-		headers, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return errMetadataNotFound
-		}
-
-		ctx, err := server.Authenticate(ctx, headers)
-		if err != nil {
-			return status.Error(codes.Unauthenticated, err.Error())
-		}
-
-		return handler(srv, wrapServerStream(ctx, stream))
-	}
 }

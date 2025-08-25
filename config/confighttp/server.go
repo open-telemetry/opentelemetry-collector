@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -206,12 +205,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 
 	if sc.Auth.HasValue() {
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
-		if err != nil {
-			return nil, err
+		var aErr error
+		handler, aErr = auth.GetHTTPHandler(ctx, host.GetExtensions(), handler, auth.RequestParameters)
+		if aErr != nil {
+			return nil, aErr
 		}
-
-		handler = authInterceptor(handler, server, auth.RequestParameters, serverOpts)
 	}
 
 	if sc.CORS.HasValue() && len(sc.CORS.Get().AllowedOrigins) > 0 {
@@ -320,29 +318,6 @@ func NewDefaultCORSConfig() CORSConfig {
 	return CORSConfig{}
 }
 
-func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sources := r.Header
-		query := r.URL.Query()
-		for _, param := range requestParams {
-			if val, ok := query[param]; ok {
-				sources[param] = val
-			}
-		}
-		ctx, err := server.Authenticate(r.Context(), sources)
-		if err != nil {
-			if serverOpts.ErrHandler != nil {
-				serverOpts.ErrHandler(w, r, err.Error(), http.StatusUnauthorized)
-			} else {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-			}
-
-			return
-		}
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
 
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

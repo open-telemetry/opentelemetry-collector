@@ -224,14 +224,10 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 		}
 
 		auth := cc.Auth.Get()
-		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
+		var aerr error
+		clientTransport, aerr = auth.GetHTTPRoundTripper(ctx, ext, clientTransport)
 		if aerr != nil {
 			return nil, aerr
-		}
-
-		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
 		}
 	}
 
