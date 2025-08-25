@@ -90,6 +90,8 @@ telemetry:
         monotonic: true
     receiver_requests:
       enabled: true
+      stability:
+        level: alpha
       description: The number of requests performed.
       unit: "{requests}"
       sum:
