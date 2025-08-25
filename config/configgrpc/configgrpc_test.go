@@ -5,6 +5,9 @@ package configgrpc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"net"
 	"os"
@@ -17,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -784,10 +788,11 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc       string
-		input      context.Context
-		doMetadata bool
-		expected   client.Info
+		desc          string
+		input         context.Context
+		doMetadata    bool
+		doTLSMetadata bool
+		expected      client.Info
 	}{
 		{
 			desc:     "no peer information, empty client",
@@ -877,10 +882,65 @@ func TestContextWithClient(t *testing.T) {
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, ":authority": {"localhost:55443"}, "Host": {"localhost:55443"}}),
 			},
 		},
+		{
+			desc: "existing client with metadata and no tls peer",
+			input: client.NewContext(context.Background(), client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			}),
+			doMetadata:    true,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "empty client with metadata in context and no tls peer",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			doMetadata:    true,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "empty client with metadata in context and tls peer cert",
+			input: peer.NewContext(metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			), &peer.Peer{
+				AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{PeerCertificates: []*x509.Certificate{
+					{Subject: pkix.Name{CommonName: "example.com"}},
+				}}},
+			}),
+			doMetadata:    true,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, "tls.subject": {"CN=example.com"}}),
+			},
+		},
+		{
+			desc: "empty client with metadata in context and only do tls metadata",
+			input: peer.NewContext(metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			), &peer.Peer{
+				AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{PeerCertificates: []*x509.Certificate{
+					{Subject: pkix.Name{CommonName: "example.com"}},
+				}}},
+			}),
+			doMetadata:    false,
+			doTLSMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"tls.subject": {"CN=example.com"}}),
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tt.input, tt.doMetadata))
+			cl := client.FromContext(contextWithClient(tt.input, tt.doMetadata, tt.doTLSMetadata))
 			assert.Equal(t, tt.expected, cl)
 		})
 	}
@@ -905,7 +965,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
+	err := enhanceStreamWithClientInformation(false, false)(nil, stream, nil, handler)
 
 	// verify
 	require.NoError(t, err)
