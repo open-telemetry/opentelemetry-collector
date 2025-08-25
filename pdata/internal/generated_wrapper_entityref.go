@@ -32,11 +32,13 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-var protoPoolEntityRef = sync.Pool{
-	New: func() any {
-		return &otlpcommon.EntityRef{}
-	},
-}
+var (
+	protoPoolEntityRef = sync.Pool{
+		New: func() any {
+			return &otlpcommon.EntityRef{}
+		},
+	}
+)
 
 func NewOrigEntityRef() *otlpcommon.EntityRef {
 	if !UseProtoPooling.IsEnabled() {

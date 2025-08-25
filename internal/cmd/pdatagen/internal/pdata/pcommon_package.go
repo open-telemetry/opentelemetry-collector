@@ -41,7 +41,9 @@ var pcommon = &Package{
 		},
 	},
 	structs: []baseStruct{
-		sliceStruct,
+		arrayValueStruct,
+		keyValueListStruct,
+		anyValueSlice,
 		scope,
 		resource,
 		byteSlice,
@@ -89,10 +91,40 @@ var mapStruct = &messageSlice{
 	structName:      "Map",
 	packageName:     "pcommon",
 	elementNullable: false,
-	element:         attribute,
+	element:         keyValue,
 }
 
-var sliceStruct = &messageSlice{
+var keyValueListStruct = &messageStruct{
+	structName:     "KeyValueList",
+	description:    "KeyValueList is a list of KeyValue messages. We need KeyValueList as a message since oneof in AnyValue does not allow repeated fields.",
+	originFullName: "otlpcommon.KeyValueList",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Values",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: keyValueSlice,
+		},
+	},
+	hasOnlyOrig: true,
+}
+
+var arrayValueStruct = &messageStruct{
+	structName:     "ArrayValue",
+	description:    "// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message since oneof in AnyValue does not allow repeated fields.",
+	originFullName: "otlpcommon.ArrayValue",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Values",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: anyValueSlice,
+		},
+	},
+	hasOnlyOrig: true,
+}
+
+var anyValueSlice = &messageSlice{
 	structName:      "Slice",
 	packageName:     "pcommon",
 	elementNullable: false,

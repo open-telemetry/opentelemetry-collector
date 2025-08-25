@@ -37,6 +37,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.38.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.132.0
 	go.opentelemetry.io/collector/pdata/testdata v0.132.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.132.0
 	go.opentelemetry.io/collector/pipeline v1.38.0
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.132.0
 	go.opentelemetry.io/collector/processor v1.38.0

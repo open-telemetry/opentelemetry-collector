@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	},
-}
+var (
+	protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+		},
+	}
+)
 
 func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	if !UseProtoPooling.IsEnabled() {

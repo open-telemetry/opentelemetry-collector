@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolScopeMetrics = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.ScopeMetrics{}
-	},
-}
+var (
+	protoPoolScopeMetrics = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.ScopeMetrics{}
+		},
+	}
+)
 
 func NewOrigScopeMetrics() *otlpmetrics.ScopeMetrics {
 	if !UseProtoPooling.IsEnabled() {

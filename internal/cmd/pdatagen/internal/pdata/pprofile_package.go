@@ -67,8 +67,8 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
-		attributeTableSlice,
-		attribute,
+		keyValueSlice,
+		keyValue,
 		attributeUnitSlice,
 		attributeUnit,
 		linkSlice,
@@ -165,7 +165,7 @@ var profilesDictionary = &messageStruct{
 			fieldName:   "AttributeTable",
 			protoID:     6,
 			protoType:   proto.TypeMessage,
-			returnSlice: attributeTableSlice,
+			returnSlice: keyValueSlice,
 		},
 		&SliceField{
 			fieldName:   "AttributeUnits",
@@ -613,13 +613,13 @@ var function = &messageStruct{
 	},
 }
 
-var attributeTableSlice = &messageSlice{
+var keyValueSlice = &messageSlice{
 	structName:      "AttributeTableSlice",
 	elementNullable: false,
-	element:         attribute,
+	element:         keyValue,
 }
 
-var attribute = &messageStruct{
+var keyValue = &messageStruct{
 	structName:     "Attribute",
 	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
 	originFullName: "otlpcommon.KeyValue",

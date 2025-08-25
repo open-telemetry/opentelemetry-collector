@@ -55,7 +55,7 @@ func (ms Location) MappingIndex() int32 {
 }
 
 // HasMappingIndex returns true if the Location contains a
-// MappingIndex value, false otherwise.
+// MappingIndex value otherwise.
 func (ms Location) HasMappingIndex() bool {
 	return ms.orig.MappingIndex_ != nil
 }

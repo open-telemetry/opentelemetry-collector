@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSum = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Sum{}
-	},
-}
+var (
+	protoPoolSum = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Sum{}
+		},
+	}
+)
 
 func NewOrigSum() *otlpmetrics.Sum {
 	if !UseProtoPooling.IsEnabled() {

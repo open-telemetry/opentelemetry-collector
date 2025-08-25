@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
+	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
 const pipelineIDAttrKey = "otelcol.pipeline.id"
@@ -127,24 +128,28 @@ func (n *connectorNode) buildTraces(
 			),
 			consumedSettings,
 		)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedSettings)
+    n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedSettings)
+    n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -201,24 +206,28 @@ func (n *connectorNode) buildMetrics(
 			),
 			consumedSettings,
 		)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedSettings)
+    n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedSettings)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
+    n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -275,24 +284,28 @@ func (n *connectorNode) buildLogs(
 			),
 			consumedSettings,
 		)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedSettings)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedSettings)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	}
 	return nil
 }
@@ -349,24 +362,28 @@ func (n *connectorNode) buildProfiles(
 			),
 			consumedSettings,
 		)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedSettings)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedSettings)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedSettings)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	}
 	return nil
 }

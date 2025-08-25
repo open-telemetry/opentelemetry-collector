@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExportTracePartialSuccess = sync.Pool{
-	New: func() any {
-		return &otlpcollectortrace.ExportTracePartialSuccess{}
-	},
-}
+var (
+	protoPoolExportTracePartialSuccess = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTracePartialSuccess{}
+		},
+	}
+)
 
 func NewOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

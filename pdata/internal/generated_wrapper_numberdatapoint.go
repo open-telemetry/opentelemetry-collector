@@ -18,11 +18,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolNumberDataPoint = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.NumberDataPoint{}
-	},
-}
+var (
+	protoPoolNumberDataPoint = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.NumberDataPoint{}
+		},
+	}
+
+	ProtoPoolNumberDataPoint_AsDouble = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.NumberDataPoint_AsDouble{}
+		},
+	}
+
+	ProtoPoolNumberDataPoint_AsInt = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.NumberDataPoint_AsInt{}
+		},
+	}
+)
 
 func NewOrigNumberDataPoint() *otlpmetrics.NumberDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -44,6 +58,19 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 	for i := range orig.Attributes {
 		DeleteOrigKeyValue(&orig.Attributes[i], false)
 	}
+	switch ov := orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		if UseProtoPooling.IsEnabled() {
+			ov.AsDouble = float64(0)
+			ProtoPoolNumberDataPoint_AsDouble.Put(ov)
+		}
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		if UseProtoPooling.IsEnabled() {
+			ov.AsInt = int64(0)
+			ProtoPoolNumberDataPoint_AsInt.Put(ov)
+		}
+
+	}
 	for i := range orig.Exemplars {
 		DeleteOrigExemplar(&orig.Exemplars[i], false)
 	}
@@ -64,9 +91,23 @@ func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: t.AsDouble}
+		var ov *otlpmetrics.NumberDataPoint_AsDouble
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.NumberDataPoint_AsDouble{}
+		} else {
+			ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*otlpmetrics.NumberDataPoint_AsDouble)
+		}
+		ov.AsDouble = t.AsDouble
+		dest.Value = ov
 	case *otlpmetrics.NumberDataPoint_AsInt:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsInt{AsInt: t.AsInt}
+		var ov *otlpmetrics.NumberDataPoint_AsInt
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.NumberDataPoint_AsInt{}
+		} else {
+			ov = ProtoPoolNumberDataPoint_AsInt.Get().(*otlpmetrics.NumberDataPoint_AsInt)
+		}
+		ov.AsInt = t.AsInt
+		dest.Value = ov
 	}
 	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
@@ -104,13 +145,13 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble)
+		dest.WriteFloat64(orig.AsDouble)
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt)
+		dest.WriteInt64(orig.AsInt)
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
@@ -146,16 +187,26 @@ func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *j
 
 		case "asDouble", "as_double":
 			{
-				ofm := &otlpmetrics.NumberDataPoint_AsDouble{}
-				ofm.AsDouble = iter.ReadFloat64()
-				orig.Value = ofm
+				var ov *otlpmetrics.NumberDataPoint_AsDouble
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.NumberDataPoint_AsDouble{}
+				} else {
+					ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*otlpmetrics.NumberDataPoint_AsDouble)
+				}
+				ov.AsDouble = iter.ReadFloat64()
+				orig.Value = ov
 			}
 
 		case "asInt", "as_int":
 			{
-				ofm := &otlpmetrics.NumberDataPoint_AsInt{}
-				ofm.AsInt = iter.ReadInt64()
-				orig.Value = ofm
+				var ov *otlpmetrics.NumberDataPoint_AsInt
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.NumberDataPoint_AsInt{}
+				} else {
+					ov = ProtoPoolNumberDataPoint_AsInt.Get().(*otlpmetrics.NumberDataPoint_AsInt)
+				}
+				ov.AsInt = iter.ReadInt64()
+				orig.Value = ov
 			}
 
 		case "exemplars":
@@ -186,7 +237,10 @@ func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 	if orig.TimeUnixNano != 0 {
 		n += 9
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
+	case nil:
+		_ = orig
+		break
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		n += 9
 	case *otlpmetrics.NumberDataPoint_AsInt:
@@ -225,16 +279,16 @@ func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []by
 		pos--
 		buf[pos] = 0x19
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
 		pos--
 		buf[pos] = 0x21
 
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
 		pos--
 		buf[pos] = 0x31
 
@@ -318,9 +372,14 @@ func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.NumberDataPoint_AsDouble{}
-			ofv.AsDouble = math.Float64frombits(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.NumberDataPoint_AsDouble
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.NumberDataPoint_AsDouble{}
+			} else {
+				ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*otlpmetrics.NumberDataPoint_AsDouble)
+			}
+			ov.AsDouble = math.Float64frombits(num)
+			orig.Value = ov
 
 		case 6:
 			if wireType != proto.WireTypeI64 {
@@ -331,9 +390,14 @@ func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.NumberDataPoint_AsInt{}
-			ofv.AsInt = int64(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.NumberDataPoint_AsInt
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.NumberDataPoint_AsInt{}
+			} else {
+				ov = ProtoPoolNumberDataPoint_AsInt.Get().(*otlpmetrics.NumberDataPoint_AsInt)
+			}
+			ov.AsInt = int64(num)
+			orig.Value = ov
 
 		case 5:
 			if wireType != proto.WireTypeLen {

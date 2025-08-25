@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
+	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
 var _ consumerNode = (*processorNode)(nil)
@@ -81,6 +82,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedSettings)
+		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set,
 			obsconsumer.NewMetrics(next.(consumer.Metrics), producedSettings))
@@ -88,6 +90,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedSettings)
+		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set,
 			obsconsumer.NewLogs(next.(consumer.Logs), producedSettings))
@@ -95,6 +98,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedSettings)
+		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set,
 			obsconsumer.NewProfiles(next.(xconsumer.Profiles), producedSettings))
@@ -102,6 +106,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
+		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}

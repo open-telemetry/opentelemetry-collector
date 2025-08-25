@@ -18,11 +18,30 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolHistogramDataPoint = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.HistogramDataPoint{}
-	},
-}
+var (
+	protoPoolHistogramDataPoint = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.HistogramDataPoint{}
+		},
+	}
+	ProtoPoolHistogramDataPoint_Sum = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.HistogramDataPoint_Sum{}
+		},
+	}
+
+	ProtoPoolHistogramDataPoint_Min = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.HistogramDataPoint_Min{}
+		},
+	}
+
+	ProtoPoolHistogramDataPoint_Max = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.HistogramDataPoint_Max{}
+		},
+	}
+)
 
 func NewOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -44,8 +63,32 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	for i := range orig.Attributes {
 		DeleteOrigKeyValue(&orig.Attributes[i], false)
 	}
+	switch ov := orig.Sum_.(type) {
+	case *otlpmetrics.HistogramDataPoint_Sum:
+		if UseProtoPooling.IsEnabled() {
+			ov.Sum = float64(0)
+			ProtoPoolHistogramDataPoint_Sum.Put(ov)
+		}
+
+	}
 	for i := range orig.Exemplars {
 		DeleteOrigExemplar(&orig.Exemplars[i], false)
+	}
+	switch ov := orig.Min_.(type) {
+	case *otlpmetrics.HistogramDataPoint_Min:
+		if UseProtoPooling.IsEnabled() {
+			ov.Min = float64(0)
+			ProtoPoolHistogramDataPoint_Min.Put(ov)
+		}
+
+	}
+	switch ov := orig.Max_.(type) {
+	case *otlpmetrics.HistogramDataPoint_Max:
+		if UseProtoPooling.IsEnabled() {
+			ov.Max = float64(0)
+			ProtoPoolHistogramDataPoint_Max.Put(ov)
+		}
+
 	}
 
 	orig.Reset()
@@ -140,9 +183,9 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 		dest.WriteObjectField("count")
 		dest.WriteUint64(orig.Count)
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum)
+		dest.WriteFloat64(orig.Sum)
 	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
@@ -178,13 +221,13 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		dest.WriteObjectField("min")
-		dest.WriteFloat64(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min)
+		dest.WriteFloat64(orig.Min)
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
 		dest.WriteObjectField("max")
-		dest.WriteFloat64(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max)
+		dest.WriteFloat64(orig.Max)
 	}
 	dest.WriteObjectEnd()
 }
@@ -207,9 +250,14 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 			orig.Count = iter.ReadUint64()
 		case "sum":
 			{
-				ofm := &otlpmetrics.HistogramDataPoint_Sum{}
-				ofm.Sum = iter.ReadFloat64()
-				orig.Sum_ = ofm
+				var ov *otlpmetrics.HistogramDataPoint_Sum
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.HistogramDataPoint_Sum{}
+				} else {
+					ov = ProtoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
+				}
+				ov.Sum = iter.ReadFloat64()
+				orig.Sum_ = ov
 			}
 
 		case "bucketCounts", "bucket_counts":
@@ -232,16 +280,26 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 			orig.Flags = iter.ReadUint32()
 		case "min":
 			{
-				ofm := &otlpmetrics.HistogramDataPoint_Min{}
-				ofm.Min = iter.ReadFloat64()
-				orig.Min_ = ofm
+				var ov *otlpmetrics.HistogramDataPoint_Min
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.HistogramDataPoint_Min{}
+				} else {
+					ov = ProtoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
+				}
+				ov.Min = iter.ReadFloat64()
+				orig.Min_ = ov
 			}
 
 		case "max":
 			{
-				ofm := &otlpmetrics.HistogramDataPoint_Max{}
-				ofm.Max = iter.ReadFloat64()
-				orig.Max_ = ofm
+				var ov *otlpmetrics.HistogramDataPoint_Max
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.HistogramDataPoint_Max{}
+				} else {
+					ov = ProtoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
+				}
+				ov.Max = iter.ReadFloat64()
+				orig.Max_ = ov
 			}
 
 		default:
@@ -267,7 +325,8 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	if orig.Count != 0 {
 		n += 9
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
+		_ = orig
 		n += 9
 	}
 	l = len(orig.BucketCounts)
@@ -287,10 +346,12 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	if orig.Flags != 0 {
 		n += 1 + proto.Sov(uint64(orig.Flags))
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
+		_ = orig
 		n += 9
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
+		_ = orig
 		n += 9
 	}
 	return n
@@ -325,12 +386,11 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		pos--
 		buf[pos] = 0x21
 	}
-	if orig.Sum_ != nil {
+	if orig, ok := orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum))
 		pos--
 		buf[pos] = 0x29
-
 	}
 	l = len(orig.BucketCounts)
 	if l > 0 {
@@ -364,19 +424,17 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		pos--
 		buf[pos] = 0x50
 	}
-	if orig.Min_ != nil {
+	if orig, ok := orig.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min))
 		pos--
 		buf[pos] = 0x59
-
 	}
-	if orig.Max_ != nil {
+	if orig, ok := orig.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max))
 		pos--
 		buf[pos] = 0x61
-
 	}
 	return len(buf) - pos
 }
@@ -457,9 +515,14 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.HistogramDataPoint_Sum{}
-			ofv.Sum = math.Float64frombits(num)
-			orig.Sum_ = ofv
+			var ov *otlpmetrics.HistogramDataPoint_Sum
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.HistogramDataPoint_Sum{}
+			} else {
+				ov = ProtoPoolHistogramDataPoint_Sum.Get().(*otlpmetrics.HistogramDataPoint_Sum)
+			}
+			ov.Sum = math.Float64frombits(num)
+			orig.Sum_ = ov
 		case 6:
 			if wireType != proto.WireTypeLen {
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
@@ -544,9 +607,14 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.HistogramDataPoint_Min{}
-			ofv.Min = math.Float64frombits(num)
-			orig.Min_ = ofv
+			var ov *otlpmetrics.HistogramDataPoint_Min
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.HistogramDataPoint_Min{}
+			} else {
+				ov = ProtoPoolHistogramDataPoint_Min.Get().(*otlpmetrics.HistogramDataPoint_Min)
+			}
+			ov.Min = math.Float64frombits(num)
+			orig.Min_ = ov
 
 		case 12:
 			if wireType != proto.WireTypeI64 {
@@ -557,9 +625,14 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.HistogramDataPoint_Max{}
-			ofv.Max = math.Float64frombits(num)
-			orig.Max_ = ofv
+			var ov *otlpmetrics.HistogramDataPoint_Max
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.HistogramDataPoint_Max{}
+			} else {
+				ov = ProtoPoolHistogramDataPoint_Max.Get().(*otlpmetrics.HistogramDataPoint_Max)
+			}
+			ov.Max = math.Float64frombits(num)
+			orig.Max_ = ov
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {

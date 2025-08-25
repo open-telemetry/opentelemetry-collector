@@ -32,11 +32,15 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 
 {{ end }}
 
-var protoPool{{ .originName }} = sync.Pool{
-    New: func() any {
-        return &{{ .originFullName }}{}
-    },
-}
+var (
+	protoPool{{ .originName }} = sync.Pool{
+	    New: func() any {
+		    return &{{ .originFullName }}{}
+	    },
+    }
+    {{- range .fields }}{{ .GeneratePoolOrig $.messageStruct }}{{- end }}
+)
+
 
 func NewOrig{{ .originName }}() *{{ .originFullName }} {
     if !UseProtoPooling.IsEnabled() {
@@ -57,7 +61,7 @@ func DeleteOrig{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
 
     {{ range .fields }}{{ .GenerateDeleteOrig $.messageStruct }}{{ end }}
     orig.Reset()
-	if nullable {
+    if nullable {
         protoPool{{ .originName }}.Put(orig)
     }
 }
