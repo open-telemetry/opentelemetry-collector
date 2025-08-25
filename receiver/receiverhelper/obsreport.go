@@ -7,6 +7,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -30,6 +31,9 @@ type ObsReport struct {
 	otelAttrs        metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 }
+
+// startTimeKey is the context key for storing the start time
+type startTimeKey struct{}
 
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
@@ -147,6 +151,11 @@ func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix strin
 	if rec.transport != "" {
 		span.SetAttributes(attribute.String(internal.TransportKey, rec.transport))
 	}
+
+	if rec.telemetryBuilder.ReceiverDuration != nil {
+		ctx = context.WithValue(ctx, startTimeKey{}, time.Now())
+	}
+
 	return ctx
 }
 
@@ -168,6 +177,7 @@ func (rec *ObsReport) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused)
+	defer rec.recordInternalDuration(receiverCtx)
 
 	// end span according to errors
 	if span.IsRecording() {
@@ -212,4 +222,13 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
+}
+
+func (rec *ObsReport) recordInternalDuration(receiverCtx context.Context) {
+	startTime, ok := receiverCtx.Value(startTimeKey{}).(time.Time)
+	if !ok {
+		return
+	}
+	duration := time.Since(startTime)
+	rec.telemetryBuilder.ReceiverDuration.Record(receiverCtx, duration.Seconds(), rec.otelAttrs)
 }

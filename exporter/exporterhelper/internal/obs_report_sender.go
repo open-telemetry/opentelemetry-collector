@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -40,14 +41,17 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName           string
+	tracer             trace.Tracer
+	spanAttrs          trace.SpanStartEventOption
+	metricAttr         metric.MeasurementOption
+	itemsSentInst      metric.Int64Counter
+	itemsFailedInst    metric.Int64Counter
+	exportDurationInst metric.Float64Histogram
+	next               sender.Sender[K]
 }
+
+type startTimeKey struct{}
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -70,14 +74,17 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalTraces:
 		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.exportDurationInst = telemetryBuilder.ExporterDuration
 
 	case pipeline.SignalMetrics:
 		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.exportDurationInst = telemetryBuilder.ExporterDuration
 
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.exportDurationInst = telemetryBuilder.ExporterDuration
 	}
 
 	return or, nil
@@ -101,6 +108,11 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 		ors.spanName,
 		ors.spanAttrs,
 		trace.WithLinks(queuebatch.LinksFromContext(ctx)...))
+
+	if ors.exportDurationInst != nil {
+		ctx = context.WithValue(ctx, startTimeKey{}, time.Now())
+	}
+
 	return ctx
 }
 
@@ -118,6 +130,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	}
 
 	span := trace.SpanFromContext(ctx)
+	defer ors.recordInternalDuration(ctx)
 	defer span.End()
 	// End the span according to errors.
 	if span.IsRecording() {
@@ -136,4 +149,15 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0
+}
+
+func (ors *obsReportSender[K]) recordInternalDuration(ctx context.Context) {
+	if ors.exportDurationInst != nil {
+		startTime, ok := ctx.Value(startTimeKey{}).(time.Time)
+		if !ok {
+			return // Should not happen if startOp was called
+		}
+		duration := time.Since(startTime)
+		ors.exportDurationInst.Record(ctx, duration.Seconds(), ors.metricAttr)
+	}
 }
