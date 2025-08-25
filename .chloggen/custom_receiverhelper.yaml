@@ -1,0 +1,27 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: receiverhelper
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: New feature flag to make receiverhelper distinguish internal vs. downstream errors using new `otelcol_receiver_failed_x` and `otelcol_receiver_requests` metrics
+
+# One or more tracking issues or pull requests related to the change
+issues: [12207, 12802]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: | 
+  This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans metrics.
+  These new metrics and semantics are enabled through the `receiverhelper.newReceiverMetrics` feature gate.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []
