@@ -149,6 +149,9 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigResourceLogsSlice(*dest.orig, *es.orig)
 }
 

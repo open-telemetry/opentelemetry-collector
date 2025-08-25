@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigScopeLogs(t *testing.T) {
-	src := NewOrigScopeLogs()
-	dest := NewOrigScopeLogs()
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, NewOrigScopeLogs(), dest)
-	*src = *GenTestOrigScopeLogs()
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigScopeLogs()
+				CopyOrigScopeLogs(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigScopeLogs(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

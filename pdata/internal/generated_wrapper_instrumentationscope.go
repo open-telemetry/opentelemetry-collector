@@ -32,11 +32,13 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-var protoPoolInstrumentationScope = sync.Pool{
-	New: func() any {
-		return &otlpcommon.InstrumentationScope{}
-	},
-}
+var (
+	protoPoolInstrumentationScope = sync.Pool{
+		New: func() any {
+			return &otlpcommon.InstrumentationScope{}
+		},
+	}
+)
 
 func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
 	if !UseProtoPooling.IsEnabled() {
@@ -66,6 +68,10 @@ func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nulla
 }
 
 func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Name = src.Name
 	dest.Version = src.Version
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)

@@ -149,6 +149,9 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigSummaryDataPoint_ValueAtQuantileSlice(*dest.orig, *es.orig)
 }
 

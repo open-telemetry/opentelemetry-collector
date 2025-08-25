@@ -32,11 +32,13 @@ func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Log
 	return Logs{orig: orig, state: state}
 }
 
-var protoPoolExportLogsServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectorlogs.ExportLogsServiceRequest{}
-	},
-}
+var (
+	protoPoolExportLogsServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectorlogs.ExportLogsServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
@@ -66,6 +68,10 @@ func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServic
 }
 
 func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 

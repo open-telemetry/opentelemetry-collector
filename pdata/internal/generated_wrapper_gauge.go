@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolGauge = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Gauge{}
-	},
-}
+var (
+	protoPoolGauge = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Gauge{}
+		},
+	}
+)
 
 func NewOrigGauge() *otlpmetrics.Gauge {
 	if !UseProtoPooling.IsEnabled() {
@@ -49,6 +51,10 @@ func DeleteOrigGauge(orig *otlpmetrics.Gauge, nullable bool) {
 }
 
 func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 

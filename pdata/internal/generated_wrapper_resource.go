@@ -33,11 +33,13 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-var protoPoolResource = sync.Pool{
-	New: func() any {
-		return &otlpresource.Resource{}
-	},
-}
+var (
+	protoPoolResource = sync.Pool{
+		New: func() any {
+			return &otlpresource.Resource{}
+		},
+	}
+)
 
 func NewOrigResource() *otlpresource.Resource {
 	if !UseProtoPooling.IsEnabled() {
@@ -70,6 +72,10 @@ func DeleteOrigResource(orig *otlpresource.Resource, nullable bool) {
 }
 
 func CopyOrigResource(dest, src *otlpresource.Resource) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)

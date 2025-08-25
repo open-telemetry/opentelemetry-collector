@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigInstrumentationScope(t *testing.T) {
-	src := NewOrigInstrumentationScope()
-	dest := NewOrigInstrumentationScope()
-	CopyOrigInstrumentationScope(dest, src)
-	assert.Equal(t, NewOrigInstrumentationScope(), dest)
-	*src = *GenTestOrigInstrumentationScope()
-	CopyOrigInstrumentationScope(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesInstrumentationScope() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigInstrumentationScope()
+				CopyOrigInstrumentationScope(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigInstrumentationScope(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
 	for name, src := range genTestEncodingValuesInstrumentationScope() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigInstrumentationScopeUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
 	for name, src := range genTestEncodingValuesInstrumentationScope() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

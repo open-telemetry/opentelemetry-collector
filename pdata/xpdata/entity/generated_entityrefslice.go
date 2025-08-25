@@ -146,6 +146,9 @@ func (es EntityRefSlice) RemoveIf(f func(EntityRef) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es EntityRefSlice) CopyTo(dest EntityRefSlice) {
 	dest.getState().AssertMutable()
+	if es.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrigEntityRefSlice(*dest.getOrig(), *es.getOrig())
 }
 

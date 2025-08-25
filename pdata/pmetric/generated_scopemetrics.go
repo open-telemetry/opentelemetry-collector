@@ -45,8 +45,8 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ScopeMetrics{}
+	internal.DeleteOrigScopeMetrics(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeMetrics.

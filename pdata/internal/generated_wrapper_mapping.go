@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolMapping = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Mapping{}
-	},
-}
+var (
+	protoPoolMapping = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Mapping{}
+		},
+	}
+)
 
 func NewOrigMapping() *otlpprofiles.Mapping {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigMapping(orig *otlpprofiles.Mapping, nullable bool) {
 }
 
 func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.MemoryStart = src.MemoryStart
 	dest.MemoryLimit = src.MemoryLimit
 	dest.FileOffset = src.FileOffset

@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExportLogsServiceResponse = sync.Pool{
-	New: func() any {
-		return &otlpcollectorlogs.ExportLogsServiceResponse{}
-	},
-}
+var (
+	protoPoolExportLogsServiceResponse = sync.Pool{
+		New: func() any {
+			return &otlpcollectorlogs.ExportLogsServiceResponse{}
+		},
+	}
+)
 
 func NewOrigExportLogsServiceResponse() *otlpcollectorlogs.ExportLogsServiceResponse {
 	if !UseProtoPooling.IsEnabled() {
@@ -47,6 +49,10 @@ func DeleteOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServi
 }
 
 func CopyOrigExportLogsServiceResponse(dest, src *otlpcollectorlogs.ExportLogsServiceResponse) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigExportLogsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 

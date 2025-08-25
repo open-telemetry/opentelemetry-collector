@@ -44,8 +44,8 @@ func (ms Line) MoveTo(dest Line) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Line{}
+	internal.DeleteOrigLine(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // FunctionIndex returns the functionindex associated with this Line.

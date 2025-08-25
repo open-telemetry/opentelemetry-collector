@@ -45,8 +45,8 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ResourceMetrics{}
+	internal.DeleteOrigResourceMetrics(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceMetrics.

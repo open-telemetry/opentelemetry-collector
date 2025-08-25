@@ -32,11 +32,13 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-var protoPoolExportTraceServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectortrace.ExportTraceServiceRequest{}
-	},
-}
+var (
+	protoPoolExportTraceServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTraceServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
@@ -66,6 +68,10 @@ func DeleteOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceSer
 }
 
 func CopyOrigExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceSpans = CopyOrigResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
 }
 

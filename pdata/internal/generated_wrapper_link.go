@@ -16,11 +16,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolLink = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Link{}
-	},
-}
+var (
+	protoPoolLink = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Link{}
+		},
+	}
+)
 
 func NewOrigLink() *otlpprofiles.Link {
 	if !UseProtoPooling.IsEnabled() {
@@ -49,6 +51,10 @@ func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
 }
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 }

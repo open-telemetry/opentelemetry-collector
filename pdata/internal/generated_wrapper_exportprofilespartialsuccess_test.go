@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
-	src := NewOrigExportProfilesPartialSuccess()
-	dest := NewOrigExportProfilesPartialSuccess()
-	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
-	*src = *GenTestOrigExportProfilesPartialSuccess()
-	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportProfilesPartialSuccess()
+				CopyOrigExportProfilesPartialSuccess(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportProfilesPartialSuccess(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testi
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *test
 func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

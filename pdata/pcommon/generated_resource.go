@@ -41,8 +41,8 @@ func (ms Resource) MoveTo(dest Resource) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpresource.Resource{}
+	internal.DeleteOrigResource(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // Attributes returns the Attributes associated with this Resource.

@@ -46,8 +46,8 @@ func (ms Link) MoveTo(dest Link) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Link{}
+	internal.DeleteOrigLink(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TraceID returns the traceid associated with this Link.

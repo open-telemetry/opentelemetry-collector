@@ -42,8 +42,8 @@ func (ms Logs) MoveTo(dest Logs) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorlogs.ExportLogsServiceRequest{}
+	internal.DeleteOrigExportLogsServiceRequest(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // ResourceLogs returns the ResourceLogs associated with this Logs.

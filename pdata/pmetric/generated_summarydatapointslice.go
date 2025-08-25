@@ -149,6 +149,9 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigSummaryDataPointSlice(*dest.orig, *es.orig)
 }
 

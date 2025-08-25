@@ -46,8 +46,8 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Event{}
+	internal.DeleteOrigSpan_Event(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Timestamp returns the timestamp associated with this SpanEvent.

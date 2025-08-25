@@ -45,8 +45,8 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.HistogramDataPoint{}
+	internal.DeleteOrigHistogramDataPoint(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Attributes returns the Attributes associated with this HistogramDataPoint.
@@ -93,7 +93,7 @@ func (ms HistogramDataPoint) Sum() float64 {
 }
 
 // HasSum returns true if the HistogramDataPoint contains a
-// Sum value, false otherwise.
+// Sum value otherwise.
 func (ms HistogramDataPoint) HasSum() bool {
 	return ms.orig.Sum_ != nil
 }
@@ -142,7 +142,7 @@ func (ms HistogramDataPoint) Min() float64 {
 }
 
 // HasMin returns true if the HistogramDataPoint contains a
-// Min value, false otherwise.
+// Min value otherwise.
 func (ms HistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
@@ -165,7 +165,7 @@ func (ms HistogramDataPoint) Max() float64 {
 }
 
 // HasMax returns true if the HistogramDataPoint contains a
-// Max value, false otherwise.
+// Max value otherwise.
 func (ms HistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }

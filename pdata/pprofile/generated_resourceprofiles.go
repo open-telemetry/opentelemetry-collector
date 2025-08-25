@@ -45,8 +45,8 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ResourceProfiles{}
+	internal.DeleteOrigResourceProfiles(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceProfiles.

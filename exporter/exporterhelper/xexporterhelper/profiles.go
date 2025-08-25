@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -35,8 +36,9 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 	return exporterhelper.QueueBatchSettings{
-		Encoding:   profilesEncoding{},
-		ItemsSizer: request.NewItemsSizer(),
+		ReferenceCounter: profilesReferenceCounter{},
+		Encoding:         profilesEncoding{},
+		ItemsSizer:       request.NewItemsSizer(),
 		BytesSizer: request.BaseSizer{
 			SizeofFunc: func(req request.Request) int64 {
 				return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
@@ -44,6 +46,11 @@ func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 		},
 	}
 }
+
+var (
+	_ request.Request      = (*profilesRequest)(nil)
+	_ request.ErrorHandler = (*profilesRequest)(nil)
+)
 
 type profilesRequest struct {
 	pd         pprofile.Profiles
@@ -86,9 +93,22 @@ func (profilesEncoding) Marshal(ctx context.Context, req request.Request) ([]byt
 	return profilesMarshaler.MarshalProfiles(profiles)
 }
 
+var _ queue.ReferenceCounter[request.Request] = profilesReferenceCounter{}
+
+type profilesReferenceCounter struct{}
+
+func (profilesReferenceCounter) Ref(req request.Request) {
+	pref.RefProfiles(req.(*profilesRequest).pd)
+}
+
+func (profilesReferenceCounter) Unref(req request.Request) {
+	pref.UnrefProfiles(req.(*profilesRequest).pd)
+}
+
 func (req *profilesRequest) OnError(err error) exporterhelper.Request {
 	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
+		// TODO: Add logic to unref the new request created here.
 		return newProfilesRequest(profileError.Data())
 	}
 	return req

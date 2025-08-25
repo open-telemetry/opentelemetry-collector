@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
-	src := NewOrigExponentialHistogramDataPoint_Buckets()
-	dest := NewOrigExponentialHistogramDataPoint_Buckets()
-	CopyOrigExponentialHistogramDataPoint_Buckets(dest, src)
-	assert.Equal(t, NewOrigExponentialHistogramDataPoint_Buckets(), dest)
-	*src = *GenTestOrigExponentialHistogramDataPoint_Buckets()
-	CopyOrigExponentialHistogramDataPoint_Buckets(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint_Buckets() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExponentialHistogramDataPoint_Buckets()
+				CopyOrigExponentialHistogramDataPoint_Buckets(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExponentialHistogramDataPoint_Buckets(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_BucketsUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_BucketsUnknown
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint_Buckets() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_BucketsUnknow
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogramDataPoint_Buckets() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
