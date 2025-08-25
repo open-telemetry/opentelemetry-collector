@@ -15,11 +15,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolLocation = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Location{}
-	},
-}
+var (
+	protoPoolLocation = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Location{}
+		},
+	}
+	ProtoPoolLocation_MappingIndex = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Location_MappingIndex{}
+		},
+	}
+)
 
 func NewOrigLocation() *otlpprofiles.Location {
 	if !UseProtoPooling.IsEnabled() {
@@ -38,6 +45,14 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 		return
 	}
 
+	switch ov := orig.MappingIndex_.(type) {
+	case *otlpprofiles.Location_MappingIndex:
+		if UseProtoPooling.IsEnabled() {
+			ov.MappingIndex = int32(0)
+			ProtoPoolLocation_MappingIndex.Put(ov)
+		}
+
+	}
 	for i := range orig.Line {
 		DeleteOrigLine(orig.Line[i], true)
 	}
@@ -49,6 +64,10 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 }
 
 func CopyOrigLocation(dest, src *otlpprofiles.Location) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
 		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
 		if !ok {
@@ -78,9 +97,9 @@ func GenTestOrigLocation() *otlpprofiles.Location {
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
 func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	dest.WriteObjectStart()
-	if orig.MappingIndex_ != nil {
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
 		dest.WriteObjectField("mappingIndex")
-		dest.WriteInt32(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex)
+		dest.WriteInt32(orig.MappingIndex)
 	}
 	if orig.Address != uint64(0) {
 		dest.WriteObjectField("address")
@@ -119,9 +138,14 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 		switch f {
 		case "mappingIndex", "mapping_index":
 			{
-				ofm := &otlpprofiles.Location_MappingIndex{}
-				ofm.MappingIndex = iter.ReadInt32()
-				orig.MappingIndex_ = ofm
+				var ov *otlpprofiles.Location_MappingIndex
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpprofiles.Location_MappingIndex{}
+				} else {
+					ov = ProtoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+				}
+				ov.MappingIndex = iter.ReadInt32()
+				orig.MappingIndex_ = ov
 			}
 
 		case "address":
@@ -149,8 +173,9 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 	var n int
 	var l int
 	_ = l
-	if orig.MappingIndex_ != nil {
-		n += 1 + proto.Sov(uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
+		_ = orig
+		n += 1 + proto.Sov(uint64(orig.MappingIndex))
 	}
 	if orig.Address != 0 {
 		n += 1 + proto.Sov(uint64(orig.Address))
@@ -176,11 +201,10 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	if orig.MappingIndex_ != nil {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	if orig, ok := orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex))
 		pos--
 		buf[pos] = 0x8
-
 	}
 	if orig.Address != 0 {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.Address))
@@ -241,9 +265,14 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpprofiles.Location_MappingIndex{}
-			ofv.MappingIndex = int32(num)
-			orig.MappingIndex_ = ofv
+			var ov *otlpprofiles.Location_MappingIndex
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpprofiles.Location_MappingIndex{}
+			} else {
+				ov = ProtoPoolLocation_MappingIndex.Get().(*otlpprofiles.Location_MappingIndex)
+			}
+			ov.MappingIndex = int32(num)
+			orig.MappingIndex_ = ov
 
 		case 2:
 			if wireType != proto.WireTypeVarint {

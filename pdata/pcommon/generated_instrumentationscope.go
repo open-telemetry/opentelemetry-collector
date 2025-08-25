@@ -41,8 +41,8 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcommon.InstrumentationScope{}
+	internal.DeleteOrigInstrumentationScope(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // Name returns the name associated with this InstrumentationScope.

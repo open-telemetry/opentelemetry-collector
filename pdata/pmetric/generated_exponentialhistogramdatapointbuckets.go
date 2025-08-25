@@ -45,8 +45,8 @@ func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramD
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	internal.DeleteOrigExponentialHistogramDataPoint_Buckets(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.

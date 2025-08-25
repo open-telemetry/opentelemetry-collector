@@ -52,6 +52,8 @@ func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	src := generateTestHistogramDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
 
 func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {

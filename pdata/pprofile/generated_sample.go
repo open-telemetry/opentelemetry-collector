@@ -45,8 +45,8 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Sample{}
+	internal.DeleteOrigSample(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // LocationsStartIndex returns the locationsstartindex associated with this Sample.
@@ -87,7 +87,7 @@ func (ms Sample) LinkIndex() int32 {
 }
 
 // HasLinkIndex returns true if the Sample contains a
-// LinkIndex value, false otherwise.
+// LinkIndex value otherwise.
 func (ms Sample) HasLinkIndex() bool {
 	return ms.orig.LinkIndex_ != nil
 }

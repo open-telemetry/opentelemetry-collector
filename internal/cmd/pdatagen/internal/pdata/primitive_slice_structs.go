@@ -58,6 +58,10 @@ func (iss *primitiveSliceStruct) getHasWrapper() bool {
 	return usedByOtherDataTypes(iss.packageName)
 }
 
+func (iss *primitiveSliceStruct) getHasOnlyOrig() bool {
+	return false
+}
+
 func (iss *primitiveSliceStruct) getElementOriginName() string {
 	return upperFirst(iss.itemType)
 }

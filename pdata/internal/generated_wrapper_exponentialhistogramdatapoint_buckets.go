@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	},
-}
+var (
+	protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+		},
+	}
+)
 
 func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Exponenti
 }
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Offset = src.Offset
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }

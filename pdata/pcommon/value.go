@@ -112,7 +112,7 @@ func NewValueBool(v bool) Value {
 
 // NewValueMap creates a new Value of map type.
 func NewValueMap() Value {
-	ov := internal.NewOrigAnyValueKeyValueList()
+	ov := internal.NewOrigAnyValueKvlistValue()
 	ov.KvlistValue = internal.NewOrigKeyValueList()
 	orig := internal.NewOrigAnyValue()
 	orig.Value = ov
@@ -343,7 +343,7 @@ func (v Value) SetEmptyMap() Map {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteOrigAnyValue(v.getOrig(), false)
-	ov := internal.NewOrigAnyValueKeyValueList()
+	ov := internal.NewOrigAnyValueKvlistValue()
 	ov.KvlistValue = internal.NewOrigKeyValueList()
 	v.getOrig().Value = ov
 	return newMap(&ov.KvlistValue.Values, v.getState())

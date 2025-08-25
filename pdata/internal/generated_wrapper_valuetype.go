@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolValueType = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.ValueType{}
-	},
-}
+var (
+	protoPoolValueType = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.ValueType{}
+		},
+	}
+)
 
 func NewOrigValueType() *otlpprofiles.ValueType {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigValueType(orig *otlpprofiles.ValueType, nullable bool) {
 }
 
 func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TypeStrindex = src.TypeStrindex
 	dest.UnitStrindex = src.UnitStrindex
 	dest.AggregationTemporality = src.AggregationTemporality

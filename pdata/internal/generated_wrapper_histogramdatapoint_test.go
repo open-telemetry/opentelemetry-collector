@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,13 +22,23 @@ import (
 )
 
 func TestCopyOrigHistogramDataPoint(t *testing.T) {
-	src := NewOrigHistogramDataPoint()
-	dest := NewOrigHistogramDataPoint()
-	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
-	*src = *GenTestOrigHistogramDataPoint()
-	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesHistogramDataPoint() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigHistogramDataPoint()
+				CopyOrigHistogramDataPoint(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigHistogramDataPoint(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
@@ -42,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogramDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -86,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogramDataPoint() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

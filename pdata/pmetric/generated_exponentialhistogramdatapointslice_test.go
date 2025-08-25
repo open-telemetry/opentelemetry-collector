@@ -52,6 +52,8 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	src := generateTestExponentialHistogramDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
 
 func TestExponentialHistogramDataPointSlice_EnsureCapacity(t *testing.T) {

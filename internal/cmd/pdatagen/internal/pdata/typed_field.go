@@ -75,6 +75,10 @@ func (ptf *TypedField) GenerateTestEncodingValues(*messageStruct) string {
 	return ptf.toProtoField().GenTestEncodingValues()
 }
 
+func (ptf *TypedField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
 func (ptf *TypedField) GenerateDeleteOrig(*messageStruct) string {
 	return ptf.toProtoField().GenDeleteOrig()
 }

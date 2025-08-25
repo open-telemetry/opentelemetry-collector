@@ -13,13 +13,23 @@ import (
 )
 
 func TestCopyOrig{{ .originName }}(t *testing.T) {
-	src := NewOrig{{ .originName }}()
-	dest := NewOrig{{ .originName }}()
-	CopyOrig{{ .originName }}(dest, src)
-	assert.Equal(t, NewOrig{{ .originName }}(), dest)
-    *src = *GenTestOrig{{ .originName }}()
-	CopyOrig{{ .originName }}(dest, src)
-	assert.Equal(t, src, dest)
+    for name, src := range genTestEncodingValues{{ .originName }}() {
+        for _, pooling := range []bool{true, false} {
+            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+                prevPooling := UseProtoPooling.IsEnabled()
+                require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+                defer func() {
+                    require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+                }()
+
+                dest := NewOrig{{ .originName }}()
+                CopyOrig{{ .originName }}(dest, src)
+                assert.Equal(t, src, dest)
+                CopyOrig{{ .originName }}(dest, dest)
+                assert.Equal(t, src, dest)
+            })
+        }
+    }
 }
 
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}Unknown(t *testing.T) {
@@ -34,7 +44,7 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}Unknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .originName }}() {
         for _, pooling := range []bool{true, false} {
-            t.Run(name, func(t *testing.T) {
+            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
                 prevPooling := UseProtoPooling.IsEnabled()
                 require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
                 defer func() {
@@ -78,7 +88,7 @@ func TestMarshalAndUnmarshalProtoOrig{{ .originName }}Unknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .originName }}(){
         for _, pooling := range []bool{true, false} {
-            t.Run(name, func(t *testing.T) {
+            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
                 prevPooling := UseProtoPooling.IsEnabled()
                 require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
                 defer func() {

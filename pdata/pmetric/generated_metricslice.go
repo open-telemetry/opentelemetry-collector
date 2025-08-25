@@ -149,6 +149,9 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigMetricSlice(*dest.orig, *es.orig)
 }
 

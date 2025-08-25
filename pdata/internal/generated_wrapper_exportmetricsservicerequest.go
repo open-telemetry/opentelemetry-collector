@@ -32,11 +32,13 @@ func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *S
 	return Metrics{orig: orig, state: state}
 }
 
-var protoPoolExportMetricsServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	},
-}
+var (
+	protoPoolExportMetricsServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectormetrics.ExportMetricsServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
@@ -66,6 +68,10 @@ func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetr
 }
 
 func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 

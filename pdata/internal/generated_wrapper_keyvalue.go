@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolKeyValue = sync.Pool{
-	New: func() any {
-		return &otlpcommon.KeyValue{}
-	},
-}
+var (
+	protoPoolKeyValue = sync.Pool{
+		New: func() any {
+			return &otlpcommon.KeyValue{}
+		},
+	}
+)
 
 func NewOrigKeyValue() *otlpcommon.KeyValue {
 	if !UseProtoPooling.IsEnabled() {
@@ -47,6 +49,10 @@ func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
 }
 
 func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Key = src.Key
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }

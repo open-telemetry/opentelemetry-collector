@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolScopeSpans = sync.Pool{
-	New: func() any {
-		return &otlptrace.ScopeSpans{}
-	},
-}
+var (
+	protoPoolScopeSpans = sync.Pool{
+		New: func() any {
+			return &otlptrace.ScopeSpans{}
+		},
+	}
+)
 
 func NewOrigScopeSpans() *otlptrace.ScopeSpans {
 	if !UseProtoPooling.IsEnabled() {
@@ -50,6 +52,10 @@ func DeleteOrigScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
 }
 
 func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.Spans = CopyOrigSpanSlice(dest.Spans, src.Spans)
 	dest.SchemaUrl = src.SchemaUrl

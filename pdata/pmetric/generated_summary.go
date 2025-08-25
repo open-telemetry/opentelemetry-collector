@@ -44,8 +44,8 @@ func (ms Summary) MoveTo(dest Summary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Summary{}
+	internal.DeleteOrigSummary(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // DataPoints returns the DataPoints associated with this Summary.

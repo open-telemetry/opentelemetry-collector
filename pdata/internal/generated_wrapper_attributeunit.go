@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolAttributeUnit = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.AttributeUnit{}
-	},
-}
+var (
+	protoPoolAttributeUnit = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.AttributeUnit{}
+		},
+	}
+)
 
 func NewOrigAttributeUnit() *otlpprofiles.AttributeUnit {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, nullable bool) {
 }
 
 func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex
 }
