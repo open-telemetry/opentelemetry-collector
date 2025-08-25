@@ -34,8 +34,7 @@ func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleS
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
 	orig := []*otlpprofiles.Sample(nil)
-	state := internal.StateMutable
-	return newSampleSlice(&orig, &state)
+	return newSampleSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, internal.NewOrigSample())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,7 +128,9 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigSample((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -147,6 +149,9 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SampleSlice) CopyTo(dest SampleSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigSampleSlice(*dest.orig, *es.orig)
 }
 

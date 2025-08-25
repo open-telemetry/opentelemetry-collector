@@ -24,9 +24,10 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
@@ -69,8 +71,9 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(13))
 	assert.Equal(t, uint64(13), ms.Count())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, sharedState).SetCount(uint64(13)) })
 }
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
@@ -145,7 +148,6 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	ms := NewHistogramDataPoint()
-	internal.FillOrigTestHistogramDataPoint(ms.orig)
+	ms := newHistogramDataPoint(internal.GenTestOrigHistogramDataPoint(), internal.NewState())
 	return ms
 }

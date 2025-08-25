@@ -11,15 +11,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestCopyOrigKeyValueSlice(t *testing.T) {
-	src := []v1.KeyValue{}
-	dest := []v1.KeyValue{}
+	src := []otlpcommon.KeyValue{}
+	dest := []otlpcommon.KeyValue{}
 	// Test CopyTo empty
 	dest = CopyOrigKeyValueSlice(dest, src)
-	assert.Equal(t, []v1.KeyValue{}, dest)
+	assert.Equal(t, []otlpcommon.KeyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenerateOrigTestKeyValueSlice()
@@ -31,7 +31,7 @@ func TestCopyOrigKeyValueSlice(t *testing.T) {
 	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigKeyValueSlice(dest, []v1.KeyValue{})
+	dest = CopyOrigKeyValueSlice(dest, []otlpcommon.KeyValue{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity

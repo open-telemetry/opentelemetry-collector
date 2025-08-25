@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportResponse_MoveTo(t *testing.T) {
@@ -23,13 +22,10 @@ func TestExportResponse_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportResponse(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportResponse(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		ms.MoveTo(newExportResponse(&otlpcollectorprofile.ExportProfilesServiceResponse{}, &sharedState))
-	})
-	assert.Panics(t, func() {
-		newExportResponse(&otlpcollectorprofile.ExportProfilesServiceResponse{}, &sharedState).MoveTo(dest)
-	})
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportResponse(internal.NewOrigExportProfilesServiceResponse(), sharedState)) })
+	assert.Panics(t, func() { newExportResponse(internal.NewOrigExportProfilesServiceResponse(), sharedState).MoveTo(dest) })
 }
 
 func TestExportResponse_CopyTo(t *testing.T) {
@@ -40,21 +36,19 @@ func TestExportResponse_CopyTo(t *testing.T) {
 	orig = generateTestExportResponse()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		ms.CopyTo(newExportResponse(&otlpcollectorprofile.ExportProfilesServiceResponse{}, &sharedState))
-	})
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExportResponse(internal.NewOrigExportProfilesServiceResponse(), sharedState)) })
 }
 
 func TestExportResponse_PartialSuccess(t *testing.T) {
 	ms := NewExportResponse()
 	assert.Equal(t, NewExportPartialSuccess(), ms.PartialSuccess())
-	internal.FillOrigTestExportProfilesPartialSuccess(&ms.orig.PartialSuccess)
+	ms.orig.PartialSuccess = *internal.GenTestOrigExportProfilesPartialSuccess()
 	assert.Equal(t, generateTestExportPartialSuccess(), ms.PartialSuccess())
 }
 
 func generateTestExportResponse() ExportResponse {
-	ms := NewExportResponse()
-	internal.FillOrigTestExportProfilesServiceResponse(ms.orig)
+	ms := newExportResponse(internal.GenTestOrigExportProfilesServiceResponse(), internal.NewState())
 	return ms
 }

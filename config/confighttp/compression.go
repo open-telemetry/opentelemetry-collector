@@ -32,6 +32,13 @@ var enableFramedSnappy = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/10584"),
 )
 
+func defaultCompressionAlgorithms() []string {
+	if enableFramedSnappy.IsEnabled() {
+		return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
+	}
+	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+}
+
 type compressRoundTripper struct {
 	rt                http.RoundTripper
 	compressionType   configcompression.Type

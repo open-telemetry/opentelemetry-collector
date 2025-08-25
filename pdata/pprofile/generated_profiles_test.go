@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestProfiles_MoveTo(t *testing.T) {
@@ -23,9 +22,10 @@ func TestProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{}, &sharedState)) })
-	assert.Panics(t, func() { newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestProfiles_CopyTo(t *testing.T) {
@@ -36,8 +36,9 @@ func TestProfiles_CopyTo(t *testing.T) {
 	orig = generateTestProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState)) })
 }
 
 func TestProfiles_ResourceProfiles(t *testing.T) {
@@ -47,13 +48,14 @@ func TestProfiles_ResourceProfiles(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfilesSlice(), ms.ResourceProfiles())
 }
 
-func TestProfiles_ProfilesDictionary(t *testing.T) {
+func TestProfiles_Dictionary(t *testing.T) {
 	ms := NewProfiles()
-	assert.Equal(t, NewProfilesDictionary(), ms.ProfilesDictionary())
-	internal.FillOrigTestProfilesDictionary(&ms.getOrig().Dictionary)
-	assert.Equal(t, generateTestProfilesDictionary(), ms.ProfilesDictionary())
+	assert.Equal(t, NewProfilesDictionary(), ms.Dictionary())
+	ms.getOrig().Dictionary = *internal.GenTestOrigProfilesDictionary()
+	assert.Equal(t, generateTestProfilesDictionary(), ms.Dictionary())
 }
 
 func generateTestProfiles() Profiles {
-	return Profiles(internal.GenerateTestProfiles())
+	ms := newProfiles(internal.GenTestOrigExportProfilesServiceRequest(), internal.NewState())
+	return ms
 }

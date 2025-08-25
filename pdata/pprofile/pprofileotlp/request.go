@@ -24,10 +24,9 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	state := internal.StateMutable
 	return ExportRequest{
 		orig:  &otlpcollectorprofile.ExportProfilesServiceRequest{},
-		state: &state,
+		state: internal.NewState(),
 	}
 }
 
@@ -43,12 +42,22 @@ func NewExportRequestFromProfiles(td pprofile.Profiles) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	return ms.orig.Marshal()
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Marshal()
+	}
+	size := internal.SizeProtoOrigExportProfilesServiceRequest(ms.orig)
+	buf := make([]byte, size)
+	_ = internal.MarshalProtoOrigExportProfilesServiceRequest(ms.orig, buf)
+	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	if err := ms.orig.Unmarshal(data); err != nil {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Unmarshal(data)
+	}
+	err := internal.UnmarshalProtoOrigExportProfilesServiceRequest(ms.orig, data)
+	if err != nil {
 		return err
 	}
 	otlp.MigrateProfiles(ms.orig.ResourceProfiles)

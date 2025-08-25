@@ -19,8 +19,7 @@ import (
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &state)
+	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPointValueAtQuantile()
@@ -28,15 +27,16 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSummaryDataPoint_ValueAtQuantile((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint_ValueAtQuantile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointValueAtQuantileSlice()
 	src := generateTestSummaryDataPointValueAtQuantileSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_RemoveIfAll(t *testing.T) {
