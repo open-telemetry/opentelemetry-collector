@@ -230,6 +230,17 @@ func (cc *ClientConfig) Validate() error {
 		}
 	}
 
+	grpcOpts, err := cc.getStaticDialOptions(context.Background())
+	if err != nil {
+		return err
+	}
+	// Perform a simple check that we will be able to create a new client
+	conn, err := grpc.NewClient(cc.Endpoint, grpcOpts...)
+	if err != nil {
+		return err
+	}
+	_ = conn.Close()
+
 	return nil
 }
 
@@ -278,12 +289,13 @@ func (cc *ClientConfig) ToClientConn(
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := cc.getGrpcDialOptions(ctx, host, settings, extraOpts)
+	opts, err := cc.getDialOptions(ctx, host, settings, extraOpts...)
 	if err != nil {
 		return nil, err
 	}
+
 	//nolint:staticcheck // SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
-	return grpc.DialContext(ctx, cc.sanitizedEndpoint(), grpcOpts...)
+	return grpc.DialContext(ctx, cc.sanitizedEndpoint(), opts...)
 }
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
@@ -297,11 +309,35 @@ func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context 
 	return metadata.AppendToOutgoingContext(ctx, kv...)
 }
 
-func (cc *ClientConfig) getGrpcDialOptions(
+func (cc *ClientConfig) getDialOptions(
 	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
-	extraOpts []ToClientConnOption,
+	extraOpts ...ToClientConnOption,
+) ([]grpc.DialOption, error) {
+	staticOpts, err := cc.getStaticDialOptions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	runtimeOpts, err := cc.getRuntimeDialOptions(ctx, host, settings)
+	if err != nil {
+		return nil, err
+	}
+	opts := make([]grpc.DialOption, 0, len(staticOpts)+len(runtimeOpts)+len(extraOpts))
+	opts = append(opts, staticOpts...)
+	opts = append(opts, runtimeOpts...)
+
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
+
+	return opts, nil
+}
+
+func (cc *ClientConfig) getStaticDialOptions(
+	ctx context.Context,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if cc.Compression.IsCompressed() {
@@ -342,23 +378,6 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, keepAliveOption)
 	}
 
-	if cc.Auth.HasValue() {
-		if host.GetExtensions() == nil {
-			return nil, errors.New("no extensions configuration available")
-		}
-
-		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
-		if cerr != nil {
-			return nil, cerr
-		}
-
-		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
-		if perr != nil {
-			return nil, err
-		}
-		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
-	}
-
 	if cc.BalancerName != "" {
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)))
 	}
@@ -366,15 +385,6 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	if cc.Authority != "" {
 		opts = append(opts, grpc.WithAuthority(cc.Authority))
 	}
-
-	otelOpts := []otelgrpc.Option{
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
-	}
-
-	// Enable OpenTelemetry observability plugin.
-	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
 	if len(cc.Headers) > 0 {
 		opts = append(opts,
@@ -387,6 +397,42 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		)
 	}
 
+	return opts, nil
+}
+
+func (cc *ClientConfig) getRuntimeDialOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+) ([]grpc.DialOption, error) {
+	var opts []grpc.DialOption
+
+	if cc.Auth.HasValue() {
+		if host.GetExtensions() == nil {
+			return nil, errors.New("no extensions configuration available")
+		}
+
+		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		if cerr != nil {
+			return nil, cerr
+		}
+
+		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
+		if perr != nil {
+			return nil, perr
+		}
+		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
+	}
+
+	otelOpts := []otelgrpc.Option{
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
+	}
+
+	// Enable OpenTelemetry observability plugin.
+	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
+
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range cc.Middlewares {
 		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, host.GetExtensions())
@@ -394,12 +440,6 @@ func (cc *ClientConfig) getGrpcDialOptions(
 			return nil, fmt.Errorf("failed to get gRPC client options from middleware: %w", err)
 		}
 		opts = append(opts, middlewareOptions...)
-	}
-
-	for _, opt := range extraOpts {
-		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
-			opts = append(opts, wrapper.opt)
-		}
 	}
 
 	return opts, nil
