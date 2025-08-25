@@ -23,12 +23,9 @@ const deleteOrigMessage = `{{ if .repeated -}}
 	{{- end }}
 	}
 {{- else if ne .oneOfGroup "" -}}
-	if UseProtoPooling.IsEnabled() {
-		DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
-		ov.{{ .fieldName }} = nil
-		ProtoPool{{ .oneOfMessageName }}.Put(ov)
-	}
 	DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
+	ov.{{ .fieldName }} = nil
+	ProtoPool{{ .oneOfMessageName }}.Put(ov)
 {{- else if .nullable -}}
 	DeleteOrig{{ .origName }}(orig.{{ .fieldName }}, true)
 {{- else -}}
