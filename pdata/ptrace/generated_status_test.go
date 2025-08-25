@@ -23,9 +23,10 @@ func TestStatus_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestStatus(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestStatus(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newStatus(&otlptrace.Status{}, &sharedState)) })
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewOrigStatus(), sharedState)) })
+	assert.Panics(t, func() { newStatus(internal.NewOrigStatus(), sharedState).MoveTo(dest) })
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -36,16 +37,9 @@ func TestStatus_CopyTo(t *testing.T) {
 	orig = generateTestStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
-}
-
-func TestStatus_Code(t *testing.T) {
-	ms := NewStatus()
-	assert.Equal(t, StatusCode(0), ms.Code())
-	testValCode := StatusCode(1)
-	ms.SetCode(testValCode)
-	assert.Equal(t, testValCode, ms.Code())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewOrigStatus(), sharedState)) })
 }
 
 func TestStatus_Message(t *testing.T) {
@@ -53,12 +47,20 @@ func TestStatus_Message(t *testing.T) {
 	assert.Empty(t, ms.Message())
 	ms.SetMessage("test_message")
 	assert.Equal(t, "test_message", ms.Message())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, sharedState).SetMessage("test_message") })
+}
+
+func TestStatus_Code(t *testing.T) {
+	ms := NewStatus()
+	assert.Equal(t, StatusCode(otlptrace.Status_StatusCode(0)), ms.Code())
+	testValCode := StatusCode(otlptrace.Status_StatusCode(1))
+	ms.SetCode(testValCode)
+	assert.Equal(t, testValCode, ms.Code())
 }
 
 func generateTestStatus() Status {
-	ms := NewStatus()
-	internal.FillOrigTestStatus(ms.orig)
+	ms := newStatus(internal.GenTestOrigStatus(), internal.NewState())
 	return ms
 }

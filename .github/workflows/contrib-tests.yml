@@ -22,7 +22,7 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Prepare Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
@@ -57,7 +57,7 @@ jobs:
           - other
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Download contrib
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
@@ -68,6 +68,16 @@ jobs:
         with:
           go-version: oldstable
           cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+
       - name: Run tests
         run: |
           chmod +x /tmp/contrib/.tools/*

@@ -24,9 +24,10 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -37,26 +38,16 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	orig = generateTestResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceMetrics_SchemaUrl(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("test_schemaurl")
-	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl")
-	})
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
@@ -66,8 +57,17 @@ func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
-func generateTestResourceMetrics() ResourceMetrics {
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	ms := NewResourceMetrics()
-	internal.FillOrigTestResourceMetrics(ms.orig)
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, sharedState).SetSchemaUrl("test_schemaurl") })
+}
+
+func generateTestResourceMetrics() ResourceMetrics {
+	ms := newResourceMetrics(internal.GenTestOrigResourceMetrics(), internal.NewState())
 	return ms
 }

@@ -35,8 +35,7 @@ func newSpan(orig *otlptrace.Span, state *internal.State) Span {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpan() Span {
-	state := internal.StateMutable
-	return newSpan(&otlptrace.Span{}, &state)
+	return newSpan(internal.NewOrigSpan(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -48,8 +47,8 @@ func (ms Span) MoveTo(dest Span) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span{}
+	internal.DeleteOrigSpan(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TraceID returns the traceid associated with this Span.
@@ -90,17 +89,6 @@ func (ms Span) SetParentSpanID(v pcommon.SpanID) {
 	ms.orig.ParentSpanId = data.SpanID(v)
 }
 
-// Name returns the name associated with this Span.
-func (ms Span) Name() string {
-	return ms.orig.Name
-}
-
-// SetName replaces the name associated with this Span.
-func (ms Span) SetName(v string) {
-	ms.state.AssertMutable()
-	ms.orig.Name = v
-}
-
 // Flags returns the flags associated with this Span.
 func (ms Span) Flags() uint32 {
 	return ms.orig.Flags
@@ -110,6 +98,17 @@ func (ms Span) Flags() uint32 {
 func (ms Span) SetFlags(v uint32) {
 	ms.state.AssertMutable()
 	ms.orig.Flags = v
+}
+
+// Name returns the name associated with this Span.
+func (ms Span) Name() string {
+	return ms.orig.Name
+}
+
+// SetName replaces the name associated with this Span.
+func (ms Span) SetName(v string) {
+	ms.state.AssertMutable()
+	ms.orig.Name = v
 }
 
 // Kind returns the kind associated with this Span.

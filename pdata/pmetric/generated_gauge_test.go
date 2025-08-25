@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestGauge_MoveTo(t *testing.T) {
@@ -23,9 +22,10 @@ func TestGauge_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestGauge(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestGauge(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newGauge(&otlpmetrics.Gauge{}, &sharedState)) })
-	assert.Panics(t, func() { newGauge(&otlpmetrics.Gauge{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newGauge(internal.NewOrigGauge(), sharedState)) })
+	assert.Panics(t, func() { newGauge(internal.NewOrigGauge(), sharedState).MoveTo(dest) })
 }
 
 func TestGauge_CopyTo(t *testing.T) {
@@ -36,8 +36,9 @@ func TestGauge_CopyTo(t *testing.T) {
 	orig = generateTestGauge()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newGauge(&otlpmetrics.Gauge{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newGauge(internal.NewOrigGauge(), sharedState)) })
 }
 
 func TestGauge_DataPoints(t *testing.T) {
@@ -48,7 +49,6 @@ func TestGauge_DataPoints(t *testing.T) {
 }
 
 func generateTestGauge() Gauge {
-	ms := NewGauge()
-	internal.FillOrigTestGauge(ms.orig)
+	ms := newGauge(internal.GenTestOrigGauge(), internal.NewState())
 	return ms
 }

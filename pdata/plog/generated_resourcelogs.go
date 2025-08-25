@@ -33,8 +33,7 @@ func newResourceLogs(orig *otlplogs.ResourceLogs, state *internal.State) Resourc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceLogs() ResourceLogs {
-	state := internal.StateMutable
-	return newResourceLogs(&otlplogs.ResourceLogs{}, &state)
+	return newResourceLogs(internal.NewOrigResourceLogs(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,13 +45,18 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ResourceLogs{}
+	internal.DeleteOrigResourceLogs(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+}
+
+// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
+func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
+	return newScopeLogsSlice(&ms.orig.ScopeLogs, ms.state)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
@@ -64,11 +68,6 @@ func (ms ResourceLogs) SchemaUrl() string {
 func (ms ResourceLogs) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
-func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&ms.orig.ScopeLogs, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

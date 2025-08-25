@@ -7,42 +7,150 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectorprofiles "go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/featuregate"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportProfilesPartialSuccess(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
-	dest := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
-	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, &otlpcollectorprofile.ExportProfilesPartialSuccess{}, dest)
-	FillOrigTestExportProfilesPartialSuccess(src)
-	CopyOrigExportProfilesPartialSuccess(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportProfilesPartialSuccess()
+				CopyOrigExportProfilesPartialSuccess(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportProfilesPartialSuccess(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigExportProfilesPartialSuccess()
+	UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
-	src := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
-	FillOrigTestExportProfilesPartialSuccess(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExportProfilesPartialSuccess(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
-	UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
-	require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExportProfilesPartialSuccess(src, stream)
+				require.NoError(t, stream.Error())
 
-	assert.Equal(t, src, dest)
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExportProfilesPartialSuccess()
+				UnmarshalJSONOrigExportProfilesPartialSuccess(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportProfilesPartialSuccess(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExportProfilesPartialSuccess()
+			require.Error(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccessUnknown(t *testing.T) {
+	dest := NewOrigExportProfilesPartialSuccess()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigExportProfilesPartialSuccess(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
+				gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExportProfilesPartialSuccess()
+				require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportProfilesPartialSuccess(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *testing.T) {
+	for name, src := range genTestEncodingValuesExportProfilesPartialSuccess() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportProfilesPartialSuccess(src))
+			gotSize := MarshalProtoOrigExportProfilesPartialSuccess(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectorprofiles.ExportProfilesPartialSuccess{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigExportProfilesPartialSuccess()
+			require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                    {0x02},
+		"RejectedProfiles/wrong_wire_type": {0xc},
+		"RejectedProfiles/missing_value":   {0x8},
+		"ErrorMessage/wrong_wire_type":     {0x14},
+		"ErrorMessage/missing_value":       {0x12},
+	}
+}
+
+func genTestEncodingValuesExportProfilesPartialSuccess() map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess {
+	return map[string]*otlpcollectorprofiles.ExportProfilesPartialSuccess{
+		"empty":                 NewOrigExportProfilesPartialSuccess(),
+		"RejectedProfiles/test": {RejectedProfiles: int64(13)},
+		"ErrorMessage/test":     {ErrorMessage: "test_errormessage"},
+	}
 }

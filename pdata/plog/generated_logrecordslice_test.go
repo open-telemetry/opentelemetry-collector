@@ -19,8 +19,7 @@ import (
 func TestLogRecordSlice(t *testing.T) {
 	es := NewLogRecordSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, &state)
+	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLogRecord()
@@ -28,15 +27,16 @@ func TestLogRecordSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLogRecord((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLogRecord()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestLogRecordSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestLogRecordSlice_CopyTo(t *testing.T) {
 	dest := NewLogRecordSlice()
 	src := generateTestLogRecordSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLogRecordSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestLogRecordSlice_RemoveIfAll(t *testing.T) {

@@ -33,8 +33,7 @@ func newResourceMetrics(orig *otlpmetrics.ResourceMetrics, state *internal.State
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceMetrics() ResourceMetrics {
-	state := internal.StateMutable
-	return newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &state)
+	return newResourceMetrics(internal.NewOrigResourceMetrics(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,13 +45,18 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ResourceMetrics{}
+	internal.DeleteOrigResourceMetrics(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+}
+
+// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
+func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
+	return newScopeMetricsSlice(&ms.orig.ScopeMetrics, ms.state)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
@@ -64,11 +68,6 @@ func (ms ResourceMetrics) SchemaUrl() string {
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
-func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return newScopeMetricsSlice(&ms.orig.ScopeMetrics, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

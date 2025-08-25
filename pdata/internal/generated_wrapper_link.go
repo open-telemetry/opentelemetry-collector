@@ -7,19 +7,63 @@
 package internal
 
 import (
+	"fmt"
+	"sync"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolLink = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Link{}
+		},
+	}
+)
+
+func NewOrigLink() *otlpprofiles.Link {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Link{}
+	}
+	return protoPoolLink.Get().(*otlpprofiles.Link)
+}
+
+func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteOrigSpanID(&orig.SpanId, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolLink.Put(orig)
+	}
+}
+
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 }
 
-func FillOrigTestLink(orig *otlpprofiles.Link) {
+func GenTestOrigLink() *otlpprofiles.Link {
+	orig := NewOrigLink()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -27,26 +71,112 @@ func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		orig.TraceId.MarshalJSONStream(dest)
+		MarshalJSONOrigTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		orig.SpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.SpanId, dest)
 	}
 	dest.WriteObjectEnd()
 }
 
 // UnmarshalJSONOrigLink unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			orig.TraceId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			orig.SpanId.UnmarshalJSONIter(iter)
+			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
+}
+
+func SizeProtoOrigLink(orig *otlpprofiles.Link) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigTraceID(&orig.TraceId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	l = SizeProtoOrigSpanID(&orig.SpanId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	return n
+}
+
+func MarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x12
+
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

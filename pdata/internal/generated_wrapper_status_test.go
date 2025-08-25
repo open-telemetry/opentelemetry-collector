@@ -7,42 +7,150 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigStatus(t *testing.T) {
-	src := &otlptrace.Status{}
-	dest := &otlptrace.Status{}
-	CopyOrigStatus(dest, src)
-	assert.Equal(t, &otlptrace.Status{}, dest)
-	FillOrigTestStatus(src)
-	CopyOrigStatus(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesStatus() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigStatus()
+				CopyOrigStatus(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigStatus(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigStatusUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigStatus()
+	UnmarshalJSONOrigStatus(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigStatus(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
-	src := &otlptrace.Status{}
-	FillOrigTestStatus(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigStatus(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesStatus() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlptrace.Status{}
-	UnmarshalJSONOrigStatus(dest, iter)
-	require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigStatus(src, stream)
+				require.NoError(t, stream.Error())
 
-	assert.Equal(t, src, dest)
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigStatus()
+				UnmarshalJSONOrigStatus(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigStatus(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigStatusFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesStatus() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigStatus()
+			require.Error(t, UnmarshalProtoOrigStatus(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigStatusUnknown(t *testing.T) {
+	dest := NewOrigStatus()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigStatus(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigStatus(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
+	for name, src := range genTestEncodingValuesStatus() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigStatus(src))
+				gotSize := MarshalProtoOrigStatus(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigStatus()
+				require.NoError(t, UnmarshalProtoOrigStatus(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigStatus(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufStatus(t *testing.T) {
+	for name, src := range genTestEncodingValuesStatus() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigStatus(src))
+			gotSize := MarshalProtoOrigStatus(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlptrace.Status{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigStatus()
+			require.NoError(t, UnmarshalProtoOrigStatus(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesStatus() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":           {0x02},
+		"Message/wrong_wire_type": {0x14},
+		"Message/missing_value":   {0x12},
+		"Code/wrong_wire_type":    {0x1c},
+		"Code/missing_value":      {0x18},
+	}
+}
+
+func genTestEncodingValuesStatus() map[string]*otlptrace.Status {
+	return map[string]*otlptrace.Status{
+		"empty":        NewOrigStatus(),
+		"Message/test": {Message: "test_message"},
+		"Code/test":    {Code: otlptrace.Status_StatusCode(13)},
+	}
 }

@@ -25,9 +25,10 @@ func TestExemplar_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExemplar(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExemplar(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExemplar(internal.NewOrigExemplar(), sharedState)) })
+	assert.Panics(t, func() { newExemplar(internal.NewOrigExemplar(), sharedState).MoveTo(dest) })
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
@@ -38,8 +39,16 @@ func TestExemplar_CopyTo(t *testing.T) {
 	orig = generateTestExemplar()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExemplar(internal.NewOrigExemplar(), sharedState)) })
+}
+
+func TestExemplar_FilteredAttributes(t *testing.T) {
+	ms := NewExemplar()
+	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
+	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -61,8 +70,9 @@ func TestExemplar_DoubleValue(t *testing.T) {
 	ms.SetDoubleValue(float64(3.1415926))
 	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetDoubleValue(float64(3.1415926)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, sharedState).SetDoubleValue(float64(3.1415926)) })
 }
 
 func TestExemplar_IntValue(t *testing.T) {
@@ -71,23 +81,9 @@ func TestExemplar_IntValue(t *testing.T) {
 	ms.SetIntValue(int64(13))
 	assert.Equal(t, int64(13), ms.IntValue())
 	assert.Equal(t, ExemplarValueTypeInt, ms.ValueType())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetIntValue(int64(13)) })
-}
-
-func TestExemplar_FilteredAttributes(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
-}
-
-func TestExemplar_TraceID(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetTraceID(testValTraceID)
-	assert.Equal(t, testValTraceID, ms.TraceID())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, sharedState).SetIntValue(int64(13)) })
 }
 
 func TestExemplar_SpanID(t *testing.T) {
@@ -98,8 +94,15 @@ func TestExemplar_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func generateTestExemplar() Exemplar {
+func TestExemplar_TraceID(t *testing.T) {
 	ms := NewExemplar()
-	internal.FillOrigTestExemplar(ms.orig)
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetTraceID(testValTraceID)
+	assert.Equal(t, testValTraceID, ms.TraceID())
+}
+
+func generateTestExemplar() Exemplar {
+	ms := newExemplar(internal.GenTestOrigExemplar(), internal.NewState())
 	return ms
 }

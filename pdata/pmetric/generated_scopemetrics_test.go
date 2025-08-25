@@ -24,9 +24,10 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeMetrics(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeMetrics(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState)) })
+	assert.Panics(t, func() { newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
@@ -37,24 +38,16 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	orig = generateTestScopeMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState)) })
 }
 
 func TestScopeMetrics_Scope(t *testing.T) {
 	ms := NewScopeMetrics()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
-}
-
-func TestScopeMetrics_SchemaUrl(t *testing.T) {
-	ms := NewScopeMetrics()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("test_schemaurl")
-	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl") })
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeMetrics_Metrics(t *testing.T) {
@@ -64,8 +57,17 @@ func TestScopeMetrics_Metrics(t *testing.T) {
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
 
-func generateTestScopeMetrics() ScopeMetrics {
+func TestScopeMetrics_SchemaUrl(t *testing.T) {
 	ms := NewScopeMetrics()
-	internal.FillOrigTestScopeMetrics(ms.orig)
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, sharedState).SetSchemaUrl("test_schemaurl") })
+}
+
+func generateTestScopeMetrics() ScopeMetrics {
+	ms := newScopeMetrics(internal.GenTestOrigScopeMetrics(), internal.NewState())
 	return ms
 }

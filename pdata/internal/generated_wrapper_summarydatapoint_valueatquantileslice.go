@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
@@ -19,19 +18,20 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigSummaryDataPoint_ValueAtQuantile(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			newDest[i] = NewOrigSummaryDataPoint_ValueAtQuantile()
 		}
 	}
 	for i := range src {
@@ -41,34 +41,11 @@ func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.Summ
 }
 
 func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	orig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		FillOrigTestSummaryDataPoint_ValueAtQuantile(orig[i])
-	}
-	return orig
-}
-
-// MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter *json.Iterator) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	var orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
-		UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 5)
+	orig[0] = NewOrigSummaryDataPoint_ValueAtQuantile()
+	orig[1] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
+	orig[2] = NewOrigSummaryDataPoint_ValueAtQuantile()
+	orig[3] = GenTestOrigSummaryDataPoint_ValueAtQuantile()
+	orig[4] = NewOrigSummaryDataPoint_ValueAtQuantile()
 	return orig
 }

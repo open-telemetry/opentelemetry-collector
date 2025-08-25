@@ -19,8 +19,7 @@ import (
 func TestLineSlice(t *testing.T) {
 	es := NewLineSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLineSlice(&[]*otlpprofiles.Line{}, &state)
+	es = newLineSlice(&[]*otlpprofiles.Line{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLine()
@@ -28,15 +27,16 @@ func TestLineSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLine((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLine()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestLineSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLineSlice(&[]*otlpprofiles.Line{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLineSlice(&[]*otlpprofiles.Line{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestLineSlice_CopyTo(t *testing.T) {
 	dest := NewLineSlice()
 	src := generateTestLineSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLineSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLineSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestLineSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Line) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestLineSlice_RemoveIfAll(t *testing.T) {

@@ -7,42 +7,193 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan(t *testing.T) {
-	src := &otlptrace.Span{}
-	dest := &otlptrace.Span{}
-	CopyOrigSpan(dest, src)
-	assert.Equal(t, &otlptrace.Span{}, dest)
-	FillOrigTestSpan(src)
-	CopyOrigSpan(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSpan() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSpan()
+				CopyOrigSpan(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSpan(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigSpan()
+	UnmarshalJSONOrigSpan(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigSpan(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
-	src := &otlptrace.Span{}
-	FillOrigTestSpan(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSpan(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesSpan() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlptrace.Span{}
-	UnmarshalJSONOrigSpan(dest, iter)
-	require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSpan(src, stream)
+				require.NoError(t, stream.Error())
 
-	assert.Equal(t, src, dest)
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSpan()
+				UnmarshalJSONOrigSpan(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSpanFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesSpan() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigSpan()
+			require.Error(t, UnmarshalProtoOrigSpan(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
+	dest := NewOrigSpan()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigSpan(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigSpan(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
+	for name, src := range genTestEncodingValuesSpan() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigSpan(src))
+				gotSize := MarshalProtoOrigSpan(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSpan()
+				require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
+	for name, src := range genTestEncodingValuesSpan() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan(src))
+			gotSize := MarshalProtoOrigSpan(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlptrace.Span{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigSpan()
+			require.NoError(t, UnmarshalProtoOrigSpan(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesSpan() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                          {0x02},
+		"TraceId/wrong_wire_type":                {0xc},
+		"TraceId/missing_value":                  {0xa},
+		"SpanId/wrong_wire_type":                 {0x14},
+		"SpanId/missing_value":                   {0x12},
+		"TraceState/wrong_wire_type":             {0x1c},
+		"TraceState/missing_value":               {0x1a},
+		"ParentSpanId/wrong_wire_type":           {0x24},
+		"ParentSpanId/missing_value":             {0x22},
+		"Flags/wrong_wire_type":                  {0x84, 0x1},
+		"Flags/missing_value":                    {0x85, 0x1},
+		"Name/wrong_wire_type":                   {0x2c},
+		"Name/missing_value":                     {0x2a},
+		"Kind/wrong_wire_type":                   {0x34},
+		"Kind/missing_value":                     {0x30},
+		"StartTimeUnixNano/wrong_wire_type":      {0x3c},
+		"StartTimeUnixNano/missing_value":        {0x39},
+		"EndTimeUnixNano/wrong_wire_type":        {0x44},
+		"EndTimeUnixNano/missing_value":          {0x41},
+		"Attributes/wrong_wire_type":             {0x4c},
+		"Attributes/missing_value":               {0x4a},
+		"DroppedAttributesCount/wrong_wire_type": {0x54},
+		"DroppedAttributesCount/missing_value":   {0x50},
+		"Events/wrong_wire_type":                 {0x5c},
+		"Events/missing_value":                   {0x5a},
+		"DroppedEventsCount/wrong_wire_type":     {0x64},
+		"DroppedEventsCount/missing_value":       {0x60},
+		"Links/wrong_wire_type":                  {0x6c},
+		"Links/missing_value":                    {0x6a},
+		"DroppedLinksCount/wrong_wire_type":      {0x74},
+		"DroppedLinksCount/missing_value":        {0x70},
+		"Status/wrong_wire_type":                 {0x7c},
+		"Status/missing_value":                   {0x7a},
+	}
+}
+
+func genTestEncodingValuesSpan() map[string]*otlptrace.Span {
+	return map[string]*otlptrace.Span{
+		"empty":                       NewOrigSpan(),
+		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"TraceState/test":             {TraceState: "test_tracestate"},
+		"ParentSpanId/test":           {ParentSpanId: *GenTestOrigSpanID()},
+		"Flags/test":                  {Flags: uint32(13)},
+		"Name/test":                   {Name: "test_name"},
+		"Kind/test":                   {Kind: otlptrace.Span_SpanKind(13)},
+		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
+		"EndTimeUnixNano/test":        {EndTimeUnixNano: uint64(13)},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
+		"Events/default_and_test":     {Events: []*otlptrace.Span_Event{{}, GenTestOrigSpan_Event()}},
+		"DroppedEventsCount/test":     {DroppedEventsCount: uint32(13)},
+		"Links/default_and_test":      {Links: []*otlptrace.Span_Link{{}, GenTestOrigSpan_Link()}},
+		"DroppedLinksCount/test":      {DroppedLinksCount: uint32(13)},
+		"Status/test":                 {Status: *GenTestOrigStatus()},
+	}
 }

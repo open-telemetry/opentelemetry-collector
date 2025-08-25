@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/internal/memorylimiter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,10 +44,10 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, tp.Shutdown(context.Background()))
-	// verify that no monitoring routine is running
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	// verify that shutdown twice works:
+	assert.NoError(t, tp.Shutdown(context.Background()))
 }

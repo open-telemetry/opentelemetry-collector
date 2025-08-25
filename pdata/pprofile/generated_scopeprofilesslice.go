@@ -34,8 +34,7 @@ func newScopeProfilesSlice(orig *[]*otlpprofiles.ScopeProfiles, state *internal.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeProfilesSlice() ScopeProfilesSlice {
 	orig := []*otlpprofiles.ScopeProfiles(nil)
-	state := internal.StateMutable
-	return newScopeProfilesSlice(&orig, &state)
+	return newScopeProfilesSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es ScopeProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeProfiles.
 func (es ScopeProfilesSlice) AppendEmpty() ScopeProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ScopeProfiles{})
+	*es.orig = append(*es.orig, internal.NewOrigScopeProfiles())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,7 +128,9 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigScopeProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -147,6 +149,9 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigScopeProfilesSlice(*dest.orig, *es.orig)
 }
 

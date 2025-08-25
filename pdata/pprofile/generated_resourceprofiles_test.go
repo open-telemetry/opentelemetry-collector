@@ -24,9 +24,10 @@ func TestResourceProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState)) })
+	assert.Panics(t, func() { newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceProfiles_CopyTo(t *testing.T) {
@@ -37,26 +38,16 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	orig = generateTestResourceProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState)) })
 }
 
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	internal.FillOrigTestResource(&ms.orig.Resource)
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceProfiles_SchemaUrl(t *testing.T) {
-	ms := NewResourceProfiles()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("test_schemaurl")
-	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl")
-	})
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
@@ -66,8 +57,19 @@ func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
-func generateTestResourceProfiles() ResourceProfiles {
+func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	ms := NewResourceProfiles()
-	internal.FillOrigTestResourceProfiles(ms.orig)
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() {
+		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState).SetSchemaUrl("test_schemaurl")
+	})
+}
+
+func generateTestResourceProfiles() ResourceProfiles {
+	ms := newResourceProfiles(internal.GenTestOrigResourceProfiles(), internal.NewState())
 	return ms
 }

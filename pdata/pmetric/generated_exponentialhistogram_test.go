@@ -23,9 +23,10 @@ func TestExponentialHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
-	assert.Panics(t, func() { newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(internal.NewOrigExponentialHistogram(), sharedState)) })
+	assert.Panics(t, func() { newExponentialHistogram(internal.NewOrigExponentialHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
@@ -36,8 +37,16 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(internal.NewOrigExponentialHistogram(), sharedState)) })
+}
+
+func TestExponentialHistogram_DataPoints(t *testing.T) {
+	ms := NewExponentialHistogram()
+	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
@@ -48,15 +57,7 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestExponentialHistogram_DataPoints(t *testing.T) {
-	ms := NewExponentialHistogram()
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestExponentialHistogram() ExponentialHistogram {
-	ms := NewExponentialHistogram()
-	internal.FillOrigTestExponentialHistogram(ms.orig)
+	ms := newExponentialHistogram(internal.GenTestOrigExponentialHistogram(), internal.NewState())
 	return ms
 }

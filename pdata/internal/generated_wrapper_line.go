@@ -7,20 +7,61 @@
 package internal
 
 import (
+	"fmt"
+	"sync"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolLine = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Line{}
+		},
+	}
+)
+
+func NewOrigLine() *otlpprofiles.Line {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Line{}
+	}
+	return protoPoolLine.Get().(*otlpprofiles.Line)
+}
+
+func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolLine.Put(orig)
+	}
+}
+
 func CopyOrigLine(dest, src *otlpprofiles.Line) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line
 	dest.Column = src.Column
 }
 
-func FillOrigTestLine(orig *otlpprofiles.Line) {
+func GenTestOrigLine() *otlpprofiles.Line {
+	orig := NewOrigLine()
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -43,7 +84,7 @@ func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
 
 // UnmarshalJSONOrigLine unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "functionIndex", "function_index":
 			orig.FunctionIndex = iter.ReadInt32()
@@ -54,6 +95,103 @@ func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
+}
+
+func SizeProtoOrigLine(orig *otlpprofiles.Line) int {
+	var n int
+	var l int
+	_ = l
+	if orig.FunctionIndex != 0 {
+		n += 1 + proto.Sov(uint64(orig.FunctionIndex))
+	}
+	if orig.Line != 0 {
+		n += 1 + proto.Sov(uint64(orig.Line))
+	}
+	if orig.Column != 0 {
+		n += 1 + proto.Sov(uint64(orig.Column))
+	}
+	return n
+}
+
+func MarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.FunctionIndex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.FunctionIndex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.Line != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Line))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.Column != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Column))
+		pos--
+		buf[pos] = 0x18
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionIndex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.FunctionIndex = int32(num)
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Line", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Line = int64(num)
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Column", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.Column = int64(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

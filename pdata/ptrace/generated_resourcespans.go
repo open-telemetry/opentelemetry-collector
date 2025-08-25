@@ -33,8 +33,7 @@ func newResourceSpans(orig *otlptrace.ResourceSpans, state *internal.State) Reso
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
-	state := internal.StateMutable
-	return newResourceSpans(&otlptrace.ResourceSpans{}, &state)
+	return newResourceSpans(internal.NewOrigResourceSpans(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,13 +45,18 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ResourceSpans{}
+	internal.DeleteOrigResourceSpans(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+}
+
+// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
+	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
@@ -64,11 +68,6 @@ func (ms ResourceSpans) SchemaUrl() string {
 func (ms ResourceSpans) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
-func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

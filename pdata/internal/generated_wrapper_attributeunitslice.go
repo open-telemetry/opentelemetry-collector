@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
@@ -19,19 +18,20 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigAttributeUnit(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
+			newDest[i] = NewOrigAttributeUnit()
 		}
 	}
 	for i := range src {
@@ -41,34 +41,11 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 }
 
 func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
-	orig := make([]*otlpprofiles.AttributeUnit, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = &otlpprofiles.AttributeUnit{}
-		FillOrigTestAttributeUnit(orig[i])
-	}
-	return orig
-}
-
-// MarshalJSONOrigAttributeUnitSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAttributeUnitSlice(orig []*otlpprofiles.AttributeUnit, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigAttributeUnit(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigAttributeUnit(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONOrigAttributeUnitSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
-	var orig []*otlpprofiles.AttributeUnit
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, &otlpprofiles.AttributeUnit{})
-		UnmarshalJSONOrigAttributeUnit(orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]*otlpprofiles.AttributeUnit, 5)
+	orig[0] = NewOrigAttributeUnit()
+	orig[1] = GenTestOrigAttributeUnit()
+	orig[2] = NewOrigAttributeUnit()
+	orig[3] = GenTestOrigAttributeUnit()
+	orig[4] = NewOrigAttributeUnit()
 	return orig
 }

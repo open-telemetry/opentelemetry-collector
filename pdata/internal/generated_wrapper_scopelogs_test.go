@@ -7,42 +7,153 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
+	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeLogs(t *testing.T) {
-	src := &otlplogs.ScopeLogs{}
-	dest := &otlplogs.ScopeLogs{}
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, &otlplogs.ScopeLogs{}, dest)
-	FillOrigTestScopeLogs(src)
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigScopeLogs()
+				CopyOrigScopeLogs(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigScopeLogs(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigScopeLogs()
+	UnmarshalJSONOrigScopeLogs(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigScopeLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
-	src := &otlplogs.ScopeLogs{}
-	FillOrigTestScopeLogs(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigScopeLogs(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlplogs.ScopeLogs{}
-	UnmarshalJSONOrigScopeLogs(dest, iter)
-	require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigScopeLogs(src, stream)
+				require.NoError(t, stream.Error())
 
-	assert.Equal(t, src, dest)
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigScopeLogs()
+				UnmarshalJSONOrigScopeLogs(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeLogs(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeLogsFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesScopeLogs() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigScopeLogs()
+			require.Error(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
+	dest := NewOrigScopeLogs()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigScopeLogs(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigScopeLogs(src))
+				gotSize := MarshalProtoOrigScopeLogs(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigScopeLogs()
+				require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeLogs(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeLogs(src))
+			gotSize := MarshalProtoOrigScopeLogs(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlplogs.ScopeLogs{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigScopeLogs()
+			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesScopeLogs() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":              {0x02},
+		"Scope/wrong_wire_type":      {0xc},
+		"Scope/missing_value":        {0xa},
+		"LogRecords/wrong_wire_type": {0x14},
+		"LogRecords/missing_value":   {0x12},
+		"SchemaUrl/wrong_wire_type":  {0x1c},
+		"SchemaUrl/missing_value":    {0x1a},
+	}
+}
+
+func genTestEncodingValuesScopeLogs() map[string]*otlplogs.ScopeLogs {
+	return map[string]*otlplogs.ScopeLogs{
+		"empty":                       NewOrigScopeLogs(),
+		"Scope/test":                  {Scope: *GenTestOrigInstrumentationScope()},
+		"LogRecords/default_and_test": {LogRecords: []*otlplogs.LogRecord{{}, GenTestOrigLogRecord()}},
+		"SchemaUrl/test":              {SchemaUrl: "test_schemaurl"},
+	}
 }

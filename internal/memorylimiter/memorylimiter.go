@@ -27,9 +27,6 @@ var (
 	// that data is being refused due to high memory usage.
 	ErrDataRefused = errors.New("data refused due to high memory usage")
 
-	// ErrShutdownNotStarted indicates no memorylimiter has not started when shutdown
-	ErrShutdownNotStarted = errors.New("no existing monitoring routine is running")
-
 	// GetMemoryFn and ReadMemStatsFn make it overridable by tests
 	GetMemoryFn    = iruntime.TotalMemory
 	ReadMemStatsFn = runtime.ReadMemStats
@@ -121,7 +118,7 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 
 	switch ml.refCounter {
 	case 0:
-		return ErrShutdownNotStarted
+		return nil
 	case 1:
 		ml.ticker.Stop()
 		close(ml.closed)

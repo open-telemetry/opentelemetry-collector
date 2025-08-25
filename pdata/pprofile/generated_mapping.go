@@ -33,8 +33,7 @@ func newMapping(orig *otlpprofiles.Mapping, state *internal.State) Mapping {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMapping() Mapping {
-	state := internal.StateMutable
-	return newMapping(&otlpprofiles.Mapping{}, &state)
+	return newMapping(internal.NewOrigMapping(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +45,8 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Mapping{}
+	internal.DeleteOrigMapping(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MemoryStart returns the memorystart associated with this Mapping.

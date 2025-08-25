@@ -7,11 +7,8 @@ import (
 	"testing"
 	"time"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goproto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
@@ -46,14 +43,14 @@ func TestSpanCount(t *testing.T) {
 func TestSpanCountWithEmpty(t *testing.T) {
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				ScopeSpans: []*otlptrace.ScopeSpans{{}},
 			},
 		},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -64,49 +61,7 @@ func TestSpanCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).SpanCount())
-}
-
-func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	traces := newTraces(otlp)
-	assert.Equal(t, NewTraces(), traces)
-	assert.Equal(t, otlp, traces.getOrig())
-	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
-	// circular dependency.
-}
-
-func TestResourceSpansWireCompatibility(t *testing.T) {
-	// This test verifies that OTLP ProtoBufs generated using goproto lib in
-	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
-	// this repository are wire compatible.
-
-	// Generate ResourceSpans as pdata struct.
-	td := generateTestTraces()
-
-	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(td.getOrig())
-	require.NoError(t, err)
-	assert.NotNil(t, wire1)
-
-	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoMessage emptypb.Empty
-	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	require.NoError(t, err)
-
-	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoMessage)
-	require.NoError(t, err)
-	assert.NotNil(t, wire2)
-
-	// Unmarshal from the wire into gogoproto's representation.
-	var gogoprotoRS2 otlpcollectortrace.ExportTraceServiceRequest
-	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
-	require.NoError(t, err)
-
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, td.getOrig(), &gogoprotoRS2)
+	}, new(internal.State)).SpanCount())
 }
 
 func TestTracesCopyTo(t *testing.T) {
@@ -189,10 +144,4 @@ func BenchmarkTracesMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestTraces() Traces {
-	td := NewTraces()
-	td.getOrig().ResourceSpans = internal.GenerateOrigTestResourceSpansSlice()
-	return td
 }

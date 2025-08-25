@@ -25,9 +25,10 @@ func TestLogRecord_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLogRecord(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLogRecord(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLogRecord(internal.NewOrigLogRecord(), sharedState)) })
+	assert.Panics(t, func() { newLogRecord(internal.NewOrigLogRecord(), sharedState).MoveTo(dest) })
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {
@@ -38,8 +39,17 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	orig = generateTestLogRecord()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLogRecord(internal.NewOrigLogRecord(), sharedState)) })
+}
+
+func TestLogRecord_Timestamp(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
+	testValTimestamp := pcommon.Timestamp(1234567890)
+	ms.SetTimestamp(testValTimestamp)
+	assert.Equal(t, testValTimestamp, ms.Timestamp())
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
@@ -50,12 +60,54 @@ func TestLogRecord_ObservedTimestamp(t *testing.T) {
 	assert.Equal(t, testValObservedTimestamp, ms.ObservedTimestamp())
 }
 
-func TestLogRecord_Timestamp(t *testing.T) {
+func TestLogRecord_SeverityNumber(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
-	testValTimestamp := pcommon.Timestamp(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.Equal(t, testValTimestamp, ms.Timestamp())
+	assert.Equal(t, SeverityNumber(otlplogs.SeverityNumber(0)), ms.SeverityNumber())
+	testValSeverityNumber := SeverityNumber(otlplogs.SeverityNumber(5))
+	ms.SetSeverityNumber(testValSeverityNumber)
+	assert.Equal(t, testValSeverityNumber, ms.SeverityNumber())
+}
+
+func TestLogRecord_SeverityText(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Empty(t, ms.SeverityText())
+	ms.SetSeverityText("test_severitytext")
+	assert.Equal(t, "test_severitytext", ms.SeverityText())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, sharedState).SetSeverityText("test_severitytext") })
+}
+
+func TestLogRecord_Body(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
+	ms.orig.Body = *internal.GenTestOrigAnyValue()
+	assert.Equal(t, pcommon.Value(internal.NewValue(internal.GenTestOrigAnyValue(), ms.state)), ms.Body())
+}
+
+func TestLogRecord_Attributes(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+}
+
+func TestLogRecord_DroppedAttributesCount(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+}
+
+func TestLogRecord_Flags(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, LogRecordFlags(0), ms.Flags())
+	testValFlags := LogRecordFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestLogRecord_TraceID(t *testing.T) {
@@ -74,65 +126,17 @@ func TestLogRecord_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestLogRecord_Flags(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, LogRecordFlags(0), ms.Flags())
-	testValFlags := LogRecordFlags(1)
-	ms.SetFlags(testValFlags)
-	assert.Equal(t, testValFlags, ms.Flags())
-}
-
 func TestLogRecord_EventName(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Empty(t, ms.EventName())
 	ms.SetEventName("test_eventname")
 	assert.Equal(t, "test_eventname", ms.EventName())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("test_eventname") })
-}
-
-func TestLogRecord_SeverityText(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Empty(t, ms.SeverityText())
-	ms.SetSeverityText("test_severitytext")
-	assert.Equal(t, "test_severitytext", ms.SeverityText())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetSeverityText("test_severitytext") })
-}
-
-func TestLogRecord_SeverityNumber(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, SeverityNumber(otlplogs.SeverityNumber(0)), ms.SeverityNumber())
-	testValSeverityNumber := SeverityNumber(otlplogs.SeverityNumber(5))
-	ms.SetSeverityNumber(testValSeverityNumber)
-	assert.Equal(t, testValSeverityNumber, ms.SeverityNumber())
-}
-
-func TestLogRecord_Body(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
-	internal.FillOrigTestAnyValue(&ms.orig.Body)
-	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Body())
-}
-
-func TestLogRecord_Attributes(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
-}
-
-func TestLogRecord_DroppedAttributesCount(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(13))
-	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, sharedState).SetEventName("test_eventname") })
 }
 
 func generateTestLogRecord() LogRecord {
-	ms := NewLogRecord()
-	internal.FillOrigTestLogRecord(ms.orig)
+	ms := newLogRecord(internal.GenTestOrigLogRecord(), internal.NewState())
 	return ms
 }

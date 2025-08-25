@@ -7,18 +7,59 @@
 package internal
 
 import (
+	"fmt"
+	"sync"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolAttributeUnit = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.AttributeUnit{}
+		},
+	}
+)
+
+func NewOrigAttributeUnit() *otlpprofiles.AttributeUnit {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.AttributeUnit{}
+	}
+	return protoPoolAttributeUnit.Get().(*otlpprofiles.AttributeUnit)
+}
+
+func DeleteOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolAttributeUnit.Put(orig)
+	}
+}
+
 func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex
 }
 
-func FillOrigTestAttributeUnit(orig *otlpprofiles.AttributeUnit) {
+func GenTestOrigAttributeUnit() *otlpprofiles.AttributeUnit {
+	orig := NewOrigAttributeUnit()
 	orig.AttributeKeyStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -37,7 +78,7 @@ func MarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, dest *json.S
 
 // UnmarshalJSONOrigAttributeUnit unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributeKeyStrindex", "attribute_key_strindex":
 			orig.AttributeKeyStrindex = iter.ReadInt32()
@@ -46,6 +87,83 @@ func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
+}
+
+func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {
+	var n int
+	var l int
+	_ = l
+	if orig.AttributeKeyStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.AttributeKeyStrindex))
+	}
+	if orig.UnitStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.UnitStrindex))
+	}
+	return n
+}
+
+func MarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.AttributeKeyStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeKeyStrindex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.UnitStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.UnitStrindex))
+		pos--
+		buf[pos] = 0x10
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeKeyStrindex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.AttributeKeyStrindex = int32(num)
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnitStrindex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			orig.UnitStrindex = int32(num)
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

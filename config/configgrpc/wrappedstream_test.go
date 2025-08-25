@@ -20,7 +20,7 @@ var (
 )
 
 func TestWrapServerStream(t *testing.T) {
-	ctx := context.WithValue(context.TODO(), oneCtxKey, 1)
+	ctx := context.WithValue(t.Context(), oneCtxKey, 1)
 	fake := &fakeServerStream{ctx: ctx}
 	assert.NotNil(t, fake.Context().Value(oneCtxKey), "values from fake must propagate to wrapper")
 	wrapped := wrapServerStream(context.WithValue(fake.Context(), otherCtxKey, 2), fake)

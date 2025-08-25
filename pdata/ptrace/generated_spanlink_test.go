@@ -25,9 +25,10 @@ func TestSpanLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanLink(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSpanLink(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSpanLink(internal.NewOrigSpan_Link(), sharedState)) })
+	assert.Panics(t, func() { newSpanLink(internal.NewOrigSpan_Link(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
@@ -38,8 +39,9 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	orig = generateTestSpanLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSpanLink(internal.NewOrigSpan_Link(), sharedState)) })
 }
 
 func TestSpanLink_TraceID(t *testing.T) {
@@ -61,17 +63,8 @@ func TestSpanLink_SpanID(t *testing.T) {
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
-	internal.FillOrigTestTraceState(&ms.orig.TraceState)
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
-}
-
-func TestSpanLink_Flags(t *testing.T) {
-	ms := NewSpanLink()
-	assert.Equal(t, uint32(0), ms.Flags())
-	ms.SetFlags(uint32(13))
-	assert.Equal(t, uint32(13), ms.Flags())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetFlags(uint32(13)) })
+	ms.orig.TraceState = *internal.GenTestOrigTraceState()
+	assert.Equal(t, pcommon.TraceState(internal.NewTraceState(internal.GenTestOrigTraceState(), ms.state)), ms.TraceState())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
@@ -86,12 +79,22 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(13))
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+}
+
+func TestSpanLink_Flags(t *testing.T) {
+	ms := NewSpanLink()
+	assert.Equal(t, uint32(0), ms.Flags())
+	ms.SetFlags(uint32(13))
+	assert.Equal(t, uint32(13), ms.Flags())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, sharedState).SetFlags(uint32(13)) })
 }
 
 func generateTestSpanLink() SpanLink {
-	ms := NewSpanLink()
-	internal.FillOrigTestSpan_Link(ms.orig)
+	ms := newSpanLink(internal.GenTestOrigSpan_Link(), internal.NewState())
 	return ms
 }

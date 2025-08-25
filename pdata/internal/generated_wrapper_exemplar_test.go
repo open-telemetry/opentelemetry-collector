@@ -7,42 +7,167 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExemplar(t *testing.T) {
-	src := &otlpmetrics.Exemplar{}
-	dest := &otlpmetrics.Exemplar{}
-	CopyOrigExemplar(dest, src)
-	assert.Equal(t, &otlpmetrics.Exemplar{}, dest)
-	FillOrigTestExemplar(src)
-	CopyOrigExemplar(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExemplar() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExemplar()
+				CopyOrigExemplar(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExemplar(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
+	defer json.ReturnIterator(iter)
+	dest := NewOrigExemplar()
+	UnmarshalJSONOrigExemplar(dest, iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, NewOrigExemplar(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
-	src := &otlpmetrics.Exemplar{}
-	FillOrigTestExemplar(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExemplar(src, stream)
-	require.NoError(t, stream.Error())
+	for name, src := range genTestEncodingValuesExemplar() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := &otlpmetrics.Exemplar{}
-	UnmarshalJSONOrigExemplar(dest, iter)
-	require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExemplar(src, stream)
+				require.NoError(t, stream.Error())
 
-	assert.Equal(t, src, dest)
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExemplar()
+				UnmarshalJSONOrigExemplar(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExemplar(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExemplarFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesExemplar() {
+		t.Run(name, func(t *testing.T) {
+			dest := NewOrigExemplar()
+			require.Error(t, UnmarshalProtoOrigExemplar(dest, buf))
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoOrigExemplarUnknown(t *testing.T) {
+	dest := NewOrigExemplar()
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExemplar(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigExemplar(), dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
+	for name, src := range genTestEncodingValuesExemplar() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				buf := make([]byte, SizeProtoOrigExemplar(src))
+				gotSize := MarshalProtoOrigExemplar(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExemplar()
+				require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExemplar(dest, true)
+			})
+		}
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
+	for name, src := range genTestEncodingValuesExemplar() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExemplar(src))
+			gotSize := MarshalProtoOrigExemplar(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.Exemplar{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := NewOrigExemplar()
+			require.NoError(t, UnmarshalProtoOrigExemplar(dest, goBuf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
+	return map[string][]byte{
+		"invalid_field":                      {0x02},
+		"FilteredAttributes/wrong_wire_type": {0x3c},
+		"FilteredAttributes/missing_value":   {0x3a},
+		"TimeUnixNano/wrong_wire_type":       {0x14},
+		"TimeUnixNano/missing_value":         {0x11},
+
+		"AsDouble/wrong_wire_type": {0x1c},
+		"AsDouble/missing_value":   {0x19},
+
+		"AsInt/wrong_wire_type":   {0x34},
+		"AsInt/missing_value":     {0x31},
+		"SpanId/wrong_wire_type":  {0x24},
+		"SpanId/missing_value":    {0x22},
+		"TraceId/wrong_wire_type": {0x2c},
+		"TraceId/missing_value":   {0x2a},
+	}
+}
+
+func genTestEncodingValuesExemplar() map[string]*otlpmetrics.Exemplar {
+	return map[string]*otlpmetrics.Exemplar{
+		"empty":                               NewOrigExemplar(),
+		"FilteredAttributes/default_and_test": {FilteredAttributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"TimeUnixNano/test":                   {TimeUnixNano: uint64(13)},
+		"AsDouble/default":                    {Value: &otlpmetrics.Exemplar_AsDouble{AsDouble: float64(0)}},
+		"AsDouble/test":                       {Value: &otlpmetrics.Exemplar_AsDouble{AsDouble: float64(3.1415926)}},
+		"AsInt/default":                       {Value: &otlpmetrics.Exemplar_AsInt{AsInt: int64(0)}},
+		"AsInt/test":                          {Value: &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}},
+		"SpanId/test":                         {SpanId: *GenTestOrigSpanID()},
+		"TraceId/test":                        {TraceId: *GenTestOrigTraceID()},
+	}
 }

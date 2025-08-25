@@ -23,9 +23,10 @@ func TestHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogram(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestHistogram(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
-	assert.Panics(t, func() { newHistogram(&otlpmetrics.Histogram{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
+	assert.Panics(t, func() { newHistogram(internal.NewOrigHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -36,8 +37,16 @@ func TestHistogram_CopyTo(t *testing.T) {
 	orig = generateTestHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
+}
+
+func TestHistogram_DataPoints(t *testing.T) {
+	ms := NewHistogram()
+	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
+	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
@@ -48,15 +57,7 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestHistogram_DataPoints(t *testing.T) {
-	ms := NewHistogram()
-	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
-	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestHistogram() Histogram {
-	ms := NewHistogram()
-	internal.FillOrigTestHistogram(ms.orig)
+	ms := newHistogram(internal.GenTestOrigHistogram(), internal.NewState())
 	return ms
 }
