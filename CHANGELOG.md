@@ -35,6 +35,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `otlpreceiver`: Log the listening addresses of the receiver, rather than the configured endpoints. (#13654)
 - `pdata`: Use the newly added proto marshaler/unmarshaler for the official proto Marshaler/Unmarshaler (#13637)
   If any problems observed with this consider to disable the featuregate `--feature-gates=-pdata.useCustomProtoEncoding`
+<!-- cspell:ignore MLKEM mlkem -->
 - `configtls`: Enable X25519MLKEM768 as per draft-ietf-tls-ecdhe-mlkem (#13670)
 
 ### 🧰 Bug fixes 🧰
