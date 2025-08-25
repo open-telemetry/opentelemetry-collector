@@ -38,7 +38,7 @@ var ErrQueueIsFull = queue.ErrQueueIsFull
 
 // QueueBatchSettings are settings for the QueueBatch component.
 // They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
-type QueueBatchSettings = internal.QueueBatchSettings[Request]
+type QueueBatchSettings = queuebatch.Settings[Request]
 
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
