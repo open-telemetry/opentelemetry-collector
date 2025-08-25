@@ -5,15 +5,15 @@ go 1.24
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.39.0
-	go.opentelemetry.io/collector/connector v0.132.0
+	go.opentelemetry.io/collector/connector v0.133.0
 	go.opentelemetry.io/collector/consumer v1.39.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.132.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.132.0
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.132.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.132.0
-	go.opentelemetry.io/collector/pdata/testdata v0.132.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.133.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.133.0
+	go.opentelemetry.io/collector/pdata/testdata v0.133.0
 	go.opentelemetry.io/collector/pipeline v1.39.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.132.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.133.0
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.132.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.39.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
