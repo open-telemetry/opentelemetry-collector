@@ -28,6 +28,9 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
+	tb.ExporterDroppedLogRecords.Add(context.Background(), 1)
+	tb.ExporterDroppedMetricPoints.Add(context.Background(), 1)
+	tb.ExporterDroppedSpans.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedSpans.Add(context.Background(), 1)
@@ -37,6 +40,15 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterSentLogRecords.Add(context.Background(), 1)
 	tb.ExporterSentMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSentSpans.Add(context.Background(), 1)
+	AssertEqualExporterDroppedLogRecords(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterDroppedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterDroppedSpans(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

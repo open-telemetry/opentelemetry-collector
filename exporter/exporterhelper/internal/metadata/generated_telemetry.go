@@ -28,6 +28,9 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ExporterDroppedLogRecords         metric.Int64Counter
+	ExporterDroppedMetricPoints       metric.Int64Counter
+	ExporterDroppedSpans              metric.Int64Counter
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -110,6 +113,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterDroppedLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_log_records",
+		metric.WithDescription("Number of log records dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_metric_points",
+		metric.WithDescription("Number of metric points dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedSpans, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_spans",
+		metric.WithDescription("Number of spans dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
