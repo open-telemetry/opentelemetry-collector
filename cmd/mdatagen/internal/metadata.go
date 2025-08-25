@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -310,6 +311,13 @@ type Attribute struct {
 	Optional bool `mapstructure:"optional"`
 }
 
+func (a *Attribute) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("enabled") {
+		return errors.New("missing required field for attribute: `enabled`")
+	}
+	return parser.Unmarshal(a)
+}
+
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
 func (a Attribute) Name() AttributeName {
 	if a.NameOverride != "" {
@@ -339,6 +347,31 @@ func (a Attribute) TestValue() string {
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
 		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
+	}
+	return ""
+}
+
+func (a Attribute) TestValueTwo() string {
+	if len(a.Enum) >= 2 {
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
 	}
 	return ""
 }

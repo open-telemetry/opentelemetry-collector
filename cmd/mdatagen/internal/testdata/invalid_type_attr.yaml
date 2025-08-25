@@ -13,6 +13,7 @@ attributes:
   used_attr:
     description: Used attribute.
     type: invalidtype
+    enabled: true
 
 metrics:
   metric:
