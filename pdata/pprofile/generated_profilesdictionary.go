@@ -33,8 +33,7 @@ func newProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfilesDictionary() ProfilesDictionary {
-	state := internal.StateMutable
-	return newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &state)
+	return newProfilesDictionary(internal.NewOrigProfilesDictionary(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +45,8 @@ func (ms ProfilesDictionary) MoveTo(dest ProfilesDictionary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ProfilesDictionary{}
+	internal.DeleteOrigProfilesDictionary(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingTable returns the MappingTable associated with this ProfilesDictionary.
@@ -88,15 +87,5 @@ func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	copyOrigProfilesDictionary(dest.orig, ms.orig)
-}
-
-func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
-	dest.MappingTable = copyOrigMappingSlice(dest.MappingTable, src.MappingTable)
-	dest.LocationTable = copyOrigLocationSlice(dest.LocationTable, src.LocationTable)
-	dest.FunctionTable = copyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)
-	dest.LinkTable = copyOrigLinkSlice(dest.LinkTable, src.LinkTable)
-	dest.StringTable = internal.CopyOrigStringSlice(dest.StringTable, src.StringTable)
-	dest.AttributeTable = copyOrigAttributeTableSlice(dest.AttributeTable, src.AttributeTable)
-	dest.AttributeUnits = copyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
+	internal.CopyOrigProfilesDictionary(dest.orig, ms.orig)
 }

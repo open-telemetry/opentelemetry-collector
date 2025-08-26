@@ -4,16 +4,16 @@
 package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 
 import (
-	"bytes"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-var jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
+var (
+	jsonMarshaler   = &pprofile.JSONMarshaler{}
+	jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
+)
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pprofile.Profiles data.
@@ -24,10 +24,9 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	state := internal.StateMutable
 	return ExportRequest{
 		orig:  &otlpcollectorprofile.ExportProfilesServiceRequest{},
-		state: &state,
+		state: internal.NewState(),
 	}
 }
 
@@ -43,12 +42,22 @@ func NewExportRequestFromProfiles(td pprofile.Profiles) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	return ms.orig.Marshal()
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Marshal()
+	}
+	size := internal.SizeProtoOrigExportProfilesServiceRequest(ms.orig)
+	buf := make([]byte, size)
+	_ = internal.MarshalProtoOrigExportProfilesServiceRequest(ms.orig, buf)
+	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	if err := ms.orig.Unmarshal(data); err != nil {
+	if !internal.UseCustomProtoEncoding.IsEnabled() {
+		return ms.orig.Unmarshal(data)
+	}
+	err := internal.UnmarshalProtoOrigExportProfilesServiceRequest(ms.orig, data)
+	if err != nil {
 		return err
 	}
 	otlp.MigrateProfiles(ms.orig.ResourceProfiles)
@@ -57,11 +66,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := json.Marshal(&buf, ms.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return jsonMarshaler.MarshalProfiles(pprofile.Profiles(internal.NewProfiles(ms.orig, nil)))
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.

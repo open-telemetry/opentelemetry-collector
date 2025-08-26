@@ -25,19 +25,19 @@ func TestExampleExporter(t *testing.T) {
 	assert.True(t, exp.Started())
 
 	assert.Empty(t, exp.Traces)
-	require.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.Traces{}))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Len(t, exp.Traces, 1)
 
 	assert.Empty(t, exp.Metrics)
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.Metrics{}))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Len(t, exp.Metrics, 1)
 
 	assert.Empty(t, exp.Logs)
-	require.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
+	require.NoError(t, exp.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.Len(t, exp.Logs, 1)
 
 	assert.Empty(t, exp.Profiles)
-	require.NoError(t, exp.ConsumeProfiles(context.Background(), pprofile.Profiles{}))
+	require.NoError(t, exp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 	assert.Len(t, exp.Profiles, 1)
 
 	assert.False(t, exp.Stopped())

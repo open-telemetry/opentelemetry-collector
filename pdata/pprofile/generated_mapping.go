@@ -33,8 +33,7 @@ func newMapping(orig *otlpprofiles.Mapping, state *internal.State) Mapping {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMapping() Mapping {
-	state := internal.StateMutable
-	return newMapping(&otlpprofiles.Mapping{}, &state)
+	return newMapping(internal.NewOrigMapping(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +45,8 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Mapping{}
+	internal.DeleteOrigMapping(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MemoryStart returns the memorystart associated with this Mapping.
@@ -146,17 +145,5 @@ func (ms Mapping) SetHasInlineFrames(v bool) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	copyOrigMapping(dest.orig, ms.orig)
-}
-
-func copyOrigMapping(dest, src *otlpprofiles.Mapping) {
-	dest.MemoryStart = src.MemoryStart
-	dest.MemoryLimit = src.MemoryLimit
-	dest.FileOffset = src.FileOffset
-	dest.FilenameStrindex = src.FilenameStrindex
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	dest.HasFunctions = src.HasFunctions
-	dest.HasFilenames = src.HasFilenames
-	dest.HasLineNumbers = src.HasLineNumbers
-	dest.HasInlineFrames = src.HasInlineFrames
+	internal.CopyOrigMapping(dest.orig, ms.orig)
 }

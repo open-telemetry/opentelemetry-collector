@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummary_MoveTo(t *testing.T) {
@@ -23,9 +22,10 @@ func TestSummary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummary(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSummary(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
-	assert.Panics(t, func() { newSummary(&otlpmetrics.Summary{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newSummary(internal.NewOrigSummary(), sharedState)) })
+	assert.Panics(t, func() { newSummary(internal.NewOrigSummary(), sharedState).MoveTo(dest) })
 }
 
 func TestSummary_CopyTo(t *testing.T) {
@@ -36,23 +36,19 @@ func TestSummary_CopyTo(t *testing.T) {
 	orig = generateTestSummary()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newSummary(internal.NewOrigSummary(), sharedState)) })
 }
 
 func TestSummary_DataPoints(t *testing.T) {
 	ms := NewSummary()
 	assert.Equal(t, NewSummaryDataPointSlice(), ms.DataPoints())
-	fillTestSummaryDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestSummaryDataPointSlice()
 	assert.Equal(t, generateTestSummaryDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSummary() Summary {
-	tv := NewSummary()
-	fillTestSummary(tv)
-	return tv
-}
-
-func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := newSummary(internal.GenTestOrigSummary(), internal.NewState())
+	return ms
 }

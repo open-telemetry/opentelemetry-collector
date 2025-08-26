@@ -23,19 +23,15 @@ func NewInt64Slice(orig *[]int64, state *State) Int64Slice {
 	return Int64Slice{orig: orig, state: state}
 }
 
-func CopyOrigInt64Slice(dst, src []int64) []int64 {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
-func FillTestInt64Slice(ms Int64Slice) {
-	*ms.orig = []int64{1, 2, 3}
-}
-
 func GenerateTestInt64Slice() Int64Slice {
-	orig := []int64(nil)
-	state := StateMutable
-	ms := NewInt64Slice(&orig, &state)
-	FillTestInt64Slice(ms)
-	return ms
+	orig := GenerateOrigTestInt64Slice()
+	return NewInt64Slice(&orig, NewState())
+}
+
+func CopyOrigInt64Slice(dst, src []int64) []int64 {
+	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestInt64Slice() []int64 {
+	return []int64{1, 2, 3}
 }

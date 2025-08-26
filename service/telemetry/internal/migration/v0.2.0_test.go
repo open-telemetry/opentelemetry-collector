@@ -23,8 +23,8 @@ func TestUnmarshalLogsConfigV020(t *testing.T) {
 	}
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.Len(t, cfg.Processors, 3)
-	// check the endpoint is prefixed w/ http
-	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
+	// check the endpoint is prefixed w/ https
+	require.Equal(t, "https://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
 	// check the endpoint is prefixed w/ http
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 	// ensure defaults set in the original config object are not lost
@@ -40,8 +40,8 @@ func TestUnmarshalTracesConfigV020(t *testing.T) {
 	}
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.Len(t, cfg.Processors, 3)
-	// check the endpoint is prefixed w/ http
-	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
+	// check the endpoint is prefixed w/ https
+	require.Equal(t, "https://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
 	// check the endpoint is prefixed w/ http
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 	// ensure defaults set in the original config object are not lost
@@ -57,8 +57,8 @@ func TestUnmarshalMetricsConfigV020(t *testing.T) {
 	}
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.Len(t, cfg.Readers, 2)
-	// check the endpoint is prefixed w/ http
-	require.Equal(t, "http://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
+	// check the endpoint is prefixed w/ https
+	require.Equal(t, "https://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
 	require.ElementsMatch(t, []config.NameStringValuePair{{Name: "key1", Value: ptr("value1")}, {Name: "key2", Value: ptr("value2")}}, cfg.Readers[0].Periodic.Exporter.OTLP.Headers)
 	// ensure defaults set in the original config object are not lost
 	require.Equal(t, configtelemetry.LevelBasic, cfg.Level)

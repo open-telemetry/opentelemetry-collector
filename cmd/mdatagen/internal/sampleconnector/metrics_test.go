@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/sampleconnector/internal/metadata"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -24,7 +23,7 @@ func TestGeneratedMetrics(t *testing.T) {
 }
 
 func TestNopConnector(t *testing.T) {
-	connector, err := createMetricsToMetricsConnector(context.Background(), connectortest.NewNopSettings(metadata.Type), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	connector, err := createMetricsToMetricsConnector(context.Background(), connectortest.NewNopSettings(metadata.Type), newMdatagenNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	require.False(t, connector.Capabilities().MutatesData)
 	require.NoError(t, connector.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))

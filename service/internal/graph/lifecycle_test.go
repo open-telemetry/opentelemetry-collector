@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -119,7 +118,7 @@ func testGraphStartStop(t *testing.T) {
 			}
 
 			ctx.order = map[component.ID]int{}
-			require.NoError(t, pg.ShutdownAll(ctx, statustest.NewNopStatusReporter()))
+			require.NoError(t, pg.ShutdownAll(ctx, status.NewNopStatusReporter()))
 			for _, edge := range tt.edges {
 				assert.Less(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -161,7 +160,7 @@ func testGraphStartStopCycle(t *testing.T) {
 	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})})
 	require.ErrorContains(t, err, `topo: no topological ordering: cyclic components`)
 
-	err = pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter())
+	err = pg.ShutdownAll(context.Background(), status.NewNopStatusReporter())
 	assert.ErrorContains(t, err, `topo: no topological ordering: cyclic components`)
 }
 
@@ -196,7 +195,7 @@ func testGraphStartStopComponentError(t *testing.T) {
 		T: e1,
 	})
 	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
-	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
+	assert.EqualError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()), "bar")
 }
 
 // This includes all tests from the previous implementation, plus a new one
@@ -276,7 +275,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
 			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
-			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/processor", func(t *testing.T) {
@@ -290,7 +289,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
 			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
-			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/exporter", func(t *testing.T) {
@@ -304,7 +303,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
 			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
-			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
 		for _, dt2 := range dataTypes {
@@ -324,7 +323,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 				pipelines, err := Build(context.Background(), set)
 				require.NoError(t, err)
 				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
-				assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+				assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 			})
 		}
 	}

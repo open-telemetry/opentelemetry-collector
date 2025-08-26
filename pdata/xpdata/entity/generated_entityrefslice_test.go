@@ -19,24 +19,24 @@ import (
 func TestEntityRefSlice(t *testing.T) {
 	es := NewEntityRefSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newEntityRefSlice(&[]*otlpcommon.EntityRef{}, &state)
+	es = newEntityRefSlice(&[]*otlpcommon.EntityRef{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewEntityRef()
-	testVal := EntityRef(internal.GenerateTestEntityRef())
+	testVal := EntityRef(internal.NewEntityRef(internal.GenTestOrigEntityRef(), internal.NewState()))
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillTestEntityRef(internal.EntityRef(el))
+		(*es.getOrig())[i] = internal.GenTestOrigEntityRef()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestEntityRefSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newEntityRefSlice(&[]*otlpcommon.EntityRef{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newEntityRefSlice(&[]*otlpcommon.EntityRef{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -49,16 +49,10 @@ func TestEntityRefSliceReadOnly(t *testing.T) {
 
 func TestEntityRefSlice_CopyTo(t *testing.T) {
 	dest := NewEntityRefSlice()
-	// Test CopyTo to empty
-	NewEntityRefSlice().CopyTo(dest)
-	assert.Equal(t, NewEntityRefSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	src := generateTestEntityRefSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
 
@@ -125,9 +119,17 @@ func TestEntityRefSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el EntityRef) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestEntityRefSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestEntityRefSlice()
+	got.RemoveIf(func(el EntityRef) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestEntityRefSliceAll(t *testing.T) {
@@ -159,5 +161,7 @@ func TestEntityRefSlice_Sort(t *testing.T) {
 }
 
 func generateTestEntityRefSlice() EntityRefSlice {
-	return EntityRefSlice(internal.GenerateTestEntityRefSlice())
+	ms := NewEntityRefSlice()
+	*ms.getOrig() = internal.GenerateOrigTestEntityRefSlice()
+	return ms
 }

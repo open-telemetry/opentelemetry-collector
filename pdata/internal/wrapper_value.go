@@ -4,10 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Value struct {
@@ -27,118 +24,51 @@ func NewValue(orig *otlpcommon.AnyValue, state *State) Value {
 	return Value{orig: orig, state: state}
 }
 
-func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
-	switch sv := src.Value.(type) {
-	case *otlpcommon.AnyValue_KvlistValue:
-		dv, ok := dest.Value.(*otlpcommon.AnyValue_KvlistValue)
-		if !ok {
-			dv = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}
-			dest.Value = dv
-		}
-		if sv.KvlistValue == nil {
-			dv.KvlistValue = nil
-			return
-		}
-		dv.KvlistValue.Values = CopyOrigMap(dv.KvlistValue.Values, sv.KvlistValue.Values)
-	case *otlpcommon.AnyValue_ArrayValue:
-		dv, ok := dest.Value.(*otlpcommon.AnyValue_ArrayValue)
-		if !ok {
-			dv = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}
-			dest.Value = dv
-		}
-		if sv.ArrayValue == nil {
-			dv.ArrayValue = nil
-			return
-		}
-		dv.ArrayValue.Values = CopyOrigSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
-	case *otlpcommon.AnyValue_BytesValue:
-		bv, ok := dest.Value.(*otlpcommon.AnyValue_BytesValue)
-		if !ok {
-			bv = &otlpcommon.AnyValue_BytesValue{}
-			dest.Value = bv
-		}
-		bv.BytesValue = make([]byte, len(sv.BytesValue))
-		copy(bv.BytesValue, sv.BytesValue)
-	default:
-		// Primitive immutable type, no need for deep copy.
-		dest.Value = sv
+func NewOrigAnyValueStringValue() *otlpcommon.AnyValue_StringValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_StringValue{}
 	}
+	return ProtoPoolAnyValue_StringValue.Get().(*otlpcommon.AnyValue_StringValue)
 }
 
-func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
+func NewOrigAnyValueIntValue() *otlpcommon.AnyValue_IntValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_IntValue{}
+	}
+	return ProtoPoolAnyValue_IntValue.Get().(*otlpcommon.AnyValue_IntValue)
 }
 
-func GenerateTestValue() Value {
-	var orig otlpcommon.AnyValue
-	state := StateMutable
-	ms := NewValue(&orig, &state)
-	FillTestValue(ms)
-	return ms
+func NewOrigAnyValueBoolValue() *otlpcommon.AnyValue_BoolValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_BoolValue{}
+	}
+	return ProtoPoolAnyValue_BoolValue.Get().(*otlpcommon.AnyValue_BoolValue)
 }
 
-// UnmarshalJSONIterValue Unmarshal JSON data and return otlpcommon.AnyValue
-func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "stringValue", "string_value":
-			val.orig.Value = &otlpcommon.AnyValue_StringValue{
-				StringValue: iter.ReadString(),
-			}
-		case "boolValue", "bool_value":
-			val.orig.Value = &otlpcommon.AnyValue_BoolValue{
-				BoolValue: iter.ReadBool(),
-			}
-		case "intValue", "int_value":
-			val.orig.Value = &otlpcommon.AnyValue_IntValue{
-				IntValue: json.ReadInt64(iter),
-			}
-		case "doubleValue", "double_value":
-			val.orig.Value = &otlpcommon.AnyValue_DoubleValue{
-				DoubleValue: json.ReadFloat64(iter),
-			}
-		case "bytesValue", "bytes_value":
-			val.orig.Value = &otlpcommon.AnyValue_BytesValue{}
-			UnmarshalJSONIterByteSlice(NewByteSlice(&val.orig.Value.(*otlpcommon.AnyValue_BytesValue).BytesValue, val.state), iter)
-		case "arrayValue", "array_value":
-			val.orig.Value = &otlpcommon.AnyValue_ArrayValue{
-				ArrayValue: readArray(iter),
-			}
-		case "kvlistValue", "kvlist_value":
-			val.orig.Value = &otlpcommon.AnyValue_KvlistValue{
-				KvlistValue: readKvlistValue(iter),
-			}
-		default:
-			iter.Skip()
-		}
-		return true
-	})
+func NewOrigAnyValueDoubleValue() *otlpcommon.AnyValue_DoubleValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_DoubleValue{}
+	}
+	return ProtoPoolAnyValue_DoubleValue.Get().(*otlpcommon.AnyValue_DoubleValue)
 }
 
-func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
-	v := &otlpcommon.ArrayValue{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "values":
-			UnmarshalJSONIterSlice(NewSlice(&v.Values, nil), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-	return v
+func NewOrigAnyValueBytesValue() *otlpcommon.AnyValue_BytesValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_BytesValue{}
+	}
+	return ProtoPoolAnyValue_BytesValue.Get().(*otlpcommon.AnyValue_BytesValue)
 }
 
-func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
-	v := &otlpcommon.KeyValueList{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "values":
-			UnmarshalJSONIterMap(NewMap(&v.Values, nil), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-	return v
+func NewOrigAnyValueArrayValue() *otlpcommon.AnyValue_ArrayValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_ArrayValue{}
+	}
+	return ProtoPoolAnyValue_ArrayValue.Get().(*otlpcommon.AnyValue_ArrayValue)
+}
+
+func NewOrigAnyValueKvlistValue() *otlpcommon.AnyValue_KvlistValue {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.AnyValue_KvlistValue{}
+	}
+	return ProtoPoolAnyValue_KvlistValue.Get().(*otlpcommon.AnyValue_KvlistValue)
 }

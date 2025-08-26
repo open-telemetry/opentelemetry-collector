@@ -23,19 +23,15 @@ func NewFloat64Slice(orig *[]float64, state *State) Float64Slice {
 	return Float64Slice{orig: orig, state: state}
 }
 
-func CopyOrigFloat64Slice(dst, src []float64) []float64 {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
-func FillTestFloat64Slice(ms Float64Slice) {
-	*ms.orig = []float64{1.1, 2.2, 3.3}
-}
-
 func GenerateTestFloat64Slice() Float64Slice {
-	orig := []float64(nil)
-	state := StateMutable
-	ms := NewFloat64Slice(&orig, &state)
-	FillTestFloat64Slice(ms)
-	return ms
+	orig := GenerateOrigTestFloat64Slice()
+	return NewFloat64Slice(&orig, NewState())
+}
+
+func CopyOrigFloat64Slice(dst, src []float64) []float64 {
+	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestFloat64Slice() []float64 {
+	return []float64{1.1, 2.2, 3.3}
 }

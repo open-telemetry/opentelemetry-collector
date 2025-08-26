@@ -19,24 +19,24 @@ import (
 func TestResourceProfilesSlice(t *testing.T) {
 	es := NewResourceProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, &state)
+	es = newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceProfiles()
 	testVal := generateTestResourceProfiles()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestResourceProfiles(el)
+		(*es.orig)[i] = internal.GenTestOrigResourceProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceProfilesSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceProfilesSlice(&[]*otlpprofiles.ResourceProfiles{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -49,16 +49,10 @@ func TestResourceProfilesSliceReadOnly(t *testing.T) {
 
 func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewResourceProfilesSlice()
-	// Test CopyTo to empty
-	NewResourceProfilesSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceProfilesSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestResourceProfilesSlice().CopyTo(dest)
+	src := generateTestResourceProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestResourceProfilesSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 }
 
@@ -125,9 +119,17 @@ func TestResourceProfilesSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ResourceProfiles) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestResourceProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestResourceProfilesSlice()
+	got.RemoveIf(func(el ResourceProfiles) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestResourceProfilesSliceAll(t *testing.T) {
@@ -159,15 +161,7 @@ func TestResourceProfilesSlice_Sort(t *testing.T) {
 }
 
 func generateTestResourceProfilesSlice() ResourceProfilesSlice {
-	es := NewResourceProfilesSlice()
-	fillTestResourceProfilesSlice(es)
-	return es
-}
-
-func fillTestResourceProfilesSlice(es ResourceProfilesSlice) {
-	*es.orig = make([]*otlpprofiles.ResourceProfiles, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.ResourceProfiles{}
-		fillTestResourceProfiles(newResourceProfiles((*es.orig)[i], es.state))
-	}
+	ms := NewResourceProfilesSlice()
+	*ms.orig = internal.GenerateOrigTestResourceProfilesSlice()
+	return ms
 }
