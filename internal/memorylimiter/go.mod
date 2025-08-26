@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/shirou/gopsutil/v4 v4.25.7
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/confmap v1.39.0
 	go.uber.org/goleak v1.3.0
