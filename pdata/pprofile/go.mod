@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/pdata/pprofile
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/pdata v1.39.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.0.1

@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/collector/client v1.39.0
 	go.opentelemetry.io/collector/featuregate v1.39.0
 	go.opentelemetry.io/collector/pdata v1.39.0
