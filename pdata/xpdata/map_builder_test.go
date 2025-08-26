@@ -26,11 +26,4 @@ func TestMapBuilder(t *testing.T) {
 	assert.True(t, ok && val.Type() == pcommon.ValueTypeStr && val.Str() == "val")
 	val, ok = m.Get("key2")
 	assert.True(t, ok && val.Type() == pcommon.ValueTypeInt && val.Int() == 42)
-
-	assert.Panics(t, func() {
-		mb.AppendEmpty("key3") // mb should now be read-only
-	})
-	assert.NotPanics(t, func() {
-		m.PutEmpty("key3") // m should still be mutable
-	})
 }

@@ -21,7 +21,6 @@ type MapBuilder struct {
 // EnsureCapacity increases the capacity of this MapBuilder instance, if necessary,
 // to ensure that it can hold at least the number of elements specified by the capacity argument.
 func (mb *MapBuilder) EnsureCapacity(capacity int) {
-	mb.state.AssertMutable()
 	oldValues := mb.pairs
 	if capacity <= cap(oldValues) {
 		return
@@ -37,7 +36,6 @@ func (mb *MapBuilder) getValue(i int) pcommon.Value {
 // AppendEmpty appends a key/value pair to the MapBuilder and return the inserted value.
 // This method does not check for duplicate keys and has an amortized constant time complexity.
 func (mb *MapBuilder) AppendEmpty(k string) pcommon.Value {
-	mb.state.AssertMutable()
 	mb.pairs = append(mb.pairs, otlpcommon.KeyValue{Key: k})
 	return mb.getValue(len(mb.pairs) - 1)
 }
@@ -45,10 +43,9 @@ func (mb *MapBuilder) AppendEmpty(k string) pcommon.Value {
 // UnsafeIntoMap transfers the contents of a MapBuilder into a Map, without checking for duplicate keys.
 // If the MapBuilder contains duplicate keys, the behavior of the resulting Map is unspecified.
 // This operation has constant time complexity and makes no allocations.
-// After this operation, the MapBuilder becomes read-only.
+// After this operation, the MapBuilder is reset to an empty state.
 func (mb *MapBuilder) UnsafeIntoMap(m pcommon.Map) {
-	mb.state.AssertMutable()
 	internal.GetMapState(internal.Map(m)).AssertMutable()
-	mb.state = internal.StateReadOnly // to avoid modifying a Map later marked as ReadOnly through builder Values
 	*internal.GetOrigMap(internal.Map(m)) = mb.pairs
+	mb.pairs = nil
 }
