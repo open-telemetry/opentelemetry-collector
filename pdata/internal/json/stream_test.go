@@ -79,9 +79,16 @@ func TestMarshalFloat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := BorrowStream(nil)
+			defer ReturnStream(s)
 			s.WriteFloat64(tt.inputFloat)
 			require.Equal(t, tt.expected, string(s.Buffer()))
-			ReturnStream(s)
 		})
 	}
+}
+
+func TestWriteBytes(t *testing.T) {
+	s := BorrowStream(nil)
+	defer ReturnStream(s)
+	s.WriteBytes([]byte("test"))
+	require.Equal(t, `"dGVzdA=="`, string(s.Buffer()))
 }

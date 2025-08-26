@@ -8,7 +8,7 @@ package pprofileotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -19,11 +19,11 @@ import (
 // Must use NewExportResponse function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportResponse struct {
-	orig  *otlpcollectorprofile.ExportProfilesServiceResponse
+	orig  *otlpcollectorprofiles.ExportProfilesServiceResponse
 	state *internal.State
 }
 
-func newExportResponse(orig *otlpcollectorprofile.ExportProfilesServiceResponse, state *internal.State) ExportResponse {
+func newExportResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, state *internal.State) ExportResponse {
 	return ExportResponse{orig: orig, state: state}
 }
 
@@ -32,8 +32,7 @@ func newExportResponse(orig *otlpcollectorprofile.ExportProfilesServiceResponse,
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	state := internal.StateMutable
-	return newExportResponse(&otlpcollectorprofile.ExportProfilesServiceResponse{}, &state)
+	return newExportResponse(internal.NewOrigExportProfilesServiceResponse(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +44,8 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorprofile.ExportProfilesServiceResponse{}
+	internal.DeleteOrigExportProfilesServiceResponse(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // PartialSuccess returns the partialsuccess associated with this ExportResponse.

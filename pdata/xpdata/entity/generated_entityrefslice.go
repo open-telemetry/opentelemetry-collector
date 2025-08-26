@@ -31,8 +31,7 @@ func newEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *internal.State) Ent
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewEntityRefSlice() EntityRefSlice {
 	orig := []*otlpcommon.EntityRef(nil)
-	state := internal.StateMutable
-	return newEntityRefSlice(&orig, &state)
+	return newEntityRefSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -97,7 +96,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 // It returns the newly added EntityRef.
 func (es EntityRefSlice) AppendEmpty() EntityRef {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), &otlpcommon.EntityRef{})
+	*es.getOrig() = append(*es.getOrig(), internal.NewOrigEntityRef())
 	return es.At(es.Len() - 1)
 }
 
@@ -126,7 +125,9 @@ func (es EntityRefSlice) RemoveIf(f func(EntityRef) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigEntityRef((*es.getOrig())[i], true)
 			(*es.getOrig())[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -135,6 +136,7 @@ func (es EntityRefSlice) RemoveIf(f func(EntityRef) bool) {
 			continue
 		}
 		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.getOrig())[i] = nil
 		newLen++
 	}
@@ -144,6 +146,9 @@ func (es EntityRefSlice) RemoveIf(f func(EntityRef) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es EntityRefSlice) CopyTo(dest EntityRefSlice) {
 	dest.getState().AssertMutable()
+	if es.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrigEntityRefSlice(*dest.getOrig(), *es.getOrig())
 }
 

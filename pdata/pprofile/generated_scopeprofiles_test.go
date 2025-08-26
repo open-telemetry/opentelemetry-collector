@@ -24,9 +24,10 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeProfiles(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -37,15 +38,16 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	orig = generateTestScopeProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
@@ -60,12 +62,12 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	ms := NewScopeProfiles()
-	internal.FillOrigTestScopeProfiles(ms.orig)
+	ms := newScopeProfiles(internal.GenTestOrigScopeProfiles(), internal.NewState())
 	return ms
 }

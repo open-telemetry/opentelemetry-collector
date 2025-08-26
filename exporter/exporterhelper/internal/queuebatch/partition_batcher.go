@@ -30,6 +30,7 @@ type partitionBatcher struct {
 	cfg            BatchConfig
 	wp             *workerPool
 	sizer          request.Sizer[request.Request]
+	mergeCtx       func(context.Context, context.Context) context.Context
 	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
@@ -42,6 +43,7 @@ type partitionBatcher struct {
 func newPartitionBatcher(
 	cfg BatchConfig,
 	sizer request.Sizer[request.Request],
+	mergeCtx func(context.Context, context.Context) context.Context,
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
@@ -50,6 +52,7 @@ func newPartitionBatcher(
 		cfg:         cfg,
 		wp:          wp,
 		sizer:       sizer,
+		mergeCtx:    mergeCtx,
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
 		logger:      logger,
@@ -147,7 +150,12 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	// Logic on how to deal with the current batch:
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
-	qb.currentBatch.ctx = contextWithMergedLinks(qb.currentBatch.ctx, ctx)
+
+	mergedCtx := context.Background() //nolint:contextcheck
+	if qb.mergeCtx != nil {
+		mergedCtx = qb.mergeCtx(qb.currentBatch.ctx, ctx)
+	}
+	qb.currentBatch.ctx = contextWithMergedLinks(mergedCtx, qb.currentBatch.ctx, ctx)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
@@ -177,7 +185,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 
 	qb.currentBatchMu.Unlock()
 	if firstBatch != nil {
-		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done) //nolint:contextcheck //context already handled
+		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
 	}
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
@@ -253,8 +261,12 @@ func newWorkerPool(maxWorkers int) *workerPool {
 
 func (wp *workerPool) execute(f func()) {
 	<-wp.workers
-	go f()
-	wp.workers <- struct{}{}
+	go func() {
+		defer func() {
+			wp.workers <- struct{}{}
+		}()
+		f()
+	}()
 }
 
 type multiDone []queue.Done

@@ -24,9 +24,10 @@ func TestEntityRef_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestEntityRef(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestEntityRef(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newEntityRef(&otlpcommon.EntityRef{}, &sharedState)) })
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
+	assert.Panics(t, func() { newEntityRef(internal.NewOrigEntityRef(), sharedState).MoveTo(dest) })
 }
 
 func TestEntityRef_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	orig = generateTestEntityRef()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newEntityRef(&otlpcommon.EntityRef{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
 }
 
 func TestEntityRef_SchemaUrl(t *testing.T) {
@@ -46,8 +48,9 @@ func TestEntityRef_SchemaUrl(t *testing.T) {
 	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("test_schemaurl")
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetSchemaUrl("test_schemaurl") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestEntityRef_Type(t *testing.T) {
@@ -55,8 +58,9 @@ func TestEntityRef_Type(t *testing.T) {
 	assert.Empty(t, ms.Type())
 	ms.SetType("test_type")
 	assert.Equal(t, "test_type", ms.Type())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetType("test_type") })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetType("test_type") })
 }
 
 func TestEntityRef_IdKeys(t *testing.T) {
@@ -74,5 +78,6 @@ func TestEntityRef_DescriptionKeys(t *testing.T) {
 }
 
 func generateTestEntityRef() EntityRef {
-	return EntityRef(internal.GenerateTestEntityRef())
+	ms := newEntityRef(internal.GenTestOrigEntityRef(), internal.NewState())
+	return ms
 }

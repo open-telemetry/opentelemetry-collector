@@ -16,13 +16,15 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal      pipeline.Signal
-	ID          component.ID
-	Telemetry   component.TelemetrySettings
-	Encoding    queue.Encoding[T]
-	ItemsSizer  request.Sizer[T]
-	BytesSizer  request.Sizer[T]
-	Partitioner Partitioner[T]
+	Signal           pipeline.Signal
+	ID               component.ID
+	Telemetry        component.TelemetrySettings
+	ReferenceCounter queue.ReferenceCounter[T]
+	Encoding         queue.Encoding[T]
+	ItemsSizer       request.Sizer[T]
+	BytesSizer       request.Sizer[T]
+	Partitioner      Partitioner[T]
+	MergeCtx         func(context.Context, context.Context) context.Context
 }
 
 type QueueBatch struct {
@@ -39,6 +41,7 @@ func NewQueueBatch(
 		itemsSizer:  set.ItemsSizer,
 		bytesSizer:  set.BytesSizer,
 		partitioner: set.Partitioner,
+		mergeCtx:    set.MergeCtx,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
 		logger:      set.Telemetry.Logger,
@@ -53,18 +56,19 @@ func NewQueueBatch(
 	}
 
 	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
-		SizerType:       cfg.Sizer,
-		ItemsSizer:      set.ItemsSizer,
-		BytesSizer:      set.BytesSizer,
-		Capacity:        cfg.QueueSize,
-		NumConsumers:    cfg.NumConsumers,
-		WaitForResult:   cfg.WaitForResult,
-		BlockOnOverflow: cfg.BlockOnOverflow,
-		Signal:          set.Signal,
-		StorageID:       cfg.StorageID,
-		Encoding:        set.Encoding,
-		ID:              set.ID,
-		Telemetry:       set.Telemetry,
+		SizerType:        cfg.Sizer,
+		ItemsSizer:       set.ItemsSizer,
+		BytesSizer:       set.BytesSizer,
+		Capacity:         cfg.QueueSize,
+		NumConsumers:     cfg.NumConsumers,
+		WaitForResult:    cfg.WaitForResult,
+		BlockOnOverflow:  cfg.BlockOnOverflow,
+		Signal:           set.Signal,
+		StorageID:        cfg.StorageID,
+		ReferenceCounter: set.ReferenceCounter,
+		Encoding:         set.Encoding,
+		ID:               set.ID,
+		Telemetry:        set.Telemetry,
 	}, b.Consume)
 	if err != nil {
 		return nil, err

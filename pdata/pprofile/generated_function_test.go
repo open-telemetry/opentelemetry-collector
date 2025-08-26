@@ -23,9 +23,10 @@ func TestFunction_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestFunction(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestFunction(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newFunction(internal.NewOrigFunction(), sharedState)) })
+	assert.Panics(t, func() { newFunction(internal.NewOrigFunction(), sharedState).MoveTo(dest) })
 }
 
 func TestFunction_CopyTo(t *testing.T) {
@@ -36,8 +37,9 @@ func TestFunction_CopyTo(t *testing.T) {
 	orig = generateTestFunction()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newFunction(internal.NewOrigFunction(), sharedState)) })
 }
 
 func TestFunction_NameStrindex(t *testing.T) {
@@ -45,8 +47,9 @@ func TestFunction_NameStrindex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.NameStrindex())
 	ms.SetNameStrindex(int32(13))
 	assert.Equal(t, int32(13), ms.NameStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetNameStrindex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, sharedState).SetNameStrindex(int32(13)) })
 }
 
 func TestFunction_SystemNameStrindex(t *testing.T) {
@@ -54,8 +57,9 @@ func TestFunction_SystemNameStrindex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.SystemNameStrindex())
 	ms.SetSystemNameStrindex(int32(13))
 	assert.Equal(t, int32(13), ms.SystemNameStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetSystemNameStrindex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, sharedState).SetSystemNameStrindex(int32(13)) })
 }
 
 func TestFunction_FilenameStrindex(t *testing.T) {
@@ -63,8 +67,9 @@ func TestFunction_FilenameStrindex(t *testing.T) {
 	assert.Equal(t, int32(0), ms.FilenameStrindex())
 	ms.SetFilenameStrindex(int32(13))
 	assert.Equal(t, int32(13), ms.FilenameStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetFilenameStrindex(int32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, sharedState).SetFilenameStrindex(int32(13)) })
 }
 
 func TestFunction_StartLine(t *testing.T) {
@@ -72,12 +77,12 @@ func TestFunction_StartLine(t *testing.T) {
 	assert.Equal(t, int64(0), ms.StartLine())
 	ms.SetStartLine(int64(13))
 	assert.Equal(t, int64(13), ms.StartLine())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetStartLine(int64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, sharedState).SetStartLine(int64(13)) })
 }
 
 func generateTestFunction() Function {
-	ms := NewFunction()
-	internal.FillOrigTestFunction(ms.orig)
+	ms := newFunction(internal.GenTestOrigFunction(), internal.NewState())
 	return ms
 }

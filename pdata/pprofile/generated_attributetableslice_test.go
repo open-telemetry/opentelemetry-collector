@@ -12,14 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestAttributeTableSlice(t *testing.T) {
 	es := NewAttributeTableSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newAttributeTableSlice(&[]v1.KeyValue{}, &state)
+	es = newAttributeTableSlice(&[]otlpcommon.KeyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttribute()
@@ -27,15 +26,16 @@ func TestAttributeTableSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestKeyValue(&(*es.orig)[i])
+		(*es.orig)[i] = *internal.GenTestOrigKeyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestAttributeTableSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newAttributeTableSlice(&[]v1.KeyValue{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newAttributeTableSlice(&[]otlpcommon.KeyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -50,6 +50,8 @@ func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
 	src := generateTestAttributeTableSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestAttributeTableSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
 
@@ -116,9 +118,9 @@ func TestAttributeTableSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Attribute) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestAttributeTableSlice_RemoveIfAll(t *testing.T) {

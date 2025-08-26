@@ -23,13 +23,10 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState))
-	})
-	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).MoveTo(dest)
-	})
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState)) })
+	assert.Panics(t, func() { newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState).MoveTo(dest) })
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -40,10 +37,9 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState))
-	})
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
@@ -51,9 +47,10 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedSpans())
 	ms.SetRejectedSpans(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedSpans())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetRejectedSpans(int64(13))
+		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetRejectedSpans(int64(13))
 	})
 }
 
@@ -62,14 +59,14 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("test_errormessage")
 	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := NewExportPartialSuccess()
-	internal.FillOrigTestExportTracePartialSuccess(ms.orig)
+	ms := newExportPartialSuccess(internal.GenTestOrigExportTracePartialSuccess(), internal.NewState())
 	return ms
 }

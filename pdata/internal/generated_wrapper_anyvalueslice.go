@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Slice struct {
@@ -30,8 +29,7 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 
 func GenerateTestSlice() Slice {
 	orig := GenerateOrigTestAnyValueSlice()
-	state := StateMutable
-	return NewSlice(&orig, &state)
+	return NewSlice(&orig, NewState())
 }
 
 func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
@@ -43,7 +41,7 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpcommon.AnyValue{}
+			DeleteOrigAnyValue(&dest[i], false)
 		}
 	}
 	for i := range src {
@@ -53,34 +51,8 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 }
 
 func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
-	orig := make([]otlpcommon.AnyValue, 7)
-	for i := 0; i < 7; i++ {
-		orig[i] = otlpcommon.AnyValue{}
-		FillOrigTestAnyValue(&orig[i])
-	}
-	return orig
-}
-
-// MarshalJSONOrigAnyValueSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAnyValueSlice(orig []otlpcommon.AnyValue, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigAnyValue(&orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigAnyValue(&orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONOrigAnyValueSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
-	var orig []otlpcommon.AnyValue
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, otlpcommon.AnyValue{})
-		UnmarshalJSONOrigAnyValue(&orig[len(orig)-1], iter)
-		return true
-	})
+	orig := make([]otlpcommon.AnyValue, 5)
+	orig[1] = *GenTestOrigAnyValue()
+	orig[3] = *GenTestOrigAnyValue()
 	return orig
 }

@@ -19,8 +19,7 @@ import (
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, &state)
+	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExponentialHistogramDataPoint()
@@ -28,15 +27,16 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestExponentialHistogramDataPoint((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigExponentialHistogramDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
 	src := generateTestExponentialHistogramDataPointSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestExponentialHistogramDataPointSlice_RemoveIfAll(t *testing.T) {

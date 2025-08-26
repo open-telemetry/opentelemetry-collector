@@ -24,12 +24,13 @@ func TestExponentialHistogramDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogramDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPoint(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState))
+		ms.MoveTo(newExponentialHistogramDataPoint(internal.NewOrigExponentialHistogramDataPoint(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).MoveTo(dest)
+		newExponentialHistogramDataPoint(internal.NewOrigExponentialHistogramDataPoint(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -41,9 +42,10 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState))
+		ms.CopyTo(newExponentialHistogramDataPoint(internal.NewOrigExponentialHistogramDataPoint(), sharedState))
 	})
 }
 
@@ -75,9 +77,10 @@ func TestExponentialHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(13))
 	assert.Equal(t, uint64(13), ms.Count())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).SetCount(uint64(13))
+		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, sharedState).SetCount(uint64(13))
 	})
 }
 
@@ -100,9 +103,10 @@ func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
 	assert.Equal(t, int32(0), ms.Scale())
 	ms.SetScale(int32(13))
 	assert.Equal(t, int32(13), ms.Scale())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).SetScale(int32(13))
+		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, sharedState).SetScale(int32(13))
 	})
 }
 
@@ -111,23 +115,24 @@ func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.ZeroCount())
 	ms.SetZeroCount(uint64(13))
 	assert.Equal(t, uint64(13), ms.ZeroCount())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).SetZeroCount(uint64(13))
+		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, sharedState).SetZeroCount(uint64(13))
 	})
 }
 
 func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Positive())
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Positive)
+	ms.orig.Positive = *internal.GenTestOrigExponentialHistogramDataPoint_Buckets()
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Positive())
 }
 
 func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Negative())
-	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Negative)
+	ms.orig.Negative = *internal.GenTestOrigExponentialHistogramDataPoint_Buckets()
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Negative())
 }
 
@@ -179,14 +184,14 @@ func TestExponentialHistogramDataPoint_ZeroThreshold(t *testing.T) {
 	assert.InDelta(t, float64(0), ms.ZeroThreshold(), 0.01)
 	ms.SetZeroThreshold(float64(3.1415926))
 	assert.InDelta(t, float64(3.1415926), ms.ZeroThreshold(), 0.01)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).SetZeroThreshold(float64(3.1415926))
+		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, sharedState).SetZeroThreshold(float64(3.1415926))
 	})
 }
 
 func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	ms := NewExponentialHistogramDataPoint()
-	internal.FillOrigTestExponentialHistogramDataPoint(ms.orig)
+	ms := newExponentialHistogramDataPoint(internal.GenTestOrigExponentialHistogramDataPoint(), internal.NewState())
 	return ms
 }

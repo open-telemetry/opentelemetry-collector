@@ -1,13 +1,13 @@
 module go.opentelemetry.io/collector/config/configtls
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-tpm v0.9.5
-	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/config/configopaque v1.37.0
+	github.com/stretchr/testify v1.11.0
+	go.opentelemetry.io/collector/config/configopaque v1.39.0
 )
 
 require (

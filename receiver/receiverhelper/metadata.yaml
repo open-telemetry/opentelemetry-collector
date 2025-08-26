@@ -1,12 +1,10 @@
 type: receiverhelper
 github_project: open-telemetry/opentelemetry-collector
-
 status:
   disable_codecov_badge: true
   class: pkg
   stability:
-    beta: [traces, metrics, logs]
-
+    beta: [metrics, traces, logs]
 telemetry:
   metrics:
     receiver_accepted_spans:
@@ -18,7 +16,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
     receiver_refused_spans:
       enabled: true
       stability:
@@ -28,17 +25,24 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
-    receiver_accepted_metric_points:
+    receiver_failed_spans:
       enabled: true
       stability:
         level: alpha
+      description: The number of spans that failed to be processed by the receiver due to internal errors.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+    receiver_accepted_metric_points:
+      stability:
+        level: alpha
+      enabled: true
       description: Number of metric points successfully pushed into the pipeline.
       unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
-
     receiver_refused_metric_points:
       enabled: true
       stability:
@@ -48,7 +52,15 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
+    receiver_failed_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: The number of metric points that failed to be processed by the receiver due to internal errors.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
     receiver_accepted_log_records:
       enabled: true
       stability:
@@ -58,7 +70,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
     receiver_refused_log_records:
       enabled: true
       stability:
@@ -68,3 +79,31 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    receiver_failed_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: The number of log records that failed to be processed by the receiver due to internal errors.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+    receiver_requests:
+      enabled: true
+      stability:
+        level: alpha
+      description: The number of requests performed.
+      unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes:
+        - outcome
+attributes:
+  outcome:
+    description: The outcome of receiver requests
+    type: string
+    enum:
+      - success
+      - refused
+      - failure
