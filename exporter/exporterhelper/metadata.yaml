@@ -5,7 +5,7 @@ status:
   disable_codecov_badge: true
   codeowners:
     active:
-      - BogdanDrutu
+      - bogdandrutu
       - dmitryax
   class: pkg
   stability:
