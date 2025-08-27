@@ -20,6 +20,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
+      - go.opentelemetry.io/collector/config/configmiddleware
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/extensionauth
@@ -43,7 +44,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
-      - go.opentelemetry.io/collector/config/configmiddleware
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/configoptional
       - go.opentelemetry.io/collector/connector
