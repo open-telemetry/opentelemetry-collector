@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.opentelemetry.io/collector/service/internal/resource"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestTracerProvider(t *testing.T) {
@@ -42,16 +42,9 @@ func TestTracerProvider(t *testing.T) {
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	buildInfo := component.BuildInfo{Command: "otelcol", Version: "latest"}
-	sdk, err := NewSDK(context.Background(), cfg, resource.New(buildInfo, cfg.Resource))
-	require.NoError(t, err)
-	defer func() {
-		assert.NoError(t, sdk.Shutdown(context.Background()))
-	}()
+	providers, _ := newTelemetryProviders(t, telemetry.Settings{BuildInfo: buildInfo}, cfg)
 
-	provider, err := newTracerProvider(*cfg, sdk)
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-
+	provider := providers.TracerProvider()
 	tracer := provider.Tracer("test_tracer")
 	_, span := tracer.Start(context.Background(), "test_span")
 	span.End()
@@ -73,14 +66,9 @@ func TestTelemetry_TracerProvider_Propagators(t *testing.T) {
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	buildInfo := component.BuildInfo{Command: "otelcol", Version: "latest"}
-	sdk, err := NewSDK(context.Background(), cfg, resource.New(buildInfo, cfg.Resource))
-	require.NoError(t, err)
-	defer func() {
-		assert.NoError(t, sdk.Shutdown(context.Background()))
-	}()
+	providers, _ := newTelemetryProviders(t, telemetry.Settings{BuildInfo: buildInfo}, cfg)
 
-	provider, err := newTracerProvider(*cfg, sdk)
-	require.NoError(t, err)
+	provider := providers.TracerProvider()
 	propagator := otel.GetTextMapPropagator()
 	require.NotNil(t, propagator)
 
@@ -111,14 +99,9 @@ func TestTelemetry_TracerProviderDisabled(t *testing.T) {
 		}
 
 		buildInfo := component.BuildInfo{Command: "otelcol", Version: "latest"}
-		sdk, err := NewSDK(context.Background(), cfg, resource.New(buildInfo, cfg.Resource))
-		require.NoError(t, err)
-		defer func() {
-			assert.NoError(t, sdk.Shutdown(context.Background()))
-		}()
+		providers, _ := newTelemetryProviders(t, telemetry.Settings{BuildInfo: buildInfo}, cfg)
 
-		provider, err := newTracerProvider(*cfg, sdk)
-		require.NoError(t, err)
+		provider := providers.TracerProvider()
 		tracer := provider.Tracer("test_tracer")
 		_, span := tracer.Start(context.Background(), "test_span")
 		span.End()
@@ -126,7 +109,7 @@ func TestTelemetry_TracerProviderDisabled(t *testing.T) {
 	}
 
 	t.Run("level_none", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := createDefaultConfig().(*Config)
 		cfg.Traces.Level = configtelemetry.LevelNone
 		test(t, cfg)
 	})

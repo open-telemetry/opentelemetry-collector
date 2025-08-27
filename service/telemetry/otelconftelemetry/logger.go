@@ -6,7 +6,6 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
-	"go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -15,7 +14,7 @@ import (
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
-func newLogger(set telemetry.Settings, cfg Config, sdk *config.SDK, res *resource.Resource) (*zap.Logger, log.LoggerProvider, error) {
+func newLogger(set telemetry.Settings, cfg *Config, sdk *config.SDK, res *resource.Resource) (*zap.Logger, log.LoggerProvider, error) {
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -71,11 +70,6 @@ func newLogger(set telemetry.Settings, cfg Config, sdk *config.SDK, res *resourc
 		}))
 	}
 
-	var lp log.LoggerProvider
-	if sdk != nil {
-		lp = sdk.LoggerProvider()
-	} else {
-		lp = noop.NewLoggerProvider()
-	}
+	lp := sdk.LoggerProvider()
 	return logger, lp, nil
 }
