@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,12 +30,6 @@ var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
 func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
-	return newConfigPrintSubCommandWithWriter(set, flagSet, os.Stdout)
-}
-
-// newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings
-// accepting an io.Writer used for testing.
-func newConfigPrintSubCommandWithWriter(set CollectorSettings, flagSet *flag.FlagSet, stdout io.Writer) *cobra.Command {
 	var outputFormat string
 	var mode string
 	var validate bool
@@ -60,7 +53,7 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			pc := printContext{
 				cmd:          cmd,
-				stdout:       stdout,
+				stdout:       cmd.OutOrStdout(),
 				set:          set,
 				outputFormat: outputFormat,
 				validate:     validate,

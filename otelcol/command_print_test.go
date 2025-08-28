@@ -193,7 +193,7 @@ func TestPrintCommand(t *testing.T) {
 				set.DefaultScheme = "file"
 				set.URIs = []string{test.path}
 
-				cmd := newConfigPrintSubCommandWithWriter(CollectorSettings{
+				cmd := newConfigPrintSubCommand(CollectorSettings{
 					Factories: func() (Factories, error) {
 						return Factories{
 							Receivers: map[component.Type]receiver.Factory{
@@ -207,7 +207,8 @@ func TestPrintCommand(t *testing.T) {
 					ConfigProviderSettings: ConfigProviderSettings{
 						ResolverSettings: set,
 					},
-				}, flags(featuregate.GlobalRegistry()), &stdout)
+				}, flags(featuregate.GlobalRegistry()))
+				cmd.SetOut(&stdout)
 				args := []string{
 					"--mode", mode,
 					"--format", test.ofmt,
