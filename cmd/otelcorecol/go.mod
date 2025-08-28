@@ -76,7 +76,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.7 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/stretchr/testify v1.11.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
@@ -104,6 +104,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.133.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.133.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.133.0 // indirect
@@ -244,6 +245,8 @@ replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/d
 replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../../exporter/exporterhelper/xexporterhelper
 

@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/exporter/otlpexporter
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector v0.133.0
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.39.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.133.0
 	go.opentelemetry.io/collector/exporter v0.133.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.133.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.133.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.133.0
@@ -181,3 +182,5 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmid
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporterhelper
