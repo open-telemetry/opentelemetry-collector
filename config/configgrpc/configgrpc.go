@@ -421,6 +421,10 @@ func (sc *ServerConfig) Validate() error {
 		return fmt.Errorf("invalid write_buffer_size value: %d", sc.WriteBufferSize)
 	}
 
+	if sc.IncludeTLSMetadata && !sc.TLS.HasValue() {
+		return errors.New("invalid include_tls_metadata value, must be false when not using TLS")
+	}
+
 	return nil
 }
 

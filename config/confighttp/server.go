@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -106,6 +107,14 @@ func NewDefaultServerConfig() ServerConfig {
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
 	}
+}
+
+func (sc *ServerConfig) Validate() error {
+	if sc.IncludeTLSMetadata && !sc.TLS.HasValue() {
+		return errors.New("invalid include_tls_metadata value, must be false when not using TLS")
+	}
+
+	return nil
 }
 
 type AuthConfig struct {

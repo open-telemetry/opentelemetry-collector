@@ -372,6 +372,12 @@ func TestGrpcServerValidate(t *testing.T) {
 			},
 			err: "invalid write_buffer_size value",
 		},
+		{
+			gss: &ServerConfig{
+				IncludeTLSMetadata: true,
+			},
+			err: "invalid include_tls_metadata value",
+		},
 	}
 
 	for _, tt := range tests {
@@ -410,6 +416,8 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 				PermitWithoutStream: true,
 			}),
 		}),
+		IncludeMetadata:    true,
+		IncludeTLSMetadata: true,
 	}
 	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
