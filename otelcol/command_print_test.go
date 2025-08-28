@@ -184,7 +184,7 @@ func TestPrintCommand(t *testing.T) {
 						return nil, nil
 					}, component.StabilityLevelStable),
 				)
-				var stdout, stderr bytes.Buffer
+				var stdout bytes.Buffer
 
 				set := confmap.ResolverSettings{}
 				set.ProviderFactories = []confmap.ProviderFactory{
@@ -193,7 +193,7 @@ func TestPrintCommand(t *testing.T) {
 				set.DefaultScheme = "file"
 				set.URIs = []string{test.path}
 
-				cmd := newConfigPrintSubCommand(CollectorSettings{
+				cmd := newConfigPrintSubCommandWithWriter(CollectorSettings{
 					Factories: func() (Factories, error) {
 						return Factories{
 							Receivers: map[component.Type]receiver.Factory{
@@ -207,7 +207,7 @@ func TestPrintCommand(t *testing.T) {
 					ConfigProviderSettings: ConfigProviderSettings{
 						ResolverSettings: set,
 					},
-				}, flags(featuregate.GlobalRegistry()), &stdout, &stderr)
+				}, flags(featuregate.GlobalRegistry()), &stdout)
 				args := []string{
 					"--mode", mode,
 					"--format", test.ofmt,

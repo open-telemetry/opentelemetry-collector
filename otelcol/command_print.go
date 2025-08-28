@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -29,7 +30,13 @@ var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
-func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet, stdout, stderr io.Writer) *cobra.Command {
+func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
+	return newConfigPrintSubCommandWithWriter(set, flagSet, os.Stdout)
+}
+
+// newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings
+// accepting an io.Writer used for testing.
+func newConfigPrintSubCommandWithWriter(set CollectorSettings, flagSet *flag.FlagSet, stdout io.Writer) *cobra.Command {
 	var outputFormat string
 	var mode string
 	var validate bool
@@ -54,7 +61,6 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 			pc := printContext{
 				cmd:          cmd,
 				stdout:       stdout,
-				stderr:       stderr,
 				set:          set,
 				outputFormat: outputFormat,
 				validate:     validate,
@@ -62,8 +68,6 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 			return pc.configPrintSubCommand(flagSet, mode)
 		},
 	}
-	cmd.SetOut(stdout)
-	cmd.SetErr(stderr)
 
 	formatHelp := "Output format: yaml (default), json (unstable))"
 	cmd.Flags().StringVar(&outputFormat, "format", "yaml", formatHelp)
@@ -81,7 +85,6 @@ All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
 type printContext struct {
 	cmd          *cobra.Command
 	stdout       io.Writer
-	stderr       io.Writer
 	set          CollectorSettings
 	outputFormat string
 	validate     bool
@@ -96,14 +99,10 @@ func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode stri
 		return err
 	}
 
-	if !pctx.validate {
-		fmt.Fprintf(pctx.stderr, "Warning: redacted mode hides sensitive fields but does not validate. Use with caution.\n")
-	}
 	switch strings.ToLower(mode) {
 	case "redacted":
 		return pctx.printRedactedConfig()
 	case "unredacted":
-		fmt.Fprintf(pctx.stderr, "Warning: unredacted mode shows the complete configuration. Use with caution.\n")
 		return pctx.printUnredactedConfig()
 	default:
 		return fmt.Errorf("invalid mode %q: modes are: redacted, unredacted", mode)
@@ -118,8 +117,6 @@ func (pctx *printContext) printConfigData(data map[string]any) error {
 	}
 
 	if strings.EqualFold(format, "json") {
-		// Note that JSON does
-		fmt.Fprintf(pctx.stderr, "Warning: JSON output format is unstable. Use with caution.\n")
 		encoder := json.NewEncoder(pctx.stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(data)
