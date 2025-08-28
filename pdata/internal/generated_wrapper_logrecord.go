@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolLogRecord = sync.Pool{
-	New: func() any {
-		return &otlplogs.LogRecord{}
-	},
-}
+var (
+	protoPoolLogRecord = sync.Pool{
+		New: func() any {
+			return &otlplogs.LogRecord{}
+		},
+	}
+)
 
 func NewOrigLogRecord() *otlplogs.LogRecord {
 	if !UseProtoPooling.IsEnabled() {

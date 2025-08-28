@@ -203,7 +203,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 		extMap:       make(map[component.ID]extension.Extension),
 		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
-		reporter:     &nopReporter{},
+		reporter:     status.NewNopStatusReporter(),
 	}
 
 	for _, opt := range options {
@@ -238,11 +238,3 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts.extensionIDs = order
 	return exts, nil
 }
-
-type nopReporter struct{}
-
-func (r *nopReporter) Ready() {}
-
-func (r *nopReporter) ReportStatus(*componentstatus.InstanceID, *componentstatus.Event) {}
-
-func (r *nopReporter) ReportOKIfStarting(*componentstatus.InstanceID) {}

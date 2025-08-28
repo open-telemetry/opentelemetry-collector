@@ -32,11 +32,13 @@ func NewProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 	return Profiles{orig: orig, state: state}
 }
 
-var protoPoolExportProfilesServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
-	},
-}
+var (
+	protoPoolExportProfilesServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
 	if !UseProtoPooling.IsEnabled() {

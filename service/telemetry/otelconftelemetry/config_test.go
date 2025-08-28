@@ -22,12 +22,12 @@ import (
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(
-		NewFactory(nil, nil).CreateDefaultConfig(),
+		NewFactory().CreateDefaultConfig(),
 	))
 }
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
-	factory := NewFactory(nil, nil)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)

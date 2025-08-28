@@ -80,6 +80,10 @@ func (pf *PrimitiveField) GenerateTestEncodingValues(*messageStruct) string {
 	return pf.toProtoField().GenTestEncodingValues()
 }
 
+func (pf *PrimitiveField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
 func (pf *PrimitiveField) GenerateDeleteOrig(*messageStruct) string {
 	return pf.toProtoField().GenDeleteOrig()
 }

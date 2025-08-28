@@ -24,7 +24,7 @@ import (
 func TestCopyOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -53,7 +53,7 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -97,7 +97,7 @@ func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name+"pooling_"+strconv.FormatBool(pooling), func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

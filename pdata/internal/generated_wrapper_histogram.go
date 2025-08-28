@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolHistogram = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Histogram{}
-	},
-}
+var (
+	protoPoolHistogram = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Histogram{}
+		},
+	}
+)
 
 func NewOrigHistogram() *otlpmetrics.Histogram {
 	if !UseProtoPooling.IsEnabled() {

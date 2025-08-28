@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolStatus = sync.Pool{
-	New: func() any {
-		return &otlptrace.Status{}
-	},
-}
+var (
+	protoPoolStatus = sync.Pool{
+		New: func() any {
+			return &otlptrace.Status{}
+		},
+	}
+)
 
 func NewOrigStatus() *otlptrace.Status {
 	if !UseProtoPooling.IsEnabled() {

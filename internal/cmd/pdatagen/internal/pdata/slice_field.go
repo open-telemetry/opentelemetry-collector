@@ -69,6 +69,10 @@ func (sf *SliceField) GenerateTestEncodingValues(*messageStruct) string {
 	return sf.toProtoField().GenTestEncodingValues()
 }
 
+func (sf *SliceField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
 func (sf *SliceField) GenerateDeleteOrig(*messageStruct) string {
 	return sf.toProtoField().GenDeleteOrig()
 }

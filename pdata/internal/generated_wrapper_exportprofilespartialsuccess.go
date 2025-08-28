@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExportProfilesPartialSuccess = sync.Pool{
-	New: func() any {
-		return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
-	},
-}
+var (
+	protoPoolExportProfilesPartialSuccess = sync.Pool{
+		New: func() any {
+			return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+		},
+	}
+)
 
 func NewOrigExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

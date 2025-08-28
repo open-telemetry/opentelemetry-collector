@@ -32,11 +32,13 @@ func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State)
 	return Traces{orig: orig, state: state}
 }
 
-var protoPoolExportTraceServiceRequest = sync.Pool{
-	New: func() any {
-		return &otlpcollectortrace.ExportTraceServiceRequest{}
-	},
-}
+var (
+	protoPoolExportTraceServiceRequest = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTraceServiceRequest{}
+		},
+	}
+)
 
 func NewOrigExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
