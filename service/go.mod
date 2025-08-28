@@ -237,8 +237,6 @@ replace go.opentelemetry.io/collector/extension/xextension => ../extension/xexte
 
 replace go.opentelemetry.io/collector/otelcol => ../otelcol
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extension/extensionmiddleware
@@ -247,6 +245,6 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../config/confi
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extension/extensionmiddleware/extensionmiddlewaretest
 
-replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
-
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
+
+replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
