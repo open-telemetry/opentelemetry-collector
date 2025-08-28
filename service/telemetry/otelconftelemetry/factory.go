@@ -4,7 +4,6 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
-	"context"
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -23,29 +22,10 @@ var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry(
 	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
 )
 
-// Factory is factory interface for telemetry providers.
-// This interface cannot be directly implemented. Implementations must
-// use the NewFactory to implement it.
-//
-// NOTE This API is experimental and will change soon - use at your own risk.
-// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
-type Factory interface {
-	// CreateDefaultConfig creates the default configuration for the telemetry.
-	CreateDefaultConfig() component.Config
-
-	// CreateProviders creates telemetry providers.
-	CreateProviders(context.Context, telemetry.Settings, component.Config) (telemetry.Providers, error)
-
-	// unexportedFactoryFunc is used to prevent external implementations of Factory.
-	unexportedFactoryFunc()
-}
-
-// NewFactory creates a new Factory.
-//
-// NOTE This API is experimental and will change soon - use at your own risk.
-// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
-func NewFactory() Factory {
-	return newFactory(createDefaultConfig, createProviders)
+// NewFactory creates a new telemetry.Factory that uses otelconf
+// to configure opentelemetry-go SDK telemetry providers.
+func NewFactory() telemetry.Factory {
+	return telemetry.NewFactory(createDefaultConfig, createProviders)
 }
 
 func createDefaultConfig() component.Config {
