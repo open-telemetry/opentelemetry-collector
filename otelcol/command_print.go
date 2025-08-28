@@ -116,24 +116,25 @@ func (pctx *printContext) printConfigData(data map[string]any) error {
 		format = "yaml"
 	}
 
-	if strings.EqualFold(format, "json") {
-		encoder := json.NewEncoder(pctx.stdout)
-		encoder.SetIndent("", "  ")
-		return encoder.Encode(data)
-	}
-
-	if strings.EqualFold(format, "yaml") {
+	switch {
+	case strings.EqualFold(format, "yaml"):
 		b, err := yaml.Marshal(data)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintf(pctx.stdout, "%s\n", b)
 		return nil
+
+	case strings.EqualFold(format, "json"):
+		encoder := json.NewEncoder(pctx.stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(data)
 	}
+
 	return fmt.Errorf("unrecognized print format: %s", format)
 }
 
-func (pctx *printContext) printConfiguration() (any, error) {
+func (pctx *printContext) getPrintableConfig() (any, error) {
 	var factories Factories
 	if pctx.set.Factories != nil {
 		var err error
@@ -159,9 +160,9 @@ func (pctx *printContext) printConfiguration() (any, error) {
 // with the intended types for each component, thus it shows the full
 // configuration without considering configuopaque. Use with caution.
 func (pctx *printContext) printUnredactedConfig() error {
-	var conf *confmap.Conf
 	if pctx.validate {
-		cfg, err := pctx.printConfiguration()
+		// Validation serves prevent revealing invalid data.
+		cfg, err := pctx.getPrintableConfig()
 		if err != nil {
 			return err
 		}
@@ -175,7 +176,7 @@ func (pctx *printContext) printUnredactedConfig() error {
 	if err != nil {
 		return fmt.Errorf("failed to create new resolver: %w", err)
 	}
-	conf, err = resolver.Resolve(pctx.cmd.Context())
+	conf, err := resolver.Resolve(pctx.cmd.Context())
 	if err != nil {
 		return fmt.Errorf("error while resolving config: %w", err)
 	}
@@ -186,7 +187,7 @@ func (pctx *printContext) printUnredactedConfig() error {
 // types, but without validation. Notably, configopaque strings are printed
 // as "[redacted]". This is the default.
 func (pctx *printContext) printRedactedConfig() error {
-	cfg, err := pctx.printConfiguration()
+	cfg, err := pctx.getPrintableConfig()
 	if err != nil {
 		return err
 	}
