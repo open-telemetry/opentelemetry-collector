@@ -1,0 +1,29 @@
+config:
+  $id: https://opentelemetry.io/collector/confignet
+  $schema: https://json-schema.org/draft/2020-12/schema
+  $defs:
+    tcpAddrConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        endpoint:
+          type: string
+        dialer:
+          $ref: https://opentelemetry.io/collector/confignet#$defs/dialerConfig
+    dialerConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        timeout:
+          type: string
+          format: duration
+    addrConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        endpoint:
+          type: string
+        transport:
+          type: string
+        dialer:
+          $ref: https://opentelemetry.io/collector/confignet#$defs/dialerConfig

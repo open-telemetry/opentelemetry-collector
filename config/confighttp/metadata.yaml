@@ -1,0 +1,115 @@
+config:
+  $id: https://opentelemetry.io/collector/confighttp
+  $schema: https://json-schema.org/draft/2020-12/schema
+  $defs:
+    clientConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        endpoint:
+          type: string
+        proxy_url:
+          type: string
+        server_name_override:
+          type: string
+        tls:
+          $ref: https://opentelemetry.io/collector/configtls#$defs/clientConfig
+        read_buffer_size:
+          type: number
+        write_buffer_size:
+          type: number
+        timeout:
+          type: number
+        headers:
+          type: object
+          additionalProperties: true
+        auth:
+          $ref: https://opentelemetry.io/collector/configauth#$defs/config
+        compression:
+          type: string
+        compression_params:
+          type: object
+          properties:
+            level:
+              type: number
+        max_idle_conns:
+          type: number
+        max_idle_conns_per_host:
+          type: number
+        max_conns_per_host:
+          type: number
+        idle_conn_timeout:
+          type: string
+          format: duration
+        disable_keep_alives:
+          type: boolean
+        http2_read_idle_timeout:
+          type: string
+          format: duration
+        http2_ping_timeout:
+          type: string
+          format: duration
+        cookies:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+        force_attempt_http2:
+          type: boolean
+        middlewares:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+    serverConfig:
+      endpoint:
+        type: string
+      tls:
+        $ref: https://opentelemetry.io/collector/configtls#$defs/serverConfig
+      cors:
+        type: object
+        properties:
+          allowed_origins:
+            type: array
+            items:
+              type: string
+          allowed_headers:
+            type: array
+            items:
+              type: string
+          max_age:
+            type: number
+      auth:
+        $ref: https://opentelemetry.io/collector/configauth#$defs/config
+      max_request_body_size:
+        type: number
+      include_metadata:
+        type: boolean
+      response_headers:
+        type: object
+        additionalProperties: true
+      compression_algorithms:
+        type: array
+        items:
+          type: string
+      read_timeout:
+        type: string
+        format: duration
+      read_header_timeout:
+        type: string
+        format: duration
+      write_timeout:
+        type: string
+        format: duration
+      idle_timeout:
+        type: string
+        format: duration
+      middlewares:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string

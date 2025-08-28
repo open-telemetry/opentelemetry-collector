@@ -1,0 +1,22 @@
+config:
+  "$id": "https://opentelemetry.io/collector/configretry",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs":
+    "config":
+      "type": "object"
+      "additionalProperties": false
+      "properties":
+        enabled:
+          type: boolean
+        initial_interval:
+          type: string
+          format: duration
+        randomization_factor:
+          type: number
+        multiplier:
+          type: number
+        max_interval:
+          type: number
+        max_elapsed_time:
+          type: string
+          format: duration
