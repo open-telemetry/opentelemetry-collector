@@ -79,7 +79,7 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func TestConfmapMarshalConfig(t *testing.T) {
-	telFactory := otelconftelemetry.NewFactory(nil, nil)
+	telFactory := otelconftelemetry.NewFactory()
 	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 	conf := confmap.New()
 
