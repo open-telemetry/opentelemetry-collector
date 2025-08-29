@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/internal/telemetry
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/featuregate v1.39.0
 	go.opentelemetry.io/collector/pdata v1.39.0
 	go.opentelemetry.io/collector/pipeline v1.39.0
