@@ -32,6 +32,9 @@ type Config struct {
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
+	// OutputPaths is a list of file paths to write logging output to when UseInternalLogger is false.
+	OutputPaths []string `mapstructure:"output_paths,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
