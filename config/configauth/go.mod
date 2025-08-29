@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.40.0
 	go.opentelemetry.io/collector/extension v1.40.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.40.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.133.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.134.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.40.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.40.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect

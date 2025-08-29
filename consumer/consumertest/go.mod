@@ -7,10 +7,10 @@ replace go.opentelemetry.io/collector/consumer => ../
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/consumer v1.40.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.133.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0
 	go.opentelemetry.io/collector/pdata v1.40.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.133.0
-	go.opentelemetry.io/collector/pdata/testdata v0.133.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.134.0
+	go.opentelemetry.io/collector/pdata/testdata v0.134.0
 	go.uber.org/goleak v1.3.0
 )
 

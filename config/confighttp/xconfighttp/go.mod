@@ -4,8 +4,8 @@ go 1.24
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component/componenttest v0.133.0
-	go.opentelemetry.io/collector/config/confighttp v0.133.0
+	go.opentelemetry.io/collector/component/componenttest v0.134.0
+	go.opentelemetry.io/collector/config/confighttp v0.134.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
@@ -40,18 +40,18 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.40.0 // indirect
 	go.opentelemetry.io/collector/component v1.40.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.133.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.134.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.40.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v0.133.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.134.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.40.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.133.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.134.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.40.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.40.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.133.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.134.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.40.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.133.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.134.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.40.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.133.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.134.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.40.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
