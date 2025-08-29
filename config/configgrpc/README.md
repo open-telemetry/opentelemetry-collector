@@ -114,3 +114,5 @@ README](../confignet/README.md).
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
 - [`auth`](../configauth/README.md)
 - [`middlewares`](../configmiddleware/README.md)
+- `include_metadata` (default = false): If true, includes gRPC connection headers in metadata context.
+- `include_tls_metadata` (default = false): If true, includes clients' certificates subject (`tls.subject`) and URIs (`tls.uri`) in metadata context. Requires `tls` to be configured.

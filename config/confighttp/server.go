@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -49,6 +50,9 @@ type ServerConfig struct {
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
+
+	// IncludeTLSMetadata includes TLS metadata from the incoming requests to the downstream consumers
+	IncludeTLSMetadata bool `mapstructure:"include_tls_metadata,omitempty"`
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
@@ -103,6 +107,14 @@ func NewDefaultServerConfig() ServerConfig {
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
 	}
+}
+
+func (sc *ServerConfig) Validate() error {
+	if sc.IncludeTLSMetadata && !sc.TLS.HasValue() {
+		return errors.New("invalid include_tls_metadata value, must be false when not using TLS")
+	}
+
+	return nil
 }
 
 type AuthConfig struct {
@@ -258,8 +270,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
-		next:            handler,
-		includeMetadata: sc.IncludeMetadata,
+		next:               handler,
+		includeMetadata:    sc.IncludeMetadata,
+		includeTLSMetadata: sc.IncludeTLSMetadata,
 	}
 
 	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
