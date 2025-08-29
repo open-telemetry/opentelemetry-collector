@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -22,6 +23,7 @@ import (
 func appendTag(buf []byte, fieldNo byte, wireType proto.WireType) []byte {
 	return append(buf, (fieldNo<<3)|byte(wireType))
 }
+
 func appendVarint(buf []byte, v uint64) []byte {
 	n := proto.Sov(v)
 	for range n {
