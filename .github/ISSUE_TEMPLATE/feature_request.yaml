@@ -57,8 +57,7 @@ body:
   - type: textarea
     attributes:
       label: Is your feature request related to a problem? Please describe.
-      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]. We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with the current roadmap and are not aimed at stabilizing and preparing the Collector for the release will
-  not be prioritized.
+      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]. We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with the current roadmap and are not aimed at stabilizing and preparing the Collector for the release will not be prioritized.
     validations:
       required: true
   - type: textarea
