@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentstatus // import "go.opentelemetry.io/collector/component/componentstatus"
+package status // import "go.opentelemetry.io/collector/service/internal/status"
 
 import (
 	"slices"
@@ -17,61 +17,41 @@ import (
 const pipelineDelim = byte(0x20)
 
 // InstanceID uniquely identifies a component instance
-// Deprecated: [v0.131.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
 type InstanceID struct {
-	componentID component.ID
-	kind        component.Kind
+	ComponentID component.ID
+	Kind        component.Kind
 	pipelineIDs string // IDs encoded as a string so InstanceID is Comparable.
 }
 
 // NewInstanceID returns an ID that uniquely identifies a component.
-// Deprecated: [v0.131.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
 func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
-		componentID: componentID,
-		kind:        kind,
+		ComponentID: componentID,
+		Kind:        kind,
 	}
 	instanceID.addPipelines(pipelineIDs)
 	return instanceID
 }
 
-// ComponentID returns the ComponentID associated with this instance.
-func (id *InstanceID) ComponentID() component.ID {
-	return id.componentID
-}
+func (id *InstanceID) PipelineIDs() []pipeline.ID {
+	strIDs := strings.Split(id.pipelineIDs, string(pipelineDelim))
 
-// Kind returns the component Kind associated with this instance.
-func (id *InstanceID) Kind() component.Kind {
-	return id.kind
-}
-
-// AllPipelineIDs calls f for each pipeline this instance is associated with. If
-// f returns false it will stop iteration.
-func (id *InstanceID) AllPipelineIDs(f func(pipeline.ID) bool) {
-	var bs []byte
-	for _, b := range []byte(id.pipelineIDs) {
-		if b != pipelineDelim {
-			bs = append(bs, b)
-			continue
-		}
+	ids := make([]pipeline.ID, len(strIDs))
+	for i, strID := range strIDs {
 		pipelineID := pipeline.ID{}
-		err := pipelineID.UnmarshalText(bs)
-		bs = bs[:0]
-		if err != nil {
-			continue
-		}
-		if !f(pipelineID) {
-			break
-		}
+		_ = pipelineID.UnmarshalText([]byte(strID))
+		ids[i] = pipelineID
 	}
+
+	return ids
 }
 
 // WithPipelines returns a new InstanceID updated to include the given
 // pipelineIDs.
 func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
-		componentID: id.componentID,
-		kind:        id.kind,
+		ComponentID: id.ComponentID,
+		Kind:        id.Kind,
 		pipelineIDs: id.pipelineIDs,
 	}
 	instanceID.addPipelines(pipelineIDs)
@@ -80,11 +60,14 @@ func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
 
 func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
 	delim := string(pipelineDelim)
-	strIDs := strings.Split(id.pipelineIDs, delim)
+	var strIDs []string
+	if id.pipelineIDs != "" {
+		strIDs = strings.Split(id.pipelineIDs, delim)
+	}
 	for _, pID := range pipelineIDs {
 		strIDs = append(strIDs, pID.String())
 	}
 	sort.Strings(strIDs)
 	strIDs = slices.Compact(strIDs)
-	id.pipelineIDs = strings.Join(strIDs, delim) + delim
+	id.pipelineIDs = strings.Join(strIDs, delim)
 }
