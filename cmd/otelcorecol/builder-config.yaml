@@ -73,6 +73,7 @@ replaces:
   - go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
   - go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
+  - go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
   - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../../exporter/exporterhelper/xexporterhelper
   - go.opentelemetry.io/collector/exporter/nopexporter => ../../exporter/nopexporter
   - go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter

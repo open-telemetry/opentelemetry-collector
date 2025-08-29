@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/prometheus/common v0.65.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector v0.133.0
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componentstatus v0.133.0
@@ -29,6 +29,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.133.0
 	go.opentelemetry.io/collector/exporter v0.133.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.133.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/exporter/exportertest v0.133.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.133.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.133.0
@@ -294,3 +295,5 @@ replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/d
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper

@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.39.0
 	go.opentelemetry.io/collector/component/componenttest v0.133.0
 	go.opentelemetry.io/collector/confmap v1.39.0
@@ -201,3 +201,5 @@ replace go.opentelemetry.io/collector => ../..
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
