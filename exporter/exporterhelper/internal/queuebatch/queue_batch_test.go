@@ -29,14 +29,16 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-func newFakeRequestSettings() Settings[request.Request] {
-	return Settings[request.Request]{
-		Signal:     pipeline.SignalMetrics,
-		ID:         component.NewID(exportertest.NopType),
-		Telemetry:  componenttest.NewNopTelemetrySettings(),
-		Encoding:   newFakeEncoding(&requesttest.FakeRequest{}),
-		ItemsSizer: request.NewItemsSizer(),
-		BytesSizer: requesttest.NewBytesSizer(),
+func newFakeRequestSettings() AllSettings[request.Request] {
+	return AllSettings[request.Request]{
+		Signal:    pipeline.SignalMetrics,
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Settings: Settings[request.Request]{
+			Encoding:   newFakeEncoding(&requesttest.FakeRequest{}),
+			ItemsSizer: request.NewItemsSizer(),
+			BytesSizer: requesttest.NewBytesSizer(),
+		},
 	}
 }
 
