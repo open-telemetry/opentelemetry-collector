@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/internal/fanoutconsumer
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer v1.40.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.134.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.134.0
