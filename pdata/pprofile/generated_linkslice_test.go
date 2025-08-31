@@ -19,8 +19,7 @@ import (
 func TestLinkSlice(t *testing.T) {
 	es := NewLinkSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLinkSlice(&[]*otlpprofiles.Link{}, &state)
+	es = newLinkSlice(&[]*otlpprofiles.Link{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLink()
@@ -28,15 +27,16 @@ func TestLinkSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLink((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLink()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestLinkSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLinkSlice(&[]*otlpprofiles.Link{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLinkSlice(&[]*otlpprofiles.Link{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestLinkSlice_CopyTo(t *testing.T) {
 	dest := NewLinkSlice()
 	src := generateTestLinkSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLinkSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLinkSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestLinkSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Link) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestLinkSlice_RemoveIfAll(t *testing.T) {

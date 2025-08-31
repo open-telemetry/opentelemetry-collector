@@ -31,6 +31,7 @@ func (t textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
 		buf.logAttributes("Resource attributes", rl.Resource().Attributes(), &t.outputConfig.Resource.AttributesOutputConfig)
+		buf.logEntityRefs(rl.Resource())
 		ills := rl.ScopeLogs()
 		if !t.outputConfig.Scope.Enabled {
 			continue

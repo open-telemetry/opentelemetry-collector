@@ -223,6 +223,69 @@ func TestReadUint64(t *testing.T) {
 	}
 }
 
+func TestReadFloat32(t *testing.T) {
+	tests := []struct {
+		name    string
+		jsonStr string
+		want    float32
+		wantErr bool
+	}{
+		{
+			name:    "number",
+			jsonStr: `3.14 `,
+			want:    3.14,
+		},
+		{
+			name:    "string",
+			jsonStr: `"3.14"`,
+			want:    3.14,
+		},
+		{
+			name:    "negative number",
+			jsonStr: `-3.14 `,
+			want:    -3.14,
+		},
+		{
+			name:    "negative string",
+			jsonStr: `"-3.14"`,
+			want:    -3.14,
+		},
+		{
+			name:    "wrong string",
+			jsonStr: `"3.f14"`,
+			wantErr: true,
+		},
+		{
+			name:    "wrong type",
+			jsonStr: `true`,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadFloat32()
+			if tt.wantErr {
+				require.Error(t, iter.Error())
+				return
+			}
+			require.NoError(t, iter.Error())
+			assert.InDelta(t, tt.want, val, 0.01)
+		})
+	}
+}
+
+func TestReadFloat32MaxValue(t *testing.T) {
+	iter := BorrowIterator([]byte(`{"value": 3.4028234663852886e+38}`))
+	defer ReturnIterator(iter)
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
+		assert.Equal(t, "value", f)
+		assert.InDelta(t, math.MaxFloat32, iter.ReadFloat64(), 0.01)
+	}
+	require.NoError(t, iter.Error())
+}
+
 func TestReadFloat64(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -294,11 +357,10 @@ func TestReadFloat64(t *testing.T) {
 func TestReadFloat64MaxValue(t *testing.T) {
 	iter := BorrowIterator([]byte(`{"value": 1.7976931348623157e+308}`))
 	defer ReturnIterator(iter)
-	iter.ReadObjectCB(func(iter *Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		assert.Equal(t, "value", f)
 		assert.InDelta(t, math.MaxFloat64, iter.ReadFloat64(), 0.01)
-		return true
-	})
+	}
 	require.NoError(t, iter.Error())
 }
 
@@ -363,4 +425,14 @@ func TestReadEnumValue(t *testing.T) {
 			assert.Equal(t, tt.want, val)
 		})
 	}
+}
+
+func TestReadBytes(t *testing.T) {
+	iter := BorrowIterator([]byte(`{"value": "dGVzdA=="}`))
+	defer ReturnIterator(iter)
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
+		assert.Equal(t, "value", f)
+		assert.Equal(t, "test", string(iter.ReadBytes()))
+	}
+	require.NoError(t, iter.Error())
 }

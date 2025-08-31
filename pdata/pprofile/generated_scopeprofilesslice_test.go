@@ -19,8 +19,7 @@ import (
 func TestScopeProfilesSlice(t *testing.T) {
 	es := NewScopeProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, &state)
+	es = newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeProfiles()
@@ -28,15 +27,16 @@ func TestScopeProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestScopeProfiles((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigScopeProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestScopeProfilesSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewScopeProfilesSlice()
 	src := generateTestScopeProfilesSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestScopeProfilesSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ScopeProfiles) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestScopeProfilesSlice_RemoveIfAll(t *testing.T) {

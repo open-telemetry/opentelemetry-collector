@@ -81,6 +81,11 @@ func TestLogsText(t *testing.T) {
 			}(),
 			out: "embedded_maps.out",
 		},
+		{
+			name: "logs_with_entity_refs",
+			in:   generateLogsWithEntityRefs(),
+			out:  "logs_with_entity_refs.out",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -305,4 +310,22 @@ func generateBasicLogs() plog.Logs {
 	l.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
 	l.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 	return ls
+}
+
+func generateLogsWithEntityRefs() plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+
+	setupResourceWithEntityRefs(rl.Resource())
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("test-scope")
+	lr := sl.LogRecords().AppendEmpty()
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
+	lr.SetSeverityNumber(plog.SeverityNumberInfo)
+	lr.SetSeverityText("Info")
+	lr.Body().SetStr("This is a test log message")
+	lr.Attributes().PutStr("test.attribute", "test-value")
+
+	return ld
 }

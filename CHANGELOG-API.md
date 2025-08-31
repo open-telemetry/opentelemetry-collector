@@ -7,6 +7,57 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Split exporterhelper into a separate module (#12985)
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Set `tcp` as the default transport type (#13657)
+  gRPC is generally used with HTTP/2, so this will simplify usage for most components.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecate Profiles.ProfilesDictionary in favor of Profiles.Dictionary. (#13644)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+
+### 🧰 Bug fixes 🧰
+
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+
+<!-- previous-version -->
+
+## v1.38.0/v0.132.0
+
+### 🛑 Breaking changes 🛑
+
+- `componenttest`: Remove `GetFactory` from the host returned by `NewNopHost` (#13577)
+  This method is no longer part of the `component.Host` interface.
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Provide an interface `queue_batch.Setting.MergeCtx` so users can control how context values are preserved or combined (#13320)
+  By supplying a custom mergeCtx function, users can control how context values are preserved or combined.
+  The default behavior is to preserve no context values.
+  
+- `pdata`: Generate Logs/Traces/Metrics/Profiles and p[log|trace|metric|profile]ExportResponse with pdatagen. (#13597)
+  This change brings consistency on how these structs are written and remove JSON marshaling/unmarshaling hand written logic.
+- `pdata`: Avoid unnecessary buffer copy when JSON marshal fails. (#13598)
+- `pipeline`: Mark module as stable (#12831)
+
+<!-- previous-version -->
+
 ## v1.37.0/v0.131.0
 
 ### 🛑 Breaking changes 🛑

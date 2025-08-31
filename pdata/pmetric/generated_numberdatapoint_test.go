@@ -24,9 +24,10 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestNumberDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
@@ -75,9 +77,10 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms.SetDoubleValue(float64(3.1415926))
 	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
 	assert.Equal(t, NumberDataPointValueTypeDouble, ms.ValueType())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetDoubleValue(float64(3.1415926))
+		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetDoubleValue(float64(3.1415926))
 	})
 }
 
@@ -87,8 +90,9 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms.SetIntValue(int64(13))
 	assert.Equal(t, int64(13), ms.IntValue())
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetIntValue(int64(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetIntValue(int64(13)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -107,7 +111,6 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := NewNumberDataPoint()
-	internal.FillOrigTestNumberDataPoint(ms.orig)
+	ms := newNumberDataPoint(internal.GenTestOrigNumberDataPoint(), internal.NewState())
 	return ms
 }

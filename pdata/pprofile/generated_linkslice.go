@@ -34,8 +34,7 @@ func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
 	orig := []*otlpprofiles.Link(nil)
-	state := internal.StateMutable
-	return newLinkSlice(&orig, &state)
+	return newLinkSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Link{})
+	*es.orig = append(*es.orig, internal.NewOrigLink())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,7 +128,9 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigLink((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -147,6 +149,9 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LinkSlice) CopyTo(dest LinkSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigLinkSlice(*dest.orig, *es.orig)
 }
 

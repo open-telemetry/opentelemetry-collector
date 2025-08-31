@@ -19,7 +19,7 @@ type textProfilesMarshaler struct{}
 // MarshalProfiles pprofile.Profiles to OTLP text.
 func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, error) {
 	buf := dataBuffer{}
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 	rps := pd.ResourceProfiles()
 
 	buf.logProfileMappings(dic.MappingTable())
@@ -42,6 +42,7 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 		rp := rps.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rp.SchemaUrl())
 		buf.logAttributes("Resource attributes", rp.Resource().Attributes(), nil)
+		buf.logEntityRefs(rp.Resource())
 		ilps := rp.ScopeProfiles()
 		for j := 0; j < ilps.Len(); j++ {
 			buf.logEntry("ScopeProfiles #%d", j)

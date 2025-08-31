@@ -34,6 +34,7 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 		if !t.outputConfig.Scope.Enabled {
 			continue
 		}
+		buf.logEntityRefs(rm.Resource())
 		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("ScopeMetrics #%d", j)

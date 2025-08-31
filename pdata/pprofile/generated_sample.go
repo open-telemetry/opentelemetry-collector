@@ -33,8 +33,7 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	state := internal.StateMutable
-	return newSample(&otlpprofiles.Sample{}, &state)
+	return newSample(internal.NewOrigSample(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +45,8 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Sample{}
+	internal.DeleteOrigSample(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // LocationsStartIndex returns the locationsstartindex associated with this Sample.
@@ -88,7 +87,7 @@ func (ms Sample) LinkIndex() int32 {
 }
 
 // HasLinkIndex returns true if the Sample contains a
-// LinkIndex value, false otherwise.
+// LinkIndex value otherwise.
 func (ms Sample) HasLinkIndex() bool {
 	return ms.orig.LinkIndex_ != nil
 }

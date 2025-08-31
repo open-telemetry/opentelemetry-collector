@@ -51,7 +51,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 .PHONY: test
 test: $(GOTESTSUM)
@@ -77,7 +77,7 @@ fmt: common/gofmt common/goimports common/gofumpt
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.23.0
+	$(GOCMD) mod tidy -compat=1.24.0
 
 .PHONY: lint
 lint: $(LINT)

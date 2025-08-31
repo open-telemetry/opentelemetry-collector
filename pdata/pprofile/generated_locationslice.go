@@ -34,8 +34,7 @@ func newLocationSlice(orig *[]*otlpprofiles.Location, state *internal.State) Loc
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
 	orig := []*otlpprofiles.Location(nil)
-	state := internal.StateMutable
-	return newLocationSlice(&orig, &state)
+	return newLocationSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
@@ -100,7 +99,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Location{})
+	*es.orig = append(*es.orig, internal.NewOrigLocation())
 	return es.At(es.Len() - 1)
 }
 
@@ -129,7 +128,9 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigLocation((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -147,6 +149,9 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
 }
 

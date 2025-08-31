@@ -23,9 +23,10 @@ func TestResource_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResource(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResource(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResource(&otlpresource.Resource{}, &sharedState)) })
-	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResource(internal.NewOrigResource(), sharedState)) })
+	assert.Panics(t, func() { newResource(internal.NewOrigResource(), sharedState).MoveTo(dest) })
 }
 
 func TestResource_CopyTo(t *testing.T) {
@@ -36,8 +37,9 @@ func TestResource_CopyTo(t *testing.T) {
 	orig = generateTestResource()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResource(&otlpresource.Resource{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResource(internal.NewOrigResource(), sharedState)) })
 }
 
 func TestResource_Attributes(t *testing.T) {
@@ -52,10 +54,12 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(13))
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestResource() Resource {
-	return Resource(internal.GenerateTestResource())
+	ms := newResource(internal.GenTestOrigResource(), internal.NewState())
+	return ms
 }

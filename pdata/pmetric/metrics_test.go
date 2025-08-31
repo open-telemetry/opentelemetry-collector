@@ -7,11 +7,8 @@ import (
 	"testing"
 	"time"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goproto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
@@ -25,39 +22,6 @@ const (
 	startTime = uint64(12578940000000012345)
 	endTime   = uint64(12578940000000054321)
 )
-
-func TestResourceMetricsWireCompatibility(t *testing.T) {
-	// This test verifies that OTLP ProtoBufs generated using goproto lib in
-	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
-	// this repository are wire compatible.
-
-	// Generate ResourceMetrics as pdata struct.
-	md := generateTestMetrics()
-
-	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(md.getOrig())
-	require.NoError(t, err)
-	assert.NotNil(t, wire1)
-
-	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoMessage emptypb.Empty
-	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	require.NoError(t, err)
-
-	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoMessage)
-	require.NoError(t, err)
-	assert.NotNil(t, wire2)
-
-	// Unmarshal from the wire into gogoproto's representation.
-	var gogoprotoRM otlpcollectormetrics.ExportMetricsServiceRequest
-	err = gogoproto.Unmarshal(wire2, &gogoprotoRM)
-	require.NoError(t, err)
-
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.Equal(t, md.getOrig(), &gogoprotoRM))
-}
 
 func TestMetricCount(t *testing.T) {
 	md := NewMetrics()

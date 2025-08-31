@@ -31,6 +31,7 @@ func (t textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 		rs := rss.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rs.SchemaUrl())
 		buf.logAttributes("Resource attributes", rs.Resource().Attributes(), &t.outputConfig.Resource.AttributesOutputConfig)
+		buf.logEntityRefs(rs.Resource())
 		ilss := rs.ScopeSpans()
 		if !t.outputConfig.Scope.Enabled {
 			continue

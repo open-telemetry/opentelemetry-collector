@@ -18,24 +18,24 @@ import (
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSlice(&[]otlpcommon.AnyValue{}, &state)
+	es = newSlice(&[]otlpcommon.AnyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueEmpty()
-	testVal := Value(internal.GenerateTestValue())
+	testVal := Value(internal.NewValue(internal.GenTestOrigAnyValue(), internal.NewState()))
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestAnyValue(&(*es.getOrig())[i])
+		(*es.getOrig())[i] = *internal.GenTestOrigAnyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSlice(&[]otlpcommon.AnyValue{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSlice(&[]otlpcommon.AnyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -50,6 +50,8 @@ func TestSlice_CopyTo(t *testing.T) {
 	dest := NewSlice()
 	src := generateTestSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSlice(), dest)
 }
 
@@ -116,9 +118,9 @@ func TestSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Value) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestSlice_RemoveIfAll(t *testing.T) {

@@ -19,8 +19,7 @@ import (
 func TestResourceLogsSlice(t *testing.T) {
 	es := NewResourceLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, &state)
+	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceLogs()
@@ -28,15 +27,16 @@ func TestResourceLogsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestResourceLogs((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigResourceLogs()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceLogsSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,6 +51,8 @@ func TestResourceLogsSlice_CopyTo(t *testing.T) {
 	dest := NewResourceLogsSlice()
 	src := generateTestResourceLogsSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestResourceLogsSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestResourceLogsSlice(), dest)
 }
 
@@ -117,9 +119,9 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ResourceLogs) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
 }
 
 func TestResourceLogsSlice_RemoveIfAll(t *testing.T) {
