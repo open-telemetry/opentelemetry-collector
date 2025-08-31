@@ -274,6 +274,62 @@ func TestLogsWithOutputConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "marshal_logs_resource_disabled_but_scope_record_enabled",
+			in:   generateBasicLogs(),
+			out:  "log_resource_disabled_scope_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_scope_disabled_but_record_enabled",
+			in:   generateBasicLogs(),
+			out:  "log_scope_disabled_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

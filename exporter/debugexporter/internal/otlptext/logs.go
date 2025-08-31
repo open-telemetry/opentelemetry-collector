@@ -23,24 +23,23 @@ type textLogsMarshaler struct {
 func (t textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := dataBuffer{}
 	rls := ld.ResourceLogs()
-	if !t.outputConfig.Resource.Enabled {
-		return buf.buf.Bytes(), nil
-	}
 	for i := 0; i < rls.Len(); i++ {
-		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
-		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
-		buf.logAttributes("Resource attributes", rl.Resource().Attributes(), &t.outputConfig.Resource.AttributesOutputConfig)
-		buf.logEntityRefs(rl.Resource())
-		ills := rl.ScopeLogs()
-		if !t.outputConfig.Scope.Enabled {
-			continue
+		if t.outputConfig.Resource.Enabled {
+			buf.logEntry("ResourceLog #%d", i)
+			buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
+			buf.logAttributes("Resource attributes", rl.Resource().Attributes(), &t.outputConfig.Resource.AttributesOutputConfig)
+			buf.logEntityRefs(rl.Resource())
 		}
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			buf.logEntry("ScopeLogs #%d", j)
 			ils := ills.At(j)
-			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
-			buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+
+			if t.outputConfig.Scope.Enabled {
+				buf.logEntry("ScopeLogs #%d", j)
+				buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
+				buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+			}
 
 			logs := ils.LogRecords()
 			if !t.outputConfig.Record.Enabled {

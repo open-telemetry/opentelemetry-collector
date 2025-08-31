@@ -236,6 +236,62 @@ func TestMetricsWithOutputConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "marshal_metrics_resource_disabled_but_scope_record_enabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_resource_disabled_scope_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_scope_disabled_but_record_enabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_scope_disabled_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
