@@ -38,6 +38,7 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
+- `output` (optional): controls which parts of the telemetry data are included in the output and their attribute filtering. See [Output Configuration](#output-configuration) below for more details.
 
 Example configuration:
 
@@ -47,6 +48,117 @@ exporters:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
+```
+
+## Output Configuration
+
+The `output` configuration allows you to control which parts of the telemetry data are included in the output and filter attributes at different levels. This is particularly useful when using `verbosity: detailed` to reduce noise and focus on specific data.
+
+### Structure
+
+The `output` configuration has three main sections:
+
+- `resource`: Controls resource-level output and attribute filtering
+- `scope`: Controls instrumentation scope-level output and attribute filtering  
+- `record`: Controls individual record-level output and attribute filtering (spans for traces, log records for logs, metrics for metrics)
+
+Each section can be independently enabled or disabled, and has its own attribute filtering configuration.
+
+### Configuration Options
+
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    output:
+      resource:
+        enabled: true  # default: true
+        attributes:
+          enabled: true  # default: true
+          include: []    # optional: list of attribute keys to include
+          exclude: []    # optional: list of attribute keys to exclude
+      scope:
+        enabled: true  # default: true
+        attributes:
+          enabled: true  # default: true
+          include: []    # optional: list of attribute keys to include
+          exclude: []    # optional: list of attribute keys to exclude
+      record:
+        enabled: true  # default: true
+        attributes:
+          enabled: true  # default: true
+          include: []    # optional: list of attribute keys to include
+          exclude: []    # optional: list of attribute keys to exclude
+```
+
+### Behavior
+
+- **Independent Control**: Disabling `resource` does not disable `scope` or `record` output. Disabling `scope` does not disable `record` output. Each level can be controlled independently.
+- **Attribute Filtering**: You can use either `include` or `exclude` for attribute filtering, but not both simultaneously for the same level.
+  - `include`: Only attributes with keys listed will be shown
+  - `exclude`: All attributes except those with keys listed will be shown
+- **Default Behavior**: When no `output` configuration is provided, all levels are enabled with all attributes shown.
+
+### Examples
+
+#### Hide Resource Information
+
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    output:
+      resource:
+        enabled: false
+      # scope and record will still be shown
+```
+
+#### Show Only Specific Attributes
+
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    output:
+      resource:
+        attributes:
+          include: ["service.name", "service.version"]
+      scope:
+        attributes:
+          include: ["library.name"]
+      record:
+        attributes:
+          include: ["http.method", "http.status_code"]
+```
+
+#### Exclude Noisy Attributes
+
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    output:
+      record:
+        attributes:
+          exclude: ["internal.debug.trace", "verbose.context.data"]
+```
+
+#### Disable All Attributes
+
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    output:
+      resource:
+        attributes:
+          enabled: false
+      scope:
+        attributes:
+          enabled: false
+      record:
+        attributes:
+          enabled: false
 ```
 
 ## Verbosity levels
