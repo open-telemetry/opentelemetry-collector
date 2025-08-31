@@ -39,7 +39,7 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 			if t.outputConfig.Scope.Enabled {
 				buf.logEntry("ScopeMetrics #%d", j)
 				buf.logEntry("ScopeMetrics SchemaURL: %s", ilm.SchemaUrl())
-				buf.logInstrumentationScope(ilm.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+				buf.logInstrumentationScope(ilm.Scope(), &t.outputConfig.Scope.Attributes)
 			}
 			if !t.outputConfig.Record.Enabled {
 				continue
@@ -49,7 +49,7 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 				buf.logEntry("Metric #%d", k)
 				metric := metrics.At(k)
 				buf.logMetricDescriptor(metric)
-				buf.logMetricDataPoints(metric, &t.outputConfig.Record.AttributesOutputConfig)
+				buf.logMetricDataPoints(metric, &t.outputConfig.Record.Attributes)
 			}
 		}
 	}

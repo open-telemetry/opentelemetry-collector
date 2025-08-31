@@ -38,7 +38,7 @@ func (t textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 			if t.outputConfig.Scope.Enabled {
 				buf.logEntry("ScopeLogs #%d", j)
 				buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
-				buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+				buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.Attributes)
 			}
 
 			logs := ils.LogRecords()
@@ -56,7 +56,7 @@ func (t textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 					buf.logEntry("EventName: %s", lr.EventName())
 				}
 				buf.logEntry("Body: %s", valueToString(lr.Body()))
-				buf.logAttributes("Attributes", lr.Attributes(), &t.outputConfig.Record.AttributesOutputConfig)
+				buf.logAttributes("Attributes", lr.Attributes(), &t.outputConfig.Record.Attributes)
 				buf.logEntry("Trace ID: %s", lr.TraceID())
 				buf.logEntry("Span ID: %s", lr.SpanID())
 				buf.logEntry("Flags: %d", lr.Flags())

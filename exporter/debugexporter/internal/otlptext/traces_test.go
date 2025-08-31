@@ -65,21 +65,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
@@ -93,21 +93,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Exclude: []string{"attribute.remove"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Exclude: []string{"attribute.remove"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Exclude: []string{"attribute.remove"},
 					},
@@ -121,21 +121,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
@@ -149,21 +149,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
@@ -177,21 +177,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
@@ -205,21 +205,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: false,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: false,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: false,
 						Include: []string{"attribute.keep"},
 					},
@@ -233,21 +233,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
@@ -261,21 +261,21 @@ func TestTracesWithOutputConfig(t *testing.T) {
 			config: internal.OutputConfig{
 				Scope: internal.ScopeOutputConfig{
 					Enabled: false,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Record: internal.RecordOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					Attributes: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},
 				},
 				Resource: internal.ResourceOutputConfig{
 					Enabled: true,
-					AttributesOutputConfig: internal.AttributesOutputConfig{
+					AttributesOutputConfig: internal.Attributes{
 						Enabled: true,
 						Include: []string{"attribute.keep"},
 					},

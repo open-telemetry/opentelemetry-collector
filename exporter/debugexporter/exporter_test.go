@@ -112,7 +112,7 @@ func TestResourceAttributesFilter(t *testing.T) {
 		configtelemetry.LevelDetailed,
 		internal.OutputConfig{
 			Resource: internal.ResourceOutputConfig{
-				AttributesOutputConfig: internal.AttributesOutputConfig{
+				AttributesOutputConfig: internal.Attributes{
 					Include: []string{"attribute.b", "attribute.c"},
 					Enabled: true,
 				},
@@ -120,14 +120,14 @@ func TestResourceAttributesFilter(t *testing.T) {
 			},
 			Record: internal.RecordOutputConfig{
 				Enabled: true,
-				AttributesOutputConfig: internal.AttributesOutputConfig{
+				Attributes: internal.Attributes{
 					Include: []string{"attribute.b", "attribute.c"},
 					Enabled: true,
 				},
 			},
 			Scope: internal.ScopeOutputConfig{
 				Enabled: true,
-				AttributesOutputConfig: internal.AttributesOutputConfig{
+				Attributes: internal.Attributes{
 					Include: []string{"attribute.b", "attribute.c"},
 					Enabled: true,
 				},
@@ -136,7 +136,7 @@ func TestResourceAttributesFilter(t *testing.T) {
 	exporterWithoutAttributesConfig := newDebugExporter(observedLogger, configtelemetry.LevelDetailed, internal.OutputConfig{
 		Resource: internal.ResourceOutputConfig{
 			Enabled: true,
-			AttributesOutputConfig: internal.AttributesOutputConfig{
+			AttributesOutputConfig: internal.Attributes{
 				Enabled: true,
 			},
 		},

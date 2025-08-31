@@ -39,7 +39,7 @@ func (t textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 			if t.outputConfig.Scope.Enabled {
 				buf.logEntry("ScopeSpans #%d", j)
 				buf.logEntry("ScopeSpans SchemaURL: %s", ils.SchemaUrl())
-				buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+				buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.Attributes)
 			}
 
 			spans := ils.Spans()
@@ -63,8 +63,8 @@ func (t textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("Status code", span.Status().Code().String())
 				buf.logAttr("Status message", span.Status().Message())
 
-				buf.logAttributes("Attributes", span.Attributes(), &t.outputConfig.Record.AttributesOutputConfig)
-				buf.logEvents("Events", span.Events(), &t.outputConfig.Record.AttributesOutputConfig)
+				buf.logAttributes("Attributes", span.Attributes(), &t.outputConfig.Record.Attributes)
+				buf.logEvents("Events", span.Events(), &t.outputConfig.Record.Attributes)
 				buf.logLinks("Links", span.Links())
 			}
 		}

@@ -129,7 +129,7 @@ func TestValidate(t *testing.T) {
 				Output: internal.OutputConfig{
 					Scope: internal.ScopeOutputConfig{
 						Enabled: true,
-						AttributesOutputConfig: internal.AttributesOutputConfig{
+						Attributes: internal.Attributes{
 							Include: []string{"service.name"},
 							Exclude: []string{"service.version"},
 							Enabled: true,
@@ -145,7 +145,7 @@ func TestValidate(t *testing.T) {
 				Output: internal.OutputConfig{
 					Resource: internal.ResourceOutputConfig{
 						Enabled: true,
-						AttributesOutputConfig: internal.AttributesOutputConfig{
+						AttributesOutputConfig: internal.Attributes{
 							Include: []string{"service.name"},
 							Exclude: []string{"service.version"},
 							Enabled: true,
@@ -161,7 +161,7 @@ func TestValidate(t *testing.T) {
 				Output: internal.OutputConfig{
 					Record: internal.RecordOutputConfig{
 						Enabled: true,
-						AttributesOutputConfig: internal.AttributesOutputConfig{
+						Attributes: internal.Attributes{
 							Include: []string{"service.name"},
 							Exclude: []string{"service.version"},
 							Enabled: true,
