@@ -553,7 +553,7 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 
 	// Shutdown the service
 	err = srv.Shutdown(context.Background())
-	assert.ErrorContains(t, err, `failed to shutdown telemetry`)
+	assert.ErrorContains(t, err, `failed to shutdown logger provider`)
 }
 
 func TestExtensionNotificationFailure(t *testing.T) {

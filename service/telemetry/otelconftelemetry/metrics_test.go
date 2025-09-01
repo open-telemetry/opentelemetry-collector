@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/promtest"
@@ -112,8 +115,11 @@ func TestTelemetryInit(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
-			mp := providers.MeterProvider()
+			mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, mp.Shutdown(t.Context()))
+			}()
 
 			createTestMetrics(t, mp)
 
@@ -198,14 +204,24 @@ func TestTelemetryMetricsDisabled(t *testing.T) {
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
 
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	settings := telemetry.MeterSettings{}
+	settings.Logger = zap.New(core)
+
 	factory := NewFactory()
-	_, err := factory.CreateProviders(context.Background(), telemetry.Settings{}, cfg)
-	require.EqualError(t, err, "failed to create SDK: no valid metric exporter")
+	_, err := factory.CreateMeterProvider(context.Background(), settings, cfg)
+	require.EqualError(t, err, "no valid metric exporter")
+	assert.Zero(t, observedLogs.Len())
 
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	_, _ = newTelemetryProviders(t, telemetry.Settings{}, cfg)
+	mp, err := createMeterProvider(t.Context(), settings, cfg)
+	require.NoError(t, err)
+	assert.NoError(t, mp.Shutdown(t.Context()))
+
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "Internal metrics telemetry disabled", observedLogs.All()[0].Message)
 }
 
 // Test that the MeterProvider implements the 'Enabled' functionality.
@@ -217,8 +233,11 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
-	meterProvider := providers.MeterProvider()
+	meterProvider, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, meterProvider.Shutdown(t.Context()))
+	}()
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
 
