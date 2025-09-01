@@ -4,15 +4,13 @@
 package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-)
-
-var (
-	jsonMarshaler   = &pprofile.JSONMarshaler{}
-	jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
 )
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
@@ -66,17 +64,21 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
-	return jsonMarshaler.MarshalProfiles(pprofile.Profiles(internal.NewProfiles(ms.orig, nil)))
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	internal.MarshalJSONOrigExportProfilesServiceRequest(ms.orig, dest)
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
-	td, err := jsonUnmarshaler.UnmarshalProfiles(data)
-	if err != nil {
-		return err
-	}
-	*ms.orig = *internal.GetOrigProfiles(internal.Profiles(td))
-	return nil
+	iter := json.BorrowIterator(data)
+	defer json.ReturnIterator(iter)
+	internal.UnmarshalJSONOrigExportProfilesServiceRequest(ms.orig, iter)
+	return iter.Error()
 }
 
 func (ms ExportRequest) Profiles() pprofile.Profiles {

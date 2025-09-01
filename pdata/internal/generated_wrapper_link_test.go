@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigLink(t *testing.T) {
-	src := NewOrigLink()
-	dest := NewOrigLink()
-	CopyOrigLink(dest, src)
-	assert.Equal(t, NewOrigLink(), dest)
-	*src = *GenTestOrigLink()
-	CopyOrigLink(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesLink() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigLink()
+				CopyOrigLink(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigLink(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigLinkUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 	for name, src := range genTestEncodingValuesLink() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigLinkUnknown(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 	for name, src := range genTestEncodingValuesLink() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

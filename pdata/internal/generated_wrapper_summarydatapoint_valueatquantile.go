@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	},
-}
+var (
+	protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		},
+	}
+)
 
 func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	if !UseProtoPooling.IsEnabled() {
@@ -47,6 +49,10 @@ func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoi
 }
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }

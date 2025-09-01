@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolStatus = sync.Pool{
-	New: func() any {
-		return &otlptrace.Status{}
-	},
-}
+var (
+	protoPoolStatus = sync.Pool{
+		New: func() any {
+			return &otlptrace.Status{}
+		},
+	}
+)
 
 func NewOrigStatus() *otlptrace.Status {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
 }
 
 func CopyOrigStatus(dest, src *otlptrace.Status) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Message = src.Message
 	dest.Code = src.Code
 }

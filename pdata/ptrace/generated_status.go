@@ -45,8 +45,8 @@ func (ms Status) MoveTo(dest Status) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Status{}
+	internal.DeleteOrigStatus(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Message returns the message associated with this Status.

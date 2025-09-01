@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSpan_Event = sync.Pool{
-	New: func() any {
-		return &otlptrace.Span_Event{}
-	},
-}
+var (
+	protoPoolSpan_Event = sync.Pool{
+		New: func() any {
+			return &otlptrace.Span_Event{}
+		},
+	}
+)
 
 func NewOrigSpan_Event() *otlptrace.Span_Event {
 	if !UseProtoPooling.IsEnabled() {
@@ -51,6 +53,10 @@ func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
 }
 
 func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Name = src.Name
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)

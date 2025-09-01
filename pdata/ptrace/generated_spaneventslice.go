@@ -149,6 +149,9 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigSpan_EventSlice(*dest.orig, *es.orig)
 }
 

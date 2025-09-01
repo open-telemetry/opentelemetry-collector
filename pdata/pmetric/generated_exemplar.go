@@ -49,8 +49,8 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Exemplar{}
+	internal.DeleteOrigExemplar(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
@@ -89,9 +89,14 @@ func (ms Exemplar) DoubleValue() float64 {
 // SetDoubleValue replaces the double associated with this Exemplar.
 func (ms Exemplar) SetDoubleValue(v float64) {
 	ms.state.AssertMutable()
-	ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
-		AsDouble: v,
+	var ov *otlpmetrics.Exemplar_AsDouble
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &otlpmetrics.Exemplar_AsDouble{}
+	} else {
+		ov = internal.ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
 	}
+	ov.AsDouble = v
+	ms.orig.Value = ov
 }
 
 // IntValue returns the int associated with this Exemplar.
@@ -102,9 +107,14 @@ func (ms Exemplar) IntValue() int64 {
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
-		AsInt: v,
+	var ov *otlpmetrics.Exemplar_AsInt
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &otlpmetrics.Exemplar_AsInt{}
+	} else {
+		ov = internal.ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
 	}
+	ov.AsInt = v
+	ms.orig.Value = ov
 }
 
 // SpanID returns the spanid associated with this Exemplar.

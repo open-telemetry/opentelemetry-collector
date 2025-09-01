@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolHistogram = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Histogram{}
-	},
-}
+var (
+	protoPoolHistogram = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Histogram{}
+		},
+	}
+)
 
 func NewOrigHistogram() *otlpmetrics.Histogram {
 	if !UseProtoPooling.IsEnabled() {
@@ -49,6 +51,10 @@ func DeleteOrigHistogram(orig *otlpmetrics.Histogram, nullable bool) {
 }
 
 func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 }

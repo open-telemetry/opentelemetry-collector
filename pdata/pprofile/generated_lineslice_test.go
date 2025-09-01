@@ -52,6 +52,8 @@ func TestLineSlice_CopyTo(t *testing.T) {
 	src := generateTestLineSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLineSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestLineSlice(), dest)
 }
 
 func TestLineSlice_EnsureCapacity(t *testing.T) {

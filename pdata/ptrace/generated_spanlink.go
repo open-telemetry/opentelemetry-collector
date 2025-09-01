@@ -48,8 +48,8 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Link{}
+	internal.DeleteOrigSpan_Link(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TraceID returns the traceid associated with this SpanLink.

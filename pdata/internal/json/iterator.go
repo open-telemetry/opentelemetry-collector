@@ -146,6 +146,9 @@ func (iter *Iterator) ReadString() string {
 // ReadBytes read base64 encoded bytes from iterator.
 func (iter *Iterator) ReadBytes() []byte {
 	buf := iter.ReadStringAsSlice()
+	if len(buf) == 0 {
+		return nil
+	}
 	orig := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 	n, err := base64.StdEncoding.Decode(orig, buf)
 	if err != nil {

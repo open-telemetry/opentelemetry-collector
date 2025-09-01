@@ -13,6 +13,7 @@ type baseStruct interface {
 	getOriginName() string
 	getOriginFullName() string
 	getHasWrapper() bool
+	getHasOnlyOrig() bool
 	generate(packageInfo *PackageInfo) []byte
 	generateTests(packageInfo *PackageInfo) []byte
 	generateInternal(packageInfo *PackageInfo) []byte
@@ -28,6 +29,7 @@ type messageStruct struct {
 	originFullName string
 	fields         []Field
 	hasWrapper     bool
+	hasOnlyOrig    bool
 }
 
 func (ms *messageStruct) getName() string {
@@ -75,7 +77,14 @@ func (ms *messageStruct) getHasWrapper() bool {
 	if ms.hasWrapper {
 		return true
 	}
+	if ms.hasOnlyOrig {
+		return false
+	}
 	return usedByOtherDataTypes(ms.packageName)
+}
+
+func (ms *messageStruct) getHasOnlyOrig() bool {
+	return ms.hasOnlyOrig
 }
 
 func (ms *messageStruct) getOriginName() string {

@@ -44,8 +44,8 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectortrace.ExportTraceServiceResponse{}
+	internal.DeleteOrigExportTraceServiceResponse(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // PartialSuccess returns the partialsuccess associated with this ExportResponse.

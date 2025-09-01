@@ -52,6 +52,8 @@ func TestValueTypeSlice_CopyTo(t *testing.T) {
 	src := generateTestValueTypeSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestValueTypeSlice(), dest)
 }
 
 func TestValueTypeSlice_EnsureCapacity(t *testing.T) {

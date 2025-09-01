@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,23 @@ import (
 )
 
 func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := NewOrigSummaryDataPoint_ValueAtQuantile()
-	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
-	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
-	*src = *GenTestOrigSummaryDataPoint_ValueAtQuantile()
-	CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSummaryDataPoint_ValueAtQuantile()
+				CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSummaryDataPoint_ValueAtQuantile(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
@@ -41,7 +52,7 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *t
 func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {
@@ -85,7 +96,7 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		for _, pooling := range []bool{true, false} {
-			t.Run(name, func(t *testing.T) {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
 				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
 				defer func() {

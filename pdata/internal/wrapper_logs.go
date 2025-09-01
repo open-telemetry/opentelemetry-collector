@@ -8,10 +8,6 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-func SetLogsState(ms Logs, state State) {
-	*ms.state = state
-}
-
 // LogsToProto internal helper to convert Logs to protobuf representation.
 func LogsToProto(l Logs) otlplogs.LogsData {
 	return otlplogs.LogsData{

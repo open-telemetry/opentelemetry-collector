@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSpan = sync.Pool{
-	New: func() any {
-		return &otlptrace.Span{}
-	},
-}
+var (
+	protoPoolSpan = sync.Pool{
+		New: func() any {
+			return &otlptrace.Span{}
+		},
+	}
+)
 
 func NewOrigSpan() *otlptrace.Span {
 	if !UseProtoPooling.IsEnabled() {
@@ -62,6 +64,10 @@ func DeleteOrigSpan(orig *otlptrace.Span, nullable bool) {
 }
 
 func CopyOrigSpan(dest, src *otlptrace.Span) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 	CopyOrigTraceState(&dest.TraceState, &src.TraceState)

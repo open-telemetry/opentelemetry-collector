@@ -45,8 +45,8 @@ func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ScopeSpans{}
+	internal.DeleteOrigScopeSpans(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeSpans.

@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolLogRecord = sync.Pool{
-	New: func() any {
-		return &otlplogs.LogRecord{}
-	},
-}
+var (
+	protoPoolLogRecord = sync.Pool{
+		New: func() any {
+			return &otlplogs.LogRecord{}
+		},
+	}
+)
 
 func NewOrigLogRecord() *otlplogs.LogRecord {
 	if !UseProtoPooling.IsEnabled() {
@@ -55,6 +57,10 @@ func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
 }
 
 func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
 	dest.SeverityNumber = src.SeverityNumber

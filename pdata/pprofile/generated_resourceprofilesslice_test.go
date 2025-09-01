@@ -52,6 +52,8 @@ func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	src := generateTestResourceProfilesSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 }
 
 func TestResourceProfilesSlice_EnsureCapacity(t *testing.T) {

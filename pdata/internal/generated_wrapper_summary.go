@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolSummary = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.Summary{}
-	},
-}
+var (
+	protoPoolSummary = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Summary{}
+		},
+	}
+)
 
 func NewOrigSummary() *otlpmetrics.Summary {
 	if !UseProtoPooling.IsEnabled() {
@@ -49,6 +51,10 @@ func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
 }
 
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 

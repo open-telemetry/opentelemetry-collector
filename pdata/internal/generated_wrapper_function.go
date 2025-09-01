@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolFunction = sync.Pool{
-	New: func() any {
-		return &otlpprofiles.Function{}
-	},
-}
+var (
+	protoPoolFunction = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Function{}
+		},
+	}
+)
 
 func NewOrigFunction() *otlpprofiles.Function {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigFunction(orig *otlpprofiles.Function, nullable bool) {
 }
 
 func CopyOrigFunction(dest, src *otlpprofiles.Function) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex
 	dest.FilenameStrindex = src.FilenameStrindex

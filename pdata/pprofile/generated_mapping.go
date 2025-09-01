@@ -45,8 +45,8 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Mapping{}
+	internal.DeleteOrigMapping(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MemoryStart returns the memorystart associated with this Mapping.

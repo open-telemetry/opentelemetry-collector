@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-var protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
-	New: func() any {
-		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	},
-}
+var (
+	protoPoolExponentialHistogramDataPoint_Buckets = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+		},
+	}
+)
 
 func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	if !UseProtoPooling.IsEnabled() {
@@ -45,6 +47,10 @@ func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Exponenti
 }
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Offset = src.Offset
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }
@@ -159,25 +165,34 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.E
 
 			orig.Offset = int32(uint32(num>>1) ^ uint32(int32((num&1)<<31)>>31))
 		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.BucketCounts = append(orig.BucketCounts, uint64(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)

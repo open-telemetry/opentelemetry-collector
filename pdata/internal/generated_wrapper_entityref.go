@@ -32,11 +32,13 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-var protoPoolEntityRef = sync.Pool{
-	New: func() any {
-		return &otlpcommon.EntityRef{}
-	},
-}
+var (
+	protoPoolEntityRef = sync.Pool{
+		New: func() any {
+			return &otlpcommon.EntityRef{}
+		},
+	}
+)
 
 func NewOrigEntityRef() *otlpcommon.EntityRef {
 	if !UseProtoPooling.IsEnabled() {
@@ -62,6 +64,10 @@ func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Type = src.Type
 	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)

@@ -44,8 +44,8 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ValueType{}
+	internal.DeleteOrigValueType(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TypeStrindex returns the typestrindex associated with this ValueType.
