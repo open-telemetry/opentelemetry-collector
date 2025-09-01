@@ -97,6 +97,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 			ItemsSizer:       be.queueBatchSettings.ItemsSizer,
 			BytesSizer:       be.queueBatchSettings.BytesSizer,
 			Partitioner:      be.queueBatchSettings.Partitioner,
+			MergeCtx:         be.queueBatchSettings.MergeCtx,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {

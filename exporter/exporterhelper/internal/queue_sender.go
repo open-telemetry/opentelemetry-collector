@@ -21,6 +21,7 @@ type QueueBatchSettings[T any] struct {
 	ItemsSizer       request.Sizer[T]
 	BytesSizer       request.Sizer[T]
 	Partitioner      queuebatch.Partitioner[T]
+	MergeCtx         func(context.Context, context.Context) context.Context
 }
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
