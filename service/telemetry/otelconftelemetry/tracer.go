@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -37,13 +36,12 @@ const (
 
 func createTracerProvider(
 	ctx context.Context,
-	set telemetry.Settings,
+	set telemetry.TracerSettings,
 	componentConfig component.Config,
-	logger *zap.Logger,
 ) (telemetry.TracerProvider, error) {
 	cfg := componentConfig.(*Config)
 	if cfg.Traces.Level == configtelemetry.LevelNone {
-		logger.Info("Internal trace telemetry disabled")
+		set.Logger.Info("Internal trace telemetry disabled")
 		return &noopNoContextTracerProvider{}, nil
 	}
 
@@ -53,7 +51,7 @@ func createTracerProvider(
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	res := newResource(set, cfg)
+	res := newResource(set.Settings, cfg)
 	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
 		TracerProvider: &cfg.Traces.TracerProvider,
 	})
