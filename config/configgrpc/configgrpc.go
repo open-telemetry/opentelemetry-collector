@@ -310,7 +310,16 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	conn, err := grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initiate connection to match the previous behavior of DialContext
+	// This ensures the connection is established eagerly rather than lazily
+	conn.Connect()
+
+	return conn, nil
 }
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
