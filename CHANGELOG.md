@@ -7,6 +7,25 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add custom grpc/encoding that replaces proto and calls into the custom marshal/unmarshal logic in pdata. (#13631)
+  This change should not affect other gRPC calls since it fallbacks to the default grpc/proto encoding if requests are not pdata/otlp requests.
+- `pdata`: Avoid copying the pcommon.Map when same origin (#13731)
+  This is a very large improvement if using OTTL with map functions since it will avoid a map copy.
+- `exporterhelper`: Respect `num_consumers` when batching and partitioning are enabled. (#13607)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Correctly parse OTLP payloads containing non-packed repeated primitive fields (#13727, #13730)
+  This bug prevented the Collector from ingesting most Histogram, ExponentialHistogram,
+  and Profile payloads.
+  
+
+<!-- previous-version -->
+
 ## v1.39.0/v0.133.0
 
 ### 🛑 Breaking changes 🛑

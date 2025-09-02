@@ -311,46 +311,64 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 
 			orig.LocationsLength = int32(num)
 		case 3:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.Value = append(orig.Value, int64(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field Value", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.Value = append(orig.Value, int64(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field Value", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
 		case 4:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
 
 		case 5:
@@ -371,25 +389,34 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 			ov.LinkIndex = int32(num)
 			orig.LinkIndex_ = ov
 		case 6:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
 			}
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
