@@ -179,6 +179,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 ## Release schedule
 
+The dates listed below indicate the start of the release process for core, but the full release process may take more than one day.
+Minor releases will not happen outside of the schedule, but bugfix releases may happen outside of the schedule as stated above.
+Changes to the dates in the schedule need approval from at least two different approvers.
+
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
 | 2025-09-08 | v0.135.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
