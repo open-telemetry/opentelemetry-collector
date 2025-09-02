@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -699,7 +700,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	})
 	reader := bufio.NewReader(resp.Body)
 
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(reader)
 	require.NoError(t, err)
 
