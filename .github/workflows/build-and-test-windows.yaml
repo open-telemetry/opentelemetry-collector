@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repo
@@ -42,13 +42,14 @@ jobs:
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Run Unit Tests
-        run: make gotest
+        run: |
+          make gotest
 
   windows-service-test:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repo
@@ -76,7 +77,7 @@ jobs:
 
       - name: Install otelcorecol as a service
         run: |
-          New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
+          New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_$(go env GOARCH) --config ${PWD}\examples\local\otel-config.yaml"
           eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
 
       - name: Test otelcorecol service
