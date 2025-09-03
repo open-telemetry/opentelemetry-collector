@@ -69,5 +69,5 @@ func resourceSC(rs ptrace.ResourceSpans) (count int) {
 	for k := 0; k < rs.ScopeSpans().Len(); k++ {
 		count += rs.ScopeSpans().At(k).Spans().Len()
 	}
-	return
+	return count
 }
