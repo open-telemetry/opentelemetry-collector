@@ -116,16 +116,14 @@ func generateProfilesWithEntityRefs() pprofile.Profiles {
 	profile := sp.Profiles().AppendEmpty()
 
 	sample := profile.Sample().AppendEmpty()
-	sample.SetLocationsStartIndex(0)
-	sample.SetLocationsLength(1)
-	sample.Value().FromRaw([]int64{100})
+	sample.Values().Append(100)
 
 	dic := pd.Dictionary()
 	dic.StringTable().Append("")
 	dic.StringTable().Append("cpu")
 	dic.StringTable().Append("nanoseconds")
 
-	sampleType := profile.SampleType().AppendEmpty()
+	sampleType := profile.SampleType()
 	sampleType.SetTypeStrindex(1)
 	sampleType.SetUnitStrindex(2)
 
