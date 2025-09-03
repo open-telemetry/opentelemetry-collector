@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Expose `MergeCtx` in `exporterhelper#QueueBatchSettings`
+note: Expose `MergeCtx` in exporterhelper's queue batch settings`
 
 # One or more tracking issues or pull requests related to the change
 issues: [13742]
