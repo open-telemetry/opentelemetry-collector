@@ -545,6 +545,17 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 			},
 		},
 	}}
+	cfg.Telemetry.Metrics.Level = configtelemetry.LevelDetailed
+	cfg.Telemetry.Metrics.Readers = []config.MetricReader{{
+		Periodic: &config.PeriodicMetricReader{
+			Exporter: config.PushMetricExporter{
+				OTLP: &config.OTLPMetric{
+					Protocol: ptr("http/protobuf"),
+					Endpoint: ptr("http://testing.invalid"),
+				},
+			},
+		},
+	}}
 
 	// Create and start a service
 	srv, err := New(context.Background(), newNopSettings(), cfg)
@@ -554,6 +565,7 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 	// Shutdown the service
 	err = srv.Shutdown(context.Background())
 	assert.ErrorContains(t, err, `failed to shutdown logger provider`)
+	assert.ErrorContains(t, err, `failed to shutdown meter provider`)
 }
 
 func TestExtensionNotificationFailure(t *testing.T) {

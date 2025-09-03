@@ -64,6 +64,19 @@ func TestTracerProvider(t *testing.T) {
 	assert.Equal(t, "test_span", traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 }
 
+func TestTracerProvider_Invalid(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Processors = []config.SpanProcessor{{
+		Simple: &config.SimpleSpanProcessor{
+			Exporter: config.SpanExporter{
+				OTLP: &config.OTLP{ /* missing endpoint, etc. */ },
+			},
+		},
+	}}
+	_, err := createTracerProvider(t.Context(), telemetry.TracerSettings{}, cfg)
+	require.EqualError(t, err, "no valid span exporter")
+}
+
 func TestTelemetry_TracerProvider_Propagators(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
@@ -95,6 +108,14 @@ func TestTelemetry_TracerProvider_Propagators(t *testing.T) {
 
 	assert.Contains(t, mapCarrier, "b3")
 	assert.Contains(t, mapCarrier, "traceparent")
+}
+
+func TestTelemetry_TracerProvider_InvalidPropagator(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Propagators = []string{"invalid"}
+
+	_, err := createTracerProvider(t.Context(), telemetry.TracerSettings{}, cfg)
+	assert.EqualError(t, err, "error creating propagator: unsupported trace propagator")
 }
 
 func TestTelemetry_TracerProviderDisabled(t *testing.T) {

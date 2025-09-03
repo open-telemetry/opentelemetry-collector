@@ -46,6 +46,29 @@ func TestNewLogger(t *testing.T) {
 			wantErr: errors.New("no encoder name specified"),
 		},
 		{
+			name: "log config with invalid processors",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:             zapcore.DebugLevel,
+					Development:       true,
+					Encoding:          "console",
+					DisableCaller:     true,
+					DisableStacktrace: true,
+					InitialFields:     map[string]any{"fieldKey": "filed-value"},
+					Processors: []config.LogRecordProcessor{
+						{
+							Batch: &config.BatchLogRecordProcessor{
+								Exporter: config.LogRecordExporter{
+									OTLP: &config.OTLP{}, // missing required fields
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: errors.New("no valid log exporter"),
+		},
+		{
 			name: "log config with no processors",
 			cfg: Config{
 				Logs: LogsConfig{
