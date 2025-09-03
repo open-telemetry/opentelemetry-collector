@@ -192,17 +192,17 @@ The following telemetry is emitted by this component.
 
 Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {times} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {times} | Sum | Int | true | deprecated |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | stable |
 
 ### otelcol_queue_capacity
 
@@ -218,14 +218,14 @@ This metric is optional and therefore not initialized in NewTelemetryBuilder. [a
 
 For example this metric only exists if feature A is enabled.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {items} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {items} | Gauge | Int | alpha |
 
 ### otelcol_request_duration
 
 Duration of request [alpha]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | alpha |
