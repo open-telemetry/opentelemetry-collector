@@ -7,82 +7,62 @@ import (
 	"context"
 	"fmt"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type otelconfTelemetry struct {
-	sdk            *config.SDK
 	resource       pcommon.Resource
 	logger         *zap.Logger
-	loggerProvider log.LoggerProvider
-	meterProvider  metric.MeterProvider
-	tracerProvider trace.TracerProvider
+	loggerProvider telemetry.LoggerProvider
+	meterProvider  telemetry.MeterProvider
+	tracerProvider telemetry.TracerProvider
 }
 
 func createProviders(
-	ctx context.Context, set telemetry.Settings, componentConfig component.Config,
+	ctx context.Context, set telemetry.Settings, cfg component.Config,
 ) (_ telemetry.Providers, resultErr error) {
-	cfg := componentConfig.(*Config)
-	res := resource.New(set.BuildInfo, cfg.Resource)
-	sdk, err := newSDK(ctx, set, cfg, res)
+	res, err := createResource(ctx, set, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create SDK: %w", err)
+		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
-	defer func() {
-		if resultErr != nil {
-			resultErr = multierr.Append(resultErr, sdk.Shutdown(ctx))
-		}
-	}()
 
-	logger, loggerProvider, err := newLogger(set, cfg, sdk, res)
+	logger, loggerProvider, err := createLogger(ctx, set, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger provider: %w", err)
 	}
-
-	var meterProvider metric.MeterProvider
-	if cfg.Metrics.Level == configtelemetry.LevelNone {
-		logger.Info("Internal metrics telemetry disabled")
-		meterProvider = noopmetric.NewMeterProvider()
-	} else {
-		meterProvider = sdk.MeterProvider()
-	}
-
-	var tracerProvider trace.TracerProvider
-	if cfg.Traces.Level == configtelemetry.LevelNone {
-		logger.Info("Internal trace telemetry disabled")
-		tracerProvider = &noopNoContextTracerProvider{}
-	} else {
-		propagator, err := textMapPropagatorFromConfig(cfg.Traces.Propagators)
-		if err != nil {
-			return nil, fmt.Errorf("error creating propagator: %w", err)
+	defer func() {
+		if resultErr != nil {
+			// Log the error before shutting down the logger provider
+			logger.Error("error creating telemetry providers", zap.Error(resultErr))
+			resultErr = multierr.Append(resultErr, loggerProvider.Shutdown(ctx))
 		}
-		otel.SetTextMapPropagator(propagator)
-		tracerProvider = sdk.TracerProvider()
-	}
+	}()
 
-	pcommonRes := pcommon.NewResource()
-	for _, keyValue := range res.Attributes() {
-		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
+	meterProvider, err := createMeterProvider(ctx, set, cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
+	}
+	defer func() {
+		if resultErr != nil {
+			resultErr = multierr.Append(resultErr, meterProvider.Shutdown(ctx))
+		}
+	}()
+
+	tracerProvider, err := createTracerProvider(ctx, set, cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
 	return &otelconfTelemetry{
-		sdk:            sdk,
-		resource:       pcommonRes,
+		resource:       res,
 		logger:         logger,
 		loggerProvider: loggerProvider,
 		meterProvider:  meterProvider,
@@ -111,48 +91,24 @@ func (t *otelconfTelemetry) TracerProvider() trace.TracerProvider {
 }
 
 func (t *otelconfTelemetry) Shutdown(ctx context.Context) error {
-	if t.sdk != nil {
-		err := t.sdk.Shutdown(ctx)
-		t.sdk = nil
-		if err != nil {
-			return fmt.Errorf("failed to shutdown SDK: %w", err)
+	var errs error
+	if t.loggerProvider != nil {
+		if err := t.loggerProvider.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger provider: %w", err))
 		}
+		t.loggerProvider = nil
 	}
-	return nil
-}
-
-func newSDK(ctx context.Context, _ telemetry.Settings, cfg *Config, res *sdkresource.Resource) (*config.SDK, error) {
-	mpConfig := cfg.Metrics.MeterProvider
-	if cfg.Metrics.Level == configtelemetry.LevelNone {
-		mpConfig.Readers = nil
+	if t.meterProvider != nil {
+		if err := t.meterProvider.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown meter provider: %w", err))
+		}
+		t.meterProvider = nil
 	}
-
-	// Merge the BuildInfo-based resource attributes with the user-defined resource attributes.
-	resourceAttrs := make([]config.AttributeNameValue, 0, res.Len())
-	for _, r := range res.Attributes() {
-		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
-			Name: string(r.Key), Value: r.Value.AsString(),
-		})
+	if t.tracerProvider != nil {
+		if err := t.tracerProvider.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown tracer provider: %w", err))
+		}
+		t.tracerProvider = nil
 	}
-
-	sdk, err := config.NewSDK(
-		config.WithContext(ctx),
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: cfg.Logs.Processors,
-				},
-				MeterProvider:  &mpConfig,
-				TracerProvider: &cfg.Traces.TracerProvider,
-				Resource: &config.Resource{
-					SchemaUrl:  ptr(semconv.SchemaURL),
-					Attributes: resourceAttrs,
-				},
-			},
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &sdk, nil
+	return errs
 }
