@@ -42,8 +42,7 @@ jobs:
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Run Unit Tests
-        run: |
-          make gotest
+        run: make gotest
 
   windows-service-test:
     strategy:
