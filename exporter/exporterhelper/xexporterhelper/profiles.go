@@ -129,6 +129,10 @@ func (req *profilesRequest) setCachedSize(size int) {
 	req.cachedSize = size
 }
 
+func (req *profilesRequest) BytesSize() int {
+	return profilesMarshaler.ProfilesSize(req.pd)
+}
+
 type profileExporter struct {
 	*internal.BaseExporter
 	xconsumer.Profiles
