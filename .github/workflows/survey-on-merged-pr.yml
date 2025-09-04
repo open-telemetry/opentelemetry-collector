@@ -1,0 +1,44 @@
+name: Survey on Merged PR by Non-Member
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+env:
+  PR_NUM: ${{ github.event.pull_request.number }}
+  SURVEY_URL: https://docs.google.com/forms/d/e/1FAIpQLSf2FfCsW-DimeWzdQgfl0KDzT2UEAqu69_f7F2BVPSxVae1cQ/viewform?entry.1540511742=open-telemetry/opentelemetry-collector
+
+jobs:
+  comment-on-pr:
+    name: Add survey to PR if author is not a member
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.event.pull_request.merged == true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check if user is a member of the org
+        id: check-membership
+        run: |
+          USERNAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+          ORG="${{ github.repository_owner }}"
+          STATUS=$(gh api "orgs/$ORG/members/$USERNAME" --silent && echo "true" || echo "false")
+          if [[ "$STATUS" == "true" ]]; then
+            echo "MEMBER_FOUND=true" >> $GITHUB_ENV
+          else
+            echo "MEMBER_FOUND=false" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+
+      - name: Add comment to PR if author is not a member
+        if: env.MEMBER_FOUND == 'false'
+        run: |
+          USERNAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+          gh pr comment ${PR_NUM} --repo open-telemetry/opentelemetry-collector --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
+        env:
+          GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
