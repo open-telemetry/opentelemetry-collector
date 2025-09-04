@@ -1,5 +1,6 @@
 self-hosted-runner:
-  labels: []
+  labels:
+    - windows-11-arm
 
 config-variables: null
 

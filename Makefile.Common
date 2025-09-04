@@ -6,11 +6,12 @@ COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
-GOTEST_TIMEOUT?=240s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
+GOTEST_TIMEOUT?=240s
+# -race is not supported on windows arm64
+GOTEST_OPT?= $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))), -timeout $(GOTEST_TIMEOUT), -race -timeout $(GOTEST_TIMEOUT))
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
