@@ -88,6 +88,24 @@ type Factory interface {
 	unexportedFactoryFunc()
 }
 
+// LoggerProvider is a log.LoggerProvider that can be shutdown.
+type LoggerProvider interface {
+	log.LoggerProvider
+	Shutdown(context.Context) error
+}
+
+// MeterProvider is a metric.MeterProvider that can be shutdown.
+type MeterProvider interface {
+	metric.MeterProvider
+	Shutdown(context.Context) error
+}
+
+// TracerProvider is a trace.TracerProvider that can be shutdown.
+type TracerProvider interface {
+	trace.TracerProvider
+	Shutdown(context.Context) error
+}
+
 type FactoryOption interface {
 	applyOption(*factory)
 }
