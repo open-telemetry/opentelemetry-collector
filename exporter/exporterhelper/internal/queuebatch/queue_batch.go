@@ -21,6 +21,7 @@ type Settings[T any] struct {
 	ItemsSizer       request.Sizer[T]
 	BytesSizer       request.Sizer[T]
 	Partitioner      Partitioner[T]
+	MergeCtx         func(context.Context, context.Context) context.Context
 }
 
 // AllSettings defines settings for creating a QueueBatch.
@@ -29,7 +30,6 @@ type AllSettings[T any] struct {
 	Signal    pipeline.Signal
 	ID        component.ID
 	Telemetry component.TelemetrySettings
-	MergeCtx  func(context.Context, context.Context) context.Context
 }
 
 type QueueBatch struct {
