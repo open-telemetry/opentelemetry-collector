@@ -23,6 +23,11 @@ type baseComponent struct {
 	component.ShutdownFunc
 }
 
+type instanceID struct {
+	ComponentID component.ID
+	Kind        component.Kind
+}
+
 func TestNewMap(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
 	assert.Empty(t, comps.components)
@@ -147,8 +152,8 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			reportedStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
-			newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+			reportedStatuses := make(map[*instanceID][]componentstatus.Status)
+			newStatusFunc := func(id *instanceID, ev *componentstatus.Event) {
 				reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
 			}
 			base := &baseComponent{}
@@ -175,7 +180,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 
 			baseHost := componenttest.NewNopHost()
 			for i := 0; i < 3; i++ {
-				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
+				err = comp.Start(context.Background(), &testHost{Host: baseHost, instanceID: &instanceID{}, newStatusFunc: newStatusFunc})
 				if err != nil {
 					break
 				}
@@ -206,10 +211,10 @@ var (
 
 type testHost struct {
 	component.Host
-	*componentstatus.InstanceID
-	newStatusFunc func(id *componentstatus.InstanceID, ev *componentstatus.Event)
+	*instanceID
+	newStatusFunc func(id *instanceID, ev *componentstatus.Event)
 }
 
 func (h *testHost) Report(e *componentstatus.Event) {
-	h.newStatusFunc(h.InstanceID, e)
+	h.newStatusFunc(h.instanceID, e)
 }
