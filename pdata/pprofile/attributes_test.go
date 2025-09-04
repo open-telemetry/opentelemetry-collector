@@ -139,7 +139,7 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 		dic.StringTable().Append(fmt.Sprintf("key_%d", i))
 
 		att := table.AppendEmpty()
-		att.SetKeyStrindex(int32(dic.StringTable().Len()))
+		att.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 		att.Value().SetStr(fmt.Sprintf("value_%d", i))
 	}
 
@@ -175,7 +175,7 @@ func BenchmarkPutAttribute(b *testing.B) {
 			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice, _ attributable, dic ProfilesDictionary) {
 				dic.StringTable().Append("attribute")
 				entry := table.AppendEmpty()
-				entry.SetKeyStrindex(int32(dic.StringTable().Len()))
+				entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 				entry.Value().SetStr("test")
 			},
 		},
@@ -198,13 +198,13 @@ func BenchmarkPutAttribute(b *testing.B) {
 					dic.StringTable().Append(fmt.Sprintf("attr_%d", i))
 
 					entry := table.AppendEmpty()
-					entry.SetKeyStrindex(int32(dic.StringTable().Len()))
+					entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 					entry.Value().SetStr("test")
 				}
 
 				dic.StringTable().Append("attribute")
 				entry := table.AppendEmpty()
-				entry.SetKeyStrindex(int32(dic.StringTable().Len()))
+				entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 				entry.Value().SetStr("test")
 			},
 		},
