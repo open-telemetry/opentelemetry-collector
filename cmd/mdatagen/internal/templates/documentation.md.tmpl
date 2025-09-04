@@ -12,11 +12,12 @@
 
 {{- end }}
 
-| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
-| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability.Level }} Stability |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability.Level }} --------- |{{ end }}
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
 
 {{- if $metric.Attributes }}
 
@@ -78,10 +79,11 @@
 
 {{- end }}
 
-| Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
-| ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability.Level }} Stability |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability.Level }} --------- |{{ end }}
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
 
 {{- if $metric.Attributes }}
 
