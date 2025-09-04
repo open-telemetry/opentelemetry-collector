@@ -8,17 +8,54 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolResourceLogs = sync.Pool{
+		New: func() any {
+			return &otlplogs.ResourceLogs{}
+		},
+	}
+)
+
 func NewOrigResourceLogs() *otlplogs.ResourceLogs {
-	return &otlplogs.ResourceLogs{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlplogs.ResourceLogs{}
+	}
+	return protoPoolResourceLogs.Get().(*otlplogs.ResourceLogs)
+}
+
+func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigResource(&orig.Resource, false)
+	for i := range orig.ScopeLogs {
+		DeleteOrigScopeLogs(orig.ScopeLogs[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResourceLogs.Put(orig)
+	}
 }
 
 func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.ScopeLogs = CopyOrigScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
 	dest.SchemaUrl = src.SchemaUrl

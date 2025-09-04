@@ -127,7 +127,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			(*es.orig)[i].Reset()
+			internal.DeleteOrigExemplar(&(*es.orig)[i], false)
 			continue
 		}
 		if newLen == i {
@@ -145,5 +145,8 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
 }

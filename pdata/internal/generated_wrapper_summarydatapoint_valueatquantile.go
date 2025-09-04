@@ -10,17 +10,49 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		},
+	}
+)
+
 func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	}
+	return protoPoolSummaryDataPoint_ValueAtQuantile.Get().(*otlpmetrics.SummaryDataPoint_ValueAtQuantile)
+}
+
+func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSummaryDataPoint_ValueAtQuantile.Put(orig)
+	}
 }
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }

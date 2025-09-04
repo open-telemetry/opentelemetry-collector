@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
@@ -32,11 +33,49 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
+var (
+	protoPoolResource = sync.Pool{
+		New: func() any {
+			return &otlpresource.Resource{}
+		},
+	}
+)
+
 func NewOrigResource() *otlpresource.Resource {
-	return &otlpresource.Resource{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpresource.Resource{}
+	}
+	return protoPoolResource.Get().(*otlpresource.Resource)
+}
+
+func DeleteOrigResource(orig *otlpresource.Resource, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	for i := range orig.EntityRefs {
+		DeleteOrigEntityRef(orig.EntityRefs[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResource.Put(orig)
+	}
 }
 
 func CopyOrigResource(dest, src *otlpresource.Resource) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)

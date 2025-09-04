@@ -40,8 +40,8 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcommon.EntityRef{}
+	internal.DeleteOrigEntityRef(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // SchemaUrl returns the schemaurl associated with this EntityRef.

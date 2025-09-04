@@ -44,8 +44,8 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorprofiles.ExportProfilesPartialSuccess{}
+	internal.DeleteOrigExportProfilesPartialSuccess(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // RejectedProfiles returns the rejectedprofiles associated with this ExportPartialSuccess.

@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolExportMetricsPartialSuccess = sync.Pool{
+		New: func() any {
+			return &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+		},
+	}
+)
+
 func NewOrigExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
-	return &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	}
+	return protoPoolExportMetricsPartialSuccess.Get().(*otlpcollectormetrics.ExportMetricsPartialSuccess)
+}
+
+func DeleteOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportMetricsPartialSuccess.Put(orig)
+	}
 }
 
 func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedDataPoints = src.RejectedDataPoints
 	dest.ErrorMessage = src.ErrorMessage
 }

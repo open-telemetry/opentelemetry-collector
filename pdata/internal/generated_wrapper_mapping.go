@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolMapping = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Mapping{}
+		},
+	}
+)
+
 func NewOrigMapping() *otlpprofiles.Mapping {
-	return &otlpprofiles.Mapping{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Mapping{}
+	}
+	return protoPoolMapping.Get().(*otlpprofiles.Mapping)
+}
+
+func DeleteOrigMapping(orig *otlpprofiles.Mapping, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolMapping.Put(orig)
+	}
 }
 
 func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.MemoryStart = src.MemoryStart
 	dest.MemoryLimit = src.MemoryLimit
 	dest.FileOffset = src.FileOffset
@@ -301,25 +333,34 @@ func UnmarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) error {
 
 			orig.FilenameStrindex = int32(num)
 		case 5:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
 
 		case 6:

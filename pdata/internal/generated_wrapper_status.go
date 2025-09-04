@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolStatus = sync.Pool{
+		New: func() any {
+			return &otlptrace.Status{}
+		},
+	}
+)
+
 func NewOrigStatus() *otlptrace.Status {
-	return &otlptrace.Status{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Status{}
+	}
+	return protoPoolStatus.Get().(*otlptrace.Status)
+}
+
+func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolStatus.Put(orig)
+	}
 }
 
 func CopyOrigStatus(dest, src *otlptrace.Status) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Message = src.Message
 	dest.Code = src.Code
 }

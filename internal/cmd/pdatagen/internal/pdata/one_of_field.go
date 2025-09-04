@@ -44,13 +44,25 @@ const oneOfTestValuesTemplate = `
 	{{ .GenerateTestEncodingValues $.baseStruct $.OneOfField }}
 	{{- end }}`
 
+const oneOfPoolOrigTemplate = `
+	{{- range .values }}
+		{{ .GeneratePoolOrig $.baseStruct $.OneOfField }}
+	{{- end }}`
+
+const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
+	{{ range .values -}}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
+		{{ .GenerateDeleteOrig $.baseStruct $.OneOfField }}{{- end }}
+	}
+`
+
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- range .values }}
 {{ .GenerateCopyOrig $.baseStruct $.OneOfField }}
 {{- end }}
 }`
 
-const oneOfMarshalJSONTemplate = `switch orig.{{ .originFieldName }}.(type) {
+const oneOfMarshalJSONTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
 	{{- range .values }}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
@@ -62,14 +74,17 @@ const oneOfUnmarshalJSONTemplate = `
 	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
 	{{- end }}`
 
-const oneOfSizeProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
-	{{- range .values }}
+const oneOfSizeProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
+	case nil:
+		_ = orig
+		break
+	{{ range .values -}}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateSizeProto $.baseStruct $.OneOfField }}
-	{{- end }}
+	{{ end -}}
 }`
 
-const oneOfMarshalProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+const oneOfMarshalProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
 	{{- range .values }}
 	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalProto $.baseStruct $.OneOfField }}
@@ -117,6 +132,14 @@ func (of *OneOfField) GenerateTestEncodingValues(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields(ms))
 }
 
+func (of *OneOfField) GeneratePoolOrig(ms *messageStruct) string {
+	return template.Execute(template.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields(ms))
+}
+
+func (of *OneOfField) GenerateDeleteOrig(ms *messageStruct) string {
+	return template.Execute(template.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields(ms))
+}
+
 func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
 	return template.Execute(template.Parse("oneOfCopyOrigTemplate", []byte(oneOfCopyOrigTemplate)), of.templateFields(ms))
 }
@@ -152,6 +175,7 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"structName":           ms.getName(),
 		"typeFuncName":         of.typeFuncName(),
 		"typeName":             of.typeName,
+		"originName":           ms.getOriginName(),
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
 		"origAccessor":         origAccessor(ms.getHasWrapper()),
@@ -170,6 +194,8 @@ type oneOfValue interface {
 	GenerateTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateTestFailingUnmarshalProtoValues(ms *messageStruct, of *OneOfField) string
 	GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string
+	GeneratePoolOrig(ms *messageStruct, of *OneOfField) string
+	GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string

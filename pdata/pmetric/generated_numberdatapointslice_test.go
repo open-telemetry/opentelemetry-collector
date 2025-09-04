@@ -52,6 +52,8 @@ func TestNumberDataPointSlice_CopyTo(t *testing.T) {
 	src := generateTestNumberDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
 }
 
 func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {

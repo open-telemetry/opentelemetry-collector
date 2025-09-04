@@ -128,7 +128,9 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigLink((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -146,6 +149,9 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LinkSlice) CopyTo(dest LinkSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigLinkSlice(*dest.orig, *es.orig)
 }
 

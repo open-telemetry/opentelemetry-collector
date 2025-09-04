@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -18,18 +19,94 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolExemplar = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar{}
+		},
+	}
+
+	ProtoPoolExemplar_AsDouble = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar_AsDouble{}
+		},
+	}
+
+	ProtoPoolExemplar_AsInt = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Exemplar_AsInt{}
+		},
+	}
+)
+
 func NewOrigExemplar() *otlpmetrics.Exemplar {
-	return &otlpmetrics.Exemplar{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Exemplar{}
+	}
+	return protoPoolExemplar.Get().(*otlpmetrics.Exemplar)
+}
+
+func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.FilteredAttributes {
+		DeleteOrigKeyValue(&orig.FilteredAttributes[i], false)
+	}
+	switch ov := orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		if UseProtoPooling.IsEnabled() {
+			ov.AsDouble = float64(0)
+			ProtoPoolExemplar_AsDouble.Put(ov)
+		}
+	case *otlpmetrics.Exemplar_AsInt:
+		if UseProtoPooling.IsEnabled() {
+			ov.AsInt = int64(0)
+			ProtoPoolExemplar_AsInt.Put(ov)
+		}
+
+	}
+	DeleteOrigSpanID(&orig.SpanId, false)
+	DeleteOrigTraceID(&orig.TraceId, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExemplar.Put(orig)
+	}
 }
 
 func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.FilteredAttributes = CopyOrigKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: t.AsDouble}
+		var ov *otlpmetrics.Exemplar_AsDouble
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Exemplar_AsDouble{}
+		} else {
+			ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+		}
+		ov.AsDouble = t.AsDouble
+		dest.Value = ov
 	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: t.AsInt}
+		var ov *otlpmetrics.Exemplar_AsInt
+		if !UseProtoPooling.IsEnabled() {
+			ov = &otlpmetrics.Exemplar_AsInt{}
+		} else {
+			ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+		}
+		ov.AsInt = t.AsInt
+		dest.Value = ov
 	}
 	dest.SpanId = src.SpanId
 	dest.TraceId = src.TraceId
@@ -62,13 +139,13 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble)
+		dest.WriteFloat64(orig.AsDouble)
 	case *otlpmetrics.Exemplar_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt)
+		dest.WriteInt64(orig.AsInt)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
@@ -96,16 +173,26 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 
 		case "asDouble", "as_double":
 			{
-				ofm := &otlpmetrics.Exemplar_AsDouble{}
-				ofm.AsDouble = iter.ReadFloat64()
-				orig.Value = ofm
+				var ov *otlpmetrics.Exemplar_AsDouble
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Exemplar_AsDouble{}
+				} else {
+					ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+				}
+				ov.AsDouble = iter.ReadFloat64()
+				orig.Value = ov
 			}
 
 		case "asInt", "as_int":
 			{
-				ofm := &otlpmetrics.Exemplar_AsInt{}
-				ofm.AsInt = iter.ReadInt64()
-				orig.Value = ofm
+				var ov *otlpmetrics.Exemplar_AsInt
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpmetrics.Exemplar_AsInt{}
+				} else {
+					ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+				}
+				ov.AsInt = iter.ReadInt64()
+				orig.Value = ov
 			}
 
 		case "spanId", "span_id":
@@ -129,7 +216,10 @@ func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
 	if orig.TimeUnixNano != 0 {
 		n += 9
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
+	case nil:
+		_ = orig
+		break
 	case *otlpmetrics.Exemplar_AsDouble:
 		n += 9
 	case *otlpmetrics.Exemplar_AsInt:
@@ -159,16 +249,16 @@ func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
 		pos--
 		buf[pos] = 0x11
 	}
-	switch orig.Value.(type) {
+	switch orig := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble))
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
 		pos--
 		buf[pos] = 0x19
 
 	case *otlpmetrics.Exemplar_AsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
 		pos--
 		buf[pos] = 0x31
 
@@ -241,9 +331,14 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.Exemplar_AsDouble{}
-			ofv.AsDouble = math.Float64frombits(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.Exemplar_AsDouble
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Exemplar_AsDouble{}
+			} else {
+				ov = ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+			}
+			ov.AsDouble = math.Float64frombits(num)
+			orig.Value = ov
 
 		case 6:
 			if wireType != proto.WireTypeI64 {
@@ -254,9 +349,14 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpmetrics.Exemplar_AsInt{}
-			ofv.AsInt = int64(num)
-			orig.Value = ofv
+			var ov *otlpmetrics.Exemplar_AsInt
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpmetrics.Exemplar_AsInt{}
+			} else {
+				ov = ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+			}
+			ov.AsInt = int64(num)
+			orig.Value = ov
 
 		case 4:
 			if wireType != proto.WireTypeLen {

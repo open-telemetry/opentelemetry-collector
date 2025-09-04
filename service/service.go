@@ -13,9 +13,7 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -37,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -101,11 +98,11 @@ type Settings struct {
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo         component.BuildInfo
-	telemetrySettings component.TelemetrySettings
-	host              *graph.Host
-	collectorConf     *confmap.Conf
-	sdk               *config.SDK
+	buildInfo          component.BuildInfo
+	telemetrySettings  component.TelemetrySettings
+	host               *graph.Host
+	collectorConf      *confmap.Conf
+	telemetryProviders telemetry.Providers
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -126,39 +123,31 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf: set.CollectorConf,
 	}
 
-	// Fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry.
-	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
-	pcommonRes := pdataFromSdk(res)
-
 	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
 	if mpConfig.Views == nil {
 		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
 	}
 
-	sdk, err := otelconftelemetry.NewSDK(ctx, &cfg.Telemetry, res)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create SDK: %w", err)
-	}
-	srv.sdk = sdk
-	defer func() {
-		if err != nil {
-			err = multierr.Append(err, sdk.Shutdown(ctx))
-		}
-	}()
-
-	telFactory := otelconftelemetry.NewFactory(sdk, res)
+	telFactory := otelconftelemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
 	}
 
-	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	telProviders, err := telFactory.CreateProviders(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create logger: %w", err)
+		return nil, fmt.Errorf("failed to create telemetry providers: %w", err)
 	}
+	srv.telemetryProviders = telProviders
+	defer func() {
+		if err != nil {
+			err = multierr.Append(err, telProviders.Shutdown(ctx))
+		}
+	}()
 
 	// Use initialized logger to handle any subsequent errors
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
+	logger := telProviders.Logger()
 	defer func() {
 		if err != nil {
 			logger.Error("error found during service initialization", zap.Error(err))
@@ -168,6 +157,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	// Wrap the zap.Logger with componentattribute so scope attributes
 	// can be added and removed dynamically, and tee logs to the
 	// LoggerProvider.
+	loggerProvider := telProviders.LoggerProvider()
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 		core = componentattribute.NewOTelTeeCoreWithAttributes(
@@ -179,23 +169,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return core
 	}))
 
-	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
-	}
-
-	logger.Info("Setting up own telemetry...")
-
-	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create meter provider: %w", err)
-	}
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         logger,
-		MeterProvider:  mp,
-		TracerProvider: tracerProvider,
-		// Construct telemetry attributes from build info and config's resource attributes.
-		Resource: pcommonRes,
+		MeterProvider:  telProviders.MeterProvider(),
+		TracerProvider: telProviders.TracerProvider(),
+		Resource:       telProviders.Resource(),
 	}
 	srv.host.Reporter = status.NewReporter(srv.host.NotifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
@@ -220,23 +198,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}
-
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
-
 	return srv, nil
-}
-
-func logsAboutMeterProvider(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig, mp metric.MeterProvider) {
-	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
-		logger.Info("Skipped telemetry setup.")
-		return
-	}
-
-	if lmp, ok := mp.(interface {
-		LogAboutServers(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig)
-	}); ok {
-		lmp.LogAboutServers(logger, cfg)
-	}
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
@@ -299,8 +261,8 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	if err := srv.sdk.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
+	if err := srv.telemetryProviders.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry providers: %w", err))
 	}
 
 	return errs
@@ -342,17 +304,6 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 // This is a temporary API that may be removed soon after investigating how the collector should record different events.
 func (srv *Service) Logger() *zap.Logger {
 	return srv.telemetrySettings.Logger
-}
-
-func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
-	// pcommon.NewResource is the best way to generate a new resource currently and is safe to use outside of tests.
-	// Because the resource is signal agnostic, and we need a net new resource, not an existing one, this is the only
-	// method of creating it without exposing internal packages.
-	pcommonRes := pcommon.NewResource()
-	for _, keyValue := range res.Attributes() {
-		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
-	}
-	return pcommonRes
 }
 
 func dropViewOption(selector *config.ViewSelector) config.View {
@@ -444,6 +395,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 				InstrumentName: ptr("otelcol_receiver_sent_wire"),
 			}),
 		)
+	}
+
+	// Batch exporter metrics
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      scope,
+			InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
+		}))
 	}
 
 	// Batch processor metrics

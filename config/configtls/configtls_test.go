@@ -346,15 +346,11 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 
 	overwriteClientCA(t, tmpCaPath, "ca-2.crt")
 
-	assert.Eventually(t, func() bool {
-		_, loadError := tlsCfg.GetConfigForClient(nil)
-		return loadError == nil
+	assert.EventuallyWithT(t, func(t *assert.CollectT) {
+		secondClient, err := tlsCfg.GetConfigForClient(nil)
+		require.NoError(t, err)
+		assert.NotEqual(t, firstClient.ClientCAs, secondClient.ClientCAs)
 	}, 5*time.Second, 10*time.Millisecond)
-
-	secondClient, err := tlsCfg.GetConfigForClient(nil)
-	require.NoError(t, err)
-
-	assert.NotEqual(t, firstClient.ClientCAs, secondClient.ClientCAs)
 }
 
 func TestLoadTLSServerConfigFailingReload(t *testing.T) {
@@ -892,6 +888,11 @@ func TestCurvePreferences(t *testing.T) {
 		expectedCurveIDs []tls.CurveID
 		expectedErr      string
 	}{
+		{
+			name:             "X25519MLKEM768",
+			preferences:      []string{"X25519MLKEM768"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+		},
 		{
 			name:             "X25519",
 			preferences:      []string{"X25519"},

@@ -45,8 +45,8 @@ func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ScopeLogs{}
+	internal.DeleteOrigScopeLogs(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeLogs.

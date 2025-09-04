@@ -222,7 +222,7 @@ func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttr
 			onlyInOther = append(onlyInOther, k)
 		}
 	}
-	return
+	return missingInOther, onlyInOther
 }
 
 // merge another set into this one and return a list of duplicate ids.
@@ -234,7 +234,7 @@ func (ds idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 			ds[k] = v
 		}
 	}
-	return
+	return duplicates
 }
 
 // mergeSlice merges another set into this one and return a list of duplicate ids.
@@ -246,7 +246,7 @@ func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVa
 			ds[id] = true
 		}
 	}
-	return
+	return duplicates
 }
 
 // union computes the union of this and another sets. A new set if created to return the result.
@@ -263,7 +263,7 @@ func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 			union[k] = v
 		}
 	}
-	return
+	return union, duplicates
 }
 
 // A function that returns a value indicating what the receiver's next consumer decides

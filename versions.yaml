@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.38.0
+    version: v1.40.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -20,6 +20,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
+      - go.opentelemetry.io/collector/config/configmiddleware
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/extensionauth
@@ -27,7 +28,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.132.0
+    version: v0.134.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
@@ -43,7 +44,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
-      - go.opentelemetry.io/collector/config/configmiddleware
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/configoptional
       - go.opentelemetry.io/collector/connector
@@ -56,6 +56,7 @@ module-sets:
       - go.opentelemetry.io/collector/consumer/consumertest
       - go.opentelemetry.io/collector/exporter
       - go.opentelemetry.io/collector/exporter/debugexporter
+      - go.opentelemetry.io/collector/exporter/exporterhelper
       - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper
       - go.opentelemetry.io/collector/exporter/exportertest
       - go.opentelemetry.io/collector/exporter/nopexporter

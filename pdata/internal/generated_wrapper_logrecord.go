@@ -9,6 +9,7 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -17,11 +18,49 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolLogRecord = sync.Pool{
+		New: func() any {
+			return &otlplogs.LogRecord{}
+		},
+	}
+)
+
 func NewOrigLogRecord() *otlplogs.LogRecord {
-	return &otlplogs.LogRecord{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlplogs.LogRecord{}
+	}
+	return protoPoolLogRecord.Get().(*otlplogs.LogRecord)
+}
+
+func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigAnyValue(&orig.Body, false)
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteOrigSpanID(&orig.SpanId, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolLogRecord.Put(orig)
+	}
 }
 
 func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
 	dest.SeverityNumber = src.SeverityNumber

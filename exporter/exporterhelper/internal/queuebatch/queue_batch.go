@@ -14,16 +14,22 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-// Settings defines settings for creating a QueueBatch.
+// Settings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type Settings[T any] struct {
-	Signal      pipeline.Signal
-	ID          component.ID
-	Telemetry   component.TelemetrySettings
-	Encoding    queue.Encoding[T]
-	ItemsSizer  request.Sizer[T]
-	BytesSizer  request.Sizer[T]
-	Partitioner Partitioner[T]
-	MergeCtx    func(context.Context, context.Context) context.Context
+	ReferenceCounter queue.ReferenceCounter[T]
+	Encoding         queue.Encoding[T]
+	ItemsSizer       request.Sizer[T]
+	BytesSizer       request.Sizer[T]
+	Partitioner      Partitioner[T]
+}
+
+// AllSettings defines settings for creating a QueueBatch.
+type AllSettings[T any] struct {
+	Settings[T]
+	Signal    pipeline.Signal
+	ID        component.ID
+	Telemetry component.TelemetrySettings
+	MergeCtx  func(context.Context, context.Context) context.Context
 }
 
 type QueueBatch struct {
@@ -32,7 +38,7 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	set Settings[request.Request],
+	set AllSettings[request.Request],
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
@@ -48,25 +54,26 @@ func NewQueueBatch(
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Batch.HasValue() {
-		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
-		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+	if cfg.Batch.HasValue() && set.Partitioner == nil {
+		// If batching is enabled and partitioner is not defined then keep the number of queue consumers to 1.
+		// see: https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
 	}
 
 	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
-		SizerType:       cfg.Sizer,
-		ItemsSizer:      set.ItemsSizer,
-		BytesSizer:      set.BytesSizer,
-		Capacity:        cfg.QueueSize,
-		NumConsumers:    cfg.NumConsumers,
-		WaitForResult:   cfg.WaitForResult,
-		BlockOnOverflow: cfg.BlockOnOverflow,
-		Signal:          set.Signal,
-		StorageID:       cfg.StorageID,
-		Encoding:        set.Encoding,
-		ID:              set.ID,
-		Telemetry:       set.Telemetry,
+		SizerType:        cfg.Sizer,
+		ItemsSizer:       set.ItemsSizer,
+		BytesSizer:       set.BytesSizer,
+		Capacity:         cfg.QueueSize,
+		NumConsumers:     cfg.NumConsumers,
+		WaitForResult:    cfg.WaitForResult,
+		BlockOnOverflow:  cfg.BlockOnOverflow,
+		Signal:           set.Signal,
+		StorageID:        cfg.StorageID,
+		ReferenceCounter: set.ReferenceCounter,
+		Encoding:         set.Encoding,
+		ID:               set.ID,
+		Telemetry:        set.Telemetry,
 	}, b.Consume)
 	if err != nil {
 		return nil, err

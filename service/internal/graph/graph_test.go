@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -30,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -917,7 +917,7 @@ func testConnectorPipelinesGraph(t *testing.T) {
 			}
 
 			// Shut down the entire component graph
-			require.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range tt.pipelineConfigs {
@@ -957,57 +957,33 @@ func testConnectorPipelinesGraph(t *testing.T) {
 			for _, e := range allExporters[pipeline.SignalTraces] {
 				tracesExporter := e.(consumer.Traces).(*testcomponents.ExampleExporter)
 				assert.Len(t, tracesExporter.Traces, tt.expectedPerExporter)
-				expectedMutable := testdata.GenerateTraces(1)
-				expectedReadOnly := testdata.GenerateTraces(1)
-				expectedReadOnly.MarkReadOnly()
+				expected := testdata.GenerateTraces(1)
 				for i := 0; i < tt.expectedPerExporter; i++ {
-					if tracesExporter.Traces[i].IsReadOnly() {
-						assert.Equal(t, expectedReadOnly, tracesExporter.Traces[i])
-					} else {
-						assert.Equal(t, expectedMutable, tracesExporter.Traces[i])
-					}
+					assert.True(t, pref.EqualTraces(expected, tracesExporter.Traces[i]))
 				}
 			}
 			for _, e := range allExporters[pipeline.SignalMetrics] {
 				metricsExporter := e.(consumer.Metrics).(*testcomponents.ExampleExporter)
 				assert.Len(t, metricsExporter.Metrics, tt.expectedPerExporter)
-				expectedMutable := testdata.GenerateMetrics(1)
-				expectedReadOnly := testdata.GenerateMetrics(1)
-				expectedReadOnly.MarkReadOnly()
+				expected := testdata.GenerateMetrics(1)
 				for i := 0; i < tt.expectedPerExporter; i++ {
-					if metricsExporter.Metrics[i].IsReadOnly() {
-						assert.Equal(t, expectedReadOnly, metricsExporter.Metrics[i])
-					} else {
-						assert.Equal(t, expectedMutable, metricsExporter.Metrics[i])
-					}
+					assert.True(t, pref.EqualMetrics(expected, metricsExporter.Metrics[i]))
 				}
 			}
 			for _, e := range allExporters[pipeline.SignalLogs] {
 				logsExporter := e.(consumer.Logs).(*testcomponents.ExampleExporter)
 				assert.Len(t, logsExporter.Logs, tt.expectedPerExporter)
-				expectedMutable := testdata.GenerateLogs(1)
-				expectedReadOnly := testdata.GenerateLogs(1)
-				expectedReadOnly.MarkReadOnly()
+				expected := testdata.GenerateLogs(1)
 				for i := 0; i < tt.expectedPerExporter; i++ {
-					if logsExporter.Logs[i].IsReadOnly() {
-						assert.Equal(t, expectedReadOnly, logsExporter.Logs[i])
-					} else {
-						assert.Equal(t, expectedMutable, logsExporter.Logs[i])
-					}
+					assert.True(t, pref.EqualLogs(expected, logsExporter.Logs[i]))
 				}
 			}
 			for _, e := range allExporters[xpipeline.SignalProfiles] {
 				profilesExporter := e.(xconsumer.Profiles).(*testcomponents.ExampleExporter)
 				assert.Len(t, profilesExporter.Profiles, tt.expectedPerExporter)
-				expectedMutable := testdata.GenerateProfiles(1)
-				expectedReadOnly := testdata.GenerateProfiles(1)
-				expectedReadOnly.MarkReadOnly()
+				expected := testdata.GenerateProfiles(1)
 				for i := 0; i < tt.expectedPerExporter; i++ {
-					if profilesExporter.Profiles[i].IsReadOnly() {
-						assert.Equal(t, expectedReadOnly, profilesExporter.Profiles[i])
-					} else {
-						assert.Equal(t, expectedMutable, profilesExporter.Profiles[i])
-					}
+					assert.True(t, pref.EqualProfiles(expected, profilesExporter.Profiles[i]))
 				}
 			}
 		})

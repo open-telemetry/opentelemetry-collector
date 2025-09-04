@@ -51,6 +51,8 @@ func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	src := generateTestAttributeTableSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
+	dest.CopyTo(dest)
+	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
 
 func TestAttributeTableSlice_EnsureCapacity(t *testing.T) {

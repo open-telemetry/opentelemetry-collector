@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,29 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigProfile(t *testing.T) {
-	src := NewOrigProfile()
-	dest := NewOrigProfile()
-	CopyOrigProfile(dest, src)
-	assert.Equal(t, NewOrigProfile(), dest)
-	*src = *GenTestOrigProfile()
-	CopyOrigProfile(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesProfile() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigProfile()
+				CopyOrigProfile(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigProfile(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfileUnknown(t *testing.T) {
@@ -39,20 +51,29 @@ func TestMarshalAndUnmarshalJSONOrigProfileUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalJSONOrigProfile(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfile() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigProfile(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigProfile()
-			UnmarshalJSONOrigProfile(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigProfile(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigProfile()
+				UnmarshalJSONOrigProfile(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfile(dest, true)
+			})
+		}
 	}
 }
 
@@ -74,15 +95,25 @@ func TestMarshalAndUnmarshalProtoOrigProfileUnknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigProfile(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfile() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigProfile(src))
-			gotSize := MarshalProtoOrigProfile(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigProfile()
-			require.NoError(t, UnmarshalProtoOrigProfile(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigProfile(src))
+				gotSize := MarshalProtoOrigProfile(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigProfile()
+				require.NoError(t, UnmarshalProtoOrigProfile(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfile(dest, true)
+			})
+		}
 	}
 }
 

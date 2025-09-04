@@ -25,6 +25,7 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigSpan_Link(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.

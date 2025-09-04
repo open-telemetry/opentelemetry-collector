@@ -8,17 +8,51 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolExportLogsServiceResponse = sync.Pool{
+		New: func() any {
+			return &otlpcollectorlogs.ExportLogsServiceResponse{}
+		},
+	}
+)
+
 func NewOrigExportLogsServiceResponse() *otlpcollectorlogs.ExportLogsServiceResponse {
-	return &otlpcollectorlogs.ExportLogsServiceResponse{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectorlogs.ExportLogsServiceResponse{}
+	}
+	return protoPoolExportLogsServiceResponse.Get().(*otlpcollectorlogs.ExportLogsServiceResponse)
+}
+
+func DeleteOrigExportLogsServiceResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigExportLogsPartialSuccess(&orig.PartialSuccess, false)
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportLogsServiceResponse.Put(orig)
+	}
 }
 
 func CopyOrigExportLogsServiceResponse(dest, src *otlpcollectorlogs.ExportLogsServiceResponse) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigExportLogsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 

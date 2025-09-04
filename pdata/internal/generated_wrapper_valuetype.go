@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolValueType = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.ValueType{}
+		},
+	}
+)
+
 func NewOrigValueType() *otlpprofiles.ValueType {
-	return &otlpprofiles.ValueType{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.ValueType{}
+	}
+	return protoPoolValueType.Get().(*otlpprofiles.ValueType)
+}
+
+func DeleteOrigValueType(orig *otlpprofiles.ValueType, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolValueType.Put(orig)
+	}
 }
 
 func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TypeStrindex = src.TypeStrindex
 	dest.UnitStrindex = src.UnitStrindex
 	dest.AggregationTemporality = src.AggregationTemporality

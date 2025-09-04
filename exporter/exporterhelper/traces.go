@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -32,8 +33,9 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding:   tracesEncoding{},
-		ItemsSizer: request.NewItemsSizer(),
+		ReferenceCounter: tracesReferenceCounter{},
+		Encoding:         tracesEncoding{},
+		ItemsSizer:       request.NewItemsSizer(),
 		BytesSizer: request.BaseSizer{
 			SizeofFunc: func(req request.Request) int64 {
 				return int64(tracesMarshaler.TracesSize(req.(*tracesRequest).td))
@@ -41,6 +43,11 @@ func NewTracesQueueBatchSettings() QueueBatchSettings {
 		},
 	}
 }
+
+var (
+	_ request.Request      = (*tracesRequest)(nil)
+	_ request.ErrorHandler = (*tracesRequest)(nil)
+)
 
 type tracesRequest struct {
 	td         ptrace.Traces
@@ -83,9 +90,22 @@ func (tracesEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) 
 	return tracesMarshaler.MarshalTraces(traces)
 }
 
+var _ queue.ReferenceCounter[Request] = tracesReferenceCounter{}
+
+type tracesReferenceCounter struct{}
+
+func (tracesReferenceCounter) Ref(req Request) {
+	pref.RefTraces(req.(*tracesRequest).td)
+}
+
+func (tracesReferenceCounter) Unref(req Request) {
+	pref.UnrefTraces(req.(*tracesRequest).td)
+}
+
 func (req *tracesRequest) OnError(err error) Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
+		// TODO: Add logic to unref the new request created here.
 		return newTracesRequest(traceError.Data())
 	}
 	return req
@@ -104,6 +124,10 @@ func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
 
 func (req *tracesRequest) setCachedSize(size int) {
 	req.cachedSize = size
+}
+
+func (req *tracesRequest) BytesSize() int {
+	return tracesMarshaler.TracesSize(req.td)
 }
 
 type tracesExporter struct {

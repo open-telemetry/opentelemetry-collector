@@ -9,6 +9,7 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -17,11 +18,48 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolSpan_Link = sync.Pool{
+		New: func() any {
+			return &otlptrace.Span_Link{}
+		},
+	}
+)
+
 func NewOrigSpan_Link() *otlptrace.Span_Link {
-	return &otlptrace.Span_Link{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.Span_Link{}
+	}
+	return protoPoolSpan_Link.Get().(*otlptrace.Span_Link)
+}
+
+func DeleteOrigSpan_Link(orig *otlptrace.Span_Link, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteOrigSpanID(&orig.SpanId, false)
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSpan_Link.Put(orig)
+	}
 }
 
 func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 	CopyOrigTraceState(&dest.TraceState, &src.TraceState)

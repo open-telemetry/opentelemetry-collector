@@ -8,17 +8,63 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolSample = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Sample{}
+		},
+	}
+	ProtoPoolSample_LinkIndex = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Sample_LinkIndex{}
+		},
+	}
+)
+
 func NewOrigSample() *otlpprofiles.Sample {
-	return &otlpprofiles.Sample{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Sample{}
+	}
+	return protoPoolSample.Get().(*otlpprofiles.Sample)
+}
+
+func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	switch ov := orig.LinkIndex_.(type) {
+	case *otlpprofiles.Sample_LinkIndex:
+		if UseProtoPooling.IsEnabled() {
+			ov.LinkIndex = int32(0)
+			ProtoPoolSample_LinkIndex.Put(ov)
+		}
+
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSample.Put(orig)
+	}
 }
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.LocationsStartIndex = src.LocationsStartIndex
 	dest.LocationsLength = src.LocationsLength
 	dest.Value = CopyOrigInt64Slice(dest.Value, src.Value)
@@ -78,9 +124,9 @@ func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
-	if orig.LinkIndex_ != nil {
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
 		dest.WriteObjectField("linkIndex")
-		dest.WriteInt32(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex)
+		dest.WriteInt32(orig.LinkIndex)
 	}
 	if len(orig.TimestampsUnixNano) > 0 {
 		dest.WriteObjectField("timestampsUnixNano")
@@ -115,9 +161,14 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 
 		case "linkIndex", "link_index":
 			{
-				ofm := &otlpprofiles.Sample_LinkIndex{}
-				ofm.LinkIndex = iter.ReadInt32()
-				orig.LinkIndex_ = ofm
+				var ov *otlpprofiles.Sample_LinkIndex
+				if !UseProtoPooling.IsEnabled() {
+					ov = &otlpprofiles.Sample_LinkIndex{}
+				} else {
+					ov = ProtoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+				}
+				ov.LinkIndex = iter.ReadInt32()
+				orig.LinkIndex_ = ov
 			}
 
 		case "timestampsUnixNano", "timestamps_unix_nano":
@@ -155,8 +206,9 @@ func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
 		}
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.LinkIndex_ != nil {
-		n += 1 + proto.Sov(uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		_ = orig
+		n += 1 + proto.Sov(uint64(orig.LinkIndex))
 	}
 	if len(orig.TimestampsUnixNano) > 0 {
 		l = 0
@@ -202,11 +254,10 @@ func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
 		pos--
 		buf[pos] = 0x22
 	}
-	if orig.LinkIndex_ != nil {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	if orig, ok := orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.LinkIndex))
 		pos--
 		buf[pos] = 0x28
-
 	}
 	l = len(orig.TimestampsUnixNano)
 	if l > 0 {
@@ -260,46 +311,64 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 
 			orig.LocationsLength = int32(num)
 		case 3:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.Value = append(orig.Value, int64(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field Value", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.Value = append(orig.Value, int64(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field Value", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
 		case 4:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
 
 		case 5:
@@ -311,29 +380,43 @@ func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
 			if err != nil {
 				return err
 			}
-			ofv := &otlpprofiles.Sample_LinkIndex{}
-			ofv.LinkIndex = int32(num)
-			orig.LinkIndex_ = ofv
+			var ov *otlpprofiles.Sample_LinkIndex
+			if !UseProtoPooling.IsEnabled() {
+				ov = &otlpprofiles.Sample_LinkIndex{}
+			} else {
+				ov = ProtoPoolSample_LinkIndex.Get().(*otlpprofiles.Sample_LinkIndex)
+			}
+			ov.LinkIndex = int32(num)
+			orig.LinkIndex_ = ov
 		case 6:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			var num uint64
-			for startPos < pos {
-				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				var num uint64
+				for startPos < pos {
+					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+					orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+				var num uint64
+				num, pos, err = proto.ConsumeVarint(buf, pos)
 				if err != nil {
 					return err
 				}
 				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
-			}
-			if startPos != pos {
-				return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-startPos)
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
 			}
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)

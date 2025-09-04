@@ -45,8 +45,8 @@ func (ms Location) MoveTo(dest Location) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Location{}
+	internal.DeleteOrigLocation(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingIndex returns the mappingindex associated with this Location.
@@ -55,7 +55,7 @@ func (ms Location) MappingIndex() int32 {
 }
 
 // HasMappingIndex returns true if the Location contains a
-// MappingIndex value, false otherwise.
+// MappingIndex value otherwise.
 func (ms Location) HasMappingIndex() bool {
 	return ms.orig.MappingIndex_ != nil
 }

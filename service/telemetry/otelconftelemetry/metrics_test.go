@@ -12,6 +12,7 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -19,10 +20,9 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/promtest"
-	"go.opentelemetry.io/collector/service/internal/resource"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -93,32 +93,27 @@ func TestTelemetryInit(t *testing.T) {
 	} {
 		prom := promtest.GetAvailableLocalAddressPrometheus(t)
 		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
-		cfg := Config{
-			Metrics: MetricsConfig{
-				Level: configtelemetry.LevelDetailed,
-				MeterProvider: config.MeterProvider{
-					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{
-							Exporter: config.PullMetricExporter{Prometheus: prom},
-						},
-					}},
-				},
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Metrics = MetricsConfig{
+			Level: configtelemetry.LevelDetailed,
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{
+						Exporter: config.PullMetricExporter{Prometheus: prom},
+					},
+				}},
 			},
 		}
-		t.Run(tt.name, func(t *testing.T) {
-			res := resource.New(component.BuildInfo{}, map[string]*string{
-				string(semconv.ServiceNameKey):       ptr("otelcol"),
-				string(semconv.ServiceVersionKey):    ptr("latest"),
-				string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
-			})
-			sdk, err := NewSDK(context.Background(), &cfg, res)
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				assert.NoError(t, sdk.Shutdown(context.Background()))
-			})
+		cfg.Resource = map[string]*string{
+			string(semconv.ServiceNameKey):       ptr("otelcol"),
+			string(semconv.ServiceVersionKey):    ptr("latest"),
+			string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
+		}
 
-			mp, err := newMeterProvider(cfg, sdk)
-			require.NoError(t, err)
+		t.Run(tt.name, func(t *testing.T) {
+			providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
+			mp := providers.MeterProvider()
 
 			createTestMetrics(t, mp)
 
@@ -189,7 +184,7 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	require.Equal(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
 	defer rr.Body.Close()
 
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(rr.Body)
 	require.NoError(t, err)
 
@@ -203,16 +198,14 @@ func TestTelemetryMetricsDisabled(t *testing.T) {
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
 
-	res := resource.New(component.BuildInfo{}, nil)
-	_, err := NewSDK(context.Background(), cfg, res)
-	require.EqualError(t, err, "no valid metric exporter")
+	factory := NewFactory()
+	_, err := factory.CreateProviders(context.Background(), telemetry.Settings{}, cfg)
+	require.EqualError(t, err, "failed to create SDK: no valid metric exporter")
 
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	sdk, err := NewSDK(context.Background(), cfg, res)
-	require.NoError(t, err)
-	assert.NoError(t, sdk.Shutdown(context.Background()))
+	_, _ = newTelemetryProviders(t, telemetry.Settings{}, cfg)
 }
 
 // Test that the MeterProvider implements the 'Enabled' functionality.
@@ -224,15 +217,8 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	sdk, err := NewSDK(context.Background(), cfg, resource.New(component.BuildInfo{}, nil))
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		assert.NoError(t, sdk.Shutdown(context.Background()))
-	})
-	require.NoError(t, err)
-
-	meterProvider, err := newMeterProvider(*cfg, sdk)
-	require.NoError(t, err)
+	providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
+	meterProvider := providers.MeterProvider()
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
 

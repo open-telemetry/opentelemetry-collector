@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -32,8 +33,9 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding:   logsEncoding{},
-		ItemsSizer: request.NewItemsSizer(),
+		ReferenceCounter: logsReferenceCounter{},
+		Encoding:         logsEncoding{},
+		ItemsSizer:       request.NewItemsSizer(),
 		BytesSizer: request.BaseSizer{
 			SizeofFunc: func(req request.Request) int64 {
 				return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
@@ -41,6 +43,11 @@ func NewLogsQueueBatchSettings() QueueBatchSettings {
 		},
 	}
 }
+
+var (
+	_ request.Request      = (*logsRequest)(nil)
+	_ request.ErrorHandler = (*logsRequest)(nil)
+)
 
 type logsRequest struct {
 	ld         plog.Logs
@@ -84,9 +91,22 @@ func (logsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
 	return logsMarshaler.MarshalLogs(logs)
 }
 
+var _ queue.ReferenceCounter[Request] = logsReferenceCounter{}
+
+type logsReferenceCounter struct{}
+
+func (logsReferenceCounter) Ref(req Request) {
+	pref.RefLogs(req.(*logsRequest).ld)
+}
+
+func (logsReferenceCounter) Unref(req Request) {
+	pref.UnrefLogs(req.(*logsRequest).ld)
+}
+
 func (req *logsRequest) OnError(err error) Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
+		// TODO: Add logic to unref the new request created here.
 		return newLogsRequest(logError.Data())
 	}
 	return req
@@ -105,6 +125,10 @@ func (req *logsRequest) size(sizer sizer.LogsSizer) int {
 
 func (req *logsRequest) setCachedSize(size int) {
 	req.cachedSize = size
+}
+
+func (req *logsRequest) BytesSize() int {
+	return logsMarshaler.LogsSize(req.ld)
 }
 
 type logsExporter struct {

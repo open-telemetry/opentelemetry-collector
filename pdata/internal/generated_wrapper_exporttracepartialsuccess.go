@@ -8,17 +8,49 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
+var (
+	protoPoolExportTracePartialSuccess = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTracePartialSuccess{}
+		},
+	}
+)
+
 func NewOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
-	return &otlpcollectortrace.ExportTracePartialSuccess{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectortrace.ExportTracePartialSuccess{}
+	}
+	return protoPoolExportTracePartialSuccess.Get().(*otlpcollectortrace.ExportTracePartialSuccess)
+}
+
+func DeleteOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportTracePartialSuccess.Put(orig)
+	}
 }
 
 func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
 }

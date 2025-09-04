@@ -27,6 +27,7 @@ var ptrace = &Package{
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			`"unsafe"`,
 			``,

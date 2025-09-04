@@ -44,8 +44,8 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	internal.DeleteOrigExportMetricsPartialSuccess(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // RejectedDataPoints returns the rejecteddatapoints associated with this ExportPartialSuccess.

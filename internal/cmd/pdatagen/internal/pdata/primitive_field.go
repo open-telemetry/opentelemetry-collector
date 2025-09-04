@@ -80,6 +80,14 @@ func (pf *PrimitiveField) GenerateTestEncodingValues(*messageStruct) string {
 	return pf.toProtoField().GenTestEncodingValues()
 }
 
+func (pf *PrimitiveField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
+func (pf *PrimitiveField) GenerateDeleteOrig(*messageStruct) string {
+	return pf.toProtoField().GenDeleteOrig()
+}
+
 func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("primitiveCopyOrigTemplate", []byte(primitiveCopyOrigTemplate))
 	return template.Execute(t, pf.templateFields(ms))

@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,11 +32,42 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
+var (
+	protoPoolEntityRef = sync.Pool{
+		New: func() any {
+			return &otlpcommon.EntityRef{}
+		},
+	}
+)
+
 func NewOrigEntityRef() *otlpcommon.EntityRef {
-	return &otlpcommon.EntityRef{}
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.EntityRef{}
+	}
+	return protoPoolEntityRef.Get().(*otlpcommon.EntityRef)
+}
+
+func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolEntityRef.Put(orig)
+	}
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Type = src.Type
 	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
