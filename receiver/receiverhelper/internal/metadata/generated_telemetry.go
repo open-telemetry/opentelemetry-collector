@@ -29,6 +29,7 @@ type TelemetryBuilder struct {
 	ReceiverAcceptedLogRecords   metric.Int64Counter
 	ReceiverAcceptedMetricPoints metric.Int64Counter
 	ReceiverAcceptedSpans        metric.Int64Counter
+	ReceiverDuration             metric.Float64Histogram
 	ReceiverFailedLogRecords     metric.Int64Counter
 	ReceiverFailedMetricPoints   metric.Int64Counter
 	ReceiverFailedSpans          metric.Int64Counter
@@ -83,6 +84,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_receiver_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverDuration, err = builder.meter.Float64Histogram(
+		"otelcol_receiver_duration",
+		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the receiver. [alpha]"),
+		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverFailedLogRecords, err = builder.meter.Int64Counter(

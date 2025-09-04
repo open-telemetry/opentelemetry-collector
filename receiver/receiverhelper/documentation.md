@@ -30,6 +30,14 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_receiver_duration
+
+Duration of time taken to process a batch of telemetry data through the receiver. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
 ### otelcol_receiver_failed_log_records
 
 The number of log records that failed to be processed by the receiver due to internal errors. [alpha]
