@@ -1,0 +1,9 @@
+ResourceLog #0
+Resource SchemaURL: 
+Resource attributes:
+     -> attribute.keep: Str(resource-keep)
+ScopeLogs #0
+ScopeLogs SchemaURL: 
+InstrumentationScope  
+InstrumentationScope attributes:
+     -> attribute.keep: Str(scope-keep)
