@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/extension/extensionauth
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.75.0
 )
