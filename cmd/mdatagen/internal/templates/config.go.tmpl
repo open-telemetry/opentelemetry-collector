@@ -3,6 +3,8 @@
 package {{ .Package }}
 
 import (
+    "fmt"
+
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
     "go.opentelemetry.io/collector/filter"
@@ -10,9 +12,11 @@ import (
 )
 {{ if .Metrics -}}
 
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled             bool   `mapstructure:"enabled"`
+  AggregationStrategy string `mapstructure:"aggregation_strategy"`
 
 	enabledSetByUser bool
 }
@@ -25,9 +29,23 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+  if ms.AggregationStrategy != AggregationStrategySum && 
+     ms.AggregationStrategy != AggregationStrategyAvg && 
+     ms.AggregationStrategy != AggregationStrategyMin && 
+     ms.AggregationStrategy != AggregationStrategyMax {
+    return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+  }
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+  Enabled bool `mapstructure:"enabled"`
+}
+
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
@@ -36,11 +54,36 @@ type MetricsConfig struct {
 	{{- end }}
 }
 
+// AttributesConfig is the collected configuration for all attributes in the
+// component
+type AttributesConfig struct {
+  {{- range $name, $attribute := .Attributes }}
+  {{ $name.Render }} AttributeConfig `mapstructure:"{{ $name }}"`
+  {{- end }}
+}
+
+
+func DefaultAttributesConfig() AttributesConfig {
+  return AttributesConfig{
+    {{- range $name, $attribute := .Attributes }}
+    {{ $name.Render }}: AttributeConfig{
+      Enabled: {{ $attribute.Enabled }},
+    },
+    {{- end }}
+  }
+}
+
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+    {{ if eq $metric.Data.Type "Sum" -}}
+      AggregationStrategy: AggregationStrategySum,
+    {{- end }}
+    {{- if eq $metric.Data.Type "Gauge" -}}
+      AggregationStrategy: AggregationStrategyAvg,
+    {{- end }}
 		},
 		{{- end }}
 	}
@@ -145,6 +188,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
+  Attributes AttributesConfig `mapstructure:"attributes"`
 	{{- if .ResourceAttributes }}
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 	{{- end }}
@@ -153,6 +197,7 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
+    Attributes: DefaultAttributesConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}
