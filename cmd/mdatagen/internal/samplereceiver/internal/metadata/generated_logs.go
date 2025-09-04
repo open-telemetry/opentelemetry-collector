@@ -258,6 +258,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude)
 	}
+	if lbc.ResourceAttributes.StringTemplateResourceAttr.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["string.template.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringTemplateResourceAttr.EventsInclude)
+	}
+	if lbc.ResourceAttributes.StringTemplateResourceAttr.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["string.template.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringTemplateResourceAttr.EventsExclude)
+	}
 
 	return lb
 }

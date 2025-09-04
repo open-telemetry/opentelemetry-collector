@@ -42,6 +42,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
 					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
 					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+					StringTemplateResourceAttr:       ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -64,6 +65,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
 					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
 					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+					StringTemplateResourceAttr:       ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -107,6 +109,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
 				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
 				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+				StringTemplateResourceAttr:       ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -120,6 +123,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
 				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
 				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+				StringTemplateResourceAttr:       ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
