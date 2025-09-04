@@ -116,8 +116,8 @@ func (cfg *BatchConfig) Validate() error {
 		return errors.New("`batch` supports only `items` or `bytes` sizer")
 	}
 
-	if cfg.FlushTimeout <= 0 {
-		return errors.New("`flush_timeout` must be positive")
+	if cfg.FlushTimeout < 0 {
+		return errors.New("`flush_timeout` must be non-negative")
 	}
 
 	if cfg.MinSize < 0 {

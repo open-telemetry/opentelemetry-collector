@@ -59,7 +59,11 @@ func TestBatchConfig_Validate(t *testing.T) {
 
 	cfg = newTestBatchConfig()
 	cfg.FlushTimeout = 0
-	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be positive")
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	cfg = newTestBatchConfig()
+	cfg.FlushTimeout = -1
+	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be non-negative")
 
 	cfg = newTestBatchConfig()
 	cfg.MinSize = -1
