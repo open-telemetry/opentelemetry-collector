@@ -118,3 +118,80 @@ func TestConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigWithAuthenticator(t *testing.T) {
+	tests := []struct {
+		name         string
+		configMap    map[string]any
+		expectedAuth string
+	}{
+		{
+			name: "valid authenticator",
+			configMap: map[string]any{
+				"authenticator": "bearertokenauth",
+				"logs": map[string]any{
+					"level": "info",
+				},
+				"metrics": map[string]any{
+					"level": "none",
+				},
+				"traces": map[string]any{
+					"level": "none",
+				},
+			},
+			expectedAuth: "bearertokenauth",
+		},
+		{
+			name: "valid authenticator with name",
+			configMap: map[string]any{
+				"authenticator": "bearertokenauth/custom",
+				"logs": map[string]any{
+					"level": "info",
+				},
+				"metrics": map[string]any{
+					"level": "none",
+				},
+				"traces": map[string]any{
+					"level": "none",
+				},
+			},
+			expectedAuth: "bearertokenauth/custom",
+		},
+		{
+			name: "no authenticator",
+			configMap: map[string]any{
+				"logs": map[string]any{
+					"level": "info",
+				},
+				"metrics": map[string]any{
+					"level": "none",
+				},
+				"traces": map[string]any{
+					"level": "none",
+				},
+			},
+			expectedAuth: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := confmap.NewFromStringMap(tt.configMap)
+
+			cfg := createDefaultConfig().(*Config)
+			err := conf.Unmarshal(cfg)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedAuth, cfg.Authenticator)
+		})
+	}
+}
+
+func TestConfigValidateWithAuthenticator(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Authenticator = "bearertokenauth"
+
+	// Should not affect validation
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
