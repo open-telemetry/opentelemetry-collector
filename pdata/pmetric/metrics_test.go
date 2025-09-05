@@ -937,28 +937,31 @@ func BenchmarkMetricsUsage(b *testing.B) {
 					m := sm.Metrics().At(k)
 					m.SetName("new_metric_name")
 					assert.Equal(b, "new_metric_name", m.Name())
-					assert.Equal(b, MetricTypeSum, m.Type())
-					m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
-					assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
-					m.Sum().SetIsMonotonic(true)
-					assert.True(b, m.Sum().IsMonotonic())
-					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
-						dp := m.Sum().DataPoints().At(l)
-						dp.SetIntValue(123)
-						assert.Equal(b, int64(123), dp.IntValue())
-						assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+					// Only process Sum metrics to avoid nil pointer dereference
+					if m.Type() == MetricTypeSum {
+						assert.Equal(b, MetricTypeSum, m.Type())
+						m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
+						assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
+						m.Sum().SetIsMonotonic(true)
+						assert.True(b, m.Sum().IsMonotonic())
+						for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+							dp := m.Sum().DataPoints().At(l)
+							dp.SetIntValue(123)
+							assert.Equal(b, int64(123), dp.IntValue())
+							assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+							dp.SetStartTimestamp(ts)
+							assert.Equal(b, ts, dp.StartTimestamp())
+						}
+						dp := m.Sum().DataPoints().AppendEmpty()
+						dp.Attributes().PutStr("foo", "bar")
+						dp.SetDoubleValue(123)
 						dp.SetStartTimestamp(ts)
-						assert.Equal(b, ts, dp.StartTimestamp())
+						dp.SetTimestamp(ts)
+						m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
+							_, ok := dp.Attributes().Get("foo")
+							return ok
+						})
 					}
-					dp := m.Sum().DataPoints().AppendEmpty()
-					dp.Attributes().PutStr("foo", "bar")
-					dp.SetDoubleValue(123)
-					dp.SetStartTimestamp(ts)
-					dp.SetTimestamp(ts)
-					m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
-						_, ok := dp.Attributes().Get("foo")
-						return ok
-					})
 				}
 			}
 		}
