@@ -25,7 +25,9 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
+	internaltelemetry "go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -170,10 +172,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}))
 
 	srv.telemetrySettings = component.TelemetrySettings{
-		Logger:         logger,
-		MeterProvider:  telProviders.MeterProvider(),
-		TracerProvider: telProviders.TracerProvider(),
-		Resource:       telProviders.Resource(),
+		Logger:               logger,
+		MeterProvider:        telProviders.MeterProvider(),
+		TracerProvider:       telProviders.TracerProvider(),
+		Resource:             telProviders.Resource(),
+		AuthenticatorID:      cfg.Telemetry.Authenticator,
+		AuthenticatorManager: internaltelemetry.NewAuthenticatorManager(),
 	}
 	srv.host.Reporter = status.NewReporter(srv.host.NotifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
@@ -191,6 +195,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	err = srv.initExtensions(ctx, cfg.Extensions)
 	if err != nil {
 		return nil, err
+	}
+
+	// Configure authentication for internal telemetry if specified
+	err = srv.configureAuthentication(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure telemetry authentication: %w", err)
 	}
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && len(mpConfig.Readers) != 0 {
@@ -279,6 +289,54 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
+	return nil
+}
+
+// configureAuthentication configures authentication for internal telemetry if specified.
+func (srv *Service) configureAuthentication(ctx context.Context) error {
+	if srv.telemetrySettings.AuthenticatorID == "" {
+		return nil
+	}
+
+	// Parse the authenticator ID
+	var authenticatorID component.ID
+	err := authenticatorID.UnmarshalText([]byte(srv.telemetrySettings.AuthenticatorID))
+	if err != nil {
+		return fmt.Errorf("invalid authenticator ID %q: %w", srv.telemetrySettings.AuthenticatorID, err)
+	}
+
+	// Get the extension from the host
+	extensions := srv.host.GetExtensions()
+	ext, found := extensions[authenticatorID]
+	if !found {
+		return fmt.Errorf("authenticator extension %q not found", authenticatorID)
+	}
+
+	// Create the authenticator provider
+	var httpClient extensionauth.HTTPClient
+	var grpcClient extensionauth.GRPCClient
+
+	// Check if the extension implements HTTP client authentication
+	if hc, ok := ext.(extensionauth.HTTPClient); ok {
+		httpClient = hc
+	}
+
+	// Check if the extension implements gRPC client authentication
+	if gc, ok := ext.(extensionauth.GRPCClient); ok {
+		grpcClient = gc
+	}
+
+	if httpClient == nil && grpcClient == nil {
+		return fmt.Errorf("authenticator extension %q does not implement HTTP or gRPC client authentication", authenticatorID)
+	}
+
+	// Create and set the authenticator provider
+	provider := internaltelemetry.NewDefaultAuthenticatorProvider(httpClient, grpcClient)
+	srv.telemetrySettings.AuthenticatorManager.SetAuthenticator(provider)
+
+	srv.telemetrySettings.Logger.Info("Configured authentication for internal telemetry",
+		zap.String("authenticator", authenticatorID.String()))
+
 	return nil
 }
 

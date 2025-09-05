@@ -23,14 +23,17 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	internaltelemetry "go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -1026,6 +1029,128 @@ func TestValidateGraph(t *testing.T) {
 			} else {
 				require.Error(t, err)
 				assert.Equal(t, tc.expectedError, err.Error())
+			}
+		})
+	}
+}
+
+// Test authenticator extension that implements both HTTP and gRPC client authentication
+type testAuthExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (e *testAuthExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &testRoundTripper{base: base}, nil
+}
+
+func (e *testAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &testCredentials{}, nil
+}
+
+type testRoundTripper struct {
+	base http.RoundTripper
+}
+
+func (rt *testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", "Bearer test-token")
+	return rt.base.RoundTrip(req)
+}
+
+type testCredentials struct{}
+
+func (c *testCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{"authorization": "Bearer test-token"}, nil
+}
+
+func (c *testCredentials) RequireTransportSecurity() bool {
+	return false
+}
+
+func TestAuthenticatorManagerIntegration(t *testing.T) {
+	// Test that the authenticator manager can be configured with real extension implementations
+	manager := internaltelemetry.NewAuthenticatorManager()
+
+	// Test with no authenticator
+	rt, err := manager.GetHTTPRoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+	assert.Equal(t, http.DefaultTransport, rt)
+
+	creds, err := manager.GetGRPCCredentials()
+	require.NoError(t, err)
+	assert.Nil(t, creds)
+
+	// Test with authenticator configured
+	authExt := &testAuthExtension{}
+	provider := internaltelemetry.NewDefaultAuthenticatorProvider(authExt, authExt)
+	manager.SetAuthenticator(provider)
+
+	rt, err = manager.GetHTTPRoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+	assert.IsType(t, &testRoundTripper{}, rt)
+
+	creds, err = manager.GetGRPCCredentials()
+	require.NoError(t, err)
+	assert.IsType(t, &testCredentials{}, creds)
+}
+
+func TestTelemetrySettingsAuthenticatorFields(t *testing.T) {
+	// Test that TelemetrySettings properly contains the new authentication fields
+	settings := component.TelemetrySettings{
+		Logger:               componenttest.NewNopTelemetrySettings().Logger,
+		AuthenticatorID:      "testauth",
+		AuthenticatorManager: internaltelemetry.NewAuthenticatorManager(),
+	}
+
+	assert.Equal(t, "testauth", settings.AuthenticatorID)
+	assert.NotNil(t, settings.AuthenticatorManager)
+
+	// Test the authenticator manager functions
+	rt, err := settings.AuthenticatorManager.GetHTTPRoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+	assert.Equal(t, http.DefaultTransport, rt)
+}
+
+func TestComponentIDParsing(t *testing.T) {
+	// Test that component ID parsing works correctly for authenticator IDs
+	testCases := []struct {
+		name        string
+		idString    string
+		expectError bool
+	}{
+		{
+			name:        "simple ID",
+			idString:    "bearertokenauth",
+			expectError: false,
+		},
+		{
+			name:        "ID with name",
+			idString:    "bearertokenauth/custom",
+			expectError: false,
+		},
+		{
+			name:        "empty ID",
+			idString:    "",
+			expectError: true,
+		},
+		{
+			name:        "invalid format",
+			idString:    "invalid/too/many/parts",
+			expectError: false, // This should actually be valid according to the ID parsing rules
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var id component.ID
+			err := id.UnmarshalText([]byte(tc.idString))
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tc.idString != "" {
+					assert.Equal(t, tc.idString, id.String())
+				}
 			}
 		})
 	}
