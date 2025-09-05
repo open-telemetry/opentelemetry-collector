@@ -21,6 +21,11 @@ jobs:
     if: github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_RIVATE_KEY }}
       - name: Check if user is a member of the org
         id: check-membership
         run: |
@@ -33,7 +38,7 @@ jobs:
             echo "MEMBER_FOUND=false" >> $GITHUB_ENV
           fi
         env:
-          GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
 
       - name: Add comment to PR if author is not a member
         if: env.MEMBER_FOUND == 'false'
@@ -41,4 +46,4 @@ jobs:
           USERNAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
           gh pr comment ${PR_NUM} --repo open-telemetry/opentelemetry-collector --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
         env:
-          GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
