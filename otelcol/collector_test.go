@@ -7,6 +7,8 @@ package otelcol
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -77,10 +79,46 @@ func TestCollectorCancelContext(t *testing.T) {
 }
 
 func TestCollectorStateAfterConfigChange(t *testing.T) {
+	metricsPushRequests := make(chan chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		unblock := make(chan struct{})
+		select {
+		case <-r.Context().Done():
+		case metricsPushRequests <- unblock:
+			select {
+			case <-unblock:
+			case <-r.Context().Done():
+			}
+		}
+	}))
+	defer srv.Close()
+
 	var watcher confmap.WatcherFunc
 	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		watcher = w
-		return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
+		conf := newConfFromFile(t, uri[5:])
+		conf["service"].(map[string]any)["telemetry"] = map[string]any{
+			"metrics": map[string]any{
+				"level": "basic",
+				"readers": []any{
+					map[string]any{
+						// Use a periodic metric reader with a long period,
+						// so we should only see an export on shutdown.
+						"periodic": map[string]any{
+							"interval": 30000, // 30s
+							"exporter": map[string]any{
+								"otlp": map[string]any{
+									"endpoint": srv.URL,
+									"insecure": true,
+									"protocol": "http/protobuf",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		return confmap.NewRetrieved(conf)
 	})
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
@@ -95,23 +133,36 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 		Factories:              nopFactories,
 		ConfigProviderSettings: set,
 	})
-
 	require.NoError(t, err)
 
 	wg := startCollector(context.Background(), t, col)
-
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
+	}, 10*time.Second, 10*time.Millisecond)
 
+	// On config change, the collector will internally close
+	// and recreate the service. The metrics reader will try to
+	// push to the OTLP endpoint. We block the request to check
+	// the state of the collector during the config change event.
 	watcher(&confmap.ChangeEvent{})
-
+	unblock := <-metricsPushRequests
+	assert.Equal(t, StateClosing, col.GetState())
+	close(unblock)
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
+	}, 10*time.Second, 10*time.Millisecond)
 
+	// Do it again, but this time call Shutdown during the
+	// config change to make sure the internal service shutdown
+	// does not influence collector shutdown.
+	watcher(&confmap.ChangeEvent{})
+	unblock = <-metricsPushRequests
+	assert.Equal(t, StateClosing, col.GetState())
 	col.Shutdown()
+	close(unblock)
 
+	// After the config reload, the final shutdown should occur.
+	close(<-metricsPushRequests)
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
 }
