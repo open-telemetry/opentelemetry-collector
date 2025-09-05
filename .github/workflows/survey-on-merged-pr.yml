@@ -15,35 +15,34 @@ jobs:
   comment-on-pr:
     name: Add survey to PR if author is not a member
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     if: github.event.pull_request.merged == true
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-      - name: Check if user is a member of the org
-        id: check-membership
-        run: |
-          USERNAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
-          ORG="${{ github.repository_owner }}"
-          STATUS=$(gh api "orgs/$ORG/members/$USERNAME" --silent && echo "true" || echo "false")
-          if [[ "$STATUS" == "true" ]]; then
-            echo "MEMBER_FOUND=true" >> $GITHUB_ENV
-          else
-            echo "MEMBER_FOUND=false" >> $GITHUB_ENV
-          fi
-        env:
-          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
 
-      - name: Add comment to PR if author is not a member
-        if: env.MEMBER_FOUND == 'false'
+      - name: Add survey comment if author is not a member or bot
         run: |
-          USERNAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
-          gh pr comment ${PR_NUM} --repo open-telemetry/opentelemetry-collector --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
+          USERNAME="${{ github.event.pull_request.user.login }}"
+          USER_TYPE="${{ github.event.pull_request.user.type }}"
+          ORG="${{ github.repository_owner }}"
+          
+          # Skip if user is a bot
+          if [[ "$USER_TYPE" == "Bot" ]]; then
+            echo "Skipping survey for bot user: $USERNAME"
+            exit 0
+          fi
+          
+          # Skip if user is an org member
+          if gh api "orgs/$ORG/members/$USERNAME" --silent; then
+            echo "Skipping survey for org member: $USERNAME"
+            exit 0
+          fi
+          
+          # Add survey comment for external contributor
+          echo "Adding survey comment for external contributor: $USERNAME"
+          gh pr comment ${PR_NUM} --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
         env:
           GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
