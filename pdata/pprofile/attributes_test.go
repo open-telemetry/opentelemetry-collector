@@ -13,36 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestAddAttribute(t *testing.T) {
-	table := NewAttributeTableSlice()
-	att := table.AppendEmpty()
-	att.SetKey("hello")
-	att.Value().SetStr("world")
-
-	// Add a brand new attribute
-	loc := NewLocation()
-	err := AddAttribute(table, loc, "bonjour", pcommon.NewValueStr("monde"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{1}, loc.AttributeIndices().AsRaw())
-
-	// Add an already existing attribute
-	mapp := NewMapping()
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
-
-	// Add a duplicate attribute
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
-}
-
 func TestFromAttributeIndices(t *testing.T) {
 	table := NewAttributeTableSlice()
 	att := table.AppendEmpty()
