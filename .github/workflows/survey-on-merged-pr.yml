@@ -21,11 +21,11 @@ jobs:
     if: github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
-          private-key: ${{ secrets.OTELBOT_RIVATE_KEY }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: Check if user is a member of the org
         id: check-membership
         run: |
