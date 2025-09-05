@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/collector/extension/extensionauth v1.40.0
 	go.opentelemetry.io/collector/featuregate v1.40.0
 	go.opentelemetry.io/collector/pdata v1.40.0
 	go.opentelemetry.io/collector/pipeline v1.40.0
@@ -46,3 +47,5 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
