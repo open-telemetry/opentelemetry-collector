@@ -16,6 +16,11 @@ type Config struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 	Traces  TracesConfig  `mapstructure:"traces,omitempty"`
 
+	// Authenticator specifies the name of the extension to use for authenticating
+	// internal telemetry exports. If set, the collector will use this extension
+	// to authenticate all HTTP and gRPC connections made by internal telemetry exporters.
+	Authenticator string `mapstructure:"authenticator,omitempty"`
+
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
 	// if they are not specified here. In order to suppress such attributes the

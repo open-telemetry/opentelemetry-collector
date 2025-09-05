@@ -39,6 +39,15 @@ type TelemetrySettings struct {
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
 
+	// AuthenticatorID specifies the name of the extension to use for authenticating
+	// internal telemetry exports. If set, the collector will use this extension
+	// to authenticate all HTTP and gRPC connections made by internal telemetry exporters.
+	AuthenticatorID string
+
+	// AuthenticatorManager provides access to authentication for internal telemetry.
+	// This is used internally by the collector to apply authentication to telemetry exports.
+	AuthenticatorManager *AuthenticatorManager
+
 	// Extra attributes added to instrumentation scopes
 	extraAttributes attribute.Set
 }
