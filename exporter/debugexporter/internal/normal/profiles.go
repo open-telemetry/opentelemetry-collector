@@ -48,7 +48,7 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 					attrs := []string{}
 					for _, i := range profile.AttributeIndices().AsRaw() {
 						a := dic.AttributeTable().At(int(i))
-						attrs = append(attrs, fmt.Sprintf("%s=%s", a.Key(), a.Value().AsString()))
+						attrs = append(attrs, fmt.Sprintf("%s=%s", dic.StringTable().At(int(a.KeyStrindex())), a.Value().AsString()))
 					}
 
 					buffer.WriteString(" ")

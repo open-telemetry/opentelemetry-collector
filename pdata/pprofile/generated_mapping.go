@@ -98,50 +98,6 @@ func (ms Mapping) AttributeIndices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
 }
 
-// HasFunctions returns the hasfunctions associated with this Mapping.
-func (ms Mapping) HasFunctions() bool {
-	return ms.orig.HasFunctions
-}
-
-// SetHasFunctions replaces the hasfunctions associated with this Mapping.
-func (ms Mapping) SetHasFunctions(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasFunctions = v
-}
-
-// HasFilenames returns the hasfilenames associated with this Mapping.
-func (ms Mapping) HasFilenames() bool {
-	return ms.orig.HasFilenames
-}
-
-// SetHasFilenames replaces the hasfilenames associated with this Mapping.
-func (ms Mapping) SetHasFilenames(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasFilenames = v
-}
-
-// HasLineNumbers returns the haslinenumbers associated with this Mapping.
-func (ms Mapping) HasLineNumbers() bool {
-	return ms.orig.HasLineNumbers
-}
-
-// SetHasLineNumbers replaces the haslinenumbers associated with this Mapping.
-func (ms Mapping) SetHasLineNumbers(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasLineNumbers = v
-}
-
-// HasInlineFrames returns the hasinlineframes associated with this Mapping.
-func (ms Mapping) HasInlineFrames() bool {
-	return ms.orig.HasInlineFrames
-}
-
-// SetHasInlineFrames replaces the hasinlineframes associated with this Mapping.
-func (ms Mapping) SetHasInlineFrames(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasInlineFrames = v
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()

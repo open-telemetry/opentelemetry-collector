@@ -14,33 +14,33 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-// AttributeUnitSlice logically represents a slice of AttributeUnit.
+// StackSlice logically represents a slice of Stack.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewAttributeUnitSlice function to create new instances.
+// Must use NewStackSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type AttributeUnitSlice struct {
-	orig  *[]*otlpprofiles.AttributeUnit
+type StackSlice struct {
+	orig  *[]*otlpprofiles.Stack
 	state *internal.State
 }
 
-func newAttributeUnitSlice(orig *[]*otlpprofiles.AttributeUnit, state *internal.State) AttributeUnitSlice {
-	return AttributeUnitSlice{orig: orig, state: state}
+func newStackSlice(orig *[]*otlpprofiles.Stack, state *internal.State) StackSlice {
+	return StackSlice{orig: orig, state: state}
 }
 
-// NewAttributeUnitSlice creates a AttributeUnitSlice with 0 elements.
+// NewStackSlice creates a StackSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewAttributeUnitSlice() AttributeUnitSlice {
-	orig := []*otlpprofiles.AttributeUnit(nil)
-	return newAttributeUnitSlice(&orig, internal.NewState())
+func NewStackSlice() StackSlice {
+	orig := []*otlpprofiles.Stack(nil)
+	return newStackSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewAttributeUnitSlice()".
-func (es AttributeUnitSlice) Len() int {
+// Returns "0" for a newly instance created with "NewStackSlice()".
+func (es StackSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -52,8 +52,8 @@ func (es AttributeUnitSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es AttributeUnitSlice) At(i int) AttributeUnit {
-	return newAttributeUnit((*es.orig)[i], es.state)
+func (es StackSlice) At(i int) Stack {
+	return newStack((*es.orig)[i], es.state)
 }
 
 // All returns an iterator over index-value pairs in the slice.
@@ -61,8 +61,8 @@ func (es AttributeUnitSlice) At(i int) AttributeUnit {
 //	for i, v := range es.All() {
 //	    ... // Do something with index-value pair
 //	}
-func (es AttributeUnitSlice) All() iter.Seq2[int, AttributeUnit] {
-	return func(yield func(int, AttributeUnit) bool) {
+func (es StackSlice) All() iter.Seq2[int, Stack] {
+	return func(yield func(int, Stack) bool) {
 		for i := 0; i < es.Len(); i++ {
 			if !yield(i, es.At(i)) {
 				return
@@ -75,37 +75,37 @@ func (es AttributeUnitSlice) All() iter.Seq2[int, AttributeUnit] {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new AttributeUnitSlice can be initialized:
+// Here is how a new StackSlice can be initialized:
 //
-//	es := NewAttributeUnitSlice()
+//	es := NewStackSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
+func (es StackSlice) EnsureCapacity(newCap int) {
 	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.AttributeUnit, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Stack, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty AttributeUnit.
-// It returns the newly added AttributeUnit.
-func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
+// AppendEmpty will append to the end of the slice an empty Stack.
+// It returns the newly added Stack.
+func (es StackSlice) AppendEmpty() Stack {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigAttributeUnit())
+	*es.orig = append(*es.orig, internal.NewOrigStack())
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es AttributeUnitSlice) MoveAndAppendTo(dest AttributeUnitSlice) {
+func (es StackSlice) MoveAndAppendTo(dest StackSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
@@ -123,12 +123,12 @@ func (es AttributeUnitSlice) MoveAndAppendTo(dest AttributeUnitSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
+func (es StackSlice) RemoveIf(f func(Stack) bool) {
 	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigAttributeUnit((*es.orig)[i], true)
+			internal.DeleteOrigStack((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -147,18 +147,18 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
+func (es StackSlice) CopyTo(dest StackSlice) {
 	dest.state.AssertMutable()
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigStackSlice(*dest.orig, *es.orig)
 }
 
-// Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
-// provided less function so that two instances of AttributeUnitSlice
+// Sort sorts the Stack elements within StackSlice given the
+// provided less function so that two instances of StackSlice
 // can be compared.
-func (es AttributeUnitSlice) Sort(less func(a, b AttributeUnit) bool) {
+func (es StackSlice) Sort(less func(a, b Stack) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

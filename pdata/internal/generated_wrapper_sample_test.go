@@ -139,30 +139,27 @@ func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
 
 func genTestFailingUnmarshalProtoValuesSample() map[string][]byte {
 	return map[string][]byte{
-		"invalid_field":                       {0x02},
-		"LocationsStartIndex/wrong_wire_type": {0xc},
-		"LocationsStartIndex/missing_value":   {0x8},
-		"LocationsLength/wrong_wire_type":     {0x14},
-		"LocationsLength/missing_value":       {0x10},
-		"Value/wrong_wire_type":               {0x1c},
-		"Value/missing_value":                 {0x1a},
-		"AttributeIndices/wrong_wire_type":    {0x24},
-		"AttributeIndices/missing_value":      {0x22},
-		"LinkIndex/wrong_wire_type":           {0x2c},
-		"LinkIndex/missing_value":             {0x28},
-		"TimestampsUnixNano/wrong_wire_type":  {0x34},
-		"TimestampsUnixNano/missing_value":    {0x32},
+		"invalid_field":                      {0x02},
+		"StackIndex/wrong_wire_type":         {0xc},
+		"StackIndex/missing_value":           {0x8},
+		"Values/wrong_wire_type":             {0x14},
+		"Values/missing_value":               {0x12},
+		"AttributeIndices/wrong_wire_type":   {0x1c},
+		"AttributeIndices/missing_value":     {0x1a},
+		"LinkIndex/wrong_wire_type":          {0x24},
+		"LinkIndex/missing_value":            {0x20},
+		"TimestampsUnixNano/wrong_wire_type": {0x2c},
+		"TimestampsUnixNano/missing_value":   {0x2a},
 	}
 }
 
 func genTestEncodingValuesSample() map[string]*otlpprofiles.Sample {
 	return map[string]*otlpprofiles.Sample{
-		"empty":                             NewOrigSample(),
-		"LocationsStartIndex/test":          {LocationsStartIndex: int32(13)},
-		"LocationsLength/test":              {LocationsLength: int32(13)},
-		"Value/default_and_test":            {Value: []int64{int64(0), int64(13)}},
-		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}}, "LinkIndex/default": {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(0)}},
-		"LinkIndex/test":                      {LinkIndex_: &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}},
+		"empty":                               NewOrigSample(),
+		"StackIndex/test":                     {StackIndex: int32(13)},
+		"Values/default_and_test":             {Values: []int64{int64(0), int64(13)}},
+		"AttributeIndices/default_and_test":   {AttributeIndices: []int32{int32(0), int32(13)}},
+		"LinkIndex/test":                      {LinkIndex: int32(13)},
 		"TimestampsUnixNano/default_and_test": {TimestampsUnixNano: []uint64{uint64(0), uint64(13)}},
 	}
 }

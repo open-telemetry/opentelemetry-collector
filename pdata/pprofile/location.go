@@ -8,6 +8,5 @@ func (ms Location) Equal(val Location) bool {
 	return ms.MappingIndex() == val.MappingIndex() &&
 		ms.Address() == val.Address() &&
 		ms.AttributeIndices().Equal(val.AttributeIndices()) &&
-		ms.IsFolded() == val.IsFolded() &&
 		ms.Line().Equal(val.Line())
 }

@@ -32,9 +32,10 @@ var profilesRequestJSON = []byte(`
 						"scope": {},
 						"profiles": [
 							{
+								"sampleType": {},
 								"sample": [
 									{
-										"locationsStartIndex": 42
+										"stackIndex": 42
 									}
 								],
 								"periodType": {}
@@ -57,7 +58,7 @@ func TestRequestToPData(t *testing.T) {
 func TestRequestJSON(t *testing.T) {
 	tr := NewExportRequest()
 	require.NoError(t, tr.UnmarshalJSON(profilesRequestJSON))
-	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Sample().At(0).LocationsStartIndex())
+	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Sample().At(0).StackIndex())
 
 	got, err := tr.MarshalJSON()
 	require.NoError(t, err)

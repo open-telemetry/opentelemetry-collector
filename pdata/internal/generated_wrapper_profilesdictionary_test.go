@@ -16,7 +16,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/featuregate"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -153,8 +152,8 @@ func genTestFailingUnmarshalProtoValuesProfilesDictionary() map[string][]byte {
 		"StringTable/missing_value":      {0x2a},
 		"AttributeTable/wrong_wire_type": {0x34},
 		"AttributeTable/missing_value":   {0x32},
-		"AttributeUnits/wrong_wire_type": {0x3c},
-		"AttributeUnits/missing_value":   {0x3a},
+		"StackTable/wrong_wire_type":     {0x3c},
+		"StackTable/missing_value":       {0x3a},
 	}
 }
 
@@ -166,7 +165,7 @@ func genTestEncodingValuesProfilesDictionary() map[string]*otlpprofiles.Profiles
 		"FunctionTable/default_and_test":  {FunctionTable: []*otlpprofiles.Function{{}, GenTestOrigFunction()}},
 		"LinkTable/default_and_test":      {LinkTable: []*otlpprofiles.Link{{}, GenTestOrigLink()}},
 		"StringTable/default_and_test":    {StringTable: []string{"", "test_stringtable"}},
-		"AttributeTable/default_and_test": {AttributeTable: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
-		"AttributeUnits/default_and_test": {AttributeUnits: []*otlpprofiles.AttributeUnit{{}, GenTestOrigAttributeUnit()}},
+		"AttributeTable/default_and_test": {AttributeTable: []*otlpprofiles.KeyValueAndUnit{{}, GenTestOrigKeyValueAndUnit()}},
+		"StackTable/default_and_test":     {StackTable: []*otlpprofiles.Stack{{}, GenTestOrigStack()}},
 	}
 }

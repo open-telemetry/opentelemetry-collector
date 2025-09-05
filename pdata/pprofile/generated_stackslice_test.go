@@ -16,82 +16,82 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestAttributeUnitSlice(t *testing.T) {
-	es := NewAttributeUnitSlice()
+func TestStackSlice(t *testing.T) {
+	es := NewStackSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, internal.NewState())
+	es = newStackSlice(&[]*otlpprofiles.Stack{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewAttributeUnit()
-	testVal := generateTestAttributeUnit()
+	emptyVal := NewStack()
+	testVal := generateTestStack()
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigAttributeUnit()
+		(*es.orig)[i] = internal.GenTestOrigStack()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
-func TestAttributeUnitSliceReadOnly(t *testing.T) {
+func TestStackSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, sharedState)
+	es := newStackSlice(&[]*otlpprofiles.Stack{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
-	es2 := NewAttributeUnitSlice()
+	es2 := NewStackSlice()
 	es.CopyTo(es2)
 	assert.Panics(t, func() { es2.CopyTo(es) })
 	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
 	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
-func TestAttributeUnitSlice_CopyTo(t *testing.T) {
-	dest := NewAttributeUnitSlice()
-	src := generateTestAttributeUnitSlice()
+func TestStackSlice_CopyTo(t *testing.T) {
+	dest := NewStackSlice()
+	src := generateTestStackSlice()
 	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
+	assert.Equal(t, generateTestStackSlice(), dest)
 	dest.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
+	assert.Equal(t, generateTestStackSlice(), dest)
 }
 
-func TestAttributeUnitSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestAttributeUnitSlice()
+func TestStackSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestStackSlice()
 
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
 	assert.Equal(t, es.Len(), cap(*es.orig))
-	assert.Equal(t, generateTestAttributeUnitSlice(), es)
+	assert.Equal(t, generateTestStackSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
-	assert.Less(t, generateTestAttributeUnitSlice().Len(), ensureLargeLen)
+	assert.Less(t, generateTestStackSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	assert.Equal(t, generateTestAttributeUnitSlice(), es)
+	assert.Equal(t, generateTestStackSlice(), es)
 }
 
-func TestAttributeUnitSlice_MoveAndAppendTo(t *testing.T) {
+func TestStackSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestAttributeUnitSlice()
-	dest := NewAttributeUnitSlice()
-	src := generateTestAttributeUnitSlice()
+	expectedSlice := generateTestStackSlice()
+	dest := NewStackSlice()
+	src := generateTestStackSlice()
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
+	assert.Equal(t, generateTestStackSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
+	assert.Equal(t, generateTestStackSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestAttributeUnitSlice().MoveAndAppendTo(dest)
+	generateTestStackSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
@@ -106,34 +106,34 @@ func TestAttributeUnitSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestAttributeUnitSlice_RemoveIf(t *testing.T) {
+func TestStackSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewAttributeUnitSlice()
-	emptySlice.RemoveIf(func(el AttributeUnit) bool {
+	emptySlice := NewStackSlice()
+	emptySlice.RemoveIf(func(el Stack) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestAttributeUnitSlice()
+	filtered := generateTestStackSlice()
 	pos := 0
-	filtered.RemoveIf(func(el AttributeUnit) bool {
+	filtered.RemoveIf(func(el Stack) bool {
 		pos++
 		return pos%2 == 1
 	})
 	assert.Equal(t, 2, filtered.Len())
 }
 
-func TestAttributeUnitSlice_RemoveIfAll(t *testing.T) {
-	got := generateTestAttributeUnitSlice()
-	got.RemoveIf(func(el AttributeUnit) bool {
+func TestStackSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestStackSlice()
+	got.RemoveIf(func(el Stack) bool {
 		return true
 	})
 	assert.Equal(t, 0, got.Len())
 }
 
-func TestAttributeUnitSliceAll(t *testing.T) {
-	ms := generateTestAttributeUnitSlice()
+func TestStackSliceAll(t *testing.T) {
+	ms := generateTestStackSlice()
 	assert.NotEmpty(t, ms.Len())
 
 	var c int
@@ -144,15 +144,15 @@ func TestAttributeUnitSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestAttributeUnitSlice_Sort(t *testing.T) {
-	es := generateTestAttributeUnitSlice()
-	es.Sort(func(a, b AttributeUnit) bool {
+func TestStackSlice_Sort(t *testing.T) {
+	es := generateTestStackSlice()
+	es.Sort(func(a, b Stack) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b AttributeUnit) bool {
+	es.Sort(func(a, b Stack) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
@@ -160,8 +160,8 @@ func TestAttributeUnitSlice_Sort(t *testing.T) {
 	}
 }
 
-func generateTestAttributeUnitSlice() AttributeUnitSlice {
-	ms := NewAttributeUnitSlice()
-	*ms.orig = internal.GenerateOrigTestAttributeUnitSlice()
+func generateTestStackSlice() StackSlice {
+	ms := NewStackSlice()
+	*ms.orig = internal.GenerateOrigTestStackSlice()
 	return ms
 }

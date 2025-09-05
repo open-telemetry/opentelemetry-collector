@@ -79,16 +79,16 @@ func TestProfilesDictionary_StringTable(t *testing.T) {
 
 func TestProfilesDictionary_AttributeTable(t *testing.T) {
 	ms := NewProfilesDictionary()
-	assert.Equal(t, NewAttributeTableSlice(), ms.AttributeTable())
-	ms.orig.AttributeTable = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, generateTestAttributeTableSlice(), ms.AttributeTable())
+	assert.Equal(t, NewKeyValueAndUnitSlice(), ms.AttributeTable())
+	ms.orig.AttributeTable = internal.GenerateOrigTestKeyValueAndUnitSlice()
+	assert.Equal(t, generateTestKeyValueAndUnitSlice(), ms.AttributeTable())
 }
 
-func TestProfilesDictionary_AttributeUnits(t *testing.T) {
+func TestProfilesDictionary_StackTable(t *testing.T) {
 	ms := NewProfilesDictionary()
-	assert.Equal(t, NewAttributeUnitSlice(), ms.AttributeUnits())
-	ms.orig.AttributeUnits = internal.GenerateOrigTestAttributeUnitSlice()
-	assert.Equal(t, generateTestAttributeUnitSlice(), ms.AttributeUnits())
+	assert.Equal(t, NewStackSlice(), ms.StackTable())
+	ms.orig.StackTable = internal.GenerateOrigTestStackSlice()
+	assert.Equal(t, generateTestStackSlice(), ms.StackTable())
 }
 
 func generateTestProfilesDictionary() ProfilesDictionary {

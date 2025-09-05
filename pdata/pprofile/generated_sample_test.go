@@ -43,31 +43,21 @@ func TestSample_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigSample(), sharedState)) })
 }
 
-func TestSample_LocationsStartIndex(t *testing.T) {
+func TestSample_StackIndex(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, int32(0), ms.LocationsStartIndex())
-	ms.SetLocationsStartIndex(int32(13))
-	assert.Equal(t, int32(13), ms.LocationsStartIndex())
+	assert.Equal(t, int32(0), ms.StackIndex())
+	ms.SetStackIndex(int32(13))
+	assert.Equal(t, int32(13), ms.StackIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsStartIndex(int32(13)) })
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetStackIndex(int32(13)) })
 }
 
-func TestSample_LocationsLength(t *testing.T) {
+func TestSample_Values(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, int32(0), ms.LocationsLength())
-	ms.SetLocationsLength(int32(13))
-	assert.Equal(t, int32(13), ms.LocationsLength())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLocationsLength(int32(13)) })
-}
-
-func TestSample_Value(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, pcommon.NewInt64Slice(), ms.Value())
-	ms.orig.Value = internal.GenerateOrigTestInt64Slice()
-	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Value())
+	assert.Equal(t, pcommon.NewInt64Slice(), ms.Values())
+	ms.orig.Values = internal.GenerateOrigTestInt64Slice()
+	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Values())
 }
 
 func TestSample_AttributeIndices(t *testing.T) {
@@ -81,14 +71,10 @@ func TestSample_LinkIndex(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LinkIndex())
 	ms.SetLinkIndex(int32(13))
-	assert.True(t, ms.HasLinkIndex())
 	assert.Equal(t, int32(13), ms.LinkIndex())
-	ms.RemoveLinkIndex()
-	assert.False(t, ms.HasLinkIndex())
-	dest := NewSample()
-	dest.SetLinkIndex(int32(13))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasLinkIndex())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLinkIndex(int32(13)) })
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {

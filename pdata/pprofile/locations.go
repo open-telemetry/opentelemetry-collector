@@ -9,9 +9,9 @@ import (
 	"math"
 )
 
-// FromLocationIndices builds a slice containing all the locations of a Profile.
-// Updates made to the returned map will not be applied back to the Profile.
-func FromLocationIndices(table LocationSlice, record Profile) LocationSlice {
+// FromLocationIndices builds a slice containing all the locations of a Stack.
+// Updates made to the returned map will not be applied back to the Stack.
+func FromLocationIndices(table LocationSlice, record Stack) LocationSlice {
 	m := NewLocationSlice()
 	m.EnsureCapacity(record.LocationIndices().Len())
 
@@ -28,9 +28,9 @@ var (
 	errTooManyLocationIndicesEntries = errors.New("too many entries in LocationIndices")
 )
 
-// PutLocation updates a LocationTable and a Profile's LocationIndices to
+// PutLocation updates a LocationTable and a Stack's LocationIndices to
 // add or update a location.
-func PutLocation(table LocationSlice, record Profile, loc Location) error {
+func PutLocation(table LocationSlice, record Stack, loc Location) error {
 	for i, locIdx := range record.LocationIndices().All() {
 		idx := int(locIdx)
 		if idx < 0 || idx >= table.Len() {

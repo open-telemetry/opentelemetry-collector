@@ -423,8 +423,8 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 			failureSizeDP = dp
 		}
 	}
-	require.Equal(t, int64(68), successSizeDP.Value)
-	require.Equal(t, int64(36), failureSizeDP.Value)
+	require.Equal(t, int64(76), successSizeDP.Value)
+	require.Equal(t, int64(40), failureSizeDP.Value)
 
 	// Check that the logger was called for errors
 	require.Len(t, logs.All(), 2)

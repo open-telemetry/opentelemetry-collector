@@ -51,25 +51,13 @@ func (ms Location) MoveTo(dest Location) {
 
 // MappingIndex returns the mappingindex associated with this Location.
 func (ms Location) MappingIndex() int32 {
-	return ms.orig.GetMappingIndex()
-}
-
-// HasMappingIndex returns true if the Location contains a
-// MappingIndex value otherwise.
-func (ms Location) HasMappingIndex() bool {
-	return ms.orig.MappingIndex_ != nil
+	return ms.orig.MappingIndex
 }
 
 // SetMappingIndex replaces the mappingindex associated with this Location.
 func (ms Location) SetMappingIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: v}
-}
-
-// RemoveMappingIndex removes the mappingindex associated with this Location.
-func (ms Location) RemoveMappingIndex() {
-	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = nil
+	ms.orig.MappingIndex = v
 }
 
 // Address returns the address associated with this Location.
@@ -86,17 +74,6 @@ func (ms Location) SetAddress(v uint64) {
 // Line returns the Line associated with this Location.
 func (ms Location) Line() LineSlice {
 	return newLineSlice(&ms.orig.Line, ms.state)
-}
-
-// IsFolded returns the isfolded associated with this Location.
-func (ms Location) IsFolded() bool {
-	return ms.orig.IsFolded
-}
-
-// SetIsFolded replaces the isfolded associated with this Location.
-func (ms Location) SetIsFolded(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.IsFolded = v
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Location.
