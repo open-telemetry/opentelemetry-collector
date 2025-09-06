@@ -301,7 +301,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			var metrics pmetric.Metrics
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
 
@@ -336,7 +336,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				counter, _ := mp.Meter(meterName).Int64Counter(meterName + ".counter")
 				counter.Add(t.Context(), 1)
 			}
-			assert.NoError(t, providers.Shutdown(t.Context())) // should flush metrics
+			require.NoError(t, providers.Shutdown(t.Context())) // should flush metrics
 
 			var scopes []string
 			for _, rm := range metrics.ResourceMetrics().All() {
