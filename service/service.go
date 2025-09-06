@@ -124,14 +124,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 
 	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
-	if mpConfig.Views == nil {
-		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
-	}
-
 	telFactory := otelconftelemetry.NewFactory()
 	telset := telemetry.Settings{
-		BuildInfo:  set.BuildInfo,
-		ZapOptions: set.LoggingOptions,
+		BuildInfo:    set.BuildInfo,
+		ZapOptions:   set.LoggingOptions,
+		DefaultViews: configureViews,
 	}
 
 	telProviders, err := telFactory.CreateProviders(ctx, telset, &cfg.Telemetry)
