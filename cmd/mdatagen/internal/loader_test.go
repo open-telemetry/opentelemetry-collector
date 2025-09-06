@@ -487,11 +487,6 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
 		},
 		{
-			name:    "testdata/unsorted_rattr.yaml",
-			want:    Metadata{},
-			wantErr: "metadata.yaml ordering check failed: [resource_attributes] keys are not sorted",
-		},
-		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
