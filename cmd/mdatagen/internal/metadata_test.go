@@ -6,6 +6,7 @@ package internal
 import (
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -172,12 +173,7 @@ func TestSupportsSignal(t *testing.T) {
 }
 
 func contains(r string, rs []string) bool {
-	for _, s := range rs {
-		if s == r {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(rs, r)
 }
 
 func TestCodeCovID(t *testing.T) {
