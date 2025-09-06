@@ -236,7 +236,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		grpclog.SetLogger(col.service.Logger(), cfg.Service.Telemetry.Logs.Level)
+		grpclog.SetLogger(col.service.Logger())
 	}
 
 	if err = col.service.Start(ctx); err != nil {
