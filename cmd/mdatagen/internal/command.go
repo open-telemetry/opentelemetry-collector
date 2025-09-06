@@ -78,12 +78,12 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
-	raw, readErr := os.ReadFile(ymlPath)
+	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
 	if readErr != nil {
 		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
 	}
 
-	if err := validateYAMLKeyOrder(raw); err != nil {
+	if err = validateYAMLKeyOrder(raw); err != nil {
 		return fmt.Errorf("metadata.yaml ordering check failed: %w", err)
 	}
 
