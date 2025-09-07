@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
@@ -162,6 +163,7 @@ func TestProfilesConsumeFailure(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockProfilesConsumer{err: expectedErr}
 
 	reader := sdkmetric.NewManualReader()
@@ -181,7 +183,7 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
 
 	err = consumer.ConsumeProfiles(ctx, pd)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var rm metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &rm)
@@ -299,6 +301,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockProfilesConsumer{}
 
 	reader := sdkmetric.NewManualReader()
@@ -329,7 +332,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	sp := r.ScopeProfiles().AppendEmpty()
 	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
 	err = consumer.ConsumeProfiles(ctx, pd2)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	// Third batch: 2 successful items
 	mockConsumer.err = nil
@@ -349,7 +352,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	sp = r.ScopeProfiles().AppendEmpty()
 	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
 	err = consumer.ConsumeProfiles(ctx, pd4)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var rm metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &rm)

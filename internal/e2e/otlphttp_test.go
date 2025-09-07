@@ -287,7 +287,7 @@ func TestIssue_4221(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
 }
 
-func startTraces(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
+func startTraces(t *testing.T, baseURL, overrideURL string) exporter.Traces {
 	factory := otlphttpexporter.NewFactory()
 	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
@@ -297,7 +297,7 @@ func startTraces(t *testing.T, baseURL string, overrideURL string) exporter.Trac
 	return exp
 }
 
-func startMetrics(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
+func startMetrics(t *testing.T, baseURL, overrideURL string) exporter.Metrics {
 	factory := otlphttpexporter.NewFactory()
 	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
@@ -307,7 +307,7 @@ func startMetrics(t *testing.T, baseURL string, overrideURL string) exporter.Met
 	return exp
 }
 
-func startLogs(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
+func startLogs(t *testing.T, baseURL, overrideURL string) exporter.Logs {
 	factory := otlphttpexporter.NewFactory()
 	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL

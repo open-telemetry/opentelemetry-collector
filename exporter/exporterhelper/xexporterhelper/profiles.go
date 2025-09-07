@@ -132,9 +132,6 @@ func NewProfiles(
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
 
-// Deprecated: [v0.130.0] use NewProfiles.
-var NewProfilesExporter = NewProfiles
-
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
 	return func(ctx context.Context, request exporterhelper.Request) error {

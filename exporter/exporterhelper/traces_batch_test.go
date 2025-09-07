@@ -140,12 +140,13 @@ func TestMergeSplitTraces(t *testing.T) {
 
 func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      RequestSizerType
-		maxSize  int
-		lr1      Request
-		lr2      Request
-		expected []Request
+		name               string
+		szt                RequestSizerType
+		maxSize            int
+		lr1                Request
+		lr2                Request
+		expected           []Request
+		expectPartialError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -230,15 +231,54 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 					return ld
 				}()),
 			},
+			expectPartialError: false,
+		},
+		{
+			name:    "unsplittable_large_trace",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(1)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           []Request{},
+			expectPartialError: true,
+		},
+		{
+			name:    "splittable_then_unsplittable_trace",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 1000,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(2)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("large_attr", string(make([]byte, 1001)))
+				return ld
+			}()),
+			lr2: nil,
+			expected: []Request{newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(1)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				return ld
+			}())},
+			expectPartialError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
-			require.NoError(t, err)
+			if tt.expectPartialError {
+				require.ErrorContains(t, err, "one span size is greater than max size, dropping items:")
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*tracesRequest).td, res[i].(*tracesRequest).td)
+				assert.Equal(t,
+					tracesMarshaler.TracesSize(tt.expected[i].(*tracesRequest).td),
+					tracesMarshaler.TracesSize(res[i].(*tracesRequest).td))
 			}
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -18,7 +19,7 @@ var (
 	logsMarshaler               = &plog.ProtoMarshaler{}
 )
 
-func NewLogs(cons consumer.Logs, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Logs {
+func NewLogs(cons consumer.Logs, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Logs {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -62,7 +63,12 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	err := c.consumer.ConsumeLogs(ctx, ld)
 	if err != nil {
-		attrs = &c.withFailureAttrs
+		if consumererror.IsDownstream(err) {
+			attrs = &c.withRefusedAttrs
+		} else {
+			attrs = &c.withFailureAttrs
+			err = consumererror.NewDownstream(err)
+		}
 	}
 	return err
 }

@@ -25,7 +25,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
 		require.Equal(t, http.StatusNoContent, rr.Code)
 	})
 
@@ -47,7 +47,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		require.NotNil(t, handler)
 
 		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
 		require.True(t, called)
 		require.Equal(t, http.StatusOK, rr.Code)
 	})

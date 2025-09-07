@@ -6,6 +6,7 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -62,4 +63,25 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 // MarkReadOnly marks the Traces as shared so that no further modifications can be done on it.
 func (ms Traces) MarkReadOnly() {
 	internal.SetTracesState(internal.Traces(ms), internal.StateReadOnly)
+}
+
+func (ms Traces) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(ms.getOrig().ResourceSpans) > 0 {
+		dest.WriteObjectField("resourceSpans")
+		internal.MarshalJSONOrigResourceSpansSlice(ms.getOrig().ResourceSpans, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func (ms Traces) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resourceSpans", "resource_spans":
+			ms.getOrig().ResourceSpans = internal.UnmarshalJSONOrigResourceSpansSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

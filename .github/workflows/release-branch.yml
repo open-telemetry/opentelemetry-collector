@@ -8,6 +8,9 @@ on:
       - 'v0.[0-9]+.[0-9]+'
       - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
 
+permissions:
+  contents: read
+
 jobs:
   release-branch:
     runs-on: ubuntu-latest
@@ -22,12 +25,22 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.10
+          go-version: oldstable
+          cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
 
       - name: Setup Git config
         run: |
-          git config --global user.name "opentelemetrybot"
-          git config --global user.email "107717825+opentelemetrybot@users.noreply.github.com"
+          git config --global user.name "otelbot"
+          git config --global user.email "197425009+otelbot@users.noreply.github.com"
 
       - name: Run release-branch.sh
         run: |

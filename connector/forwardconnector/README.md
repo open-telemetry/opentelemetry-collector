@@ -43,7 +43,7 @@ connectors:
 
 ### Example Usage
 
-Annotate distinct log streams, then merge them together, batch, and export.
+Annotate distinct log streams, then merge them together, and export.
 
 ```yaml
 receivers:
@@ -52,7 +52,6 @@ receivers:
 processors:
   attributes/blue:
   attributes/green:
-  batch:
 exporters:
   bar:
 connectors:
@@ -69,7 +68,6 @@ service:
       exporters: [forward]
     logs:
       receivers: [forward]
-      processors: [batch]
       exporters: [bar]
 ```
 
@@ -82,7 +80,6 @@ processors:
   resourcedetection:
   sample:
   attributes:
-  batch:
 exporters:
   bar/hot:
   bar/cold:
@@ -96,7 +93,7 @@ service:
       exporters: [forward]
     traces/hot:
       receivers: [forward]
-      processors: [sample, batch]
+      processors: [sample]
       exporters: [bar/hot]
     traces/cold:
       receivers: [forward]
@@ -111,7 +108,6 @@ receivers:
   foo:
 processors:
   filter:
-  batch:
 exporters:
   bar:
 # connectors:
@@ -123,7 +119,6 @@ service:
         - foo
       processors:
         - filter
-        - batch
       exporters:
         - bar
       # - forward

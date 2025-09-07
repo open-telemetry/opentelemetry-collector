@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanID(t *testing.T) {
@@ -39,18 +41,6 @@ func TestSpanIDMarshal(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSpanIDMarshalJSON(t *testing.T) {
-	sid := SpanID([8]byte{})
-	json, err := sid.MarshalJSON()
-	require.NoError(t, err)
-	assert.JSONEq(t, `""`, string(json))
-
-	sid = [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}
-	json, err = sid.MarshalJSON()
-	require.NoError(t, err)
-	assert.JSONEq(t, `"1223ad1223ad1223"`, string(json))
-}
-
 func TestSpanIDUnmarshal(t *testing.T) {
 	buf := []byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}
 
@@ -71,29 +61,18 @@ func TestSpanIDUnmarshal(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSpanIDUnmarshalJSON(t *testing.T) {
-	sid := SpanID{}
-	err := sid.UnmarshalJSON([]byte(`""`))
-	require.NoError(t, err)
-	assert.EqualValues(t, [8]byte{}, sid)
+func TestSpanIDMarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := SpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
+	src.MarshalJSONStream(stream)
+	require.NoError(t, stream.Error())
 
-	err = sid.UnmarshalJSON([]byte(`"1234567812345678"`))
-	require.NoError(t, err)
-	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := SpanID{}
+	dest.UnmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 
-	err = sid.UnmarshalJSON([]byte(`1234567812345678`))
-	require.NoError(t, err)
-	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
-
-	err = sid.UnmarshalJSON([]byte(`"nothex"`))
-	require.Error(t, err)
-
-	err = sid.UnmarshalJSON([]byte(`"1"`))
-	require.Error(t, err)
-
-	err = sid.UnmarshalJSON([]byte(`"123"`))
-	require.Error(t, err)
-
-	err = sid.UnmarshalJSON([]byte(`"`))
-	assert.Error(t, err)
+	assert.Equal(t, src, dest)
 }

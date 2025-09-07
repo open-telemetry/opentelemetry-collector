@@ -128,12 +128,13 @@ func TestMergeSplitLogs(t *testing.T) {
 
 func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      RequestSizerType
-		maxSize  int
-		lr1      Request
-		lr2      Request
-		expected []Request
+		name               string
+		szt                RequestSizerType
+		maxSize            int
+		lr1                Request
+		lr2                Request
+		expected           []Request
+		expectPartialError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -219,14 +220,52 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           []Request{},
+			expectPartialError: true,
+		},
+		{
+			name:    "splittable_then_unsplittable_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 1000,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 1001)))
+				return ld
+			}()),
+			lr2: nil,
+			expected: []Request{newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+				return ld
+			}())},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
-			require.NoError(t, err)
+			if tt.expectPartialError {
+				require.ErrorContains(t, err, "one log record size is greater than max size, dropping")
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+				assert.Equal(t,
+					logsMarshaler.LogsSize(tt.expected[i].(*logsRequest).ld),
+					logsMarshaler.LogsSize(res[i].(*logsRequest).ld))
 			}
 		})
 	}

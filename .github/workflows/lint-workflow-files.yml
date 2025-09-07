@@ -6,6 +6,9 @@ on:
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -17,14 +20,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: '1.24'
+          go-version: stable
+          cache: false
 
-      - name: Install Actionlint
-        run: |
-          mkdir -p .tools
-          cd internal/tools
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          mv $(go env GOPATH)/bin/actionlint ../../.tools/actionlint
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
 
       - name: Run Actionlint
         run: |

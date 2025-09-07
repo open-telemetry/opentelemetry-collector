@@ -8,7 +8,7 @@ import "go.opentelemetry.io/collector/featuregate"
 // PersistRequestContextFeatureGate controls whether request context should be preserved in the persistent queue.
 var PersistRequestContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.PersistRequestContext",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.128.0"),
 	featuregate.WithRegisterDescription("controls whether context should be stored alongside requests in the persistent queue"),
 )

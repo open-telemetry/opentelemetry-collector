@@ -140,7 +140,7 @@ func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	return m.sizeInBytes
 }
 
-func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
