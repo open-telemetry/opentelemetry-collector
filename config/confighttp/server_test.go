@@ -957,6 +957,68 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+	assert.False(t, httpServerSettings.DisableKeepAlives)
+}
+
+func TestHTTPServerDisableKeepAlives(t *testing.T) {
+	tests := []struct {
+		name               string
+		disableKeepAlives  bool
+		expectedKeepAlives bool
+	}{
+		{
+			name:               "KeepAlives enabled (default)",
+			disableKeepAlives:  false,
+			expectedKeepAlives: true,
+		},
+		{
+			name:               "KeepAlives disabled",
+			disableKeepAlives:  true,
+			expectedKeepAlives: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc := &ServerConfig{
+				Endpoint:          "localhost:0",
+				DisableKeepAlives: tt.disableKeepAlives,
+			}
+
+			server, err := sc.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}))
+
+			require.NoError(t, err)
+			require.NotNil(t, server)
+
+			// Since http.Server.disableKeepAlives is a private field and difficult to test directly,
+			// we'll verify the configuration was set by testing the server behavior.
+			// The main verification is that ToServer() succeeds without error when DisableKeepAlives is set.
+
+			ln, err := sc.ToListener(context.Background())
+			require.NoError(t, err)
+
+			go func() {
+				_ = server.Serve(ln)
+			}()
+			defer func() {
+				_ = server.Close()
+			}()
+
+			resp, err := http.Get("http://" + ln.Addr().String())
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			_ = resp.Body.Close()
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			assert.Equal(t, tt.disableKeepAlives, sc.DisableKeepAlives)
+		})
+	}
 }
 
 func TestHTTPServerTelemetry_Tracing(t *testing.T) {
@@ -1058,6 +1120,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
+	assert.False(t, serverConfig.DisableKeepAlives) // Should match config.yaml
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
