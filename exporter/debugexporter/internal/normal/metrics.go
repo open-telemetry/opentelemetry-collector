@@ -132,14 +132,14 @@ func writeExponentialHistogramDataPoints(metric pmetric.Metric) (lines []string)
 
 		for i := 0; i < dataPoint.Negative().BucketCounts().Len(); i++ {
 			index := int(dataPoint.Negative().Offset()) + i
-			lowerBound := math.Pow(base, float64(index)) * -1
-			value += fmt.Sprintf(" le%v=%d", lowerBound, dataPoint.Negative().BucketCounts().At(i))
+			upperBound := math.Pow(base, float64(index+1)) * -1
+			value += fmt.Sprintf(" le%v=%d", upperBound, dataPoint.Negative().BucketCounts().At(i))
 		}
 
 		for i := 0; i < dataPoint.Positive().BucketCounts().Len(); i++ {
 			index := int(dataPoint.Positive().Offset()) + i
-			lowerBound := math.Pow(base, float64(index))
-			value += fmt.Sprintf(" le%v=%d", lowerBound, dataPoint.Positive().BucketCounts().At(i))
+			upperBound := math.Pow(base, float64(index+1))
+			value += fmt.Sprintf(" le%v=%d", upperBound, dataPoint.Positive().BucketCounts().At(i))
 		}
 
 		if dataPoint.ZeroCount() > 0 {

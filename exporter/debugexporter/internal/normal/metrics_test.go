@@ -146,7 +146,9 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 				dataPoint.Positive().BucketCounts().FromRaw([]uint64{40, 50, 60})
 				return metrics
 			}(),
-			expected: `http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13 le-0.8408964152537146=10 le-0.9170040432046712=20 le1.0905077326652577=40 le1.189207115002721=50 le1.2968395546510096=60
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
+http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13 le-0.9170040432046712=10 le-1=20 le1.189207115002721=40 le1.2968395546510096=50 le1.414213562373095=60
 `,
 		},
 		{
