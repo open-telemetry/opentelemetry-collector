@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -57,7 +58,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithQueueBatch(qCfg, QueueBatchSettings[request.Request]{}))
+		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
 	require.Error(t, err)
 }
 
@@ -140,8 +141,8 @@ func noopExport(context.Context, request.Request) error {
 	return nil
 }
 
-func newFakeQueueBatch() QueueBatchSettings[request.Request] {
-	return QueueBatchSettings[request.Request]{
+func newFakeQueueBatch() queuebatch.Settings[request.Request] {
+	return queuebatch.Settings[request.Request]{
 		Encoding:   fakeEncoding{},
 		ItemsSizer: request.NewItemsSizer(),
 		BytesSizer: requesttest.NewBytesSizer(),

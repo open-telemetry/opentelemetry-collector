@@ -14,17 +14,22 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-// Settings defines settings for creating a QueueBatch.
+// Settings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type Settings[T any] struct {
-	Signal           pipeline.Signal
-	ID               component.ID
-	Telemetry        component.TelemetrySettings
 	ReferenceCounter queue.ReferenceCounter[T]
 	Encoding         queue.Encoding[T]
 	ItemsSizer       request.Sizer[T]
 	BytesSizer       request.Sizer[T]
 	Partitioner      Partitioner[T]
-	MergeCtx         func(context.Context, context.Context) context.Context
+}
+
+// AllSettings defines settings for creating a QueueBatch.
+type AllSettings[T any] struct {
+	Settings[T]
+	Signal    pipeline.Signal
+	ID        component.ID
+	Telemetry component.TelemetrySettings
+	MergeCtx  func(context.Context, context.Context) context.Context
 }
 
 type QueueBatch struct {
@@ -33,7 +38,7 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	set Settings[request.Request],
+	set AllSettings[request.Request],
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {

@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporterhelper
+component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Respect `num_consumers` when batching and partitioning are enabled.
+note: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime.
 
 # One or more tracking issues or pull requests related to the change
-issues: [13607]
+issues: [13130, 13245]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

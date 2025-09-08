@@ -11,27 +11,36 @@ import (
 
 const unmarshalProtoFloat = `{{ if .repeated -}}
 	case {{ .protoFieldID }}:
-		if wireType != proto.WireTypeLen {
-			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
-		}
-		var length int
-		length, pos, err = proto.ConsumeLen(buf, pos)
-		if err != nil {
-			return err
-		}
-		startPos := pos - length
-		size := length / {{ div .bitSize 8 }}
-		orig.{{ .fieldName }} = make([]{{ .goType }}, size)
-		var num uint{{ .bitSize }}
-		for i := 0; i < size; i++ {
-			num, startPos, err = proto.ConsumeI{{ .bitSize }}(buf[:pos], startPos)
+		switch wireType {
+		case proto.WireTypeLen:
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }}[i] = math.Float{{ .bitSize }}frombits(num)
-		}
-		if startPos != pos {
-			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			startPos := pos - length
+			size := length / {{ div .bitSize 8 }}
+			orig.{{ .fieldName }} = make([]{{ .goType }}, size)
+			var num uint{{ .bitSize }}
+			for i := 0; i < size; i++ {
+				num, startPos, err = proto.ConsumeI{{ .bitSize }}(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.{{ .fieldName }}[i] = math.Float{{ .bitSize }}frombits(num)
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			}
+		case proto.WireTypeI{{ .bitSize }}:
+			var num uint{{ .bitSize }}
+			num, pos, err = proto.ConsumeI{{ .bitSize }}(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, math.Float{{ .bitSize }}frombits(num))
+		default:
+			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
 {{- else }}
 	case {{ .protoFieldID }}:
@@ -58,27 +67,36 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 
 const unmarshalProtoFixed = `{{ if .repeated -}}
 	case {{ .protoFieldID }}:
-		if wireType != proto.WireTypeLen {
-			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
-		}
-		var length int
-		length, pos, err = proto.ConsumeLen(buf, pos)
-		if err != nil {
-			return err
-		}
-		startPos := pos - length
-		size := length / {{ div .bitSize 8 }}
-		orig.{{ .fieldName }} = make([]{{ .goType }}, size)
-		var num uint{{ .bitSize }}
-		for i := 0; i < size; i++ {
-			num, startPos, err = proto.ConsumeI{{ .bitSize }}(buf[:pos], startPos)
+		switch wireType {
+		case proto.WireTypeLen:
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }}[i] = {{ .goType }}(num)
-		}
-		if startPos != pos {
-			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			startPos := pos - length
+			size := length / {{ div .bitSize 8 }}
+			orig.{{ .fieldName }} = make([]{{ .goType }}, size)
+			var num uint{{ .bitSize }}
+			for i := 0; i < size; i++ {
+				num, startPos, err = proto.ConsumeI{{ .bitSize }}(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.{{ .fieldName }}[i] = {{ .goType }}(num)
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			}
+		case proto.WireTypeI{{ .bitSize }}:
+			var num uint{{ .bitSize }}
+			num, pos, err = proto.ConsumeI{{ .bitSize }}(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .goType }}(num))
+		default:
+			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
 {{- else }}
 	case {{ .protoFieldID }}:
@@ -105,27 +123,36 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 
 const unmarshalProtoBool = `{{ if .repeated -}}
 	case {{ .protoFieldID }}:
-		if wireType != proto.WireTypeLen {
-			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
-		}
-		var length int
-		length, pos, err = proto.ConsumeLen(buf, pos)
-		if err != nil {
-			return err
-		}
-		startPos := pos - length
-		// Optimistically assume that bools are encoded as 1 byte even in variant form.
-		orig.{{ .fieldName }} = make([]bool, 0, length)
-		var num uint64
-		for startPos < pos {
-			num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+		switch wireType {
+		case proto.WireTypeLen:
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			// Optimistically assume that bools are encoded as 1 byte even in variant form.
+			orig.{{ .fieldName }} = make([]bool, 0, length)
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, num != 0)
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			}
+		case proto.WireTypeVarint:
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
 			if err != nil {
 				return err
 			}
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, num != 0)
-		}
-		if startPos != pos {
-			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+		default:
+			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
 {{- else }}
 	case {{ .protoFieldID }}:
@@ -152,25 +179,34 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 
 const unmarshalProtoVarint = `{{ if .repeated -}}
 	case {{ .protoFieldID }}:
-		if wireType != proto.WireTypeLen {
-			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
-		}
-		var length int
-		length, pos, err = proto.ConsumeLen(buf, pos)
-		if err != nil {
-			return err
-		}
-		startPos := pos - length
-		var num uint64
-		for startPos < pos {
-			num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+		switch wireType {
+		case proto.WireTypeLen:
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .goType }}(num))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			}
+		case proto.WireTypeVarint:
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
 			if err != nil {
 				return err
 			}
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .goType }}(num))
-		}
-		if startPos != pos {
-			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+		default:
+			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
 {{- else }}
 	case {{ .protoFieldID }}:
@@ -298,28 +334,38 @@ const unmarshalProtoMessage = `
 
 const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 	case {{ .protoFieldID }}:
-		if wireType != proto.WireTypeLen {
-			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
-		}
-		var length int
-		length, pos, err = proto.ConsumeLen(buf, pos)
-		if err != nil {
-			return err
-		}
-		startPos := pos - length
-		// Optimistically assume that bools are encoded as 1 byte even in variant form.
-		orig.{{ .fieldName }} = make([]bool, 0, pos - startPos)
-		var num uint64
-		for startPos < pos {
-			num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+		switch wireType {
+		case proto.WireTypeLen:
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			// Optimistically assume that bools are encoded as 1 byte even in variant form.
+			orig.{{ .fieldName }} = make([]bool, 0, pos - startPos)
+			var num uint64
+			for startPos < pos {
+				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
+				if err != nil {
+					return err
+				}
+				orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
+			}
+			if startPos != pos {
+				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
+			}
+		case proto.WireTypeVarint:
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
 			if err != nil {
 				return err
 			}
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
+		default:
+			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
-		if startPos != pos {
-			return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
-		}
+		
 {{- else }}
 	case {{ .protoFieldID }}:
 		if wireType != proto.WireTypeVarint {
