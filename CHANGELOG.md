@@ -7,6 +7,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.41.0/v0.135.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add new `exporter_queue_batch_send_size` and `exporter_queue_batch_send_size_bytes` metrics, showing the size of telemetry batches from the exporter. (#12894)
+
+<!-- previous-version -->
+
 ## v1.40.0/v0.134.0
 
 ### 💡 Enhancements 💡
