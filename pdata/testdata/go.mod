@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/pdata/testdata
 go 1.24
 
 require (
-	go.opentelemetry.io/collector/pdata v1.40.0
+	go.opentelemetry.io/collector/pdata v1.41.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.134.0
 )
 
@@ -13,7 +13,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.40.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
