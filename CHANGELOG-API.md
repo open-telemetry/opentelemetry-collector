@@ -7,6 +7,20 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.41.0/v0.135.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated AddAttribute method (#13764)
+
+### 💡 Enhancements 💡
+
+- `configmiddleware`: Stabilize `configmiddleware` module (#13422)
+  This only stabilizes the configuration interface but does not stabilize the middlewares themselves or the way of implementing them.
+- `xpdata`: Add experimental MapBuilder struct to optimize pcommon.Map construction (#13617)
+
+<!-- previous-version -->
+
 ## v1.40.0/v0.134.0
 
 ### 💡 Enhancements 💡
