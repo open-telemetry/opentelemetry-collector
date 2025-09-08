@@ -957,23 +957,30 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.False(t, httpServerSettings.DisableKeepAlives)
+	assert.Nil(t, httpServerSettings.KeepAlivesEnabled)
 }
 
-func TestHTTPServerDisableKeepAlives(t *testing.T) {
+func TestHTTPServerKeepAlives(t *testing.T) {
+	boolPtr := func(b bool) *bool { return &b }
+
 	tests := []struct {
 		name               string
-		disableKeepAlives  bool
+		keepAlivesEnabled  *bool
 		expectedKeepAlives bool
 	}{
 		{
-			name:               "KeepAlives enabled (default)",
-			disableKeepAlives:  false,
+			name:               "KeepAlives default (nil - enabled)",
+			keepAlivesEnabled:  nil,
+			expectedKeepAlives: true,
+		},
+		{
+			name:               "KeepAlives explicitly enabled",
+			keepAlivesEnabled:  boolPtr(true),
 			expectedKeepAlives: true,
 		},
 		{
 			name:               "KeepAlives disabled",
-			disableKeepAlives:  true,
+			keepAlivesEnabled:  boolPtr(false),
 			expectedKeepAlives: false,
 		},
 	}
@@ -982,7 +989,7 @@ func TestHTTPServerDisableKeepAlives(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
 				Endpoint:          "localhost:0",
-				DisableKeepAlives: tt.disableKeepAlives,
+				KeepAlivesEnabled: tt.keepAlivesEnabled,
 			}
 
 			server, err := sc.ToServer(
@@ -1016,7 +1023,7 @@ func TestHTTPServerDisableKeepAlives(t *testing.T) {
 			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-			assert.Equal(t, tt.disableKeepAlives, sc.DisableKeepAlives)
+			assert.Equal(t, tt.keepAlivesEnabled, sc.KeepAlivesEnabled)
 		})
 	}
 }
@@ -1120,7 +1127,8 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
-	assert.False(t, serverConfig.DisableKeepAlives) // Should match config.yaml
+	assert.NotNil(t, serverConfig.KeepAlivesEnabled) // Should match config.yaml
+	assert.True(t, *serverConfig.KeepAlivesEnabled)  // Should be true as configured
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 

@@ -88,12 +88,12 @@ type ServerConfig struct {
 	// zero, there is no timeout.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
-
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	KeepAlivesEnabled *bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -279,7 +279,12 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	}
 
 	// Set keep-alives enabled/disabled
-	server.SetKeepAlivesEnabled(!sc.DisableKeepAlives)
+	// Default to true (enabled) if not specified, matching http.Server default behavior
+	keepAlivesEnabled := true
+	if sc.KeepAlivesEnabled != nil {
+		keepAlivesEnabled = *sc.KeepAlivesEnabled
+	}
+	server.SetKeepAlivesEnabled(keepAlivesEnabled)
 
 	return server, err
 }
