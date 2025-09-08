@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -40,7 +41,7 @@ func TestTracesText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTextTracesMarshaler().MarshalTraces(tt.in)
+			got, err := NewTextTracesMarshaler(internal.NewDefaultOutputConfig()).MarshalTraces(tt.in)
 			require.NoError(t, err)
 			out, err := os.ReadFile(filepath.Join("testdata", "traces", tt.out))
 			require.NoError(t, err)
@@ -48,6 +49,265 @@ func TestTracesText(t *testing.T) {
 			assert.Equal(t, expected, string(got))
 		})
 	}
+}
+
+func TestTracesWithOutputConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		in     ptrace.Traces
+		out    string
+		config internal.OutputConfig
+	}{
+		{
+			name: "marshal_traces_with_attributes_filter_include",
+			in:   generateBasicTraces(),
+			out:  "trace_with_attributes_filter_include.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_with_attributes_filter_exclude",
+			in:   generateBasicTraces(),
+			out:  "trace_with_attributes_filter_exclude.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_with_record_disabled",
+			in:   generateBasicTraces(),
+			out:  "trace_with_record_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_with_scope_disabled",
+			in:   generateBasicTraces(),
+			out:  "trace_with_scope_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_with_resource_disabled",
+			in:   generateBasicTraces(),
+			out:  "trace_with_resource_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_with_attributes_disabled",
+			in:   generateBasicTraces(),
+			out:  "trace_with_attributes_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_resource_disabled_but_scope_record_enabled",
+			in:   generateBasicTraces(),
+			out:  "trace_resource_disabled_scope_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_traces_scope_disabled_but_record_enabled",
+			in:   generateBasicTraces(),
+			out:  "trace_scope_disabled_record_enabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					Attributes: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.Attributes{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewTextTracesMarshaler(tt.config).MarshalTraces(tt.in)
+			require.NoError(t, err)
+			out, err := os.ReadFile(filepath.Join("testdata", "traces", tt.out))
+			require.NoError(t, err)
+			expected := strings.ReplaceAll(string(out), "\r", "")
+			assert.Equal(t, expected, string(got))
+		})
+	}
+}
+
+func generateBasicTraces() ptrace.Traces {
+	td := testdata.GenerateTraces(1)
+	rs := td.ResourceSpans().At(0)
+	rs.Resource().Attributes().PutStr("attribute.keep", "resource-keep")
+	rs.Resource().Attributes().PutStr("attribute.remove", "resource-remove")
+	ss := rs.ScopeSpans().At(0)
+	ss.Scope().Attributes().PutStr("attribute.keep", "scope-keep")
+	ss.Scope().Attributes().PutStr("attribute.remove", "scope-remove")
+	span := ss.Spans().At(0)
+	span.Attributes().PutStr("attribute.keep", "span-keep")
+	span.Attributes().PutStr("attribute.remove", "span-remove")
+	return td
 }
 
 func generateTracesWithEntityRefs() ptrace.Traces {
