@@ -1,0 +1,22 @@
+type: batch
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: processor
+  stability:
+    beta: [ traces, metrics, logs ]
+  distributions: [ core, contrib, k8s ]
+
+config:
+  type: object
+  additionalProperties: false
+  description: "Configuration parameters for the batch processor."
+  properties:
+    ExampleSecret:
+      type: string
+      default: "secret_default"
+      goJSONSchema:
+        type: configopaque.String
+        imports:
+        - go.opentelemetry.io/collector/config/configopaque

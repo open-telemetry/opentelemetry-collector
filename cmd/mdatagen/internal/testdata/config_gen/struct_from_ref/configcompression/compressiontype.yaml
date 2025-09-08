@@ -1,0 +1,13 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/configcompression
+title: Type
+type: string
+enum:
+- gzip
+- zlib
+- deflate
+- snappy
+- zstd
+- none
+- ''
+default: 'none'

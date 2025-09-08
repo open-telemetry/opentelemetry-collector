@@ -1,0 +1,24 @@
+type: batch
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: processor
+  stability:
+    beta: [ traces, metrics, logs ]
+  distributions: [ core, contrib, k8s ]
+
+config_sources:
+- schema_id:    "opentelemetry.io/collector/configcompression"
+  package_name: "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata/config_gen/struct_from_ref/configcompression"
+  output_name:  "./configcompression/compressiontype.go"
+
+config:
+  type: object
+  additionalProperties: false
+  properties:
+    ExampleType:
+      type: object
+      properties:
+        compression:
+          "$ref": "./testdata/config_gen/struct_from_ref/configcompression/compressiontype.yaml"
