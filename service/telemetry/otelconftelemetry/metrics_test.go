@@ -12,7 +12,6 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -184,7 +183,7 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	require.Equal(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
 	defer rr.Body.Close()
 
-	parser := expfmt.NewTextParser(model.UTF8Validation)
+	var parser expfmt.TextParser
 	parsed, err := parser.TextToMetricFamilies(rr.Body)
 	require.NoError(t, err)
 
