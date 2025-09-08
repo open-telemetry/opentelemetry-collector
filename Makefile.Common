@@ -96,8 +96,8 @@ common/goimports: $(GOIMPORTS)
 common/gofumpt: $(GOFUMPT)
 	$(GOFUMPT) -l -w -extra .
 
-.PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
 
 .PHONY: generate
