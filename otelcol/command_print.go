@@ -48,7 +48,7 @@ however this is considered unstable.
 
 Validation is enabled by default, as a safety measure.
 
-All modes are experimental requiring otelcol.printInitialConfig feature gate.`,
+All modes are experimental, requiring the otelcol.printInitialConfig feature gate.`,
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			pc := printContext{
