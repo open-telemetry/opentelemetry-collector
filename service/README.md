@@ -169,10 +169,6 @@ Use `print-config` with `--mode=unredacted` and `--feature-gates=otelcol.printIn
    ./otelcorecol print-config --mode=unredacted --config=file:examples/local/otel-config.yaml
 ```
 
-Note that by default the configuration will only print when it is
-valid.  To print a potentially invalid configuration, use
-`--validate=false`.
-
 ## How to print the final configuration in JSON format?
 
 Use `print-config` with `--format=json` and
