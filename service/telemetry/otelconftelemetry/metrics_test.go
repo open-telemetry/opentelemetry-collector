@@ -6,7 +6,9 @@ package otelconftelemetry
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -20,6 +22,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -254,4 +258,92 @@ func TestInstrumentEnabled(t *testing.T) {
 	floatGauge, err := meter.Float64Gauge("int64.updowncounter")
 	require.NoError(t, err)
 	assert.Implements(t, new(enabledInstrument), floatGauge)
+}
+
+func TestTelemetryMetrics_DefaultViews(t *testing.T) {
+	type testcase struct {
+		configuredViews    []config.View
+		expectedMeterNames []string
+	}
+
+	defaultViews := func(level configtelemetry.Level) []config.View {
+		assert.Equal(t, configtelemetry.LevelDetailed, level)
+		return []config.View{{
+			Selector: &config.ViewSelector{
+				MeterName: ptr("a"),
+			},
+			Stream: &config.ViewStream{
+				Aggregation: &config.ViewStreamAggregation{
+					Drop: config.ViewStreamAggregationDrop{},
+				},
+			},
+		}}
+	}
+
+	for name, tc := range map[string]testcase{
+		"no_configured_views": {
+			expectedMeterNames: []string{"b", "c"},
+		},
+		"configured_views": {
+			configuredViews: []config.View{{
+				Selector: &config.ViewSelector{
+					MeterName: ptr("b"),
+				},
+				Stream: &config.ViewStream{
+					Aggregation: &config.ViewStreamAggregation{
+						Drop: config.ViewStreamAggregationDrop{},
+					},
+				},
+			}},
+			expectedMeterNames: []string{"a", "c"},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var metrics pmetric.Metrics
+			srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+				body, err := io.ReadAll(req.Body)
+				assert.NoError(t, err)
+
+				exportRequest := pmetricotlp.NewExportRequest()
+				assert.NoError(t, exportRequest.UnmarshalProto(body))
+				metrics = exportRequest.Metrics()
+			}))
+			defer srv.Close()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Metrics.Level = configtelemetry.LevelDetailed
+			cfg.Metrics.Views = tc.configuredViews
+			cfg.Metrics.Readers = []config.MetricReader{{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.PushMetricExporter{
+						OTLP: &config.OTLPMetric{
+							Endpoint: ptr(srv.URL),
+							Protocol: ptr("http/protobuf"),
+							Insecure: ptr(true),
+						},
+					},
+				},
+			}}
+
+			factory := NewFactory()
+			settings := telemetry.Settings{DefaultViews: defaultViews}
+			providers, err := factory.CreateProviders(t.Context(), settings, cfg)
+			require.NoError(t, err)
+
+			mp := providers.MeterProvider()
+			for _, meterName := range []string{"a", "b", "c"} {
+				counter, _ := mp.Meter(meterName).Int64Counter(meterName + ".counter")
+				counter.Add(t.Context(), 1)
+			}
+			require.NoError(t, providers.Shutdown(t.Context())) // should flush metrics
+
+			var scopes []string
+			for _, rm := range metrics.ResourceMetrics().All() {
+				for _, sm := range rm.ScopeMetrics().All() {
+					scopes = append(scopes, sm.Scope().Name())
+				}
+			}
+			assert.ElementsMatch(t, tc.expectedMeterNames, scopes)
+		})
+	}
 }
