@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.41.0
-	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1
+	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.1.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.0.1
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.75.0
