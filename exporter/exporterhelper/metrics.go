@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -20,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
@@ -130,10 +127,6 @@ func (req *metricsRequest) BytesSize() int {
 	return metricsMarshaler.MetricsSize(req.md)
 }
 
-type metricsExporter struct {
-	*internal.BaseExporter
-	consumer.Metrics
-}
 
 // NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetrics(
@@ -149,7 +142,7 @@ func NewMetrics(
 	if pusher == nil {
 		return nil, errNilPushMetrics
 	}
-	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher),
+	return internal.NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher),
 		append([]Option{internal.WithQueueBatchSettings(NewMetricsQueueBatchSettings())}, options...)...)
 }
 
@@ -167,50 +160,3 @@ func requestFromMetrics() RequestConverterFunc[pmetric.Metrics] {
 	}
 }
 
-// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMetricsRequest(
-	_ context.Context,
-	set exporter.Settings,
-	converter RequestConverterFunc[pmetric.Metrics],
-	pusher RequestConsumeFunc,
-	options ...Option,
-) (exporter.Metrics, error) {
-	if set.Logger == nil {
-		return nil, errNilLogger
-	}
-
-	if converter == nil {
-		return nil, errNilMetricsConverter
-	}
-
-	if pusher == nil {
-		return nil, errNilConsumeRequest
-	}
-
-	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, pusher, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	mc, err := consumer.NewMetrics(newConsumeMetrics(converter, be, set.Logger), be.ConsumerOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	return &metricsExporter{BaseExporter: be, Metrics: mc}, nil
-}
-
-func newConsumeMetrics(converter RequestConverterFunc[pmetric.Metrics], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
-	return func(ctx context.Context, md pmetric.Metrics) error {
-		req, err := converter(ctx, md)
-		if err != nil {
-			logger.Error("Failed to convert metrics. Dropping data.",
-				zap.Int("dropped_data_points", md.DataPointCount()),
-				zap.Error(err))
-			return consumererror.NewPermanent(err)
-		}
-		return be.Send(ctx, req)
-	}
-}
