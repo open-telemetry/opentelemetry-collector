@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestLogsRequest_NilLogger(t *testing.T) {
@@ -105,4 +106,90 @@ func TestLogsRequest_WithShutdown_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want, le.Shutdown(context.Background()))
+}
+
+func TestTracesRequest_NilLogger(t *testing.T) {
+	te, err := NewTracesRequest(context.Background(), exporter.Settings{}, requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
+	require.Nil(t, te)
+	require.Equal(t, errNilLogger, err)
+}
+
+func TestTracesRequest_NilTracesConverter(t *testing.T) {
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, sendertest.NewNopSenderFunc[request.Request]())
+	require.Nil(t, te)
+	require.Equal(t, errNilTracesConverter, err)
+}
+
+func TestTracesRequest_NilPushTraceData(t *testing.T) {
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType), requesttest.RequestFromTracesFunc(nil), nil)
+	require.Nil(t, te)
+	require.Equal(t, errNilConsumeRequest, err)
+}
+
+func TestTracesRequest_Default(t *testing.T) {
+	td := ptrace.NewTraces()
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
+	assert.NotNil(t, te)
+	require.NoError(t, err)
+
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, te.Capabilities())
+	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, te.Shutdown(context.Background()))
+}
+
+func TestTracesRequest_WithCapabilities(t *testing.T) {
+	capabilities := consumer.Capabilities{MutatesData: true}
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request](), WithCapabilities(capabilities))
+	assert.NotNil(t, te)
+	require.NoError(t, err)
+
+	assert.Equal(t, capabilities, te.Capabilities())
+}
+
+func TestTracesRequest_Default_ConvertError(t *testing.T) {
+	td := ptrace.NewTraces()
+	want := errors.New("convert_error")
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(want), sendertest.NewNopSenderFunc[request.Request]())
+	require.NoError(t, err)
+	require.NotNil(t, te)
+	require.Equal(t, consumererror.NewPermanent(want), te.ConsumeTraces(context.Background(), td))
+}
+
+func TestTracesRequest_Default_ExportError(t *testing.T) {
+	td := ptrace.NewTraces()
+	want := errors.New("export_error")
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+	require.Equal(t, want, te.ConsumeTraces(context.Background(), td))
+}
+
+func TestTracesRequest_WithShutdown(t *testing.T) {
+	shutdownCalled := false
+	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
+
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request](), WithShutdown(shutdown))
+	assert.NotNil(t, te)
+	assert.NoError(t, err)
+
+	assert.NoError(t, te.Shutdown(context.Background()))
+	assert.True(t, shutdownCalled)
+}
+
+func TestTracesRequest_WithShutdown_ReturnError(t *testing.T) {
+	want := errors.New("my_error")
+	shutdownErr := func(context.Context) error { return want }
+
+	te, err := NewTracesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request](), WithShutdown(shutdownErr))
+	assert.NotNil(t, te)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, te.Shutdown(context.Background()))
 }
