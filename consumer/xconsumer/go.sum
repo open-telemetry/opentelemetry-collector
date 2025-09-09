@@ -54,8 +54,8 @@ go.opentelemetry.io/otel/trace v1.37.0 h1:HLdcFNbRQBE2imdSEgm/kwqmQj1Or1l/7bW6mx
 go.opentelemetry.io/otel/trace v1.37.0/go.mod h1:TlgrlQ+PtQO5XFerSPUYG0JSgGyryXewPGyayAWSBS0=
 go.opentelemetry.io/proto/slim/otlp v1.7.1 h1:lZ11gEokjIWYM3JWOUrIILr2wcf6RX+rq5SPObV9oyc=
 go.opentelemetry.io/proto/slim/otlp v1.7.1/go.mod h1:uZ6LJWa49eNM/EXnnvJGTTu8miokU8RQdnO980LJ57g=
-go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1 h1:Tr/eXq6N7ZFjN+THBF/BtGLUz8dciA7cuzGRsCEkZ88=
-go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1/go.mod h1:riqUmAOJFDFuIAzZu/3V6cOrTyfWzpgNJnG5UwrapCk=
+go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.1.0 h1:Uc+elixz922LHx5colXGi1ORbsW8DTIGM+gg+D9V7HE=
+go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.1.0/go.mod h1:VyU6dTWBWv6h9w/+DYgSZAPMabWbPTFTuxp25sM8+s0=
 go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.0.1 h1:z/oMlrCv3Kopwh/dtdRagJy+qsRRPA86/Ux3g7+zFXM=
 go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.0.1/go.mod h1:C7EHYSIiaALi9RnNORCVaPCQDuJgJEn/XxkctaTez1E=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
