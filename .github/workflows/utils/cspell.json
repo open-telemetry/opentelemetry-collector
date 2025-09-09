@@ -504,7 +504,8 @@
       "zipkinv",
       "zpages",
       "zpagesextension",
-      "zstd"
+      "zstd",
+      "nillable"
     ],
     "enableGlobDot": true,
     "useGitignore": true,

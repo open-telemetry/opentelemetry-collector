@@ -41,10 +41,23 @@ type Metadata struct {
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// Config is the component configuration.
+	ConfigSources []ConfigSource `mapstructure:"config_sources"`
+	// Config is the component configuration.
+	Config any `mapstructure:"config"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
+}
+
+type ConfigSource struct {
+	// A unique identifier for the schema.
+	SchemaID string `mapstructure:"schema_id"`
+	// The name of the Go package which the generated code is part of.
+	PackageName string `mapstructure:"package_name"`
+	// The output file to be generated.
+	OutputName string `mapstructure:"output_name"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {

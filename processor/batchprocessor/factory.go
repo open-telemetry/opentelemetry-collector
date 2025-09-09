@@ -7,22 +7,12 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
-	"time"
+	"encoding/json"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
-)
-
-const (
-	defaultSendBatchSize = uint32(8192)
-	defaultTimeout       = 200 * time.Millisecond
-
-	// defaultMetadataCardinalityLimit should be set to the number
-	// of metadata configurations the user expects to submit to
-	// the collector.
-	defaultMetadataCardinalityLimit = 1000
 )
 
 // NewFactory returns a new factory for the Batch processor.
@@ -36,11 +26,15 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		SendBatchSize:            defaultSendBatchSize,
-		Timeout:                  defaultTimeout,
-		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
-	}
+	cfg := &Config{}
+
+	// Unmarshal empty JSON to get default values.
+	// Errors shouldn't happen, so we can ignore them.
+	// TODO: Find a cleaner, more mapstructure-friendly way to do this.
+	// For example: https://github.com/omissis/go-jsonschema/pull/283
+	_ = json.Unmarshal([]byte("{}"), cfg)
+
+	return cfg
 }
 
 func createTraces(
