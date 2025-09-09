@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -23,6 +24,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.QueueSize = 1
 	tests := []struct {
 		filename    string
 		cfg         *Config
@@ -34,6 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				QueueConfig:        queueCfg,
 			},
 		},
 		{
