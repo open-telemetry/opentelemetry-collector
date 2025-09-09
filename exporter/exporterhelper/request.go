@@ -15,6 +15,7 @@ import (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Request = request.Request
 
+// Deprecated [v0.136.0]: will be removed in the next minor version.
 // RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
 // temporary failures. For example, if some items failed to process and can be retried, this interface allows to
 // return a new Request that contains the items left to be sent. Otherwise, the original Request should be returned.
@@ -32,6 +33,7 @@ type RequestConverterFunc[T any] func(context.Context, T) (Request, error)
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = sender.SendFunc[Request]
 
+// Deprecated [v0.136.0]: will be removed in the next minor version.
 // RequestSizer is an interface that returns the size of the given request.
 type RequestSizer = request.Sizer[Request]
 
