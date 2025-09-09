@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.41.0
 	go.opentelemetry.io/proto/slim/otlp v1.7.1
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.0.1
