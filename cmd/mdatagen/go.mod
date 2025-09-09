@@ -31,6 +31,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/text v0.28.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -77,7 +78,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace go.opentelemetry.io/collector/component => ../../component
