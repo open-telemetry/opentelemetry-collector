@@ -5,7 +5,7 @@ go 1.24
 replace go.opentelemetry.io/collector/consumer => ../
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer v1.41.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.135.0
 	go.opentelemetry.io/collector/pdata v1.41.0
