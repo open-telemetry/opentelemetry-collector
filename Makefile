@@ -96,6 +96,10 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 	$(MAKE) fmt
 
+.PHONY: govulncheck
+govulncheck:
+	@$(MAKE) for-all-target TARGET="vulncheck"
+
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
