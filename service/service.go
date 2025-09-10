@@ -123,7 +123,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf: set.CollectorConf,
 	}
 
-	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
 	telFactory := otelconftelemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:    set.BuildInfo,
