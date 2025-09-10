@@ -223,8 +223,11 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zapcore.DebugLevel)
 			set := telemetry.Settings{
-				BuildInfo:  tt.buildInfo,
-				ZapOptions: []zap.Option{zap.WrapCore(func(zapcore.Core) zapcore.Core { return core })},
+				BuildInfo: tt.buildInfo,
+				ZapOptions: []zap.Option{
+					// Redirect logs to the observer core
+					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+				},
 			}
 			cfg := &Config{
 				Logs: LogsConfig{
