@@ -35,11 +35,6 @@ type RequestConsumeFunc = request.RequestConsumeFunc
 // RequestSizer is an interface that returns the size of the given request.
 type RequestSizer = request.Sizer[Request]
 
-// Deprecated: [v0.129.0] no need, always supported.
-func NewRequestsSizer() RequestSizer {
-	return request.RequestsSizer[Request]{}
-}
-
 type RequestSizerType = request.SizerType
 
 var (
