@@ -53,7 +53,7 @@ func TestProfilesRequest(t *testing.T) {
 	assert.Equal(
 		t,
 		newProfilesRequest(pprofile.NewProfiles()),
-		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),
+		lr.(RequestErrorHandler).OnError(profileErr),
 	)
 }
 

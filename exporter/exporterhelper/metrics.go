@@ -145,8 +145,8 @@ func NewMetrics(
 		append([]Option{internal.WithQueueBatchSettings(NewMetricsQueueBatchSettings())}, options...)...)
 }
 
-// Deprecated [v0.136.0]: Use xexporterhelper.NewMetricsRequest instead.
 // NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
+// Deprecated [v0.136.0]: Use xexporterhelper.NewMetricsRequest instead.
 func NewMetricsRequest(
 	ctx context.Context,
 	set exporter.Settings,

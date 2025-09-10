@@ -107,7 +107,6 @@ func TestMetrics_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
 }
 
-
 func TestMetrics_WithPersistentQueue(t *testing.T) {
 	fgOrigReadState := queue.PersistRequestContextOnRead
 	fgOrigWriteState := queue.PersistRequestContextOnWrite

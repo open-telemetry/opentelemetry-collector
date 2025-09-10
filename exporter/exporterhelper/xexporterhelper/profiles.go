@@ -157,14 +157,14 @@ func NewProfiles(
 }
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
-func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
+func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request exporterhelper.Request) error {
 		return pusher.ConsumeProfiles(ctx, request.(*profilesRequest).pd)
 	}
 }
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
-func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles] {
+func requestFromProfiles() RequestConverterFunc[pprofile.Profiles] {
 	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
 		return newProfilesRequest(profiles), nil
 	}
@@ -205,7 +205,7 @@ func NewProfilesRequest(
 	return &profileExporter{BaseExporter: be, Profiles: tc}, nil
 }
 
-func newConsumeProfiles(converter exporterhelper.RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
+func newConsumeProfiles(converter RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {

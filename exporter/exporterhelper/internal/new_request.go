@@ -6,6 +6,8 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -14,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.uber.org/zap"
 )
 
 type logsExporter struct {

@@ -105,7 +105,6 @@ func TestTraces_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, err)
 }
 
-
 func TestTraces_WithPersistentQueue(t *testing.T) {
 	fgOrigReadState := queue.PersistRequestContextOnRead
 	fgOrigWriteState := queue.PersistRequestContextOnWrite

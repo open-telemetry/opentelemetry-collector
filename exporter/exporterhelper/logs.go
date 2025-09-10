@@ -146,8 +146,8 @@ func NewLogs(
 		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
 }
 
-// Deprecated [v0.136.0]: Use xexporterhelper.NewLogsRequest instead.
 // NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
+// Deprecated [v0.136.0]: Use xexporterhelper.NewLogsRequest instead.
 func NewLogsRequest(
 	ctx context.Context,
 	set exporter.Settings,
