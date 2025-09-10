@@ -5,11 +5,11 @@ go 1.24
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.40.0
-	go.opentelemetry.io/collector/featuregate v1.40.0
-	go.opentelemetry.io/collector/pdata v1.40.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.134.0
-	go.opentelemetry.io/collector/pdata/testdata v0.134.0
+	go.opentelemetry.io/collector/client v1.41.0
+	go.opentelemetry.io/collector/featuregate v1.41.0
+	go.opentelemetry.io/collector/pdata v1.41.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.135.0
+	go.opentelemetry.io/collector/pdata/testdata v0.135.0
 	go.opentelemetry.io/otel/trace v1.38.0
 )
 
@@ -27,7 +27,7 @@ require (
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
