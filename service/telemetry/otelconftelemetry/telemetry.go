@@ -121,10 +121,12 @@ func (t *otelconfTelemetry) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func newSDK(ctx context.Context, _ telemetry.Settings, cfg *Config, res *sdkresource.Resource) (*config.SDK, error) {
+func newSDK(ctx context.Context, set telemetry.Settings, cfg *Config, res *sdkresource.Resource) (*config.SDK, error) {
 	mpConfig := cfg.Metrics.MeterProvider
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		mpConfig.Readers = nil
+	} else if mpConfig.Views == nil && set.DefaultViews != nil {
+		mpConfig.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
 	// Merge the BuildInfo-based resource attributes with the user-defined resource attributes.
