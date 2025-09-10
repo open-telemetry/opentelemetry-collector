@@ -19,6 +19,18 @@ on:
 permissions: read-all
 
 jobs:
+  debug:
+    name: Debug merge queue
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    env:
+      MESSAGE: ${{ github.event.merge_group.head_commit.message }}
+      AUTHOR_NAME: ${{ github.event.merge_group.head_commit.author.name }}
+      AUTHOR_EMAIL: ${{ github.event.merge_group.head_commit.author.email }}
+    steps:
+      - run: |
+          echo "Merging commit '$MESSAGE' from '$AUTHOR_NAME' ('$AUTHOR_EMAIL')"
+
   check-merge-freeze:
     name: Check
     # This condition is to avoid blocking the PR causing the freeze in the first place.
