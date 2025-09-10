@@ -52,3 +52,11 @@ func NewTracesRequest(
 ) (exporter.Traces, error) {
 	return internal.NewTracesRequest(ctx, set, converter, pusher, options...)
 }
+
+// WithQueueBatch enables queueing and batching for an exporter.
+// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set exporterhelper.QueueBatchSettings) exporterhelper.Option {
+	return internal.WithQueueBatch(cfg, set)
+}
