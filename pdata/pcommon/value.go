@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -186,14 +188,40 @@ func (v Value) FromRaw(iv any) error {
 		v.SetBool(tv)
 	case []byte:
 		v.SetEmptyBytes().FromRaw(tv)
+	case time.Time:
+		v.SetStr(tv.UTC().Format("2006-01-02T15:04:05.000Z"))
 	case map[string]any:
 		return v.SetEmptyMap().FromRaw(tv)
 	case []any:
 		return v.SetEmptySlice().FromRaw(tv)
 	default:
-		return fmt.Errorf("<Invalid value type %T>", tv)
+		return v.handleDefaultCase(iv)
 	}
 	return nil
+}
+
+func (v Value) handleDefaultCase(iv any) error {
+	ref := reflect.ValueOf(iv)
+	switch ref.Kind() {
+	case reflect.Map:
+		// we handle a special case where the user might've defined a custom type, but internally
+		// it's a map[string]any{}.
+		if ref.CanConvert(reflect.TypeOf(map[string]any{})) {
+			updated := ref.Convert(reflect.TypeOf(map[string]any{})).Interface()
+			return v.FromRaw(updated)
+		}
+	case reflect.Array, reflect.Slice:
+		s := make([]any, ref.Len())
+		for i := 0; i < ref.Len(); i++ {
+			s[i] = ref.Index(i).Interface()
+		}
+
+		// if the underlying type of our slice is supported, then the following will succeed.
+		// or else, it will fail with "<Invalid value type _type_>" in subsequent call
+		return v.SetEmptySlice().FromRaw(s)
+
+	}
+	return fmt.Errorf("<Invalid value type %T>", iv)
 }
 
 // Type returns the type of the value for this Value.
