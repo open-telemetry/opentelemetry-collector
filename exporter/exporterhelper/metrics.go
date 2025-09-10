@@ -127,7 +127,6 @@ func (req *metricsRequest) BytesSize() int {
 	return metricsMarshaler.MetricsSize(req.md)
 }
 
-
 // NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetrics(
 	ctx context.Context,
@@ -146,6 +145,18 @@ func NewMetrics(
 		append([]Option{internal.WithQueueBatchSettings(NewMetricsQueueBatchSettings())}, options...)...)
 }
 
+// Deprecated [v0.136.0]: Use xexporterhelper.NewMetricsRequest instead.
+// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
+func NewMetricsRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[pmetric.Metrics],
+	pusher RequestConsumeFunc,
+	options ...Option,
+) (exporter.Metrics, error) {
+	return internal.NewMetricsRequest(ctx, set, converter, pusher, options...)
+}
+
 // requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
 func requestConsumeFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request Request) error {
@@ -159,4 +170,3 @@ func requestFromMetrics() RequestConverterFunc[pmetric.Metrics] {
 		return newMetricsRequest(md), nil
 	}
 }
-

@@ -176,8 +176,8 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 func NewProfilesRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],
-	pusher exporterhelper.RequestConsumeFunc,
+	converter RequestConverterFunc[pprofile.Profiles],
+	pusher RequestConsumeFunc,
 	options ...exporterhelper.Option,
 ) (xexporter.Profiles, error) {
 	if set.Logger == nil {

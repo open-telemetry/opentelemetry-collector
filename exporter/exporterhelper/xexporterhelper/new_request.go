@@ -1,0 +1,54 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package xexporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+
+import (
+	"context"
+
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
+
+// NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[plog.Logs],
+	pusher RequestConsumeFunc,
+	options ...exporterhelper.Option,
+) (exporter.Logs, error) {
+	return internal.NewLogsRequest(ctx, set, converter, pusher, options...)
+}
+
+// NewMetricsRequest creates new metrics exporter based on custom MetricsConverter and Sender.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewMetricsRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[pmetric.Metrics],
+	pusher RequestConsumeFunc,
+	options ...exporterhelper.Option,
+) (exporter.Metrics, error) {
+	return internal.NewMetricsRequest(ctx, set, converter, pusher, options...)
+}
+
+// NewTracesRequest creates new traces exporter based on custom TracesConverter and Sender.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewTracesRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[ptrace.Traces],
+	pusher RequestConsumeFunc,
+	options ...exporterhelper.Option,
+) (exporter.Traces, error) {
+	return internal.NewTracesRequest(ctx, set, converter, pusher, options...)
+}

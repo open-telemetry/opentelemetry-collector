@@ -127,7 +127,6 @@ func (req *tracesRequest) BytesSize() int {
 	return tracesMarshaler.TracesSize(req.td)
 }
 
-
 // NewTraces creates an exporter.Traces that records observability metrics and wraps every request with a Span.
 func NewTraces(
 	ctx context.Context,
@@ -146,6 +145,18 @@ func NewTraces(
 		append([]Option{internal.WithQueueBatchSettings(NewTracesQueueBatchSettings())}, options...)...)
 }
 
+// Deprecated [v0.136.0]: Use xexporterhelper.NewTracesRequest instead.\
+// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and Sender.
+func NewTracesRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[ptrace.Traces],
+	pusher RequestConsumeFunc,
+	options ...Option,
+) (exporter.Traces, error) {
+	return internal.NewTracesRequest(ctx, set, converter, pusher, options...)
+}
+
 // requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
 func requestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request Request) error {
@@ -159,4 +170,3 @@ func requestFromTraces() RequestConverterFunc[ptrace.Traces] {
 		return newTracesRequest(traces), nil
 	}
 }
-

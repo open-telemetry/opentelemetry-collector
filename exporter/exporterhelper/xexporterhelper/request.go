@@ -1,16 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package xexporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 
-import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-)
-
-// Request represents a single request that can be sent to an external endpoint.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Request = request.Request
+import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request" // Request represents a single request that can be sent to an external endpoint.
 
 // RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
 // temporary failures. For example, if some items failed to process and can be retried, this interface allows to
@@ -20,29 +13,11 @@ type Request = request.Request
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestErrorHandler = request.ErrorHandler
 
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestConsumeFunc.
 // RequestConverterFunc converts pdata telemetry into a user-defined Request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestConverterFunc[T any] = request.RequestConverterFunc[T]
 
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestConsumeFunc.
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = request.RequestConsumeFunc
-
-// RequestSizer is an interface that returns the size of the given request.
-type RequestSizer = request.Sizer[Request]
-
-// Deprecated: [v0.129.0] no need, always supported.
-func NewRequestsSizer() RequestSizer {
-	return request.RequestsSizer[Request]{}
-}
-
-type RequestSizerType = request.SizerType
-
-var (
-	RequestSizerTypeBytes    = request.SizerTypeBytes
-	RequestSizerTypeItems    = request.SizerTypeItems
-	RequestSizerTypeRequests = request.SizerTypeRequests
-)
