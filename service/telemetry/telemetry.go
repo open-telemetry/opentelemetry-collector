@@ -6,6 +6,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	nooplog "go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/metric"
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
@@ -67,6 +69,16 @@ type Settings struct {
 
 	// ZapOptions contains options for creating the zap logger.
 	ZapOptions []zap.Option
+
+	// DefaultViews holds a function that returns default metric
+	// views for the given internal telemetry metrics level.
+	//
+	// The meter provider is expected to use this if no user-provided
+	// view configuration is supplied.
+	//
+	// TODO we should not use otelconf.View directly here, change
+	// to something independent of otelconf.
+	DefaultViews func(configtelemetry.Level) []otelconf.View
 }
 
 // Factory is a factory interface for internal telemetry.

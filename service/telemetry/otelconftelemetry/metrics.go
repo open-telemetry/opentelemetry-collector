@@ -25,6 +25,8 @@ func createMeterProvider(
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		logger.Info("Internal metrics telemetry disabled")
 		return noopMeterProvider{MeterProvider: noopmetric.NewMeterProvider()}, nil
+	} else if cfg.Metrics.Views == nil && set.DefaultViews != nil {
+		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
 	res := newResource(set, cfg)
