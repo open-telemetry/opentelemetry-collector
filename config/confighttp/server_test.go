@@ -957,30 +957,23 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.Nil(t, httpServerSettings.KeepAlivesEnabled)
+	assert.True(t, httpServerSettings.KeepAlivesEnabled) // Default should be true (keep-alives enabled by default)
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {
-	boolPtr := func(b bool) *bool { return &b }
-
 	tests := []struct {
 		name               string
-		keepAlivesEnabled  *bool
+		keepAlivesEnabled  bool
 		expectedKeepAlives bool
 	}{
 		{
-			name:               "KeepAlives default (nil - enabled)",
-			keepAlivesEnabled:  nil,
-			expectedKeepAlives: true,
-		},
-		{
-			name:               "KeepAlives explicitly enabled",
-			keepAlivesEnabled:  boolPtr(true),
+			name:               "KeepAlives enabled",
+			keepAlivesEnabled:  true,
 			expectedKeepAlives: true,
 		},
 		{
 			name:               "KeepAlives disabled",
-			keepAlivesEnabled:  boolPtr(false),
+			keepAlivesEnabled:  false,
 			expectedKeepAlives: false,
 		},
 	}
@@ -1127,8 +1120,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
-	assert.NotNil(t, serverConfig.KeepAlivesEnabled) // Should match config.yaml
-	assert.True(t, *serverConfig.KeepAlivesEnabled)  // Should be true as configured
+	assert.True(t, serverConfig.KeepAlivesEnabled) // Should be true as configured in config.yaml
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
