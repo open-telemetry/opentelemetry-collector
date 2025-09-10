@@ -2,8 +2,6 @@ module go.opentelemetry.io/collector/service
 
 go 1.24.0
 
-toolchain go1.24.7
-
 require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_model v0.6.2
