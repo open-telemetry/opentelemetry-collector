@@ -7,7 +7,7 @@ change_type: deprecation
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate exporterhelper.RequestErrorHandler and exporterhelper.RequestSizer
+note: Deprecate exporterhelper.RequestSizer
 
 # One or more tracking issues or pull requests related to the change
 issues: [13804]
