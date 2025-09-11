@@ -146,7 +146,7 @@ func NewTraces(
 }
 
 // NewTracesRequest creates a new traces exporter based on a custom TracesConverter and Sender.
-// Deprecated [v0.136.0]: Use xexporterhelper.NewTracesRequest instead.\
+// Deprecated [v0.136.0]: Use xexporterhelper.NewTracesRequest instead.
 func NewTracesRequest(
 	ctx context.Context,
 	set exporter.Settings,

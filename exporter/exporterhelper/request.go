@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
+// Deprecated: [v0.136.0] Use xexporterhelper.Request.
 // Request represents a single request that can be sent to an external endpoint.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
@@ -32,6 +33,7 @@ type RequestConverterFunc[T any] = request.RequestConverterFunc[T]
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = request.RequestConsumeFunc
 
+// Deprecated: [v0.136.0] Use xexporterhelper.RequestSizer.
 // RequestSizer is an interface that returns the size of the given request.
 type RequestSizer = request.Sizer[Request]
 

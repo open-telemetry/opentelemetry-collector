@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -53,10 +54,14 @@ func NewTracesRequest(
 	return internal.NewTracesRequest(ctx, set, converter, pusher, options...)
 }
 
+// QueueBatchSettings are settings for the QueueBatch component.
+// They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
+type QueueBatchSettings = queuebatch.Settings[Request]
+
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set exporterhelper.QueueBatchSettings) exporterhelper.Option {
+func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set QueueBatchSettings) exporterhelper.Option {
 	return internal.WithQueueBatch(cfg, set)
 }
