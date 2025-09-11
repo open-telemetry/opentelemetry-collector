@@ -235,7 +235,7 @@ var profile = &messageStruct{
 			returnType: &TypedType{
 				structName:  "Timestamp",
 				packageName: "pcommon",
-				protoType:   proto.TypeUint64,
+				protoType:   proto.TypeFixed64,
 				defaultVal:  "0",
 				testVal:     "1234567890",
 			},
