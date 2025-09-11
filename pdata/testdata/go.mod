@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/pdata/testdata
 
-go 1.24
+go 1.24.0
 
 require (
 	go.opentelemetry.io/collector/pdata v1.41.0
