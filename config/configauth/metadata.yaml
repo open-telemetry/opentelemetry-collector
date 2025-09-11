@@ -1,0 +1,10 @@
+config:
+  $id: https://opentelemetry.io/collector/configauth
+  $schema: https://json-schema.org/draft/2020-12/schema
+  $defs:
+    config:
+      type: object
+      additionalProperties: false
+      properties:
+        authenticator:
+          type: string
