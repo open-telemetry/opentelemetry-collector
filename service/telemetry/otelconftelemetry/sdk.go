@@ -14,8 +14,10 @@ import (
 func newSDK(ctx context.Context, res *sdkresource.Resource, conf config.OpenTelemetryConfiguration) (config.SDK, error) {
 	resourceAttrs := make([]config.AttributeNameValue, 0, res.Len())
 	for _, r := range res.Attributes() {
+		key := string(r.Key)
 		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
-			Name: string(r.Key), Value: r.Value.AsString(),
+			Name:  key,
+			Value: mustAttributeValueString(key, r.Value),
 		})
 	}
 	conf.Resource = &config.Resource{

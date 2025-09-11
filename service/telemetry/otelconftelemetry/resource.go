@@ -5,7 +5,9 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
+	"fmt"
 
+	"go.opentelemetry.io/otel/attribute"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,11 +24,20 @@ func createResource(
 	res := newResource(set, componentConfig.(*Config))
 	pcommonRes := pcommon.NewResource()
 	for _, keyValue := range res.Attributes() {
-		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
+		key := string(keyValue.Key)
+		pcommonRes.Attributes().PutStr(key, mustAttributeValueString(key, keyValue.Value))
 	}
 	return pcommonRes, nil
 }
 
 func newResource(set telemetry.Settings, cfg *Config) *sdkresource.Resource {
 	return resource.New(set.BuildInfo, cfg.Resource)
+}
+
+func mustAttributeValueString(k string, v attribute.Value) string {
+	if v.Type() != attribute.STRING {
+		// We only support string-type resource attributes in the configuration.
+		fmt.Errorf("attribute %q: expected string, got %s", k, v.Type())
+	}
+	return v.AsString()
 }
