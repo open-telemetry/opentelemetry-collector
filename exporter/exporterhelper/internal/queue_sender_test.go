@@ -24,7 +24,7 @@ import (
 )
 
 func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
-	qSet := queuebatch.Settings[request.Request]{
+	qSet := queuebatch.AllSettings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),

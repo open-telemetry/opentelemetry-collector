@@ -123,15 +123,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf: set.CollectorConf,
 	}
 
-	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
-	if mpConfig.Views == nil {
-		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
-	}
-
 	telFactory := otelconftelemetry.NewFactory()
 	telset := telemetry.Settings{
-		BuildInfo:  set.BuildInfo,
-		ZapOptions: set.LoggingOptions,
+		BuildInfo:    set.BuildInfo,
+		ZapOptions:   set.LoggingOptions,
+		DefaultViews: configureViews,
 	}
 
 	telProviders, err := telFactory.CreateProviders(ctx, telset, &cfg.Telemetry)
@@ -193,10 +189,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && len(mpConfig.Readers) != 0 {
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 	return srv, nil
 }
@@ -395,6 +389,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 				InstrumentName: ptr("otelcol_receiver_sent_wire"),
 			}),
 		)
+	}
+
+	// Batch exporter metrics
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      scope,
+			InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
+		}))
 	}
 
 	// Batch processor metrics
