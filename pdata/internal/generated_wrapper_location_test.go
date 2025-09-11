@@ -146,8 +146,6 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 		"Address/missing_value":            {0x10},
 		"Line/wrong_wire_type":             {0x1c},
 		"Line/missing_value":               {0x1a},
-		"IsFolded/wrong_wire_type":         {0x24},
-		"IsFolded/missing_value":           {0x20},
 		"AttributeIndices/wrong_wire_type": {0x2c},
 		"AttributeIndices/missing_value":   {0x2a},
 	}
@@ -155,11 +153,10 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 
 func genTestEncodingValuesLocation() map[string]*otlpprofiles.Location {
 	return map[string]*otlpprofiles.Location{
-		"empty": NewOrigLocation(), "MappingIndex/default": {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(0)}},
-		"MappingIndex/test":                 {MappingIndex_: &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}},
+		"empty":                             NewOrigLocation(),
+		"MappingIndex/test":                 {MappingIndex: int32(13)},
 		"Address/test":                      {Address: uint64(13)},
 		"Line/default_and_test":             {Line: []*otlpprofiles.Line{{}, GenTestOrigLine()}},
-		"IsFolded/test":                     {IsFolded: true},
 		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

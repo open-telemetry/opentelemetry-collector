@@ -14,12 +14,16 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -38,7 +42,7 @@ const (
 
 var testInstanceID = "test_instance_id"
 
-func TestTelemetryInit(t *testing.T) {
+func TestCreateMeterProvider(t *testing.T) {
 	type metricValue struct {
 		value  float64
 		labels map[string]string
@@ -115,8 +119,11 @@ func TestTelemetryInit(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
-			mp := providers.MeterProvider()
+			mp, err := createMeterProvider(t.Context(), telemetry.Settings{}, cfg, zap.NewNop())
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, mp.Shutdown(t.Context()))
+			}()
 
 			createTestMetrics(t, mp)
 
@@ -187,28 +194,44 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	require.Equal(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
 	defer rr.Body.Close()
 
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(rr.Body)
 	require.NoError(t, err)
 
 	return parsed
 }
 
-func TestTelemetryMetricsDisabled(t *testing.T) {
+func TestCreateMeterProvider_Invalid(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Logs.Level = zapcore.FatalLevel
+	cfg.Traces.Level = configtelemetry.LevelNone
+	cfg.Metrics.Readers = []config.MetricReader{{
+		// Invalid -- no OTLP protocol defined
+		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
+	}}
+	_, err := createProviders(t.Context(), telemetry.Settings{}, cfg)
+	require.EqualError(t, err, "failed to create meter provider: no valid metric exporter")
+}
+
+func TestCreateMeterProvider_Disabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.Readers = []config.MetricReader{{
 		// Invalid -- no OTLP protocol defined
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
-
-	factory := NewFactory()
-	_, err := factory.CreateProviders(context.Background(), telemetry.Settings{}, cfg)
-	require.EqualError(t, err, "failed to create SDK: no valid metric exporter")
-
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	_, _ = newTelemetryProviders(t, telemetry.Settings{}, cfg)
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.Settings{}, cfg, logger)
+	require.NoError(t, err)
+	assert.NoError(t, mp.Shutdown(t.Context()))
+
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "Internal metrics telemetry disabled", observedLogs.All()[0].Message)
 }
 
 // Test that the MeterProvider implements the 'Enabled' functionality.
@@ -220,8 +243,11 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	providers, _ := newTelemetryProviders(t, telemetry.Settings{}, cfg)
-	meterProvider := providers.MeterProvider()
+	meterProvider, err := createMeterProvider(t.Context(), telemetry.Settings{}, cfg, zap.NewNop())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, meterProvider.Shutdown(t.Context()))
+	}()
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
 

@@ -6,14 +6,21 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 var _ = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
@@ -27,6 +34,34 @@ const (
 	traceContextPropagator = "tracecontext"
 	b3Propagator           = "b3"
 )
+
+func createTracerProvider(
+	ctx context.Context,
+	set telemetry.Settings,
+	componentConfig component.Config,
+	logger *zap.Logger,
+) (telemetry.TracerProvider, error) {
+	cfg := componentConfig.(*Config)
+	if cfg.Traces.Level == configtelemetry.LevelNone {
+		logger.Info("Internal trace telemetry disabled")
+		return &noopNoContextTracerProvider{}, nil
+	}
+
+	propagator, err := textMapPropagatorFromConfig(cfg.Traces.Propagators)
+	if err != nil {
+		return nil, fmt.Errorf("error creating propagator: %w", err)
+	}
+	otel.SetTextMapPropagator(propagator)
+
+	res := newResource(set, cfg)
+	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+		TracerProvider: &cfg.Traces.TracerProvider,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return sdk.TracerProvider().(telemetry.TracerProvider), nil
+}
 
 var errUnsupportedPropagator = errors.New("unsupported trace propagator")
 
@@ -42,6 +77,10 @@ func (n *noopNoContextTracer) Start(ctx context.Context, _ string, _ ...trace.Sp
 
 type noopNoContextTracerProvider struct {
 	embedded.TracerProvider
+}
+
+func (n *noopNoContextTracerProvider) Shutdown(_ context.Context) error {
+	return nil
 }
 
 func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {

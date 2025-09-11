@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -51,7 +52,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]
 	defer resp.Body.Close()
 
 	reader := bufio.NewReader(resp.Body)
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(reader)
 	if err != nil {
 		return false
