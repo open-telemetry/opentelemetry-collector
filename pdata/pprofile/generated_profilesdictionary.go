@@ -75,13 +75,13 @@ func (ms ProfilesDictionary) StringTable() pcommon.StringSlice {
 }
 
 // AttributeTable returns the AttributeTable associated with this ProfilesDictionary.
-func (ms ProfilesDictionary) AttributeTable() AttributeTableSlice {
-	return newAttributeTableSlice(&ms.orig.AttributeTable, ms.state)
+func (ms ProfilesDictionary) AttributeTable() KeyValueAndUnitSlice {
+	return newKeyValueAndUnitSlice(&ms.orig.AttributeTable, ms.state)
 }
 
-// AttributeUnits returns the AttributeUnits associated with this ProfilesDictionary.
-func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
-	return newAttributeUnitSlice(&ms.orig.AttributeUnits, ms.state)
+// StackTable returns the StackTable associated with this ProfilesDictionary.
+func (ms ProfilesDictionary) StackTable() StackSlice {
+	return newStackSlice(&ms.orig.StackTable, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
