@@ -37,7 +37,7 @@ func newResource(set telemetry.Settings, cfg *Config) *sdkresource.Resource {
 func mustAttributeValueString(k string, v attribute.Value) string {
 	if v.Type() != attribute.STRING {
 		// We only support string-type resource attributes in the configuration.
-		fmt.Errorf("attribute %q: expected string, got %s", k, v.Type())
+		panic(fmt.Errorf("attribute %q: expected string, got %s", k, v.Type()))
 	}
 	return v.AsString()
 }
