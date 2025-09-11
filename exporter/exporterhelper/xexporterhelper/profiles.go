@@ -57,7 +57,7 @@ type profilesRequest struct {
 	cachedSize int
 }
 
-func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
+func newProfilesRequest(pd pprofile.Profiles) Request {
 	return &profilesRequest{
 		pd:         pd,
 		cachedSize: -1,
@@ -105,7 +105,7 @@ func (profilesReferenceCounter) Unref(req request.Request) {
 	pref.UnrefProfiles(req.(*profilesRequest).pd)
 }
 
-func (req *profilesRequest) OnError(err error) exporterhelper.Request {
+func (req *profilesRequest) OnError(err error) Request {
 	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
 		// TODO: Add logic to unref the new request created here.
@@ -158,14 +158,14 @@ func NewProfiles(
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestConsumeFunc {
-	return func(ctx context.Context, request exporterhelper.Request) error {
+	return func(ctx context.Context, request Request) error {
 		return pusher.ConsumeProfiles(ctx, request.(*profilesRequest).pd)
 	}
 }
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
 func requestFromProfiles() RequestConverterFunc[pprofile.Profiles] {
-	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
+	return func(_ context.Context, profiles pprofile.Profiles) (Request, error) {
 		return newProfilesRequest(profiles), nil
 	}
 }
