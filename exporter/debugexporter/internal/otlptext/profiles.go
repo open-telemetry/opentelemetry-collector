@@ -26,8 +26,8 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 	buf.logProfileLocations(dic.LocationTable())
 	buf.logProfileFunctions(dic.FunctionTable())
 	buf.logAttributesWithIndentation(
-		"Attribute units",
-		attributeUnitsToMap(dic.AttributeUnits()),
+		"Attribute table",
+		keyValueAndUnitsToMap(dic.AttributeTable()),
 		0)
 
 	buf.logAttributesWithIndentation(
@@ -57,9 +57,8 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logAttr("Start time", profile.Time().String())
 				buf.logAttr("Duration", profile.Duration().String())
 				buf.logAttr("Dropped attributes count", strconv.FormatUint(uint64(profile.DroppedAttributesCount()), 10))
-				buf.logEntry("    Location indices: %d", profile.LocationIndices().AsRaw())
 
-				buf.logProfileSamples(profile.Sample(), dic.AttributeTable())
+				buf.logProfileSamples(profile.Sample(), dic)
 				buf.logComment(profile.CommentStrindices())
 			}
 		}

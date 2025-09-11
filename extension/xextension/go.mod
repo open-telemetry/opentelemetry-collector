@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/extension/xextension
 
-go 1.24
+go 1.24.0
 
 require (
 	go.opentelemetry.io/collector/component v1.41.0
@@ -33,7 +33,7 @@ require (
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 )
 
 replace go.opentelemetry.io/collector/extension => ../

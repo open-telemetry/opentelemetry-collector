@@ -36,12 +36,11 @@ type Config struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
 	// TODO: This will be changed to Optional when available.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
-	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
-	// TODO: This will also control the maximum number of shards, when supported:
-	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12473.
+	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
