@@ -123,7 +123,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf: set.CollectorConf,
 	}
 
-	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
 	telFactory := otelconftelemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:    set.BuildInfo,
@@ -190,10 +189,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && len(mpConfig.Readers) != 0 {
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 	return srv, nil
 }
