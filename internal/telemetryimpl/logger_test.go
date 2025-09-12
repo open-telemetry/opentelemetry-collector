@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	internaltelemetry "go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -44,13 +44,13 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 	require.Len(t, observedLogs, 3)
 
 	parentContext := map[string]string{
-		"preexisting":                    "value",
-		internaltelemetry.SignalKey:      pipeline.SignalLogs.String(),
-		internaltelemetry.ComponentIDKey: "filelog",
+		"preexisting":                     "value",
+		componentattribute.SignalKey:      pipeline.SignalLogs.String(),
+		componentattribute.ComponentIDKey: "filelog",
 	}
 	childContext := map[string]string{
-		"preexisting":                    "value",
-		internaltelemetry.ComponentIDKey: "filelog",
+		"preexisting":                     "value",
+		componentattribute.ComponentIDKey: "filelog",
 	}
 
 	require.Equal(t, "test parent before child", observedLogs[0].Message)
@@ -74,8 +74,8 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 
 func TestCore(t *testing.T) {
 	attrs := attribute.NewSet(
-		attribute.String(internaltelemetry.SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(internaltelemetry.ComponentIDKey, "filelog"),
+		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
+		attribute.String(componentattribute.ComponentIDKey, "filelog"),
 	)
 
 	tests := []test{
@@ -111,7 +111,7 @@ func TestCore(t *testing.T) {
 				}
 
 				childAttrs := attribute.NewSet(
-					attribute.String(internaltelemetry.ComponentIDKey, "filelog"),
+					attribute.String(componentattribute.ComponentIDKey, "filelog"),
 				)
 
 				assert.Equal(t, map[string]attribute.Set{
@@ -130,7 +130,7 @@ func TestCore(t *testing.T) {
 			parent.Info("test parent before child")
 
 			childAttrs, _ := attribute.NewSetWithFiltered(attrs.ToSlice(), func(kv attribute.KeyValue) bool {
-				return string(kv.Key) != internaltelemetry.SignalKey
+				return string(kv.Key) != componentattribute.SignalKey
 			})
 			child := ZapLoggerWithAttributes(parent, childAttrs)
 			child.Info("test child")
