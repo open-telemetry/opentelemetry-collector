@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute
+package telemetryimpl
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -43,13 +44,13 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 	require.Len(t, observedLogs, 3)
 
 	parentContext := map[string]string{
-		"preexisting":  "value",
-		SignalKey:      pipeline.SignalLogs.String(),
-		ComponentIDKey: "filelog",
+		"preexisting":                     "value",
+		componentattribute.SignalKey:      pipeline.SignalLogs.String(),
+		componentattribute.ComponentIDKey: "filelog",
 	}
 	childContext := map[string]string{
-		"preexisting":  "value",
-		ComponentIDKey: "filelog",
+		"preexisting":                     "value",
+		componentattribute.ComponentIDKey: "filelog",
 	}
 
 	require.Equal(t, "test parent before child", observedLogs[0].Message)
@@ -73,8 +74,8 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 
 func TestCore(t *testing.T) {
 	attrs := attribute.NewSet(
-		attribute.String(SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(ComponentIDKey, "filelog"),
+		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
+		attribute.String(componentattribute.ComponentIDKey, "filelog"),
 	)
 
 	tests := []test{
@@ -110,7 +111,7 @@ func TestCore(t *testing.T) {
 				}
 
 				childAttrs := attribute.NewSet(
-					attribute.String(ComponentIDKey, "filelog"),
+					attribute.String(componentattribute.ComponentIDKey, "filelog"),
 				)
 
 				assert.Equal(t, map[string]attribute.Set{
@@ -127,7 +128,11 @@ func TestCore(t *testing.T) {
 
 			parent := ZapLoggerWithAttributes(logger, attrs)
 			parent.Info("test parent before child")
-			child := ZapLoggerWithAttributes(parent, RemoveAttributes(attrs, SignalKey))
+
+			childAttrs, _ := attribute.NewSetWithFiltered(attrs.ToSlice(), func(kv attribute.KeyValue) bool {
+				return string(kv.Key) != componentattribute.SignalKey
+			})
+			child := ZapLoggerWithAttributes(parent, childAttrs)
 			child.Info("test child")
 			parent.Info("test parent after child")
 

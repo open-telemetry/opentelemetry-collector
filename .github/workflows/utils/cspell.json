@@ -446,6 +446,7 @@
       "tailsampling",
       "tchannel",
       "telemetrygen",
+      "telemetryimpl",
       "testcomponents",
       "testconverter",
       "testdata",

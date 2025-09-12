@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -62,6 +63,7 @@ func (n *connectorNode) buildComponent(
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	telemetryimpl.InitializeWithAttributes(&set.TelemetrySettings)
 
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:

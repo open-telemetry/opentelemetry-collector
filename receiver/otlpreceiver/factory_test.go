@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -49,7 +50,7 @@ func TestCreateSameReceiver(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+	creationSet.Logger = zap.New(telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
 	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)

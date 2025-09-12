@@ -120,6 +120,7 @@ require (
 	go.opentelemetry.io/collector/internal/memorylimiter v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.135.0 // indirect
@@ -135,7 +136,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.135.0 // indirect
 	go.opentelemetry.io/collector/service v0.135.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.135.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.16.0 // indirect
@@ -286,6 +287,8 @@ replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/m
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
 
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
 
