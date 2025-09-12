@@ -180,11 +180,11 @@ func TestValidSeqsToStopped(t *testing.T) {
 }
 
 func TestStatusFuncs(t *testing.T) {
-	id1 := &componentstatus.InstanceID{}
-	id2 := &componentstatus.InstanceID{}
+	id1 := &InstanceID{}
+	id2 := &InstanceID{}
 
-	actualStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
-	statusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+	actualStatuses := make(map[*InstanceID][]componentstatus.Status)
+	statusFunc := func(id *InstanceID, ev *componentstatus.Event) {
 		actualStatuses[id] = append(actualStatuses[id], ev.Status())
 	}
 
@@ -204,7 +204,7 @@ func TestStatusFuncs(t *testing.T) {
 		componentstatus.StatusStopped,
 	}
 
-	expectedStatuses := map[*componentstatus.InstanceID][]componentstatus.Status{
+	expectedStatuses := map[*InstanceID][]componentstatus.Status{
 		id1: statuses1,
 		id2: statuses2,
 	}
@@ -228,9 +228,9 @@ func TestStatusFuncs(t *testing.T) {
 }
 
 func TestStatusFuncsConcurrent(t *testing.T) {
-	ids := []*componentstatus.InstanceID{{}, {}, {}, {}}
+	ids := []*InstanceID{{}, {}, {}, {}}
 	count := 0
-	statusFunc := func(*componentstatus.InstanceID, *componentstatus.Event) {
+	statusFunc := func(*InstanceID, *componentstatus.Event) {
 		count++
 	}
 	rep := NewReporter(statusFunc,
@@ -311,7 +311,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			var receivedStatuses []componentstatus.Status
 
 			rep := NewReporter(
-				func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+				func(_ *InstanceID, ev *componentstatus.Event) {
 					receivedStatuses = append(receivedStatuses, ev.Status())
 				},
 				func(err error) {
@@ -319,7 +319,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 				},
 			)
 
-			id := &componentstatus.InstanceID{}
+			id := &InstanceID{}
 			for _, status := range tt.initialStatuses {
 				rep.ReportStatus(id, componentstatus.NewEvent(status))
 			}
