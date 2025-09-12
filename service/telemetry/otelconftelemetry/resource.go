@@ -20,7 +20,7 @@ func createResource(
 	_ context.Context,
 	set telemetry.Settings,
 	componentConfig component.Config,
-) (pcommon.Resource, error) { //nolint:unparam
+) (pcommon.Resource, error) {
 	res := newResource(set, componentConfig.(*Config))
 	pcommonRes := pcommon.NewResource()
 	for _, keyValue := range res.Attributes() {

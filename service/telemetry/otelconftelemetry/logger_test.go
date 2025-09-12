@@ -128,9 +128,8 @@ func TestCreateLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buildInfo := component.BuildInfo{}
-
-			_, provider, err := createLogger(context.Background(), telemetry.Settings{
-				BuildInfo: buildInfo,
+			_, provider, err := NewFactory().CreateLogger(context.Background(), telemetry.LoggerSettings{
+				Settings: telemetry.Settings{BuildInfo: buildInfo},
 			}, &tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
@@ -222,8 +221,8 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zapcore.DebugLevel)
-			set := telemetry.Settings{
-				BuildInfo: tt.buildInfo,
+			set := telemetry.LoggerSettings{
+				Settings: telemetry.Settings{BuildInfo: tt.buildInfo},
 				ZapOptions: []zap.Option{
 					// Redirect logs to the observer core
 					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
@@ -348,7 +347,7 @@ func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.Handl
 		},
 	}
 
-	_, loggerProvider, err := createLogger(t.Context(), telemetry.Settings{}, cfg)
+	_, loggerProvider, err := createLogger(t.Context(), telemetry.LoggerSettings{}, cfg)
 	require.NoError(t, err)
 	return loggerProvider
 }
