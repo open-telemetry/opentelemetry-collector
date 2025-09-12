@@ -83,7 +83,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetryimpl v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.135.0 // indirect
