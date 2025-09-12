@@ -63,6 +63,9 @@ func (n *connectorNode) buildComponent(
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	defer func() {
+		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
+	}()
 
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
@@ -386,7 +389,6 @@ func (n *connectorNode) buildProfiles(
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedSettings)
 		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	}
-	telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
 	return nil
 }
 

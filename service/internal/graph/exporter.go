@@ -57,6 +57,9 @@ func (n *exporterNode) buildComponent(
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	defer func() {
+		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
+	}()
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -101,6 +104,5 @@ func (n *exporterNode) buildComponent(
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
-	telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
 	return nil
 }

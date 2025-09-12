@@ -50,6 +50,9 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	defer func() {
+		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
+	}()
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -98,6 +101,5 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, n.pipelineType, err)
 	}
-	telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
 	return nil
 }

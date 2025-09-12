@@ -57,6 +57,9 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	defer func() {
+		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
+	}()
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -111,6 +114,5 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}
-	telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
 	return nil
 }
