@@ -150,14 +150,6 @@ func genTestFailingUnmarshalProtoValuesMapping() map[string][]byte {
 		"FilenameStrindex/missing_value":   {0x20},
 		"AttributeIndices/wrong_wire_type": {0x2c},
 		"AttributeIndices/missing_value":   {0x2a},
-		"HasFunctions/wrong_wire_type":     {0x34},
-		"HasFunctions/missing_value":       {0x30},
-		"HasFilenames/wrong_wire_type":     {0x3c},
-		"HasFilenames/missing_value":       {0x38},
-		"HasLineNumbers/wrong_wire_type":   {0x44},
-		"HasLineNumbers/missing_value":     {0x40},
-		"HasInlineFrames/wrong_wire_type":  {0x4c},
-		"HasInlineFrames/missing_value":    {0x48},
 	}
 }
 
@@ -169,9 +161,5 @@ func genTestEncodingValuesMapping() map[string]*otlpprofiles.Mapping {
 		"FileOffset/test":                   {FileOffset: uint64(13)},
 		"FilenameStrindex/test":             {FilenameStrindex: int32(13)},
 		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
-		"HasFunctions/test":                 {HasFunctions: true},
-		"HasFilenames/test":                 {HasFilenames: true},
-		"HasLineNumbers/test":               {HasLineNumbers: true},
-		"HasInlineFrames/test":              {HasInlineFrames: true},
 	}
 }

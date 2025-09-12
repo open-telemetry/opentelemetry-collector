@@ -46,9 +46,9 @@ func TestProfile_CopyTo(t *testing.T) {
 
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, NewValueTypeSlice(), ms.SampleType())
-	ms.orig.SampleType = internal.GenerateOrigTestValueTypeSlice()
-	assert.Equal(t, generateTestValueTypeSlice(), ms.SampleType())
+	assert.Equal(t, NewValueType(), ms.SampleType())
+	ms.orig.SampleType = *internal.GenTestOrigValueType()
+	assert.Equal(t, generateTestValueType(), ms.SampleType())
 }
 
 func TestProfile_Sample(t *testing.T) {
@@ -56,13 +56,6 @@ func TestProfile_Sample(t *testing.T) {
 	assert.Equal(t, NewSampleSlice(), ms.Sample())
 	ms.orig.Sample = internal.GenerateOrigTestSampleSlice()
 	assert.Equal(t, generateTestSampleSlice(), ms.Sample())
-}
-
-func TestProfile_LocationIndices(t *testing.T) {
-	ms := NewProfile()
-	assert.Equal(t, pcommon.NewInt32Slice(), ms.LocationIndices())
-	ms.orig.LocationIndices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.LocationIndices())
 }
 
 func TestProfile_Time(t *testing.T) {
@@ -103,16 +96,6 @@ func TestProfile_CommentStrindices(t *testing.T) {
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.CommentStrindices())
 	ms.orig.CommentStrindices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.CommentStrindices())
-}
-
-func TestProfile_DefaultSampleTypeIndex(t *testing.T) {
-	ms := NewProfile()
-	assert.Equal(t, int32(0), ms.DefaultSampleTypeIndex())
-	ms.SetDefaultSampleTypeIndex(int32(13))
-	assert.Equal(t, int32(13), ms.DefaultSampleTypeIndex())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, sharedState).SetDefaultSampleTypeIndex(int32(13)) })
 }
 
 func TestProfile_ProfileID(t *testing.T) {

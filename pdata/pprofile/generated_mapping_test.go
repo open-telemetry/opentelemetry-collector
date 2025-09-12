@@ -90,46 +90,6 @@ func TestMapping_AttributeIndices(t *testing.T) {
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
-func TestMapping_HasFunctions(t *testing.T) {
-	ms := NewMapping()
-	assert.False(t, ms.HasFunctions())
-	ms.SetHasFunctions(true)
-	assert.True(t, ms.HasFunctions())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasFunctions(true) })
-}
-
-func TestMapping_HasFilenames(t *testing.T) {
-	ms := NewMapping()
-	assert.False(t, ms.HasFilenames())
-	ms.SetHasFilenames(true)
-	assert.True(t, ms.HasFilenames())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasFilenames(true) })
-}
-
-func TestMapping_HasLineNumbers(t *testing.T) {
-	ms := NewMapping()
-	assert.False(t, ms.HasLineNumbers())
-	ms.SetHasLineNumbers(true)
-	assert.True(t, ms.HasLineNumbers())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasLineNumbers(true) })
-}
-
-func TestMapping_HasInlineFrames(t *testing.T) {
-	ms := NewMapping()
-	assert.False(t, ms.HasInlineFrames())
-	ms.SetHasInlineFrames(true)
-	assert.True(t, ms.HasInlineFrames())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetHasInlineFrames(true) })
-}
-
 func generateTestMapping() Mapping {
 	ms := newMapping(internal.GenTestOrigMapping(), internal.NewState())
 	return ms
