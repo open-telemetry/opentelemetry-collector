@@ -289,14 +289,16 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	if err := srv.loggerProvider.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger provider: %w", err))
+	// Shut down telemetry providers in the reverse order of creation,
+	// since the tracer and meter providers may use the logger.
+	if err := srv.tracerProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown tracer provider: %w", err))
 	}
 	if err := srv.meterProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown meter provider: %w", err))
 	}
-	if err := srv.tracerProvider.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown tracer provider: %w", err))
+	if err := srv.loggerProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger provider: %w", err))
 	}
 
 	return errs
