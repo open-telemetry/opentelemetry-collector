@@ -34,49 +34,49 @@ Number of items passed to the exporter.
 
 Total CPU user and system time in seconds [alpha]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| s | Sum | Double | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| s | Sum | Double | true | alpha |
 
 ### otelcol_process_memory_rss
 
 Total physical memory (resident set size) [alpha]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | alpha |
 
 ### otelcol_process_runtime_heap_alloc_bytes
 
 Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | alpha |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | alpha |
 
 ### otelcol_process_runtime_total_sys_memory_bytes
 
 Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | alpha |
 
 ### otelcol_process_uptime
 
 Uptime of the process [alpha]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| s | Sum | Double | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| s | Sum | Double | true | alpha |
 
 ### otelcol.processor.consumed.items
 

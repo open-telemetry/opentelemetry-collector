@@ -43,6 +43,7 @@ MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
+MODERNIZE    := $(TOOLS_BIN_DIR)/modernize
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -74,6 +75,10 @@ benchmark: $(GOTESTSUM)
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
+.PHONY: modernize
+modernize: $(MODERNIZE)
+	$(MODERNIZE) -fix -test -v ./...
+
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
@@ -95,8 +100,8 @@ common/goimports: $(GOIMPORTS)
 common/gofumpt: $(GOFUMPT)
 	$(GOFUMPT) -l -w -extra .
 
-.PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
 
 .PHONY: generate
