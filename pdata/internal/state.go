@@ -18,7 +18,7 @@ var UseCustomProtoEncoding = featuregate.GlobalRegistry().MustRegister(
 
 var UseProtoPooling = featuregate.GlobalRegistry().MustRegister(
 	"pdata.useProtoPooling",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/13631"),
 	featuregate.WithRegisterFromVersion("v0.133.0"),
