@@ -93,6 +93,8 @@ type ServerConfig struct {
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
