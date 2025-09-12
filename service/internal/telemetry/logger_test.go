@@ -5,7 +5,6 @@ package telemetry
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
@@ -130,7 +129,10 @@ func TestCore(t *testing.T) {
 			parent := ZapLoggerWithAttributes(logger, attrs)
 			parent.Info("test parent before child")
 
-			child := ZapLoggerWithAttributes(parent, internaltelemetry.RemoveAttributes(internaltelemetry.WithAttributeSet(componenttest.NewNopTelemetrySettings(), attrs), internaltelemetry.SignalKey))
+			childAttrs, _ := attribute.NewSetWithFiltered(attrs.ToSlice(), func(kv attribute.KeyValue) bool {
+				return string(kv.Key) != internaltelemetry.SignalKey
+			})
+			child := ZapLoggerWithAttributes(parent, childAttrs)
 			child.Info("test child")
 			parent.Info("test parent after child")
 

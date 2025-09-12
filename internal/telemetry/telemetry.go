@@ -4,6 +4,8 @@
 package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
 
 import (
+	"slices"
+	
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -45,6 +47,13 @@ func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettin
 }
 
 func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings {
-	ts.extraAttributes = RemoveAttributes(ts, fields...)
+	ts.extraAttributes = removeAttributes(ts, fields...)
 	return ts
+}
+
+func removeAttributes(t TelemetrySettings, fields ...string) attribute.Set {
+	attrs, _ := attribute.NewSetWithFiltered(t.extraAttributes.ToSlice(), func(kv attribute.KeyValue) bool {
+		return !slices.Contains(fields, string(kv.Key))
+	})
+	return attrs
 }
