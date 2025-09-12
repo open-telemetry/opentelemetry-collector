@@ -246,9 +246,12 @@ genproto_sub:
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
+remove-pdatagen:
+	rm -f .tools/pdatagen
+
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata: $(PDATAGEN)
+genpdata: remove-pdatagen $(PDATAGEN)
 	$(PDATAGEN)
 	$(MAKE) -C pdata fmt
 
