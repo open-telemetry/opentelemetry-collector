@@ -230,7 +230,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 
 		exts.extMap[extID] = ext
 		exts.instanceIDs[extID] = instanceID
-		telemetryimpl.InitializeWithAttributes(set.Telemetry)
+		telemetryimpl.InitializeWithAttributes(&extSet.TelemetrySettings)
 	}
 	order, err := computeOrder(exts)
 	if err != nil {

@@ -63,9 +63,7 @@ func (n *connectorNode) buildComponent(
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
-	defer func() {
-		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
-	}()
+	telemetryimpl.InitializeWithAttributes(&set.TelemetrySettings)
 
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:

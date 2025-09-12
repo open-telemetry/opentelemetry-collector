@@ -50,9 +50,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
 		BuildInfo:         info,
 	}
-	defer func() {
-		telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
-	}()
+	telemetryimpl.InitializeWithAttributes(&set.TelemetrySettings)
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

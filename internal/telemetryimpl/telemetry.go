@@ -16,11 +16,10 @@ var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
 )
 
-func InitializeWithAttributes(ts telemetry.TelemetrySettings) telemetry.TelemetrySettings {
+func InitializeWithAttributes(ts *telemetry.TelemetrySettings) {
 	ts.Logger = ZapLoggerWithAttributes(ts.Logger, ts.Attributes())
 	ts.TracerProvider = TracerProviderWithAttributes(ts.TracerProvider, ts.Attributes())
 	if NewPipelineTelemetryGate.IsEnabled() {
 		ts.MeterProvider = MeterProviderWithAttributes(ts.MeterProvider, ts.Attributes())
 	}
-	return ts
 }
