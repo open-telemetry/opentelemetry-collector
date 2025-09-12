@@ -201,3 +201,5 @@ replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../e
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
+
+replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
