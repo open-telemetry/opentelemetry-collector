@@ -129,7 +129,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-// Deprecated: [v0.131.0] use NotifyComponentStatusChange2 instead
+// Deprecated: [v0.136.0] use NotifyComponentStatusChange2 instead
 func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	pipelineIDs := make([]pipeline.ID, 0, 1)
 	source.AllPipelineIDs(func(id pipeline.ID) bool {

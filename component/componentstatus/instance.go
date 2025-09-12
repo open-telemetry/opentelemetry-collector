@@ -17,7 +17,7 @@ import (
 const pipelineDelim = byte(0x20)
 
 // InstanceID uniquely identifies a component instance
-// Deprecated: [v0.131.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
+// Deprecated: [v0.136.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
 type InstanceID struct {
 	componentID component.ID
 	kind        component.Kind
@@ -25,7 +25,7 @@ type InstanceID struct {
 }
 
 // NewInstanceID returns an ID that uniquely identifies a component.
-// Deprecated: [v0.131.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
+// Deprecated: [v0.136.0] This struct will be removed, please use `extensioncapabilities.Watcher`.
 func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
 		componentID: componentID,
