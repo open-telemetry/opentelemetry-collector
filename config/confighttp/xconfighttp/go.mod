@@ -97,8 +97,6 @@ replace go.opentelemetry.io/collector/config/configtls => ../../configtls
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../configcompression
 
-replace go.opentelemetry.io/collector/pipeline => ../../../pipeline
-
 replace go.opentelemetry.io/collector/internal/telemetry => ../../../internal/telemetry
 
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate

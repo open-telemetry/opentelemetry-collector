@@ -27,8 +27,6 @@ require (
 	google.golang.org/protobuf v1.36.9 // indirect
 )
 
-replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate

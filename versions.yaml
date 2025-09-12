@@ -36,6 +36,7 @@ module-sets:
       - go.opentelemetry.io/collector/internal/fanoutconsumer
       - go.opentelemetry.io/collector/internal/sharedcomponent
       - go.opentelemetry.io/collector/internal/telemetry
+      - go.opentelemetry.io/collector/internal/telemetryimpl
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component/componentstatus

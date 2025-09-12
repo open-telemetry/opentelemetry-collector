@@ -50,6 +50,4 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
-replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate

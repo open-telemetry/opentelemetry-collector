@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	internaltelemetry "go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
-	"go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // A receiver instance can be shared by multiple pipelines of the same type.
@@ -98,6 +98,6 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, n.pipelineType, err)
 	}
-	telemetry.InitializeWithAttributes(set.TelemetrySettings)
+	telemetryimpl.InitializeWithAttributes(set.TelemetrySettings)
 	return nil
 }

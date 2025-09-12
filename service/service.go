@@ -35,9 +35,10 @@ import (
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
-	serviceinternaltelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+
+	"go.opentelemetry.io/collector/internal/telemetryimpl"
 )
 
 // This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
@@ -155,8 +156,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	// LoggerProvider.
 	loggerProvider := telProviders.LoggerProvider()
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		core = serviceinternaltelemetry.NewConsoleCoreWithAttributes(core, attribute.NewSet())
-		core = serviceinternaltelemetry.NewOTelTeeCoreWithAttributes(
+		core = telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = telemetryimpl.NewOTelTeeCoreWithAttributes(
 			core,
 			loggerProvider,
 			"go.opentelemetry.io/collector/service",
