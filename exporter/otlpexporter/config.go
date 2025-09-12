@@ -30,8 +30,8 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	if strings.HasPrefix(c.ClientConfig.Endpoint, "unix://") {
-		s := strings.Split(c.ClientConfig.Endpoint, "//")
-		if len(s) == 2 && s[1] == "" {
+		path := strings.TrimPrefix(c.ClientConfig.Endpoint, "unix://")
+		if path == "" {
 			return errors.New("unix socket path cannot be empty")
 		}
 		return nil
