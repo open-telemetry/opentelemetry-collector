@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -52,7 +51,8 @@ func TestCreateProcessor(t *testing.T) {
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+
+	set.Logger = zap.New(core)
 	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
@@ -98,4 +98,22 @@ func TestCreateProcessor(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, createLoggerCount)
+}
+
+func TestProcessorTelemetryAttributes(t *testing.T) {
+	factory := NewFactory()
+	type factoryWithAttributes interface {
+		TelemetryAttributes(attribute.Set) attribute.Set
+	}
+	f := factory.(factoryWithAttributes)
+	result := f.TelemetryAttributes(attribute.NewSet(
+		attribute.String(componentattribute.SignalKey, "foo"),
+		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
+		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
+		attribute.String("foo", "bar"),
+	),
+	)
+	assert.Equal(t, 1, result.Len())
+	kv, _ := result.Get(0)
+	assert.Equal(t, attribute.Key("foo"), kv.Key)
 }

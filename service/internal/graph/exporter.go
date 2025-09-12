@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -20,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 var _ consumerNode = (*exporterNode)(nil)
@@ -52,12 +52,17 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *builders.ExporterBuilder,
 ) error {
+	f := builder.Factory(n.componentID.Type())
+	attrs := *n.Set()
+	if fwta, ok := f.(FactoryWithTelemetryAttributes); ok {
+		attrs = fwta.TelemetryAttributes(attrs)
+	}
 	set := exporter.Settings{
 		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
+		TelemetrySettings: telemetry.WithAttributeSet(tel, attrs),
 		BuildInfo:         info,
 	}
-	telemetryimpl.InitializeWithAttributes(&set.TelemetrySettings)
+	servicetelemetry.InitializeWithAttributes(&set.TelemetrySettings)
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

@@ -9,13 +9,13 @@ import (
 	"context"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -43,7 +43,15 @@ func NewFactory() xprocessor.Factory {
 		xprocessor.WithTraces(f.createTraces, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetrics, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogs, metadata.LogsStability),
-		xprocessor.WithProfiles(f.createProfiles, metadata.ProfilesStability))
+		xprocessor.WithProfiles(f.createProfiles, metadata.ProfilesStability),
+		xprocessor.WithTelemetryAttributes(func(set attribute.Set) attribute.Set {
+			attrs, _ := attribute.NewSetWithFiltered(set.ToSlice(), func(kv attribute.KeyValue) bool {
+				return componentattribute.SignalKey != string(kv.Key) &&
+					componentattribute.PipelineIDKey != string(kv.Key) &&
+					componentattribute.ComponentIDKey != string(kv.Key)
+			})
+			return attrs
+		}))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -136,13 +144,6 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	set.TelemetrySettings = telemetry.WithoutAttributes(
-		set.TelemetrySettings,
-		componentattribute.SignalKey,
-		componentattribute.PipelineIDKey,
-		componentattribute.ComponentIDKey,
-	)
-	telemetryimpl.InitializeWithAttributes(&set.TelemetrySettings)
 	set.Logger.Debug("created singleton logger")
 
 	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))

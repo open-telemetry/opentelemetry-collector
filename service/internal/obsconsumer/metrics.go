@@ -11,8 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 )
 
 func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Metrics {
-	if !telemetryimpl.NewPipelineTelemetryGate.IsEnabled() {
+	if !servicetelemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
 
@@ -33,7 +33,7 @@ func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Me
 	consumerSet := Settings{
 		ItemCounter: set.ItemCounter,
 		SizeCounter: set.SizeCounter,
-		Logger:      set.Logger.With(telemetryimpl.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
+		Logger:      set.Logger.With(servicetelemetry.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
 	}
 
 	return obsMetrics{

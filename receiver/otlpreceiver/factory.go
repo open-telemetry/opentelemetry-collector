@@ -6,6 +6,8 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -14,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -35,6 +38,12 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		xreceiver.WithLogs(createLog, metadata.LogsStability),
 		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
+		xreceiver.WithTelemetryAttributes(func(set attribute.Set) attribute.Set {
+			attrs, _ := attribute.NewSetWithFiltered(set.ToSlice(), func(kv attribute.KeyValue) bool {
+				return componentattribute.SignalKey != string(kv.Key)
+			})
+			return attrs
+		}),
 	)
 }
 

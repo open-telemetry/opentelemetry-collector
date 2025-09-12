@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +49,12 @@ func TestCreateSameReceiver(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+	creationSet.Logger = zap.New(core.With([]zapcore.Field{
+		{
+			Key:    componentattribute.ComponentIDKey,
+			String: "otlp",
+		},
+	}))
 	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
@@ -457,4 +461,25 @@ func TestCreateProfiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReceiverTelemetryAttributes(t *testing.T) {
+	factory := NewFactory()
+	type factoryWithAttributes interface {
+		TelemetryAttributes(attribute.Set) attribute.Set
+	}
+	f := factory.(factoryWithAttributes)
+	result := f.TelemetryAttributes(attribute.NewSet(
+		attribute.String(componentattribute.SignalKey, "logs"),
+		attribute.String(componentattribute.ComponentIDKey, "otlpreceiver"),
+		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
+		attribute.String("foo", "bar"),
+	),
+	)
+	assert.Equal(t, 3, result.Len())
+	assert.Equal(t, []attribute.KeyValue{
+		attribute.String("foo", "bar"),
+		attribute.String(componentattribute.ComponentIDKey, "otlpreceiver"),
+		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
+	}, result.ToSlice())
 }
