@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -20,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
@@ -131,11 +128,6 @@ func (req *logsRequest) BytesSize() int {
 	return logsMarshaler.LogsSize(req.ld)
 }
 
-type logsExporter struct {
-	*internal.BaseExporter
-	consumer.Logs
-}
-
 // NewLogs creates an exporter.Logs that records observability logs and wraps every request with a Span.
 func NewLogs(
 	ctx context.Context,
@@ -150,8 +142,20 @@ func NewLogs(
 	if pusher == nil {
 		return nil, errNilPushLogs
 	}
-	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
+	return internal.NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
 		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
+}
+
+// NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
+// Deprecated [v0.136.0]: Use xexporterhelper.NewLogsRequest instead.
+func NewLogsRequest(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestConverterFunc[plog.Logs],
+	pusher RequestConsumeFunc,
+	options ...Option,
+) (exporter.Logs, error) {
+	return internal.NewLogsRequest(ctx, set, converter, pusher, options...)
 }
 
 // requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
@@ -165,53 +169,5 @@ func requestConsumeFromLogs(pusher consumer.ConsumeLogsFunc) RequestConsumeFunc 
 func requestFromLogs() RequestConverterFunc[plog.Logs] {
 	return func(_ context.Context, ld plog.Logs) (Request, error) {
 		return newLogsRequest(ld), nil
-	}
-}
-
-// NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewLogsRequest(
-	_ context.Context,
-	set exporter.Settings,
-	converter RequestConverterFunc[plog.Logs],
-	pusher RequestConsumeFunc,
-	options ...Option,
-) (exporter.Logs, error) {
-	if set.Logger == nil {
-		return nil, errNilLogger
-	}
-
-	if converter == nil {
-		return nil, errNilLogsConverter
-	}
-
-	if pusher == nil {
-		return nil, errNilConsumeRequest
-	}
-
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, pusher, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	lc, err := consumer.NewLogs(newConsumeLogs(converter, be, set.Logger), be.ConsumerOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	return &logsExporter{BaseExporter: be, Logs: lc}, nil
-}
-
-func newConsumeLogs(converter RequestConverterFunc[plog.Logs], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
-	return func(ctx context.Context, ld plog.Logs) error {
-		req, err := converter(ctx, ld)
-		if err != nil {
-			logger.Error("Failed to convert logs. Dropping data.",
-				zap.Int("dropped_log_records", ld.LogRecordCount()),
-				zap.Error(err))
-			return consumererror.NewPermanent(err)
-		}
-		return be.Send(ctx, req)
 	}
 }
