@@ -11,9 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 var (
@@ -34,7 +33,7 @@ func NewTraces(cons consumer.Traces, set Settings, opts ...Option) consumer.Trac
 	consumerSet := Settings{
 		ItemCounter: set.ItemCounter,
 		SizeCounter: set.SizeCounter,
-		Logger:      set.Logger.With(componentattribute.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
+		Logger:      set.Logger.With(telemetry.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
 	}
 
 	return obsTraces{

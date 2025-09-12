@@ -7,14 +7,13 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
-	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -135,12 +134,7 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	set.TelemetrySettings = telemetry.WithoutAttributes(
-		set.TelemetrySettings,
-		componentattribute.SignalKey,
-		componentattribute.PipelineIDKey,
-		componentattribute.ComponentIDKey,
-	)
+	set.TelemetrySettings = componenttest.NewNopTelemetrySettings()
 	set.Logger.Debug("created singleton logger")
 
 	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))

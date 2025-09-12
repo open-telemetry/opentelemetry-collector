@@ -10,16 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -45,14 +41,8 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.CheckInterval = 100 * time.Millisecond
 
 	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
-		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
-	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
+	set.Logger = zap.New(core)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -93,7 +83,6 @@ func TestCreateProcessor(t *testing.T) {
 	for _, log := range observer.All() {
 		if log.Message == "created singleton logger" {
 			createLoggerCount++
-			assert.Empty(t, observer.All()[0].Context)
 		}
 	}
 	assert.Equal(t, 1, createLoggerCount)

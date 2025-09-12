@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute
+package telemetry
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	internaltelemetry "go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -43,13 +45,13 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 	require.Len(t, observedLogs, 3)
 
 	parentContext := map[string]string{
-		"preexisting":  "value",
-		SignalKey:      pipeline.SignalLogs.String(),
-		ComponentIDKey: "filelog",
+		"preexisting":                    "value",
+		internaltelemetry.SignalKey:      pipeline.SignalLogs.String(),
+		internaltelemetry.ComponentIDKey: "filelog",
 	}
 	childContext := map[string]string{
-		"preexisting":  "value",
-		ComponentIDKey: "filelog",
+		"preexisting":                    "value",
+		internaltelemetry.ComponentIDKey: "filelog",
 	}
 
 	require.Equal(t, "test parent before child", observedLogs[0].Message)
@@ -73,8 +75,8 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 
 func TestCore(t *testing.T) {
 	attrs := attribute.NewSet(
-		attribute.String(SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(ComponentIDKey, "filelog"),
+		attribute.String(internaltelemetry.SignalKey, pipeline.SignalLogs.String()),
+		attribute.String(internaltelemetry.ComponentIDKey, "filelog"),
 	)
 
 	tests := []test{
@@ -110,7 +112,7 @@ func TestCore(t *testing.T) {
 				}
 
 				childAttrs := attribute.NewSet(
-					attribute.String(ComponentIDKey, "filelog"),
+					attribute.String(internaltelemetry.ComponentIDKey, "filelog"),
 				)
 
 				assert.Equal(t, map[string]attribute.Set{
@@ -127,7 +129,8 @@ func TestCore(t *testing.T) {
 
 			parent := ZapLoggerWithAttributes(logger, attrs)
 			parent.Info("test parent before child")
-			child := ZapLoggerWithAttributes(parent, RemoveAttributes(attrs, SignalKey))
+
+			child := ZapLoggerWithAttributes(parent, internaltelemetry.RemoveAttributes(internaltelemetry.WithAttributeSet(componenttest.NewNopTelemetrySettings(), attrs), internaltelemetry.SignalKey))
 			child.Info("test child")
 			parent.Info("test parent after child")
 
