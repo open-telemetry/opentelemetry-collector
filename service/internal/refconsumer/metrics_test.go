@@ -20,7 +20,7 @@ func TestMetricsNopWhenGateDisabled(t *testing.T) {
 	initial := pref.UseProtoPooling.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), false))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(telemetryimpl.NewPipelineTelemetryGate.ID(), initial))
 	})
 
 	refCons := NewMetrics(consumertest.NewNop())
@@ -34,7 +34,7 @@ func TestMetrics(t *testing.T) {
 	initial := pref.UseProtoPooling.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(telemetryimpl.NewPipelineTelemetryGate.ID(), initial))
 	})
 
 	refCons := NewMetrics(consumertest.NewNop())
