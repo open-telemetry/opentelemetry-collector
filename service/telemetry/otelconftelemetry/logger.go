@@ -17,11 +17,11 @@ import (
 // createLogger creates a Logger and a LoggerProvider from Config.
 func createLogger(
 	ctx context.Context,
-	set telemetry.Settings,
+	set telemetry.LoggerSettings,
 	componentConfig component.Config,
 ) (*zap.Logger, telemetry.LoggerProvider, error) {
 	cfg := componentConfig.(*Config)
-	res := newResource(set, cfg)
+	res := newResource(set.Settings, cfg)
 
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()

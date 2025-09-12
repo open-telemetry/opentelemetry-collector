@@ -98,15 +98,17 @@ type Settings struct {
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo          component.BuildInfo
-	telemetrySettings  component.TelemetrySettings
-	host               *graph.Host
-	collectorConf      *confmap.Conf
-	telemetryProviders telemetry.Providers
+	buildInfo         component.BuildInfo
+	telemetrySettings component.TelemetrySettings
+	host              *graph.Host
+	collectorConf     *confmap.Conf
+	loggerProvider    telemetry.LoggerProvider
+	meterProvider     telemetry.MeterProvider
+	tracerProvider    telemetry.TracerProvider
 }
 
 // New creates a new Service, its telemetry, and Components.
-func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
+func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -123,37 +125,30 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf: set.CollectorConf,
 	}
 
-	telFactory := otelconftelemetry.NewFactory()
-	telset := telemetry.Settings{
-		BuildInfo:    set.BuildInfo,
-		ZapOptions:   set.LoggingOptions,
-		DefaultViews: configureViews,
-	}
+	telemetryFactory := otelconftelemetry.NewFactory()
+	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
 
-	telProviders, err := telFactory.CreateProviders(ctx, telset, &cfg.Telemetry)
+	// Create the logger & LoggerProvider first. These may be used
+	// when creating the other telemetry providers.
+	loggerSettings := telemetry.LoggerSettings{
+		Settings:   telemetrySettings,
+		ZapOptions: set.LoggingOptions,
+	}
+	logger, loggerProvider, err := telemetryFactory.CreateLogger(ctx, loggerSettings, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create telemetry providers: %w", err)
+		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	srv.telemetryProviders = telProviders
 	defer func() {
-		if err != nil {
-			err = multierr.Append(err, telProviders.Shutdown(ctx))
+		if resultErr != nil {
+			logger.Error("error found during service initialization", zap.Error(resultErr))
+			resultErr = multierr.Append(resultErr, loggerProvider.Shutdown(ctx))
 		}
 	}()
-
-	// Use initialized logger to handle any subsequent errors
-	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
-	logger := telProviders.Logger()
-	defer func() {
-		if err != nil {
-			logger.Error("error found during service initialization", zap.Error(err))
-		}
-	}()
+	srv.loggerProvider = loggerProvider
 
 	// Wrap the zap.Logger with componentattribute so scope attributes
 	// can be added and removed dynamically, and tee logs to the
 	// LoggerProvider.
-	loggerProvider := telProviders.LoggerProvider()
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 		core = componentattribute.NewOTelTeeCoreWithAttributes(
@@ -165,11 +160,50 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return core
 	}))
 
+	meterSettings := telemetry.MeterSettings{
+		Settings: telemetrySettings,
+		Logger:   logger,
+	}
+	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
+	if mpConfig.Views == nil {
+		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
+	}
+	meterProvider, err := telemetryFactory.CreateMeterProvider(ctx, meterSettings, &cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
+	}
+	defer func() {
+		if resultErr != nil {
+			resultErr = multierr.Append(resultErr, meterProvider.Shutdown(ctx))
+		}
+	}()
+	srv.meterProvider = meterProvider
+
+	tracerSettings := telemetry.TracerSettings{
+		Settings: telemetrySettings,
+		Logger:   logger,
+	}
+	tracerProvider, err := telemetryFactory.CreateTracerProvider(ctx, tracerSettings, &cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
+	}
+	defer func() {
+		if resultErr != nil {
+			resultErr = multierr.Append(resultErr, tracerProvider.Shutdown(ctx))
+		}
+	}()
+	srv.tracerProvider = tracerProvider
+
+	resource, err := telemetryFactory.CreateResource(ctx, telemetrySettings, &cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         logger,
-		MeterProvider:  telProviders.MeterProvider(),
-		TracerProvider: telProviders.TracerProvider(),
-		Resource:       telProviders.Resource(),
+		MeterProvider:  meterProvider,
+		TracerProvider: tracerProvider,
+		Resource:       resource,
 	}
 	srv.host.Reporter = status.NewReporter(srv.host.NotifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
@@ -255,8 +289,16 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	if err := srv.telemetryProviders.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry providers: %w", err))
+	// Shut down telemetry providers in the reverse order of creation,
+	// since the tracer and meter providers may use the logger.
+	if err := srv.tracerProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown tracer provider: %w", err))
+	}
+	if err := srv.meterProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown meter provider: %w", err))
+	}
+	if err := srv.loggerProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger provider: %w", err))
 	}
 
 	return errs

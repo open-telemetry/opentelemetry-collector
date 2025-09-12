@@ -8,7 +8,6 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -17,19 +16,18 @@ import (
 
 func createMeterProvider(
 	ctx context.Context,
-	set telemetry.Settings,
+	set telemetry.MeterSettings,
 	componentConfig component.Config,
-	logger *zap.Logger,
 ) (telemetry.MeterProvider, error) {
 	cfg := componentConfig.(*Config)
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
-		logger.Info("Internal metrics telemetry disabled")
+		set.Logger.Info("Internal metrics telemetry disabled")
 		return noopMeterProvider{MeterProvider: noopmetric.NewMeterProvider()}, nil
 	} else if cfg.Metrics.Views == nil && set.DefaultViews != nil {
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	res := newResource(set, cfg)
+	res := newResource(set.Settings, cfg)
 	mpConfig := cfg.Metrics.MeterProvider
 	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
 		MeterProvider: &mpConfig,
