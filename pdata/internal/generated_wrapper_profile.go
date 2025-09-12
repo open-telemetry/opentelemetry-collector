@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
 	"sync"
 
@@ -214,7 +215,7 @@ func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.TimeUnixNano != 0 {
-		n += 1 + proto.Sov(uint64(orig.TimeUnixNano))
+		n += 9
 	}
 	if orig.DurationNano != 0 {
 		n += 1 + proto.Sov(uint64(orig.DurationNano))
@@ -273,9 +274,10 @@ func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
 		buf[pos] = 0x12
 	}
 	if orig.TimeUnixNano != 0 {
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.TimeUnixNano))
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
 		pos--
-		buf[pos] = 0x18
+		buf[pos] = 0x19
 	}
 	if orig.DurationNano != 0 {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.DurationNano))
@@ -393,11 +395,11 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 			}
 
 		case 3:
-			if wireType != proto.WireTypeVarint {
+			if wireType != proto.WireTypeI64 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
 			}
 			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
+			num, pos, err = proto.ConsumeI64(buf, pos)
 			if err != nil {
 				return err
 			}
