@@ -33,7 +33,7 @@ func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Me
 	consumerSet := Settings{
 		ItemCounter: set.ItemCounter,
 		SizeCounter: set.SizeCounter,
-		Logger:      set.Logger.With(telemetry.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
+		Logger:      set.Logger.With(telemetryimpl.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
 	}
 
 	return obsMetrics{
