@@ -129,6 +129,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			name:     "invalid_port",
 			errorMsg: `invalid port "port"`,
 		},
+		{
+			name:     "invalid_unix_socket",
+			errorMsg: "unix socket path cannot be empty",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
@@ -144,6 +148,13 @@ func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidUnixSocketEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, cfg.Validate())
 }
 
