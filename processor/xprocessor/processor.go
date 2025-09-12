@@ -6,6 +6,8 @@ package xprocessor // import "go.opentelemetry.io/collector/processor/xprocessor
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
@@ -56,6 +58,7 @@ type factory struct {
 	processor.Factory
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
+	attributesFunc         func(set attribute.Set) attribute.Set
 }
 
 func (f factory) ProfilesStability() component.StabilityLevel {
@@ -104,6 +107,20 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 		o.profilesStabilityLevel = sl
 		o.createProfilesFunc = createProfiles
 	})
+}
+
+// WithTelemetryAttributes overrides the default component attributes setter to change the attributes to set on the component telemetry.
+func WithTelemetryAttributes(attributesFunc func(set attribute.Set) attribute.Set) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.attributesFunc = attributesFunc
+	})
+}
+
+func (f *factory) TelemetryAttributes(attributes attribute.Set) attribute.Set {
+	if f.attributesFunc != nil {
+		return f.attributesFunc(attributes)
+	}
+	return attributes
 }
 
 // NewFactory returns a Factory.

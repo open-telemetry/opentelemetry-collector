@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sort"
 
+	otelattribute "go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -18,10 +19,10 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -40,7 +41,7 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
-		extLogger := telemetryimpl.ZapLoggerWithAttributes(bes.telemetry.Logger,
+		extLogger := servicetelemetry.ZapLoggerWithAttributes(bes.telemetry.Logger,
 			*attribute.Extension(extID).Set())
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
@@ -196,6 +197,10 @@ func WithReporter(reporter status.Reporter) Option {
 	})
 }
 
+type factoryWithTelemetryAttributes interface {
+	TelemetryAttributes(attributes otelattribute.Set) otelattribute.Set
+}
+
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Extensions, error) {
 	exts := &Extensions{
@@ -212,11 +217,17 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 
 	for _, extID := range cfg {
 		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
+		f := set.Extensions.Factory(extID.Type())
+		attrs := *attribute.Extension(extID).Set()
+		if fwta, ok := f.(factoryWithTelemetryAttributes); ok {
+			attrs = fwta.TelemetryAttributes(attrs)
+		}
 		extSet := extension.Settings{
 			ID:                extID,
-			TelemetrySettings: telemetry.WithAttributeSet(set.Telemetry, *attribute.Extension(extID).Set()),
+			TelemetrySettings: telemetry.WithAttributeSet(set.Telemetry, attrs),
 			BuildInfo:         set.BuildInfo,
 		}
+		servicetelemetry.InitializeWithAttributes(&extSet.TelemetrySettings)
 
 		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {
@@ -230,7 +241,6 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 
 		exts.extMap[extID] = ext
 		exts.instanceIDs[extID] = instanceID
-		telemetryimpl.InitializeWithAttributes(&extSet.TelemetrySettings)
 	}
 	order, err := computeOrder(exts)
 	if err != nil {

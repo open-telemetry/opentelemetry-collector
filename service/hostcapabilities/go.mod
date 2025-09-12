@@ -97,5 +97,3 @@ replace go.opentelemetry.io/collector/config/configoptional => ../../config/conf
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
-
-replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl

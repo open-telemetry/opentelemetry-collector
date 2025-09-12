@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -52,7 +51,8 @@ func TestCreateProcessor(t *testing.T) {
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+
+	set.Logger = zap.New(core)
 	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())

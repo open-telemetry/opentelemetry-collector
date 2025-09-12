@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -36,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
@@ -155,8 +155,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	// LoggerProvider.
 	loggerProvider := telProviders.LoggerProvider()
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		core = telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet())
-		core = telemetryimpl.NewOTelTeeCoreWithAttributes(
+		core = servicetelemetry.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = servicetelemetry.NewOTelTeeCoreWithAttributes(
 			core,
 			loggerProvider,
 			"go.opentelemetry.io/collector/service",

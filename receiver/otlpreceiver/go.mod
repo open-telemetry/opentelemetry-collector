@@ -24,7 +24,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.135.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.135.0
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0
-	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0
 	go.opentelemetry.io/collector/pdata v1.41.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0
 	go.opentelemetry.io/collector/pdata/testdata v0.135.0
@@ -75,10 +74,8 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.135.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.41.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
@@ -152,8 +149,6 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
-
-replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

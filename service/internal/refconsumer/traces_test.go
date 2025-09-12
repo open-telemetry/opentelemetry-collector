@@ -11,16 +11,16 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pdata/xpdata/pref"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 func TestTracesNopWhenGateDisabled(t *testing.T) {
 	initial := pref.UseProtoPooling.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), false))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetryimpl.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(servicetelemetry.NewPipelineTelemetryGate.ID(), initial))
 	})
 
 	refCons := NewTraces(consumertest.NewNop())
@@ -34,7 +34,7 @@ func TestTraces(t *testing.T) {
 	initial := pref.UseProtoPooling.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetryimpl.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(servicetelemetry.NewPipelineTelemetryGate.ID(), initial))
 	})
 
 	refCons := NewTraces(consumertest.NewNop())

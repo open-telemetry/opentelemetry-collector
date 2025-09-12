@@ -13,7 +13,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.135.0
 	go.opentelemetry.io/collector/internal/memorylimiter v0.135.0
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0
-	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0
 	go.opentelemetry.io/collector/pdata v1.41.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0
 	go.opentelemetry.io/collector/pipeline v1.41.0
@@ -61,8 +60,6 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.135.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.135.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
@@ -111,8 +108,6 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
-
-replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
