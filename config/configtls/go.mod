@@ -7,6 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-tpm v0.9.5
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/collector/client v1.41.0
 	go.opentelemetry.io/collector/config/configopaque v1.41.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.135.0
 )
@@ -29,7 +30,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -40,3 +41,9 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
+
+replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/client => ../../client

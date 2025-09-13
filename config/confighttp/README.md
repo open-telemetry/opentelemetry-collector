@@ -109,6 +109,8 @@ will not be enabled.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
   - `x-snappy-framed` can be used if feature gate `confighttp.snappyFramed` is enabled.
+- `include_metadata` (default = false): If true, includes HTTP request headers in metadata context.
+- `include_tls_metadata` (default = false): If true, includes clients' certificates subject (`tls.subject`) and URIs (`tls.uri`) in metadata context. Requires `tls` to be configured.
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
