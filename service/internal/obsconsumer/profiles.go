@@ -12,9 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 var (
@@ -23,7 +22,7 @@ var (
 )
 
 func NewProfiles(cons xconsumer.Profiles, set Settings, opts ...Option) xconsumer.Profiles {
-	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if !servicetelemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
 
@@ -35,7 +34,7 @@ func NewProfiles(cons xconsumer.Profiles, set Settings, opts ...Option) xconsume
 	consumerSet := Settings{
 		ItemCounter: set.ItemCounter,
 		SizeCounter: set.SizeCounter,
-		Logger:      set.Logger.With(componentattribute.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
+		Logger:      set.Logger.With(servicetelemetry.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
 	}
 
 	return obsProfiles{

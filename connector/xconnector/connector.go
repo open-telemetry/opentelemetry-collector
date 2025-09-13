@@ -6,6 +6,8 @@ package xconnector // import "go.opentelemetry.io/collector/connector/xconnector
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
@@ -213,6 +215,13 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 	})
 }
 
+// WithTelemetryAttributes overrides the default component attributes setter to change the attributes to set on the component telemetry.
+func WithTelemetryAttributes(attributesFunc func(set attribute.Set) attribute.Set) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.attributesFunc = attributesFunc
+	})
+}
+
 // factory implements the Factory interface.
 type factory struct {
 	connector.Factory
@@ -234,6 +243,8 @@ type factory struct {
 	profilesToTracesStabilityLevel   component.StabilityLevel
 	profilesToMetricsStabilityLevel  component.StabilityLevel
 	profilesToLogsStabilityLevel     component.StabilityLevel
+
+	attributesFunc func(set attribute.Set) attribute.Set
 }
 
 func (f *factory) TracesToProfilesStability() component.StabilityLevel {
@@ -311,6 +322,13 @@ func (f *factory) CreateProfilesToLogs(ctx context.Context, set connector.Settin
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
 	}
 	return f.createProfilesToLogsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) TelemetryAttributes(attributes attribute.Set) attribute.Set {
+	if f.attributesFunc != nil {
+		return f.attributesFunc(attributes)
+	}
+	return attributes
 }
 
 // NewFactory returns a Factory.

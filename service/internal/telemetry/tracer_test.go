@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute_test
+package telemetry
 
 import (
 	"context"
@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
-
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 // Emulate a TracerProvider from a non-official SDK
@@ -40,18 +38,18 @@ func TestTPWA(t *testing.T) {
 	extraAttrs2 := attribute.NewSet(
 		attribute.String("extrakey2", "extraval2"),
 	)
-	tp2 := componentattribute.TracerProviderWithAttributes(tp1, extraAttrs2)
+	tp2 := TracerProviderWithAttributes(tp1, extraAttrs2)
 
 	// Replace attribute set
 	extraAttrs3 := attribute.NewSet(
 		attribute.String("extrakey3", "extraval3"),
 	)
-	tp3 := componentattribute.TracerProviderWithAttributes(tp2, extraAttrs3)
+	tp3 := TracerProviderWithAttributes(tp2, extraAttrs3)
 
 	// The same thing, but with a non-official SDK Provider
 	tp4 := &customTracerProvider{tp: tp1}
-	tp5 := componentattribute.TracerProviderWithAttributes(tp4, extraAttrs2)
-	tp6 := componentattribute.TracerProviderWithAttributes(tp5, extraAttrs3)
+	tp5 := TracerProviderWithAttributes(tp4, extraAttrs2)
+	tp6 := TracerProviderWithAttributes(tp5, extraAttrs3)
 
 	noAttrs := attribute.NewSet()
 	// Add a standard attribute on top of the extra attributes

@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 func setGateForTest(t *testing.T, enabled bool) {
-	initial := telemetry.NewPipelineTelemetryGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), enabled))
+	initial := servicetelemetry.NewPipelineTelemetryGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(servicetelemetry.NewPipelineTelemetryGate.ID(), enabled))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(servicetelemetry.NewPipelineTelemetryGate.ID(), initial))
 	})
 }

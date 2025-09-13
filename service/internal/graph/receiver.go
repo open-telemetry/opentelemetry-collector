@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // A receiver instance can be shared by multiple pipelines of the same type.
@@ -44,11 +45,17 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
+	f := builder.Factory(n.componentID.Type())
+	attrs := *n.Set()
+	if fwta, ok := f.(FactoryWithTelemetryAttributes); ok {
+		attrs = fwta.TelemetryAttributes(attrs)
+	}
 	set := receiver.Settings{
 		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
+		TelemetrySettings: telemetry.WithAttributeSet(tel, attrs),
 		BuildInfo:         info,
 	}
+	servicetelemetry.InitializeWithAttributes(&set.TelemetrySettings)
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

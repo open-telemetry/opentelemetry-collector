@@ -49,7 +49,12 @@ func TestCreateSameReceiver(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+	creationSet.Logger = zap.New(core.With([]zapcore.Field{
+		{
+			Key:    componentattribute.ComponentIDKey,
+			String: "otlp",
+		},
+	}))
 	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)

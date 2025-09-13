@@ -51,7 +51,8 @@ func TestCreateProcessor(t *testing.T) {
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
+
+	set.Logger = zap.New(core)
 	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
