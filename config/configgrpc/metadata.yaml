@@ -1,0 +1,108 @@
+config:
+  $id: https://opentelemetry.io/collector/configgrpc
+  $schema: https://json-schema.org/draft/2020-12/schema
+  $defs:
+    keepAliveClientConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        time:
+          type: string
+          format: duration
+        timeout:
+          type: string
+          format: duration
+        permit_without_stream:
+          type: boolean
+    keepaliveEnforcementPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        min_time:
+          type: string
+          format: duration
+        permit_without_stream:
+          type: boolean
+    keepaliveServerParameters:
+      type: object
+      additionalProperties: false
+      properties:
+        max_connection_idle:
+          type: string
+          format: duration
+        max_connection_age:
+          type: string
+          format: duration
+        max_connection_age_grace:
+          type: string
+          format: duration
+        time:
+          type: string
+          format: duration
+        timeout:
+          type: string
+          format: duration
+    clientConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        endpoint:
+          type: string
+        compression:
+          type: string
+        tls:
+          $ref: https://opentelemetry.io/collector/configtls#$defs/config
+        keepalive:
+          $ref: https://opentelemetry.io/collector/configgrpc#$defs/keepAliveClientConfig
+        read_buffer_size:
+          type: number
+        write_buffer_size:
+          type: number
+        wait_for_ready:
+          type: boolean
+        headers:
+          type: object
+          additionalProperties: true
+        balancer_name:
+          type: string
+        authority:
+          type: string
+        auth:
+          $ref: https://opentelemetry.io/collector/configauth#$defs/config
+        middlewares:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+    serverConfig:
+      type: object
+      additionalProperties: false
+      allOf:
+        $ref: https://opentelemetry.io/collector/confignet#$defs/addrConfig
+      properties:
+        tls:
+          $ref: https://opentelemetry.io/collector/configtls#$defs/config
+        max_recv_msg_size_mib:
+          type: number
+        max_concurrent_streams:
+          type: number
+        read_buffer_size:
+          type: number
+        write_buffer_size:
+          type: number
+        keepalive:
+          $ref: https://opentelemetry.io/collector/configgrpc#$defs/keepaliveServerConfig
+        auth:
+          $ref: https://opentelemetry.io/collector/configauth#$defs/config
+        include_metadata:
+          type: boolean
+        middlewares:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+
