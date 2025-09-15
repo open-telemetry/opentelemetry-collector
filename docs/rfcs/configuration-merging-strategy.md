@@ -17,7 +17,7 @@ This issue has been highlighted in several discussions and feature requests:
 
 ## Motivation and Scope
 
-We’ve already implemented a feature gate and foundational logic that supports merging lists across configuration files. Currently, this logic is hardcoded to merge lists only for specific keys: receivers, exporters, and extensions. The relevant implementation can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/merge.go).
+We’ve already implemented a feature gate and foundational logic that supports merging lists across configuration files. Currently, this logic is hardcoded to merge lists only for specific keys: receivers, exporters, and extensions. The relevant implementation can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/internal/merge.go).
 
 The current implementation lacks flexibility. Ideally, users should be able to specify which configuration paths should be merged, rather than relying on hardcoded defaults. 
 This RFC proposes extending the existing functionality by introducing a user-configurable mechanism to define merge behavior.
@@ -97,9 +97,9 @@ Our "custom" yaml tag will be in the format of URI query parameters. For starter
     - If the user wants to allow duplicates, they can simply turn this flag on.
     - Default: `false`
 3. `recursive`:
-    - This setting controls the merging of child elemts of the give yaml path. 
+    - This setting controls the merging of child elements of the given yaml path. 
     - This is useful if user wants to merge all the lists under a give sub-tree. 
-        - For eg. merging all the lists under `service` stanza.
+        - For eg. merging all the lists under the `service` section.
 
 #### Examples of first approach
 
