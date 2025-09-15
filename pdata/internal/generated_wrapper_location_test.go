@@ -146,8 +146,8 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 		"Address/missing_value":            {0x10},
 		"Line/wrong_wire_type":             {0x1c},
 		"Line/missing_value":               {0x1a},
-		"AttributeIndices/wrong_wire_type": {0x2c},
-		"AttributeIndices/missing_value":   {0x2a},
+		"AttributeIndices/wrong_wire_type": {0x24},
+		"AttributeIndices/missing_value":   {0x22},
 	}
 }
 
