@@ -145,7 +145,7 @@ func genTestFailingUnmarshalProtoValuesProfile() map[string][]byte {
 		"Sample/wrong_wire_type":                 {0x14},
 		"Sample/missing_value":                   {0x12},
 		"TimeUnixNano/wrong_wire_type":           {0x1c},
-		"TimeUnixNano/missing_value":             {0x18},
+		"TimeUnixNano/missing_value":             {0x19},
 		"DurationNano/wrong_wire_type":           {0x24},
 		"DurationNano/missing_value":             {0x20},
 		"PeriodType/wrong_wire_type":             {0x2c},
