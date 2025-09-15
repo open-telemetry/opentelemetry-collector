@@ -4,7 +4,7 @@
 
 As part of issue [#8754](https://github.com/open-telemetry/opentelemetry-collector/issues/8754), a new feature gate has been introduced to support merging component lists instead of replacing them ([first PR](https://github.com/open-telemetry/opentelemetry-collector/pull/12097)). This enhancement enables configurations from multiple sources to be combined, preserving all defined components in the final configuration.
 
-More information about this feature can be found in the [confmap's README](https://github.com/VihasMakwana/opentelemetry-collector/blob/7e731ce792c0318e6a179330a7bc600783ab0b29/confmap/README.md#experimental-append-merging-strategy-for-lists).
+More information about this feature can be found in the [confmap README](https://github.com/open-telemetry/opentelemetry-collector/blob/d4539dd6b4e554e15066226fa975b156af7b1510/confmap/README.md#experimental-append-merging-strategy-for-lists).
 
 The main motivation for this change was to allow users to define configuration fragments in different sources, and have them merged in such a way that all specified components are included under `service::pipeline` in the final configuration.
 
