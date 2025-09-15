@@ -149,7 +149,7 @@ service:
       exporters: [...]
 ```
 
-2. _Merge all the lists under `service::*` stanza_:
+2. _Merge all the lists under the `service::*` section_:
 
 
 ```yaml
