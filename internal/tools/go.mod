@@ -21,7 +21,7 @@ require (
 	golang.org/x/tools v0.36.0
 	golang.org/x/tools/gopls v0.20.0
 	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.12.3
+	gotest.tools/gotestsum v1.13.0
 	mvdan.cc/gofumpt v0.9.1
 )
 
