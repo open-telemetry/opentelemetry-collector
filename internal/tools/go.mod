@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.25
+go 1.24.0
 
 tool (
 	github.com/a8m/envsubst/cmd/envsubst
