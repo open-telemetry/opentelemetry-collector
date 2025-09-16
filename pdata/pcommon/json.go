@@ -22,7 +22,7 @@ func (*JSONMarshaler) MarshalAnyValue(value *otlpcommon.AnyValue) ([]byte, error
 
 type JSONUnmarshaler struct{}
 
-func (*JSONMarshaler) UnmarshalAnyValue(buf []byte) (*otlpcommon.AnyValue, error) {
+func (*JSONUnmarshaler) UnmarshalAnyValue(buf []byte) (*otlpcommon.AnyValue, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	value := &otlpcommon.AnyValue{}
