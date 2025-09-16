@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.1.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
 )
 

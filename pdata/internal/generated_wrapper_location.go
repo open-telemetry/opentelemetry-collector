@@ -182,7 +182,7 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
 		pos--
-		buf[pos] = 0x2a
+		buf[pos] = 0x22
 	}
 	return len(buf) - pos
 }
@@ -241,7 +241,7 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 			if err != nil {
 				return err
 			}
-		case 5:
+		case 4:
 			switch wireType {
 			case proto.WireTypeLen:
 				var length int

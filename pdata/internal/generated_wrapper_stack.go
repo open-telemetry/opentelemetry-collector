@@ -117,7 +117,7 @@ func MarshalProtoOrigStack(orig *otlpprofiles.Stack, buf []byte) int {
 		}
 		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
 		pos--
-		buf[pos] = 0x1a
+		buf[pos] = 0xa
 	}
 	return len(buf) - pos
 }
@@ -136,7 +136,7 @@ func UnmarshalProtoOrigStack(orig *otlpprofiles.Stack, buf []byte) error {
 			return err
 		}
 		switch fieldNum {
-		case 3:
+		case 1:
 			switch wireType {
 			case proto.WireTypeLen:
 				var length int
