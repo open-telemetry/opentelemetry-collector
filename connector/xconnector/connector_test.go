@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -145,4 +146,28 @@ func createProfilesToMetrics(context.Context, connector.Settings, component.Conf
 
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
+}
+
+func TestWithAttributes(t *testing.T) {
+	testType := component.MustNewType("test")
+	defaultCfg := struct{}{}
+	factory := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+		WithTelemetryAttributes(func(set attribute.Set) attribute.Set {
+			return attribute.NewSet(append(set.ToSlice(), attribute.String("foobar", "bar"))...)
+		}),
+	)
+	type factoryWithAttributes interface {
+		TelemetryAttributes(attributes attribute.Set) attribute.Set
+	}
+	result := factory.(factoryWithAttributes).TelemetryAttributes(attribute.NewSet(attribute.String("foo", "bar")))
+	assert.Equal(t, attribute.NewSet(attribute.String("foobar", "bar"), attribute.String("foo", "bar")), result)
+	// test without attributes set
+	factory = NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+	)
+	result = factory.(factoryWithAttributes).TelemetryAttributes(attribute.NewSet())
+	assert.Empty(t, result.ToSlice())
 }

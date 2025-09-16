@@ -74,10 +74,8 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.135.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.41.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect

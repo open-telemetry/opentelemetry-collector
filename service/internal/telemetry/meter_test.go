@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute_test
+package telemetry
 
 import (
 	"context"
@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 func TestMPWA(t *testing.T) {
@@ -27,13 +25,13 @@ func TestMPWA(t *testing.T) {
 	extraAttrs2 := attribute.NewSet(
 		attribute.String("extrakey2", "extraval2"),
 	)
-	mp2 := componentattribute.MeterProviderWithAttributes(mp1, extraAttrs2)
+	mp2 := MeterProviderWithAttributes(mp1, extraAttrs2)
 
 	// Replace attribute set
 	extraAttrs3 := attribute.NewSet(
 		attribute.String("extrakey3", "extraval3"),
 	)
-	mp3 := componentattribute.MeterProviderWithAttributes(mp2, extraAttrs3)
+	mp3 := MeterProviderWithAttributes(mp2, extraAttrs3)
 
 	noAttrs := attribute.NewSet()
 	// Add a standard attribute on top of the extra attributes

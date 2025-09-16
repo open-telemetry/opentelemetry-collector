@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
+	servicetelemetry "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 var _ consumerNode = (*processorNode)(nil)
@@ -51,11 +52,17 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
+	f := builder.Factory(n.componentID.Type())
+	attrs := *n.Set()
+	if fwta, ok := f.(FactoryWithTelemetryAttributes); ok {
+		attrs = fwta.TelemetryAttributes(attrs)
+	}
 	set := processor.Settings{
 		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
+		TelemetrySettings: telemetry.WithAttributeSet(tel, attrs),
 		BuildInfo:         info,
 	}
+	servicetelemetry.InitializeWithAttributes(&set.TelemetrySettings)
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

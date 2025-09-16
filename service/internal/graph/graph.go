@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
@@ -39,6 +40,10 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
+
+type FactoryWithTelemetryAttributes interface {
+	TelemetryAttributes(attributes attribute.Set) attribute.Set
+}
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
