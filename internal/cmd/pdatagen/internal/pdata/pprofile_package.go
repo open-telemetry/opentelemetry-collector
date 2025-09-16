@@ -232,13 +232,7 @@ var profile = &messageStruct{
 			fieldName:       "Time",
 			originFieldName: "TimeUnixNano",
 			protoID:         3,
-			returnType: &TypedType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				protoType:   proto.TypeUint64,
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
+			returnType:      timestampType,
 		},
 		&TypedField{
 			fieldName:       "Duration",
@@ -508,7 +502,7 @@ var location = &messageStruct{
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     5,
+			protoID:     4,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
@@ -591,7 +585,7 @@ var stack = &messageStruct{
 	fields: []Field{
 		&SliceField{
 			fieldName:   "LocationIndices",
-			protoID:     3,
+			protoID:     1,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
