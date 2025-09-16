@@ -61,8 +61,8 @@ gotest-with-junit:
 	@$(MAKE) for-all-target TARGET="test-with-junit"
 
 .PHONY: goporto
-goporto: $(PORTO)
-	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
+goporto:
+	$(GO_TOOL) porto -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
 
 .PHONY: for-all
 for-all:
@@ -101,8 +101,8 @@ govulncheck:
 	@$(MAKE) for-all-target TARGET="vulncheck"
 
 .PHONY: addlicense
-addlicense: $(ADDLICENSE)
-	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+addlicense:
+	@ADDLICENSEOUT=`$(GO_TOOL) addlicense -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENSEOUT\n"; \
@@ -112,7 +112,7 @@ addlicense: $(ADDLICENSE)
 		fi
 
 .PHONY: checklicense
-checklicense: $(ADDLICENSE)
+checklicense:
 	@licRes=$$(for f in $$(find . -type f \( -iname '*.go' -o -iname '*.sh' \) ! -path '**/third_party/*') ; do \
 	           awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 			   awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
@@ -123,12 +123,12 @@ checklicense: $(ADDLICENSE)
 	   fi
 
 .PHONY: misspell
-misspell: $(MISSPELL)
-	$(MISSPELL) -error $(ALL_DOC)
+misspell:
+	$(GO_TOOL) misspell -error $(ALL_DOC)
 
 .PHONY: misspell-correction
-misspell-correction: $(MISSPELL)
-	$(MISSPELL) -w $(ALL_DOC)
+misspell-correction:
+	$(GO_TOOL) misspell -w $(ALL_DOC)
 
 .PHONY: run
 run: otelcorecol
@@ -159,13 +159,13 @@ otelcorecol:
 	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) -tags "grpcnotrace" ./... && popd
 
 .PHONY: genotelcorecol
-genotelcorecol: install-tools
+genotelcorecol:
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
 
 .PHONY: actionlint
-actionlint: $(ACTIONLINT)
-	$(ACTIONLINT) -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+actionlint:
+	$(GO_TOOL) actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:
@@ -246,13 +246,10 @@ genproto_sub:
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
-remove-pdatagen:
-	rm -f .tools/pdatagen
-
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata: remove-pdatagen $(PDATAGEN)
-	$(PDATAGEN)
+genpdata:
+	$(GO_TOOL) pdatagen
 	$(MAKE) -C pdata fmt
 
 INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
@@ -321,17 +318,17 @@ certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
 
 .PHONY: checkapi
-checkapi: $(CHECKAPI)
-	$(CHECKAPI) -folder . -config .checkapi.yaml
+checkapi:
+	$(GO_TOOL) checkapi -folder . -config .checkapi.yaml
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKFILE)
-	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
+checkdoc:
+	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
 # Construct new API state snapshots
 .PHONY: apidiff-build
-apidiff-build: $(APIDIFF)
+apidiff-build:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
 
 # If we are running in CI, change input directory
@@ -343,33 +340,33 @@ endif
 
 # Compare API state snapshots
 .PHONY: apidiff-compare
-apidiff-compare: $(APIDIFF)
+apidiff-compare:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
 .PHONY: multimod-verify
-multimod-verify: $(MULTIMOD)
+multimod-verify:
 	@echo "Validating versions.yaml"
-	$(MULTIMOD) verify
+	$(GO_TOOL) multimod verify
 
 MODSET?=stable
 .PHONY: multimod-prerelease
-multimod-prerelease: $(MULTIMOD)
-	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
+multimod-prerelease:
+	$(GO_TOOL) multimod prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
 	$(MAKE) gotidy
 
 COMMIT?=HEAD
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
-push-tags: $(MULTIMOD)
-	$(MULTIMOD) verify
-	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags:
+	$(GO_TOOL) multimod verify
+	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
 
 .PHONY: check-changes
-check-changes: $(MULTIMOD)
-	$(MULTIMOD) diff -p $(PREVIOUS_VERSION) -m $(MODSET)
+check-changes:
+	$(GO_TOOL) multimod diff -p $(PREVIOUS_VERSION) -m $(MODSET)
 
 .PHONY: prepare-release
 prepare-release:
@@ -429,29 +426,29 @@ checklinks:
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
 # is a known issue but does not affect function.
 .PHONY: crosslink
-crosslink: $(CROSSLINK)
+crosslink:
 	@echo "Executing crosslink"
-	$(CROSSLINK) --root=$(shell pwd) --prune
+	$(GO_TOOL) crosslink --root=$(shell pwd) --prune
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: $(CHLOGGEN)
-	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
+chlog-new:
+	$(GO_TOOL) chloggen new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: $(CHLOGGEN)
-	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
+chlog-validate:
+	$(GO_TOOL) chloggen validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
-chlog-preview: $(CHLOGGEN)
-	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
+chlog-preview:
+	$(GO_TOOL) chloggen update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
-chlog-update: $(CHLOGGEN)
-	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
+chlog-update:
+	$(GO_TOOL) chloggen update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: builder-integration-test
-builder-integration-test: $(ENVSUBST)
+builder-integration-test:
 	cd ./cmd/builder && ./test/test.sh
 
 .PHONY: mdatagen-test
@@ -462,16 +459,16 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: generate-gh-issue-templates
-generate-gh-issue-templates: $(GITHUBGEN)
-	$(GITHUBGEN) issue-templates
+generate-gh-issue-templates:
+	$(GO_TOOL) githubgen issue-templates
 
 .PHONY: generate-codeowners
-generate-codeowners: $(GITHUBGEN)
-	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
+generate-codeowners:
+	$(GO_TOOL) githubgen --default-codeowner "open-telemetry/collector-approvers" codeowners
 
 .PHONY: gengithub
-gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
+gengithub: generate-codeowners generate-gh-issue-templates
 
 .PHONY: gendistributions
-gendistributions: $(GITHUBGEN)
-	$(GITHUBGEN) distributions
+gendistributions:
+	$(GO_TOOL) githubgen distributions
