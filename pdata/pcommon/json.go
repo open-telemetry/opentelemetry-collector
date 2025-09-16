@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package pcommon
+package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
 	"slices"
