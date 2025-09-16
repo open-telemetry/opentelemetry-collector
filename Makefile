@@ -13,7 +13,11 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
 # ALL_MODULES includes ./* dirs (excludes . dir)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | grep -E '^./' )
+ALL_MODULES := $(shell find . -mindepth 2 \
+				-type f \
+				-name "go.mod" \
+				-not -path "./internal/tools/*" \
+				-exec dirname {} \; | sort )
 
 CMD?=
 
