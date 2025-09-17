@@ -11,7 +11,7 @@ GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
 GOTEST_TIMEOUT?=240s
 # -race is not supported on windows arm64
-GOTEST_OPT?= $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))), -timeout $(GOTEST_TIMEOUT), -race -timeout $(GOTEST_TIMEOUT))
+GOTEST_OPT?= -timeout $(GOTEST_TIMEOUT) $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))),, -race)
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
