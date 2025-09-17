@@ -10,8 +10,10 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -58,7 +60,27 @@ func createTracerProvider(
 	if err != nil {
 		return nil, err
 	}
-	return sdk.TracerProvider().(telemetry.TracerProvider), nil
+
+	sdktraceProvider := sdk.TracerProvider().(*sdktrace.TracerProvider)
+
+	zpagesSpanProcessor := zpages.NewSpanProcessor()
+	sdktraceProvider.RegisterSpanProcessor(zpagesSpanProcessor)
+	set.ZPagesMux.Handle("/debug/tracez", zpages.NewTracezHandler(zpagesSpanProcessor))
+
+	return &withUnregisterZPages{
+		TracerProvider:      sdktraceProvider,
+		zpagesSpanProcessor: zpagesSpanProcessor,
+	}, nil
+}
+
+type withUnregisterZPages struct {
+	*sdktrace.TracerProvider
+	zpagesSpanProcessor *zpages.SpanProcessor
+}
+
+func (tp *withUnregisterZPages) Shutdown(ctx context.Context) error {
+	tp.UnregisterSpanProcessor(tp.zpagesSpanProcessor)
+	return tp.TracerProvider.Shutdown(ctx)
 }
 
 var errUnsupportedPropagator = errors.New("unsupported trace propagator")

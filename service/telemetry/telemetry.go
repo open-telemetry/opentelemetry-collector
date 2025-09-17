@@ -5,6 +5,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
+	"net/http"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/metric"
@@ -64,6 +65,14 @@ type TracerSettings struct {
 type Settings struct {
 	// BuildInfo contains build information about the collector.
 	BuildInfo component.BuildInfo
+
+	// ZPagesMux is an http.ServeMux with which telemetry providers
+	// may register zPages handlers. The mux will always be non-nil,
+	// but will not be exposed unless the zpages extension is enabled.
+	//
+	// Where possible, tracer providers should register a handler
+	// for "GET /debug/tracez".
+	ZPagesMux *http.ServeMux
 }
 
 // Factory is a factory interface for internal telemetry.
