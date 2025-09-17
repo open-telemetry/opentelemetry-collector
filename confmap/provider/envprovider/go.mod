@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/confmap/provider/envprovider
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

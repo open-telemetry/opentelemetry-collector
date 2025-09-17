@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/pdata/pprofile
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.1.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.1.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
 )
 

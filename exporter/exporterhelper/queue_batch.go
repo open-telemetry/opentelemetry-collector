@@ -36,10 +36,12 @@ type QueueBatchEncoding[T any] interface {
 
 var ErrQueueIsFull = queue.ErrQueueIsFull
 
+// Deprecated: [v0.136.0] Use xexporterhelper.WithQueueBatch.
 // QueueBatchSettings are settings for the QueueBatch component.
 // They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
 type QueueBatchSettings = queuebatch.Settings[Request]
 
+// Deprecated: [v0.136.0] Use xexporterhelper.WithQueueBatch or WithQueue.
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility

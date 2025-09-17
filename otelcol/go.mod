@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/otelcol
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/spf13/cobra v1.10.1
@@ -31,8 +31,8 @@ require (
 	go.uber.org/zap v1.27.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.35.0
-	google.golang.org/grpc v1.75.0
+	golang.org/x/sys v0.36.0
+	google.golang.org/grpc v1.75.1
 )
 
 require (
@@ -54,7 +54,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
