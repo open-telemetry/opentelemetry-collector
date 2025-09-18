@@ -96,6 +96,10 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 	$(MAKE) fmt
 
+.PHONY: govulncheck
+govulncheck:
+	@$(MAKE) for-all-target TARGET="vulncheck"
+
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
@@ -174,7 +178,7 @@ ocb:
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.7.0
+OPENTELEMETRY_PROTO_VERSION=v1.8.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1development/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1development/*.proto))
@@ -242,9 +246,12 @@ genproto_sub:
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
+remove-pdatagen:
+	rm -f .tools/pdatagen
+
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata: $(PDATAGEN)
+genpdata: remove-pdatagen $(PDATAGEN)
 	$(PDATAGEN)
 	$(MAKE) -C pdata fmt
 

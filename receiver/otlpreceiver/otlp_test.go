@@ -793,7 +793,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = addr
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = addr
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -898,13 +898,13 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpoint
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpoint
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
@@ -1084,8 +1084,8 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpointGrpc
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpointHTTP
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
