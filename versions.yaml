@@ -15,6 +15,7 @@ module-sets:
       - go.opentelemetry.io/collector/confmap/provider/httpprovider
       - go.opentelemetry.io/collector/confmap/provider/httpsprovider
       - go.opentelemetry.io/collector/confmap/provider/yamlprovider
+      - go.opentelemetry.io/collector/config/configauth
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
@@ -41,7 +42,6 @@ module-sets:
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/confmap/xconfmap
-      - go.opentelemetry.io/collector/config/configauth
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
