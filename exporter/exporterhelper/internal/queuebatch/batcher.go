@@ -34,7 +34,7 @@ type batcherSettings[T any] struct {
 
 func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[request.Request]) (Batcher[request.Request], error) {
 	if !cfg.HasValue() {
-		return newDisabledBatcher[request.Request](set.next), nil
+		return newDisabledBatcher(set.next), nil
 	}
 
 	sizer := activeSizer(cfg.Get().Sizer, set.itemsSizer, set.bytesSizer)
