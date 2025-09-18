@@ -158,6 +158,17 @@ func TestReceiveTraceDataOp(t *testing.T) {
 					}
 					metadatatest.AssertEqualReceiverRequests(t, tt, expectedRequests, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 				}
+
+				// Assert duration metrics are recorded
+				metadatatest.AssertEqualReceiverDuration(t, tt,
+					[]metricdata.HistogramDataPoint[float64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String(internal.ReceiverKey, receiverID.String()),
+								attribute.String(internal.TransportKey, transport)),
+							Count: 3, // Duration will be recorded for each of the 3 operations
+						},
+					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
 			})
 		})
 	}

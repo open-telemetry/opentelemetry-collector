@@ -22,6 +22,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ReceiverAcceptedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverAcceptedMetricPoints.Add(context.Background(), 1)
 	tb.ReceiverAcceptedSpans.Add(context.Background(), 1)
+	tb.ReceiverDuration.Record(context.Background(), 1)
 	tb.ReceiverFailedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverFailedMetricPoints.Add(context.Background(), 1)
 	tb.ReceiverFailedSpans.Add(context.Background(), 1)
@@ -37,6 +38,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverAcceptedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
