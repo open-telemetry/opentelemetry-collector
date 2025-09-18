@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetryimpl"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -150,8 +150,8 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	// can be added and removed dynamically, and tee logs to the
 	// LoggerProvider.
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
-		core = componentattribute.NewOTelTeeCoreWithAttributes(
+		core = telemetryimpl.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = telemetryimpl.NewOTelTeeCoreWithAttributes(
 			core,
 			loggerProvider,
 			"go.opentelemetry.io/collector/service",

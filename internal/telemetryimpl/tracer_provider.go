@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+package telemetryimpl // import "go.opentelemetry.io/collector/internal/telemetryimpl"
 
 import (
 	"slices"

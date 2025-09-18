@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.41.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.135.0
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0
+	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0
 	go.opentelemetry.io/collector/otelcol v0.135.0
 	go.opentelemetry.io/collector/pdata v1.41.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0
@@ -113,7 +114,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.41.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.41.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.135.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.62.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.13.0 // indirect
@@ -155,6 +156,8 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry/
+
+replace go.opentelemetry.io/collector/internal/telemetryimpl => ../internal/telemetryimpl/
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
 

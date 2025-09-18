@@ -77,6 +77,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetryimpl v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.135.0 // indirect
@@ -87,7 +88,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.41.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.135.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.135.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.16.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.36.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
@@ -229,6 +230,8 @@ replace go.opentelemetry.io/collector/processor/processortest => ../../processor
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
