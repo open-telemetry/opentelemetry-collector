@@ -3,6 +3,7 @@ package xpdata
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
@@ -23,6 +24,14 @@ func TestMarshalAndUnmarshalAnyValue(t *testing.T) {
 			require.Equal(t, src, dest)
 		})
 	}
+}
+
+func TestUnmarshalAnyValueUnknown(t *testing.T) {
+	m := &JSONUnmarshaler{}
+
+	b, err := m.UnmarshalAnyValue([]byte(`{"unknown": "string"}`))
+	require.NoError(t, err)
+	assert.Equal(t, internal.NewOrigAnyValue(), b)
 }
 
 func genTestEncodingValuesAnyValue() map[string]*otlpcommon.AnyValue {
