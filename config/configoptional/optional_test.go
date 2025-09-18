@@ -134,7 +134,7 @@ func ExampleNone() {
 		Age  int
 	}
 
-	var opt Optional[Person] = None[Person]()
+	opt := None[Person]()
 
 	// A None has no value.
 	fmt.Println(opt.HasValue())
@@ -172,7 +172,7 @@ func ExampleSome() {
 		Age  int
 	}
 
-	var opt Optional[Person] = Some(Person{
+	opt := Some(Person{
 		Name: "John Doe",
 		Age:  42,
 	})
@@ -210,7 +210,7 @@ func ExampleDefault() {
 		Age  int
 	}
 
-	var opt Optional[Person] = Default(Person{
+	opt := Default(Person{
 		Name: "John Doe",
 		Age:  42,
 	})
