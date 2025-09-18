@@ -73,6 +73,16 @@ func TestDefaultPanics(t *testing.T) {
 		_ = None[WithEnabled]()
 	})
 
+	assert.Panics(t, func() {
+		opt := None[int]()
+		_ = opt.GetOrInsertDefault()
+	})
+
+	assert.Panics(t, func() {
+		var opt Optional[WithEnabled]
+		_ = opt.GetOrInsertDefault()
+	})
+
 	assert.NotPanics(t, func() {
 		_ = Default(NoMapstructure{})
 	})
@@ -100,12 +110,47 @@ func TestNoneZeroVal(t *testing.T) {
 	var none Optional[Sub]
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
 }
 
 func TestNone(t *testing.T) {
 	none := None[Sub]()
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
+}
+
+func ExampleNone() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	var opt Optional[Person] = None[Person]()
+
+	// A None has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the zero value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Name = "John Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 0}
 }
 
 func TestSome(t *testing.T) {
@@ -113,13 +158,78 @@ func TestSome(t *testing.T) {
 		Foo: "foobar",
 	})
 	require.True(t, some.HasValue())
-	assert.Equal(t, "foobar", some.Get().Foo)
+	retGet := some.Get()
+	assert.Equal(t, "foobar", retGet.Foo)
+
+	retGetOrInsertDefault := some.GetOrInsertDefault()
+	require.True(t, some.HasValue())
+	assert.Equal(t, retGet, retGetOrInsertDefault)
+}
+
+func ExampleSome() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	var opt Optional[Person] = Some(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Some has a value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault only returns a reference
+	// to the inner value without modifying it.
+	opt.GetOrInsertDefault().Name = "Jane Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// true
+	// &{John Doe 42}
+	// true
+	// &{Jane Doe 42}
 }
 
 func TestDefault(t *testing.T) {
-	defaultSub := Default(&subDefault)
+	defaultSub := Default(subDefault)
 	require.False(t, defaultSub.HasValue())
 	require.Nil(t, defaultSub.Get())
+
+	ret := defaultSub.GetOrInsertDefault()
+	require.True(t, defaultSub.HasValue())
+	assert.Equal(t, &subDefault, ret)
+}
+
+func ExampleDefault() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	var opt Optional[Person] = Default(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Default has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the default value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Age = 38
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 38}
 }
 
 func TestUnmarshalOptional(t *testing.T) {
