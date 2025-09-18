@@ -41,6 +41,7 @@ var pcommon = &Package{
 		},
 	},
 	structs: []baseStruct{
+		anyValueStruct,
 		arrayValueStruct,
 		keyValueListStruct,
 		anyValueSlice,
@@ -91,7 +92,84 @@ var mapStruct = &messageSlice{
 	structName:      "Map",
 	packageName:     "pcommon",
 	elementNullable: false,
-	element:         keyValue,
+	element: &messageStruct{
+		originFullName: "otlpcommon.KeyValue",
+		fields: []Field{
+			&PrimitiveField{
+				fieldName: "Key",
+				protoID:   1,
+				protoType: proto.TypeString,
+			},
+			&MessageField{
+				fieldName:     "Value",
+				protoID:       2,
+				returnMessage: anyValue,
+			},
+		},
+	},
+}
+
+var anyValue = &messageStruct{
+	structName:     "Value",
+	packageName:    "pcommon",
+	originFullName: "otlpcommon.AnyValue",
+}
+
+// anyValueStruct needs to be different from anyValue because otherwise we cause initialization circular deps with mapStruct.
+var anyValueStruct = &messageStruct{
+	structName:     "Value",
+	originFullName: "otlpcommon.AnyValue",
+	fields: []Field{
+		&OneOfField{
+			typeName:                   "MetricType",
+			originFieldName:            "Value",
+			testValueIdx:               1, //
+			omitOriginFieldNameInNames: true,
+			values: []oneOfValue{
+				&OneOfPrimitiveValue{
+					fieldName:       "StringValue",
+					protoID:         1,
+					originFieldName: "StringValue",
+					protoType:       proto.TypeString,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "BoolValue",
+					protoID:         2,
+					originFieldName: "BoolValue",
+					protoType:       proto.TypeBool,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "IntValue",
+					protoID:         3,
+					originFieldName: "IntValue",
+					protoType:       proto.TypeInt64,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "DoubleValue",
+					protoID:         4,
+					originFieldName: "DoubleValue",
+					protoType:       proto.TypeDouble,
+				},
+				&OneOfMessageValue{
+					fieldName:     "ArrayValue",
+					protoID:       5,
+					returnMessage: arrayValueStruct,
+				},
+				&OneOfMessageValue{
+					fieldName:     "KvlistValue",
+					protoID:       6,
+					returnMessage: keyValueListStruct,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "BytesValue",
+					protoID:         7,
+					originFieldName: "BytesValue",
+					protoType:       proto.TypeBytes,
+				},
+			},
+		},
+	},
+	hasOnlyOrig: true,
 }
 
 var keyValueListStruct = &messageStruct{
@@ -103,7 +181,7 @@ var keyValueListStruct = &messageStruct{
 			fieldName:   "Values",
 			protoID:     1,
 			protoType:   proto.TypeMessage,
-			returnSlice: keyValueSlice,
+			returnSlice: mapStruct,
 		},
 	},
 	hasOnlyOrig: true,
@@ -143,12 +221,6 @@ var timestampType = &TypedType{
 	protoType:   proto.TypeFixed64,
 	defaultVal:  "0",
 	testVal:     "1234567890",
-}
-
-var anyValue = &messageStruct{
-	structName:     "Value",
-	packageName:    "pcommon",
-	originFullName: "otlpcommon.AnyValue",
 }
 
 var traceIDType = &TypedType{

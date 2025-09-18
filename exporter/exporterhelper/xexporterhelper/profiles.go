@@ -34,8 +34,8 @@ var (
 // NewProfilesQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using pprofile.Profiles.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
-	return exporterhelper.QueueBatchSettings{
+func NewProfilesQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
 		ReferenceCounter: profilesReferenceCounter{},
 		Encoding:         profilesEncoding{},
 		ItemsSizer:       request.NewItemsSizer(),
@@ -57,7 +57,7 @@ type profilesRequest struct {
 	cachedSize int
 }
 
-func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
+func newProfilesRequest(pd pprofile.Profiles) Request {
 	return &profilesRequest{
 		pd:         pd,
 		cachedSize: -1,
@@ -105,7 +105,7 @@ func (profilesReferenceCounter) Unref(req request.Request) {
 	pref.UnrefProfiles(req.(*profilesRequest).pd)
 }
 
-func (req *profilesRequest) OnError(err error) exporterhelper.Request {
+func (req *profilesRequest) OnError(err error) Request {
 	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
 		// TODO: Add logic to unref the new request created here.
@@ -127,6 +127,10 @@ func (req *profilesRequest) size(sizer sizer.ProfilesSizer) int {
 
 func (req *profilesRequest) setCachedSize(size int) {
 	req.cachedSize = size
+}
+
+func (req *profilesRequest) BytesSize() int {
+	return profilesMarshaler.ProfilesSize(req.pd)
 }
 
 type profileExporter struct {
@@ -153,15 +157,15 @@ func NewProfiles(
 }
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
-func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
-	return func(ctx context.Context, request exporterhelper.Request) error {
+func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestConsumeFunc {
+	return func(ctx context.Context, request Request) error {
 		return pusher.ConsumeProfiles(ctx, request.(*profilesRequest).pd)
 	}
 }
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
-func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles] {
-	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
+func requestFromProfiles() RequestConverterFunc[pprofile.Profiles] {
+	return func(_ context.Context, profiles pprofile.Profiles) (Request, error) {
 		return newProfilesRequest(profiles), nil
 	}
 }
@@ -172,8 +176,8 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 func NewProfilesRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],
-	pusher exporterhelper.RequestConsumeFunc,
+	converter RequestConverterFunc[pprofile.Profiles],
+	pusher RequestConsumeFunc,
 	options ...exporterhelper.Option,
 ) (xexporter.Profiles, error) {
 	if set.Logger == nil {
@@ -201,7 +205,7 @@ func NewProfilesRequest(
 	return &profileExporter{BaseExporter: be, Profiles: tc}, nil
 }
 
-func newConsumeProfiles(converter exporterhelper.RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
+func newConsumeProfiles(converter RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {

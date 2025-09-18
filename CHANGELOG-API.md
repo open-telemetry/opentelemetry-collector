@@ -7,6 +7,51 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.41.0/v0.135.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated AddAttribute method (#13764)
+
+### 💡 Enhancements 💡
+
+- `configmiddleware`: Stabilize `configmiddleware` module (#13422)
+  This only stabilizes the configuration interface but does not stabilize the middlewares themselves or the way of implementing them.
+- `xpdata`: Add experimental MapBuilder struct to optimize pcommon.Map construction (#13617)
+
+<!-- previous-version -->
+
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Split exporterhelper into a separate module (#12985)
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Set `tcp` as the default transport type (#13657)
+  gRPC is generally used with HTTP/2, so this will simplify usage for most components.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecate Profiles.ProfilesDictionary in favor of Profiles.Dictionary. (#13644)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+
+### 🧰 Bug fixes 🧰
+
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+
+<!-- previous-version -->
+
 ## v1.38.0/v0.132.0
 
 ### 🛑 Breaking changes 🛑

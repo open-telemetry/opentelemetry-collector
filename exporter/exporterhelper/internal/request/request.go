@@ -5,6 +5,8 @@ package request // import "go.opentelemetry.io/collector/exporter/exporterhelper
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // Request represents a single request that can be sent to an external endpoint.
@@ -25,6 +27,8 @@ type Request interface {
 	// Experimental: This API is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 	MergeSplit(context.Context, int, SizerType, Request) ([]Request, error)
+	// BytesSize returns the size of the request in bytes.
+	BytesSize() int
 }
 
 // ErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
@@ -39,3 +43,9 @@ type ErrorHandler interface {
 	// Otherwise, it should return the original Request.
 	OnError(error) Request
 }
+
+type RequestConverterFunc[T any] func(context.Context, T) (Request, error)
+
+// RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
+// and accessing it is considered undefined behavior.
+type RequestConsumeFunc = sender.SendFunc[Request]

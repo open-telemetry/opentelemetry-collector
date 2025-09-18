@@ -7,12 +7,17 @@ Currently, this includes queuing, batching, timeouts, and retries.
 
 The following configuration options can be modified:
 
+### Retry on Failure
+
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`. If set to 0, the retries are never stopped.
   - `multiplier` (default = 1.5): Factor by which the retry interval is multiplied on each attempt; ignored if `enabled` is `false`
+
+### Sending Queue
+
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
@@ -30,6 +35,9 @@ The following configuration options can be modified:
     - `sizer`: Overrides the sizer set at the `sending_queue` level for batching. Available options:
       - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
       - `bytes`: the size of serialized data in bytes (the least performant option).
+
+### Timeout
+
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 

@@ -53,7 +53,7 @@ func (pf *Field) DefaultValue() string {
 	case TypeBool:
 		return `false`
 	case TypeBytes:
-		return `[]byte{}`
+		return `nil`
 	case TypeString:
 		return `""`
 	case TypeMessage:

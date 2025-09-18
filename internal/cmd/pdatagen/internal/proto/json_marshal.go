@@ -80,12 +80,14 @@ const marshalJSONBytes = `{{ if .repeated -}}
 		}
 		dest.WriteArrayEnd()
 	}
-{{- else }}
+{{- else }}{{ if not .nullable }}
 	if len(orig.{{ .fieldName }}) > 0 {
+{{- end }}
 		dest.WriteObjectField("{{ .jsonTag }}")
 		dest.WriteBytes(orig.{{ .fieldName }})
+{{- if not .nullable -}}
 	}
-{{- end }}`
+{{- end }}{{- end }}`
 
 func (pf *Field) GenMarshalJSON() string {
 	tf := pf.getTemplateFields()
