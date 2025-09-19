@@ -125,14 +125,14 @@ func (req *logsRequest) BytesSize() int {
 	return logsMarshaler.LogsSize(req.ld)
 }
 
-// requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
+// RequestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
 func RequestConsumeFromLogs(pusher consumer.ConsumeLogsFunc) request.RequestConsumeFunc {
 	return func(ctx context.Context, request request.Request) error {
 		return pusher.ConsumeLogs(ctx, request.(*logsRequest).ld)
 	}
 }
 
-// requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
+// RequestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
 func RequestFromLogs() request.RequestConverterFunc[plog.Logs] {
 	return func(_ context.Context, ld plog.Logs) (request.Request, error) {
 		return newLogsRequest(ld), nil

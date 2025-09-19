@@ -124,14 +124,14 @@ func (req *tracesRequest) BytesSize() int {
 	return tracesMarshaler.TracesSize(req.td)
 }
 
-// requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
+// RequestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
 func RequestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) request.RequestConsumeFunc {
 	return func(ctx context.Context, request request.Request) error {
 		return pusher.ConsumeTraces(ctx, request.(*tracesRequest).td)
 	}
 }
 
-// requestFromTraces returns a RequestConverterFunc that converts ptrace.Traces into a Request.
+// RequestFromTraces returns a RequestConverterFunc that converts ptrace.Traces into a Request.
 func RequestFromTraces() request.RequestConverterFunc[ptrace.Traces] {
 	return func(_ context.Context, traces ptrace.Traces) (request.Request, error) {
 		return newTracesRequest(traces), nil
