@@ -5,9 +5,11 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -25,6 +27,11 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		// This default is probably still too high, and may be adjusted further down in a future release
 		QueueSize:       1_000,
 		BlockOnOverflow: false,
+		Batch: configoptional.Default(queuebatch.BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        request.SizerTypeItems,
+			MinSize:      8192,
+		}),
 	}
 }
 
