@@ -16,7 +16,6 @@ tool (
 	go.opentelemetry.io/build-tools/crosslink
 	go.opentelemetry.io/build-tools/githubgen
 	go.opentelemetry.io/build-tools/multimod
-	go.opentelemetry.io/collector/internal/cmd/pdatagen
 	golang.org/x/exp/cmd/apidiff
 	golang.org/x/tools/cmd/goimports
 	golang.org/x/vuln/cmd/govulncheck
@@ -248,7 +247,6 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.26.2 // indirect
 	go.opentelemetry.io/build-tools/githubgen v0.26.2 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.26.2 // indirect
-	go.opentelemetry.io/collector/internal/cmd/pdatagen v0.130.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -278,5 +276,3 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
-
-replace go.opentelemetry.io/collector/internal/cmd/pdatagen => ../cmd/pdatagen
