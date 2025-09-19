@@ -58,6 +58,27 @@ func NewTracesRequest(
 // They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
 type QueueBatchSettings = queuebatch.Settings[Request]
 
+// NewMetricsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using pmetric.Metrics.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewMetricsQueueBatchSettings() QueueBatchSettings {
+	return queuebatch.NewMetricsQueueBatchSettings()
+}
+
+// NewLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsQueueBatchSettings() QueueBatchSettings {
+	return queuebatch.NewLogsQueueBatchSettings()
+}
+
+// NewTracesQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using ptrace.Traces.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewTracesQueueBatchSettings() QueueBatchSettings {
+	return queuebatch.NewTracesQueueBatchSettings()
+}
+
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
