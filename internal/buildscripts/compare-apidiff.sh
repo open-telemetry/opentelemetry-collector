@@ -17,11 +17,13 @@ usage() {
 package=""
 input_dir="./internal/data/apidiff"
 check_only=false
-apidiff_cmd="$(git rev-parse --show-toplevel)/.tools/apidiff"
+repo_toplevel="$( git rev-parse --show-toplevel )"
+tools_mod_file="${repo_toplevel}/internal/tools/go.mod"
+apidiff_cmd=$( go tool -n -modfile "${tools_mod_file}" apidiff )
 
 while getopts "cp:d:" o; do
     case "${o}" in
-        c) 
+        c)
             check_only=true
             ;;
         p)
