@@ -1,25 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	var sz sizer.TracesSizer
 	switch szt {
-	case RequestSizerTypeItems:
+	case request.SizerTypeItems:
 		sz = &sizer.TracesCountSizer{}
-	case RequestSizerTypeBytes:
+	case request.SizerTypeBytes:
 		sz = &sizer.TracesBytesSizer{}
 	default:
 		return nil, errors.New("unknown sizer type")
@@ -35,7 +36,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt Request
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
-		return []Request{req}, nil
+		return []request.Request{req}, nil
 	}
 	return req.split(maxSize, sz)
 }
@@ -48,8 +49,8 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]Request, error) {
-	var res []Request
+func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]request.Request, error) {
+	var res []request.Request
 	for req.size(sz) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {

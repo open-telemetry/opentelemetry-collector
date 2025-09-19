@@ -1,25 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
+func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	var sz sizer.MetricsSizer
 	switch szt {
-	case RequestSizerTypeItems:
+	case request.SizerTypeItems:
 		sz = &sizer.MetricsCountSizer{}
-	case RequestSizerTypeBytes:
+	case request.SizerTypeBytes:
 		sz = &sizer.MetricsBytesSizer{}
 	default:
 		return nil, errors.New("unknown sizer type")
@@ -35,7 +36,7 @@ func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt Reques
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
-		return []Request{req}, nil
+		return []request.Request{req}, nil
 	}
 	return req.split(maxSize, sz)
 }
@@ -48,8 +49,8 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }
 
-func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]Request, error) {
-	var res []Request
+func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.Request, error) {
+	var res []request.Request
 	for req.size(sz) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {

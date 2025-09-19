@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -47,17 +46,6 @@ var (
 	fakeLogsName   = component.MustNewIDWithName("fake_logs_exporter", "with_name")
 	fakeLogsConfig = struct{}{}
 )
-
-func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(testdata.GenerateLogs(1))
-
-	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
-	assert.Equal(
-		t,
-		newLogsRequest(plog.NewLogs()),
-		lr.(RequestErrorHandler).OnError(logErr),
-	)
-}
 
 func TestLogs_InvalidName(t *testing.T) {
 	le, err := NewLogs(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushLogsData(nil))

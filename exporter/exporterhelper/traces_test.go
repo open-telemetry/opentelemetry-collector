@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -47,13 +46,6 @@ var (
 	fakeTracesName   = component.MustNewIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesConfig = struct{}{}
 )
-
-func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(testdata.GenerateTraces(1))
-
-	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.Equal(t, newTracesRequest(ptrace.NewTraces()), mr.(RequestErrorHandler).OnError(traceErr))
-}
 
 func TestTraces_InvalidName(t *testing.T) {
 	te, err := NewTraces(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newTraceDataPusher(nil))
