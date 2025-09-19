@@ -253,7 +253,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	$(GO_TOOL) pdatagen
+	cd internal/cmd/pdatagen && $(GOCMD) run main.go -C $(SRC_ROOT)
 	$(MAKE) -C pdata fmt
 
 INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
