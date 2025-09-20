@@ -48,6 +48,28 @@ func newMockAuthServer(auth func(ctx context.Context, sources map[string][]strin
 	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 
+func TestHTTPServerValidate(t *testing.T) {
+	tests := []struct {
+		settings *ServerConfig
+		err      string
+	}{
+		{
+			settings: &ServerConfig{
+				IncludeTLSMetadata: true,
+			},
+			err: "invalid include_tls_metadata value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			err := tt.settings.Validate()
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.err)
+		})
+	}
+}
+
 func TestHTTPServerSettingsError(t *testing.T) {
 	tests := []struct {
 		settings ServerConfig
