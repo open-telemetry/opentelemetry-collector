@@ -804,7 +804,7 @@ func testConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Len(t, pg.pipelines, len(tt.pipelineConfigs))
 
-			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 
 			mutatingPipelines := make(map[pipeline.ID]bool, len(tt.pipelineConfigs))
 

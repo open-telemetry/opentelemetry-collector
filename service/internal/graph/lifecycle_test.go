@@ -103,16 +103,16 @@ func testGraphStartStop(t *testing.T) {
 
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 			pg.telemetry = componenttest.NewNopTelemetrySettings()
-			pg.instanceIDs = make(map[int64]*componentstatus.InstanceID)
+			pg.instanceIDs = make(map[int64]*status.InstanceID)
 
 			for _, edge := range tt.edges {
 				f, t := &testNode{id: edge[0]}, &testNode{id: edge[1]}
-				pg.instanceIDs[f.ID()] = &componentstatus.InstanceID{}
-				pg.instanceIDs[t.ID()] = &componentstatus.InstanceID{}
+				pg.instanceIDs[f.ID()] = &status.InstanceID{}
+				pg.instanceIDs[t.ID()] = &status.InstanceID{}
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
-			require.NoError(t, pg.StartAll(ctx, &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, pg.StartAll(ctx, &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			for _, edge := range tt.edges {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -145,7 +145,7 @@ func testGraphStartStopCycle(t *testing.T) {
 	c1 := &testNode{id: component.MustNewIDWithName("c", "1")}
 	e1 := &testNode{id: component.MustNewIDWithName("e", "1")}
 
-	pg.instanceIDs = map[int64]*componentstatus.InstanceID{
+	pg.instanceIDs = map[int64]*status.InstanceID{
 		r1.ID(): {},
 		p1.ID(): {},
 		c1.ID(): {},
@@ -157,7 +157,7 @@ func testGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: e1})
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
-	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})})
+	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})})
 	require.ErrorContains(t, err, `topo: no topological ordering: cyclic components`)
 
 	err = pg.ShutdownAll(context.Background(), status.NewNopStatusReporter())
@@ -186,7 +186,7 @@ func testGraphStartStopComponentError(t *testing.T) {
 		id:          component.MustNewIDWithName("e", "1"),
 		shutdownErr: errors.New("bar"),
 	}
-	pg.instanceIDs = map[int64]*componentstatus.InstanceID{
+	pg.instanceIDs = map[int64]*status.InstanceID{
 		r1.ID(): {},
 		e1.ID(): {},
 	}
@@ -194,7 +194,7 @@ func testGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
+	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()), "bar")
 }
 
@@ -274,7 +274,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -288,7 +288,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -302,7 +302,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -322,7 +322,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				require.NoError(t, err)
-				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 				assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 			})
 		}
@@ -349,17 +349,17 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 	eStErr := &testNode{id: component.MustNewIDWithName("e_st_err", "1"), startErr: assert.AnError}
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
-	instanceIDs := map[*testNode]*componentstatus.InstanceID{
-		rNoErr: componentstatus.NewInstanceID(rNoErr.id, component.KindReceiver),
-		rStErr: componentstatus.NewInstanceID(rStErr.id, component.KindReceiver),
-		rSdErr: componentstatus.NewInstanceID(rSdErr.id, component.KindReceiver),
-		eNoErr: componentstatus.NewInstanceID(eNoErr.id, component.KindExporter),
-		eStErr: componentstatus.NewInstanceID(eStErr.id, component.KindExporter),
-		eSdErr: componentstatus.NewInstanceID(eSdErr.id, component.KindExporter),
+	instanceIDs := map[*testNode]*status.InstanceID{
+		rNoErr: status.NewInstanceID(rNoErr.id, component.KindReceiver),
+		rStErr: status.NewInstanceID(rStErr.id, component.KindReceiver),
+		rSdErr: status.NewInstanceID(rSdErr.id, component.KindReceiver),
+		eNoErr: status.NewInstanceID(eNoErr.id, component.KindExporter),
+		eStErr: status.NewInstanceID(eStErr.id, component.KindExporter),
+		eSdErr: status.NewInstanceID(eSdErr.id, component.KindExporter),
 	}
 
 	// compare two maps of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*componentstatus.InstanceID][]*componentstatus.Event) {
+	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*status.InstanceID][]*componentstatus.Event) {
 		assert.Len(t, evMap2, len(evMap1))
 		for id, evts1 := range evMap1 {
 			evts2 := evMap2[id]
@@ -376,14 +376,14 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 	for _, tt := range []struct {
 		name             string
 		edge             [2]*testNode
-		expectedStatuses map[*componentstatus.InstanceID][]*componentstatus.Event
+		expectedStatuses map[*status.InstanceID][]*componentstatus.Event
 		startupErr       error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
 			edge: [2]*testNode{rNoErr, eNoErr},
-			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
+			expectedStatuses: map[*status.InstanceID][]*componentstatus.Event{
 				instanceIDs[rNoErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewEvent(componentstatus.StatusOK),
@@ -401,7 +401,7 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "early startup error",
 			edge: [2]*testNode{rNoErr, eStErr},
-			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
+			expectedStatuses: map[*status.InstanceID][]*componentstatus.Event{
 				instanceIDs[eStErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewPermanentErrorEvent(assert.AnError),
@@ -414,7 +414,7 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late startup error",
 			edge: [2]*testNode{rStErr, eNoErr},
-			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
+			expectedStatuses: map[*status.InstanceID][]*componentstatus.Event{
 				instanceIDs[rStErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewPermanentErrorEvent(assert.AnError),
@@ -433,7 +433,7 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "early shutdown error",
 			edge: [2]*testNode{rSdErr, eNoErr},
-			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
+			expectedStatuses: map[*status.InstanceID][]*componentstatus.Event{
 				instanceIDs[rSdErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewEvent(componentstatus.StatusOK),
@@ -452,7 +452,7 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late shutdown error",
 			edge: [2]*testNode{rNoErr, eSdErr},
-			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
+			expectedStatuses: map[*status.InstanceID][]*componentstatus.Event{
 				instanceIDs[rNoErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewEvent(componentstatus.StatusOK),
@@ -473,14 +473,14 @@ func testStatusReportedOnStartupShutdown(t *testing.T) {
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 			pg.telemetry = componenttest.NewNopTelemetrySettings()
 
-			actualStatuses := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
-			rep := status.NewReporter(func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+			actualStatuses := make(map[*status.InstanceID][]*componentstatus.Event)
+			rep := status.NewReporter(func(id *status.InstanceID, ev *componentstatus.Event) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
 			}, func(error) {
 			})
 
 			e0, e1 := tt.edge[0], tt.edge[1]
-			pg.instanceIDs = map[int64]*componentstatus.InstanceID{
+			pg.instanceIDs = map[int64]*status.InstanceID{
 				e0.ID(): instanceIDs[e0],
 				e1.ID(): instanceIDs[e1],
 			}
