@@ -67,8 +67,6 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.135.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.135.0 // indirect
 	go.opentelemetry.io/collector/service v0.135.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
@@ -203,3 +201,5 @@ replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../e
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
+
+replace go.opentelemetry.io/collector/internal/telemetryimpl => ../../internal/telemetryimpl
