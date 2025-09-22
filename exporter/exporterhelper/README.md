@@ -28,7 +28,7 @@ The following configuration options can be modified:
     - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
-  - `batch` disabled by default if not defined
+  - `batch` disabled by default if not defined. You must set at least one of the fields below to enable batching.
     - `flush_timeout`: time after which a batch will be sent regardless of its size. Must be a non-zero value
     - `min_size`: the minimum size of a batch.
     - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch.

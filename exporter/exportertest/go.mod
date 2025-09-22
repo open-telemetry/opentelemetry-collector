@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/exporter/exportertest
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/google/uuid v1.6.0
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.41.0
 	go.opentelemetry.io/collector/receiver v1.41.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.135.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

@@ -9,9 +9,5 @@ func (ms Mapping) Equal(val Mapping) bool {
 		ms.MemoryLimit() == val.MemoryLimit() &&
 		ms.FileOffset() == val.FileOffset() &&
 		ms.FilenameStrindex() == val.FilenameStrindex() &&
-		ms.AttributeIndices().Equal(val.AttributeIndices()) &&
-		ms.HasFunctions() == val.HasFunctions() &&
-		ms.HasFilenames() == val.HasFilenames() &&
-		ms.HasLineNumbers() == val.HasLineNumbers() &&
-		ms.HasInlineFrames() == val.HasInlineFrames()
+		ms.AttributeIndices().Equal(val.AttributeIndices())
 }

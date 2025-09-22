@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/config/configmiddleware
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.41.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.135.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.135.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 )
 
 require (
