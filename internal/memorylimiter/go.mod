@@ -38,7 +38,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.42.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.136.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.42.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
