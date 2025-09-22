@@ -230,7 +230,7 @@ func TestMetricsTelemetry(t *testing.T) {
 	}
 	require.NoError(t, metrics.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorAcceptedMetricPoints(t, tel,
+	metadatatest.AssertEqualProcessorMemoryLimiterAcceptedMetricPoints(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      10,
