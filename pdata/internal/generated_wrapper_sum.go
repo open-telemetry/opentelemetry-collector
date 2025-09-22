@@ -8,28 +8,60 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSum() otlpmetrics.Sum {
-	return otlpmetrics.Sum{}
+var (
+	protoPoolSum = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Sum{}
+		},
+	}
+)
+
+func NewOrigSum() *otlpmetrics.Sum {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Sum{}
+	}
+	return protoPoolSum.Get().(*otlpmetrics.Sum)
 }
 
-func NewOrigPtrSum() *otlpmetrics.Sum {
-	return &otlpmetrics.Sum{}
+func DeleteOrigSum(orig *otlpmetrics.Sum, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.DataPoints {
+		DeleteOrigNumberDataPoint(orig.DataPoints[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSum.Put(orig)
+	}
 }
 
 func CopyOrigSum(dest, src *otlpmetrics.Sum) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.IsMonotonic = src.IsMonotonic
 }
 
 func GenTestOrigSum() *otlpmetrics.Sum {
-	orig := NewOrigPtrSum()
+	orig := NewOrigSum()
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.IsMonotonic = true
@@ -63,10 +95,14 @@ func MarshalJSONOrigSum(orig *otlpmetrics.Sum, dest *json.Stream) {
 
 // UnmarshalJSONOrigSum unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSum(orig *otlpmetrics.Sum, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
+				UnmarshalJSONOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		case "isMonotonic", "is_monotonic":
@@ -74,8 +110,7 @@ func UnmarshalJSONOrigSum(orig *otlpmetrics.Sum, iter *json.Iterator) {
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSum(orig *otlpmetrics.Sum) int {
@@ -149,7 +184,7 @@ func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrNumberDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
 			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

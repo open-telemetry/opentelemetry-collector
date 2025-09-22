@@ -41,7 +41,7 @@ func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	return new{{ .structName }}(internal.NewOrigPtr{{ .originName }}(), internal.NewState())
+	return new{{ .structName }}(internal.NewOrig{{ .originName }}(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -53,8 +53,8 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
-	*ms.{{ .origAccessor }} = {{ .originFullName }}{}
+	internal.DeleteOrig{{ .originName }}(dest.{{ .origAccessor }}, false)
+	*dest.{{ .origAccessor }}, *ms.{{ .origAccessor }} = *ms.{{ .origAccessor }}, *dest.{{ .origAccessor }}
 }
 
 {{ range .fields -}}

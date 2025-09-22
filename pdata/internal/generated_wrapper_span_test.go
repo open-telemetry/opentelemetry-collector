@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,106 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigSpan(t *testing.T) {
-	src := NewOrigPtrSpan()
-	dest := NewOrigPtrSpan()
-	CopyOrigSpan(dest, src)
-	assert.Equal(t, NewOrigPtrSpan(), dest)
-	*src = *GenTestOrigSpan()
-	CopyOrigSpan(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesSpan() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigSpan()
+				CopyOrigSpan(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigSpan(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrSpan()
+	dest := NewOrigSpan()
 	UnmarshalJSONOrigSpan(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrSpan(), dest)
+	assert.Equal(t, NewOrigSpan(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigSpan(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrSpan()
-			UnmarshalJSONOrigSpan(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigSpan(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigSpan()
+				UnmarshalJSONOrigSpan(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpanFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			require.Error(t, UnmarshalProtoOrigSpan(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
-	dest := NewOrigPtrSpan()
+	dest := NewOrigSpan()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigSpan(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrSpan(), dest)
+	assert.Equal(t, NewOrigSpan(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan(src))
-			gotSize := MarshalProtoOrigSpan(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrSpan()
-			require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigSpan(src))
+				gotSize := MarshalProtoOrigSpan(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigSpan()
+				require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigSpan(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +131,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrSpan()
+			dest := NewOrigSpan()
 			require.NoError(t, UnmarshalProtoOrigSpan(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -147,7 +178,7 @@ func genTestFailingUnmarshalProtoValuesSpan() map[string][]byte {
 
 func genTestEncodingValuesSpan() map[string]*otlptrace.Span {
 	return map[string]*otlptrace.Span{
-		"empty":                       NewOrigPtrSpan(),
+		"empty":                       NewOrigSpan(),
 		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
 		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},

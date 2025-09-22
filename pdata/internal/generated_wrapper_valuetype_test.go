@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,75 +15,105 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigValueType(t *testing.T) {
-	src := NewOrigPtrValueType()
-	dest := NewOrigPtrValueType()
-	CopyOrigValueType(dest, src)
-	assert.Equal(t, NewOrigPtrValueType(), dest)
-	*src = *GenTestOrigValueType()
-	CopyOrigValueType(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesValueType() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigValueType()
+				CopyOrigValueType(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigValueType(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	UnmarshalJSONOrigValueType(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigValueType(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrValueType()
-			UnmarshalJSONOrigValueType(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigValueType(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigValueType()
+				UnmarshalJSONOrigValueType(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigValueType(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueTypeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesValueType() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.Error(t, UnmarshalProtoOrigValueType(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
-	dest := NewOrigPtrValueType()
+	dest := NewOrigValueType()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrValueType(), dest)
+	assert.Equal(t, NewOrigValueType(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigValueType(src))
-			gotSize := MarshalProtoOrigValueType(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrValueType()
-			require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigValueType(src))
+				gotSize := MarshalProtoOrigValueType(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigValueType()
+				require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigValueType(dest, true)
+			})
+		}
 	}
 }
 
@@ -99,7 +130,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrValueType()
+			dest := NewOrigValueType()
 			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +151,7 @@ func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
 
 func genTestEncodingValuesValueType() map[string]*otlpprofiles.ValueType {
 	return map[string]*otlpprofiles.ValueType{
-		"empty":                       NewOrigPtrValueType(),
+		"empty":                       NewOrigValueType(),
 		"TypeStrindex/test":           {TypeStrindex: int32(13)},
 		"UnitStrindex/test":           {UnitStrindex: int32(13)},
 		"AggregationTemporality/test": {AggregationTemporality: otlpprofiles.AggregationTemporality(13)},

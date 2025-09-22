@@ -33,7 +33,7 @@ func newProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfilesDictionary() ProfilesDictionary {
-	return newProfilesDictionary(internal.NewOrigPtrProfilesDictionary(), internal.NewState())
+	return newProfilesDictionary(internal.NewOrigProfilesDictionary(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +45,8 @@ func (ms ProfilesDictionary) MoveTo(dest ProfilesDictionary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ProfilesDictionary{}
+	internal.DeleteOrigProfilesDictionary(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingTable returns the MappingTable associated with this ProfilesDictionary.
@@ -75,13 +75,13 @@ func (ms ProfilesDictionary) StringTable() pcommon.StringSlice {
 }
 
 // AttributeTable returns the AttributeTable associated with this ProfilesDictionary.
-func (ms ProfilesDictionary) AttributeTable() AttributeTableSlice {
-	return newAttributeTableSlice(&ms.orig.AttributeTable, ms.state)
+func (ms ProfilesDictionary) AttributeTable() KeyValueAndUnitSlice {
+	return newKeyValueAndUnitSlice(&ms.orig.AttributeTable, ms.state)
 }
 
-// AttributeUnits returns the AttributeUnits associated with this ProfilesDictionary.
-func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
-	return newAttributeUnitSlice(&ms.orig.AttributeUnits, ms.state)
+// StackTable returns the StackTable associated with this ProfilesDictionary.
+func (ms ProfilesDictionary) StackTable() StackSlice {
+	return newStackSlice(&ms.orig.StackTable, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

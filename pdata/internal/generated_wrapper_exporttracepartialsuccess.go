@@ -8,27 +8,55 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigExportTracePartialSuccess() otlpcollectortrace.ExportTracePartialSuccess {
-	return otlpcollectortrace.ExportTracePartialSuccess{}
+var (
+	protoPoolExportTracePartialSuccess = sync.Pool{
+		New: func() any {
+			return &otlpcollectortrace.ExportTracePartialSuccess{}
+		},
+	}
+)
+
+func NewOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcollectortrace.ExportTracePartialSuccess{}
+	}
+	return protoPoolExportTracePartialSuccess.Get().(*otlpcollectortrace.ExportTracePartialSuccess)
 }
 
-func NewOrigPtrExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
-	return &otlpcollectortrace.ExportTracePartialSuccess{}
+func DeleteOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolExportTracePartialSuccess.Put(orig)
+	}
 }
 
 func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
 }
 
 func GenTestOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
-	orig := NewOrigPtrExportTracePartialSuccess()
+	orig := NewOrigExportTracePartialSuccess()
 	orig.RejectedSpans = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
@@ -50,7 +78,7 @@ func MarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTra
 
 // UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedSpans", "rejected_spans":
 			orig.RejectedSpans = iter.ReadInt64()
@@ -59,8 +87,7 @@ func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportT
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) int {

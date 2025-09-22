@@ -8,26 +8,58 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummary() otlpmetrics.Summary {
-	return otlpmetrics.Summary{}
+var (
+	protoPoolSummary = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.Summary{}
+		},
+	}
+)
+
+func NewOrigSummary() *otlpmetrics.Summary {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.Summary{}
+	}
+	return protoPoolSummary.Get().(*otlpmetrics.Summary)
 }
 
-func NewOrigPtrSummary() *otlpmetrics.Summary {
-	return &otlpmetrics.Summary{}
+func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.DataPoints {
+		DeleteOrigSummaryDataPoint(orig.DataPoints[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSummary.Put(orig)
+	}
 }
 
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
 func GenTestOrigSummary() *otlpmetrics.Summary {
-	orig := NewOrigPtrSummary()
+	orig := NewOrigSummary()
 	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
 	return orig
 }
@@ -50,15 +82,18 @@ func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
 
 // UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
-			orig.DataPoints = UnmarshalJSONOrigSummaryDataPointSlice(iter)
+			for iter.ReadArray() {
+				orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
+				UnmarshalJSONOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {
@@ -111,7 +146,7 @@ func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigPtrSummaryDataPoint())
+			orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
 			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err

@@ -8,7 +8,9 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -31,22 +33,56 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-func NewOrigResource() otlpresource.Resource {
-	return otlpresource.Resource{}
+var (
+	protoPoolResource = sync.Pool{
+		New: func() any {
+			return &otlpresource.Resource{}
+		},
+	}
+)
+
+func NewOrigResource() *otlpresource.Resource {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpresource.Resource{}
+	}
+	return protoPoolResource.Get().(*otlpresource.Resource)
 }
 
-func NewOrigPtrResource() *otlpresource.Resource {
-	return &otlpresource.Resource{}
+func DeleteOrigResource(orig *otlpresource.Resource, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+	for i := range orig.EntityRefs {
+		DeleteOrigEntityRef(orig.EntityRefs[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResource.Put(orig)
+	}
 }
 
 func CopyOrigResource(dest, src *otlpresource.Resource) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
 }
 
 func GenTestOrigResource() *otlpresource.Resource {
-	orig := NewOrigPtrResource()
+	orig := NewOrigResource()
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.EntityRefs = GenerateOrigTestEntityRefSlice()
@@ -85,19 +121,26 @@ func MarshalJSONOrigResource(orig *otlpresource.Resource, dest *json.Stream) {
 
 // UnmarshalJSONOrigResource unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResource(orig *otlpresource.Resource, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "entityRefs", "entity_refs":
-			orig.EntityRefs = UnmarshalJSONOrigEntityRefSlice(iter)
+			for iter.ReadArray() {
+				orig.EntityRefs = append(orig.EntityRefs, NewOrigEntityRef())
+				UnmarshalJSONOrigEntityRef(orig.EntityRefs[len(orig.EntityRefs)-1], iter)
+			}
+
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResource(orig *otlpresource.Resource) int {
@@ -169,7 +212,7 @@ func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
@@ -197,7 +240,7 @@ func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EntityRefs = append(orig.EntityRefs, NewOrigPtrEntityRef())
+			orig.EntityRefs = append(orig.EntityRefs, NewOrigEntityRef())
 			err = UnmarshalProtoOrigEntityRef(orig.EntityRefs[len(orig.EntityRefs)-1], buf[startPos:pos])
 			if err != nil {
 				return err

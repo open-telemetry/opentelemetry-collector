@@ -130,6 +130,9 @@ func (ms StringSlice) MoveAndAppendTo(dest StringSlice) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms StringSlice) CopyTo(dest StringSlice) {
 	dest.getState().AssertMutable()
+	if ms.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrigStringSlice(*dest.getOrig(), *ms.getOrig())
 }
 

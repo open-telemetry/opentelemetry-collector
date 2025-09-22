@@ -34,7 +34,7 @@ func newSpanEvent(orig *otlptrace.Span_Event, state *internal.State) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	return newSpanEvent(internal.NewOrigPtrSpan_Event(), internal.NewState())
+	return newSpanEvent(internal.NewOrigSpan_Event(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +46,8 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Event{}
+	internal.DeleteOrigSpan_Event(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Timestamp returns the timestamp associated with this SpanEvent.

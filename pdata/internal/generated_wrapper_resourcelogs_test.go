@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,75 +15,105 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceLogs(t *testing.T) {
-	src := NewOrigPtrResourceLogs()
-	dest := NewOrigPtrResourceLogs()
-	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
-	*src = *GenTestOrigResourceLogs()
-	CopyOrigResourceLogs(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesResourceLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigResourceLogs()
+				CopyOrigResourceLogs(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigResourceLogs(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrResourceLogs()
+	dest := NewOrigResourceLogs()
 	UnmarshalJSONOrigResourceLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
+	assert.Equal(t, NewOrigResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigResourceLogs(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrResourceLogs()
-			UnmarshalJSONOrigResourceLogs(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigResourceLogs(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigResourceLogs()
+				UnmarshalJSONOrigResourceLogs(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResourceLogs() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrResourceLogs()
+			dest := NewOrigResourceLogs()
 			require.Error(t, UnmarshalProtoOrigResourceLogs(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
-	dest := NewOrigPtrResourceLogs()
+	dest := NewOrigResourceLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrResourceLogs(), dest)
+	assert.Equal(t, NewOrigResourceLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceLogs(src))
-			gotSize := MarshalProtoOrigResourceLogs(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrResourceLogs()
-			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigResourceLogs(src))
+				gotSize := MarshalProtoOrigResourceLogs(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigResourceLogs()
+				require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigResourceLogs(dest, true)
+			})
+		}
 	}
 }
 
@@ -99,7 +130,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrResourceLogs()
+			dest := NewOrigResourceLogs()
 			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +151,7 @@ func genTestFailingUnmarshalProtoValuesResourceLogs() map[string][]byte {
 
 func genTestEncodingValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
 	return map[string]*otlplogs.ResourceLogs{
-		"empty":                      NewOrigPtrResourceLogs(),
+		"empty":                      NewOrigResourceLogs(),
 		"Resource/test":              {Resource: *GenTestOrigResource()},
 		"ScopeLogs/default_and_test": {ScopeLogs: []*otlplogs.ScopeLogs{{}, GenTestOrigScopeLogs()}},
 		"SchemaUrl/test":             {SchemaUrl: "test_schemaurl"},

@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,106 @@ import (
 	gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExportTraceServiceRequest(t *testing.T) {
-	src := NewOrigPtrExportTraceServiceRequest()
-	dest := NewOrigPtrExportTraceServiceRequest()
-	CopyOrigExportTraceServiceRequest(dest, src)
-	assert.Equal(t, NewOrigPtrExportTraceServiceRequest(), dest)
-	*src = *GenTestOrigExportTraceServiceRequest()
-	CopyOrigExportTraceServiceRequest(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExportTraceServiceRequest()
+				CopyOrigExportTraceServiceRequest(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExportTraceServiceRequest(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequestUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExportTraceServiceRequest()
+	dest := NewOrigExportTraceServiceRequest()
 	UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExportTraceServiceRequest(), dest)
+	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExportTraceServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigExportTraceServiceRequest(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExportTraceServiceRequest()
-			UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExportTraceServiceRequest(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExportTraceServiceRequest()
+				UnmarshalJSONOrigExportTraceServiceRequest(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportTraceServiceRequest(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequestFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExportTraceServiceRequest()
+			dest := NewOrigExportTraceServiceRequest()
 			require.Error(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequestUnknown(t *testing.T) {
-	dest := NewOrigPtrExportTraceServiceRequest()
+	dest := NewOrigExportTraceServiceRequest()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExportTraceServiceRequest(), dest)
+	assert.Equal(t, NewOrigExportTraceServiceRequest(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExportTraceServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTraceServiceRequest() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
-			gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrExportTraceServiceRequest()
-			require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigExportTraceServiceRequest(src))
+				gotSize := MarshalProtoOrigExportTraceServiceRequest(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExportTraceServiceRequest()
+				require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExportTraceServiceRequest(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +131,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceRequest(t *testing
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExportTraceServiceRequest()
+			dest := NewOrigExportTraceServiceRequest()
 			require.NoError(t, UnmarshalProtoOrigExportTraceServiceRequest(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -117,7 +148,7 @@ func genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() map[string][]
 
 func genTestEncodingValuesExportTraceServiceRequest() map[string]*otlpcollectortrace.ExportTraceServiceRequest {
 	return map[string]*otlpcollectortrace.ExportTraceServiceRequest{
-		"empty":                          NewOrigPtrExportTraceServiceRequest(),
+		"empty":                          NewOrigExportTraceServiceRequest(),
 		"ResourceSpans/default_and_test": {ResourceSpans: []*otlptrace.ResourceSpans{{}, GenTestOrigResourceSpans()}},
 	}
 }

@@ -129,6 +129,9 @@ func (ms {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.getState().AssertMutable()
+	if ms.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.getOrig(), *ms.getOrig())
 }
 

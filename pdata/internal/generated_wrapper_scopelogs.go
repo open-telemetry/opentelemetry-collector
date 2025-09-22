@@ -8,28 +8,61 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigScopeLogs() otlplogs.ScopeLogs {
-	return otlplogs.ScopeLogs{}
+var (
+	protoPoolScopeLogs = sync.Pool{
+		New: func() any {
+			return &otlplogs.ScopeLogs{}
+		},
+	}
+)
+
+func NewOrigScopeLogs() *otlplogs.ScopeLogs {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlplogs.ScopeLogs{}
+	}
+	return protoPoolScopeLogs.Get().(*otlplogs.ScopeLogs)
 }
 
-func NewOrigPtrScopeLogs() *otlplogs.ScopeLogs {
-	return &otlplogs.ScopeLogs{}
+func DeleteOrigScopeLogs(orig *otlplogs.ScopeLogs, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigInstrumentationScope(&orig.Scope, false)
+	for i := range orig.LogRecords {
+		DeleteOrigLogRecord(orig.LogRecords[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolScopeLogs.Put(orig)
+	}
 }
 
 func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.LogRecords = CopyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
 func GenTestOrigScopeLogs() *otlplogs.ScopeLogs {
-	orig := NewOrigPtrScopeLogs()
+	orig := NewOrigScopeLogs()
 	orig.Scope = *GenTestOrigInstrumentationScope()
 	orig.LogRecords = GenerateOrigTestLogRecordSlice()
 	orig.SchemaUrl = "test_schemaurl"
@@ -60,19 +93,22 @@ func MarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, dest *json.Stream) {
 
 // UnmarshalJSONOrigScopeLogs unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
 		case "logRecords", "log_records":
-			orig.LogRecords = UnmarshalJSONOrigLogRecordSlice(iter)
+			for iter.ReadArray() {
+				orig.LogRecords = append(orig.LogRecords, NewOrigLogRecord())
+				UnmarshalJSONOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) int {
@@ -162,7 +198,7 @@ func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LogRecords = append(orig.LogRecords, NewOrigPtrLogRecord())
+			orig.LogRecords = append(orig.LogRecords, NewOrigLogRecord())
 			err = UnmarshalProtoOrigLogRecord(orig.LogRecords[len(orig.LogRecords)-1], buf[startPos:pos])
 			if err != nil {
 				return err

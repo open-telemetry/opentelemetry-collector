@@ -23,6 +23,7 @@ var pprofileotlp = &Package{
 			`otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 		},
 		testImports: []string{
+			`"strconv"`,
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,

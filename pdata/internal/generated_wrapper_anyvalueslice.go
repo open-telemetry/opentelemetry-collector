@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Slice struct {
@@ -42,7 +41,7 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			dest[i].Reset()
+			DeleteOrigAnyValue(&dest[i], false)
 		}
 	}
 	for i := range src {
@@ -55,16 +54,5 @@ func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
 	orig := make([]otlpcommon.AnyValue, 5)
 	orig[1] = *GenTestOrigAnyValue()
 	orig[3] = *GenTestOrigAnyValue()
-	return orig
-}
-
-// UnmarshalJSONOrigAnyValueSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
-	var orig []otlpcommon.AnyValue
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, otlpcommon.AnyValue{})
-		UnmarshalJSONOrigAnyValue(&orig[len(orig)-1], iter)
-		return true
-	})
 	return orig
 }

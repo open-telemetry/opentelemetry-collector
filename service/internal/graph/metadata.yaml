@@ -5,5 +5,5 @@ status:
   disable_codecov_badge: true
   class: service
   codeowners:
-    active:
+    emeritus:
       - djaglowski

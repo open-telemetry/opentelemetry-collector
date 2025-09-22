@@ -32,9 +32,6 @@ const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
-const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	orig.{{ .originFieldName }} = UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)`
-
 type SliceField struct {
 	fieldName     string
 	protoType     proto.Type
@@ -72,6 +69,14 @@ func (sf *SliceField) GenerateTestEncodingValues(*messageStruct) string {
 	return sf.toProtoField().GenTestEncodingValues()
 }
 
+func (sf *SliceField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
+func (sf *SliceField) GenerateDeleteOrig(*messageStruct) string {
+	return sf.toProtoField().GenDeleteOrig()
+}
+
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("sliceCopyOrigTemplate", []byte(sliceCopyOrigTemplate))
 	return template.Execute(t, sf.templateFields(ms))
@@ -81,9 +86,8 @@ func (sf *SliceField) GenerateMarshalJSON(*messageStruct) string {
 	return sf.toProtoField().GenMarshalJSON()
 }
 
-func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("sliceUnmarshalJSONTemplate", []byte(sliceUnmarshalJSONTemplate))
-	return template.Execute(t, sf.templateFields(ms))
+func (sf *SliceField) GenerateUnmarshalJSON(*messageStruct) string {
+	return sf.toProtoField().GenUnmarshalJSON()
 }
 
 func (sf *SliceField) GenerateSizeProto(*messageStruct) string {

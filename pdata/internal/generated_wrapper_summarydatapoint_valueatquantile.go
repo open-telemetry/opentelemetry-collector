@@ -10,27 +10,55 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sync"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigSummaryDataPoint_ValueAtQuantile() otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+var (
+	protoPoolSummaryDataPoint_ValueAtQuantile = sync.Pool{
+		New: func() any {
+			return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		},
+	}
+)
+
+func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	}
+	return protoPoolSummaryDataPoint_ValueAtQuantile.Get().(*otlpmetrics.SummaryDataPoint_ValueAtQuantile)
 }
 
-func NewOrigPtrSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolSummaryDataPoint_ValueAtQuantile.Put(orig)
+	}
 }
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }
 
 func GenTestOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	orig := NewOrigPtrSummaryDataPoint_ValueAtQuantile()
+	orig := NewOrigSummaryDataPoint_ValueAtQuantile()
 	orig.Quantile = float64(3.1415926)
 	orig.Value = float64(3.1415926)
 	return orig
@@ -52,7 +80,7 @@ func MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDa
 
 // UnmarshalJSONOrigSummaryDataPointValueAtQuantile unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "quantile":
 			orig.Quantile = iter.ReadFloat64()
@@ -61,8 +89,7 @@ func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.Summary
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {

@@ -128,9 +128,11 @@ func (m Map) PutStr(k, v string) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
-	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v, m.getState()))
+		return
 	}
+	ov := internal.NewOrigAnyValueStringValue()
+	ov.StringValue = v
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
 }
 
 // PutInt performs the Insert or Update action. The int Value is
@@ -140,9 +142,11 @@ func (m Map) PutInt(k string, v int64) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
-	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v, m.getState()))
+		return
 	}
+	ov := internal.NewOrigAnyValueIntValue()
+	ov.IntValue = v
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
 }
 
 // PutDouble performs the Insert or Update action. The double Value is
@@ -152,9 +156,11 @@ func (m Map) PutDouble(k string, v float64) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
-	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v, m.getState()))
+		return
 	}
+	ov := internal.NewOrigAnyValueDoubleValue()
+	ov.DoubleValue = v
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
 }
 
 // PutBool performs the Insert or Update action. The bool Value is
@@ -164,45 +170,46 @@ func (m Map) PutBool(k string, v bool) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
-	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v, m.getState()))
+		return
 	}
+	ov := internal.NewOrigAnyValueBoolValue()
+	ov.BoolValue = v
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
 }
 
 // PutEmptyBytes inserts or updates an empty byte slice under given key and returns it.
 func (m Map) PutEmptyBytes(k string) ByteSlice {
 	m.getState().AssertMutable()
-	bv := otlpcommon.AnyValue_BytesValue{}
 	if av, existing := m.Get(k); existing {
-		av.getOrig().Value = &bv
-	} else {
-		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &bv}})
+		return av.SetEmptyBytes()
 	}
-	return ByteSlice(internal.NewByteSlice(&bv.BytesValue, m.getState()))
+	ov := internal.NewOrigAnyValueBytesValue()
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
+	return ByteSlice(internal.NewByteSlice(&ov.BytesValue, m.getState()))
 }
 
 // PutEmptyMap inserts or updates an empty map under given key and returns it.
 func (m Map) PutEmptyMap(k string) Map {
 	m.getState().AssertMutable()
-	kvl := otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue(nil)}}
 	if av, existing := m.Get(k); existing {
-		av.getOrig().Value = &kvl
-	} else {
-		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &kvl}})
+		return av.SetEmptyMap()
 	}
-	return Map(internal.NewMap(&kvl.KvlistValue.Values, m.getState()))
+	ov := internal.NewOrigAnyValueKvlistValue()
+	ov.KvlistValue = internal.NewOrigKeyValueList()
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
+	return Map(internal.NewMap(&ov.KvlistValue.Values, m.getState()))
 }
 
 // PutEmptySlice inserts or updates an empty slice under given key and returns it.
 func (m Map) PutEmptySlice(k string) Slice {
 	m.getState().AssertMutable()
-	vl := otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue(nil)}}
 	if av, existing := m.Get(k); existing {
-		av.getOrig().Value = &vl
-	} else {
-		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &vl}})
+		return av.SetEmptySlice()
 	}
-	return Slice(internal.NewSlice(&vl.ArrayValue.Values, m.getState()))
+	ov := internal.NewOrigAnyValueArrayValue()
+	ov.ArrayValue = internal.NewOrigArrayValue()
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
+	return Slice(internal.NewSlice(&ov.ArrayValue.Values, m.getState()))
 }
 
 // Len returns the length of this map.
@@ -261,6 +268,9 @@ func (m Map) MoveTo(dest Map) {
 // CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
 	dest.getState().AssertMutable()
+	if m.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrigKeyValueSlice(*dest.getOrig(), *m.getOrig())
 }
 
@@ -315,32 +325,4 @@ func (m Map) Equal(val Map) bool {
 		return fullEqual
 	})
 	return fullEqual
-}
-
-func newKeyValueString(k, v string, state *internal.State) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	akv := newValue(&orig.Value, state)
-	akv.SetStr(v)
-	return orig
-}
-
-func newKeyValueInt(k string, v int64, state *internal.State) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	akv := newValue(&orig.Value, state)
-	akv.SetInt(v)
-	return orig
-}
-
-func newKeyValueDouble(k string, v float64, state *internal.State) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	akv := newValue(&orig.Value, state)
-	akv.SetDouble(v)
-	return orig
-}
-
-func newKeyValueBool(k string, v bool, state *internal.State) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	akv := newValue(&orig.Value, state)
-	akv.SetBool(v)
-	return orig
 }

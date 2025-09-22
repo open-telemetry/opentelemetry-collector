@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 var exporterType = component.MustNewType("exampleexporter")
@@ -59,25 +60,29 @@ type ExampleExporter struct {
 
 // ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
 func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	pref.RefTraces(td)
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
 // ConsumeMetrics receives pmetric.Metrics for processing by the Metrics.
 func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	pref.RefMetrics(md)
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
 
 // ConsumeLogs receives plog.Logs for processing by the Logs.
 func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	pref.RefLogs(ld)
 	exp.Logs = append(exp.Logs, ld)
 	return nil
 }
 
 // ConsumeProfiles receives pprofile.Profiles for processing by the xconsumer.Profiles.
-func (exp *ExampleExporter) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {
-	exp.Profiles = append(exp.Profiles, td)
+func (exp *ExampleExporter) ConsumeProfiles(_ context.Context, pd pprofile.Profiles) error {
+	pref.RefProfiles(pd)
+	exp.Profiles = append(exp.Profiles, pd)
 	return nil
 }
 

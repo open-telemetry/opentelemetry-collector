@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,106 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigHistogramDataPoint(t *testing.T) {
-	src := NewOrigPtrHistogramDataPoint()
-	dest := NewOrigPtrHistogramDataPoint()
-	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
-	*src = *GenTestOrigHistogramDataPoint()
-	CopyOrigHistogramDataPoint(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesHistogramDataPoint() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigHistogramDataPoint()
+				CopyOrigHistogramDataPoint(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigHistogramDataPoint(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrHistogramDataPoint()
+	dest := NewOrigHistogramDataPoint()
 	UnmarshalJSONOrigHistogramDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigHistogramDataPoint(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrHistogramDataPoint()
-			UnmarshalJSONOrigHistogramDataPoint(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigHistogramDataPoint(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigHistogramDataPoint()
+				UnmarshalJSONOrigHistogramDataPoint(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigHistogramDataPoint(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPointFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			require.Error(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
-	dest := NewOrigPtrHistogramDataPoint()
+	dest := NewOrigHistogramDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrHistogramDataPoint(), dest)
+	assert.Equal(t, NewOrigHistogramDataPoint(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogramDataPoint() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
-			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrHistogramDataPoint()
-			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+				gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigHistogramDataPoint()
+				require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigHistogramDataPoint(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +131,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrHistogramDataPoint()
+			dest := NewOrigHistogramDataPoint()
 			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -137,7 +168,7 @@ func genTestFailingUnmarshalProtoValuesHistogramDataPoint() map[string][]byte {
 
 func genTestEncodingValuesHistogramDataPoint() map[string]*otlpmetrics.HistogramDataPoint {
 	return map[string]*otlpmetrics.HistogramDataPoint{
-		"empty":                       NewOrigPtrHistogramDataPoint(),
+		"empty":                       NewOrigHistogramDataPoint(),
 		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
 		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},

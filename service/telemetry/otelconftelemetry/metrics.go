@@ -4,23 +4,44 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
-	"errors"
+	"context"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// newMeterProvider creates a new MeterProvider from Config.
-func newMeterProvider(cfg Config, sdk *config.SDK) (metric.MeterProvider, error) {
-	if cfg.Metrics.Level == configtelemetry.LevelNone || len(cfg.Metrics.Readers) == 0 {
-		return noop.NewMeterProvider(), nil
+func createMeterProvider(
+	ctx context.Context,
+	set telemetry.MeterSettings,
+	componentConfig component.Config,
+) (telemetry.MeterProvider, error) {
+	cfg := componentConfig.(*Config)
+	if cfg.Metrics.Level == configtelemetry.LevelNone {
+		set.Logger.Info("Internal metrics telemetry disabled")
+		return noopMeterProvider{MeterProvider: noopmetric.NewMeterProvider()}, nil
+	} else if cfg.Metrics.Views == nil && set.DefaultViews != nil {
+		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	if sdk != nil {
-		return sdk.MeterProvider(), nil
+	res := newResource(set.Settings, cfg)
+	mpConfig := cfg.Metrics.MeterProvider
+	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+		MeterProvider: &mpConfig,
+	})
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("no sdk set")
+	return sdk.MeterProvider().(telemetry.MeterProvider), nil
+}
+
+type noopMeterProvider struct {
+	noopmetric.MeterProvider
+}
+
+func (noopMeterProvider) Shutdown(context.Context) error {
+	return nil
 }

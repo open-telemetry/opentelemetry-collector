@@ -18,9 +18,14 @@ func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
 // Set{{ .accessorFieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-		{{ .originFieldName }}: v,
+	var ov *{{ .originStructType }}
+	if !internal.UseProtoPooling.IsEnabled() {
+		ov = &{{ .originStructType }}{}
+	} else {
+		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
 	}
+	ov.{{ .originFieldName }} = v
+	ms.orig.{{ .originOneOfFieldName }} = ov
 }`
 
 const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .accessorFieldName }}(t *testing.T) {
@@ -51,16 +56,17 @@ const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .o
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructType }}:
-	dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-{{- .originFieldName }}: t.{{ .originFieldName }}}`
+	var ov *{{ .originStructType }}
+	if !UseProtoPooling.IsEnabled() {
+		ov = &{{ .originStructType }}{}
+	} else {
+		ov = ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
+	}
+	ov.{{ .originFieldName }} = t.{{ .originFieldName }}
+	dest.{{ .originOneOfFieldName }} = ov`
 
 const oneOfPrimitiveTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
-
-const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-		{{ .originFieldName }}: iter.Read{{ upperFirst .returnType }}(),
-	}`
 
 type OneOfPrimitiveValue struct {
 	fieldName       string
@@ -89,11 +95,19 @@ func (opv *OneOfPrimitiveValue) GenerateTestValue(ms *messageStruct, of *OneOfFi
 }
 
 func (opv *OneOfPrimitiveValue) GenerateTestFailingUnmarshalProtoValues(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, false).GenTestFailingUnmarshalProtoValues()
+	return opv.toProtoField(ms, of).GenTestFailingUnmarshalProtoValues()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, false).GenTestEncodingValues()
+	return opv.toProtoField(ms, of).GenTestEncodingValues()
+}
+
+func (opv *OneOfPrimitiveValue) GeneratePoolOrig(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of).GenPoolVarOrig()
+}
+
+func (opv *OneOfPrimitiveValue) GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of).GenDeleteOrig()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField) string {
@@ -107,27 +121,26 @@ func (opv *OneOfPrimitiveValue) GenerateType(ms *messageStruct, of *OneOfField) 
 }
 
 func (opv *OneOfPrimitiveValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, true).GenMarshalJSON()
+	return opv.toProtoField(ms, of).GenMarshalJSON()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveUnmarshalJSONTemplate", []byte(oneOfPrimitiveUnmarshalJSONTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+	return opv.toProtoField(ms, of).GenUnmarshalJSON()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, true).GenSizeProto()
+	return opv.toProtoField(ms, of).GenSizeProto()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, true).GenMarshalProto()
+	return opv.toProtoField(ms, of).GenMarshalProto()
 }
 
 func (opv *OneOfPrimitiveValue) GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string {
-	return opv.toProtoField(ms, of, false).GenUnmarshalProto()
+	return opv.toProtoField(ms, of).GenUnmarshalProto()
 }
 
-func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField, oldOneOf bool) *proto.Field {
+func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField) *proto.Field {
 	pf := &proto.Field{
 		Type:                 opv.protoType,
 		ID:                   opv.protoID,
@@ -136,15 +149,11 @@ func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField, 
 		OneOfMessageFullName: ms.originFullName + "_" + opv.originFieldName,
 		Nullable:             true,
 	}
-	// TODO: Cleanup this by moving everyone to the new OneOfGroup
-	if oldOneOf {
-		pf.Name = of.originFieldName + ".(*" + ms.originFullName + "_" + opv.originFieldName + ")" + "." + opv.originFieldName
-	}
 	return pf
 }
 
 func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
-	pf := opv.toProtoField(ms, of, false)
+	pf := opv.toProtoField(ms, of)
 	return map[string]any{
 		"structName":              ms.getName(),
 		"defaultVal":              pf.DefaultValue(),
@@ -159,6 +168,7 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 		"originOneOfFieldName":    of.originFieldName,
 		"originStructName":        ms.originFullName,
 		"originStructType":        ms.originFullName + "_" + opv.originFieldName,
+		"oneOfName":               proto.ExtractNameFromFull(ms.originFullName + "_" + opv.originFieldName),
 	}
 }
 

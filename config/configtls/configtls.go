@@ -194,6 +194,21 @@ func (c Config) Validate() error {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
+	// Ensure certificate is not set using both file and PEM
+	if c.hasCertFile() && c.hasCertPem() {
+		return errors.New("provide either certificate file or PEM, but not both")
+	}
+
+	// Ensure key is not set using both file and PEM
+	if c.hasKeyFile() && c.hasKeyPem() {
+		return errors.New("provide either key file or PEM, but not both")
+	}
+
+	// Fail if only one of cert/key is provided (mismatch case)
+	if c.hasCert() != c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -208,6 +223,16 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	return nil
+}
+
+func (c ServerConfig) Validate() error {
+	// For servers, both certificate and key are required:
+	// - If both are missing, error.
+	// - If only one is provided (mismatch), error.
+	if !c.hasCert() && !c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key for server connections")
+	}
 	return nil
 }
 
@@ -247,7 +272,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	for _, curve := range c.CurvePreferences {
 		curveID, ok := tlsCurveTypes[curve]
 		if !ok {
-			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519]", curveID)
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519, X25519MLKEM768]", curveID)
 		}
 		curvePreferences = append(curvePreferences, curveID)
 	}
@@ -478,8 +503,9 @@ var tlsVersions = map[string]uint16{
 }
 
 var tlsCurveTypes = map[string]tls.CurveID{
-	"P256":   tls.CurveP256,
-	"P384":   tls.CurveP384,
-	"P521":   tls.CurveP521,
-	"X25519": tls.X25519,
+	"P256":           tls.CurveP256,
+	"P384":           tls.CurveP384,
+	"P521":           tls.CurveP521,
+	"X25519":         tls.X25519,
+	"X25519MLKEM768": tls.X25519MLKEM768,
 }

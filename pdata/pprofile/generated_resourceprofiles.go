@@ -33,7 +33,7 @@ func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceProfiles() ResourceProfiles {
-	return newResourceProfiles(internal.NewOrigPtrResourceProfiles(), internal.NewState())
+	return newResourceProfiles(internal.NewOrigResourceProfiles(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +45,8 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ResourceProfiles{}
+	internal.DeleteOrigResourceProfiles(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceProfiles.

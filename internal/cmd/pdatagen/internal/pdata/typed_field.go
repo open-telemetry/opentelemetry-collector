@@ -33,15 +33,6 @@ const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-		{{- if .isType }}
-		orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
-		{{- else if .isEnum }}
-		orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
-		{{- else }}	
-		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
-		{{- end }}`
-
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")
 type TypedField struct {
 	fieldName       string
@@ -84,6 +75,14 @@ func (ptf *TypedField) GenerateTestEncodingValues(*messageStruct) string {
 	return ptf.toProtoField().GenTestEncodingValues()
 }
 
+func (ptf *TypedField) GeneratePoolOrig(*messageStruct) string {
+	return ""
+}
+
+func (ptf *TypedField) GenerateDeleteOrig(*messageStruct) string {
+	return ptf.toProtoField().GenDeleteOrig()
+}
+
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("typedCopyOrigTemplate", []byte(typedCopyOrigTemplate))
 	return template.Execute(t, ptf.templateFields(ms))
@@ -96,9 +95,8 @@ func (ptf *TypedField) GenerateMarshalJSON(*messageStruct) string {
 	return ptf.toProtoField().GenMarshalJSON()
 }
 
-func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("typedUnmarshalJSONTemplate", []byte(typedUnmarshalJSONTemplate))
-	return template.Execute(t, ptf.templateFields(ms))
+func (ptf *TypedField) GenerateUnmarshalJSON(*messageStruct) string {
+	return ptf.toProtoField().GenUnmarshalJSON()
 }
 
 func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
@@ -139,8 +137,6 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 		"lowerFieldName":  strings.ToLower(ptf.fieldName),
 		"testValue":       ptf.returnType.testVal,
 		"rawType":         pf.GoType(),
-		"isType":          ptf.returnType.protoType == proto.TypeMessage,
-		"isEnum":          ptf.returnType.protoType == proto.TypeEnum,
 		"originFieldName": ptf.getOriginFieldName(),
 	}
 }

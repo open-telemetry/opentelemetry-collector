@@ -53,7 +53,7 @@ func (pf *Field) DefaultValue() string {
 	case TypeBool:
 		return `false`
 	case TypeBytes:
-		return `[]byte{}`
+		return `nil`
 	case TypeString:
 		return `""`
 	case TypeMessage:
@@ -126,7 +126,9 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"jsonTag":              genJSONTag(pf.Name),
 		"fieldName":            pf.Name,
 		"origName":             pf.messageName(),
+		"origFullName":         pf.MessageFullName,
 		"oneOfGroup":           pf.OneOfGroup,
+		"oneOfMessageName":     ExtractNameFromFull(pf.OneOfMessageFullName),
 		"oneOfMessageFullName": pf.OneOfMessageFullName,
 		"repeated":             pf.Repeated,
 		"nullable":             pf.Nullable,

@@ -130,6 +130,9 @@ func (ms UInt64Slice) MoveAndAppendTo(dest UInt64Slice) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 	dest.getState().AssertMutable()
+	if ms.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = internal.CopyOrigUint64Slice(*dest.getOrig(), *ms.getOrig())
 }
 

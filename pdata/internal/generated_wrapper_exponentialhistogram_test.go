@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,75 +15,105 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigExponentialHistogram(t *testing.T) {
-	src := NewOrigPtrExponentialHistogram()
-	dest := NewOrigPtrExponentialHistogram()
-	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
-	*src = *GenTestOrigExponentialHistogram()
-	CopyOrigExponentialHistogram(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesExponentialHistogram() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigExponentialHistogram()
+				CopyOrigExponentialHistogram(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigExponentialHistogram(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	UnmarshalJSONOrigExponentialHistogram(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogram() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigExponentialHistogram(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrExponentialHistogram()
-			UnmarshalJSONOrigExponentialHistogram(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigExponentialHistogram(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigExponentialHistogram()
+				UnmarshalJSONOrigExponentialHistogram(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExponentialHistogram(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExponentialHistogram() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			require.Error(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogramUnknown(t *testing.T) {
-	dest := NewOrigPtrExponentialHistogram()
+	dest := NewOrigExponentialHistogram()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrExponentialHistogram(), dest)
+	assert.Equal(t, NewOrigExponentialHistogram(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesExponentialHistogram() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
-			gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrExponentialHistogram()
-			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
+				gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigExponentialHistogram()
+				require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigExponentialHistogram(dest, true)
+			})
+		}
 	}
 }
 
@@ -99,7 +130,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogram(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrExponentialHistogram()
+			dest := NewOrigExponentialHistogram()
 			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -118,7 +149,7 @@ func genTestFailingUnmarshalProtoValuesExponentialHistogram() map[string][]byte 
 
 func genTestEncodingValuesExponentialHistogram() map[string]*otlpmetrics.ExponentialHistogram {
 	return map[string]*otlpmetrics.ExponentialHistogram{
-		"empty":                       NewOrigPtrExponentialHistogram(),
+		"empty":                       NewOrigExponentialHistogram(),
 		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.ExponentialHistogramDataPoint{{}, GenTestOrigExponentialHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 	}

@@ -32,7 +32,7 @@ func newExportResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, state 
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	return newExportResponse(internal.NewOrigPtrExportLogsServiceResponse(), internal.NewState())
+	return newExportResponse(internal.NewOrigExportLogsServiceResponse(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +44,8 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorlogs.ExportLogsServiceResponse{}
+	internal.DeleteOrigExportLogsServiceResponse(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // PartialSuccess returns the partialsuccess associated with this ExportResponse.

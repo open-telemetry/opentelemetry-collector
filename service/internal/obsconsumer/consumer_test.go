@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -80,6 +81,10 @@ func TestConsumeRefused(t *testing.T) {
 	producedSizeConter, err := meter.Int64Counter("produced.size")
 	require.NoError(t, err)
 
+	logger := zap.NewNop()
+	receivedSettings := obsconsumer.Settings{ItemCounter: receivedItemsCounter, SizeCounter: receivedSizeCounter, Logger: logger}
+	producedSettings := obsconsumer.Settings{ItemCounter: producedItemsCounter, SizeCounter: producedSizeConter, Logger: logger}
+
 	type testCase struct {
 		name         string
 		testConsumer func() error
@@ -89,8 +94,8 @@ func TestConsumeRefused(t *testing.T) {
 		{
 			name: "metrics",
 			testConsumer: func() error {
-				consumer1 := obsconsumer.NewMetrics(mockConsumer, receivedItemsCounter, receivedSizeCounter)
-				consumer2 := obsconsumer.NewMetrics(consumer1, producedItemsCounter, producedSizeConter)
+				consumer1 := obsconsumer.NewMetrics(mockConsumer, receivedSettings)
+				consumer2 := obsconsumer.NewMetrics(consumer1, producedSettings)
 				md := pmetric.NewMetrics()
 				md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 				return consumer2.ConsumeMetrics(ctx, md)
@@ -99,8 +104,8 @@ func TestConsumeRefused(t *testing.T) {
 		{
 			name: "logs",
 			testConsumer: func() error {
-				consumer1 := obsconsumer.NewLogs(mockConsumer, receivedItemsCounter, receivedSizeCounter)
-				consumer2 := obsconsumer.NewLogs(consumer1, producedItemsCounter, producedSizeConter)
+				consumer1 := obsconsumer.NewLogs(mockConsumer, receivedSettings)
+				consumer2 := obsconsumer.NewLogs(consumer1, producedSettings)
 				ld := plog.NewLogs()
 				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				return consumer2.ConsumeLogs(ctx, ld)
@@ -109,8 +114,8 @@ func TestConsumeRefused(t *testing.T) {
 		{
 			name: "traces",
 			testConsumer: func() error {
-				consumer1 := obsconsumer.NewTraces(mockConsumer, receivedItemsCounter, receivedSizeCounter)
-				consumer2 := obsconsumer.NewTraces(consumer1, producedItemsCounter, producedSizeConter)
+				consumer1 := obsconsumer.NewTraces(mockConsumer, receivedSettings)
+				consumer2 := obsconsumer.NewTraces(consumer1, producedSettings)
 				td := ptrace.NewTraces()
 				td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				return consumer2.ConsumeTraces(ctx, td)
@@ -119,8 +124,8 @@ func TestConsumeRefused(t *testing.T) {
 		{
 			name: "profiles",
 			testConsumer: func() error {
-				consumer1 := obsconsumer.NewProfiles(mockConsumer, receivedItemsCounter, receivedSizeCounter)
-				consumer2 := obsconsumer.NewProfiles(consumer1, producedItemsCounter, producedSizeConter)
+				consumer1 := obsconsumer.NewProfiles(mockConsumer, receivedSettings)
+				consumer2 := obsconsumer.NewProfiles(consumer1, producedSettings)
 				pd := pprofile.NewProfiles()
 				pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample().AppendEmpty()
 				return consumer2.ConsumeProfiles(ctx, pd)

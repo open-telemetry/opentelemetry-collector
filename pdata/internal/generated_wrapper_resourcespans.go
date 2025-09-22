@@ -8,28 +8,61 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigResourceSpans() otlptrace.ResourceSpans {
-	return otlptrace.ResourceSpans{}
+var (
+	protoPoolResourceSpans = sync.Pool{
+		New: func() any {
+			return &otlptrace.ResourceSpans{}
+		},
+	}
+)
+
+func NewOrigResourceSpans() *otlptrace.ResourceSpans {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlptrace.ResourceSpans{}
+	}
+	return protoPoolResourceSpans.Get().(*otlptrace.ResourceSpans)
 }
 
-func NewOrigPtrResourceSpans() *otlptrace.ResourceSpans {
-	return &otlptrace.ResourceSpans{}
+func DeleteOrigResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	DeleteOrigResource(&orig.Resource, false)
+	for i := range orig.ScopeSpans {
+		DeleteOrigScopeSpans(orig.ScopeSpans[i], true)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolResourceSpans.Put(orig)
+	}
 }
 
 func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
 func GenTestOrigResourceSpans() *otlptrace.ResourceSpans {
-	orig := NewOrigPtrResourceSpans()
+	orig := NewOrigResourceSpans()
 	orig.Resource = *GenTestOrigResource()
 	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
 	orig.SchemaUrl = "test_schemaurl"
@@ -60,19 +93,22 @@ func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stre
 
 // UnmarshalJSONOrigResourceSpans unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
 		case "scopeSpans", "scope_spans":
-			orig.ScopeSpans = UnmarshalJSONOrigScopeSpansSlice(iter)
+			for iter.ReadArray() {
+				orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
+				UnmarshalJSONOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], iter)
+			}
+
 		case "schemaUrl", "schema_url":
 			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) int {
@@ -162,7 +198,7 @@ func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) 
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigPtrScopeSpans())
+			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
 			err = UnmarshalProtoOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err

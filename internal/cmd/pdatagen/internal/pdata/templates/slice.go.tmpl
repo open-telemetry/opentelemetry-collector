@@ -103,7 +103,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 	es.{{ .stateAccessor }}.AssertMutable()
-	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.NewOrigPtr{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
+	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.NewOrig{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
 	return es.At(es.Len() - 1)
 }
 
@@ -133,8 +133,10 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 	for i := 0; i < len(*es.{{ .origAccessor }}); i++ {
 		if f(es.At(i)) {
 			{{ if .elementNullable -}}
-			(*es.{{ .origAccessor }})[i] = nil{{ else -}}
-			(*es.{{ .origAccessor }})[i].Reset()
+			internal.DeleteOrig{{ .elementOriginName }}((*es.{{ .origAccessor }})[i], true)
+			(*es.{{ .origAccessor }})[i] = nil
+			{{ else -}}
+			internal.DeleteOrig{{ .elementOriginName }}(&(*es.{{ .origAccessor }})[i], false)
 			{{- end }}
 			continue
 		}
@@ -145,6 +147,7 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 		}
 		(*es.{{ .origAccessor }})[newLen] = (*es.{{ .origAccessor }})[i]
 		{{ if .elementNullable -}}
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.{{ .origAccessor }})[i] = nil{{ else -}}
 		(*es.{{ .origAccessor }})[i].Reset()
 		{{- end }}
@@ -157,6 +160,9 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
+	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
+		return
+	}
 	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 }
 

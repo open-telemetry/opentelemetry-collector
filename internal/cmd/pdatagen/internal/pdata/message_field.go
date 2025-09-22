@@ -34,9 +34,6 @@ const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTestOrig{{
 
 const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
-const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }}"{{ if needSnake .fieldOriginFullName -}}, "{{ toSnake .fieldOriginFullName }}"{{- end }}:
-	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
-
 type MessageField struct {
 	fieldName     string
 	protoID       uint32
@@ -66,18 +63,25 @@ func (mf *MessageField) GenerateTestEncodingValues(*messageStruct) string {
 	return mf.toProtoField().GenTestEncodingValues()
 }
 
+func (mf *MessageField) GenerateDeleteOrig(*messageStruct) string {
+	return mf.toProtoField().GenDeleteOrig()
+}
+
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Parse("messageCopyOrigTemplate", []byte(messageCopyOrigTemplate))
 	return template.Execute(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GeneratePoolOrig(*messageStruct) string {
+	return ""
 }
 
 func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
 	return mf.toProtoField().GenMarshalJSON()
 }
 
-func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	t := template.Parse("messageUnmarshalJSONTemplate", []byte(messageUnmarshalJSONTemplate))
-	return template.Execute(t, mf.templateFields(ms))
+func (mf *MessageField) GenerateUnmarshalJSON(*messageStruct) string {
+	return mf.toProtoField().GenUnmarshalJSON()
 }
 
 func (mf *MessageField) GenerateSizeProto(*messageStruct) string {

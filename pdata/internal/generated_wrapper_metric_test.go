@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,106 @@ import (
 	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigMetric(t *testing.T) {
-	src := NewOrigPtrMetric()
-	dest := NewOrigPtrMetric()
-	CopyOrigMetric(dest, src)
-	assert.Equal(t, NewOrigPtrMetric(), dest)
-	*src = *GenTestOrigMetric()
-	CopyOrigMetric(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesMetric() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigMetric()
+				CopyOrigMetric(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigMetric(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigMetricUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrMetric()
+	dest := NewOrigMetric()
 	UnmarshalJSONOrigMetric(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrMetric(), dest)
+	assert.Equal(t, NewOrigMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigMetric(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrMetric()
-			UnmarshalJSONOrigMetric(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigMetric(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigMetric()
+				UnmarshalJSONOrigMetric(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigMetric(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetricFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesMetric() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrMetric()
+			dest := NewOrigMetric()
 			require.Error(t, UnmarshalProtoOrigMetric(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetricUnknown(t *testing.T) {
-	dest := NewOrigPtrMetric()
+	dest := NewOrigMetric()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigMetric(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrMetric(), dest)
+	assert.Equal(t, NewOrigMetric(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigMetric(src))
-			gotSize := MarshalProtoOrigMetric(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrMetric()
-			require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigMetric(src))
+				gotSize := MarshalProtoOrigMetric(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigMetric()
+				require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigMetric(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +131,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrMetric()
+			dest := NewOrigMetric()
 			require.NoError(t, UnmarshalProtoOrigMetric(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -138,7 +169,7 @@ func genTestFailingUnmarshalProtoValuesMetric() map[string][]byte {
 
 func genTestEncodingValuesMetric() map[string]*otlpmetrics.Metric {
 	return map[string]*otlpmetrics.Metric{
-		"empty":                        NewOrigPtrMetric(),
+		"empty":                        NewOrigMetric(),
 		"Name/test":                    {Name: "test_name"},
 		"Description/test":             {Description: "test_description"},
 		"Unit/test":                    {Unit: "test_unit"},

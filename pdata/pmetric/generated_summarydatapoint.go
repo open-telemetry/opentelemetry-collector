@@ -33,7 +33,7 @@ func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, state *internal.Sta
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
-	return newSummaryDataPoint(internal.NewOrigPtrSummaryDataPoint(), internal.NewState())
+	return newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +45,8 @@ func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.SummaryDataPoint{}
+	internal.DeleteOrigSummaryDataPoint(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Attributes returns the Attributes associated with this SummaryDataPoint.

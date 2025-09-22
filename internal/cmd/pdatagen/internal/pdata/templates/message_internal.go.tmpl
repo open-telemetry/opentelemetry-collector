@@ -32,22 +32,53 @@ func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structN
 
 {{ end }}
 
-func NewOrig{{ .originName }}() {{ .originFullName }} {
-	return {{ .originFullName }}{}
+var (
+	protoPool{{ .originName }} = sync.Pool{
+	    New: func() any {
+		    return &{{ .originFullName }}{}
+	    },
+    }
+    {{- range .fields }}{{ .GeneratePoolOrig $.messageStruct }}{{- end }}
+)
+
+
+func NewOrig{{ .originName }}() *{{ .originFullName }} {
+    if !UseProtoPooling.IsEnabled() {
+        return &{{ .originFullName }}{}
+    }
+    return protoPool{{ .originName }}.Get().(*{{ .originFullName }})
 }
 
-func NewOrigPtr{{ .originName }}() *{{ .originFullName }} {
-    return &{{ .originFullName }}{}
+func DeleteOrig{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
+    if orig == nil {
+        return
+    }
+
+    if !UseProtoPooling.IsEnabled() {
+        orig.Reset()
+        return
+    }
+
+    {{ range .fields }}{{ .GenerateDeleteOrig $.messageStruct }}{{ end }}
+    orig.Reset()
+    if nullable {
+        protoPool{{ .originName }}.Put(orig)
+    }
 }
 
 func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+    }
+
 	{{- range .fields }}
 	{{ .GenerateCopyOrig $.messageStruct }}
 	{{- end }}
 }
 
 func GenTestOrig{{ .originName }}() *{{ .originFullName }} {
-	orig := NewOrigPtr{{ .originName }}()
+	orig := NewOrig{{ .originName }}()
 	{{- range .fields }}
 	{{ .GenerateTestValue $.messageStruct }}
 	{{- end }}
@@ -65,7 +96,7 @@ func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.St
 
 // UnmarshalJSONOrig{{ .structName }} unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		{{ range .fields -}}
 		{{ .GenerateUnmarshalJSON $.messageStruct }}
@@ -73,8 +104,7 @@ func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {

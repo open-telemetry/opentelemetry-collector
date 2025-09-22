@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,105 @@ import (
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/featuregate"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigProfilesDictionary(t *testing.T) {
-	src := NewOrigPtrProfilesDictionary()
-	dest := NewOrigPtrProfilesDictionary()
-	CopyOrigProfilesDictionary(dest, src)
-	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
-	*src = *GenTestOrigProfilesDictionary()
-	CopyOrigProfilesDictionary(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesProfilesDictionary() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigProfilesDictionary()
+				CopyOrigProfilesDictionary(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigProfilesDictionary(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionaryUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrProfilesDictionary()
+	dest := NewOrigProfilesDictionary()
 	UnmarshalJSONOrigProfilesDictionary(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
+	assert.Equal(t, NewOrigProfilesDictionary(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigProfilesDictionary(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrProfilesDictionary()
-			UnmarshalJSONOrigProfilesDictionary(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigProfilesDictionary(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigProfilesDictionary()
+				UnmarshalJSONOrigProfilesDictionary(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfilesDictionary(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesProfilesDictionary() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrProfilesDictionary()
+			dest := NewOrigProfilesDictionary()
 			require.Error(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionaryUnknown(t *testing.T) {
-	dest := NewOrigPtrProfilesDictionary()
+	dest := NewOrigProfilesDictionary()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrProfilesDictionary(), dest)
+	assert.Equal(t, NewOrigProfilesDictionary(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
 	for name, src := range genTestEncodingValuesProfilesDictionary() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
-			gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrProfilesDictionary()
-			require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigProfilesDictionary(src))
+				gotSize := MarshalProtoOrigProfilesDictionary(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigProfilesDictionary()
+				require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigProfilesDictionary(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +130,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrProfilesDictionary()
+			dest := NewOrigProfilesDictionary()
 			require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -122,20 +152,20 @@ func genTestFailingUnmarshalProtoValuesProfilesDictionary() map[string][]byte {
 		"StringTable/missing_value":      {0x2a},
 		"AttributeTable/wrong_wire_type": {0x34},
 		"AttributeTable/missing_value":   {0x32},
-		"AttributeUnits/wrong_wire_type": {0x3c},
-		"AttributeUnits/missing_value":   {0x3a},
+		"StackTable/wrong_wire_type":     {0x3c},
+		"StackTable/missing_value":       {0x3a},
 	}
 }
 
 func genTestEncodingValuesProfilesDictionary() map[string]*otlpprofiles.ProfilesDictionary {
 	return map[string]*otlpprofiles.ProfilesDictionary{
-		"empty":                           NewOrigPtrProfilesDictionary(),
+		"empty":                           NewOrigProfilesDictionary(),
 		"MappingTable/default_and_test":   {MappingTable: []*otlpprofiles.Mapping{{}, GenTestOrigMapping()}},
 		"LocationTable/default_and_test":  {LocationTable: []*otlpprofiles.Location{{}, GenTestOrigLocation()}},
 		"FunctionTable/default_and_test":  {FunctionTable: []*otlpprofiles.Function{{}, GenTestOrigFunction()}},
 		"LinkTable/default_and_test":      {LinkTable: []*otlpprofiles.Link{{}, GenTestOrigLink()}},
 		"StringTable/default_and_test":    {StringTable: []string{"", "test_stringtable"}},
-		"AttributeTable/default_and_test": {AttributeTable: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
-		"AttributeUnits/default_and_test": {AttributeUnits: []*otlpprofiles.AttributeUnit{{}, GenTestOrigAttributeUnit()}},
+		"AttributeTable/default_and_test": {AttributeTable: []*otlpprofiles.KeyValueAndUnit{{}, GenTestOrigKeyValueAndUnit()}},
+		"StackTable/default_and_test":     {StackTable: []*otlpprofiles.Stack{{}, GenTestOrigStack()}},
 	}
 }

@@ -8,6 +8,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
+func DeleteOrigTraceID(*data.TraceID, bool) {}
+
+func DeleteOrigSpanID(*data.SpanID, bool) {}
+
+func DeleteOrigProfileID(*data.ProfileID, bool) {}
+
 func GenTestOrigTraceID() *data.TraceID {
 	id := data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	return &id
@@ -33,6 +39,18 @@ func MarshalJSONOrigSpanID(id *data.SpanID, dest *json.Stream) {
 
 func MarshalJSONOrigProfileID(id *data.ProfileID, dest *json.Stream) {
 	id.MarshalJSONStream(dest)
+}
+
+func UnmarshalJSONOrigTraceID(id *data.TraceID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
+}
+
+func UnmarshalJSONOrigSpanID(id *data.SpanID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
+}
+
+func UnmarshalJSONOrigProfileID(id *data.ProfileID, iter *json.Iterator) {
+	id.UnmarshalJSONIter(iter)
 }
 
 func SizeProtoOrigTraceID(id *data.TraceID) int {

@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,75 +15,105 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeLogs(t *testing.T) {
-	src := NewOrigPtrScopeLogs()
-	dest := NewOrigPtrScopeLogs()
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
-	*src = *GenTestOrigScopeLogs()
-	CopyOrigScopeLogs(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesScopeLogs() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigScopeLogs()
+				CopyOrigScopeLogs(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigScopeLogs(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrScopeLogs()
+	dest := NewOrigScopeLogs()
 	UnmarshalJSONOrigScopeLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
+	assert.Equal(t, NewOrigScopeLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigScopeLogs(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrScopeLogs()
-			UnmarshalJSONOrigScopeLogs(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigScopeLogs(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigScopeLogs()
+				UnmarshalJSONOrigScopeLogs(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeLogs(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeLogs() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrScopeLogs()
+			dest := NewOrigScopeLogs()
 			require.Error(t, UnmarshalProtoOrigScopeLogs(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
-	dest := NewOrigPtrScopeLogs()
+	dest := NewOrigScopeLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrScopeLogs(), dest)
+	assert.Equal(t, NewOrigScopeLogs(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeLogs(src))
-			gotSize := MarshalProtoOrigScopeLogs(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrScopeLogs()
-			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigScopeLogs(src))
+				gotSize := MarshalProtoOrigScopeLogs(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigScopeLogs()
+				require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigScopeLogs(dest, true)
+			})
+		}
 	}
 }
 
@@ -99,7 +130,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrScopeLogs()
+			dest := NewOrigScopeLogs()
 			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -120,7 +151,7 @@ func genTestFailingUnmarshalProtoValuesScopeLogs() map[string][]byte {
 
 func genTestEncodingValuesScopeLogs() map[string]*otlplogs.ScopeLogs {
 	return map[string]*otlplogs.ScopeLogs{
-		"empty":                       NewOrigPtrScopeLogs(),
+		"empty":                       NewOrigScopeLogs(),
 		"Scope/test":                  {Scope: *GenTestOrigInstrumentationScope()},
 		"LogRecords/default_and_test": {LogRecords: []*otlplogs.LogRecord{{}, GenTestOrigLogRecord()}},
 		"SchemaUrl/test":              {SchemaUrl: "test_schemaurl"},

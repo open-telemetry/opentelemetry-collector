@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,76 +15,106 @@ import (
 	gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigLogRecord(t *testing.T) {
-	src := NewOrigPtrLogRecord()
-	dest := NewOrigPtrLogRecord()
-	CopyOrigLogRecord(dest, src)
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
-	*src = *GenTestOrigLogRecord()
-	CopyOrigLogRecord(dest, src)
-	assert.Equal(t, src, dest)
+	for name, src := range genTestEncodingValuesLogRecord() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
+
+				dest := NewOrigLogRecord()
+				CopyOrigLogRecord(dest, src)
+				assert.Equal(t, src, dest)
+				CopyOrigLogRecord(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigPtrLogRecord()
+	dest := NewOrigLogRecord()
 	UnmarshalJSONOrigLogRecord(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
+	assert.Equal(t, NewOrigLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
-		t.Run(name, func(t *testing.T) {
-			stream := json.BorrowStream(nil)
-			defer json.ReturnStream(stream)
-			MarshalJSONOrigLogRecord(src, stream)
-			require.NoError(t, stream.Error())
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			iter := json.BorrowIterator(stream.Buffer())
-			defer json.ReturnIterator(iter)
-			dest := NewOrigPtrLogRecord()
-			UnmarshalJSONOrigLogRecord(dest, iter)
-			require.NoError(t, iter.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				MarshalJSONOrigLogRecord(src, stream)
+				require.NoError(t, stream.Error())
 
-			assert.Equal(t, src, dest)
-		})
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := NewOrigLogRecord()
+				UnmarshalJSONOrigLogRecord(dest, iter)
+				require.NoError(t, iter.Error())
+
+				assert.Equal(t, src, dest)
+				DeleteOrigLogRecord(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecordFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLogRecord() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			require.Error(t, UnmarshalProtoOrigLogRecord(dest, buf))
 		})
 	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecordUnknown(t *testing.T) {
-	dest := NewOrigPtrLogRecord()
+	dest := NewOrigLogRecord()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
 	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigPtrLogRecord(), dest)
+	assert.Equal(t, NewOrigLogRecord(), dest)
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
-		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigLogRecord(src))
-			gotSize := MarshalProtoOrigLogRecord(src, buf)
-			assert.Equal(t, len(buf), gotSize)
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := UseProtoPooling.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+				}()
 
-			dest := NewOrigPtrLogRecord()
-			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
-			assert.Equal(t, src, dest)
-		})
+				buf := make([]byte, SizeProtoOrigLogRecord(src))
+				gotSize := MarshalProtoOrigLogRecord(src, buf)
+				assert.Equal(t, len(buf), gotSize)
+
+				dest := NewOrigLogRecord()
+				require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
+
+				assert.Equal(t, src, dest)
+				DeleteOrigLogRecord(dest, true)
+			})
+		}
 	}
 }
 
@@ -100,7 +131,7 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigPtrLogRecord()
+			dest := NewOrigLogRecord()
 			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
@@ -137,7 +168,7 @@ func genTestFailingUnmarshalProtoValuesLogRecord() map[string][]byte {
 
 func genTestEncodingValuesLogRecord() map[string]*otlplogs.LogRecord {
 	return map[string]*otlplogs.LogRecord{
-		"empty":                       NewOrigPtrLogRecord(),
+		"empty":                       NewOrigLogRecord(),
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"ObservedTimeUnixNano/test":   {ObservedTimeUnixNano: uint64(13)},
 		"SeverityNumber/test":         {SeverityNumber: otlplogs.SeverityNumber(13)},

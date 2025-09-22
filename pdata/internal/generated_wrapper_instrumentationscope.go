@@ -8,6 +8,7 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -31,15 +32,46 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-func NewOrigInstrumentationScope() otlpcommon.InstrumentationScope {
-	return otlpcommon.InstrumentationScope{}
+var (
+	protoPoolInstrumentationScope = sync.Pool{
+		New: func() any {
+			return &otlpcommon.InstrumentationScope{}
+		},
+	}
+)
+
+func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpcommon.InstrumentationScope{}
+	}
+	return protoPoolInstrumentationScope.Get().(*otlpcommon.InstrumentationScope)
 }
 
-func NewOrigPtrInstrumentationScope() *otlpcommon.InstrumentationScope {
-	return &otlpcommon.InstrumentationScope{}
+func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	for i := range orig.Attributes {
+		DeleteOrigKeyValue(&orig.Attributes[i], false)
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolInstrumentationScope.Put(orig)
+	}
 }
 
 func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.Name = src.Name
 	dest.Version = src.Version
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
@@ -47,7 +79,7 @@ func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 }
 
 func GenTestOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
-	orig := NewOrigPtrInstrumentationScope()
+	orig := NewOrigInstrumentationScope()
 	orig.Name = "test_name"
 	orig.Version = "test_version"
 	orig.Attributes = GenerateOrigTestKeyValueSlice()
@@ -85,21 +117,24 @@ func MarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, 
 
 // UnmarshalJSONOrigInstrumentationScope unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
 			orig.Name = iter.ReadString()
 		case "version":
 			orig.Version = iter.ReadString()
 		case "attributes":
-			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+			for iter.ReadArray() {
+				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
+				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+			}
+
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
@@ -208,7 +243,7 @@ func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScop
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
 			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
