@@ -7,36 +7,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-// Deprecated: [v0.136.0] Use xexporterhelper.Request.
-// Request represents a single request that can be sent to an external endpoint.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Request = request.Request
-
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestErroHandler
-// RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
-// temporary failures. For example, if some items failed to process and can be retried, this interface allows to
-// return a new Request that contains the items left to be sent. Otherwise, the original Request should be returned.
-// If not implemented, the original Request will be returned assuming the error is applied to the whole Request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestErrorHandler = request.ErrorHandler
-
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestConsumeFunc.
-// RequestConverterFunc converts pdata telemetry into a user-defined Request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestConverterFunc[T any] = request.RequestConverterFunc[T]
-
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestConsumeFunc.
-// RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
-// and accessing it is considered undefined behavior.
-type RequestConsumeFunc = request.RequestConsumeFunc
-
-// Deprecated: [v0.136.0] Use xexporterhelper.RequestSizer.
-// RequestSizer is an interface that returns the size of the given request.
-type RequestSizer = request.Sizer[Request]
-
 type RequestSizerType = request.SizerType
 
 var (
