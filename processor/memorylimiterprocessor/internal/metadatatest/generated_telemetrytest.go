@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
@@ -25,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorMemoryLimiterAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_accepted_log_records",
-		Description: "Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of log records successfully pushed into the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -41,7 +40,7 @@ func AssertEqualProcessorMemoryLimiterAcceptedLogRecords(t *testing.T, tt *compo
 func AssertEqualProcessorMemoryLimiterAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_accepted_metric_points",
-		Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of metric points successfully pushed into the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -57,7 +56,7 @@ func AssertEqualProcessorMemoryLimiterAcceptedMetricPoints(t *testing.T, tt *com
 func AssertEqualProcessorMemoryLimiterAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_accepted_spans",
-		Description: "Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of spans successfully pushed into the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -73,7 +72,7 @@ func AssertEqualProcessorMemoryLimiterAcceptedSpans(t *testing.T, tt *componentt
 func AssertEqualProcessorMemoryLimiterRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_refused_log_records",
-		Description: "Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of log records that were rejected by the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -89,7 +88,7 @@ func AssertEqualProcessorMemoryLimiterRefusedLogRecords(t *testing.T, tt *compon
 func AssertEqualProcessorMemoryLimiterRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_refused_metric_points",
-		Description: "Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of metric points that were rejected by the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -105,7 +104,7 @@ func AssertEqualProcessorMemoryLimiterRefusedMetricPoints(t *testing.T, tt *comp
 func AssertEqualProcessorMemoryLimiterRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_memory_limiter_refused_spans",
-		Description: "Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
+		Description: "Number of spans that were rejected by the next component in the pipeline. [alpha since v0.137.0]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

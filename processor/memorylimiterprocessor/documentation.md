@@ -8,48 +8,48 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_memory_limiter_accepted_log_records
 
-Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
+Number of log records successfully pushed into the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | deprecated |
+| {records} | Sum | Int | true | alpha |
 
 ### otelcol_processor_memory_limiter_accepted_metric_points
 
-Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
+Number of metric points successfully pushed into the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | deprecated |
+| {datapoints} | Sum | Int | true | alpha |
 
 ### otelcol_processor_memory_limiter_accepted_spans
 
-Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
+Number of spans successfully pushed into the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | deprecated |
+| {spans} | Sum | Int | true | alpha |
 
 ### otelcol_processor_memory_limiter_refused_log_records
 
-Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
+Number of log records that were rejected by the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | deprecated |
+| {records} | Sum | Int | true | alpha |
 
 ### otelcol_processor_memory_limiter_refused_metric_points
 
-Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
+Number of metric points that were rejected by the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | deprecated |
+| {datapoints} | Sum | Int | true | alpha |
 
 ### otelcol_processor_memory_limiter_refused_spans
 
-Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
+Number of spans that were rejected by the next component in the pipeline. [alpha since v0.137.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | deprecated |
+| {spans} | Sum | Int | true | alpha |
