@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/internal/cmd/pdatagen v0.130.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/tools v0.37.0
-	golang.org/x/tools/gopls v0.20.0
+	golang.org/x/tools/gopls v0.0.0-20250922164505-4fb47d0de6dd
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.13.0
 	mvdan.cc/gofumpt v0.9.1
