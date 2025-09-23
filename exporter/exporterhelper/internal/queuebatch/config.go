@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -45,6 +46,18 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+}
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If the batch sizer is not set and the batch section is nonempty, use the same value as the queue sizer.
+	if !conf.IsSet("batch::sizer") && conf.IsSet("batch") && conf.Get("batch") != nil {
+		cfg.Batch.Get().Sizer = cfg.Sizer
+	}
+	return nil
 }
 
 // Validate checks if the Config is valid
