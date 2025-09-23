@@ -96,7 +96,7 @@ func newTestBatchConfig() BatchConfig {
 }
 
 func TestUnmarshal(t *testing.T) {
-	var newBaseCfg = func() Config {
+	newBaseCfg := func() Config {
 		return Config{
 			Enabled:      true,
 			Sizer:        request.SizerTypeRequests,
