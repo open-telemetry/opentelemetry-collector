@@ -94,7 +94,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.136.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.136.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.36.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.38.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.14.0 // indirect
@@ -122,7 +122,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
 replace go.opentelemetry.io/collector => ../
