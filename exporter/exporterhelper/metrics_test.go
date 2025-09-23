@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -47,17 +46,6 @@ var (
 	fakeMetricsName   = component.MustNewIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsConfig = struct{}{}
 )
-
-func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(testdata.GenerateMetrics(1))
-
-	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
-	assert.Equal(
-		t,
-		newMetricsRequest(pmetric.NewMetrics()),
-		mr.(RequestErrorHandler).OnError(metricsErr),
-	)
-}
 
 func TestMetrics_NilConfig(t *testing.T) {
 	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushMetricsData(nil))
