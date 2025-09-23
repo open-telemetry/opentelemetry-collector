@@ -140,7 +140,7 @@ func TestUnmarshal(t *testing.T) {
 				cfg.QueueSize = 2000
 				cfg.Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has been overriden by parent sizer
+					// Sizer has been overridden by parent sizer
 					Sizer:   request.SizerTypeBytes,
 					MinSize: 100,
 				})
