@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -18,7 +19,7 @@ import (
 func TestMergeLogs(t *testing.T) {
 	lr1 := newLogsRequest(testdata.GenerateLogs(2))
 	lr2 := newLogsRequest(testdata.GenerateLogs(3))
-	res, err := lr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, lr2)
+	res, err := lr1.MergeSplit(context.Background(), 0, request.SizerTypeItems, lr2)
 	require.NoError(t, err)
 	require.Equal(t, 5, res[0].ItemsCount())
 }
@@ -26,40 +27,40 @@ func TestMergeLogs(t *testing.T) {
 func TestMergeSplitLogs(t *testing.T) {
 	tests := []struct {
 		name     string
-		szt      RequestSizerType
+		szt      request.SizerType
 		maxSize  int
-		lr1      Request
-		lr2      Request
-		expected []Request
+		lr1      request.Request
+		lr2      request.Request
+		expected []request.Request
 	}{
 		{
 			name: "both_requests_empty",
-			szt:  RequestSizerTypeItems, maxSize: 10,
+			szt:  request.SizerTypeItems, maxSize: 10,
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      newLogsRequest(plog.NewLogs()),
-			expected: []Request{newLogsRequest(plog.NewLogs())},
+			expected: []request.Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name: "first_request_empty",
-			szt:  RequestSizerTypeItems, maxSize: 10,
+			szt:  request.SizerTypeItems, maxSize: 10,
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      newLogsRequest(testdata.GenerateLogs(5)),
-			expected: []Request{newLogsRequest(testdata.GenerateLogs(5))},
+			expected: []request.Request{newLogsRequest(testdata.GenerateLogs(5))},
 		},
 		{
 			name: "first_empty_second_nil",
-			szt:  RequestSizerTypeItems, maxSize: 10,
+			szt:  request.SizerTypeItems, maxSize: 10,
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      nil,
-			expected: []Request{newLogsRequest(plog.NewLogs())},
+			expected: []request.Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name:    "merge_only",
-			szt:     RequestSizerTypeItems,
+			szt:     request.SizerTypeItems,
 			maxSize: 10,
 			lr1:     newLogsRequest(testdata.GenerateLogs(4)),
 			lr2:     newLogsRequest(testdata.GenerateLogs(6)),
-			expected: []Request{newLogsRequest(func() plog.Logs {
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
 				logs := testdata.GenerateLogs(4)
 				testdata.GenerateLogs(6).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 				return logs
@@ -67,11 +68,11 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name:    "split_only",
-			szt:     RequestSizerTypeItems,
+			szt:     request.SizerTypeItems,
 			maxSize: 4,
 			lr1:     newLogsRequest(plog.NewLogs()),
 			lr2:     newLogsRequest(testdata.GenerateLogs(10)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(testdata.GenerateLogs(2)),
@@ -79,11 +80,11 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name:    "merge_and_split",
-			szt:     RequestSizerTypeItems,
+			szt:     request.SizerTypeItems,
 			maxSize: 10,
 			lr1:     newLogsRequest(testdata.GenerateLogs(8)),
 			lr2:     newLogsRequest(testdata.GenerateLogs(20)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(func() plog.Logs {
 					logs := testdata.GenerateLogs(8)
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
@@ -95,7 +96,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name:    "scope_logs_split",
-			szt:     RequestSizerTypeItems,
+			szt:     request.SizerTypeItems,
 			maxSize: 4,
 			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(4)
@@ -103,7 +104,7 @@ func TestMergeSplitLogs(t *testing.T) {
 				return ld
 			}()),
 			lr2: newLogsRequest(testdata.GenerateLogs(2)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(func() plog.Logs {
 					ld := testdata.GenerateLogs(0)
@@ -129,44 +130,44 @@ func TestMergeSplitLogs(t *testing.T) {
 func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	tests := []struct {
 		name               string
-		szt                RequestSizerType
+		szt                request.SizerType
 		maxSize            int
-		lr1                Request
-		lr2                Request
-		expected           []Request
+		lr1                request.Request
+		lr2                request.Request
+		expected           []request.Request
 		expectPartialError bool
 	}{
 		{
 			name:     "both_requests_empty",
-			szt:      RequestSizerTypeBytes,
+			szt:      request.SizerTypeBytes,
 			maxSize:  logsMarshaler.LogsSize(testdata.GenerateLogs(10)),
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      newLogsRequest(plog.NewLogs()),
-			expected: []Request{newLogsRequest(plog.NewLogs())},
+			expected: []request.Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name:     "first_request_empty",
-			szt:      RequestSizerTypeBytes,
+			szt:      request.SizerTypeBytes,
 			maxSize:  logsMarshaler.LogsSize(testdata.GenerateLogs(10)),
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      newLogsRequest(testdata.GenerateLogs(5)),
-			expected: []Request{newLogsRequest(testdata.GenerateLogs(5))},
+			expected: []request.Request{newLogsRequest(testdata.GenerateLogs(5))},
 		},
 		{
 			name:     "first_empty_second_nil",
-			szt:      RequestSizerTypeBytes,
+			szt:      request.SizerTypeBytes,
 			maxSize:  logsMarshaler.LogsSize(testdata.GenerateLogs(10)),
 			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      nil,
-			expected: []Request{newLogsRequest(plog.NewLogs())},
+			expected: []request.Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name:    "merge_only",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(11)),
 			lr1:     newLogsRequest(testdata.GenerateLogs(4)),
 			lr2:     newLogsRequest(testdata.GenerateLogs(6)),
-			expected: []Request{newLogsRequest(func() plog.Logs {
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
 				logs := testdata.GenerateLogs(4)
 				testdata.GenerateLogs(6).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 				return logs
@@ -174,11 +175,11 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		},
 		{
 			name:    "split_only",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(4)),
 			lr1:     newLogsRequest(plog.NewLogs()),
 			lr2:     newLogsRequest(testdata.GenerateLogs(10)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(testdata.GenerateLogs(2)),
@@ -186,11 +187,11 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		},
 		{
 			name:    "merge_and_split",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10))/2 + logsMarshaler.LogsSize(testdata.GenerateLogs(11))/2,
 			lr1:     newLogsRequest(testdata.GenerateLogs(8)),
 			lr2:     newLogsRequest(testdata.GenerateLogs(20)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(func() plog.Logs {
 					logs := testdata.GenerateLogs(8)
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
@@ -202,7 +203,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		},
 		{
 			name:    "scope_logs_split",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(4)),
 			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(4)
@@ -210,7 +211,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				return ld
 			}()),
 			lr2: newLogsRequest(testdata.GenerateLogs(2)),
-			expected: []Request{
+			expected: []request.Request{
 				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(func() plog.Logs {
 					ld := testdata.GenerateLogs(0)
@@ -222,7 +223,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		},
 		{
 			name:    "unsplittable_large_log",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: 10,
 			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(1)
@@ -230,12 +231,12 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				return ld
 			}()),
 			lr2:                nil,
-			expected:           []Request{},
+			expected:           []request.Request{},
 			expectPartialError: true,
 		},
 		{
 			name:    "splittable_then_unsplittable_log",
-			szt:     RequestSizerTypeBytes,
+			szt:     request.SizerTypeBytes,
 			maxSize: 1000,
 			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(2)
@@ -244,7 +245,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				return ld
 			}()),
 			lr2: nil,
-			expected: []Request{newLogsRequest(func() plog.Logs {
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(1)
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
 				return ld
@@ -274,7 +275,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newLogsRequest(testdata.GenerateLogs(18))
 	r2 := newTracesRequest(testdata.GenerateTraces(3))
-	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2)
+	_, err := r1.MergeSplit(context.Background(), 10, request.SizerTypeItems, r2)
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
@@ -290,10 +291,10 @@ func TestExtractLogs(t *testing.T) {
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
 	// All requests merge into a single batch.
-	merged := []Request{newLogsRequest(testdata.GenerateLogs(1))}
+	merged := []request.Request{newLogsRequest(testdata.GenerateLogs(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newLogsRequest(testdata.GenerateLogs(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -303,7 +304,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 	pb := plog.ProtoMarshaler{}
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newLogsRequest(testdata.GenerateLogs(4))
-	merged, err := lr.MergeSplit(context.Background(), pb.LogsSize(testdata.GenerateLogs(2))-1, RequestSizerTypeBytes, nil)
+	merged, err := lr.MergeSplit(context.Background(), pb.LogsSize(testdata.GenerateLogs(2))-1, request.SizerTypeBytes, nil)
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -311,7 +312,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 func TestLogsMergeSplitExactItems(t *testing.T) {
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newLogsRequest(testdata.GenerateLogs(4))
-	merged, err := lr.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+	merged, err := lr.MergeSplit(context.Background(), 1, request.SizerTypeItems, nil)
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -319,7 +320,7 @@ func TestLogsMergeSplitExactItems(t *testing.T) {
 func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newLogsRequest(plog.NewLogs())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil)
+	_, err := req.MergeSplit(context.Background(), 0, request.SizerType{}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -327,10 +328,10 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -341,10 +342,10 @@ func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(11000)), RequestSizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(11000)), request.SizerTypeBytes, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -355,10 +356,10 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
@@ -369,10 +370,10 @@ func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10000)), RequestSizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10000)), request.SizerTypeBytes, lr2)
 			assert.Len(b, res, 2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -384,9 +385,9 @@ func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
@@ -396,9 +397,9 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), RequestSizerTypeBytes, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}

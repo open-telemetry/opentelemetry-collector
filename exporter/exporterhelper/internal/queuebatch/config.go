@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,12 +37,11 @@ type Config struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
 	// TODO: This will be changed to Optional when available.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
-	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
-	// TODO: This will also control the maximum number of shards, when supported:
-	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12473.
+	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
@@ -113,23 +113,23 @@ func (cfg *BatchConfig) Validate() error {
 
 	// Only support items or bytes sizer for batch at this moment.
 	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
-		return errors.New("`batch` supports only `items` or `bytes` sizer")
+		return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
 	}
 
 	if cfg.FlushTimeout <= 0 {
-		return errors.New("`flush_timeout` must be positive")
+		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
 
 	if cfg.MinSize < 0 {
-		return errors.New("`min_size` must be non-negative")
+		return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
 	}
 
 	if cfg.MaxSize < 0 {
-		return errors.New("`max_size` must be non-negative")
+		return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
 	}
 
 	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
-		return errors.New("`max_size` must be greater or equal to `min_size`")
+		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
 	}
 
 	return nil

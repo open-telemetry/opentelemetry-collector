@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigAttributeUnit(t *testing.T) {
-	for name, src := range genTestEncodingValuesAttributeUnit() {
+func TestCopyOrigStack(t *testing.T) {
+	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
@@ -30,27 +30,27 @@ func TestCopyOrigAttributeUnit(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigAttributeUnit()
-				CopyOrigAttributeUnit(dest, src)
+				dest := NewOrigStack()
+				CopyOrigStack(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigAttributeUnit(dest, dest)
+				CopyOrigStack(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigAttributeUnitUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONOrigStackUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigAttributeUnit()
-	UnmarshalJSONOrigAttributeUnit(dest, iter)
+	dest := NewOrigStack()
+	UnmarshalJSONOrigStack(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigAttributeUnit(), dest)
+	assert.Equal(t, NewOrigStack(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
-	for name, src := range genTestEncodingValuesAttributeUnit() {
+func TestMarshalAndUnmarshalJSONOrigStack(t *testing.T) {
+	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
@@ -61,40 +61,40 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigAttributeUnit(src, stream)
+				MarshalJSONOrigStack(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigAttributeUnit()
-				UnmarshalJSONOrigAttributeUnit(dest, iter)
+				dest := NewOrigStack()
+				UnmarshalJSONOrigStack(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigAttributeUnit(dest, true)
+				DeleteOrigStack(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigAttributeUnitFailing(t *testing.T) {
-	for name, buf := range genTestFailingUnmarshalProtoValuesAttributeUnit() {
+func TestMarshalAndUnmarshalProtoOrigStackFailing(t *testing.T) {
+	for name, buf := range genTestFailingUnmarshalProtoValuesStack() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigAttributeUnit()
-			require.Error(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+			dest := NewOrigStack()
+			require.Error(t, UnmarshalProtoOrigStack(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigAttributeUnitUnknown(t *testing.T) {
-	dest := NewOrigAttributeUnit()
+func TestMarshalAndUnmarshalProtoOrigStackUnknown(t *testing.T) {
+	dest := NewOrigStack()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigAttributeUnit(), dest)
+	require.NoError(t, UnmarshalProtoOrigStack(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewOrigStack(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
-	for name, src := range genTestEncodingValuesAttributeUnit() {
+func TestMarshalAndUnmarshalProtoOrigStack(t *testing.T) {
+	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
 				prevPooling := UseProtoPooling.IsEnabled()
@@ -103,54 +103,51 @@ func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigAttributeUnit(src))
-				gotSize := MarshalProtoOrigAttributeUnit(src, buf)
+				buf := make([]byte, SizeProtoOrigStack(src))
+				gotSize := MarshalProtoOrigStack(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigAttributeUnit()
-				require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+				dest := NewOrigStack()
+				require.NoError(t, UnmarshalProtoOrigStack(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigAttributeUnit(dest, true)
+				DeleteOrigStack(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoViaProtobufAttributeUnit(t *testing.T) {
-	for name, src := range genTestEncodingValuesAttributeUnit() {
+func TestMarshalAndUnmarshalProtoViaProtobufStack(t *testing.T) {
+	for name, src := range genTestEncodingValuesStack() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigAttributeUnit(src))
-			gotSize := MarshalProtoOrigAttributeUnit(src, buf)
+			buf := make([]byte, SizeProtoOrigStack(src))
+			gotSize := MarshalProtoOrigStack(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
-			goDest := &gootlpprofiles.AttributeUnit{}
+			goDest := &gootlpprofiles.Stack{}
 			require.NoError(t, proto.Unmarshal(buf, goDest))
 
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigAttributeUnit()
-			require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, goBuf))
+			dest := NewOrigStack()
+			require.NoError(t, UnmarshalProtoOrigStack(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
 }
 
-func genTestFailingUnmarshalProtoValuesAttributeUnit() map[string][]byte {
+func genTestFailingUnmarshalProtoValuesStack() map[string][]byte {
 	return map[string][]byte{
-		"invalid_field":                        {0x02},
-		"AttributeKeyStrindex/wrong_wire_type": {0xc},
-		"AttributeKeyStrindex/missing_value":   {0x8},
-		"UnitStrindex/wrong_wire_type":         {0x14},
-		"UnitStrindex/missing_value":           {0x10},
+		"invalid_field":                   {0x02},
+		"LocationIndices/wrong_wire_type": {0xc},
+		"LocationIndices/missing_value":   {0xa},
 	}
 }
 
-func genTestEncodingValuesAttributeUnit() map[string]*otlpprofiles.AttributeUnit {
-	return map[string]*otlpprofiles.AttributeUnit{
-		"empty":                     NewOrigAttributeUnit(),
-		"AttributeKeyStrindex/test": {AttributeKeyStrindex: int32(13)},
-		"UnitStrindex/test":         {UnitStrindex: int32(13)},
+func genTestEncodingValuesStack() map[string]*otlpprofiles.Stack {
+	return map[string]*otlpprofiles.Stack{
+		"empty":                            NewOrigStack(),
+		"LocationIndices/default_and_test": {LocationIndices: []int32{int32(0), int32(13)}},
 	}
 }
