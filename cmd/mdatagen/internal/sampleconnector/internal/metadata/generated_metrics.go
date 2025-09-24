@@ -20,11 +20,12 @@ import (
 type AttributeEnumAttr int
 
 const (
-	AggregationStrategySum                   = "sum"
-	AggregationStrategyAvg                   = "avg"
-	AggregationStrategyMin                   = "min"
-	AggregationStrategyMax                   = "max"
-	_                      AttributeEnumAttr = iota
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+
+	_ AttributeEnumAttr = iota
 	AttributeEnumAttrRed
 	AttributeEnumAttrGreen
 	AttributeEnumAttrBlue

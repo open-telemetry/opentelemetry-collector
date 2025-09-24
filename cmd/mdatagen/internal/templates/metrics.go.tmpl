@@ -33,6 +33,7 @@ const (
   AggregationStrategyAvg = "avg"
   AggregationStrategyMin = "min"
   AggregationStrategyMax = "max"
+
 	_ Attribute{{ $name.Render }} = iota
 	{{- range $info.Enum }}
 	Attribute{{ $name.Render }}{{ . | publicVar }}

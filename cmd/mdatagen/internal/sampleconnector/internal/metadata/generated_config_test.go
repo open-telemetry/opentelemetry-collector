@@ -29,17 +29,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					DefaultMetric: MetricConfig{
 						Enabled:             true,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					DefaultMetricToBeRemoved: MetricConfig{
 						Enabled:             true,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					MetricInputType: MetricConfig{
 						Enabled:             true,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					OptionalMetric: MetricConfig{
-						Enabled: true, AggregationStrategy: "avg"},
+						Enabled: true, AggregationStrategy: AggregationStrategyAvg},
 					OptionalMetricEmptyUnit: MetricConfig{
-						Enabled: true, AggregationStrategy: "avg"},
+						Enabled: true, AggregationStrategy: AggregationStrategyAvg},
 				},
 				Attributes: AttributesConfig{
 					BooleanAttr: AttributeConfig{
@@ -82,17 +82,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					DefaultMetric: MetricConfig{
 						Enabled:             false,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					DefaultMetricToBeRemoved: MetricConfig{
 						Enabled:             false,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					MetricInputType: MetricConfig{
 						Enabled:             false,
-						AggregationStrategy: "sum"},
+						AggregationStrategy: AggregationStrategySum},
 					OptionalMetric: MetricConfig{
-						Enabled: false, AggregationStrategy: "avg"},
+						Enabled: false, AggregationStrategy: AggregationStrategyAvg},
 					OptionalMetricEmptyUnit: MetricConfig{
-						Enabled: false, AggregationStrategy: "avg"},
+						Enabled: false, AggregationStrategy: AggregationStrategyAvg},
 				},
 				Attributes: AttributesConfig{
 					BooleanAttr: AttributeConfig{

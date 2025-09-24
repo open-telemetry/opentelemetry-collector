@@ -44,6 +44,24 @@ func TestMetricsBuilder(t *testing.T) {
 			expectEmpty: true,
 		},
 		{
+			name:        "none_set_max",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "none_set_min",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "none_set_avg",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
 			name:        "filter_set_include",
 			resAttrsSet: testDataSetAll,
 		},

@@ -32,9 +32,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					{{ $name.Render }}: MetricConfig{
             Enabled: true,
             {{- if eq $metric.Data.Type "Sum" }}
-            AggregationStrategy: "sum"},
+            AggregationStrategy: AggregationStrategySum },
             {{- else -}}
-            AggregationStrategy: "avg"},
+            AggregationStrategy: AggregationStrategyAvg },
             {{- end }}
 					{{- end }}
 				},
@@ -62,9 +62,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					{{ $name.Render }}: MetricConfig{
             Enabled: false,
             {{- if eq $metric.Data.Type "Sum" }}
-            AggregationStrategy: "sum"},
+            AggregationStrategy: AggregationStrategySum },
             {{- else -}}
-            AggregationStrategy: "avg"},
+            AggregationStrategy: AggregationStrategyAvg },
             {{- end }}
 					{{- end }}
 				},
