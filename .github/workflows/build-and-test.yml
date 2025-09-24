@@ -266,6 +266,8 @@ jobs:
             goarch: 386
           - goos: windows
             goarch: amd64
+          - goos: windows
+            goarch: arm64
 
     steps:
       - name: Checkout Repo
