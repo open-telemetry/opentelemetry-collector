@@ -87,6 +87,141 @@ none_set:
       enabled: false
     string.resource.attr_to_be_removed:
       enabled: false
+none_set_min:
+  attributes:
+    boolean_attr:
+      enabled: false
+    boolean_attr2:
+      enabled: false
+    enum_attr:
+      enabled: false
+    map_attr:
+      enabled: false
+    overridden_int_attr:
+      enabled: false
+    slice_attr:
+      enabled: false
+    string_attr:
+      enabled: false
+    aggregation_strategy: min
+  metrics:
+    default.metric:
+      enabled: false
+    default.metric.to_be_removed:
+      enabled: false
+    metric.input_type:
+      enabled: false
+    optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
+      enabled: false
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
+none_set_max:
+  attributes:
+    boolean_attr:
+      enabled: false
+    boolean_attr2:
+      enabled: false
+    enum_attr:
+      enabled: false
+    map_attr:
+      enabled: false
+    overridden_int_attr:
+      enabled: false
+    slice_attr:
+      enabled: false
+    string_attr:
+      enabled: false
+    aggregation_strategy: max
+  metrics:
+    default.metric:
+      enabled: false
+    default.metric.to_be_removed:
+      enabled: false
+    metric.input_type:
+      enabled: false
+    optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
+      enabled: false
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
+none_set_avg:
+  attributes:
+    boolean_attr:
+      enabled: false
+    boolean_attr2:
+      enabled: false
+    enum_attr:
+      enabled: false
+    map_attr:
+      enabled: false
+    overridden_int_attr:
+      enabled: false
+    slice_attr:
+      enabled: false
+    string_attr:
+      enabled: false
+    aggregation_strategy: avg
+  metrics:
+    default.metric:
+      enabled: false
+    default.metric.to_be_removed:
+      enabled: false
+    metric.input_type:
+      enabled: false
+    optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
+      enabled: false
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
 filter_set_include:
   resource_attributes:
     map.resource.attr:

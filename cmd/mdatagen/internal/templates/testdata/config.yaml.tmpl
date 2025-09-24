@@ -57,6 +57,96 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+none_set_min:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: min
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+none_set_max:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: max
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+none_set_avg:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: avg
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
 {{- if and (or .Metrics .Events) .ResourceAttributes }}
 filter_set_include:
   resource_attributes:

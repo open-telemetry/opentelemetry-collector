@@ -159,10 +159,20 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["default.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-					if tt.name == "all_set" {
+					switch tt.name {
+					case "all_set":
 						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
+					case "none_set_min":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
+					case "none_set_max":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(3), dp.IntValue())
+					case "none_set_avg":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(2), dp.IntValue())
+					default:
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(4), dp.IntValue())
 					}
@@ -227,10 +237,20 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["metric.input_type"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-					if tt.name == "all_set" {
+					switch tt.name {
+					case "all_set":
 						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
+					case "none_set_min":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
+					case "none_set_max":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(3), dp.IntValue())
+					case "none_set_avg":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(2), dp.IntValue())
+					default:
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(4), dp.IntValue())
 					}
@@ -281,10 +301,20 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["optional.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
-					if tt.name == "all_set" {
+					switch tt.name {
+					case "all_set":
 						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					} else {
+					case "none_set_min":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					case "none_set_max":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+					case "none_set_avg":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+					default:
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 					}
@@ -319,10 +349,20 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["optional.metric.empty_unit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
-					if tt.name == "all_set" {
+					switch tt.name {
+					case "all_set":
 						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					} else {
+					case "none_set_min":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					case "none_set_max":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+					case "none_set_avg":
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+					default:
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 					}

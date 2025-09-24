@@ -198,14 +198,36 @@ func TestMetricsBuilder(t *testing.T) {
           assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
           {{- end }}
           {{- else }}
-          if tt.name == "all_set" {
+          switch tt.name {
+          case "all_set":
 					  assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
             {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
             assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
             {{- else }}
             assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
             {{- end }}
-          } else {
+          case "none_set_min":
+					  assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+          case "none_set_max":
+					  assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(3), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(3), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+          case "none_set_avg":
+					  assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+          default:
 					  assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
             {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
             assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(4), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
