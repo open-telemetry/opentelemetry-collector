@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/log"
-	"go.opentelemetry.io/otel/log/logtest"
-	nooplog "go.opentelemetry.io/otel/log/noop"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -142,13 +139,12 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 func TestServiceTelemetryLogging(t *testing.T) {
 	observerCore, observedLogs := observer.New(zapcore.WarnLevel)
 	zapLogger := zap.New(observerCore)
-	recorder := logtest.NewRecorder()
 
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.TelemetryFactory = telemetry.NewFactory(
 		func() component.Config { return nil },
-		telemetrytest.WithLogger(zapLogger, recorder),
+		telemetrytest.WithLogger(zapLogger, nil),
 	)
 
 	cfg := newNopConfig()
@@ -168,36 +164,6 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	entries := observedLogs.All()
 	require.Len(t, entries, 1)
 	assert.Equal(t, "warn_message", entries[0].Message)
-
-	logtest.AssertEqual(t, logtest.Recording{
-		logtest.Scope{
-			Name: "go.opentelemetry.io/collector/service",
-		}: []logtest.Record{{
-			Context:      context.Background(),
-			Timestamp:    time.Time{},
-			Severity:     log.SeverityWarn,
-			SeverityText: "warn",
-			Body:         log.StringValue("warn_message"),
-			Attributes:   []log.KeyValue{},
-		}},
-	}, recorder.Result(),
-		logtest.Transform(func(recording logtest.Recording) logtest.Recording {
-			// Remove empty scopes.
-			newRecording := make(logtest.Recording)
-			for scope, records := range recording {
-				if len(records) != 0 {
-					newRecording[scope] = records
-				}
-			}
-			return newRecording
-		}),
-		logtest.Transform(func(record logtest.Record) logtest.Record {
-			// Clear timestamp and any attributes for easier testing.
-			record.Timestamp = time.Time{}
-			record.Attributes = nil
-			return record
-		}),
-	)
 }
 
 func TestServiceTelemetryMetrics(t *testing.T) {
@@ -382,12 +348,9 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 	set.TelemetryFactory = telemetry.NewFactory(
 		func() component.Config { return nil },
 		telemetry.WithCreateLogger(
-			func(context.Context, telemetry.LoggerSettings, component.Config) (*zap.Logger, telemetry.LoggerProvider, error) {
-				return zap.NewNop(), telemetrytest.ShutdownLoggerProvider{
-					LoggerProvider: nooplog.NewLoggerProvider(),
-					ShutdownFunc: func(context.Context) error {
-						return errors.New("an exception occurred")
-					},
+			func(context.Context, telemetry.LoggerSettings, component.Config) (*zap.Logger, component.ShutdownFunc, error) {
+				return zap.NewNop(), func(context.Context) error {
+					return errors.New("an exception occurred")
 				}, nil
 			},
 		),
@@ -506,7 +469,7 @@ func TestServiceFatalError(t *testing.T) {
 
 func TestServiceTelemetryCreateProvidersError(t *testing.T) {
 	loggerOpt := telemetry.WithCreateLogger(
-		func(context.Context, telemetry.LoggerSettings, component.Config) (*zap.Logger, telemetry.LoggerProvider, error) {
+		func(context.Context, telemetry.LoggerSettings, component.Config) (*zap.Logger, component.ShutdownFunc, error) {
 			return nil, nil, errors.New("something went wrong")
 		},
 	)

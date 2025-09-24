@@ -131,7 +131,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		Settings:   telemetrySettings,
 		ZapOptions: set.LoggingOptions,
 	}
-	logger, loggerShutdownFunc, err := telemetryFactory.CreateLogger(ctx, loggerSettings, cfg.Telemetry)
+	logger, loggerShutdownFunc, err := set.TelemetryFactory.CreateLogger(ctx, loggerSettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
