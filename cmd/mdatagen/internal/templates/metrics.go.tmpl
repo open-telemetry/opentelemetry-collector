@@ -139,6 +139,12 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 	{{- end }}
 
+  {{- if $metric.HasOptionalAttribute $.Attributes }}
+    for _, op := range options {
+        op.apply(dp)
+    }
+  {{- end }}
+
   var s string
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
@@ -164,11 +170,6 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-  {{- if $metric.HasOptionalAttribute $.Attributes }}
-    for _, op := range options {
-        op.apply(dp)
-    }
-  {{- end }}
   m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }

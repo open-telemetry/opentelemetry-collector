@@ -145,6 +145,9 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if m.attributes.MapAttr.Enabled {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
+	for _, op := range options {
+		op.apply(dp)
+	}
 
 	var s string
 	dps := m.data.Sum().DataPoints()
@@ -171,9 +174,6 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 
 	dp.SetIntValue(val)
-	for _, op := range options {
-		op.apply(dp)
-	}
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
@@ -432,6 +432,9 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	if m.attributes.BooleanAttr2.Enabled {
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
+	for _, op := range options {
+		op.apply(dp)
+	}
 
 	var s string
 	dps := m.data.Gauge().DataPoints()
@@ -458,9 +461,6 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	}
 
 	dp.SetDoubleValue(val)
-	for _, op := range options {
-		op.apply(dp)
-	}
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
