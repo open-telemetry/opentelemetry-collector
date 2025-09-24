@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -75,7 +76,7 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 	// Create the server with middleware interceptors
 	{
 		var srv *grpc.Server
-		srv, addr = server.startTestServerWithHost(t, ServerConfig{
+		srv, addr = server.startTestServerWithHost(t, configoptional.Some(ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  "localhost:0",
 				Transport: confignet.TransportTypeTCP,
@@ -84,7 +85,7 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 				newTestMiddlewareConfig("test1"),
 				newTestMiddlewareConfig("test2"),
 			},
-		}, host)
+		}), host)
 		defer srv.Stop()
 	}
 

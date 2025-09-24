@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"

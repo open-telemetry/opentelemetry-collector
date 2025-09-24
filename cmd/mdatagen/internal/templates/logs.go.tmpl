@@ -20,6 +20,26 @@ import (
 )
 
 
+{{ if getEventOptionalAttributes .Attributes }}
+type EventAttributeOption interface {
+	apply(plog.LogRecord)
+}
+
+type eventAttributeOptionFunc func(plog.LogRecord)
+
+func (eaof eventAttributeOptionFunc) apply(lr plog.LogRecord) {
+	eaof(lr)
+}
+
+{{ range getEventOptionalAttributes .Attributes }}
+func With{{ .Render }}EventAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) EventAttributeOption {
+	return eventAttributeOptionFunc(func(dp plog.LogRecord) {
+		{{- template "putAttribute" . }}
+	})
+}
+{{ end }}
+{{ end }}
+
 {{ range $name, $event := .Events -}}
 type event{{ $name.Render }} struct {
 	data     plog.LogRecordSlice // data buffer for generated log records.
@@ -27,29 +47,29 @@ type event{{ $name.Render }} struct {
 }
 
 func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pcommon.Timestamp
-{{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
+{{- range $event.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{end}}{{- if $event.HasOptionalAttribute $.Attributes -}}, options ...EventAttributeOption{{- end -}}) {
 	if !e.config.Enabled {
 		return
 	}
-	lr := e.data.AppendEmpty()
-	lr.SetEventName("{{ $name }}")
-	lr.SetTimestamp(timestamp)
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("{{ $name }}")
+	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
-		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
-		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
 
-	{{ range $event.Attributes }}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	lr.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	lr.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	lr.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else }}
-	lr.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+	{{- range $event.Attributes }}
+	{{- if not (attributeInfo .).Optional -}}
+	{{- template "putAttribute" . }}
 	{{- end }}
+	{{- end }}
+
+    {{ if $event.HasOptionalAttribute $.Attributes }}
+	for _, op := range options {
+		op.apply(dp)
+	}
 	{{- end }}
 }
 
@@ -251,11 +271,21 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 // Record{{ $name.Render }}Event adds a log record of {{ $name }} event.
 func (lb *LogsBuilder) Record{{ $name.Render }}Event(ctx context.Context, timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
+	{{- if not (attributeInfo .).Optional -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
-	{{- end }}) {
+	{{- end -}}
+	{{- end -}}
+	{{- if $event.HasOptionalAttribute $.Attributes -}}
+	, options... EventAttributeOption
+	{{- end -}}) {
 	lb.event{{ $name.Render }}.recordEvent(ctx, timestamp
 		{{- range $event.Attributes -}}
+		{{- if not (attributeInfo .).Optional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end }})
+		{{- end -}}
+		{{- end -}}
+		{{- if $event.HasOptionalAttribute $.Attributes -}}
+		, options...
+		{{- end -}})
 }
 {{ end }}

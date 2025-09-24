@@ -12,6 +12,16 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+// ReferenceCounter is an optional interface that can be implemented to provide a way for the request data
+// to manage internal locally allocated memory and re-use across multiple requests, etc.
+//
+// The queue will only call Ref and Unref when requests are executed asynchronously, otherwise these
+// funcs are not called.
+type ReferenceCounter[T any] interface {
+	Ref(T)
+	Unref(T)
+}
+
 type Encoding[T any] interface {
 	// Marshal is a function that can marshal a request into bytes.
 	Marshal(context.Context, T) ([]byte, error)
@@ -55,40 +65,59 @@ type Queue[T any] interface {
 
 // Settings define internal parameters for a new Queue creation.
 type Settings[T any] struct {
-	Sizer           request.Sizer[T]
-	SizerType       request.SizerType
-	Capacity        int64
-	NumConsumers    int
-	WaitForResult   bool
-	BlockOnOverflow bool
-	Signal          pipeline.Signal
-	StorageID       *component.ID
-	Encoding        Encoding[T]
-	ID              component.ID
-	Telemetry       component.TelemetrySettings
+	ItemsSizer       request.Sizer[T]
+	BytesSizer       request.Sizer[T]
+	SizerType        request.SizerType
+	Capacity         int64
+	NumConsumers     int
+	WaitForResult    bool
+	BlockOnOverflow  bool
+	Signal           pipeline.Signal
+	StorageID        *component.ID
+	ReferenceCounter ReferenceCounter[T]
+	Encoding         Encoding[T]
+	ID               component.ID
+	Telemetry        component.TelemetrySettings
 }
 
-func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) Queue[T] {
+func (set *Settings[T]) activeSizer() request.Sizer[T] {
+	switch set.SizerType {
+	case request.SizerTypeBytes:
+		return set.BytesSizer
+	case request.SizerTypeItems:
+		return set.ItemsSizer
+	default:
+		return request.RequestsSizer[T]{}
+	}
+}
+
+func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
+	q, err := newBaseQueue(set)
+	if err != nil {
+		return nil, err
+	}
+
+	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	if err != nil {
+		return nil, err
+	}
+
+	return oq, nil
+}
+
+func newBaseQueue[T any](set Settings[T]) (readableQueue[T], error) {
 	// Configure memory queue or persistent based on the config.
 	if set.StorageID == nil {
-		return newAsyncQueue(newMemoryQueue[T](memoryQueueSettings[T]{
-			sizer:           set.Sizer,
-			capacity:        set.Capacity,
-			waitForResult:   set.WaitForResult,
-			blockOnOverflow: set.BlockOnOverflow,
-		}), set.NumConsumers, next)
+		return newMemoryQueue[T](set), nil
 	}
-	return newAsyncQueue(newPersistentQueue[T](persistentQueueSettings[T]{
-		sizer:           set.Sizer,
-		sizerType:       set.SizerType,
-		capacity:        set.Capacity,
-		blockOnOverflow: set.BlockOnOverflow,
-		signal:          set.Signal,
-		storageID:       *set.StorageID,
-		encoding:        set.Encoding,
-		id:              set.ID,
-		telemetry:       set.Telemetry,
-	}), set.NumConsumers, next)
+	if set.ItemsSizer == nil {
+		return nil, errors.New("PersistentQueue requires ItemsSizer to be set")
+	}
+	if set.BytesSizer == nil {
+		return nil, errors.New("PersistentQueue requires BytesSizer to be set")
+	}
+
+	return newPersistentQueue[T](set), nil
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.

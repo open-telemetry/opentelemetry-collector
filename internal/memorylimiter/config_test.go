@@ -109,6 +109,6 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg := &Config{}
 	err = cm.Unmarshal(&cfg)
-	require.ErrorContains(t, err, "cannot parse 'limit_mib', -2000 overflows uint")
-	require.ErrorContains(t, err, "cannot parse 'spike_limit_mib', -2300 overflows uint")
+	require.ErrorContains(t, err, "'limit_mib' cannot parse value as 'uint32': -2000 overflows uint")
+	require.ErrorContains(t, err, "'spike_limit_mib' cannot parse value as 'uint32': -2300 overflows uint")
 }

@@ -96,6 +96,10 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 	$(MAKE) fmt
 
+.PHONY: govulncheck
+govulncheck:
+	@$(MAKE) for-all-target TARGET="vulncheck"
+
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
@@ -152,18 +156,16 @@ endif
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
-	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
-		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
+	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) -tags "grpcnotrace" ./... && popd
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
-	cd internal/tools && $(GOCMD) install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
 
 .PHONY: actionlint
-actionlint:
-	./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:
@@ -176,7 +178,7 @@ ocb:
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.7.0
+OPENTELEMETRY_PROTO_VERSION=v1.8.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1development/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1development/*.proto))
@@ -244,11 +246,14 @@ genproto_sub:
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
+remove-pdatagen:
+	rm -f .tools/pdatagen
+
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata:
-	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
-	$(MAKE) fmt
+genpdata: remove-pdatagen $(PDATAGEN)
+	$(PDATAGEN)
+	$(MAKE) -C pdata fmt
 
 INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))

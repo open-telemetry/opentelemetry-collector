@@ -44,11 +44,13 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -118,8 +120,8 @@ func TestJsonHttp(t *testing.T) {
 			name:               "Retryable GRPCError",
 			encoding:           "",
 			contentType:        "application/json",
-			err:                status.New(codes.Unavailable, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			err:                status.New(codes.Unavailable, "Service Unavailable").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "Service Unavailable"},
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
@@ -145,7 +147,8 @@ func TestJsonHttp(t *testing.T) {
 					errStatus := &spb.Status{}
 					require.NoError(t, json.Unmarshal(respBytes, errStatus))
 					if s, ok := status.FromError(tt.err); ok {
-						assert.True(t, proto.Equal(errStatus, s.Proto()))
+						assert.Equal(t, s.Proto().Code, errStatus.Code)
+						assert.Equal(t, s.Proto().Message, errStatus.Message)
 					} else {
 						fmt.Println(errStatus)
 						assert.True(t, proto.Equal(errStatus, tt.expectedStatus))
@@ -365,15 +368,15 @@ func TestProtoHttp(t *testing.T) {
 		{
 			name:               "Permanent GRPCError",
 			encoding:           "",
-			err:                status.New(codes.InvalidArgument, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
+			err:                status.New(codes.InvalidArgument, "Bad Request").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: "Bad Request"},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:               "Retryable GRPCError",
 			encoding:           "",
-			err:                status.New(codes.Unavailable, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			err:                status.New(codes.Unavailable, "Service Unavailable").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "Service Unavailable"},
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
@@ -419,7 +422,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 		content     string
 		encoding    string
 		reqBodyFunc func() (*bytes.Buffer, error)
-		resBodyFunc func() ([]byte, error)
+		checkBody   func(tb testing.TB, got []byte)
 		status      int
 	}{
 		{
@@ -429,8 +432,8 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return json.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				assert.JSONEq(tb, `{"code":3,"message": "gzip: invalid header"}`, string(got))
 			},
 			status: 400,
 		},
@@ -441,8 +444,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -453,8 +458,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -472,27 +479,53 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			body, err := test.reqBodyFunc()
-			require.NoError(t, err, "Error creating request body: %v", err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest(http.MethodPost, url, body)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			require.NoError(t, err)
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
 
 			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			require.NoError(t, err)
+			assert.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
+			assert.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 			respBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
-			exRespBytes, err := test.resBodyFunc()
-			require.NoError(t, err, "Error creating expecting response body")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
-
-			require.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
-			require.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-			require.Equal(t, exRespBytes, respBytes, "Unexpected response content")
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			test.checkBody(t, respBytes)
 		})
 	}
+}
+
+func TestOTLPReceiverNoContentType(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
+
+	t.Run("NoContentType", func(t *testing.T) {
+		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
+
+		req, err := http.NewRequest(http.MethodPost, url, body)
+		require.NoError(t, err, "Error creating trace POST request: %v", err)
+
+		// Set invalid encoding to trigger an error
+		req.Header.Set("Content-Encoding", "invalid")
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error posting to server: %v", err)
+		// Don't care about the response body, just check the content type
+		defer resp.Body.Close()
+
+		require.Equal(t, fallbackContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	})
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
@@ -521,6 +554,45 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+// TestOTLPReceiverGRPCMetricsIngestTest checks that the metrics receiver
+// is returning the proper response (return and metrics) when the next consumer
+// in the pipeline reports error.
+func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
+	// Get a new available port
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Create a sink
+	sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
+
+	// Create a telemetry instance
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	// Create telemetry settings
+	settings := tt.NewTelemetrySettings()
+
+	recv := newGRPCReceiver(t, settings, addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, cc.Close())
+	}()
+	// Set up the error case
+	sink.SetConsumeError(errors.New("consumer error"))
+
+	md := testdata.GenerateMetrics(1)
+	_, err = pmetricotlp.NewGRPCClient(cc).Export(context.Background(), pmetricotlp.NewExportRequestFromMetrics(md))
+	errStatus, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Unavailable, errStatus.Code())
+
+	// Assert receiver metrics including receiver_requests
+	assertReceiverMetrics(t, tt, otlpReceiverID, "grpc", 0, 2)
 }
 
 // TestOTLPReceiverGRPCTracesIngestTest checks that the gRPC trace receiver
@@ -694,11 +766,11 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLS: &configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
-				},
+				}),
 			}),
 		},
 	}
@@ -721,7 +793,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = addr
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = addr
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -757,11 +829,11 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
 						},
-					},
+					}),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
@@ -782,7 +854,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 }
 
-func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, payload []byte, size int, expectedStatusCode int) {
+func testHTTPMaxRequestBodySize(t *testing.T, path, contentType string, payload []byte, size, expectedStatusCode int) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	url := "http://" + addr + path
 	cfg := &Config{
@@ -826,13 +898,13 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpoint
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpoint
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
@@ -1012,8 +1084,8 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpointGrpc
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpointHTTP
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
@@ -1232,8 +1304,41 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	}
 }
 
-func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
+	var refused, failed int64
+	var outcome string
+	gateEnabled := receiverhelper.NewReceiverMetricsGate.IsEnabled()
+	// The errors in the OTLP tests are not downstream, so they should be "failed" when the gate is enabled.
+	if gateEnabled {
+		failed = rejected
+		outcome = "failure"
+	} else {
+		// When the gate is disabled, all errors are "refused".
+		refused = rejected
+	}
+
+	got, err := tt.GetMetric("otelcol_receiver_failed_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_failed_spans",
+			Description: "The number of spans that failed to be processed by the receiver due to internal errors. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: failed,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
@@ -1274,4 +1379,165 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 				},
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// Assert receiver_requests metric
+	if gateEnabled {
+		got, err := tt.GetMetric("otelcol_receiver_requests")
+		require.NoError(t, err)
+
+		// Calculate expected requests based on accepted and refused counts
+		var expectedRequests []metricdata.DataPoint[int64]
+		if accepted > 0 {
+			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", id.String()),
+					attribute.String("transport", transport),
+					attribute.String("outcome", "success")),
+				Value: accepted,
+			})
+		}
+		if rejected > 0 {
+			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", id.String()),
+					attribute.String("transport", transport),
+					attribute.String("outcome", outcome)),
+				Value: rejected,
+			})
+		}
+
+		metricdatatest.AssertEqual(t,
+			metricdata.Metrics{
+				Name:        "otelcol_receiver_requests",
+				Description: "The number of requests performed.",
+				Unit:        "{requests}",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints:  expectedRequests,
+				},
+			}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	} else {
+		_, err := tt.GetMetric("otelcol_receiver_requests")
+		require.Error(t, err)
+	}
+}
+
+func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
+	var refused, failed int64
+	var outcome string
+	gateEnabled := receiverhelper.NewReceiverMetricsGate.IsEnabled()
+	// The error used in the metrics test is not downstream.
+	if gateEnabled {
+		failed = rejected
+		outcome = "failure"
+	} else {
+		// When the gate is disabled, all errors are "refused".
+		refused = rejected
+	}
+
+	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_failed_metric_points",
+			Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: failed,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: accepted,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_metric_points",
+			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: refused,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// Assert receiver_requests metric
+	if gateEnabled {
+		got, err := tt.GetMetric("otelcol_receiver_requests")
+		require.NoError(t, err)
+
+		// Calculate expected requests based on accepted and refused counts
+		var expectedRequests []metricdata.DataPoint[int64]
+		if accepted > 0 {
+			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", id.String()),
+					attribute.String("transport", transport),
+					attribute.String("outcome", "success")),
+				Value: accepted,
+			})
+		}
+		if rejected > 0 {
+			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", id.String()),
+					attribute.String("transport", transport),
+					attribute.String("outcome", outcome)),
+				Value: 1, // One request failed
+			})
+		}
+
+		metricdatatest.AssertEqual(t,
+			metricdata.Metrics{
+				Name:        "otelcol_receiver_requests",
+				Description: "The number of requests performed.",
+				Unit:        "{requests}",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints:  expectedRequests,
+				},
+			}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	} else {
+		_, err := tt.GetMetric("otelcol_receiver_requests")
+		require.Error(t, err)
+	}
 }

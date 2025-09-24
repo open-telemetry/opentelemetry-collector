@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 type configSettings struct {
@@ -27,8 +27,10 @@ type configSettings struct {
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
-	telFactory := telemetry.NewFactory()
-	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+	// TODO: inject the telemetry factory through factories, once available.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+	telFactory := otelconftelemetry.NewFactory()
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
@@ -42,6 +44,6 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 			Telemetry: defaultTelConfig,
 		},
 	}
-
-	return cfg, v.Unmarshal(&cfg)
+	err := v.Unmarshal(&cfg)
+	return cfg, err
 }

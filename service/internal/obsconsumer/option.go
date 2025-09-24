@@ -29,6 +29,7 @@ func WithStaticDataPointAttribute(attr attribute.KeyValue) Option {
 type compiledOptions struct {
 	withSuccessAttrs metric.AddOption
 	withFailureAttrs metric.AddOption
+	withRefusedAttrs metric.AddOption
 }
 
 func (o *options) compile() compiledOptions {
@@ -40,8 +41,13 @@ func (o *options) compile() compiledOptions {
 	failureAttrs = append(failureAttrs, attribute.String(ComponentOutcome, "failure"))
 	failureAttrs = append(failureAttrs, o.staticDataPointAttributes...)
 
+	refusedAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
+	refusedAttrs = append(refusedAttrs, attribute.String(ComponentOutcome, "refused"))
+	refusedAttrs = append(refusedAttrs, o.staticDataPointAttributes...)
+
 	return compiledOptions{
 		withSuccessAttrs: metric.WithAttributes(successAttrs...),
 		withFailureAttrs: metric.WithAttributes(failureAttrs...),
+		withRefusedAttrs: metric.WithAttributes(refusedAttrs...),
 	}
 }

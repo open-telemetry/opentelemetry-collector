@@ -6,11 +6,12 @@ COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
-GOTEST_TIMEOUT?=240s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
+GOTEST_TIMEOUT?=240s
+# -race is not supported on windows arm64
+GOTEST_OPT?= -timeout $(GOTEST_TIMEOUT) $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))),, -race)
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
@@ -24,6 +25,7 @@ CHLOGGEN_CONFIG := .chloggen/config.yaml
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
+ACTIONLINT   := $(TOOLS_BIN_DIR)/actionlint
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
 CHECKAPI     := $(TOOLS_BIN_DIR)/checkapi
@@ -31,16 +33,18 @@ CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
 ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
-GITHUBGEN     := $(TOOLS_BIN_DIR)/githubgen
+GITHUBGEN    := $(TOOLS_BIN_DIR)/githubgen
 GOFUMPT      := $(TOOLS_BIN_DIR)/gofumpt
 GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
 GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
 LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+PDATAGEN     := $(TOOLS_BIN_DIR)/pdatagen
 IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
+MODERNIZE    := $(TOOLS_BIN_DIR)/modernize
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -49,7 +53,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 .PHONY: test
 test: $(GOTESTSUM)
@@ -72,10 +76,14 @@ benchmark: $(GOTESTSUM)
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
+.PHONY: modernize
+modernize: $(MODERNIZE)
+	$(MODERNIZE) -fix -test -v ./...
+
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.23.0
+	$(GOCMD) mod tidy -compat=1.24.0
 
 .PHONY: lint
 lint: $(LINT)
@@ -91,10 +99,10 @@ common/goimports: $(GOIMPORTS)
 
 .PHONY: common/gofumpt
 common/gofumpt: $(GOFUMPT)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 
-.PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
 
 .PHONY: generate

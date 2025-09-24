@@ -18,12 +18,11 @@ func TestMap(t *testing.T) {
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
-	state := internal.StateMutable
-	assert.Equal(t, newValue(nil, &state), val)
+	assert.Equal(t, newValue(nil, internal.NewState()), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
-	assert.Equal(t, Map(internal.GenerateTestMap()), putString)
+	assert.Equal(t, generateTestStringMap(t), putString)
 
 	putInt := NewMap()
 	putInt.PutInt("k", 123)
@@ -55,10 +54,11 @@ func TestMap(t *testing.T) {
 }
 
 func TestMapReadOnly(t *testing.T) {
-	state := internal.StateReadOnly
+	state := internal.NewState()
+	state.MarkReadOnly()
 	m := newMap(&[]otlpcommon.KeyValue{
 		{Key: "k1", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}}},
-	}, &state)
+	}, state)
 
 	assert.Equal(t, 1, m.Len())
 
@@ -188,8 +188,7 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	state := internal.StateMutable
-	sm := newMap(&origWithNil, &state)
+	sm := newMap(&origWithNil, internal.NewState())
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.Equal(t, ValueTypeStr, val.Type())
@@ -441,6 +440,18 @@ func TestMap_CopyTo(t *testing.T) {
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
 	Map(internal.GenerateTestMap()).CopyTo(dest)
 	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+
+	// Test CopyTo same size slice
+	dest.CopyTo(dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+}
+
+func TestMap_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewMap()
+	src := Map(internal.GenerateTestMap())
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -532,6 +543,15 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.True(t, exists)
 }
 
+func TestMap_RemoveIfAll(t *testing.T) {
+	am := Map(internal.GenerateTestMap())
+	assert.Equal(t, 5, am.Len())
+	am.RemoveIf(func(string, Value) bool {
+		return true
+	})
+	assert.Equal(t, 0, am.Len())
+}
+
 func generateTestEmptyMap(t *testing.T) Map {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": map[string]any(nil)}))
@@ -541,6 +561,12 @@ func generateTestEmptyMap(t *testing.T) Map {
 func generateTestEmptySlice(t *testing.T) Map {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []any(nil)}))
+	return m
+}
+
+func generateTestStringMap(t *testing.T) Map {
+	m := NewMap()
+	assert.NoError(t, m.FromRaw(map[string]any{"k": "v"}))
 	return m
 }
 

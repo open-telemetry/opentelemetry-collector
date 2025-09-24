@@ -13,8 +13,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
@@ -44,7 +47,7 @@ func TestTracesNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewTraces(cons, itemCounter, sizeCounter))
+	require.Equal(t, cons, obsconsumer.NewTraces(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()}))
 }
 
 func TestTracesItemsOnly(t *testing.T) {
@@ -63,7 +66,9 @@ func TestTracesItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounterDisabled)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: logger})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -91,6 +96,9 @@ func TestTracesItemsOnly(t *testing.T) {
 	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestTracesConsumeSuccess(t *testing.T) {
@@ -108,7 +116,9 @@ func TestTracesConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -155,6 +165,9 @@ func TestTracesConsumeSuccess(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestTracesConsumeFailure(t *testing.T) {
@@ -162,6 +175,7 @@ func TestTracesConsumeFailure(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockTracesConsumer{err: expectedErr}
 
 	reader := sdkmetric.NewManualReader()
@@ -173,7 +187,9 @@ func TestTracesConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -181,7 +197,7 @@ func TestTracesConsumeFailure(t *testing.T) {
 	ss.Spans().AppendEmpty()
 
 	err = consumer.ConsumeTraces(ctx, td)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var rm metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &rm)
@@ -220,6 +236,10 @@ func TestTracesConsumeFailure(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
+
+	// Check that the logger was called with an error
+	require.Len(t, logs.All(), 1)
+	assert.Contains(t, logs.All()[0].Message, "Traces pipeline component had an error")
 }
 
 func TestTracesWithStaticAttributes(t *testing.T) {
@@ -238,7 +258,9 @@ func TestTracesWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter,
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	td := ptrace.NewTraces()
@@ -292,6 +314,9 @@ func TestTracesWithStaticAttributes(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
@@ -299,6 +324,7 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockTracesConsumer{}
 
 	reader := sdkmetric.NewManualReader()
@@ -310,7 +336,9 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	// First batch: 2 successful items
 	td1 := ptrace.NewTraces()
@@ -329,7 +357,7 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 	ss := r.ScopeSpans().AppendEmpty()
 	ss.Spans().AppendEmpty()
 	err = consumer.ConsumeTraces(ctx, td2)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	// Third batch: 2 successful items
 	mockConsumer.err = nil
@@ -349,7 +377,7 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 	ss = r.ScopeSpans().AppendEmpty()
 	ss.Spans().AppendEmpty()
 	err = consumer.ConsumeTraces(ctx, td4)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var rm metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &rm)
@@ -398,6 +426,12 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 	}
 	require.Equal(t, int64(72), successSizeDP.Value)
 	require.Equal(t, int64(36), failureSizeDP.Value)
+
+	// Check that the logger was called for errors
+	require.Len(t, logs.All(), 2)
+	for _, log := range logs.All() {
+		assert.Contains(t, log.Message, "Traces pipeline component had an error")
+	}
 }
 
 func TestTracesCapabilities(t *testing.T) {
@@ -417,10 +451,10 @@ func TestTracesCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	consumer = obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

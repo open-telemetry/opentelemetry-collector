@@ -7,6 +7,314 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.42.0/v0.136.0
+
+### 💡 Enhancements 💡
+
+- `xpdata`: Add Serialization and Deserialization of AnyValue (#12826)
+- `debugexporter`: add support for batching (#13791)
+  The default queue size is 1
+- `configtls`: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime. (#13130, #13245)
+- `mdatagen`: Expose stability level in generated metric documentation (#13748)
+- `internal/tools`: Add support for modernize in Makefile (#13796)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Fix a potential deadlock during collector shutdown. (#13740)
+- `otlpexporter`: fix the validation of unix socket endpoints (#13826)
+
+<!-- previous-version -->
+
+## v1.41.0/v0.135.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add new `exporter_queue_batch_send_size` and `exporter_queue_batch_send_size_bytes` metrics, showing the size of telemetry batches from the exporter. (#12894)
+
+<!-- previous-version -->
+
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add custom grpc/encoding that replaces proto and calls into the custom marshal/unmarshal logic in pdata. (#13631)
+  This change should not affect other gRPC calls since it fallbacks to the default grpc/proto encoding if requests are not pdata/otlp requests.
+- `pdata`: Avoid copying the pcommon.Map when same origin (#13731)
+  This is a very large improvement if using OTTL with map functions since it will avoid a map copy.
+- `exporterhelper`: Respect `num_consumers` when batching and partitioning are enabled. (#13607)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Correctly parse OTLP payloads containing non-packed repeated primitive fields (#13727, #13730)
+  This bug prevented the Collector from ingesting most Histogram, ExponentialHistogram,
+  and Profile payloads.
+  
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Increase minimum Go version to 1.24 (#13627)
+
+### 💡 Enhancements 💡
+
+- `otlphttpexporter`: Add `profiles_endpoint` configuration option to allow custom endpoint for profiles data export (#13504)
+  The `profiles_endpoint` configuration follows the same pattern as `traces_endpoint`, `metrics_endpoint`, and `logs_endpoint`.
+  When specified, profiles data will be sent to the custom URL instead of the default `{endpoint}/v1development/profiles`.
+  
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+- `pdata`: Optimize CopyTo messages to avoid any copy when same source and destination (#13680)
+- `receiverhelper`: New feature flag to make receiverhelper distinguish internal vs. downstream errors using new `otelcol_receiver_failed_x` and `otelcol_receiver_requests` metrics (#12207, #12802)
+  This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans metrics.
+  These new metrics and semantics are enabled through the `receiverhelper.newReceiverMetrics` feature gate.
+  
+- `debugexporter`: Add support for entity references in debug exporter output (#13324)
+- `pdata`: Fix unnecessary allocation of a new state when adding new values to pcommon.Map (#13634)
+- `service`: Implement refcounting for pipeline data owned memory. (#13631)
+  This feature is protected by `--featuregate=+pdata.useProtoPooling`.
+- `service`: Add a debug-level log message when a consumer returns an error. (#13357)
+- `xpdata`: Optimize xpdata/context for persistent queue when only one value for key (#13636)
+- `otlpreceiver`: Log the listening addresses of the receiver, rather than the configured endpoints. (#13654)
+- `pdata`: Use the newly added proto marshaler/unmarshaler for the official proto Marshaler/Unmarshaler (#13637)
+  If any problems observed with this consider to disable the featuregate `--feature-gates=-pdata.useCustomProtoEncoding`
+<!-- cspell:ignore MLKEM mlkem -->
+- `configtls`: Enable X25519MLKEM768 as per draft-ietf-tls-ecdhe-mlkem (#13670)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Prevent uncontrolled goroutines in batcher due to a incorrect worker pool behaviour. (#13689)
+- `service`: Ensure the insecure configuration is accounted for when normalizing the endpoint. (#13691)
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+- `batchprocessor`: Fix UB in batch processor when trying to read bytes size after adding request to pipeline (#13698)
+  This bug only happens id detailed metrics are enabled and also an async (sending queue enabled) exporter that mutates data is configure.
+
+<!-- previous-version -->
+
+## v1.38.0/v0.132.0
+
+### 🛑 Breaking changes 🛑
+
+- `componentstatus`: Change the signature of the componentstatus.NewEvent to accept multiple options. (#13210)
+  Changes the signature of the component.NewEvent to accept multiple EventBuilderOption,
+  like the new WithAttributes constructor.
+  
+
+### 🚩 Deprecations 🚩
+
+- `service`: move service.noopTraceProvider feature gate to deprecated stage (#13492)
+  The functionality of the feature gate is available via configuration with the following telemetry settings:
+  ```
+  service:
+    telemetry:
+      traces:
+        level: none
+  ```
+  
+- `mdatagen`: Remove the deletion of `generated_component_telemetry_test.go`. (#12067)
+  This file used to be generated by mdatagen. Starting with 0.122.0, the code deletes that file.
+  It is no longer necessary to delete the file, as code has had time to upgrade to mdatagen and delete the file.
+  
+- `service`: The `telemetry.disableHighCardinalityMetrics` feature gate is deprecated (#13537)
+  The feature gate is now deprecated since metric views can be configured.
+  The feature gate will be removed in v0.134.0.
+  
+  The metric attributes removed by this feature gate are no longer emitted
+  by the Collector by default, but if needed, you can achieve the same
+  functionality by configuring the following metric views:
+  
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        level: detailed
+        views:
+          - selector:
+              meter_name: "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+            stream:
+              attribute_keys:
+                excluded: ["net.sock.peer.addr", "net.sock.peer.port", "net.sock.peer.name"]
+          - selector:
+              meter_name: "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+            stream:
+              attribute_keys:
+                excluded: ["net.host.name", "net.host.port"]
+  ```
+  
+  Note that this requires setting `service::telemetry::metrics::level: detailed`.
+  If you have a strong use case for using views in combination with a different
+  level, please show your interest in
+  https://github.com/open-telemetry/opentelemetry-collector/issues/10769.
+  
+
+### 💡 Enhancements 💡
+
+- `pdata`: Generate Logs/Traces/Metrics/Profiles and p[log|trace|metric|profile]ExportResponse with pdatagen. (#13597)
+  This change brings consistency on how these structs are written and remove JSON marshaling/unmarshaling hand written logic.
+- `confighttp`: Add option to configure ForceAttemptHTTP2 to support HTTP/1 specific transport settings. (#13426)
+- `pdata`: Avoid unnecessary buffer copy when JSON marshal fails. (#13598)
+- `cmd/mdatagen`: Use a custom host implementation for lifecycle tests (#13589)
+  Use a custom noop host implementation that implements all non-deprecated, publicly-accessible interfaces implemented by the Collector service.
+- `processorhelper`: Add processor internal duration metric. (#13231)
+- `pdata`: Improve RemoveIf for slices to not reference anymore the removed memory (#13522)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix null pointer access when copying into a slice with larger cap but smaller len. (#13523)
+- `confighttp`: Fix middleware configuration field name from "middleware" to "middlewares" for consistency with configgrpc (#13444)
+- `memorylimiterextension, memorylimiterprocessor`: Memory limiter extension and processor shutdown don't throw an error if the component was not started first. (#9687)
+  The components would throw an error if they were shut down before being started.
+  With this change, they will no longer return an error, conforming to the lifecycle of components expected.
+  
+- `confighttp`: Reuse zstd Reader objects (#11824)
+
+<!-- previous-version -->
+
+## v1.37.0/v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Move `confighttp.framedSnappy` feature gate to beta. (#10584)
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Move to alpha stability except profiles (#13487)
+- `exporterhelper`: Enable `exporter.PersistRequestContext` feature gate by default. (#13437)
+  Request context is now preserved by default when using persistent queues.
+  Note that Auth extensions context is not propagated through the persistent queue.
+  
+- `pdata`: Use pdatagen to generate marshalJSON without using gogo proto jsonpb. (#13450)
+- `otlpreceiver`: Remove usage of gogo proto which uses reflect.Value.MethodByName. Removes one source of disabling DCE. (#12747)
+- `exporterhelper`: Fix metrics split logic to consider metrics description into the size. (#13418)
+- `service`: New pipeline instrumentation now differentiates internal failures from downstream errors (#13234)
+  With the telemetry.newPipelineTelemetry feature gate enabled, the "received" and "produced"
+  metrics related to a component now distinguish between two types of errors:
+  - "outcome = failure" indicates that the component returned an internal error;
+  - "outcome = refused" indicates that the component successfully emitted data, but returned an
+    error coming from a downstream component processing that data.
+  
+- `pdata`: Remove usage of text/template from pdata, improves DCE. (#12747)
+- `architecture`: New Tier 3 platform riscv64 allowing the collector to be built and distributed for this platform. (#13462)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Prevents the exporter for being stuck when telemetry data is bigger than batch.max_size (#12893)
+- `mdatagen`: Fix import paths for mdatagen component (#13069)
+- `otlpreceiver`: Error handler correctly fallbacks to content type (#13414)
+- `pdata/pprofiles`: Fix profiles JSON unmarshal logic for originalPayload. The bytes have to be base64 encoded. (#13483)
+- `xpdata`: Fix unmarshaling JSON for entities, add e2e tests to avoid this in the future. (#13480)
+- `service`: Downgrade dependency of prometheus exporter in OTel Go SDK (#13429)
+  This fixes the bug where collector's internal metrics are emitted with an unexpected suffix in their names when users configure the service::telemetry::metrics::readers with Prometheus
+- `service`: Revert Default internal metrics config now enables `otel_scope_` labels (#12939, #13344)
+  Reverting change temporarily due to prometheus exporter downgrade. This unfortunately re-introduces the bug that instrumentation scope attributes cause errors in Prometheus exporter. See http://github.com/open-telemetry/opentelemetry-collector/issues/12939 for details.
+- `builder`: Remove undocumented handling of `DIST_*` environment variables replacements (#13335)
+
+<!-- previous-version -->
+
+## v1.36.1/v0.130.1
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fixes bug where internal metrics are emitted with an unexpected suffix in their names when users configure `service::telemetry::metrics::readers` with Prometheus. (#13449)
+  See more details on https://github.com/open-telemetry/opentelemetry-go/issues/7039
+
+<!-- previous-version -->
+
+## v1.36.0/v0.130.0
+
+### ❗ Known Issues ❗
+
+- Due to a [bug](https://github.com/open-telemetry/opentelemetry-go/issues/7039) in the prometheus exporter, if you are configuring a prometheus exporter, the collector's internal metrics will be emitted with an unexpected suffix in its name. For example, the metric `otelcol_exporter_sent_spans__spans__total` instead of `otelcol_exporter_sent_spans_total`. The workaround is to manually configure `without_units: true` in your prometheus exporter config
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+                  without_units: true
+  ```
+
+  If you are using the collector's default Prometheus exporter for exporting internal metrics you are unaffected. 
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Enable items and bytes sizers for persistent queue (#12881)
+- `exporterhelper`: Refactor persistent storage size backup to always record it. (#12890)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `yaml`: Replaced `sigs.k8s.io/yaml` with `go.yaml.in/yaml` for improved support and long-term maintainability. (#13308)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix exporter.PersistRequestContext feature gate (#13342)
+- `exporterhelper`: Preserve all metrics metadata when batch splitting. (#13236)
+  Previously, when large batches of metrics were processed, the splitting logic in `metric_batch.go` could
+  cause the `name` field of some metrics to disappear. This fix ensures that all metric fields are
+  properly preserved when `metricRequest` objects are split.
+  
+- `service`: Default internal metrics config now enables `otel_scope_` labels (#12939, #13344)
+  By default, the Collector exports its internal metrics using a Prometheus
+  exporter from the opentelemetry-go repository. With this change, the Collector
+  no longer sets "without_scope_info" to true in its configuration.
+  
+  This means that all exported metrics will have `otel_scope_name`,
+  `otel_scope_schema_url`, and `otel_scope_version` labels corresponding to the
+  instrumentation scope metadata for that metric.
+  
+  This notably prevents an error when multiple metrics are only distinguished
+  by their instrumentation scopes and end up aliased during export.
+  
+  If this is not desired behavior, a Prometheus exporter can be explicitly
+  configured with this option enabled.
+  
+
+<!-- previous-version -->
+
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated sending_queue::blocking options, use sending_queue::block_on_overflow. (#13211)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Taught mdatagen to print the `go list` stderr output on failures, and to run `go list` where the metadata file is. (#13205)
+- `service`: Support setting `sampler` and `limits` under `service::telemetry::traces` (#13201)
+  This allows users to enable sampling and set span limits on internal Collector traces using the
+  OpenTelemetry SDK declarative configuration.
+  
+- `pdata/pprofile`: Add new helper methods `FromLocationIndices` and `PutLocation` to read and modify the content of locations. (#13150)
+- `exporterhelper`: Preserve request span context and client information in the persistent queue. (#11740, #13220, #13232)
+  It allows internal collector spans and client information to propagate through the persistent queue used by 
+  the exporters. The same way as it's done for the in-memory queue.
+  Currently, it is behind the exporter.PersistRequestContext feature gate, which can be enabled by adding 
+  `--feature-gates=exporter.PersistRequestContext` to the collector command line. An exporter buffer stored by
+  a previous version of the collector (or by a collector with the feature gate disabled) can be read by a newer
+  collector with the feature enabled. However, the reverse is not supported: a buffer stored by a newer collector with
+  the feature enabled cannot be read by an older collector (or by a collector with the feature gate disabled).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix copying of optional fields when the source is unset. (#13268)
+- `service`: Only allocate one set of internal log sampling counters (#13014)
+  The case where logs are only exported to stdout was fixed in v0.126.0;
+  this new fix also covers the case where logs are exported through OTLP.
+  
+
+<!-- previous-version -->
+
 ## v1.34.0/v0.128.0
 
 ### 🛑 Breaking changes 🛑

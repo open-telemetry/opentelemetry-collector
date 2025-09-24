@@ -145,7 +145,7 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:        "\"0123\"",
 			targetField:  TargetFieldInt,
-			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string', value: '\"0123\"'",
+			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string'",
 		},
 		{
 			value:       "\"0123\"",
@@ -165,12 +165,12 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:        "t",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '\"t\"', value: '\"t\"'",
+			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'string'",
 		},
 		{
 			value:        "23",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '23', value: '23'",
+			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'int'",
 		},
 		{
 			value:       "{\"field\": 123}",
@@ -437,7 +437,7 @@ func TestIssue10787(t *testing.T) {
 			},
 		},
 		"processors": map[string]any{
-			"batch": nil,
+			"memory_limiter": nil,
 		},
 		"receivers": map[string]any{
 			"otlp": map[string]any{
@@ -455,7 +455,7 @@ func TestIssue10787(t *testing.T) {
 			"pipelines": map[string]any{
 				"traces": map[string]any{
 					"exporters":  []any{"debug"},
-					"processors": []any{"batch"},
+					"processors": []any{"memory_limiter"},
 					"receivers":  []any{"otlp"},
 				},
 			},

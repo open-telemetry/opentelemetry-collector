@@ -8,6 +8,10 @@ formatters:
       # simplify code: gofmt with `-s` option, true by default
       simplify: true
 
+    gofumpt:
+      # Choose whether to use the extra rules
+      extra-rules: true
+
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
       # it's a comma-separated list of prefixes
@@ -22,10 +26,14 @@ issues:
 
 linters:
   enable:
+    - asasalint
+    - contextcheck
     - copyloopvar
+    - decorder
     - depguard
     - errcheck
     - errorlint
+    - fatcontext
     - gocritic
     - gosec
     - govet
@@ -67,6 +75,8 @@ linters:
               desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
             - pkg: "math/rand$"
               desc: "Use the newer 'math/rand/v2' instead of math/rand"
+            - pkg: "sigs.k8s.io/yaml"
+              desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"  
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
@@ -75,6 +85,18 @@ linters:
           deny:
             - pkg: go.opentelemetry.io/proto
               desc: Use go.opentelemetry.io/collector/pdata instead
+
+    gocritic:
+      disabled-checks:
+        - commentedOutCode
+        - deferInLoop
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+      enable-all: true
 
     gosec:
       excludes:
