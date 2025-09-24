@@ -148,6 +148,20 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		{
+			path: "batch_set_nonempty_no_explicit_sizer.yaml",
+			expectedCfg: func() Config {
+				cfg := newBaseCfg()
+				cfg.QueueSize = 2000
+				cfg.Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Sizer has NOT been overridden by parent sizer
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
 			path: "batch_unset.yaml",
 			// Batch remains unset, sizer override does not apply.
 			expectedCfg: newBaseCfg,
