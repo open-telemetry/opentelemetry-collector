@@ -6,7 +6,6 @@ package telemetrytest // import "go.opentelemetry.io/collector/service/telemetry
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -27,19 +26,13 @@ func WithResource(res pcommon.Resource) telemetry.FactoryOption {
 }
 
 // WithLogger returns a telemetry.FactoryOption that configures the
-// factory's CreateLogger method to return logger and provider.
-// If provider does not implement the Shutdown method, it will be
-// wrapped with ShutdownLoggerProvider with a no-op shutdown func.
-func WithLogger(logger *zap.Logger, provider log.LoggerProvider) telemetry.FactoryOption {
+// factory's CreateLogger method to return logger and shutdown func.
+func WithLogger(logger *zap.Logger, shutdownFunc component.ShutdownFunc) telemetry.FactoryOption {
 	return telemetry.WithCreateLogger(
 		func(context.Context, telemetry.LoggerSettings, component.Config) (
-			*zap.Logger, telemetry.LoggerProvider, error,
+			*zap.Logger, component.ShutdownFunc, error,
 		) {
-			withShutdown, ok := provider.(telemetry.LoggerProvider)
-			if !ok {
-				withShutdown = ShutdownLoggerProvider{LoggerProvider: provider}
-			}
-			return logger, withShutdown, nil
+			return logger, shutdownFunc, nil
 		},
 	)
 }
@@ -78,11 +71,6 @@ func WithTracerProvider(provider trace.TracerProvider) telemetry.FactoryOption {
 			return withShutdown, nil
 		},
 	)
-}
-
-type ShutdownLoggerProvider struct {
-	log.LoggerProvider
-	component.ShutdownFunc
 }
 
 type ShutdownMeterProvider struct {

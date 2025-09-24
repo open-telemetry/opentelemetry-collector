@@ -5,12 +5,11 @@ package telemetrytest // import "go.opentelemetry.io/collector/service/telemetry
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/log"
-	nooplog "go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -32,22 +31,17 @@ func TestWithResource(t *testing.T) {
 }
 
 func TestWithLogger(t *testing.T) {
-	test := func(t *testing.T, provider log.LoggerProvider, expectedProvider telemetry.LoggerProvider) {
-		logger := zap.NewNop()
-		factory := telemetry.NewFactory(nil, WithLogger(logger, provider))
-		createdLogger, createdProvider, err := factory.CreateLogger(context.Background(), telemetry.LoggerSettings{}, nil)
-		require.NoError(t, err)
-		assert.Same(t, logger, createdLogger)
-		assert.Equal(t, expectedProvider, createdProvider)
+	logger := zap.NewNop()
+	shutdownErr := errors.New("shutdown error")
+	shutdown := func(context.Context) error {
+		return shutdownErr
 	}
-	t.Run("Without Shutdown method", func(t *testing.T) {
-		provider := nooplog.NewLoggerProvider()
-		test(t, provider, ShutdownLoggerProvider{LoggerProvider: provider})
-	})
-	t.Run("With Shutdown method", func(t *testing.T) {
-		provider := new(struct{ telemetry.LoggerProvider })
-		test(t, provider, provider)
-	})
+
+	factory := telemetry.NewFactory(nil, WithLogger(logger, shutdown))
+	createdLogger, createdShutdown, err := factory.CreateLogger(context.Background(), telemetry.LoggerSettings{}, nil)
+	require.NoError(t, err)
+	assert.Same(t, logger, createdLogger)
+	assert.Same(t, shutdownErr, createdShutdown(t.Context()))
 }
 
 func TestWithMeterProvider(t *testing.T) {
@@ -83,41 +77,3 @@ func TestWithTracerProvider(t *testing.T) {
 		test(t, provider, provider)
 	})
 }
-
-/*
-// WithMeterProvider returns a telemetry.FactoryOption that configures the
-// factory's CreateMeterProvider method to return provider. If provider does
-// not implement the Shutdown method, it will be wrapped with
-// ShutdownMeterProvider with a no-op shutdown func.
-func WithMeterProvider(provider metric.MeterProvider) telemetry.FactoryOption {
-	return telemetry.WithCreateMeterProvider(
-		func(context.Context, telemetry.MeterSettings, component.Config) (
-			telemetry.MeterProvider, error,
-		) {
-			withShutdown, ok := provider.(telemetry.MeterProvider)
-			if !ok {
-				withShutdown = ShutdownMeterProvider{MeterProvider: provider}
-			}
-			return withShutdown, nil
-		},
-	)
-}
-
-// WithTracerProvider returns a telemetry.FactoryOption that configures the
-// factory's CreateTracerProvider method to return provider. If provider does
-// not implement the Shutdown method, it will be wrapped with
-// ShutdownTracerProvider with a no-op shutdown func.
-func WithTracerProvider(provider trace.TracerProvider) telemetry.FactoryOption {
-	return telemetry.WithCreateTracerProvider(
-		func(context.Context, telemetry.TracerSettings, component.Config) (
-			telemetry.TracerProvider, error,
-		) {
-			withShutdown, ok := provider.(telemetry.TracerProvider)
-			if !ok {
-				withShutdown = ShutdownTracerProvider{TracerProvider: provider}
-			}
-			return withShutdown, nil
-		},
-	)
-}
-*/
