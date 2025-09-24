@@ -564,7 +564,7 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 
 	// Shutdown the service
 	err = srv.Shutdown(context.Background())
-	require.ErrorContains(t, err, `failed to shutdown logger provider`)
+	require.ErrorContains(t, err, `failed to shutdown logger`)
 	require.ErrorContains(t, err, `failed to shutdown meter provider`)
 }
 
