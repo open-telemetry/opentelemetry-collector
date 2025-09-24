@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="62" failures="0" errors="0" time="0.000531">
+	<testsuite tests="59" failures="0" time="0.001000" name="go.opentelemetry.io/collector/processor/batchprocessor" timestamp="2025-09-24T16:28:10-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestProcessorShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestProcessorLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSpansDelivered" time="4.090000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSpansDeliveredEnforceBatchSize" time="0.880000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSentBySize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSentBySizeWithMaxSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSentByTimeout" time="0.200000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorTraceSendWhenClosing" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchMetricProcessor_ReceivingData" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchMetricProcessorBatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchMetrics_UnevenBatchMaxSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchMetricsProcessor_Timeout" time="0.200000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchMetricProcessor_Shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchLogProcessor_ReceivingData" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchLogProcessor_BatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchLogsProcessor_Timeout" time="0.200000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchLogProcessor_Shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorSpansBatchedByMetadata" time="1.330000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorDuplicateMetadataKeys" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchProcessorMetadataCardinalityLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchZeroConfig" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestBatchSplitOnly" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestUnmarshalDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestUnmarshalConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestValidateConfig_DefaultBatchMaxSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestValidateConfig_ValidBatchSizes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestValidateConfig_InvalidBatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestValidateConfig_InvalidTimeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestValidateConfig_ValidZero" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestCreateDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestCreateProcessor" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentFactoryType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentConfigStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/logs-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/logs-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/metrics-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/metrics-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/traces-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle/traces-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestComponentLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitLogs_noop" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitLogsMultipleResourceLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitLogsMultipleILL" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetrics_noop" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsMultipleResourceSpans" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsUneven" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsAllTypes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsBatchSizeSmallerThanDataPointCount" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitMetricsMultipleILM" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitTraces_noop" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitTraces" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitTracesMultipleResourceSpans" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor" name="TestSplitTracesMultipleILS" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata" timestamp="2025-09-24T16:28:10-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata" name="TestProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata" name="TestNewTelemetryBuilder" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/processor/batchprocessor/internal/metadatatest" timestamp="2025-09-24T16:28:10-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/batchprocessor/internal/metadatatest" name="TestSetupTelemetry" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

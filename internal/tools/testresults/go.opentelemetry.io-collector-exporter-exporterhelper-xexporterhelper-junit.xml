@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="33" failures="0" errors="0" time="0.000437">
+	<testsuite tests="33" failures="0" skipped="3" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestMergeSplitProfiles" time="0.000000">
+			<skipped message="=== RUN   TestMergeSplitProfiles&#xA;    profiles_batch_test.go:37: merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)&#xA;--- SKIP: TestMergeSplitProfiles (0.00s)&#xA;"></skipped>
+		</testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestMergeSplitProfilesBasedOnByteSize" time="0.000000">
+			<skipped message="=== RUN   TestMergeSplitProfilesBasedOnByteSize&#xA;    profiles_batch_test.go:140: merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)&#xA;--- SKIP: TestMergeSplitProfilesBasedOnByteSize (0.00s)&#xA;"></skipped>
+		</testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestMergeSplitManySmallLogs" time="0.000000">
+			<skipped message="=== RUN   TestMergeSplitManySmallLogs&#xA;    profiles_batch_test.go:316: merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)&#xA;--- SKIP: TestMergeSplitManySmallLogs (0.00s)&#xA;"></skipped>
+		</testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestMergeProfiles" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestMergeProfilesInvalidInput" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestExtractProfiles" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_InvalidName" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_NilPushProfilesData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_NilProfilesConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_NilProfilesConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_Default_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_Default_ConvertError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_Default_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfiles_WithPersistentQueue/feature_gate_disabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfiles_WithPersistentQueue/feature_gate_enabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfiles_WithPersistentQueue/feature_gate_disabled_on_write_enabled_on_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfiles_WithPersistentQueue/feature_gate_enabled_on_write_disabled_on_read" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfiles_WithPersistentQueue" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesExporter_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper" name="TestProfilesRequestExporter_WithShutdown_ReturnError" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

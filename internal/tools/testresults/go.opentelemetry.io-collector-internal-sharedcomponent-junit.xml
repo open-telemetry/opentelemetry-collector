@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="0" errors="0" time="0.000107">
+	<testsuite tests="8" failures="0" time="0.000000" name="go.opentelemetry.io/collector/internal/sharedcomponent" timestamp="2025-09-24T16:28:09-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestNewMap" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestNewSharedComponentsCreateError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestSharedComponentsLoadOrStore" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestSharedComponent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestReportStatusOnStartShutdown/successful_start/stop" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestReportStatusOnStartShutdown/start_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestReportStatusOnStartShutdown/shutdown_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/sharedcomponent" name="TestReportStatusOnStartShutdown" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

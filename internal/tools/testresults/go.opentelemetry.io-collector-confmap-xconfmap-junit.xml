@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="40" failures="0" errors="0" time="0.000552">
+	<testsuite tests="40" failures="0" time="0.001000" name="go.opentelemetry.io/collector/confmap/xconfmap" timestamp="2025-09-24T16:28:06-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/struct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_struct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_interface_with_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_to_child_interface_with_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nil_map_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nil_pointer_map_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_struct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child_struct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_struct_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_interface" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_to_child_interface" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_interface_with_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_to_child_interface_with_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_slice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child_slice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_slice_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_map_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child_map_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_map_value_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_map_key" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child_map_key" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_map_key_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/map_with_stringified_non-string_key_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/pointer_child_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/child_type_pointer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/valid_mapstructure_tag" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/zero-length_mapstructure_tag" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/no_field_name_in_mapstructure_tag" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nested_map_key_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nested_map_value_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nested_slice_value_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nested_map_with_int_key" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/nested_map_with_float_key" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig/slice_type_alias" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="TestValidateConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/xconfmap" name="Example" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

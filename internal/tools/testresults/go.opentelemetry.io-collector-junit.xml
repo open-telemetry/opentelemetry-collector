@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="18" failures="0" errors="0" time="0.000250">
+	<testsuite tests="15" failures="0" time="0.000000" name="go.opentelemetry.io/collector/internal/statusutil" timestamp="2025-09-24T16:28:12-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Bad_Request" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Unauthorized" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Forbidden" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Not_Found" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Too_Many_Requests" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Bad_Gateway" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Service_Unavailable" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Gateway_Timeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus/Unsupported_Media_Type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="Test_ErrorMsgAndHTTPCodeToStatus" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="TestGetRetryInfo/NoDetails" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="TestGetRetryInfo/WithRetryInfoDetails" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="TestGetRetryInfo/WithOtherDetails" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="TestGetRetryInfo/WithMultipleDetails" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/statusutil" name="TestGetRetryInfo" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="3" failures="0" time="0.000000" name="go.opentelemetry.io/collector/internal/testutil" timestamp="2025-09-24T16:28:12-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/internal/testutil" name="TestGetAvailableLocalAddress" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/testutil" name="TestGetAvailableLocalIpv6Address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/internal/testutil" name="TestCreateExclusionsList" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="22" failures="0" errors="0" time="0.000289">
+	<testsuite tests="22" failures="0" time="0.000000" name="go.opentelemetry.io/collector/config/configtelemetry" timestamp="2025-09-24T16:28:05-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/#00" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/other_string" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/none" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/None" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/NONE" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/basic" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/Basic" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/BASIC" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/normal" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/Normal" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/NORMAL" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/detailed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/Detailed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText/DETAILED" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalText" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestUnmarshalTextNilLevel" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal/#00" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal/None" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal/Basic" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal/Normal" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal/Detailed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configtelemetry" name="TestLevelStringMarshal" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

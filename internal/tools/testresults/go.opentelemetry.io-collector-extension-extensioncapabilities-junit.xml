@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="0" failures="0" errors="0" time="0.000060">
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/extension/extensioncapabilities" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

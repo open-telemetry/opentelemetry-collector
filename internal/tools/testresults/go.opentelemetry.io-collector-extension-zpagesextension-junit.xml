@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="17" failures="0" errors="0" time="0.000249">
+	<testsuite tests="17" failures="0" time="0.000000" name="go.opentelemetry.io/collector/extension/zpagesextension" timestamp="2025-09-24T16:28:09-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestUnmarshalDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestInvalidConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestUnmarshalConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestFactory_CreateDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestFactoryCreate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestComponentFactoryType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestComponentConfigStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestComponentLifecycle/shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestComponentLifecycle/lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestComponentLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesExtensionUsage" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesExtensionBadAuthExtension" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesExtensionPortAlreadyInUse" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesMultipleStarts" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesMultipleShutdowns" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesShutdownWithoutStart" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/zpagesextension" name="TestZPagesEnableExpvar" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata" timestamp="2025-09-24T16:28:09-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="132" failures="0" errors="0" time="0.001183">
+	<testsuite tests="103" failures="0" time="0.001000" name="go.opentelemetry.io/collector/receiver/otlpreceiver" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigOnlyGRPC" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigOnlyHTTP" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigOnlyHTTPNull" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigOnlyHTTPEmptyMap" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigUnix" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigTypoDefaultProtocol" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigInvalidProtocol" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigEmptyProtocols" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigInvalidSignalPath/Invalid_traces_URL_path" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigInvalidSignalPath/Invalid_metrics_URL_path" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigInvalidSignalPath/Invalid_logs_URL_path" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigInvalidSignalPath" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestUnmarshalConfigEmpty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateSameReceiver" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateTraces/default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateTraces/invalid_grpc_port" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateTraces/invalid_http_port" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateTraces/no_http_or_grcp_config" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateTraces" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateMetric/default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateMetric/invalid_grpc_address" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateMetric/invalid_http_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateMetric/no_http_or_grcp_config" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateMetric" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateLogs/default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateLogs/invalid_grpc_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateLogs/invalid_http_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateLogs/no_http_or_grcp_config" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateProfiles/default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateProfiles/invalid_grpc_port" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateProfiles/invalid_http_port" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateProfiles/no_http_or_grcp_config" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestCreateProfiles" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentFactoryType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentConfigStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/logs-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/logs-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/metrics-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/metrics-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/traces-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle/traces-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestComponentLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/JSONUncompressed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/JSONUncompressedUTF8" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/JSONUncompressedUppercase" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/JSONGzipCompressed" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/JSONZstdCompressed" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/Permanent_NotGRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/Retryable_NotGRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/Permanent_GRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp/Retryable_GRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestJsonHttp" time="0.040000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/traces_no_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/traces_invalid_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/traces_invalid_request" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/PATCH_/v1/traces_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/GET_/v1/traces_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/metrics_no_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/metrics_invalid_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/metrics_invalid_request" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/PATCH_/v1/metrics_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/GET_/v1/metrics_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/logs_no_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/logs_invalid_content_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/POST_/v1/logs_invalid_request" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/PATCH_/v1/logs_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests/GET_/v1/logs_" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHandleInvalidRequests" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/ProtoUncompressed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/ProtoGzipCompressed" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/ProtoZstdCompressed" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/Permanent_NotGRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/Retryable_NotGRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/Permanent_GRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp/Retryable_GRPCError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestProtoHttp" time="0.040000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverInvalidContentEncoding/JsonGzipUncompressed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverInvalidContentEncoding/ProtoGzipUncompressed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverInvalidContentEncoding/ProtoZstdUncompressed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverInvalidContentEncoding" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverNoContentType/NoContentType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverNoContentType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestGRPCNewPortAlreadyUsed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHTTPNewPortAlreadyUsed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverGRPCMetricsIngestTest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverGRPCTracesIngestTest" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestOTLPReceiverHTTPTracesIngestTest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestGRPCInvalidTLSCredentials" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestGRPCMaxRecvSize" time="2.009000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHTTPInvalidTLSCredentials" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHTTPMaxRequestBodySize" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestShutdown" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter/StatusErrorRetryableNoRetryAfter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter/StatusErrorRetryableWithZeroRetryAfter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter/StatusErrorRetryableRetryAfter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter/StatusErrorNotRetryableRetryAfter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter/StatusErrorNotRetryableNoRetryAfter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="TestHttpRetryAfter" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver" name="FuzzReceiverHandlers" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="12" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetStatusFromError/Status" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetStatusFromError/Permanent_Error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetStatusFromError/Non-Permanent_Error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetStatusFromError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Retryable_Status" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Non-retryable_Status" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Specifically_429" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Specifically_400" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Specifically_401" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Specifically_403" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus/Specifically_404" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors" name="Test_GetHTTPStatusCodeFromStatus" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="4" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs" name="TestExport" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs" name="TestExport_EmptyRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs" name="TestExport_NonPermanentErrorConsumer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs" name="TestExport_PermanentErrorConsumer" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata" name="TestLogsBuilderAppendLogRecord" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="4" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics" name="TestExport" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics" name="TestExport_EmptyRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics" name="TestExport_NonPermanentErrorConsumer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics" name="TestExport_PermanentErrorConsumer" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="4" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles" name="TestExport" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles" name="TestExport_EmptyRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles" name="TestExport_NonPermanentErrorConsumer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles" name="TestExport_PermanentErrorConsumer" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="4" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace" timestamp="2025-09-24T16:28:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace" name="TestExport" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace" name="TestExport_EmptyRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace" name="TestExport_NonPermanentErrorConsumer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace" name="TestExport_PermanentErrorConsumer" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

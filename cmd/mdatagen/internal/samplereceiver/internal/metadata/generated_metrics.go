@@ -16,15 +16,17 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeEnumAttr specifies the value enum_attr attribute.
-type AttributeEnumAttr int
-
 const (
 	AggregationStrategySum = "sum"
 	AggregationStrategyAvg = "avg"
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
+)
 
+// AttributeEnumAttr specifies the value enum_attr attribute.
+type AttributeEnumAttr int
+
+const (
 	_ AttributeEnumAttr = iota
 	AttributeEnumAttrRed
 	AttributeEnumAttrGreen

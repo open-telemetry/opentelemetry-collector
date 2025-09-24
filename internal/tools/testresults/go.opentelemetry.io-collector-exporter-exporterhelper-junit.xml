@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="374" failures="0" errors="0" time="0.028581">
+	<testsuite tests="66" failures="0" time="0.001000" name="go.opentelemetry.io/collector/exporter/exporterhelper" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_InvalidName" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_NilPushLogsData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_Default_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithPersistentQueue/feature_gate_disabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithPersistentQueue/feature_gate_enabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithPersistentQueue/feature_gate_disabled_on_write_enabled_on_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithPersistentQueue/feature_gate_enabled_on_write_disabled_on_read" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithPersistentQueue" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_pLogModifiedDownStream_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogsRequest_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithRecordMetrics_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogsRequest_WithRecordMetrics_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogsRequest_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogsRequest_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestLogs_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_NilConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_NilPushMetricsData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_Default_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithPersistentQueue/feature_gate_disabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithPersistentQueue/feature_gate_enabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithPersistentQueue/feature_gate_disabled_on_write_enabled_on_read" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithPersistentQueue/feature_gate_enabled_on_write_disabled_on_read" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithPersistentQueue" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_pMetricModifiedDownStream_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetricsRequest_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithRecordMetrics_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetricsRequest_WithRecordMetrics_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetricsRequest_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetricsRequest_WithSpan_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestMetrics_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_InvalidName" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_NilPushTraceData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_Default_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithPersistentQueue/feature_gate_disabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithPersistentQueue/feature_gate_enabled_on_write_and_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithPersistentQueue/feature_gate_disabled_on_write_enabled_on_read" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithPersistentQueue/feature_gate_enabled_on_write_disabled_on_read" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithPersistentQueue" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_pLogModifiedDownStream_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTracesRequest_WithRecordMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithRecordMetrics_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTracesRequest_WithRecordMetrics_RequestSenderError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTracesRequest_WithSpan" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithSpan_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTracesRequest_WithSpan_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper" name="TestTraces_WithShutdown_ReturnError" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="49" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestBaseExporter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestBaseExporterWithOptions" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestQueueOptionsWithRequestExporter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestBaseExporterLogging" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestQueueRetryWithDisabledQueue/WithQueue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestQueueRetryWithDisabledQueue/WithRequestQueue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestQueueRetryWithDisabledQueue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_NilLogsConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_NilPushLogsData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_Default_ConvertError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_Default_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestLogsRequest_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_NilTracesConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_NilPushTraceData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_Default_ConvertError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_Default_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestTracesRequest_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_NilLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_NilMetricsConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_NilPushMetricsData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_Default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_WithCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_Default_ConvertError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_Default_ExportError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_WithShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestMetricsRequest_WithShutdown_ReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestExportTraceDataOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestExportMetricsOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestExportLogsOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestNewQueueSenderFailedRequestDropped" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestQueueConfig_Validate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderDropOnPermanentError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderSimpleRetry" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderRetryPartial" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderMaxElapsedTime" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderThrottleError" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderWithContextTimeout" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestRetrySenderWithCancelledContext" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestNewDefaultTimeoutConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestInvalidTimeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal" name="TestNewTimeoutSender" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr" name="TestNewShutdownErr" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr" name="TestIsShutdownErr" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest" name="TestMockHost" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata" name="TestProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata" name="TestNewTelemetryBuilder" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest" name="TestSetupTelemetry" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="73" failures="0" time="0.004000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestAsyncMemoryQueue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestAsyncMemoryQueueBlocking" time="5.820000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestAsyncMemoryWaitForResultQueueBlocking" time="5.260000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestAsyncMemoryQueueBlockingCancelled" time="1.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueBlockingCancelled" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueDrainWhenShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueOfferInvalidSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueRejectOverCapacityElements" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueOfferZeroSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueOverflow" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueWaitForResultPassErrorBack" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueWaitForResultCancelIncomingRequest" time="1.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestMemoryQueueWaitForResultSizeAndCapacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueLogsSizeCapacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueLogsFailure" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueTracesSizeCapacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueTracesFailure" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueMetricsFailure" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueLogsBatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueTracesBatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestObsQueueMetricsBatchSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_FullCapacity/requests_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_FullCapacity/items_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_FullCapacity/bytes_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_FullCapacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_Shutdown" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers/#messages:_1_#consumers:_1" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers/#messages:_100_#consumers:_1" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers/#messages:_100_#consumers:_3" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers/#messages:_1_#consumers:_100" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers/#messages:_100_#consumers:_100" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ConsumersProducers" time="0.050000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentBlockingQueue/requests_based" time="23.520000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentBlockingQueue/items_based" time="22.740000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentBlockingQueue" time="46.260000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestToStorageClient/obtain_storage_extension_by_name" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestToStorageClient/fail_on_not_existing_storage_extension" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestToStorageClient/invalid_extension_type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestToStorageClient/fail_on_error_getting_storage_client_from_extension" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestToStorageClient" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestInvalidStorageExtensionType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_StopAfterBadStart" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData/corrupted_no_items" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData/corrupted_all_items" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData/corrupted_some_items" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData/corrupted_metadata" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData/corrupted_everything" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CorruptedData" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_CurrentlyProcessedItems" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueueStartWithNonDispatched" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueueStartWithNonDispatchedConcurrent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_PutCloseReadClose" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexMarshaling/#elements:0" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexMarshaling/#elements:1" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexMarshaling/#elements:18446744073709551615" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexMarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexArrayMarshaling/#elements:[0_1_2]" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexArrayMarshaling/#elements:[]" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexArrayMarshaling/#elements:[]#01" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestItemIndexArrayMarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ShutdownWhileConsuming" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_StorageFull" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemDispatchingFinish_ErrorHandling/no_errors" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemDispatchingFinish_ErrorHandling/error_on_first_transaction,_success_afterwards" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemDispatchingFinish_ErrorHandling/error_on_first_and_second_transaction" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemDispatchingFinish_ErrorHandling/error_on_first_and_third_transaction" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemDispatchingFinish_ErrorHandling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_ItemsCapacityIsAlwyasRecorder" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_RequestCapacityLessAfterRestart" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue" name="TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="166" failures="0" time="0.001000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestBatchContextLink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergedContext_GetValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestConfig_Validate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestBatchConfig_Validate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestDisabledBatcher/one_worker" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestDisabledBatcher/three_workers" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestDisabledBatcher" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/merge_and_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs/scope_logs_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/merge_and_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/scope_logs_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/unsplittable_large_log" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize/splittable_then_unsplittable_log" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsBasedOnByteSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitLogsInputNotModifiedIfErrorReturned" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitManySmallLogs" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestLogsMergeSplitExactBytes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestLogsMergeSplitExactItems" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestLogsMergeSplitUnknownSizerType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestLogsRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/split_and_merge" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics/scope_metrics_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit/sum" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit/gauge" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit/histogram" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit/exponential_histogram" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit/summary" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSplitMetricsWithDataPointSplit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsInputNotModifiedIfErrorReturned" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractMetricsInvalidMetric" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitManySmallMetrics" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/merge_and_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/scope_metrics_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/unsplittable_large_metric" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize/splittable_then_unsplittable_metric" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitMetricsBasedOnByteSize" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractGaugeDataPoints/extract_all_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractGaugeDataPoints/extract_partial_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractGaugeDataPoints/no_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractGaugeDataPoints" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSumDataPoints/extract_all_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSumDataPoints/extract_partial_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSumDataPoints/no_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSumDataPoints" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractHistogramDataPoints/extract_all_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractHistogramDataPoints/extract_partial_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractHistogramDataPoints/no_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractHistogramDataPoints" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractExponentialHistogramDataPoints/extract_all_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractExponentialHistogramDataPoints/extract_partial_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractExponentialHistogramDataPoints/no_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractExponentialHistogramDataPoints" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSummaryDataPoints/extract_all_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSummaryDataPoints/extract_partial_points" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSummaryDataPoints/no_capacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractSummaryDataPoints" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMetricsMergeSplitUnknownSizerType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMetricsRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMultiBatcher_NoTimeout" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMultiBatcher_Timeout" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled/items/one_worker" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled/items/three_workers" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled/bytes/one_worker" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled/bytes/three_workers" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_TimeoutDisabled/items/one_worker" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_TimeoutDisabled/items/three_workers" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_TimeoutDisabled/bytes/one_worker" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_TimeoutDisabled/bytes/three_workers" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_TimeoutDisabled" time="0.070000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_WithTimeout/items/one_worker" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_WithTimeout/items/three_workers" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_WithTimeout/bytes/one_worker" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_WithTimeout/bytes/three_workers" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_NoSplit_WithTimeout" time="0.240000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Split_TimeoutDisabled/items/one_worker" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Split_TimeoutDisabled/items/three_workers" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Split_TimeoutDisabled/bytes/one_worker" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Split_TimeoutDisabled/bytes/three_workers" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Split_TimeoutDisabled" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_Shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_MergeError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_PartialSuccessError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestSPartitionBatcher_PartialSuccessError_AfterOkRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestShardBatcher_EmptyRequestList" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_ContextMerging/merge_context_with_timestamp" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_ContextMerging/merge_context_returns_background" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_ContextMerging/nil_merge_context" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitionBatcher_ContextMerging" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitioner_GetKeyFromRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestPartitioner_GetKeyFromContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchStopWhileWaiting" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchDoNotPreserveCancellation" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchHappyPath" time="0.210000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchDifferentSizers" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchPersistenceEnabled" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchPersistenceEnabledStorageError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchPersistentEnabled_NoDataLossOnShutdown" time="0.410000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchNoStartShutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_Merge/split_disabled" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_Merge/split_high_limit" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_Merge" time="0.220000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_BatchExportError/merge_only" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_BatchExportError/merge_without_split_triggered" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_BatchExportError/merge_with_split_triggered" time="0.260000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_BatchExportError" time="0.390000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_MergeOrSplit" time="0.130000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_MergeOrSplit_Multibatch" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_Shutdown" time="0.050000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_BatchBlocking" time="0.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatch_DrainActiveRequests" time="0.080000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchTimerResetNoConflict" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestQueueBatchTimerFlush" time="0.170000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeTraces" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/second_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/split_and_merge" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces/scope_spans_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTraces" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/both_requests_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/first_request_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/first_empty_second_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/merge_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/split_only" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/merge_and_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/scope_spans_split" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/unsplittable_large_trace" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize/splittable_then_unsplittable_trace" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesBasedOnByteSize" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitTracesInputNotModifiedIfErrorReturned" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestExtractTraces" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestMergeSplitManySmallTraces" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestTracesMergeSplitExactBytes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestTracesMergeSplitExactItems" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestTracesMergeSplitUnknownSizerType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch" name="TestTracesRequest" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="3" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/request" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/request" name="TestItemsSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/request" name="TestSizeTypeUnmarshalText" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/request" name="TestSizeTypeMarshalText" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender" name="TestExportSenderRightArguments" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender" name="TestExportSenderReturnsError" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest" name="TestNewNopSenderFunc" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest" name="TestNewErrSenderFunc" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="7" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestLogsCountSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestLogsBytesSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestMetricsCountSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestMetricsBytesSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestMetricsBytesDeltaSize" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestTracesCountSizer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer" name="TestTracesBytesSizer" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest" timestamp="2025-09-24T16:28:08-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

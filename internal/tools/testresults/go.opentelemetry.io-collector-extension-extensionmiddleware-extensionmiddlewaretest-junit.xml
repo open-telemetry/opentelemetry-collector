@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="5" failures="0" errors="0" time="0.000127">
+	<testsuite tests="5" failures="0" time="0.000000" name="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" timestamp="2025-09-24T16:28:09-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" name="TestErrClient" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" name="TestErrServer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" name="TestNopClient" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" name="TestNopServer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest" name="TestRoundTripperFunc" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
