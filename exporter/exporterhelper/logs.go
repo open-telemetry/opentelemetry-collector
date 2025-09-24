@@ -11,16 +11,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/pdata/plog"
 )
-
-// NewLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-// Deprecated: [v0.136.0] Use xexporterhelper.NewLogsQueueBatchSettings instead.
-func NewLogsQueueBatchSettings() QueueBatchSettings {
-	return queuebatch.NewLogsQueueBatchSettings()
-}
 
 // NewLogs creates an exporter.Logs that records observability logs and wraps every request with a Span.
 func NewLogs(
@@ -37,17 +28,5 @@ func NewLogs(
 		return nil, errNilPushLogs
 	}
 	return internal.NewLogsRequest(ctx, set, queuebatch.RequestFromLogs(), queuebatch.RequestConsumeFromLogs(pusher),
-		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
-}
-
-// NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
-// Deprecated [v0.136.0]: Use xexporterhelper.NewLogsRequest instead.
-func NewLogsRequest(
-	ctx context.Context,
-	set exporter.Settings,
-	converter RequestConverterFunc[plog.Logs],
-	pusher RequestConsumeFunc,
-	options ...Option,
-) (exporter.Logs, error) {
-	return internal.NewLogsRequest(ctx, set, converter, pusher, options...)
+		append([]Option{internal.WithQueueBatchSettings(queuebatch.NewLogsQueueBatchSettings())}, options...)...)
 }

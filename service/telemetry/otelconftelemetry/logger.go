@@ -7,10 +7,12 @@ import (
 	"context"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -19,7 +21,7 @@ func createLogger(
 	ctx context.Context,
 	set telemetry.LoggerSettings,
 	componentConfig component.Config,
-) (*zap.Logger, telemetry.LoggerProvider, error) {
+) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 	res := newResource(set.Settings, cfg)
 
@@ -86,5 +88,21 @@ func createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
-	return logger, sdk.LoggerProvider().(telemetry.LoggerProvider), nil
+
+	// Wrap the zap.Logger with componentattribute so scope attributes
+	// can be added and removed dynamically, and tee logs to the
+	// LoggerProvider.
+	loggerProvider := sdk.LoggerProvider()
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = componentattribute.NewOTelTeeCoreWithAttributes(
+			core,
+			loggerProvider,
+			"go.opentelemetry.io/collector/service",
+			attribute.NewSet(),
+		)
+		return core
+	}))
+
+	return logger, sdk.Shutdown, nil
 }

@@ -7,8 +7,6 @@ import (
 	"context"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/log"
-	nooplog "go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -85,14 +83,10 @@ type Factory interface {
 	// This may be used by components in their internal telemetry.
 	CreateResource(context.Context, Settings, component.Config) (pcommon.Resource, error)
 
-	// CreateLogger creates a zap.Logger and LoggerProvider that may be used
-	// by components to log their internal operations.
-	//
-	// NOTE: from the perspective of the Factory implementation, the Logger
-	// and the LoggerProvider are independent. However, the service package
-	// will arrange for logs written to this logger to be copied to the
-	// LoggerProvider.
-	CreateLogger(context.Context, LoggerSettings, component.Config) (*zap.Logger, LoggerProvider, error)
+	// CreateLogger creates a zap.Logger that may be used by components to
+	// log their internal operations, along with a function that must be called
+	// when the service is shutting down.
+	CreateLogger(context.Context, LoggerSettings, component.Config) (*zap.Logger, component.ShutdownFunc, error)
 
 	// CreateMeterProvider creates a metric.MeterProvider that may be used
 	// by components to record metrics relating to their internal operations.
@@ -104,12 +98,6 @@ type Factory interface {
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
-}
-
-// LoggerProvider is a log.LoggerProvider that can be shutdown.
-type LoggerProvider interface {
-	log.LoggerProvider
-	Shutdown(context.Context) error
 }
 
 // MeterProvider is a metric.MeterProvider that can be shutdown.
@@ -174,7 +162,7 @@ func WithCreateLogger(createLogger CreateLoggerFunc) FactoryOption {
 }
 
 // WithCreateLogger is the equivalent of Factory.CreateLogger.
-type CreateLoggerFunc func(context.Context, LoggerSettings, component.Config) (*zap.Logger, LoggerProvider, error)
+type CreateLoggerFunc func(context.Context, LoggerSettings, component.Config) (*zap.Logger, component.ShutdownFunc, error)
 
 // WithCreateMeterProvider overrides the default CreateMeterProvider
 func WithCreateMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
@@ -206,10 +194,11 @@ func (f *factory) CreateResource(ctx context.Context, settings Settings, cfg com
 	return f.createResourceFunc(ctx, settings, cfg)
 }
 
-func (f *factory) CreateLogger(ctx context.Context, settings LoggerSettings, cfg component.Config) (*zap.Logger, LoggerProvider, error) {
+func (f *factory) CreateLogger(ctx context.Context, settings LoggerSettings, cfg component.Config) (*zap.Logger, component.ShutdownFunc, error) {
 	if f.createLoggerFunc == nil {
 		logger := zap.NewNop()
-		return logger, noopLoggerProvider{LoggerProvider: nooplog.NewLoggerProvider()}, nil
+		nopShutdown := component.ShutdownFunc(nil)
+		return logger, nopShutdown, nil
 	}
 	return f.createLoggerFunc(ctx, settings, cfg)
 }
@@ -226,11 +215,6 @@ func (f *factory) CreateTracerProvider(ctx context.Context, settings TracerSetti
 		return noopTracerProvider{TracerProvider: nooptrace.NewTracerProvider()}, nil
 	}
 	return f.createTracerProviderFunc(ctx, settings, cfg)
-}
-
-type noopLoggerProvider struct {
-	nooplog.LoggerProvider
-	component.ShutdownFunc
 }
 
 type noopMeterProvider struct {
