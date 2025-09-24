@@ -1,8 +1,8 @@
-# Functional Composition Pattern
+# Functional Interface Pattern
 
 ## Overview
 
-This codebase uses a **Functional Composition** pattern for its core
+This codebase uses a **Functional Interface** pattern for its core
 interfaces. This pattern decomposes the individual methods from
 interface types into corresponding function types, then recomposes
 them into a concrete implementation type. This approach provides
@@ -18,19 +18,19 @@ For every method in the public interface, a corresponding `type
 exist, having the matching signature.
 
 For every interface type, there is a corresponding functional
-constructor to enable a functional composition of interface methods,
-`func New<Type>(<Method1>Func, {...}, ...Option) Type` which accepts
-the initially-required method set and uses a Functional Option pattern
-for forwards compatibility, even when there are no options at the
-start.
+constructor to enable an easy composition of interface methods, `func
+New<Type>(<Method1>Func, {...}, ...Option) Type` which accepts the
+initially-required method set and also applies the well-known
+Functional Option pattern for forwards compatibility, even in cases
+where there are no options at the start.
 
 Interface stability for exported interface types is our primary
-objective. The Functional Composition pattern supports safe interface
+objective. The Functional Interface pattern supports safe interface
 evolution, first by "sealing" the type with an unexported interface
 method. This means all implementations of an interface must embed or
 use constructors provided in the package.
 
-These "sealed concrete" implementation objects support adding new
+These sealed, concrete implementation objects support adding new
 methods in future releases, _without changing the major version
 number_, because public interface types are always provided through a
 package-provided implementation.
@@ -45,7 +45,11 @@ implementation for each type.
 ### 1. Decompose Interfaces into Function Types
 
 Instead of implementing interfaces directly on structs, we create
-function types for each method:
+function types for each method. In the examples developed below, we
+describe a hypothetical rate limiter interface that returns a
+non-block reservation. The reservation object is a simple pair of two
+interface methods saying how long to wait before proceeding and
+allowing the caller to cancel their request.
 
 ```go
 // Interface definition
@@ -76,13 +80,14 @@ func (f CancelFunc) Cancel() {
 
 Users of the [`net/http` package have seen this
 pattern](https://pkg.go.dev/net/http#HandlerFunc). `http.HandlerFunc`
-can be seen as a prototype for the Functional Composition pattern, in
+can be seen as a prototype for the Functional Interface pattern, in
 this case for HTTP servers. Interestingly, the single-method
 `http.RoundTripper` interface, representing the same interaction for
 HTTP clients, does not have a `RoundTripperFunc` in the base library
-(consequently, this codebase defines [it for testing middleware
-extensions](https://github.com/open-telemetry/opentelemetry-collector/blob/64088871efb1b873c3d53ed3b7f0ce7140c0d7e2/extension/extensionmiddleware/extensionmiddlewaretest/nop.go#L23)). In
-this codebase, the pattern is applied extensively.
+(consequently, this codebase defines [its own for testing middleware
+extensions](https://github.com/open-telemetry/opentelemetry-collector/blob/64088871efb1b873c3d53ed3b7f0ce7140c0d7e2/extension/extensionmiddleware/extensionmiddlewaretest/nop.go#L23)). 
+
+In this codebase, the Functional Interface pattern is applied extensively.
 
 ### 2. Compose Function Types into Interface Implementations
 
@@ -97,21 +102,22 @@ type rateReservationImpl struct {
 }
 ```
 
-This pattern applies even for single-method interfaces, where the
-`<Method>Func` would implement the interface, were it not sealed. 
+This pattern applies even for single-method interfaces, where a single
+`<Method>Func` provides the complete interface surface. Still, an
+interface is used so that it can be sealed, as in:
 
 ```go
 // Single-method interface type
 type RateLimiter interface {
-    ReserveRate(context.Context, int) RateReservation
+    ReserveRate(context.Context, int) (RateReservation, error)
 }
 
 // Single function type
-ReserveRateFunc func(context.Context, int) RateReservation
+type ReserveRateFunc func(context.Context, int) (RateReservation, error)
 
-func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) RateReservation {
+func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) (RateReservation, error) {
     if f == nil {
-        return rateReservationImpl{} // Composite no-op behavior
+        return rateReservationImpl{} // No-op behavior
     }
     f(ctx, value)
 }
@@ -132,16 +138,20 @@ parameters methods are arguments in the constructor. In addition, a
 Functional Optional pattern is provided for use by future optional
 methods.
 
+The Golang "functional option" pattern [first introduced in a Rob Pike
+blog
+post](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
+is by now widely known, spelled out in in Golang blog post ["working
+with
+interfaces"](https://go.dev/blog/module-compatibility#working-with-interfaces). For
+complex interfaces, including all top-level extension types, this
+additional pattern is REQUIRED, even at first when there are no
+options.
+
 For example:
 
 ```go
-func NewRateReservation(wf WaitTimeFunc, cf CancelFunc, _ ...RateReservationOption) RateReservation {
-    return rateReservationImpl{
-        WaitTimeFunc: wf,
-        CancelFunc:   cf,
-    }
-}
-
+// NewRateLimiter
 func NewRateLimiter(f ReserveRateFunc, _ ...RateLimiterOption) RateLimiter {
     return rateLimiterImpl{ReserveRateFunc: f}
 }
@@ -153,18 +163,11 @@ correct named type (i.e., `<Method>Func`), so we can pass function
 literals to these constructors without an explicit conversion:
 
 ```go
-    return NewRateReservation(
-        // Wait time 1 second
-        func() time.Duration { return time.Second },
-	// Cancel is a no-op.
-	nil,
-    )
+    // construct a rate limiter from a bare function (without options)
+    return NewRateLimiter(func(ctx context.Context, weight int) RateReservation {
+		// rate-limiter logic
+	})
 ```
-
-For more complicated interfaces, this pattern can be combined with the
-[Functional Option
-pattern](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
-in Golang, shown in the next example.
 
 Taken from `receiver/receiver.go`, here we setup signal-specific
 functions using a functional-option argument passed to
@@ -193,7 +196,9 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 
 ### 4. Seal Public Interface Types
 
-Using an unexported method "seals" the interface type so external
+Following the [guidance in "working with
+interfaces"](https://go.dev/blog/module-compatibility#working-with-interfaces),
+we use an unexported method "seals" the interface type so external
 packages can only use, not implement the interface. This allows
 interfaces to evolve safely because users are forced to use
 constructor functions.
@@ -284,20 +289,53 @@ func modifiedFactory() Factory {
 }    
 ```
 
-### 6. How to apply the Functional Option pattern
+### 6. When to apply the Functional Option pattern
 
-The functional option pattern is well known. For the Functional
-Composition pattern, we require the use of Functional Option arguments
+[The functional option pattern is not always considered
+helpful](https://rednafi.com/go/dysfunctional_options_pattern/), since
+it adds code complexity and runtime cost when it is applied
+unconditionally.
+
+For the Functional Interface pattern, we require the use of Functional
+Option arguments as follows:
+
+- Major interfaces, including all top-level extension types and those
+  with substantial design complexity, are REQUIRED to use the
+  Functional Option pattern in their constructor.
+- Performance interfaces SHOULD NOT use the Functional Option pattern;
+  top-interfaces are expected to pre-compute the result of functional
+  options during initialization and obtain simpler interfaces to use
+  at runtime.
+- Interfaces MAY use the Functional Option pattern when they are not
+  simple, not top-level, and do not require high-performance.
+
+As an example of a type which does not require functional options,
+consider a lazily-evaluated key-value object. The interface allows the
+user selective evaluation, knowing that the function call is
+expensive.
+
+```go
+// Construct a new rate reservation. Simple API, not a top-level interface, 
+// and performance sensitive, therefore do not use functional options.
+func NewRateReservation(wf WaitTimeFunc, cf CancelFunc) RateReservation {
+    return rateReservationImpl{
+        WaitTimeFunc: wf,
+        CancelFunc:   cf,
+    }
+}
+```
 
 ## Examples
 
-This pattern enables composition by making it easy to compose and
-decompose interface values. For example, to wrap a `receiver.Factory`
-with a limiter of some sort:
+The Functional Interface pattern enables code composition through
+making it easy to compose and decompose interface values. For example,
+to wrap a `receiver.Factory` with a limiter of some sort:
 
 ```go
 // Transform existing factories with cross-cutting concerns
-func NewLimitedFactory(fact receiver.Factory, cfg LimiterConfigurator) receiver.Factory {
+// Note interface method values (e.g., fact.Type) have the correct
+// argument type to pass-through in this constructor
+func NewLimitedFactory(fact receiver.Factory, cfg LimiterConfigurator, _ ...Option) receiver.Factory {
     return receiver.NewFactoryImpl(
         fact.Type,
         fact.CreateDefaultConfig,
