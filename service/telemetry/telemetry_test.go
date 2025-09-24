@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	nooplog "go.opentelemetry.io/otel/log/noop"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -34,10 +33,10 @@ func TestNewFactory_Defaults(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, pcommon.NewResource(), res)
 
-	logger, loggerProvider, err := factory.CreateLogger(context.Background(), LoggerSettings{}, nil)
+	logger, loggerShutdownFunc, err := factory.CreateLogger(context.Background(), LoggerSettings{}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, zap.NewNop(), logger)
-	assert.Equal(t, noopLoggerProvider{LoggerProvider: nooplog.NewLoggerProvider()}, loggerProvider)
+	assert.Nil(t, loggerShutdownFunc)
 
 	meterProvider, err := factory.CreateMeterProvider(context.Background(), MeterSettings{}, nil)
 	require.NoError(t, err)
@@ -92,22 +91,27 @@ func TestNewFactory_CreateLogger(t *testing.T) {
 	}
 	ctx := context.WithValue(context.Background(), contextKey{}, 123)
 
-	var dummyLoggerProvider struct{ LoggerProvider }
+	shutdownCalled := false
 	dummyLogger := new(zap.Logger)
 	factory := NewFactory(nil, WithCreateLogger(
-		func(ctx context.Context, set LoggerSettings, cfg component.Config) (*zap.Logger, LoggerProvider, error) {
+		func(ctx context.Context, set LoggerSettings, cfg component.Config) (*zap.Logger, component.ShutdownFunc, error) {
 			assert.Equal(t, 123, ctx.Value(contextKey{}))
 			assert.Equal(t, settings, set)
 			assert.Equal(t, config, cfg)
-			return dummyLogger, &dummyLoggerProvider, errors.New("not implemented")
+			shutdownFunc := func(context.Context) error {
+				shutdownCalled = true
+				return nil
+			}
+			return dummyLogger, shutdownFunc, errors.New("not implemented")
 		},
 	))
 	require.NotNil(t, factory)
 
-	logger, loggerProvider, err := factory.CreateLogger(ctx, settings, config)
+	logger, shutdownFunc, err := factory.CreateLogger(ctx, settings, config)
 	require.EqualError(t, err, "not implemented")
 	assert.Equal(t, dummyLogger, logger)
-	assert.Equal(t, &dummyLoggerProvider, loggerProvider)
+	require.NoError(t, shutdownFunc(context.Background()))
+	assert.True(t, shutdownCalled)
 }
 
 func TestNewFactory_CreateMeterProvider(t *testing.T) {

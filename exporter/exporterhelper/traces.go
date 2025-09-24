@@ -11,16 +11,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-// NewTracesQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using ptrace.Traces.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-// Deprecated: [v0.136.0] Use xexporterhelper.NewTracesQueueBatchSettings instead.
-func NewTracesQueueBatchSettings() QueueBatchSettings {
-	return queuebatch.NewTracesQueueBatchSettings()
-}
 
 // NewTraces creates an exporter.Traces that records observability metrics and wraps every request with a Span.
 func NewTraces(
@@ -37,17 +28,5 @@ func NewTraces(
 		return nil, errNilPushTraces
 	}
 	return internal.NewTracesRequest(ctx, set, queuebatch.RequestFromTraces(), queuebatch.RequestConsumeFromTraces(pusher),
-		append([]Option{internal.WithQueueBatchSettings(NewTracesQueueBatchSettings())}, options...)...)
-}
-
-// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and Sender.
-// Deprecated [v0.136.0]: Use xexporterhelper.NewTracesRequest instead.
-func NewTracesRequest(
-	ctx context.Context,
-	set exporter.Settings,
-	converter RequestConverterFunc[ptrace.Traces],
-	pusher RequestConsumeFunc,
-	options ...Option,
-) (exporter.Traces, error) {
-	return internal.NewTracesRequest(ctx, set, converter, pusher, options...)
+		append([]Option{internal.WithQueueBatchSettings(queuebatch.NewTracesQueueBatchSettings())}, options...)...)
 }
