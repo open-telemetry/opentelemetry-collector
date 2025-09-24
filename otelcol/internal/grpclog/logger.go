@@ -13,10 +13,11 @@ import (
 // SetLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
 // exact configuration. The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to
 // INFO to avoid copious logging from grpc framework.
-func SetLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
+func SetLogger(baseLogger *zap.Logger) *zapgrpc.Logger {
 	logger := zapgrpc.NewLogger(baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		var err error
+		loglevel := baseLogger.Level()
 		if loglevel == zapcore.InfoLevel {
 			loglevel = zapcore.WarnLevel
 		}

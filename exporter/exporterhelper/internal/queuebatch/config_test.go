@@ -42,7 +42,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfig()
 	cfg.Batch.Get().Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer")
+	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer, found \"\"")
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
@@ -59,28 +59,28 @@ func TestBatchConfig_Validate(t *testing.T) {
 
 	cfg = newTestBatchConfig()
 	cfg.FlushTimeout = 0
-	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be positive")
+	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be positive, found 0")
 
 	cfg = newTestBatchConfig()
 	cfg.MinSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative")
+	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative, found -1")
 
 	cfg = newTestBatchConfig()
 	cfg.MaxSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative")
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative, found -1")
 
 	cfg = newTestBatchConfig()
 	cfg.Sizer = request.SizerTypeRequests
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer")
+	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
 
 	cfg = newTestBatchConfig()
 	cfg.Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer")
+	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"\"")
 
 	cfg = newTestBatchConfig()
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be greater or equal to `min_size`")
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
 }
 
 func newTestBatchConfig() BatchConfig {

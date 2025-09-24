@@ -7,6 +7,32 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.42.0/v0.136.0
+
+### 💡 Enhancements 💡
+
+- `xpdata`: Add Serialization and Deserialization of AnyValue (#12826)
+- `debugexporter`: add support for batching (#13791)
+  The default queue size is 1
+- `configtls`: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime. (#13130, #13245)
+- `mdatagen`: Expose stability level in generated metric documentation (#13748)
+- `internal/tools`: Add support for modernize in Makefile (#13796)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Fix a potential deadlock during collector shutdown. (#13740)
+- `otlpexporter`: fix the validation of unix socket endpoints (#13826)
+
+<!-- previous-version -->
+
+## v1.41.0/v0.135.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add new `exporter_queue_batch_send_size` and `exporter_queue_batch_send_size_bytes` metrics, showing the size of telemetry batches from the exporter. (#12894)
+
+<!-- previous-version -->
+
 ## v1.40.0/v0.134.0
 
 ### 💡 Enhancements 💡

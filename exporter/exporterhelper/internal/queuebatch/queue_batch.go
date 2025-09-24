@@ -60,7 +60,7 @@ func NewQueueBatch(
 		cfg.NumConsumers = 1
 	}
 
-	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
+	q, err := queue.NewQueue(queue.Settings[request.Request]{
 		SizerType:        cfg.Sizer,
 		ItemsSizer:       set.ItemsSizer,
 		BytesSizer:       set.BytesSizer,

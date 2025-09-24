@@ -28,7 +28,5 @@ Profile #0
     Start time     : 1970-01-01 00:00:00 +0000 UTC
     Duration       : 1970-01-01 00:00:00 +0000 UTC
     Dropped attributes count: 0
-    Location indices: []
     Sample #0
-        Location length: 1
-        Value: [100]
+        Values: [100]

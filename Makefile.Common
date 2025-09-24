@@ -6,11 +6,12 @@ COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
-GOTEST_TIMEOUT?=240s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
+GOTEST_TIMEOUT?=240s
+# -race is not supported on windows arm64
+GOTEST_OPT?= -timeout $(GOTEST_TIMEOUT) $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))),, -race)
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
@@ -43,6 +44,7 @@ MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
+MODERNIZE    := $(TOOLS_BIN_DIR)/modernize
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -74,6 +76,10 @@ benchmark: $(GOTESTSUM)
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
+.PHONY: modernize
+modernize: $(MODERNIZE)
+	$(MODERNIZE) -fix -test -v ./...
+
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
@@ -95,8 +101,8 @@ common/goimports: $(GOIMPORTS)
 common/gofumpt: $(GOFUMPT)
 	$(GOFUMPT) -l -w -extra .
 
-.PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
 
 .PHONY: generate
