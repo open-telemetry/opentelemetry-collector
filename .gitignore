@@ -1,5 +1,6 @@
 bin/
 dist/
+.tools/
 /local
 
 # GoLand IDEA
@@ -36,3 +37,4 @@ go.work*
 # npm (used for markdown-link-check)
 node_modules/*
 package-lock.json
+
