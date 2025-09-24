@@ -313,7 +313,7 @@ type Attribute struct {
 
 func (a *Attribute) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
-		return errors.New("missing required field for attribute: `enabled`")
+		a.Enabled = true
 	}
 	return parser.Unmarshal(a)
 }
