@@ -40,8 +40,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	core, observer := observer.New(zapcore.DebugLevel)
 	attrs := attribute.NewSet(

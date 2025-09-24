@@ -424,7 +424,7 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 	assert.EqualError(t, err, ""+
 		"failed to shutdown tracer provider: an exception occurred; "+
 		"failed to shutdown meter provider: an exception occurred; "+
-		"failed to shutdown logger provider: an exception occurred",
+		"failed to shutdown logger: an exception occurred",
 	)
 }
 
