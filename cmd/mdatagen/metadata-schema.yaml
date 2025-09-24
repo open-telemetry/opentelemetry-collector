@@ -80,7 +80,7 @@ attributes:
     type: <string|int|double|bool|bytes|slice|map>
     # Optional: indicates whether the attribute is optional or not.
     optional:
-    # Required: whether the metric attribute is enabled by default for the
+    # Optional: whether the metric attribute is enabled by default for the
     # receiver instance. This only affects attributes present on metrics. 
     enabled: bool
 
