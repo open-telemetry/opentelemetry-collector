@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="39" failures="0" errors="0" time="0.020791">
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/cmd/builder" timestamp="2025-09-25T17:00:56-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="7" failures="0" time="0.000000" name="go.opentelemetry.io/collector/cmd/builder/internal" timestamp="2025-09-25T17:00:56-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestCommand/command_created" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestCommand" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestApplyFlags/Default_flag_values" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestApplyFlags/All_flag_values" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestApplyFlags" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestInitConfig/initConfig_created_correctly" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal" name="TestInitConfig" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="32" failures="0" time="0.000000" name="go.opentelemetry.io/collector/cmd/builder/internal/builder" timestamp="2025-09-25T17:00:56-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestAliases" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestParseModules" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestInvalidConverter" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestRelativePath" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestModuleFromCore" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestMissingModule" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestNewDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestNewBuiltinConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestSkipGoValidation" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestSkipGoInitialization" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestBuildTagConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestDebugOptionSetConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestAddsDefaultProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestSkipsNilFieldValidation" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateDefault" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateInvalidOutputPath" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestVersioning/defaults" time="1.310000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestVersioning/only_gomod_file,_skip_generate" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestVersioning/old_component_version" time="1.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestVersioning/old_component_version_without_strict_mode" time="0.960000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestVersioning" time="3.280000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestSkipGenerate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/Default_Configuration_Compilation" time="1.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/LDFlags_Compilation" time="1.410000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/GCFlags_Compilation" time="0.870000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/Build_Tags_Compilation" time="1.030000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/Debug_Compilation" time="1.300000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/No_providers" time="0.810000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/With_confmap_factories" time="0.640000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile/ConfResolverDefaultURIScheme_set" time="0.640000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestGenerateAndCompile" time="7.700000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/cmd/builder/internal/builder" name="TestReplaceStatementsAreComplete" time="0.810000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/cmd/builder/internal/config" timestamp="2025-09-25T17:00:56-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

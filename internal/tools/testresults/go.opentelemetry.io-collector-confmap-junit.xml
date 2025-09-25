@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="260" failures="0" errors="0" time="0.002176">
+	<testsuite tests="134" failures="0" time="0.002000" name="go.opentelemetry.io/collector/confmap" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandEnvVars/expand-with-no-env.yaml" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandEnvVars/expand-with-partial-env.yaml" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandEnvVars/expand-with-all-env.yaml" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandEnvVars" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverDoneNotExpandOldEnvVars" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandMapAndSliceValues" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOldStyle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOldStyleDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOldStyleNoBrackets" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOldStyleNoBracketsDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/ComplexValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Embedded" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedMulti" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedConcat" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedNewAndOldStyle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedNewAndOldStyleDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Int" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Int32" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Int64" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Float32" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Float64" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Bool" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Timestamp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/MultipleSameMatches" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/Nested" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NestedDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedInNested" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedInNestedDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/EmbeddedAndNested" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NestedMultiple" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchMissingOpeningBracket" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchMissingOpeningBracketDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchMissingClosingBracket" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchMissingClosingBracketDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchBracketsWithout$" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchBracketsWithout$DefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOnlyMissingClosingBracket" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOnlyMissingClosingBracketDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOnlyMissingOpeningBracket" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOnlyMissingOpeningBracketDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchCloseBeforeOpen" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchCloseBeforeOpenDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/NoMatchOldStyleNested" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMissingOpeningBracketFirst" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMissingOpeningBracketFirstDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMissingOpeningBracketLast" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMissingClosingBracketFirst" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMissingClosingBracketLast" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMultipleMissingOpen" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMultipleMissingClosing" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMoreClosingBrackets" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchMoreOpeningBrackets" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchAlternatingMissingOpening" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/PartialMatchAlternatingMissingClosing" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/SchemeAfterNoSchemeIsExpanded" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/SchemeAfterNoSchemeIsExpandedDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/SchemeBeforeNoSchemeIsExpanded" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues/SchemeBeforeNoSchemeIsExpandedDefaultProvider" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandStringValues" time="0.020000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandReturnError/string_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandReturnError/slice_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandReturnError/map_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandReturnError/string_embedded_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandReturnError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverInfiniteExpand" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandInvalidScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandInvalidOpaqueValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverExpandUnsupportedScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverDefaultProviderExpand" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrieved" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedWithOptions" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedUnsupportedType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAML" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLWithOptions" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLInvalidYAMLBytes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLInvalidAsMap" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/string" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/&#34;string&#34;" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/123" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/2023-03-20T03:17:55.432328Z" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/true" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/0123" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/0x123" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/0b101" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/0.123" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString/{key:_value}" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewRetrievedFromYAMLString" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewResolverInvalidSchemeInURI" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestNewResolverDuplicateScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/unsupported_location_scheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/default_scheme_not_found" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/retrieve_location_config_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/retrieve_location_not_convertible_to_Conf" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/converter_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/watch_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/close_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors/shutdown_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverErrors" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/unix" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/file_unix" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/windows_C" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/windows_z" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/file_windows" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath/invalid_scheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestBackwardsCompatibilityForFilePath" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolver" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverNewLinesInOpaqueValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverNoLocations" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverNoProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverShutdownClosesWatch" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestProvidesDefaultLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestResolverDefaultProviderSet" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-override-old-values" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-name-aware" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-multiple" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-processor-service" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-entire-config" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-append-different-kinds" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-multiple-pipelines" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled/merge-mode-map" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-enabled" time="0.050000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-disabled/merge-mode-default" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-disabled/merge-mode-append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-disabled/merge-mode-append-override-old-values" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality/feature-flag-disabled" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="TestMergeFunctionality" time="0.060000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="ExampleProvider" time="1.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="Example_simpleUnmarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="Example_embeddedUnmarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="Example_embeddedManualUnmarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="Example_manualUnmarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap" name="Example" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="5" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/confmaptest" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/confmaptest" name="TestLoadConfFileNotFound" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/confmaptest" name="TestLoadConfInvalidYAML" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/confmaptest" name="TestLoadConf" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/confmaptest" name="TestToStringMapSanitizeEmptySlice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/confmaptest" name="TestValidateProviderScheme" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="80" failures="0" skipped="1" time="0.001000" name="go.opentelemetry.io/collector/confmap/internal" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestEmbeddedMarshalerError" time="0.000000">
+			<skipped message="=== RUN   TestEmbeddedMarshalerError&#xA;    confmap_test.go:550: This test fails because the main struct calls the embedded struct Unmarshal method, and doesn&#39;t execute the embedded struct hook.&#xA;--- SKIP: TestEmbeddedMarshalerError (0.00s)&#xA;"></skipped>
+		</testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestToStringMapFlatten" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestToStringMap/Sample_Collector_configuration" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestToStringMap/Sample_types" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestToStringMap/Embedded_keys" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestToStringMap" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestNilToAnyField" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestExpandNilStructPointersHookFunc" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalWithIgnoreUnused" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapKeyStringToMapKeyTextUnmarshalerHookFunc" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint32UnmarshalerSuccess/Test_convert_0_to_uint" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint32UnmarshalerSuccess/Test_positive_uint_conversion" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint32UnmarshalerSuccess/Test_largest_uint64_conversion" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint32UnmarshalerSuccess" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint32UnmarshalerFailure" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint64Unmarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUint64UnmarshalerFailure" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMarshal" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMarshalDuplicateID" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMarshalError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestEmbeddedUnmarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestEmbeddedUnmarshalerError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalerEmbeddedNilMap" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalerKeepAlreadyInitialized" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestDirectUnmarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalerErr" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc/overridden_by_slice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc/overridden_by_a_bigger_slice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc/overridden_by_an_empty_slice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc/not_overridden_by_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc/not_overridden_by_missing_value" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestZeroSliceHookFunc" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestStructValuesReplaced" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestNilValuesUnchanged" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestEmptySliceUnchanged" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestNestedUnmarshalerImplementations" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalDouble" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalThroughEmbeddedStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestUnmarshalOwnThroughEmbeddedSquashedStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestRecursiveUnmarshaling" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestExpandedValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestSubExpandedValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestStringyTypes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfDelete/key" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfDelete/map::expanded" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfDelete" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapMerge/both_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapMerge/nil_map" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapMerge/initialized" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapMerge/both" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestMapMerge" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/nil_input" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/empty_map" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/nil_subkey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/empty_subkey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/non-empty_map" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil/non-map_subkey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfIsNil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/both_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/both_nilmerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_nilmerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/right_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/right_nilmerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/both_non-nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/both_non-nilmerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_empty,_right_non-empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_empty,_right_non-emptymerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_non-empty,_right_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_non-empty,_right_emptymerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_nil,_right_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_nil,_right_emptymerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_empty,_right_nil" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge/left_empty,_right_nilmerge_append" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal" name="TestConfmapNilMerge" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/internal/envvar" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="22" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/internal/mapstructure" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/WithString" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/WithTextMarshaler" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/MapWithTextMarshalerKey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/MapWithoutTextMarshalerKey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/WithSlice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/WithSimpleStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode/WithComplexStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncode" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithoutTags" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithoutMapStructureTag" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithRename" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithOmitEmpty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithSquash" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo/WithRemain" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestGetTagInfo" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncodeValueError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncodeNonStringEncodedKey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestDuplicateKey" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestTextMarshalerError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncodeStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncodeStructError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/internal/mapstructure" name="TestEncodeNil" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/internal/third_party/composehook" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/provider/internal" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="19" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" timestamp="2025-09-25T17:00:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTP" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_valid_certificate_and_name" time="0.120000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_valid_certificate_with_invalid_name" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_valid_certificate_with_invalid_name,_skip_validation" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_no_certificate_should_fail" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_invalid_cert" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS/Test_no_cert" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestFunctionalityDownloadFileHTTPS" time="0.230000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestUnsupportedScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestEmptyURI" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestRetrieveFromShutdownServer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestNonExistent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestInvalidYAML" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestValidateProviderScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestInvalidURI/foo://.." time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestInvalidURI/http://" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestInvalidURI/http://{}" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider" name="TestInvalidURI" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="2" failures="0" errors="0" time="0.000181">
+	<testsuite tests="2" failures="0" time="0.000000" name="go.opentelemetry.io/collector/processor" timestamp="2025-09-25T17:01:02-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor" name="TestNewFactory" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor" name="TestNewFactoryWithOptions" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/processor/internal" timestamp="2025-09-25T17:01:02-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

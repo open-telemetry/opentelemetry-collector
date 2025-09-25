@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="6" failures="0" errors="0" time="0.000147">
+	<testsuite tests="6" failures="0" time="0.000000" name="go.opentelemetry.io/collector/otelcol/otelcoltest" timestamp="2025-09-25T17:01:01-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestLoadConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestLoadConfigAndValidate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestLoadConfigEnv/testdata/config_env.yaml" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestLoadConfigEnv/testdata/config_default_scheme.yaml" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestLoadConfigEnv" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/otelcol/otelcoltest" name="TestNopFactories" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

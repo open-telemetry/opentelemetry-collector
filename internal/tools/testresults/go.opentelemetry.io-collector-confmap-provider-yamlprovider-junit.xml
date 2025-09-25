@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="9" failures="0" errors="0" time="0.000104">
+	<testsuite tests="9" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/provider/yamlprovider" timestamp="2025-09-25T17:00:58-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestValidateProviderScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestEmpty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestInvalidYAML" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestOneValue" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestNamedComponent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestMapEntry" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestArrayEntry" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestNewLine" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/yamlprovider" name="TestDotSeparator" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

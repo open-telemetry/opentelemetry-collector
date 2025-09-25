@@ -67,7 +67,7 @@ func TestLoadMetadata(t *testing.T) {
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
-				ResourceAttributes: map[AttributeName]Attribute{
+				ResourceAttributes: map[AttributeName]ResourceAttribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
 						Enabled:     true,

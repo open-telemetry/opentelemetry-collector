@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="36" failures="0" errors="0" time="0.000460">
+	<testsuite tests="36" failures="0" time="0.000000" name="go.opentelemetry.io/collector/component/componentstatus" timestamp="2025-09-25T17:00:55-05:00">
+		<properties>
+			<property name="go.version" value="go1.25.1 X:nodwarf5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestInstanceID/equal_instances" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestInstanceID/equal_instances_-_out_of_order" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestInstanceID/with_pipelines" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestInstanceID/with_pipelines_-_out_of_order" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestInstanceID" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestAllPipelineIDs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStarting_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStarting_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusOK_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusOK_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusRecoverableError_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusRecoverableError_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusPermanentError_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusPermanentError_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusFatalError_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusFatalError_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStopping_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStopping_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStopped_without_error" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent/StatusStopped_without_error_and_attributes" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestNewStatusEvent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusEventsWithError/error_status_constructor_for:_StatusRecoverableError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusEventsWithError/error_status_constructor_for:_StatusPermanentError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusEventsWithError/error_status_constructor_for:_StatusFatalError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusEventsWithError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusStarting)_is_false" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusOK)_is_false" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusRecoverableError)_is_true" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusPermanentError)_is_true" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusFatalError)_is_true" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusStopping)_is_false" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError/StatusIsError(StatusStopped)_is_false" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="TestStatusIsError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="Test_ReportStatus/Reporter_implemented" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="Test_ReportStatus/Reporter_not_implemented" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/component/componentstatus" name="Test_ReportStatus" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
