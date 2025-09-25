@@ -14,8 +14,10 @@ import (
 func TestGetAvailableLocalAddress(t *testing.T) {
 	endpoint := GetAvailableLocalAddress(t)
 
+	lc := &net.ListenConfig{}
+
 	// Endpoint should be free.
-	ln0, err := net.Listen("tcp", endpoint)
+	ln0, err := lc.Listen(t.Context(), "tcp", endpoint)
 	require.NoError(t, err)
 	require.NotNil(t, ln0)
 	t.Cleanup(func() {
@@ -24,7 +26,7 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 
 	// Ensure that the endpoint wasn't something like ":0" by checking that a
 	// second listener will fail.
-	ln1, err := net.Listen("tcp", endpoint)
+	ln1, err := lc.Listen(t.Context(), "tcp", endpoint)
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
@@ -32,8 +34,9 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 func TestGetAvailableLocalIpv6Address(t *testing.T) {
 	endpoint := GetAvailableLocalIPv6Address(t)
 
+	lc := &net.ListenConfig{}
 	// Endpoint should be free.
-	ln0, err := net.Listen("tcp", endpoint)
+	ln0, err := lc.Listen(t.Context(), "tcp", endpoint)
 	require.NoError(t, err)
 	require.NotNil(t, ln0)
 	t.Cleanup(func() {
@@ -42,7 +45,7 @@ func TestGetAvailableLocalIpv6Address(t *testing.T) {
 
 	// Ensure that the endpoint wasn't something like ":0" by checking that a
 	// second listener will fail.
-	ln1, err := net.Listen("tcp", endpoint)
+	ln1, err := lc.Listen(t.Context(), "tcp", endpoint)
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }

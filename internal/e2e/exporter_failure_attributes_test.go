@@ -44,7 +44,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 
 		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
 
-		require.NoError(t, sendTestMetrics(otelPort))
+		require.NoError(t, sendTestMetrics(t, otelPort))
 
 		require.Eventually(t, func() bool {
 			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
@@ -73,7 +73,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 
 		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
 
-		require.NoError(t, sendTestMetrics(otelPort))
+		require.NoError(t, sendTestMetrics(t, otelPort))
 		assertNoFailureMetric(t, metricsPort, "otlp_http/test")
 	})
 
@@ -89,7 +89,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 
 		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
 
-		require.NoError(t, sendTestMetrics(otelPort))
+		require.NoError(t, sendTestMetrics(t, otelPort))
 
 		require.Eventually(t, func() bool {
 			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
@@ -145,7 +145,11 @@ func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (stri
 	}()
 
 	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://localhost:%s/metrics", metricsPort), http.NoBody)
+		if err != nil {
+			return false
+		}
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return false
 		}
@@ -158,7 +162,11 @@ func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (stri
 
 func scrapeFailureMetric(t *testing.T, metricsPort, exporterName string) *dto.Metric {
 	t.Helper()
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://localhost:%s/metrics", metricsPort), http.NoBody)
+	if err != nil {
+		return nil
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil
 	}

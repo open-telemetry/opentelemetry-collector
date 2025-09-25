@@ -169,7 +169,7 @@ service:
 			waitMetricsReady(t, metricsPort)
 
 			// Send some data through the pipeline to trigger internal telemetry
-			err = sendTestTraces(otlphttpPort)
+			err = sendTestTraces(t, otlphttpPort)
 			require.NoError(t, err)
 
 			// Capture service.instance.id from the Prometheus endpoint

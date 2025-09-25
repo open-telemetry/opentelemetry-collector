@@ -265,7 +265,9 @@ func TestHTTPServerTLS(t *testing.T) {
 				client.Transport.(*http.Transport).ForceAttemptHTTP2 = false
 			}
 
-			resp, errResp := client.Get(cc.Endpoint)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, cc.Endpoint, http.NoBody)
+			require.NoError(t, err)
+			resp, errResp := client.Do(req)
 			if tt.hasError {
 				require.Error(t, errResp)
 			} else {
@@ -295,13 +297,16 @@ func TestHTTPServerTransport(t *testing.T) {
 
 			client := http.Client{
 				Transport: &http.Transport{
-					DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-						return net.Dial("unix", addr)
+					DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+						d := net.Dialer{}
+						return d.DialContext(ctx, "unix", addr)
 					},
 				},
 				Timeout: 5 * time.Second, // Set a client-level timeout
 			}
-			resp, err := client.Get("http://whatever/foo")
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://whatever/foo", http.NoBody)
+			require.NoError(t, err)
+			resp, err := client.Do(req)
 			require.NoError(t, err)
 			defer resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -477,7 +482,7 @@ func TestHTTPCorsExposedHeaders(t *testing.T) {
 	url := "http://" + ln.Addr().String()
 
 	// ExposedHeaders are returned on actual requests, not preflight.
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 	require.NoError(t, err)
 	req.Header.Set("Origin", "http://allowed.com")
 
@@ -532,7 +537,7 @@ func TestHTTPServerHeaders(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	if extraHeader {
@@ -567,8 +572,8 @@ func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optiona
 }
 
 func verifyHeadersResp(t *testing.T, url string, expected configopaque.MapList) {
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
-	require.NoError(t, err, "Error creating request")
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
+	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Error sending request to http server")
@@ -729,7 +734,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 	// tt
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, http.NoBody)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.Addr, http.NoBody)
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-invalid")
 
@@ -757,7 +762,7 @@ func TestServerWithDecoder(t *testing.T) {
 	// tt
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
@@ -794,7 +799,7 @@ func TestServerWithDecompression(t *testing.T) {
 	testSrv := httptest.NewServer(srv.Handler)
 	defer testSrv.Close()
 
-	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, testSrv.URL, compressZstd(t, body))
 	require.NoError(t, err, "Error creating request: %v", err)
 
 	req.Header.Set("Content-Encoding", "zstd")
@@ -974,7 +979,9 @@ func BenchmarkHTTPRequest(b *testing.B) {
 				}
 
 				for pb.Next() {
-					resp, errResp := c.Get(cc.Endpoint)
+					req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, cc.Endpoint, http.NoBody)
+					require.NoError(b, err)
+					resp, errResp := c.Do(req)
 					require.NoError(b, errResp)
 					body, errRead := io.ReadAll(resp.Body)
 					_ = resp.Body.Close()
@@ -1039,7 +1046,9 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 			// we'll verify the configuration was set by testing the server behavior.
 			// The main verification is that ToServer() succeeds without error when DisableKeepAlives is set.
 
-			resp, err := http.Get("http://" + ln.Addr().String())
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+ln.Addr().String(), http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			require.NotNil(t, resp)
 			_ = resp.Body.Close()
@@ -1108,7 +1117,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				<-done
 			}()
 
-			req, err := http.NewRequest(tc.httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
+			req, err := http.NewRequestWithContext(t.Context(), tc.httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
 			require.NoError(t, err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)

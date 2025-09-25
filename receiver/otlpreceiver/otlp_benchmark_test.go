@@ -78,7 +78,7 @@ func BenchmarkHTTPProtoLogsSequential(b *testing.B) {
 	marshaler := &plog.ProtoMarshaler{}
 	bodyBytes, err := marshaler.MarshalLogs(testdata.GenerateLogs(itemsPerRequest))
 	require.NoError(b, err)
-	req, err := http.NewRequest(http.MethodPost, "http://"+endpoint+defaultLogsURLPath, bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(b.Context(), http.MethodPost, "http://"+endpoint+defaultLogsURLPath, bytes.NewReader(bodyBytes))
 	require.NoError(b, err)
 	req.Header.Set("Content-Type", protobufContentType)
 

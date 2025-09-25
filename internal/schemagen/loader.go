@@ -4,6 +4,7 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -134,7 +135,12 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error
 		return nil, fmt.Errorf("failed to construct URL for %s: %w", ref.CacheKey(), err)
 	}
 
-	resp, err := sl.httpClient.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a HTTP GET request for url %q: %w", url, err)
+	}
+
+	resp, err := sl.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from %s: %w", url, err)
 	}
@@ -192,7 +198,7 @@ func (sl *schemaLoader) refVersion(ref *Ref) (string, error) {
 			return version, nil
 		}
 		// attempt to "go get" the module to resolve version if not found locally
-		cmd := exec.Command("go", "get", modulePath) // #nosec G204
+		cmd := exec.CommandContext(context.Background(), "go", "get", modulePath) // #nosec G204
 		cmd.Dir = sl.cd
 
 		if err := cmd.Run(); err != nil {
@@ -229,7 +235,7 @@ func (sl *schemaLoader) repoRoot(componentDir string) (string, error) {
 		return sl.rootDir, nil
 	}
 
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
+	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--show-toplevel")
 	cmd.Dir = componentDir
 	output, err := cmd.Output()
 	if err != nil {

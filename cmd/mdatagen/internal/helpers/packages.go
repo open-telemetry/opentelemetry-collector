@@ -4,6 +4,7 @@
 package helpers // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,7 +21,7 @@ func RootPackage(componentDir string) (string, error) {
 		return "", err
 	}
 
-	cmd := exec.Command("go", "list", "-m")
+	cmd := exec.CommandContext(context.Background(), "go", "list", "-m")
 	cmd.Dir = rootModDir
 	output, err := cmd.Output()
 	if err != nil {

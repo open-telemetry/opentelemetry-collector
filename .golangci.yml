@@ -39,6 +39,7 @@ linters:
     - govet
     - misspell
     - modernize
+    - noctx
     - nolintlint
     - perfsprint
     - revive

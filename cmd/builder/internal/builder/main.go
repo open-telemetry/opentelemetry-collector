@@ -5,6 +5,7 @@ package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/bu
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -38,7 +39,7 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	}
 
 	//nolint:gosec // #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
-	cmd := exec.Command(cfg.Distribution.Go, args...)
+	cmd := exec.CommandContext(context.Background(), cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 
 	cmd.Env = os.Environ()

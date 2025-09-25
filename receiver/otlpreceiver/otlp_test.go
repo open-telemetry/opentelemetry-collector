@@ -308,7 +308,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.method+" "+tt.uri+" "+tt.name, func(t *testing.T) {
 			url := "http://" + addr + tt.uri
-			req, err := http.NewRequest(tt.method, url, bytes.NewReader([]byte(`1234`)))
+			req, err := http.NewRequestWithContext(t.Context(), tt.method, url, bytes.NewReader([]byte(`1234`)))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", tt.contentType)
 
@@ -482,7 +482,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			body, err := test.reqBodyFunc()
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(http.MethodPost, url, body)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, url, body)
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
@@ -514,7 +514,7 @@ func TestOTLPReceiverNoContentType(t *testing.T) {
 	t.Run("NoContentType", func(t *testing.T) {
 		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
 
-		req, err := http.NewRequest(http.MethodPost, url, body)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, url, body)
 		require.NoError(t, err, "Error creating trace POST request: %v", err)
 
 		// Set invalid encoding to trigger an error
@@ -531,7 +531,8 @@ func TestOTLPReceiverNoContentType(t *testing.T) {
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	ln, err := net.Listen("tcp", addr)
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	t.Cleanup(func() {
 		assert.NoError(t, ln.Close())
@@ -545,7 +546,8 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 
 func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	ln, err := net.Listen("tcp", addr)
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	t.Cleanup(func() {
 		assert.NoError(t, ln.Close())
@@ -809,7 +811,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		pbMarshaler := ptrace.ProtoMarshaler{}
 		pbBytes, err := pbMarshaler.MarshalTraces(td)
 		require.NoError(t, err)
-		req, err := http.NewRequest(http.MethodPost, "http://"+addr+defaultTracesURLPath, bytes.NewReader(pbBytes))
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "http://"+addr+defaultTracesURLPath, bytes.NewReader(pbBytes))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", pbContentType)
 		resp, err := http.DefaultClient.Do(req)
@@ -1117,7 +1119,7 @@ func createHTTPRequest(
 		t.Fatalf("Unsupported compression type %v", encoding)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, buf)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, url, buf)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Content-Encoding", encoding)
