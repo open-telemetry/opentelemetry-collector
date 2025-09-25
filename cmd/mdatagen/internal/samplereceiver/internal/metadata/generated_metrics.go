@@ -816,13 +816,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
 func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
 	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
-	return
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
 func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricDefaultMetricToBeRemoved.recordDataPoint(mb.startTime, ts, val)
-	return
 }
 
 // RecordMetricInputTypeDataPoint adds a data point to metric.input_type metric.
@@ -838,13 +836,11 @@ func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, i
 // RecordOptionalMetricDataPoint adds a data point to optional.metric metric.
 func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool, options ...MetricAttributeOption) {
 	mb.metricOptionalMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue, options...)
-	return
 }
 
 // RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
 func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
-	return
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

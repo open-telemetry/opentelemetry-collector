@@ -450,8 +450,6 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
         )
 	{{- if $metric.Data.HasMetricInputType }}
 	return nil
-  {{- else }}
-  return
 	{{- end }}
 }
 {{ end }}

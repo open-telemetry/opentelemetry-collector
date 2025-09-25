@@ -312,10 +312,17 @@ type Attribute struct {
 }
 
 func (a *Attribute) Unmarshal(parser *confmap.Conf) error {
+	err := parser.Unmarshal(a)
+	if err != nil {
+		return err
+	}
+
+	// default enabled to true
 	if !parser.IsSet("enabled") {
 		a.Enabled = true
 	}
-	return parser.Unmarshal(a)
+
+	return nil
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -352,7 +359,8 @@ func (a Attribute) TestValue() string {
 }
 
 func (a Attribute) TestValueTwo() string {
-	if len(a.Enum) >= 2 {
+	if len(a.Enum) > 2 {
+		fmt.Printf("second %q", a.Enum[1])
 		return fmt.Sprintf(`%q`, a.Enum[1])
 	}
 	switch a.Type.ValueType {
@@ -394,6 +402,9 @@ type Signal struct {
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// NumAttributes is the length of the attribtues field.
+	NumAttributes int
 }
 
 func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {

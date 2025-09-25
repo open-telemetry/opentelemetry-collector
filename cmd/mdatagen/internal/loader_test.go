@@ -234,7 +234,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes:    []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							NumAttributes: 7,
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -250,7 +251,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes:    []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							NumAttributes: 4,
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -264,7 +266,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr"},
+							Attributes:    []AttributeName{"string_attr", "boolean_attr"},
+							NumAttributes: 2,
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
@@ -290,9 +293,10 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"metric.input_type": {
 						Signal: Signal{
-							Enabled:     true,
-							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
-							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+							Enabled:       true,
+							Description:   "Monotonic cumulative sum int metric with string input_type enabled by default.",
+							Attributes:    []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+							NumAttributes: 5,
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{

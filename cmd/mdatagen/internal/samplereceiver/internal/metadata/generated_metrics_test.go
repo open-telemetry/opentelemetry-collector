@@ -118,8 +118,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
-			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
+
+			// record a second point
+			mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, WithOptionalIntAttrMetricAttribute(18), WithOptionalStringAttrMetricAttribute("optional_string_attr-val-2"))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,18 +129,21 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
-			allMetricsCount++
-			mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+
+			// record a second point
+			mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
 
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false, WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
-			allMetricsCount++
-			mb.RecordOptionalMetricDataPoint(ts, 3, "string_attr-val-2", true, false, WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
+
+			// record a second point
+			mb.RecordOptionalMetricDataPoint(ts, 3, "string_attr-val-2", false, true, WithOptionalStringAttrMetricAttribute("optional_string_attr-val-2"))
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
-			allMetricsCount++
-			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", true)
+
+			// record a second point
+			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -167,7 +171,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, (allMetricsCount/2)+1, ms.Len())
+				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
@@ -191,8 +195,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(2), dp.IntValue())
 					default:
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, int64(4), dp.IntValue())
+						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
 					}
 					assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
@@ -255,8 +259,23 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["default.metric.to_be_removed"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					switch tt.name {
+					case "all_set":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					case "none_set_min":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					case "none_set_max":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+					case "none_set_avg":
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+					default:
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					}
 					assert.Equal(t, "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
@@ -283,8 +302,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 						assert.Equal(t, int64(2), dp.IntValue())
 					default:
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, int64(4), dp.IntValue())
+						assert.Equal(t, 2, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, int64(1), dp.IntValue())
 					}
 					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
@@ -347,8 +366,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
 					default:
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					}
 					assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
@@ -402,8 +421,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
 					default:
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					}
 					assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
 					assert.Empty(t, ms.At(i).Unit())
