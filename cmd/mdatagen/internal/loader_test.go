@@ -221,6 +221,9 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
+							Stability: Stability{
+								Level: component.StabilityLevelDevelopment,
+							},
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
@@ -237,6 +240,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -251,6 +255,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -265,6 +270,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.metric.to_be_removed": {
 						Signal: Signal{
 							Enabled:               true,
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
 							ExtendedDocumentation: "The metric will be removed soon.",
 							Warnings: Warnings{
@@ -280,7 +286,10 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"metric.input_type": {
 						Signal: Signal{
-							Enabled:     true,
+							Enabled: true,
+							Stability: Stability{
+								Level: component.StabilityLevelBeta,
+							},
 							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
 							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 						},
@@ -332,7 +341,7 @@ func TestLoadMetadata(t *testing.T) {
 						"batch_size_trigger_send": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: "deprecated", From: "v0.110.0"},
+								Stability:   Stability{Level: component.StabilityLevelDeprecated, From: "v0.110.0"},
 								Description: "Number of times the batch was sent due to a size trigger",
 							},
 							Unit: strPtr("{times}"),
@@ -344,7 +353,7 @@ func TestLoadMetadata(t *testing.T) {
 						"request_duration": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: "alpha"},
+								Stability:   Stability{Level: component.StabilityLevelAlpha},
 								Description: "Duration of request",
 							},
 							Unit: strPtr("s"),
@@ -356,7 +365,7 @@ func TestLoadMetadata(t *testing.T) {
 						"process_runtime_total_alloc_bytes": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: "stable"},
+								Stability:   Stability{Level: component.StabilityLevelStable},
 								Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 							},
 							Unit: strPtr("By"),
@@ -371,7 +380,7 @@ func TestLoadMetadata(t *testing.T) {
 						"queue_length": {
 							Signal: Signal{
 								Enabled:               true,
-								Stability:             Stability{Level: "alpha"},
+								Stability:             Stability{Level: component.StabilityLevelAlpha},
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},

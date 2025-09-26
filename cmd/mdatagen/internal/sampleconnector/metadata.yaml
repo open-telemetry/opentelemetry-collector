@@ -116,6 +116,8 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     unit: "1"
+    stability:
+      level: deprecated
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
@@ -126,6 +128,8 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     unit: ""
+    stability:
+      level: deprecated
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
@@ -136,6 +140,8 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
+    stability:
+      level: deprecated
     unit: s
     sum:
       value_type: double
@@ -146,6 +152,8 @@ metrics:
 
   metric.input_type:
     enabled: true
+    stability:
+      level: beta
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:

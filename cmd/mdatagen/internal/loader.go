@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
@@ -63,8 +65,18 @@ func LoadMetadata(filePath string) (Metadata, error) {
 
 	setAttributesFullName(md.Attributes)
 	setAttributesFullName(md.ResourceAttributes)
+	setDefaultMetricStabilityLevel(md.Metrics)
 
 	return md, nil
+}
+
+func setDefaultMetricStabilityLevel(metrics map[MetricName]Metric) {
+	for mName, metric := range metrics {
+		if metric.Stability.Level == component.StabilityLevelUndefined {
+			metric.Stability.Level = component.StabilityLevelDevelopment
+			metrics[mName] = metric
+		}
+	}
 }
 
 var componentTypes = []string{
