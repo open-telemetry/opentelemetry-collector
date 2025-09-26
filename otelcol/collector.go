@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // State defines Collector's state.
@@ -216,6 +217,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+
+		// TODO: inject the telemetry factory through factories.
+		// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+		TelemetryFactory: otelconftelemetry.NewFactory(),
 	}, cfg.Service)
 	if err != nil {
 		return err
