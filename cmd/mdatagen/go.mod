@@ -184,8 +184,6 @@ replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression

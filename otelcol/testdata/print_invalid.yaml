@@ -1,0 +1,10 @@
+receivers:
+  r:
+exporters:
+  e:
+    timeout: invalid
+service:
+  pipelines:
+    logs:
+      receivers: [r]
+      exporters: [e]
