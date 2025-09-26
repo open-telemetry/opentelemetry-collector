@@ -181,7 +181,7 @@ func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompres
 		compressionParams: compressionParams,
 		compressor:        encoder,
 		bufferPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &bytes.Buffer{}
 			},
 		},
