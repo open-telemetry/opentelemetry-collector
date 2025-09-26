@@ -74,7 +74,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr",
+						FullName:     "string.resource.attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
@@ -83,7 +84,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.enum.resource.attr",
+						FullName:     "string.enum.resource.attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
@@ -91,7 +93,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional.resource.attr",
+						FullName:     "optional.resource.attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
@@ -99,7 +102,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice.resource.attr",
+						FullName:     "slice.resource.attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
@@ -107,7 +111,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map.resource.attr",
+						FullName:     "map.resource.attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
@@ -118,7 +123,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_disable_warning",
+						FullName:     "string.resource.attr_disable_warning",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"string.resource.attr_remove_warning": {
 						Description: "Resource attribute with any string value.",
@@ -129,7 +135,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_remove_warning",
+						FullName:     "string.resource.attr_remove_warning",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"string.resource.attr_to_be_removed": {
 						Description: "Resource attribute with any string value.",
@@ -140,7 +147,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_to_be_removed",
+						FullName:     "string.resource.attr_to_be_removed",
+						Availability: AttributeAvailabilityDefault,
 					},
 				},
 
@@ -152,7 +160,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "enum_attr",
+						FullName:     "enum_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -160,7 +169,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string_attr",
+						FullName:     "string_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -168,51 +178,64 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "overridden_int_attr",
+						FullName:     "overridden_int_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr",
+						FullName:     "boolean_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"boolean_attr2": {
 						Description: "Another attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr2",
+						FullName:     "boolean_attr2",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice_attr",
+						FullName:     "slice_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map_attr",
+						FullName:     "map_attr",
+						Availability: AttributeAvailabilityDefault,
 					},
-					"optional_int_attr": {
-						Description: "An optional attribute with an integer value",
+					"conditional_int_attr": {
+						Description: "A conditional attribute with an integer value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "optional_int_attr",
-						Optional: true,
+						FullName:     "conditional_int_attr",
+						Availability: AttributeAvailabilityConditional,
 					},
-					"optional_string_attr": {
-						Description: "An optional attribute with any string value",
+					"conditional_string_attr": {
+						Description: "A conditional attribute with any string value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional_string_attr",
-						Optional: true,
+						FullName:     "conditional_string_attr",
+						Availability: AttributeAvailabilityConditional,
+					},
+					"opt_in_bool_attr": {
+						Description: "An opt-in attribute with a boolean value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+						FullName:     "opt_in_bool_attr",
+						Availability: AttributeAvailabilityOptIn,
 					},
 				},
 				Metrics: map[MetricName]Metric{
@@ -224,7 +247,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -240,7 +263,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -301,7 +324,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This event will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
 					},
 					"default.event.to_be_renamed": {
@@ -312,7 +335,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
 					},
 					"default.event.to_be_removed": {

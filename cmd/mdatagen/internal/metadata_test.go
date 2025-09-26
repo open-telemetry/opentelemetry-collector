@@ -222,3 +222,82 @@ func TestCodeCovID(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributeAvailability(t *testing.T) {
+	tests := []struct {
+		name            string
+		availability    AttributeAvailability
+		wantConditional bool
+	}{
+		{
+			name:            "default availability",
+			availability:    AttributeAvailabilityDefault,
+			wantConditional: false,
+		},
+		{
+			name:            "conditional availability",
+			availability:    AttributeAvailabilityConditional,
+			wantConditional: true,
+		},
+		{
+			name:            "opt_in availability",
+			availability:    AttributeAvailabilityOptIn,
+			wantConditional: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := Attribute{Availability: tt.availability}
+			assert.Equal(t, tt.wantConditional, attr.IsConditional())
+		})
+	}
+}
+
+func TestAttributeAvailabilityUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    AttributeAvailability
+		wantErr bool
+	}{
+		{
+			name:  "default",
+			input: "default",
+			want:  AttributeAvailabilityDefault,
+		},
+		{
+			name:  "conditional",
+			input: "conditional",
+			want:  AttributeAvailabilityConditional,
+		},
+		{
+			name:  "opt_in",
+			input: "opt_in",
+			want:  AttributeAvailabilityOptIn,
+		},
+		{
+			name:  "empty defaults to default",
+			input: "",
+			want:  AttributeAvailabilityDefault,
+		},
+		{
+			name:    "invalid value",
+			input:   "invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var aa AttributeAvailability
+			err := aa.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, aa)
+		})
+	}
+}
