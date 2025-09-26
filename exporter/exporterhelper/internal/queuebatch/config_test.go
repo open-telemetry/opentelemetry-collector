@@ -4,6 +4,7 @@
 package queuebatch
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -89,5 +92,96 @@ func newTestBatchConfig() BatchConfig {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      2048,
 		MaxSize:      0,
+	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	newBaseCfg := func() Config {
+		return Config{
+			Enabled:      true,
+			Sizer:        request.SizerTypeRequests,
+			NumConsumers: 10,
+			QueueSize:    1_000,
+			Batch: configoptional.Default(BatchConfig{
+				FlushTimeout: 200 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
+				MinSize:      8192,
+			}),
+		}
+	}
+	tests := []struct {
+		path        string
+		expectedErr string
+		expectedCfg func() Config
+	}{
+		{
+			path: "batch_set_empty_explicit_sizer.yaml",
+			expectedCfg: func() Config {
+				cfg := newBaseCfg()
+				cfg.Sizer = request.SizerTypeBytes
+				// Batch is set, sizer is not overridden
+				cfg.Batch.GetOrInsertDefault()
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_empty_no_explicit_sizer.yaml",
+			expectedCfg: func() Config {
+				cfg := newBaseCfg()
+				cfg.Batch.GetOrInsertDefault()
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_explicit_sizer.yaml",
+			expectedCfg: func() Config {
+				cfg := newBaseCfg()
+				cfg.Sizer = request.SizerTypeBytes
+				cfg.QueueSize = 2000
+				cfg.Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Sizer has been overridden by parent sizer
+					Sizer:   request.SizerTypeBytes,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_no_explicit_sizer.yaml",
+			expectedCfg: func() Config {
+				cfg := newBaseCfg()
+				cfg.QueueSize = 2000
+				cfg.Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Sizer has NOT been overridden by parent sizer
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_unset.yaml",
+			// Batch remains unset, sizer override does not apply.
+			expectedCfg: newBaseCfg,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.path))
+			require.NoError(t, err)
+
+			cfg := newBaseCfg()
+			err = cfg.Unmarshal(cm)
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, err, tt.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedCfg(), cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+		})
 	}
 }
