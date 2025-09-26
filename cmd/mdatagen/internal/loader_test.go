@@ -67,7 +67,7 @@ func TestLoadMetadata(t *testing.T) {
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
-				ResourceAttributes: map[AttributeName]Attribute{
+				ResourceAttributes: map[AttributeName]ResourceAttribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
 						Enabled:     true,
@@ -153,6 +153,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeStr,
 						},
 						FullName: "enum_attr",
+						Enabled:  true,
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -161,6 +162,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeStr,
 						},
 						FullName: "string_attr",
+						Enabled:  false,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -169,6 +171,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeInt,
 						},
 						FullName: "overridden_int_attr",
+						Enabled:  true,
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
@@ -176,6 +179,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeBool,
 						},
 						FullName: "boolean_attr",
+						Enabled:  true,
 					},
 					"boolean_attr2": {
 						Description: "Another attribute with a boolean value.",
@@ -183,6 +187,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeBool,
 						},
 						FullName: "boolean_attr2",
+						Enabled:  true,
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
@@ -190,6 +195,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeSlice,
 						},
 						FullName: "slice_attr",
+						Enabled:  true,
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
@@ -197,6 +203,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeMap,
 						},
 						FullName: "map_attr",
+						Enabled:  true,
 					},
 					"optional_int_attr": {
 						Description: "An optional attribute with an integer value",
@@ -205,6 +212,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "optional_int_attr",
 						Optional: true,
+						Enabled:  true,
 					},
 					"optional_string_attr": {
 						Description: "An optional attribute with any string value",
@@ -213,8 +221,10 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "optional_string_attr",
 						Optional: true,
+						Enabled:  true,
 					},
 				},
+
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
 						Signal: Signal{
@@ -224,7 +234,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes:    []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							NumAttributes: 7,
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -240,7 +251,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes:    []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							NumAttributes: 4,
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -254,7 +266,8 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr"},
+							Attributes:    []AttributeName{"string_attr", "boolean_attr"},
+							NumAttributes: 2,
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
@@ -280,9 +293,10 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"metric.input_type": {
 						Signal: Signal{
-							Enabled:     true,
-							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
-							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+							Enabled:       true,
+							Description:   "Monotonic cumulative sum int metric with string input_type enabled by default.",
+							Attributes:    []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+							NumAttributes: 5,
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -454,7 +468,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
@@ -484,7 +498,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",

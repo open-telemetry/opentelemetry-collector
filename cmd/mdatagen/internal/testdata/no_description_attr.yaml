@@ -17,6 +17,7 @@ status:
 attributes:
   string_attr:
     type: string
+    enabled: true
 
 metrics:
   default.metric:
