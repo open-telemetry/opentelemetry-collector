@@ -1,15 +1,15 @@
-module go.opentelemetry.io/collector/scraper
+module go.opentelemetry.io/collector/scraper/xscraper
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.0
 	go.opentelemetry.io/collector/component/componenttest v0.136.0
-	go.opentelemetry.io/collector/pdata v1.42.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.136.0
 	go.opentelemetry.io/collector/pipeline v1.42.0
+	go.opentelemetry.io/collector/scraper v0.136.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/multierr v1.11.0
 )
 
 require (
@@ -26,6 +26,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.42.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.136.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.42.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
@@ -33,6 +34,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
@@ -43,14 +45,12 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/pipeline => ../pipeline
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/pdata => ../pdata
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
-replace go.opentelemetry.io/collector/component => ../component
+replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
+replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
-replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
-
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
+replace go.opentelemetry.io/collector/scraper => ../../scraper
