@@ -26,28 +26,28 @@ type Factory interface {
 // FactoryOption apply changes to Options.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factory)
+	applyOption(o *factoryOpts)
+}
+
+type factoryOpts struct {
+	opts []scraper.FactoryOption
+	*factory
 }
 
 var _ FactoryOption = (*factoryOptionFunc)(nil)
 
 // factoryOptionFunc is a FactoryOption created through a function.
-type factoryOptionFunc func(*factory)
+type factoryOptionFunc func(*factoryOpts)
 
-func (f factoryOptionFunc) applyOption(o *factory) {
+func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 	f(o)
 }
 
 type factory struct {
-	cfgType component.Type
-	component.CreateDefaultConfigFunc
 	scraper.Factory
+
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
-}
-
-func (f *factory) Type() component.Type {
-	return f.cfgType
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
@@ -61,13 +61,37 @@ func (f *factory) CreateProfiles(ctx context.Context, set scraper.Settings, cfg 
 	return f.createProfilesFunc(ctx, set, cfg)
 }
 
+// WithLogs overrides the default "error not supported" implementation for CreateLogs and the default "undefined" stability level.
+func WithLogs(createLogs scraper.CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, scraper.WithLogs(createLogs, sl))
+	})
+}
+
+// WithMetrics overrides the default "error not supported" implementation for CreateMetrics and the default "undefined" stability level.
+func WithMetrics(createMetrics scraper.CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, scraper.WithMetrics(createMetrics, sl))
+	})
+}
+
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 type CreateProfilesFunc func(context.Context, scraper.Settings, component.Config) (Profiles, error)
 
 // WithProfiles overrides the default "error not supported" implementation for CreateProfiles and the default "undefined" stability level.
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory) {
+	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
 		o.createProfilesFunc = createProfiles
 	})
+}
+
+// NewFactory returns a Factory.
+func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
+	opts := factoryOpts{factory: &factory{}}
+	for _, opt := range options {
+		opt.applyOption(&opts)
+	}
+	opts.Factory = scraper.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	return opts.factory
 }
