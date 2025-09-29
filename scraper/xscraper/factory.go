@@ -21,8 +21,6 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles scraper.
 	ProfilesStability() component.StabilityLevel
-
-	unexportedFactoryFunc()
 }
 
 // FactoryOption apply changes to Options.
@@ -51,8 +49,6 @@ type factory struct {
 func (f *factory) Type() component.Type {
 	return f.cfgType
 }
-
-func (f *factory) unexportedFactoryFunc() {}
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
