@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -208,7 +209,7 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 
 	me, err := internal.NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -234,7 +235,7 @@ func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 
 	me, err := internal.NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -261,7 +262,7 @@ func TestMetricsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	me, err := internal.NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
+	me, err := internal.NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
@@ -289,7 +290,7 @@ func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := internal.NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+	me, err := internal.NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
