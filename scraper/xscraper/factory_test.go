@@ -11,10 +11,32 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/scraper"
 )
+
+var testType = component.MustNewType("test")
+
+func nopSettings() scraper.Settings {
+	return scraper.Settings{
+		ID:                component.NewID(testType),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+}
+
+func TestNewFactory(t *testing.T) {
+	defaultCfg := struct{}{}
+	f := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg })
+	assert.Equal(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	_, err := f.CreateProfiles(context.Background(), nopSettings(), &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+}
 
 func TestNewFactoryWithOptions(t *testing.T) {
 	testType := component.MustNewType("test")
