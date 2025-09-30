@@ -43,7 +43,7 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
-				SemConvVersion:       "1.9.0",
+				SemConvVersion:       "1.37.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
@@ -225,6 +225,21 @@ func TestLoadMetadata(t *testing.T) {
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.cpu.time": {
+						Signal: Signal{
+							Enabled:               true,
+							Stability:             Stability{Level: "beta"},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{

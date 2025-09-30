@@ -105,13 +105,13 @@ func metricAnchor(metricName string) string {
 // https://github.com/open-telemetry/semantic-conventions/blob/<semConvVersion>/*#metric-<metricName>
 func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 	if strings.TrimSpace(rawURL) == "" {
-		return fmt.Errorf("url is empty")
+		return errors.New("url is empty")
 	}
 	if strings.TrimSpace(semConvVersion) == "" {
-		return fmt.Errorf("semConvVersion is empty")
+		return errors.New("semConvVersion is empty")
 	}
 	if strings.TrimSpace(metricName) == "" {
-		return fmt.Errorf("metricName is empty")
+		return errors.New("metricName is empty")
 	}
 	semConvVersion = "v" + semConvVersion
 
@@ -123,8 +123,8 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 	)
 	re := regexp.MustCompile(pattern)
 	if !re.MatchString(rawURL) {
-		return fmt.Errorf("invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
-			semConvVersion, anchor, rawURL)
+		return errors.New(fmt.Sprintf("invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
+			semConvVersion, anchor, rawURL))
 	}
 	return nil
 }
