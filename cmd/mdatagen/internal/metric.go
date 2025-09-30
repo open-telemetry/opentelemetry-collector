@@ -91,7 +91,15 @@ func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	return parser.Unmarshal(m)
+
+	err := parser.Unmarshal(m)
+	if err != nil {
+		return err
+	}
+
+	m.NumAttributes = len(m.Attributes)
+
+	return nil
 }
 
 func (m Metric) Data() MetricData {

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -28,7 +29,7 @@ type Metadata struct {
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
-	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	ResourceAttributes map[AttributeName]ResourceAttribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
@@ -287,7 +288,7 @@ type Warnings struct {
 	IfConfigured string `mapstructure:"if_configured"`
 }
 
-type Attribute struct {
+type AttributeStruct struct {
 	// Description describes the purpose of the attribute.
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
@@ -308,6 +309,96 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// Optional defines whether the attribute is required.
 	Optional bool `mapstructure:"optional"`
+}
+
+type ResourceAttribute AttributeStruct
+
+func (a *ResourceAttribute) Unmarshal(parser *confmap.Conf) error {
+	err := parser.Unmarshal(a)
+	if err != nil {
+		return err
+	}
+
+	if !parser.IsSet("enabled") {
+		return fmt.Errorf("missing field `enabled` for resource attribute")
+	}
+
+	return nil
+}
+
+// Name returns actual name of the attribute that is set on the metric after applying NameOverride.
+func (a ResourceAttribute) Name() AttributeName {
+	if a.NameOverride != "" {
+		return AttributeName(a.NameOverride)
+	}
+	return a.FullName
+}
+
+func (a ResourceAttribute) TestValue() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`%q`, a.Enum[0])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName))
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 0)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
+	}
+	return ""
+}
+
+func (a ResourceAttribute) TestValueTwo() string {
+	if len(a.Enum) > 2 {
+		fmt.Printf("second %q", a.Enum[1])
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
+	}
+	return ""
+}
+
+type Attribute AttributeStruct
+
+func (a *Attribute) Unmarshal(parser *confmap.Conf) error {
+	err := parser.Unmarshal(a)
+	if err != nil {
+		return err
+	}
+
+	// default enabled to true
+	if !parser.IsSet("enabled") {
+		a.Enabled = true
+	}
+
+	return nil
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -343,6 +434,32 @@ func (a Attribute) TestValue() string {
 	return ""
 }
 
+func (a Attribute) TestValueTwo() string {
+	if len(a.Enum) > 2 {
+		fmt.Printf("second %q", a.Enum[1])
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
+	}
+	return ""
+}
+
 type Signal struct {
 	// Enabled defines whether the signal is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
@@ -361,6 +478,9 @@ type Signal struct {
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// NumAttributes is the length of the attribtues field.
+	NumAttributes int
 }
 
 func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {

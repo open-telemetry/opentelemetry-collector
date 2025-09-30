@@ -1,5 +1,12 @@
 default:
 all_set:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}
@@ -22,6 +29,103 @@ all_set:
     {{- end }}
   {{- end }}
 none_set:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+none_set_min:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: min
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+none_set_max:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: max
+  {{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+none_set_avg:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+    aggregation_strategy: avg
+  {{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}

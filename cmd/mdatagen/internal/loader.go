@@ -22,6 +22,13 @@ func setAttributesFullName(attrs map[AttributeName]Attribute) {
 	}
 }
 
+func setResourceAttributesFullName(attrs map[AttributeName]ResourceAttribute) {
+	for k, v := range attrs {
+		v.FullName = k
+		attrs[k] = v
+	}
+}
+
 type TemplateContext struct {
 	Metadata
 	// Package name for generated code.
@@ -62,7 +69,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	}
 
 	setAttributesFullName(md.Attributes)
-	setAttributesFullName(md.ResourceAttributes)
+	setResourceAttributesFullName(md.ResourceAttributes)
 
 	return md, nil
 }

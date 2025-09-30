@@ -35,3 +35,57 @@ none_set:
       enabled: false
     string.resource.attr_to_be_removed:
       enabled: false
+none_set_min:
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
+none_set_max:
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
+none_set_avg:
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false
