@@ -114,6 +114,9 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.Type == empty {
 			errs = errors.Join(errs, fmt.Errorf("empty type for resource attribute: %v", name))
 		}
+		if attr.EnabledPtr == nil {
+			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
+		}
 	}
 	return errs
 }
@@ -139,6 +142,9 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 		empty := ValueType{ValueType: pcommon.ValueTypeEmpty}
 		if attr.Type == empty {
 			errs = errors.Join(errs, fmt.Errorf("empty type for attribute: %v", attrName))
+		}
+		if attr.EnabledPtr != nil {
+			errs = errors.Join(errs, fmt.Errorf("enabled field is not allowed for regular attribute: %v", attrName))
 		}
 		if !usedAttrs[attrName] {
 			unusedAttrs = append(unusedAttrs, attrName)
@@ -292,8 +298,8 @@ type Attribute struct {
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
-	// Enabled defines whether the attribute is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
+	// EnabledPtr defines whether the attribute is enabled by default.
+	EnabledPtr *bool `mapstructure:"enabled"`
 	// Include can be used to filter attributes.
 	Include []filter.Config `mapstructure:"include"`
 	// Include can be used to filter attributes.
@@ -308,6 +314,18 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// Optional defines whether the attribute is required.
 	Optional bool `mapstructure:"optional"`
+}
+
+// Enabled returns the boolean value of EnabledPtr.
+// This method is needed to differentiate between different types of attributes:
+// - Resource attributes: EnabledPtr is always set (non-nil) due to validation
+// - Regular attributes: EnabledPtr is always nil due to validation
+// Panics if EnabledPtr is nil, indicating incorrect template usage.
+func (a Attribute) Enabled() bool {
+	if a.EnabledPtr == nil {
+		panic("Enabled() must not be called on regular attributes, only on resource attributes")
+	}
+	return *a.EnabledPtr
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
