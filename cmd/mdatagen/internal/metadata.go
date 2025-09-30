@@ -278,6 +278,10 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
+type SemanticConvention struct {
+	SemanticConventionRef string `mapstructure:"semconv_ref"`
+}
+
 type Warnings struct {
 	// A warning that will be displayed if the field is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
@@ -352,6 +356,9 @@ type Signal struct {
 
 	// Description of the signal.
 	Description string `mapstructure:"description"`
+
+	// The semantic convention reference of the signal.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
 	Stability Stability `mapstructure:"stability"`

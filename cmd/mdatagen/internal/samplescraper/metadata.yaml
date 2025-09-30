@@ -100,6 +100,19 @@ attributes:
     type: map
 
 metrics:
+  system.cpu.time:
+    enabled: true
+    stability:
+      level: beta
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    semantic_convention:
+      semconv_ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.35.0/docs/system/system-metrics.md#metric-systemcputime
   default.metric:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
