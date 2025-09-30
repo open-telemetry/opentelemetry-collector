@@ -1,25 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
+func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	var sz sizer.LogsSizer
 	switch szt {
-	case RequestSizerTypeItems:
+	case request.SizerTypeItems:
 		sz = &sizer.LogsCountSizer{}
-	case RequestSizerTypeBytes:
+	case request.SizerTypeBytes:
 		sz = &sizer.LogsBytesSizer{}
 	default:
 		return nil, errors.New("unknown sizer type")
@@ -34,7 +35,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSi
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
-		return []Request{req}, nil
+		return []request.Request{req}, nil
 	}
 
 	return req.split(maxSize, sz)
@@ -48,8 +49,8 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]Request, error) {
-	var res []Request
+func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Request, error) {
+	var res []request.Request
 	for req.size(sz) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
