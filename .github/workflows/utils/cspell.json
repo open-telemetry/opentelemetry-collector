@@ -336,6 +336,8 @@
       "otelbot",
       "otelcol",
       "otelcoltest",
+      "otelconf",
+      "otelconftelemetry",
       "otelcorecol",
       "otelgrpc",
       "otelhttp",
