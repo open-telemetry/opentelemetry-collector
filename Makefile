@@ -475,3 +475,7 @@ gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
 .PHONY: gendistributions
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
+
+.PHONY: generate-chloggen-components
+generate-chloggen-components: $(GITHUBGEN)
+	$(GITHUBGEN) chloggen-components
