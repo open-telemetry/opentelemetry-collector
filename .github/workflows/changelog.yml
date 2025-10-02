@@ -61,7 +61,7 @@ jobs:
       - name: Ensure changelog config.yaml is up to date
         run: |
           make generate-chloggen-components
-          if [[ $(git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen/config.yaml) ]]; then
+          if [[ $(git diff --name-only) ]]; then
             echo ".chloggen/config.yaml is out of date. Please run 'make generate-chloggen-components' and commit the changes."
             false
           else
