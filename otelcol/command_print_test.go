@@ -5,173 +5,251 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"bytes"
-	"os"
+	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	yaml "go.yaml.in/yaml/v3"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
+type printExporterConfig struct {
+	Timeout time.Duration `mapstructure:"timeout"`
+}
+
+type printReceiverConfig struct {
+	Opaque configopaque.String `mapstructure:"opaque"`
+	Other  string              `mapstructure:"other,omitempty"`
+}
+
+func (c *printExporterConfig) Validate() error {
+	if c.Timeout < 0 {
+		return errors.New("timeout cannot be negative")
+	}
+	return nil
+}
+
 func TestPrintCommand(t *testing.T) {
+	const nonexistentConfig = "file:nope.yaml"
+
+	validConfig := fmt.Sprint("file:", filepath.Join("testdata", "print.yaml"))
+	invalidConfig1 := fmt.Sprint("file:", filepath.Join("testdata", "print_invalid.yaml"))
+	invalidConfig2 := fmt.Sprint("file:", filepath.Join("testdata", "print_negative.yaml"))
+	defaultConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_default.yaml"))
+
 	tests := []struct {
-		name      string
-		set       confmap.ResolverSettings
-		errString string
+		name            string
+		ofmt            string
+		path            string
+		errString       string
+		outString       map[string]string
+		disableFF       bool // disable the feature flag
+		validate        bool // add validation (even redacted)
+		errOnlyRedacted bool // error applies only in redacted mode
 	}{
 		{
-			name:      "no URIs",
-			set:       confmap.ResolverSettings{},
-			errString: "at least one config flag must be provided",
-		},
-		{
-			name: "valid URI - file not found",
-			set: confmap.ResolverSettings{
-				URIs: []string{"file:blabla.yaml"},
-				ProviderFactories: []confmap.ProviderFactory{
-					fileprovider.NewFactory(),
-				},
-				DefaultScheme: "file",
-			},
+			name:      "file not found",
+			path:      nonexistentConfig,
 			errString: "cannot retrieve the configuration: unable to read the file",
 		},
 		{
-			name: "valid URI",
-			set: confmap.ResolverSettings{
-				URIs: []string{"yaml:processors::test/foo::timeout: 3s"},
-				ProviderFactories: []confmap.ProviderFactory{
-					yamlprovider.NewFactory(),
-				},
-				DefaultScheme: "yaml",
+			name: "valid yaml",
+			path: validConfig,
+		},
+		{
+			name:            "invalid syntax without validate",
+			path:            invalidConfig1,
+			errString:       "'timeout' time: invalid duration",
+			errOnlyRedacted: true,
+		},
+		{
+			name:      "validation fail",
+			path:      invalidConfig2,
+			validate:  true,
+			errString: "timeout cannot be negative",
+		},
+		{
+			name:      "no feature flag",
+			path:      validConfig,
+			disableFF: true,
+			errString: "use the otelcol.printInitialConfig feature gate",
+		},
+		{
+			name: "field is set yaml",
+			path: validConfig,
+			outString: map[string]string{
+				"redacted":   `timeout: 5s`,
+				"unredacted": `timeout: 5s`,
 			},
 		},
 		{
-			name: "valid URI - no provider set",
-			set: confmap.ResolverSettings{
-				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
-				DefaultScheme: "yaml",
+			name: "default field value",
+			path: defaultConfig,
+			outString: map[string]string{
+				"redacted": `timeout: 1s`,
+
+				// Since the structure is empty before
+				// interpretation, no default is expanded.
+				"unredacted": `e: null`,
 			},
-			errString: "at least one Provider must be supplied",
 		},
 		{
-			name: "valid URI - invalid scheme name",
-			set: confmap.ResolverSettings{
-				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
-				DefaultScheme: "foo",
-				ProviderFactories: []confmap.ProviderFactory{
-					yamlprovider.NewFactory(),
-				},
+			name: "field is set json",
+			ofmt: "json",
+			path: validConfig,
+			outString: map[string]string{
+				// Note: JSON does not format as a time.Duration
+				"redacted": `"timeout": 5000000000`,
+
+				// Note: the original input is "5s"
+				"unredacted": `"timeout": "5s"`,
 			},
-			errString: "configuration: DefaultScheme not found in providers list",
+		},
+		{
+			name: "opaque field",
+			path: validConfig,
+			outString: map[string]string{
+				"redacted":   `opaque: '[REDACTED]'`,
+				"unredacted": `opaque: OOO`,
+			},
+		},
+		{
+			name: "opaque default",
+			path: defaultConfig,
+			outString: map[string]string{
+				"redacted": `opaque: '[REDACTED]'`,
+
+				// Note: the default opaque value does not print,
+				// the other value is set in defaultConfig so that
+				// the whole component config is not defaulted.
+				"unredacted": `other: lala`,
+			},
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true))
-			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
-			}()
+		testModes := []string{"redacted", "unredacted", "unrecognized"}
+		for _, mode := range testModes {
+			t.Run(fmt.Sprint(test.name, "_", mode), func(t *testing.T) {
+				// Save current feature flag state and restore after test
+				fg := featuregate.GlobalRegistry()
 
-			set := ConfigProviderSettings{
-				ResolverSettings: test.set,
-			}
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
-			err := cmd.Execute()
-			if test.errString != "" {
-				require.ErrorContains(t, err, test.errString)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
+				fg.VisitAll(func(g *featuregate.Gate) {
+					if g.ID() == featureGateName {
+						defer func() {
+							_ = fg.Set(featureGateName, g.IsEnabled())
+						}()
+					}
+				})
+				if test.disableFF {
+					require.NoError(t, fg.Set(featureGateName, false))
+				} else {
+					require.NoError(t, fg.Set(featureGateName, true))
+				}
 
-func TestPrintCommandFeaturegateDisabled(t *testing.T) {
-	cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
-			DefaultScheme: "foo",
-			ProviderFactories: []confmap.ProviderFactory{
-				yamlprovider.NewFactory(),
-			},
-		},
-	}}, flags(featuregate.GlobalRegistry()))
-	err := cmd.Execute()
-	require.ErrorContains(t, err, "print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
-}
-
-func TestConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		configs     []string
-		finalConfig string
-	}{
-		{
-			name: "two-configs",
-			configs: []string{
-				"file:testdata/configs/1-config-first.yaml",
-				"file:testdata/configs/1-config-second.yaml",
-			},
-			finalConfig: "testdata/configs/1-config-output.yaml",
-		},
-		{
-			name: "two-configs-yaml",
-			configs: []string{
-				"file:testdata/configs/1-config-first.yaml",
-				"file:testdata/configs/1-config-second.yaml",
-				"yaml:service::pipelines::logs::receivers: [foo,bar]",
-				"yaml:service::pipelines::logs::exporters: [foo,bar]",
-			},
-			finalConfig: "testdata/configs/2-config-output.yaml",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true))
-			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
-			}()
-			set := ConfigProviderSettings{
-				ResolverSettings: confmap.ResolverSettings{
-					URIs: test.configs,
-					ProviderFactories: []confmap.ProviderFactory{
-						fileprovider.NewFactory(),
-						yamlprovider.NewFactory(),
+				testR := component.MustNewType("r")
+				testE := component.MustNewType("e")
+				testReceiver := xreceiver.NewFactory(
+					testR,
+					func() component.Config {
+						return printReceiverConfig{
+							Opaque: "1234",
+							Other:  "",
+						}
 					},
-					DefaultScheme: "file",
-				},
-			}
-			tmpFile, err := os.CreateTemp(t.TempDir(), "*")
-			require.NoError(t, err)
-			t.Cleanup(func() { _ = tmpFile.Close() })
+					xreceiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+						return nil, nil
+					}, component.StabilityLevelStable),
+				)
+				testExporter := xexporter.NewFactory(
+					testE,
+					func() component.Config {
+						return printExporterConfig{
+							Timeout: time.Second,
+						}
+					},
+					xexporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+						return nil, nil
+					}, component.StabilityLevelStable),
+				)
+				var stdout bytes.Buffer
 
-			// save the os.Stdout and temporarily set it to temp file
-			oldStdout := os.Stdout
-			os.Stdout = tmpFile
+				set := confmap.ResolverSettings{}
+				set.ProviderFactories = []confmap.ProviderFactory{
+					fileprovider.NewFactory(),
+				}
+				set.DefaultScheme = "file"
+				set.URIs = []string{test.path}
 
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
-			require.NoError(t, cmd.Execute())
+				cmd := newConfigPrintSubCommand(CollectorSettings{
+					Factories: func() (Factories, error) {
+						return Factories{
+							Receivers: map[component.Type]receiver.Factory{
+								testR: testReceiver,
+							},
+							Exporters: map[component.Type]exporter.Factory{
+								testE: testExporter,
+							},
+						}, nil
+					},
+					ConfigProviderSettings: ConfigProviderSettings{
+						ResolverSettings: set,
+					},
+				}, flags(featuregate.GlobalRegistry()))
+				cmd.SetOut(&stdout)
+				args := []string{
+					"--mode", mode,
+					"--format", test.ofmt,
+				}
+				if test.validate {
+					args = append(args, "--validate=true")
+				} else {
+					args = append(args, "--validate=false")
+				}
+				cmd.SetArgs(args)
+				err := cmd.Execute()
 
-			// restore os.Stdout
-			os.Stdout = oldStdout
+				expectErr := test.errString != ""
+				expectErrMsg := test.errString
 
-			expectedOutput, err := os.ReadFile(test.finalConfig)
-			require.NoError(t, err)
+				switch mode {
+				case "redacted":
+				case "unredacted":
+					if test.errOnlyRedacted {
+						expectErr = false
+						expectErrMsg = ""
+					}
+				default:
+					expectErr = true
+					if test.disableFF {
+						expectErrMsg = "feature gate"
+					} else {
+						expectErrMsg = "unrecognized"
+					}
+				}
 
-			actualOutput, err := os.ReadFile(tmpFile.Name())
-			require.NoError(t, err)
-
-			actualConfig := make(map[string]any, 0)
-			expectedConfig := make(map[string]any, 0)
-
-			require.NoError(t, yaml.Unmarshal(bytes.TrimSpace(actualOutput), actualConfig))
-			require.NoError(t, yaml.Unmarshal(bytes.TrimSpace(expectedOutput), expectedConfig))
-
-			require.Equal(t, expectedConfig, actualConfig)
-		})
+				if expectErr {
+					require.Error(t, err)
+					require.ErrorContains(t, err, expectErrMsg)
+				} else {
+					require.NoError(t, err)
+				}
+				if test.outString[mode] != "" {
+					require.Contains(t, stdout.String(), test.outString[mode])
+				}
+			})
+		}
 	}
 }
