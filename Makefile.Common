@@ -27,6 +27,10 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 test:
 	$(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 
+.PHONY: test-fips140-only
+test-fips140-only: $(GOTESTSUM)
+	GODEBUG=fips140=only $(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
+
 .PHONY: test-with-cover
 test-with-cover:
 	mkdir -p $(PWD)/coverage/unit
