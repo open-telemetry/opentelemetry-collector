@@ -13,6 +13,8 @@ body:
       # Start components list
       - cmd/builder
       - cmd/mdatagen
+      - cmd/mdatagen/internal/sampleconnector
+      - cmd/mdatagen/internal/samplefactoryreceiver
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - cmd/mdatagen/internal/samplescraper
@@ -28,8 +30,8 @@ body:
       - docs/rfcs
       - exporter/debug
       - exporter/exporterhelper
+      - exporter/exporterhelper/internal/queuebatch
       - exporter/exporterhelper/xexporterhelper
-      - exporter/exporterqueue
       - exporter/nop
       - exporter/otlp
       - exporter/otlphttp
