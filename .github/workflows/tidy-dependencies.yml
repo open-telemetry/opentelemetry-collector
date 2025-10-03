@@ -33,9 +33,6 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: go mod tidy
         run: |
           make gotidy
