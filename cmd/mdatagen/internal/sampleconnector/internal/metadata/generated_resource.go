@@ -84,6 +84,13 @@ func (rb *ResourceBuilder) SetStringResourceAttrToBeRemoved(val string) {
 	}
 }
 
+// SetStringTemplateResourceAttr sets provided attribute key with template prefix "string.template.resource.attr".
+func (rb *ResourceBuilder) SetStringTemplateResourceAttr(key string, val string) {
+	if rb.config.StringTemplateResourceAttr.Enabled {
+		rb.res.Attributes().PutStr("string.template.resource.attr."+key, val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
