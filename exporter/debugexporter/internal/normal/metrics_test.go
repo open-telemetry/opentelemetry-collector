@@ -127,6 +127,31 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 `,
 		},
 		{
+			name: "exponential histogram with buckets",
+			input: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metric.SetName("http.server.request.duration")
+				dataPoint := metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				dataPoint.Attributes().PutInt("http.response.status_code", 200)
+				dataPoint.Attributes().PutStr("http.request.method", "GET")
+				dataPoint.SetCount(1340)
+				dataPoint.SetSum(99.573)
+				dataPoint.SetMin(0.017)
+				dataPoint.SetMax(8.13)
+				dataPoint.SetScale(3)
+				dataPoint.Negative().SetOffset(-2)
+				dataPoint.Negative().BucketCounts().FromRaw([]uint64{10, 20})
+				dataPoint.Positive().SetOffset(1)
+				dataPoint.Positive().BucketCounts().FromRaw([]uint64{40, 50, 60})
+				return metrics
+			}(),
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
+http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13 le-0.9170040432046712=10 le-1=20 le1.189207115002721=40 le1.2968395546510096=50 le1.414213562373095=60
+`,
+		},
+		{
 			name: "summary",
 			input: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
