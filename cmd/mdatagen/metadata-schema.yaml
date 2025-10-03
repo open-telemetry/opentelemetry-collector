@@ -78,8 +78,11 @@ attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
-    # Optional: indicates whether the attribute is optional or not.
-    optional:
+    # Optional: indicates availability of the attribute.
+    # - default: the attribute is always available unless explicitly disabled in user config.
+    # - conditional: the attribute is available only when certain conditions are met (e.g. certain features are enabled).
+    # - opt_in: the attribute is not available unless explicitly enabled in user config.
+    availability: <default|conditional|opt_in>
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
