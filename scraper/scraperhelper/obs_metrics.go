@@ -64,11 +64,27 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set 
 				numErroredMetrics = partialErr.Failed
 				numScrapedMetrics = md.MetricCount()
 			}
+			// --- Add error metric to md ---)
+			errorMetric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			errorMetric.SetName("scraper_errors")
+			errorMetric.SetUnit("1")
+			errorMetric.SetDescription("Error detected in scraper")
+			errorMetric.SetEmptyGauge()
+			dp := errorMetric.Gauge().DataPoints().AppendEmpty()
+			dp.SetIntValue(1)
+			dp.Attributes().PutStr("error_message", err.Error())
+			errorMetric.SetEmptyHistogram().DataPoints().AppendEmpty().BucketCounts().Append(uint64(numErroredMetrics))
+			//dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			errorMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(int64(numErroredMetrics))
+			// Optionally add attributes
+			errorMetric.SetDescription("error: " + err.Error())
+			set.Logger.Info("Error scraping metrics", zap.String(errorMetric.Description(), errorMetric.Name()))
 		} else {
 			numScrapedMetrics = md.MetricCount()
 		}
 
 		telemetryBuilder.ScraperScrapedMetricPoints.Add(ctx, int64(numScrapedMetrics), otelAttrs)
+		telemetryBuilder.ScraperScrapedMetricPoints.Add(ctx, int64(numErroredMetrics), otelAttrs)
 		telemetryBuilder.ScraperErroredMetricPoints.Add(ctx, int64(numErroredMetrics), otelAttrs)
 
 		// end span according to errors
