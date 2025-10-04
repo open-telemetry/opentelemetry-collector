@@ -59,10 +59,6 @@ $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 test: $(GOTESTSUM)
 	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
 
-.PHONY: test-fips140-only
-test-fips140-only: $(GOTESTSUM)
-	GODEBUG=fips140=only $(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
-
 .PHONY: test-with-cover
 test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
