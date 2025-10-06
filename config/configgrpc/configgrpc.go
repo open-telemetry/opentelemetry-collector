@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -63,6 +64,15 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 // BalancerName returns a string with default load balancer value
 func BalancerName() string {
 	return "round_robin"
+}
+
+var _ confmap.Unmarshaler = (*Headers)(nil)
+
+type Headers map[string]configopaque.String
+
+// Unmarshal implements confmap.Unmarshaler.
+func (h *Headers) Unmarshal(conf *confmap.Conf) error {
+	panic("I got called")
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -95,7 +105,7 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Headers Headers `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
