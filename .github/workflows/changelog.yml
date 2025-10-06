@@ -58,6 +58,17 @@ jobs:
           echo "CHANGELOG.md and CHANGELOG-API.md were not modified."
           fi
 
+      - name: Ensure changelog config.yaml is up to date
+        run: |
+          make generate-chloggen-components
+          if [[ $(git diff --name-only) ]]; then
+            echo ".chloggen/config.yaml is out of date. Please run 'make generate-chloggen-components' and commit the changes."
+            false
+          else
+            echo ".chloggen/config.yaml is up to date."
+          fi
+          git checkout $PR_HEAD -- ./.chloggen/config.yaml
+
       - name: Ensure ./.chloggen/*.yaml addition(s)
         run: |
           if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen | grep -c \\.yaml) ]]
