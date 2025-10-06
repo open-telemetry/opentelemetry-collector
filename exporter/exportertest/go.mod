@@ -6,19 +6,19 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.43.0
-	go.opentelemetry.io/collector/component/componenttest v0.136.0
+	go.opentelemetry.io/collector/component/componenttest v0.137.0
 	go.opentelemetry.io/collector/config/configretry v1.43.0
 	go.opentelemetry.io/collector/consumer v1.43.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.136.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.136.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.137.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
 	go.opentelemetry.io/collector/exporter v1.43.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.136.0
-	go.opentelemetry.io/collector/exporter/xexporter v0.136.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.137.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.137.0
 	go.opentelemetry.io/collector/pdata v1.43.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.136.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.137.0
 	go.opentelemetry.io/collector/pipeline v1.43.0
 	go.opentelemetry.io/collector/receiver v1.43.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.136.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.137.0
 	google.golang.org/grpc v1.75.1
 )
 
@@ -44,14 +44,14 @@ require (
 	go.opentelemetry.io/collector/client v1.43.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.43.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.136.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.136.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 // indirect
 	go.opentelemetry.io/collector/extension v1.43.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.136.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.137.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.136.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.136.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.136.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.137.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.137.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect

@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	go.opentelemetry.io/collector/pdata v1.43.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.136.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.137.0
 )
 
 require (
