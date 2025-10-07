@@ -128,6 +128,8 @@ replace go.opentelemetry.io/collector => ../
 
 replace go.opentelemetry.io/collector/service => ../service
 
+replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../service/telemetry/telemetrytest
+
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/connector => ../connector

@@ -333,3 +333,5 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
+
+replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
