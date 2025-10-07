@@ -1,26 +1,53 @@
-# The directory that stores individual changelog entries.
-# Each entry is stored in a dedicated yaml file.
-# - 'chloggen new' will copy the 'template_yaml' to this directory as a new entry file.
-# - 'chloggen validate' will validate that all entry files are valid.
-# - 'chloggen update' will read and delete all entry files in this directory, and update 'changelog_md'.
-# Specify as relative path from root of repo.
-# (Optional) Default: .chloggen
-entries_dir: .chloggen
-
-# This file is used as the input for individual changelog entries.
-# Specify as relative path from root of repo.
-# (Optional) Default: .chloggen/TEMPLATE.yaml
-template_yaml: .chloggen/TEMPLATE.yaml
-
-summary_template: .chloggen/summary.tmpl
-
-# The CHANGELOG file or files to which 'chloggen update' will write new entries
-# (Optional) Default filename: CHANGELOG.md
 change_logs:
-  user: CHANGELOG.md
-  api: CHANGELOG-API.md
-
-# The default change_log or change_logs to which an entry should be added.
-# If 'change_logs' is specified in this file, and no value is specified for 'default_change_logs',
-# then 'change_logs' MUST be specified in every entry file.
-default_change_logs: [user]
+    api: CHANGELOG-API.md
+    user: CHANGELOG.md
+default_change_logs:
+    - user
+entries_dir: .chloggen
+template_yaml: .chloggen/TEMPLATE.yaml
+summary_template: .chloggen/summary.tmpl
+components:
+    - all
+    - cmd/builder
+    - cmd/mdatagen
+    - connector/forward
+    - connector/sample
+    - consumer/xconsumer
+    - docs/rfcs
+    - exporter/debug
+    - exporter/nop
+    - exporter/otlp
+    - exporter/otlphttp
+    - extension/memory_limiter
+    - extension/xextension
+    - extension/xextension
+    - extension/zpages
+    - pdata/pprofile
+    - pkg/confmap
+    - pkg/exporterhelper
+    - pkg/pdata
+    - pkg/processorhelper
+    - pkg/queuebatch
+    - pkg/receiverhelper
+    - pkg/scraper
+    - pkg/scraperhelper
+    - pkg/service
+    - pkg/xconnector
+    - pkg/xexporter
+    - pkg/xexporterhelper
+    - pkg/xprocessor
+    - pkg/xreceiver
+    - processor/batch
+    - processor/memory_limiter
+    - processor/sample
+    - provider/env
+    - provider/file
+    - provider/http
+    - provider/https
+    - provider/yaml
+    - receiver/nop
+    - receiver/otlp
+    - receiver/sample
+    - receiver/sample
+    - scraper/sample
+    - service/graph
