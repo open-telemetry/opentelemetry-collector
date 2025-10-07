@@ -14,7 +14,7 @@ import (
 
 type JSONMarshaler struct{}
 
-func (*JSONMarshaler) MarshalAnyValue(value pcommon.Value) ([]byte, error) {
+func (*JSONMarshaler) MarshalValue(value pcommon.Value) ([]byte, error) {
 	av := internal.GetOrigValue(internal.Value(value))
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
@@ -27,7 +27,7 @@ func (*JSONMarshaler) MarshalAnyValue(value pcommon.Value) ([]byte, error) {
 
 type JSONUnmarshaler struct{}
 
-func (*JSONUnmarshaler) UnmarshalAnyValue(buf []byte) (pcommon.Value, error) {
+func (*JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	value := &otlpcommon.AnyValue{}
