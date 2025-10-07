@@ -12,15 +12,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestMarshalAndUnmarshalAnyValue(t *testing.T) {
-	for name, src := range genTestEncodingValuesAnyValue() {
+func TestMarshalAndUnmarshalValue(t *testing.T) {
+	for name, src := range genTestEncodingValues() {
 		t.Run(name, func(t *testing.T) {
 			m := &JSONMarshaler{}
-			b, err := m.MarshalAnyValue(src)
+			b, err := m.MarshalValue(src)
 			require.NoError(t, err)
 
 			u := &JSONUnmarshaler{}
-			dest, err := u.UnmarshalAnyValue(b)
+			dest, err := u.UnmarshalValue(b)
 			require.NoError(t, err)
 
 			require.Equal(t, src, dest)
@@ -28,15 +28,15 @@ func TestMarshalAndUnmarshalAnyValue(t *testing.T) {
 	}
 }
 
-func TestUnmarshalAnyValueUnknown(t *testing.T) {
+func TestUnmarshalValueUnknown(t *testing.T) {
 	m := &JSONUnmarshaler{}
 
-	b, err := m.UnmarshalAnyValue([]byte(`{"unknown": "string"}`))
+	b, err := m.UnmarshalValue([]byte(`{"unknown": "string"}`))
 	require.NoError(t, err)
 	assert.Equal(t, pcommon.NewValueEmpty(), b)
 }
 
-func genTestEncodingValuesAnyValue() map[string]pcommon.Value {
+func genTestEncodingValues() map[string]pcommon.Value {
 	return map[string]pcommon.Value{
 		"empty":               pcommon.NewValueEmpty(),
 		"StringValue/default": pcommon.NewValueStr(""),
