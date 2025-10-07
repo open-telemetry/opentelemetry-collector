@@ -7,6 +7,20 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.43.0/v0.137.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Improve validation for resource attribute `enabled` field in metadata files (#12722)
+  Resource attributes now require an explicit `enabled` field in metadata.yaml files, while regular attributes
+  are prohibited from having this field. This improves validation and prevents configuration errors.
+  
+- `all`: Changelog entries will now have their component field checked against a list of valid components. (#13924)
+  This will ensure a more standardized changelog format which makes it easier to parse.
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
 ## v1.42.0/v0.136.0
 
 ### 💡 Enhancements 💡
