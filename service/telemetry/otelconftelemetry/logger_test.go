@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/log"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -269,12 +268,10 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	}
 }
 
-func TestLoggerProvider(t *testing.T) {
-	receivedLogs := 0
-	totalLogs := 10
-
+func TestLogger_OTLP(t *testing.T) {
 	// Create a backend to receive the logs and assert the content
-	lp := newOTLPLoggerProvider(t, zapcore.InfoLevel, func(_ http.ResponseWriter, request *http.Request) {
+	receivedLogs := 0
+	logger := newOTLPLogger(t, zapcore.InfoLevel, func(_ http.ResponseWriter, request *http.Request) {
 		body, err := io.ReadAll(request.Body)
 		assert.NoError(t, err)
 		defer request.Body.Close()
@@ -302,23 +299,17 @@ func TestLoggerProvider(t *testing.T) {
 
 		receivedLogs++
 	})
-	defer func() {
-		assert.NoError(t, lp.Shutdown(t.Context()))
-	}()
 
-	// Generate some logs to send to the backend
-	logger := lp.Logger("name")
-	for i := 0; i < totalLogs; i++ {
-		var record log.Record
-		record.SetBody(log.StringValue("Test log message"))
-		logger.Emit(context.Background(), record)
+	const totalLogs = 10
+	for range totalLogs {
+		logger.Info("Test log message")
 	}
 
 	// Ensure the correct number of logs were received
 	require.Equal(t, totalLogs, receivedLogs)
 }
 
-func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.HandlerFunc) telemetry.LoggerProvider {
+func newOTLPLogger(t *testing.T, level zapcore.Level, handler http.HandlerFunc) *zap.Logger {
 	srv := createBackend("/v1/logs", handler)
 	t.Cleanup(srv.Close)
 
@@ -339,6 +330,8 @@ func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.Handl
 			Level:      level,
 			Encoding:   "json",
 			Processors: processors,
+			// OutputPaths is empty, so logs are only
+			// written to the OTLP processor
 		},
 		Resource: map[string]*string{
 			string(semconv.ServiceNameKey):    ptr(service),
@@ -347,9 +340,12 @@ func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.Handl
 		},
 	}
 
-	_, loggerProvider, err := createLogger(t.Context(), telemetry.LoggerSettings{}, cfg)
+	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{}, cfg)
 	require.NoError(t, err)
-	return loggerProvider
+	t.Cleanup(func() {
+		assert.NoError(t, shutdown.Shutdown(context.WithoutCancel(t.Context())))
+	})
+	return logger
 }
 
 func createBackend(endpoint string, handler func(http.ResponseWriter, *http.Request)) *httptest.Server {

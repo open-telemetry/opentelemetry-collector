@@ -72,7 +72,7 @@ type ClientConfig struct {
 	MaxIdleConns int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// Default is 0 (unlimited).
+	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,

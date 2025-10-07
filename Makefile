@@ -467,7 +467,7 @@ generate-gh-issue-templates: $(GITHUBGEN)
 
 .PHONY: generate-codeowners
 generate-codeowners: $(GITHUBGEN)
-	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
+	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" -skipgithub codeowners
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
@@ -475,3 +475,7 @@ gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
 .PHONY: gendistributions
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
+
+.PHONY: generate-chloggen-components
+generate-chloggen-components: $(GITHUBGEN)
+	$(GITHUBGEN) chloggen-components
