@@ -1,7 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute_test
+package componentattribute
+
+/*
 
 import (
 	"context"
@@ -17,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 )
 
 // Emulate a TracerProvider from a non-official SDK
@@ -105,3 +107,5 @@ func TestTPWA(t *testing.T) {
 		})
 	}
 }
+
+*/

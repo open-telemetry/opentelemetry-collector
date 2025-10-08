@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+package componentattribute // import "go.opentelemetry.io/collector/service/internal/componentattribute"
 
 import (
 	"slices"
@@ -15,17 +15,6 @@ type meterProviderWithAttributes struct {
 	attrs []attribute.KeyValue
 }
 
-// MeterProviderWithAttributes creates a MeterProvider with a new set of injected instrumentation scope attributes.
-func MeterProviderWithAttributes(mp metric.MeterProvider, attrs attribute.Set) metric.MeterProvider {
-	if mpwa, ok := mp.(meterProviderWithAttributes); ok {
-		mp = mpwa.MeterProvider
-	}
-	return meterProviderWithAttributes{
-		MeterProvider: mp,
-		attrs:         attrs.ToSlice(),
-	}
-}
-
 func (mpwa meterProviderWithAttributes) Meter(name string, opts ...metric.MeterOption) metric.Meter {
 	conf := metric.NewMeterConfig(opts...)
 	attrSet := conf.InstrumentationAttributes()
@@ -34,4 +23,17 @@ func (mpwa meterProviderWithAttributes) Meter(name string, opts ...metric.MeterO
 	// append our attribute set option to overwrite the old one
 	opts = append(opts, metric.WithInstrumentationAttributes(newAttrs...))
 	return mpwa.MeterProvider.Meter(name, opts...)
+}
+
+func (mpwa meterProviderWithAttributes) Unwrap() metric.MeterProvider {
+	return mpwa.MeterProvider
+}
+
+func (mpwa meterProviderWithAttributes) DropInjectedAttributes(droppedAttrs ...string) metric.MeterProvider {
+	return meterProviderWithAttributes{
+		MeterProvider: mpwa.MeterProvider,
+		attrs: slices.DeleteFunc(slices.Clone(mpwa.attrs), func(kv attribute.KeyValue) bool {
+			return slices.Contains(droppedAttrs, string(kv.Key))
+		}),
+	}
 }

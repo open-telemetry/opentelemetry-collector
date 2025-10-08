@@ -60,15 +60,12 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.137.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.137.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.137.0 // indirect
 	go.opentelemetry.io/collector/service v0.137.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
