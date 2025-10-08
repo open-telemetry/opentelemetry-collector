@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -882,22 +883,14 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 }
 
 func TestCurvePreferences(t *testing.T) {
-	tests := []struct {
+	type testCase struct {
 		name             string
 		preferences      []string
 		expectedCurveIDs []tls.CurveID
 		expectedErr      string
-	}{
-		{
-			name:             "X25519MLKEM768",
-			preferences:      []string{"X25519MLKEM768"},
-			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
-		},
-		{
-			name:             "X25519",
-			preferences:      []string{"X25519"},
-			expectedCurveIDs: []tls.CurveID{tls.X25519},
-		},
+	}
+
+	tests := []testCase{
 		{
 			name:             "P521",
 			preferences:      []string{"P521"},
@@ -910,8 +903,8 @@ func TestCurvePreferences(t *testing.T) {
 		},
 		{
 			name:             "multiple",
-			preferences:      []string{"P256", "P521", "X25519"},
-			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521, tls.X25519},
+			preferences:      []string{"P256", "P521"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521},
 		},
 		{
 			name:             "invalid-curve",
@@ -920,6 +913,24 @@ func TestCurvePreferences(t *testing.T) {
 			expectedErr:      "invalid curve type",
 		},
 	}
+
+	// X25519 curves are not supported when GODEBUG=fips140=only is set, so we
+	// detect if it is and conditionally add test cases for those curves.
+	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
+		tests = append(tests,
+			testCase{
+				name:             "X25519MLKEM768",
+				preferences:      []string{"X25519MLKEM768"},
+				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+			},
+			testCase{
+				name:             "X25519",
+				preferences:      []string{"X25519"},
+				expectedCurveIDs: []tls.CurveID{tls.X25519},
+			},
+		)
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tlsSetting := ClientConfig{
