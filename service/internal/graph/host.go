@@ -5,7 +5,6 @@ package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
 	"net/http"
-	"path"
 	"runtime"
 	"time"
 
@@ -26,6 +25,7 @@ var (
 	_ hostcapabilities.ModuleInfo       = (*Host)(nil)
 	_ hostcapabilities.ExposeExporters  = (*Host)(nil)
 	_ hostcapabilities.ComponentFactory = (*Host)(nil)
+	_ hostcapabilities.ZPages           = (*Host)(nil)
 )
 
 type Host struct {
@@ -42,7 +42,8 @@ type Host struct {
 	Pipelines         *Graph
 	ServiceExtensions *extensions.Extensions
 
-	Reporter status.Reporter
+	ZPagesMux *http.ServeMux
+	Reporter  status.Reporter
 }
 
 func (host *Host) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
@@ -88,10 +89,10 @@ func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID
 
 const (
 	// Paths
-	zServicePath   = "servicez"
-	zPipelinePath  = "pipelinez"
-	zExtensionPath = "extensionz"
-	zFeaturePath   = "featurez"
+	zServicePath   = "/debug/servicez"
+	zPipelinePath  = "/debug/pipelinez"
+	zExtensionPath = "/debug/extensionz"
+	zFeaturePath   = "/debug/featurez"
 )
 
 // InfoVar is a singleton instance of the Info struct.
@@ -107,11 +108,19 @@ func init() {
 	}
 }
 
-func (host *Host) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, zServicePath), host.zPagesRequest)
-	mux.HandleFunc(path.Join(pathPrefix, zPipelinePath), host.Pipelines.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, zExtensionPath), host.ServiceExtensions.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, zFeaturePath), handleFeaturezRequest)
+func (host *Host) GetZPagesMux() *http.ServeMux {
+	return host.ZPagesMux
+}
+
+// RegisterZPages registers the zPages handlers on the host's ZPagesMux.
+//
+// This must only be called after the Pipelines and ServiceExtensions fields
+// are set on the host.
+func (host *Host) RegisterZPages() {
+	host.ZPagesMux.HandleFunc(zServicePath, host.zPagesRequest)
+	host.ZPagesMux.HandleFunc(zPipelinePath, host.Pipelines.HandleZPages)
+	host.ZPagesMux.HandleFunc(zExtensionPath, host.ServiceExtensions.HandleZPages)
+	host.ZPagesMux.HandleFunc(zFeaturePath, handleFeaturezRequest)
 }
 
 func (host *Host) zPagesRequest(w http.ResponseWriter, _ *http.Request) {

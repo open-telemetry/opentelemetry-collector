@@ -4,6 +4,7 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -44,9 +45,11 @@ func TestCreateTracerProvider(t *testing.T) {
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
+	zpagesMux := http.NewServeMux()
 	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{
 			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+			ZPagesMux: zpagesMux,
 		},
 	}, cfg)
 	require.NoError(t, err)
@@ -62,6 +65,15 @@ func TestCreateTracerProvider(t *testing.T) {
 	traces := received[0]
 	require.Equal(t, 1, traces.SpanCount())
 	assert.Equal(t, "test_span", traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+
+	// /debug/tracez should have been registered on the mux,
+	// and the span should be visible there.
+	var recorder httptest.ResponseRecorder
+	recorder.Body = bytes.NewBuffer(nil)
+	req := httptest.NewRequest(http.MethodGet, "/debug/tracez", http.NoBody)
+	zpagesMux.ServeHTTP(&recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "test_span")
 }
 
 func TestCreateTracerProvider_Invalid(t *testing.T) {
@@ -92,6 +104,7 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{
 			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+			ZPagesMux: http.NewServeMux(),
 		},
 	}, cfg)
 	require.NoError(t, err)

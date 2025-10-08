@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -106,6 +107,7 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
+	zpagesMux := http.NewServeMux()
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -118,12 +120,16 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			ModuleInfos:       set.ModuleInfos,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
+			ZPagesMux:         zpagesMux,
 		},
 		collectorConf: set.CollectorConf,
 	}
 
 	telemetryFactory := otelconftelemetry.NewFactory()
-	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
+	telemetrySettings := telemetry.Settings{
+		BuildInfo: set.BuildInfo,
+		ZPagesMux: zpagesMux,
+	}
 
 	// Create the logger & LoggerProvider first. These may be used
 	// when creating the other telemetry providers.
@@ -205,6 +211,9 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	if err != nil {
 		return nil, err
 	}
+
+	// After all components are initialized, register zpages.
+	srv.host.RegisterZPages()
 
 	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 		return nil, fmt.Errorf("failed to register process metrics: %w", err)
