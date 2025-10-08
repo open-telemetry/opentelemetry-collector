@@ -30,7 +30,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// TODO: inject the telemetry factory through factories, once available.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 	telFactory := otelconftelemetry.NewFactory()
-	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
+	defaultTelConfig := telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
