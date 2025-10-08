@@ -115,3 +115,4 @@ replaces:
   - go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
   - go.opentelemetry.io/collector/service => ../../service
   - go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
+  - go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest

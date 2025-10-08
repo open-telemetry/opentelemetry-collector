@@ -238,6 +238,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/service => ../../service
 
+replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
+
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
