@@ -520,6 +520,13 @@ func TestServiceTelemetryCreateProvidersError(t *testing.T) {
 	}
 }
 
+func TestNew_NilTelemetryProvider(t *testing.T) {
+	set := newNopSettings()
+	set.TelemetryFactory = nil
+	_, err := New(context.Background(), set, newNopConfig())
+	require.EqualError(t, err, "telemetry factory not provided")
+}
+
 func newNopSettings() Settings {
 	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
 	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
