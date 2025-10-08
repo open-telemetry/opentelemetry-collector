@@ -74,12 +74,11 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: ${{ env.GORELEASER_PRO_VERSION }}
-          args: --snapshot --clean -f .core/cmd/builder/.goreleaser.yaml
+          args: --snapshot --clean -f .core/cmd/builder/.goreleaser.yaml --skip sign
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COSIGN_YES: false
-          SKIP_SIGNS: true
 
         # Only create an issue if the workflows fails on push to main branch
       - name: File an issue if the workflow failed
