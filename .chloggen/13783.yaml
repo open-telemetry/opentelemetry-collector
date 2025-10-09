@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confighttp
+component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all HTTP servers
+note: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server.
 
 # One or more tracking issues or pull requests related to the change
 issues: [13783]
