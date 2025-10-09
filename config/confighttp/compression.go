@@ -46,10 +46,7 @@ type compressRoundTripper struct {
 	compressor        *compressor
 }
 
-var (
-	zstdReaderPool    sync.Pool
-	errReadAfterClose = errors.New("read after close")
-)
+var zstdReaderPool sync.Pool
 
 type pooledZstdReadCloser struct {
 	inner *zstd.Decoder
@@ -57,7 +54,7 @@ type pooledZstdReadCloser struct {
 
 func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
 	if pzrc.inner == nil {
-		return 0, errReadAfterClose
+		return 0, zstd.ErrDecoderClosed
 	}
 	return pzrc.inner.Read(dst)
 }
