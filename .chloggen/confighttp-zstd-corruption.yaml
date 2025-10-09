@@ -7,7 +7,7 @@ change_type: bug_fix
 component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix zstd decoder data corruption due to decoder pooling
+note: Fix zstd decoder data corruption due to decoder pooling for all components that create an HTTP server.
 
 # One or more tracking issues or pull requests related to the change
 issues: [13954]
