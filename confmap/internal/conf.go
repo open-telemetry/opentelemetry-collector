@@ -38,7 +38,7 @@ type Conf struct {
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {
-	return &Conf{k: koanf.New(KeyDelimiter), isNil: false, mergeOpts: map[string]*MergeOptions{}}
+	return &Conf{k: koanf.New(KeyDelimiter), isNil: false}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
