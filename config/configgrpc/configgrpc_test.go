@@ -27,9 +27,10 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
@@ -163,8 +164,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with gzip compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
-					"test": "test",
+				Headers: Map{
+					{"test", "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeGzip,
@@ -192,8 +193,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with snappy compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
-					"test": "test",
+				Headers: Map{
+					{"test", "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeSnappy,
@@ -221,8 +222,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with zstd compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
-					"test": "test",
+				Headers: Map{
+					{"test", "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeZstd,
@@ -285,8 +286,8 @@ func TestHeaders(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
-			"testheader": "testvalue",
+		Headers: Map{
+			{"testheader", "testvalue"},
 		},
 	})
 	require.NoError(t, errResp)
@@ -434,8 +435,8 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 	settings := ClientConfig{
-		Headers: map[string]configopaque.String{
-			"test": "test",
+		Headers: Map{
+			{"test", "test"},
 		},
 		Endpoint:    "localhost:1234",
 		Compression: "gzip",
@@ -1217,4 +1218,35 @@ type mockHost struct {
 
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
+}
+
+const clientConfigHeadersList = `
+headers:
+- name: "foo"
+  value: "bar"
+`
+const clientConfigHeadersMap = `
+headers:
+  "foo": "bar"
+`
+
+func TestHeadersList(t *testing.T) {
+	retrieved1, err := confmap.NewRetrievedFromYAML([]byte(clientConfigHeadersList))
+	require.NoError(t, err)
+	conf1, err := retrieved1.AsConf()
+	require.NoError(t, err)
+	cc1 := NewDefaultClientConfig()
+	require.NoError(t, conf1.Unmarshal(&cc1))
+	assert.NoError(t, xconfmap.Validate(&cc1))
+
+	retrieved2, err := confmap.NewRetrievedFromYAML([]byte(clientConfigHeadersMap))
+	require.NoError(t, err)
+	conf2, err := retrieved2.AsConf()
+	require.NoError(t, err)
+	cc2 := NewDefaultClientConfig()
+	err = conf2.Unmarshal(&cc2)
+	require.NoError(t, err)
+	assert.NoError(t, xconfmap.Validate(&cc2))
+
+	assert.Equal(t, cc1, cc2)
 }
