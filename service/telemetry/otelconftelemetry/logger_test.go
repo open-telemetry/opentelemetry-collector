@@ -347,7 +347,7 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 
 func createLogsBackend(t *testing.T, endpoint string, handler func(plogotlp.ExportRequest)) *httptest.Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc(endpoint, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(endpoint, func(_ http.ResponseWriter, request *http.Request) {
 		body, err := io.ReadAll(request.Body)
 		assert.NoError(t, err)
 		defer request.Body.Close()
@@ -355,7 +355,7 @@ func createLogsBackend(t *testing.T, endpoint string, handler func(plogotlp.Expo
 		// Unmarshal the protobuf body into logs
 		req := plogotlp.NewExportRequest()
 		err = req.UnmarshalProto(body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		handler(req)
 	})
@@ -415,14 +415,14 @@ func TestLogAttributeInjection(t *testing.T) {
 	ts.Logger = ts.Logger.With(zap.String("after", "val"))
 
 	fields, scope := checkScopes(t, ts.Logger, consoleLogs, &otlpLogs)
-	assert.Equal(t, `{"injected1":"val","injected2":"val","after":"val","manual":"val"}`, fields)
-	assert.Equal(t, `{"injected1":"val","injected2":"val"}`, scope)
+	assert.JSONEq(t, `{"injected1":"val","injected2":"val","after":"val","manual":"val"}`, fields)
+	assert.JSONEq(t, `{"injected1":"val","injected2":"val"}`, scope)
 
 	ts = internalTelemetry.DropInjectedAttributes(ts, "injected1")
 
 	fields, scope = checkScopes(t, ts.Logger, consoleLogs, &otlpLogs)
-	assert.Equal(t, `{"injected2":"val","after":"val","manual":"val"}`, fields)
-	assert.Equal(t, `{"injected2":"val"}`, scope)
+	assert.JSONEq(t, `{"injected2":"val","after":"val","manual":"val"}`, fields)
+	assert.JSONEq(t, `{"injected2":"val"}`, scope)
 }
 
 func checkScopes(t *testing.T, logger *zap.Logger, consoleLogs *observer.ObservedLogs, otlpLogs *[]plogotlp.ExportRequest) (string, string) {

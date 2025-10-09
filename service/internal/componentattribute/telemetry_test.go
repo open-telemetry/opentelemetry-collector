@@ -38,7 +38,7 @@ func findScopeAttributesField(context []zap.Field) ([]attribute.KeyValue, bool) 
 	return nil, false
 }
 
-func attributeSetJson(t *testing.T, set attribute.Set) string {
+func attributeSetJSON(t *testing.T, set attribute.Set) string {
 	scopeBuf, err := json.Marshal(set.MarshalLog())
 	require.NoError(t, err)
 	return string(scopeBuf)
@@ -52,7 +52,7 @@ func getLogScopeAndFields(t *testing.T, logObs *observer.ObservedLogs) (string, 
 
 	scope, ok := findScopeAttributesField(log.Context)
 	require.True(t, ok, "Failed to find ScopeAttributesField field")
-	scopeStr := attributeSetJson(t, attribute.NewSet(scope...))
+	scopeStr := attributeSetJSON(t, attribute.NewSet(scope...))
 
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
 	fieldsBuf, err := enc.EncodeEntry(log.Entry, log.Context)
@@ -68,7 +68,7 @@ func getSpanScope(t *testing.T, spanObs *tracetest.InMemoryExporter) string {
 	require.Len(t, spans, 1)
 	span := spans[0]
 	require.Equal(t, "test", span.Name())
-	return attributeSetJson(t, span.InstrumentationScope().Attributes)
+	return attributeSetJSON(t, span.InstrumentationScope().Attributes)
 }
 
 func getMetricScope(t *testing.T, metricObs *metricSdk.ManualReader) string {
@@ -76,7 +76,7 @@ func getMetricScope(t *testing.T, metricObs *metricSdk.ManualReader) string {
 	err := metricObs.Collect(t.Context(), &rm)
 	require.NoError(t, err)
 	require.Len(t, rm.ScopeMetrics, 1)
-	return attributeSetJson(t, rm.ScopeMetrics[0].Scope.Attributes)
+	return attributeSetJSON(t, rm.ScopeMetrics[0].Scope.Attributes)
 }
 
 type TestResults struct {
@@ -127,7 +127,7 @@ func TestTelemetryWithAttributes(t *testing.T) {
 	tracerProvider := traceSdk.NewTracerProvider(traceSdk.WithSpanProcessor(traceSdk.NewSimpleSpanProcessor(spanObs)))
 
 	// Use delta temporality so points from the first step are no longer exported in the second step
-	metricObs := metricSdk.NewManualReader(metricSdk.WithTemporalitySelector(func(ik metricSdk.InstrumentKind) metricdata.Temporality {
+	metricObs := metricSdk.NewManualReader(metricSdk.WithTemporalitySelector(func(metricSdk.InstrumentKind) metricdata.Temporality {
 		return metricdata.DeltaTemporality
 	}))
 	meterProvider := metricSdk.NewMeterProvider(metricSdk.WithReader(metricObs))
