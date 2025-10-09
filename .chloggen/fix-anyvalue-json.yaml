@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: 'xpdata'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Refactor JSON marshaling and unmarshaling to use `Value` instead of `AnyValue`."
+note: "Refactor JSON marshaling and unmarshaling to use `pcommon.Value` instead of `AnyValue`."
 
 # One or more tracking issues or pull requests related to the change
 issues: [13837]
