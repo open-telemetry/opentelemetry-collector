@@ -4,12 +4,17 @@
 package memorylimiterprocessor
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -20,8 +25,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
-
-/*
 
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
@@ -35,15 +38,9 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(telemetry.SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(telemetry.ComponentIDKey, "memorylimiter"),
-		attribute.String(telemetry.PipelineIDKey, "logs/foo"),
-	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
+	var droppedAttrs []string
+	set.Logger = telemetry.MockInjectorLogger(set.Logger, &droppedAttrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -65,7 +62,12 @@ func TestCreateProcessor(t *testing.T) {
 	pp, err := factory.CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NotNil(t, pp)
-	assert.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Test that we've dropped the relevant injected attributes exactly once
+	assert.ElementsMatch(t, droppedAttrs, []string{
+		telemetry.SignalKey, telemetry.ComponentIDKey, telemetry.PipelineIDKey,
+	})
 
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	assert.NoError(t, tp.Shutdown(context.Background()))
@@ -79,15 +81,4 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	// calling it again should throw no error
 	require.NoError(t, lp.Shutdown(context.Background()))
-
-	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created singleton logger" {
-			createLoggerCount++
-			assert.Empty(t, observer.All()[0].Context)
-		}
-	}
-	assert.Equal(t, 1, createLoggerCount)
 }
-
-*/

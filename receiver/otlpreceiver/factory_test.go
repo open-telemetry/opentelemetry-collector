@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -31,22 +32,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-/*
-
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(telemetry.SignalKey, "traces"), // should be removed
-		attribute.String(telemetry.ComponentIDKey, "otlp"),
-	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(telemetry.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
+	var droppedAttrs []string
+	creationSet.Logger = telemetry.MockInjectorLogger(creationSet.Logger, &droppedAttrs)
+
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -67,19 +62,9 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, lReceiver)
 	assert.Same(t, tReceiver, pReceiver)
 
-	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created signal-agnostic logger" {
-			createLoggerCount++
-			require.Len(t, log.Context, 1)
-			assert.Equal(t, telemetry.ComponentIDKey, log.Context[0].Key)
-			assert.Equal(t, "otlp", log.Context[0].String)
-		}
-	}
-	assert.Equal(t, 1, createLoggerCount)
+	// Test that we've dropped the relevant injected attributes exactly once
+	assert.ElementsMatch(t, droppedAttrs, []string{telemetry.SignalKey})
 }
-
-*/
 
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
