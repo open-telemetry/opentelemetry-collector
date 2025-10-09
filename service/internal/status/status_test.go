@@ -245,7 +245,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 		go func() {
 			compFn := NewReportStatusFunc(id, rep.ReportStatus)
 			compFn(componentstatus.NewEvent(componentstatus.StatusStarting))
-			for i := 0; i < 1000; i++ {
+			for range 1000 {
 				compFn(componentstatus.NewEvent(componentstatus.StatusRecoverableError))
 				compFn(componentstatus.NewEvent(componentstatus.StatusOK))
 			}
