@@ -25,7 +25,6 @@ components:
     - pdata/pprofile
     - pkg/confmap
     - pkg/exporterhelper
-    - pkg/otelcol
     - pkg/pdata
     - pkg/processorhelper
     - pkg/queuebatch
