@@ -41,6 +41,7 @@ body:
       - extension/x
       - extension/x/storage
       - extension/zpages
+      - otelcol
       - pdata
       - pdata/pprofile
       - processor/batch
