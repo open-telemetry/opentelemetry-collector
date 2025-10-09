@@ -46,22 +46,31 @@ type compressRoundTripper struct {
 	compressor        *compressor
 }
 
-var zstdReaderPool sync.Pool
+var (
+	zstdReaderPool    sync.Pool
+	errReadAfterClose = errors.New("read after close")
+)
 
 type pooledZstdReadCloser struct {
 	inner *zstd.Decoder
 }
 
 func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
+	if pzrc.inner == nil {
+		return 0, errReadAfterClose
+	}
 	return pzrc.inner.Read(dst)
 }
 
 func (pzrc *pooledZstdReadCloser) Close() error {
-	err := pzrc.inner.Reset(nil)
-	if err != nil {
-		return err
+	if pzrc.inner != nil {
+		err := pzrc.inner.Reset(nil)
+		if err != nil {
+			return err
+		}
+		zstdReaderPool.Put(pzrc.inner)
+		pzrc.inner = nil
 	}
-	zstdReaderPool.Put(pzrc.inner)
 	return nil
 }
 
