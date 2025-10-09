@@ -33,7 +33,7 @@ func TestLogRecordCount(t *testing.T) {
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeLogs().AppendEmpty()
 	illl := rms.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -81,9 +81,8 @@ func BenchmarkLogsUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			rl := ld.ResourceLogs().At(i)
 			res := rl.Resource()
@@ -126,8 +125,8 @@ func BenchmarkLogsMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalLogs(ld)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
