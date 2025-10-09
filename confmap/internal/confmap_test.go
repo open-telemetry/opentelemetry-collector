@@ -403,13 +403,6 @@ func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	return NewFromStringMap(data).ToStringMap()
 }
 
-func newConfFromYAMLBytes(tb testing.TB, fileName string) []byte {
-	content, err := os.ReadFile(filepath.Clean(fileName))
-	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
-
-	return content
-}
-
 type testConfig2 struct {
 	Next            *nextConfig `mapstructure:"next"`
 	Another         string      `mapstructure:"another"`
@@ -1326,7 +1319,7 @@ func TestConfmapNilMerge(t *testing.T) {
 			rightConf := NewFromStringMap(test.right)
 			assert.Equal(t, test.right, rightConf.ToStringMap())
 
-			err := leftConf.mergeAppend(rightConf, map[string]*options{})
+			err := leftConf.mergeAppend(rightConf)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.expected, leftConf.ToStringMap())

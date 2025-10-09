@@ -38,7 +38,7 @@ type Conf struct {
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {
-	return &Conf{k: koanf.New(KeyDelimiter), isNil: false}
+	return &Conf{k: koanf.New(KeyDelimiter), isNil: false, mergeOpts: map[string]*MergeOptions{}}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
@@ -107,8 +107,8 @@ func (l *Conf) IsSet(key string) bool {
 // Note that the given map may be modified.
 func (l *Conf) Merge(in *Conf) error {
 	if EnableMergeAppendOption.IsEnabled() {
-		// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
-		return l.mergeAppend(in, in.mergeOpts)
+		// only use MergeAppend when EnableMergeAppendOption featuregate is enabled.
+		return l.mergeAppend(in)
 	}
 	l.isNil = l.isNil && in.isNil
 	return l.k.Merge(in.k)
@@ -128,8 +128,8 @@ func (l *Conf) Delete(key string) bool {
 // Additionally, mergeAppend performs deduplication when merging lists.
 // For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
 // the resulting list will be [extension1, extension2, extension3].
-func (l *Conf) mergeAppend(in *Conf, mergeOpts map[string]*MergeOptions) error {
-	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend(mergeOpts)))
+func (l *Conf) mergeAppend(in *Conf) error {
+	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend(in.mergeOpts)))
 	if err != nil {
 		return err
 	}

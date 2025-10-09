@@ -66,6 +66,12 @@ type fakeProvider struct {
 	logger *zap.Logger
 }
 
+func newConfFromYAMLBytes(tb testing.TB, fileName string) []byte {
+	content, err := os.ReadFile(filepath.Clean(fileName))
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
+	return content
+}
+
 func newFileProvider(tb testing.TB) ProviderFactory {
 	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 		return NewRetrievedFromYAML(newConfFromYAMLBytes(tb, uri[5:]))
