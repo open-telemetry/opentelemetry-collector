@@ -4,6 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
@@ -27,17 +28,17 @@ func NewOptions(mode string, duplicates bool) *MergeOptions {
 	}
 }
 
-func FetchMergePaths(yamlBytes []byte) map[string]*MergeOptions {
+func FetchMergePaths(yamlBytes []byte) (map[string]*MergeOptions, error) {
 	// fetchMergePaths takes the input yaml and extracts the path that has custom tags set
 	// It returns a "map" of paths->options, where options are the merge options to use.
 	// Right now, we only support list merging options. In future, we can support an option to override maps.
 	var root yaml.Node
 	if err := yaml.Unmarshal(yamlBytes, &root); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error unmarshalling yaml: %w", err)
 	}
 	m := map[string]*MergeOptions{}
 	walkYAML(nil, &root, m, []string{})
-	return m
+	return m, nil
 }
 
 func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*MergeOptions, path []string) {

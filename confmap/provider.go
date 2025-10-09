@@ -165,7 +165,11 @@ func withMergeOpts(mergeOpts map[string]*internal.MergeOptions) RetrievedOption 
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	if internal.EnableMergeAppendOption.IsEnabled() {
-		opts = append(opts, withMergeOpts(internal.FetchMergePaths(yamlBytes)))
+		mergePaths, err := internal.FetchMergePaths(yamlBytes)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, withMergeOpts(mergePaths))
 	}
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
