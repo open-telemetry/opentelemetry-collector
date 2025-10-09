@@ -89,7 +89,9 @@ func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]a
 		destFlat, _ := maps.Flatten(dest, []string{}, KeyDelimiter)
 
 		for sKey, sVal := range srcFlat {
-			if !isMatch(sKey, mergeOpts) {
+			opt := isMatch(sKey, mergeOpts)
+			if opt == nil {
+				// no option found for this path. Continue
 				continue
 			}
 
@@ -101,10 +103,20 @@ func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]a
 			srcVal := reflect.ValueOf(sVal)
 			destVal := reflect.ValueOf(dVal)
 
-			// Only merge if the value is a slice or array; let maps.Merge handle other types
-			if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
-				srcFlat[sKey] = mergeSlice(srcVal, destVal)
+			if srcVal.Kind() != destVal.Kind() {
+				// If user has specified different types for the same key, continue and let maps.Merge handle this
+				// User shouldn't really be doing this, but this protects against any panics we can face in reflect
+				continue
 			}
+
+			switch opt.mode {
+			case "append":
+				// Only merge if the value is a slice or array; let maps.Merge handle other types
+				if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
+					srcFlat[sKey] = mergeSlice(srcVal, destVal, opt.duplicates)
+				}
+			}
+
 		}
 
 		// Unflatten and merge
@@ -116,23 +128,23 @@ func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]a
 }
 
 // isMatch checks if a key matches any of the extracted paths
-func isMatch(sKey string, mergeOpts map[string]*MergeOptions) bool {
-	for key, _ := range mergeOpts {
+func isMatch(sKey string, mergeOpts map[string]*MergeOptions) *MergeOptions {
+	for key := range mergeOpts {
 		if strings.EqualFold(key, sKey) {
-			return true
+			return mergeOpts[key]
 		}
 	}
-	return false
+	return nil
 }
 
-func mergeSlice(src, dest reflect.Value) any {
+func mergeSlice(src, dest reflect.Value, duplicates bool) any {
 	slice := reflect.MakeSlice(src.Type(), 0, src.Cap()+dest.Cap())
 	for i := 0; i < dest.Len(); i++ {
 		slice = reflect.Append(slice, dest.Index(i))
 	}
 
 	for i := 0; i < src.Len(); i++ {
-		if isPresent(slice, src.Index(i)) {
+		if !duplicates && isPresent(slice, src.Index(i)) {
 			continue
 		}
 		slice = reflect.Append(slice, src.Index(i))

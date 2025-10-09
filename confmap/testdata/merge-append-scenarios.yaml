@@ -35,12 +35,12 @@
             nop2:
 
         service:
-            extensions: !mode=append&duplicates=true [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: !mode=append&duplicates=true [nop2]
-                    processors: !mode=append&duplicates=true [nop2]
-                    exporters: !mode=append&duplicates=true [nop2]
+                    receivers: !mode=append [nop2]
+                    processors: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop2:
@@ -105,12 +105,12 @@
             nop2:
 
         service:
-            extensions: !mode=append&duplicates=true [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: !mode=append&duplicates=true [nop2]
-                    processors: !mode=append&duplicates=true [nop2]
-                    exporters: !mode=append&duplicates=true [nop2]
+                    receivers: !mode=append [nop2]
+                    processors: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop2:
@@ -567,3 +567,175 @@
             - key: app
               value: "foo"
               action: upsert
+- name: merge-mode-append-duplicates
+  configs:
+    - |
+        receivers:
+            nop:
+                key: val
+
+        processors:
+            nop:
+                key: [val]
+
+        exporters:
+            nop:
+                key: 2
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    - |
+        processors:
+            nop:
+                key: !mode=append&duplicates=true [val, val2]
+  expected: 
+    receivers:
+        nop:
+            key: val
+    processors:
+        nop:
+            key: [val, val, val2]
+
+    exporters:
+        nop:
+            key: 2
+
+    extensions:
+        nop:
+
+    service:
+        extensions: [nop]
+        pipelines:
+            traces:
+                receivers: [nop]
+                processors: [nop]
+                exporters: [nop]
+- name: merge-mode-append-duplicates-invalid-tag
+  configs:
+    - |
+        receivers:
+            nop:
+                key: val
+
+        processors:
+            nop:
+                key: [val]
+
+        exporters:
+            nop:
+                key: 2
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    - |
+        processors:
+            nop:
+                key: !mode=append&duplicate=true [val, val2]
+  expected: 
+    receivers:
+        nop:
+            key: val
+    processors:
+        nop:
+            key: [val, val2]
+
+    exporters:
+        nop:
+            key: 2
+
+    extensions:
+        nop:
+
+    service:
+        extensions: [nop]
+        pipelines:
+            traces:
+                receivers: [nop]
+                processors: [nop]
+                exporters: [nop]
+- name: merge-mode-invalid-tags
+  configs:
+    - |
+        receivers:
+            nop:
+            nop/myreceiver:
+
+        processors:
+            nop:
+            nop/myprocessor:
+
+        exporters:
+            nop:
+            nop/myexporter:
+
+        extensions:
+            nop:
+            nop/myextension:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    - |
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+
+        service:
+            extensions: !mode=appendd [nop2]
+            pipelines:
+                traces:
+                    receivers: !mode=appendd [nop2]
+                    processors: [nop2]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop2:
+        nop:
+        nop/myreceiver:
+
+    exporters:
+        nop2:
+        nop:
+        nop/myexporter:
+
+    processors:
+        nop:
+        nop/myprocessor:
+
+    extensions:
+        nop2:
+        nop:
+        nop/myextension:
+
+    service:
+        extensions: [nop2]
+        pipelines:
+            traces:
+                receivers: [nop2]
+                processors: [nop2]
+                exporters: [nop2]
