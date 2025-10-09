@@ -174,10 +174,8 @@ jobs:
         run: |
           make -j4 gotest-with-junit
       - name: Run Unit Tests with GODEBUG=fips140=only
-        env:
-          GODEBUG: fips140=only
         run: |
-          make -j4 gotest
+          make -j4 gotest-fips140-only
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: test-results-${{ runner.os }}-${{ matrix.runner }}-${{ matrix.go-version }}
