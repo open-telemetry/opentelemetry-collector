@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.43.0/v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Remove all experimental symbols in exporterhelper (#11143)
+  They have all been moved to xexporterhelper
+  
+
+### 🚩 Deprecations 🚩
+
+- `all`: service/telemetry.TracesConfig is deprecated (#13904)
+  This type alias has been added to otelconftelemetry.TracesConfig,
+  where the otelconf-based telemetry implementation now lives.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Mark configoptional as stable (#13403)
+- `all`: Mark configauth module as 1.0 (#9476)
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
 ## v1.42.0/v0.136.0
 
 ### 🛑 Breaking changes 🛑

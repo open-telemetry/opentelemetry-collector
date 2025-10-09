@@ -19,9 +19,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
 
-// NOTE TracesConfig will be removed once opentelemetry-collector-contrib
-// has been updated to use otelconftelemetry instead; use at your own risk.
-// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+// Deprecated: [v0.137.0] Use otelconftelemetry.TracesConfig instead.
 type TracesConfig = migration.TracesConfigV030
 
 // LoggerSettings holds settings for building logger providers.
