@@ -41,7 +41,7 @@ func FetchMergePaths(yamlBytes []byte) (map[string]*MergeOptions, error) {
 	return m, nil
 }
 
-func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*MergeOptions, path []string) {
+func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string) {
 	// walkYAML recursively walks through the yaml tree and populates "res" with paths to merge.
 	// It keeps track of current path in "path" array. This is needed for final merge operation
 	if key != nil {
@@ -109,14 +109,12 @@ func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]a
 				continue
 			}
 
-			switch opt.mode {
-			case "append":
+			if opt.mode == "append" {
 				// Only merge if the value is a slice or array; let maps.Merge handle other types
 				if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
 					srcFlat[sKey] = mergeSlice(srcVal, destVal, opt.duplicates)
 				}
 			}
-
 		}
 
 		// Unflatten and merge
@@ -152,7 +150,7 @@ func mergeSlice(src, dest reflect.Value, duplicates bool) any {
 	return slice.Interface()
 }
 
-func isPresent(slice reflect.Value, val reflect.Value) bool {
+func isPresent(slice, val reflect.Value) bool {
 	for i := 0; i < slice.Len(); i++ {
 		if reflect.DeepEqual(val.Interface(), slice.Index(i).Interface()) {
 			return true

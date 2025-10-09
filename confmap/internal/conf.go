@@ -53,9 +53,9 @@ func NewFromStringMap(data map[string]any) *Conf {
 	return p
 }
 
-func (c *Conf) WithMergeOptions(opt map[string]*MergeOptions) *Conf {
-	c.mergeOpts = opt
-	return c
+func (l *Conf) WithMergeOptions(opt map[string]*MergeOptions) *Conf {
+	l.mergeOpts = opt
+	return l
 }
 
 // Unmarshal unmarshalls the config into a struct using the given options.

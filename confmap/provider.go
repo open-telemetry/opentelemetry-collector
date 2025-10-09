@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/confmap/internal"
 	"go.uber.org/zap"
 	yaml "go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/confmap/internal"
 )
 
 // ProviderSettings are the settings to initialize a Provider.

@@ -497,7 +497,7 @@ func runScenario(t *testing.T, path string) {
 				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 				defer func() { require.NoError(t, file.Close()) }()
 				require.NoError(t, err)
-				n, err := file.Write([]byte(c))
+				n, err := file.WriteString(c)
 				require.NoError(t, err)
 				require.Positive(t, n)
 				configFiles = append(configFiles, file.Name())
