@@ -61,10 +61,6 @@ func LoggerWithAttributes(logger *zap.Logger, attrs []attribute.KeyValue) *zap.L
 	}))
 }
 
-func (cwa coreWithAttributes) Unwrap() zapcore.Core {
-	return cwa.Core
-}
-
 func (cwa coreWithAttributes) DropInjectedAttributes(droppedAttrs ...string) zapcore.Core {
 	cwa.attrs = slices.DeleteFunc(slices.Clone(cwa.attrs), func(kv attribute.KeyValue) bool {
 		return slices.Contains(droppedAttrs, string(kv.Key))

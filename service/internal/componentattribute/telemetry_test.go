@@ -4,6 +4,7 @@
 package componentattribute_test
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -111,7 +112,11 @@ func getScopes(t *testing.T, tswa component.TelemetrySettings, logObs *observer.
 	}
 }
 
-func TestTelemetryWithAttributes(t *testing.T) {
+type tracerProviderWrapper struct {
+	trace.TracerProvider
+}
+
+func testTelemetryWithAttributes(t *testing.T, useTraceSdk bool) {
 	prevState := telemetry.NewPipelineTelemetryGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), true))
 	defer func() {
@@ -124,7 +129,10 @@ func TestTelemetryWithAttributes(t *testing.T) {
 	logger = logger.With(zap.String("before", "val"))
 
 	spanObs := tracetest.NewInMemoryExporter()
-	tracerProvider := traceSdk.NewTracerProvider(traceSdk.WithSpanProcessor(traceSdk.NewSimpleSpanProcessor(spanObs)))
+	var tracerProvider trace.TracerProvider = traceSdk.NewTracerProvider(traceSdk.WithSpanProcessor(traceSdk.NewSimpleSpanProcessor(spanObs)))
+	if !useTraceSdk {
+		tracerProvider = tracerProviderWrapper{TracerProvider: tracerProvider}
+	}
 
 	// Use delta temporality so points from the first step are no longer exported in the second step
 	metricObs := metricSdk.NewManualReader(metricSdk.WithTemporalitySelector(func(metricSdk.InstrumentKind) metricdata.Temporality {
@@ -143,6 +151,12 @@ func TestTelemetryWithAttributes(t *testing.T) {
 		attribute.String("injected1", "val"),
 		attribute.String("injected2", "val"),
 	))
+
+	// Check that SDK-only methods are accessible
+	_, ok := tswa.TracerProvider.(interface {
+		ForceFlush(ctx context.Context) error
+	})
+	assert.Equal(t, useTraceSdk, ok)
 
 	// Add extra log attribute
 	tswa.Logger = tswa.Logger.With(zap.String("after", "val"))
@@ -164,4 +178,13 @@ func TestTelemetryWithAttributes(t *testing.T) {
 		SpanScope:   `{"after":"val","injected2":"val"}`,
 		MetricScope: `{"after":"val","injected2":"val"}`,
 	}, getScopes(t, tswa, logObs, spanObs, metricObs))
+}
+
+func TestTelemetryWithAttributes(t *testing.T) {
+	t.Run("sdk", func(t *testing.T) {
+		testTelemetryWithAttributes(t, true)
+	})
+	t.Run("generic", func(t *testing.T) {
+		testTelemetryWithAttributes(t, false)
+	})
 }

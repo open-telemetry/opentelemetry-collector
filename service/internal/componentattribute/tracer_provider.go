@@ -25,10 +25,6 @@ func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.Tr
 	return tpwa.TracerProvider.Tracer(name, options...)
 }
 
-func (tpwa tracerProviderWithAttributes) Unwrap() trace.TracerProvider {
-	return tpwa.TracerProvider
-}
-
 func (tpwa tracerProviderWithAttributes) DropInjectedAttributes(droppedAttrs ...string) trace.TracerProvider {
 	return tracerProviderWithAttributes{
 		TracerProvider: tpwa.TracerProvider,

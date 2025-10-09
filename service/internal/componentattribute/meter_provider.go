@@ -25,10 +25,6 @@ func (mpwa meterProviderWithAttributes) Meter(name string, opts ...metric.MeterO
 	return mpwa.MeterProvider.Meter(name, opts...)
 }
 
-func (mpwa meterProviderWithAttributes) Unwrap() metric.MeterProvider {
-	return mpwa.MeterProvider
-}
-
 func (mpwa meterProviderWithAttributes) DropInjectedAttributes(droppedAttrs ...string) metric.MeterProvider {
 	return meterProviderWithAttributes{
 		MeterProvider: mpwa.MeterProvider,
