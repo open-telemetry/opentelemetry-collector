@@ -7,12 +7,10 @@ import (
 	"testing"
 	"time"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goproto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -46,14 +44,14 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
 	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
-	}).LogRecordCount())
+	}, new(internal.State)).LogRecordCount())
 	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				ScopeLogs: []*otlplogs.ScopeLogs{{}},
 			},
 		},
-	}).LogRecordCount())
+	}, new(internal.State)).LogRecordCount())
 	assert.Equal(t, 1, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
@@ -64,71 +62,21 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).LogRecordCount())
-}
-
-func TestToFromLogOtlp(t *testing.T) {
-	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
-	logs := newLogs(otlp)
-	assert.Equal(t, NewLogs(), logs)
-	assert.Equal(t, otlp, logs.getOrig())
-}
-
-func TestResourceLogsWireCompatibility(t *testing.T) {
-	// This test verifies that OTLP ProtoBufs generated using goproto lib in
-	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
-	// this repository are wire compatible.
-
-	// Generate ResourceLogs as pdata struct.
-	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
-
-	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(logs.getOrig())
-	require.NoError(t, err)
-	assert.NotNil(t, wire1)
-
-	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoMessage emptypb.Empty
-	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	require.NoError(t, err)
-
-	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoMessage)
-	require.NoError(t, err)
-	assert.NotNil(t, wire2)
-
-	// Unmarshal from the wire into gogoproto's representation.
-	var gogoprotoRS2 otlpcollectorlog.ExportLogsServiceRequest
-	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
-	require.NoError(t, err)
-
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, logs.getOrig(), &gogoprotoRS2)
-}
-
-func TestLogsCopyTo(t *testing.T) {
-	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
-	logsCopy := NewLogs()
-	logs.CopyTo(logsCopy)
-	assert.Equal(t, logs, logsCopy)
+	}, new(internal.State)).LogRecordCount())
 }
 
 func TestReadOnlyLogsInvalidUsage(t *testing.T) {
-	logs := NewLogs()
-	assert.False(t, logs.IsReadOnly())
-	res := logs.ResourceLogs().AppendEmpty().Resource()
+	ld := NewLogs()
+	assert.False(t, ld.IsReadOnly())
+	res := ld.ResourceLogs().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
-	logs.MarkReadOnly()
-	assert.True(t, logs.IsReadOnly())
+	ld.MarkReadOnly()
+	assert.True(t, ld.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 
 func BenchmarkLogsUsage(b *testing.B) {
-	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
+	ld := generateTestLogs()
 
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
@@ -136,8 +84,8 @@ func BenchmarkLogsUsage(b *testing.B) {
 	b.ResetTimer()
 
 	for bb := 0; bb < b.N; bb++ {
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
-			rl := logs.ResourceLogs().At(i)
+		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+			rl := ld.ResourceLogs().At(i)
 			res := rl.Resource()
 			res.Attributes().PutStr("foo", "bar")
 			v, ok := res.Attributes().Get("foo")
@@ -170,5 +118,18 @@ func BenchmarkLogsUsage(b *testing.B) {
 				})
 			}
 		}
+	}
+}
+
+func BenchmarkLogsMarshalJSON(b *testing.B) {
+	ld := generateTestLogs()
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalLogs(ld)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
 	}
 }

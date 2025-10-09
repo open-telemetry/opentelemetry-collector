@@ -2,28 +2,28 @@
 
 Collector build and testing is currently fully automated. However there are still certain operations that need to be performed manually in order to make a release.
 
-We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into four sections. A release engineer must release:
+We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into three sections. Each section is assigned to an approver or maintainer of the corresponding repository. The sections are:
 
 1. The [Core](#releasing-opentelemetry-collector) collector, including the collector builder CLI tool.
-2. The [Contrib](#releasing-opentelemetry-collector-contrib) collector.
+2. The [Contrib](#releasing-opentelemetry-collector-contrib) collector repository, containing Collector components.
 3. The [artifacts](#producing-the-artifacts)
 
 **Important Note:** You’ll need to be able to sign git commits/tags in order to be able to release a collector version. Follow [this guide](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to set it up.
 
-## Release manager
+## Release managers
 
 A release manager is the person responsible for a specific release. While the manager might request help from other folks, they are ultimately responsible for the success of a release.
 
-In order to have more people comfortable with the release process, and in order to decrease the burden on a small number of volunteers, all core approvers are release managers from time to time, listed under the [Release Schedule](#release-schedule) section. That table is updated at every release, with the current manager adding themselves to the bottom of the table, removing themselves from the top of the table.
+In order to have more people comfortable with the release process, and in order to decrease the burden on a small number of volunteers, all core, contrib and releases approvers are release managers from time to time, listed under the [Release Schedule](#release-schedule) section. That table is updated at every release, with the current core release manager adding themselves to the bottom of the table, removing themselves from the top of the table.
 
-It is possible that a core approver isn't a contrib approver. In that case, the release manager should coordinate with a contrib approver for the steps requiring this role, such as branch creation or tag publishing.
+The assigned release managers should coordinate with each other to ensure a smooth release process. The release managers may be the same person for different repositories, but it is not required.
 
-To ensure the rest of the community is informed about the release and can properly help the release manager, the release manager should open a thread on the #otel-collector-dev CNCF Slack channel and provide updates there.
-The thread should be shared with all Collector leads (core and contrib approvers and maintainers).
+To ensure the rest of the community is informed about the release and can properly help the release manager, the core release manager should open a thread on the #otel-collector-dev CNCF Slack channel and provide updates there.
+The thread should be shared with all Collector leads (core, contrib and releases approvers and maintainers).
 
 Before the release, make sure there are no open release blockers in [core](https://github.com/open-telemetry/opentelemetry-collector/labels/release%3Ablocker), [contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib/labels/release%3Ablocker) and [releases](https://github.com/open-telemetry/opentelemetry-collector-releases/labels/release%3Ablocker) repos.
 
-## Releasing opentelemetry-collector
+## Releasing opentelemetry-collector (core release manager)
 
 1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
    - While this PR is open, all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
@@ -65,66 +65,15 @@ Before the release, make sure there are no open release blockers in [core](https
 
 7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
-## Releasing opentelemetry-collector-contrib
+## Releasing opentelemetry-collector-contrib (contrib release manager)
 
-1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers of the current and new beta versions, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
-   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
-   -  🛑 **Do not move forward until this PR is merged.** 🛑
+See the [opentelemetry-collector-contrib release documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/docs/release.md) for the release process in that repository.
 
-2. Check out main and ensure it has the "Prepare release" commit in your local
-   copy by pulling in the latest from
-   `open-telemetry/opentelemetry-collector-contrib`. Use this commit to create a
-   branch named `release/<release-series>` (e.g. `release/v0.85.x`). Push the
-   new branch to `open-telemetry/opentelemetry-collector-contrib`. Assuming your
-   upstream remote is named `upstream`, you can try the following commands:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
-   - `git push -u upstream release/<release series>`
+## Producing the artifacts ('releases' release manager)
 
-3. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
+See the [opentelemetry-collector-releases release documentation](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/docs/release.md) for the release process in that repository.
 
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
-
-   - `make push-tags MODSET=contrib-base`
-
-4. Wait for the new tag build to pass successfully. A new `v0.85.0` release should be automatically created on Github by now, with the description containing the changelog for the new release.
-
-5. Manually edit the release description, and add a section listing the unmaintained components at the top ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)). The list of unmaintained components can be found by [searching for issues with the "unmaintained" label](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue%20state%3Aopen%20label%3Aunmaintained).
-
-## Producing the artifacts
-
-The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
-
-1. Run the GitHub Action workflow "[Update Version in Distributions and Prepare PR](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/update-version.yaml)" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
-   -  🛑 **Do not move forward until this PR is merged.** 🛑
-
-2. Check out main and ensure it has the "Update version from ..." commit in your local
-   copy by pulling in the latest from
-   `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
-   remote is named `upstream`, you can try running:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-
-3. Create a tag for the new release version by running:
-   
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. ⚠️
-   
-   - `make push-tags TAG=v0.85.0`
-
-4. Wait for the new tag build to pass successfully.
-
-5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
-
-    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
-
-    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/release-core.yaml).
-
-    3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
-
-    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
-
-6. Update the release notes with the CHANGELOG.md updates.
-
-## Post-release steps
+## Post-release steps (all release managers)
 
 After the release is complete, the release manager should do the following steps:
 
@@ -132,7 +81,10 @@ After the release is complete, the release manager should do the following steps
 the appropriate repositories and label them with the `release:retro` label. The release manager
 should share the list of issues that affected the release with the Collector leads.
 2. Update the [release schedule](#release-schedule) section of this document to remove the completed
-releases and add new schedules to the bottom of the list.
+releases and add new schedules to the bottom of the list. To update the release schedule, follow these rules:
+   1. If the core release manager is also eligible as a contrib and 'releases' release manager, assign them to all roles they can perform.
+   2. Otherwise, pick a contrib/'releases' approver/maintainer that is not a core approver/maintainer, rotating through the list of eligible people. The contrib approvers/maintainers are all members of the [@collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers) team, and the 'releases' approvers/maintainers are all members of the [@collector-releases-approvers](https://github.com/orgs/open-telemetry/teams/collector-releases-approvers) team.
+
 
 ## Troubleshooting
 
@@ -178,7 +130,7 @@ releases and add new schedules to the bottom of the list.
 
 ### Bugfix release criteria
 
-Both `opentelemetry-collector` and `opentelemetry-collector-contrib` have very short 2 week release cycles. Because of this, we put a high bar when considering making a patch release, to avoid wasting engineering time unnecessarily.
+All OpenTelemetry Collector repositories have very short 2 week release cycles. Because of this, we put a high bar when considering making a patch release, to avoid wasting engineering time unnecessarily.
 
 When considering making a bugfix release on the `v0.N.x` release cycle, the bug in question needs to fulfill the following criteria:
 
@@ -202,7 +154,7 @@ If the maintainers are unable to reach consensus within one working day, we will
 
 ### Bugfix release procedure
 
-The release manager of a minor version is responsible for releasing any bugfix versions on this release series. The following documents the procedure to release a bugfix
+The release manager of a minor version is responsible for releasing any bugfix versions on this release series for their repository. The following documents the procedure to release a bugfix:
 
 1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
@@ -227,16 +179,35 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 ## Release schedule
 
-| Date       | Version  | Release manager                                      |
-|------------|----------|------------------------------------------------------|
-| 2025-07-14 | v0.130.0 | [@mx-psi](https://github.com/mx-psi)                 |
-| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                   |
-| 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
-| 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
-| 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
-| 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
-| 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
-| 2025-10-20 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |
-| 2025-11-03 | v0.138.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
-| 2025-11-17 | v0.139.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
-| 2025-12-01 | v0.140.0 | [@dmathieu](https://github.com/dmathieu)             |
+| Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
+|------------|----------|-----------------------|-------------------------|----------------------------|
+| 2025-10-20 | v0.138.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
+| 2025-11-03 | v0.139.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
+| 2025-11-17 | v0.140.0 | [@jade-guiton-dd][10] | [@andrzej-stencel][4]   | [@dehaansa][16]            |
+| 2025-12-01 | v0.141.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
+| 2025-12-15 | v0.142.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
+| 2026-01-05 | v0.143.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
+| 2026-01-19 | v0.144.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2026-02-02 | v0.145.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
+| 2026-02-16 | v0.146.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
+| 2026-03-02 | v0.147.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
+| 2026-03-16 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+
+
+[1]: https://github.com/jmacd
+[2]: https://github.com/evan-bradley
+[3]: https://github.com/TylerHelmuth
+[4]: https://github.com/andrzej-stencel
+[5]: https://github.com/atoulme
+[6]: https://github.com/songy23
+[7]: https://github.com/dmitryax
+[8]: https://github.com/codeboten
+[9]: https://github.com/bogdandrutu
+[10]: https://github.com/jade-guiton-dd
+[11]: https://github.com/ArthurSens
+[12]: https://github.com/dmathieu
+[13]: https://github.com/braydonk
+[14]: https://github.com/mx-psi
+[15]: https://github.com/mowies
+[16]: https://github.com/dehaansa
+[17]: https://github.com/MovieStoreGuy

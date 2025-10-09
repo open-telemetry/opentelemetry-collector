@@ -24,19 +24,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
-// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
-func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
-	if opt.HasValue() {
-		return opt.Get()
-	}
-
-	empty := confmap.NewFromStringMap(map[string]any{})
-	require.NoError(t, empty.Unmarshal(opt))
-	val := opt.Get()
-	require.NotNil(t, "Expected a default value to be set for %T", val)
-	return val
-}
-
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
 	require.NoError(t, err)
@@ -44,8 +31,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 	expectedCfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &expectedCfg.GRPC)
-	GetOrInsertDefault(t, &expectedCfg.HTTP)
+	expectedCfg.GRPC.GetOrInsertDefault()
+	expectedCfg.HTTP.GetOrInsertDefault()
 	assert.Equal(t, expectedCfg, cfg)
 }
 
@@ -57,7 +44,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyGRPC.GRPC)
+	defaultOnlyGRPC.GRPC.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -69,7 +56,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -81,7 +68,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -93,7 +80,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -122,17 +109,17 @@ func TestUnmarshalConfig(t *testing.T) {
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
 					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
 							MaxConnectionAgeGrace: 13 * time.Second,
 							Time:                  30 * time.Second,
 							Timeout:               5 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
-						},
+						}),
 					}),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
@@ -153,7 +140,8 @@ func TestUnmarshalConfig(t *testing.T) {
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						}),
-						ResponseHeaders: map[string]configopaque.String{},
+						ResponseHeaders:   map[string]configopaque.String{},
+						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
@@ -182,8 +170,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint:        "/tmp/http_otlp.sock",
-						ResponseHeaders: map[string]configopaque.String{},
+						Endpoint:          "/tmp/http_otlp.sock",
+						ResponseHeaders:   map[string]configopaque.String{},
+						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,

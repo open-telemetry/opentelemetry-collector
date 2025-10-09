@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/confmap/internal"
 	"go.uber.org/zap"
 	yaml "go.yaml.in/yaml/v3"
 )
@@ -110,7 +111,7 @@ type Retrieved struct {
 
 	stringRepresentation string
 	isSetString          bool
-	mergeOpts            map[string]*options
+	mergeOpts            map[string]*internal.MergeOptions
 }
 
 type retrievedSettings struct {
@@ -118,7 +119,7 @@ type retrievedSettings struct {
 	stringRepresentation string
 	isSetString          bool
 	closeFunc            CloseFunc
-	mergeOpts            map[string]*options
+	mergeOpts            map[string]*internal.MergeOptions
 }
 
 // RetrievedOption options to customize Retrieved values.
@@ -153,7 +154,7 @@ func withErrorHint(errorHint error) RetrievedOption {
 	})
 }
 
-func withMergeOpts(mergeOpts map[string]*options) RetrievedOption {
+func withMergeOpts(mergeOpts map[string]*internal.MergeOptions) RetrievedOption {
 	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.mergeOpts = mergeOpts
 	})
@@ -163,8 +164,8 @@ func withMergeOpts(mergeOpts map[string]*options) RetrievedOption {
 // * yamlBytes the yaml bytes that will be deserialized.
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
-	if enableMergeAppendOption.IsEnabled() {
-		opts = append(opts, withMergeOpts(fetchMergePaths(yamlBytes)))
+	if internal.EnableMergeAppendOption.IsEnabled() {
+		opts = append(opts, withMergeOpts(internal.FetchMergePaths(yamlBytes)))
 	}
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
@@ -222,8 +223,7 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 		}
 		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
 	}
-	c := NewFromStringMap(val)
-	c.mergeOpts = r.mergeOpts
+	c := NewFromStringMap(val).WithMergeOptions(r.mergeOpts)
 	return c, nil
 }
 

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 )
 
 type dataBuffer struct {
@@ -44,6 +45,39 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 
 	for k, v := range m.All() {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
+	}
+}
+
+func (b *dataBuffer) logEntityRefs(resource pcommon.Resource) {
+	entityRefs := entity.ResourceEntityRefs(resource)
+	if entityRefs.Len() == 0 {
+		return
+	}
+
+	b.logEntry("Resource entity refs:")
+	for i := 0; i < entityRefs.Len(); i++ {
+		entityRef := entityRefs.At(i)
+		b.logEntry("     -> Entity ref #%d:", i)
+		b.logEntry("          -> Type: %s", entityRef.Type())
+		if entityRef.SchemaUrl() != "" {
+			b.logEntry("          -> Schema URL: %s", entityRef.SchemaUrl())
+		}
+
+		idKeys := entityRef.IdKeys()
+		if idKeys.Len() > 0 {
+			b.logEntry("          -> ID keys:")
+			for j := 0; j < idKeys.Len(); j++ {
+				b.logEntry("               -> %s", idKeys.At(j))
+			}
+		}
+
+		descKeys := entityRef.DescriptionKeys()
+		if descKeys.Len() > 0 {
+			b.logEntry("          -> Description keys:")
+			for j := 0; j < descKeys.Len(); j++ {
+				b.logEntry("               -> %s", descKeys.At(j))
+			}
+		}
 	}
 }
 
@@ -301,7 +335,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 	}
 }
 
-func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, attrs pprofile.AttributeTableSlice) {
+func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.ProfilesDictionary) {
 	if ss.Len() == 0 {
 		return
 	}
@@ -310,14 +344,13 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, attrs pprofile.A
 		b.logEntry("    Sample #%d", i)
 		sample := ss.At(i)
 
-		b.logEntry("        Location length: %d", sample.LocationsLength())
-		b.logEntry("        Value: %d", sample.Value().AsRaw())
+		b.logEntry("        Values: %d", sample.Values().AsRaw())
 
 		if lai := sample.AttributeIndices().Len(); lai > 0 {
 			b.logEntry("        Attributes:")
 			for j := 0; j < lai; j++ {
-				attr := attrs.At(int(sample.AttributeIndices().At(j)))
-				b.logEntry("             -> %s: %s", attr.Key(), attr.Value().AsRaw())
+				attr := dic.AttributeTable().At(int(sample.AttributeIndices().At(j)))
+				b.logEntry("             -> %s: %s", dic.StringTable().At(int(attr.KeyStrindex())), attr.Value().AsRaw())
 			}
 		}
 	}
@@ -337,10 +370,6 @@ func (b *dataBuffer) logProfileMappings(ms pprofile.MappingSlice) {
 		b.logEntry("    File offset: %d", mapping.FileOffset())
 		b.logEntry("    File name: %d", mapping.FilenameStrindex())
 		b.logEntry("    Attributes: %d", mapping.AttributeIndices().AsRaw())
-		b.logEntry("    Has functions: %t", mapping.HasFunctions())
-		b.logEntry("    Has filenames: %t", mapping.HasFilenames())
-		b.logEntry("    Has line numbers: %t", mapping.HasLineNumbers())
-		b.logEntry("    Has inline frames: %t", mapping.HasInlineFrames())
 	}
 }
 
@@ -364,7 +393,6 @@ func (b *dataBuffer) logProfileLocations(ls pprofile.LocationSlice) {
 				b.logEntry("        Column: %d", line.Column())
 			}
 		}
-		b.logEntry("    Is folded: %t", location.IsFolded())
 		b.logEntry("    Attributes: %d", location.AttributeIndices().AsRaw())
 	}
 }
@@ -407,11 +435,12 @@ func (b *dataBuffer) logComment(c pcommon.Int32Slice) {
 	}
 }
 
-func attributeUnitsToMap(aus pprofile.AttributeUnitSlice) pcommon.Map {
+func keyValueAndUnitsToMap(aus pprofile.KeyValueAndUnitSlice) pcommon.Map {
 	m := pcommon.NewMap()
 	for i := 0; i < aus.Len(); i++ {
 		au := aus.At(i)
-		m.PutInt("attributeKey", int64(au.AttributeKeyStrindex()))
+		m.PutInt("Key", int64(au.KeyStrindex()))
+		m.PutStr("Value", au.Value().AsString())
 		m.PutInt("unit", int64(au.UnitStrindex()))
 	}
 	return m

@@ -29,6 +29,14 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	if strings.HasPrefix(c.ClientConfig.Endpoint, "unix://") {
+		path := strings.TrimPrefix(c.ClientConfig.Endpoint, "unix://")
+		if path == "" {
+			return errors.New("unix socket path cannot be empty")
+		}
+		return nil
+	}
+
 	endpoint := c.sanitizedEndpoint()
 	if endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
@@ -53,7 +61,7 @@ func (c *Config) sanitizedEndpoint() string {
 	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
 		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
 	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
-		r := regexp.MustCompile("^dns://[/]?")
+		r := regexp.MustCompile(`^dns:///?`)
 		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
 	default:
 		return c.ClientConfig.Endpoint

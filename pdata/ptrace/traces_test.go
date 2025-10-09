@@ -7,12 +7,10 @@ import (
 	"testing"
 	"time"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goproto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -45,14 +43,14 @@ func TestSpanCount(t *testing.T) {
 func TestSpanCountWithEmpty(t *testing.T) {
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				ScopeSpans: []*otlptrace.ScopeSpans{{}},
 			},
 		},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -63,81 +61,36 @@ func TestSpanCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).SpanCount())
-}
-
-func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	traces := newTraces(otlp)
-	assert.Equal(t, NewTraces(), traces)
-	assert.Equal(t, otlp, traces.getOrig())
-	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
-	// circular dependency.
-}
-
-func TestResourceSpansWireCompatibility(t *testing.T) {
-	// This test verifies that OTLP ProtoBufs generated using goproto lib in
-	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
-	// this repository are wire compatible.
-
-	// Generate ResourceSpans as pdata struct.
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
-
-	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(traces.getOrig())
-	require.NoError(t, err)
-	assert.NotNil(t, wire1)
-
-	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoMessage emptypb.Empty
-	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	require.NoError(t, err)
-
-	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoMessage)
-	require.NoError(t, err)
-	assert.NotNil(t, wire2)
-
-	// Unmarshal from the wire into gogoproto's representation.
-	var gogoprotoRS2 otlpcollectortrace.ExportTraceServiceRequest
-	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
-	require.NoError(t, err)
-
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, traces.getOrig(), &gogoprotoRS2)
+	}, new(internal.State)).SpanCount())
 }
 
 func TestTracesCopyTo(t *testing.T) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	td := generateTestTraces()
 	tracesCopy := NewTraces()
-	traces.CopyTo(tracesCopy)
-	assert.Equal(t, traces, tracesCopy)
+	td.CopyTo(tracesCopy)
+	assert.Equal(t, td, tracesCopy)
 }
 
 func TestReadOnlyTracesInvalidUsage(t *testing.T) {
-	traces := NewTraces()
-	assert.False(t, traces.IsReadOnly())
-	res := traces.ResourceSpans().AppendEmpty().Resource()
+	td := NewTraces()
+	assert.False(t, td.IsReadOnly())
+	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
-	traces.MarkReadOnly()
-	assert.True(t, traces.IsReadOnly())
+	td.MarkReadOnly()
+	assert.True(t, td.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 
 func BenchmarkTracesUsage(b *testing.B) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	td := generateTestTraces()
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for bb := 0; bb < b.N; bb++ {
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
-			rs := traces.ResourceSpans().At(i)
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			rs := td.ResourceSpans().At(i)
 			res := rs.Resource()
 			res.Attributes().PutStr("foo", "bar")
 			v, ok := res.Attributes().Get("foo")
@@ -177,5 +130,18 @@ func BenchmarkTracesUsage(b *testing.B) {
 				})
 			}
 		}
+	}
+}
+
+func BenchmarkTracesMarshalJSON(b *testing.B) {
+	td := generateTestTraces()
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalTraces(td)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
 	}
 }

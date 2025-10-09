@@ -164,7 +164,7 @@ Here is a list of community roles with current and previous members:
 ### Maintainers
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
-- [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
+- [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
@@ -203,22 +203,22 @@ For more information about the emeritus role, see the [community repository](htt
 
 ### Emeritus Approvers
 
+- [Anthony Mirabella](https://github.com/Aneurysm9)
+- [Daniel Jaglowski](https://github.com/djaglowski)
 - [James Bebbington](https://github.com/james-bebbington)
 - [Jay Camp](https://github.com/jrcamp)
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
 - [Nail Islamov](https://github.com/nilebox)
 - [Owais Lone](https://github.com/owais)
 - [Rahul Patel](https://github.com/rghetia)
 - [Steven Karis](https://github.com/sjkaris)
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Daniel Jaglowski](https://github.com/djaglowski)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
 ### Emeritus Triagers
 
-- [Andrew Hsu](https://github.com/andrewhsu)
 - [Alolita Sharma](https://github.com/alolita)
+- [Andrew Hsu](https://github.com/andrewhsu)
 - [Punya Biswal](https://github.com/punya)
 - [Steve Flanders](https://github.com/flands)
 

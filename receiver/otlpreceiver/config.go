@@ -62,6 +62,8 @@ type Protocols struct {
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

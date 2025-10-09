@@ -1,0 +1,114 @@
+# Comprehensive HTTP configuration example showing all available options
+# with middleware configurations (using the new "middlewares" field)
+
+# HTTP Client Configuration
+client:
+  # The target URL to send data to
+  endpoint: "http://example.com:4318/v1/traces"
+
+  # Proxy URL setting for the collector
+  proxy_url: "http://proxy.example.com:8080"
+
+  # TLS configuration
+  tls:
+    insecure: false
+    cert_file: "/path/to/client.crt"
+    key_file: "/path/to/client.key"
+    ca_file: "/path/to/ca.crt"
+    server_name_override: "example.com"
+    insecure_skip_verify: false
+
+  # HTTP client buffer sizes
+  read_buffer_size: 4096
+  write_buffer_size: 4096
+
+  # Request timeout
+  timeout: 30s
+
+  # Custom headers
+  headers:
+    "User-Agent": "OpenTelemetry-Collector/1.0"
+    "X-Custom-Header": "custom-value"
+
+  # Compression setting
+  compression: "gzip"
+
+  # Disable HTTP/2
+  disable_keep_alives: false
+  http2_read_idle_timeout: 10s
+  http2_ping_timeout: 15s
+
+  # Maximum idle connections
+  max_idle_conns: 100
+  max_idle_conns_per_host: 10
+  max_conns_per_host: 50
+  idle_conn_timeout: 90s
+
+  # Authentication configuration
+  auth:
+    authenticator: "oauth2client"
+
+  # Cookies configuration
+  cookies:
+    enabled: true
+
+  # Middlewares configuration (note: plural "middlewares")
+  middlewares:
+    - id: "middleware1"
+    - id: "middleware2"
+
+# HTTP Server Configuration
+server:
+  # Network endpoint configuration
+  endpoint: "0.0.0.0:4318"
+
+  # TLS configuration
+  tls:
+    cert_file: "/path/to/server.crt"
+    key_file: "/path/to/server.key"
+    ca_file: "/path/to/ca.crt"
+    client_ca_file: "/path/to/client-ca.crt"
+    reload_interval: 24h
+
+  # CORS configuration
+  cors:
+    allowed_origins:
+      - "https://example.com"
+      - "https://*.test.com"
+    allowed_headers:
+      - "Content-Type"
+      - "Accept"
+    max_age: 7200
+
+  # Authentication configuration
+  auth:
+    authenticator: "basic"
+
+  # Server timeouts
+  read_timeout: 30s
+  read_header_timeout: 10s
+  write_timeout: 30s
+  idle_timeout: 120s
+
+  # HTTP keep-alives configuration
+  keep_alives_enabled: true
+
+  # Maximum request size
+  max_request_body_size: 33554432  # 32MB
+
+  # Include metadata in the context
+  include_metadata: true
+
+  # Response headers to add to every response
+  response_headers:
+    "Server": "OpenTelemetry-Collector"
+    "X-Flavor": "apple"
+
+  # Compression algorithms supported by the server
+  compression_algorithms: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+
+  # Middlewares configuration (note: plural "middlewares")
+  middlewares:
+    - id: "server_middleware1"
+    - id: "server_middleware2"
+    - id: "server_middleware3"

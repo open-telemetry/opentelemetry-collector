@@ -5,9 +5,12 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -34,17 +37,27 @@ type Config struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
 	// TODO: This will be changed to Optional when available.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
-	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
-	// TODO: This will also control the maximum number of shards, when supported:
-	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12473.
+	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
-	// TODO: This will be changed to Optional when available.
-	Batch *BatchConfig `mapstructure:"batch"`
+	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+}
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If the batch sizer is not set, use the same value as the queue sizer.
+	if !conf.IsSet("batch::sizer") && cfg.Batch.HasValue() {
+		cfg.Batch.Get().Sizer = cfg.Sizer
+	}
+	return nil
 }
 
 // Validate checks if the Config is valid
@@ -66,14 +79,9 @@ func (cfg *Config) Validate() error {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	if cfg.Batch != nil {
-		// Only support items or bytes sizer for batch at this moment.
-		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
-			return errors.New("`batch` supports only `items` or `bytes` sizer")
-		}
-
+	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
 		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.MinSize > cfg.QueueSize {
+		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
 		}
 	}
@@ -85,6 +93,11 @@ func (cfg *Config) Validate() error {
 type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	// Sizer determines the type of size measurement used by the batch.
+	// If not configured, use the same configuration as the queue.
+	// It accepts "requests", "items", or "bytes".
+	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// MinSize defines the configuration for the minimum size of a batch.
 	MinSize int64 `mapstructure:"min_size"`
@@ -98,20 +111,25 @@ func (cfg *BatchConfig) Validate() error {
 		return nil
 	}
 
+	// Only support items or bytes sizer for batch at this moment.
+	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
+		return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
+	}
+
 	if cfg.FlushTimeout <= 0 {
-		return errors.New("`flush_timeout` must be positive")
+		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
 
 	if cfg.MinSize < 0 {
-		return errors.New("`min_size` must be non-negative")
+		return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
 	}
 
 	if cfg.MaxSize < 0 {
-		return errors.New("`max_size` must be non-negative")
+		return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
 	}
 
 	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
-		return errors.New("`max_size` must be greater or equal to `min_size`")
+		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
 	}
 
 	return nil

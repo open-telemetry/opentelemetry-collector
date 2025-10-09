@@ -13,53 +13,28 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestAddAttribute(t *testing.T) {
-	table := NewAttributeTableSlice()
-	att := table.AppendEmpty()
-	att.SetKey("hello")
-	att.Value().SetStr("world")
-
-	// Add a brand new attribute
-	loc := NewLocation()
-	err := AddAttribute(table, loc, "bonjour", pcommon.NewValueStr("monde"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{1}, loc.AttributeIndices().AsRaw())
-
-	// Add an already existing attribute
-	mapp := NewMapping()
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
-
-	// Add a duplicate attribute
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
-}
-
 func TestFromAttributeIndices(t *testing.T) {
-	table := NewAttributeTableSlice()
+	dic := NewProfilesDictionary()
+	dic.StringTable().Append("")
+	dic.StringTable().Append("hello")
+	dic.StringTable().Append("bonjour")
+
+	table := NewKeyValueAndUnitSlice()
 	att := table.AppendEmpty()
-	att.SetKey("hello")
+	att.SetKeyStrindex(1)
 	att.Value().SetStr("world")
 	att2 := table.AppendEmpty()
-	att2.SetKey("bonjour")
+	att2.SetKeyStrindex(2)
 	att2.Value().SetStr("monde")
 
-	attrs := FromAttributeIndices(table, NewProfile())
+	attrs := FromAttributeIndices(table, NewProfile(), dic)
 	assert.Equal(t, attrs, pcommon.NewMap())
 
 	// A Location with a single attribute
 	loc := NewLocation()
 	loc.AttributeIndices().Append(0)
 
-	attrs = FromAttributeIndices(table, loc)
+	attrs = FromAttributeIndices(table, loc, dic)
 
 	m := map[string]any{"hello": "world"}
 	assert.Equal(t, attrs.AsRaw(), m)
@@ -68,54 +43,56 @@ func TestFromAttributeIndices(t *testing.T) {
 	mapp := NewLocation()
 	mapp.AttributeIndices().Append(0, 1)
 
-	attrs = FromAttributeIndices(table, mapp)
+	attrs = FromAttributeIndices(table, mapp, dic)
 
 	m = map[string]any{"hello": "world", "bonjour": "monde"}
 	assert.Equal(t, attrs.AsRaw(), m)
 }
 
 func testPutAttribute(t *testing.T, record attributable) {
-	table := NewAttributeTableSlice()
+	dic := NewProfilesDictionary()
+	dic.StringTable().Append("")
+	table := NewKeyValueAndUnitSlice()
 
 	// Put a first attribute.
-	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, dic, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 1, table.Len())
 	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute, same key, same value.
 	// This should be a no-op.
-	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, dic, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 1, table.Len())
 	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Special case: removing and adding again should not change the table as
 	// this can lead to multiple identical attributes in the table.
 	record.AttributeIndices().FromRaw([]int32{})
-	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, dic, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 1, table.Len())
 	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute, same key, different value.
 	// This updates the index and adds to the table.
-	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world2")))
+	require.NoError(t, PutAttribute(table, record, dic, "hello", pcommon.NewValueStr("world2")))
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, []int32{1}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute that already exists in the table.
 	// This updates the index and does not add to the table.
-	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, dic, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put a new attribute.
 	// This adds an index and adds to the table.
-	require.NoError(t, PutAttribute(table, record, "good", pcommon.NewValueStr("day")))
+	require.NoError(t, PutAttribute(table, record, dic, "good", pcommon.NewValueStr("day")))
 	assert.Equal(t, 3, table.Len())
 	assert.Equal(t, []int32{0, 2}, record.AttributeIndices().AsRaw())
 
 	// Add multiple distinct attributes.
 	for i := range 100 {
-		require.NoError(t, PutAttribute(table, record, fmt.Sprintf("key_%d", i), pcommon.NewValueStr("day")))
+		require.NoError(t, PutAttribute(table, record, dic, fmt.Sprintf("key_%d", i), pcommon.NewValueStr("day")))
 		assert.Equal(t, i+4, table.Len())
 		assert.Equal(t, i+3, record.AttributeIndices().Len())
 	}
@@ -125,14 +102,14 @@ func testPutAttribute(t *testing.T, record attributable) {
 	tableLen := table.Len()
 	indicesLen := record.AttributeIndices().Len()
 	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
-	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
+	require.Error(t, PutAttribute(table, record, dic, "newKey", pcommon.NewValueStr("value")))
 	require.Equal(t, tableLen, table.Len())
 	require.Equal(t, indicesLen, record.AttributeIndices().Len())
 
 	// Set the last index to the table length, which is out of range.
 	record.AttributeIndices().SetAt(indicesLen-1, int32(tableLen)) //nolint:gosec
 	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
-	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
+	require.Error(t, PutAttribute(table, record, dic, "newKey", pcommon.NewValueStr("value")))
 	require.Equal(t, tableLen, table.Len())
 	require.Equal(t, indicesLen, record.AttributeIndices().Len())
 }
@@ -155,11 +132,14 @@ func TestPutAttribute(t *testing.T) {
 }
 
 func BenchmarkFromAttributeIndices(b *testing.B) {
-	table := NewAttributeTableSlice()
+	dic := NewProfilesDictionary()
+	table := NewKeyValueAndUnitSlice()
 
 	for i := range 10 {
+		dic.StringTable().Append(fmt.Sprintf("key_%d", i))
+
 		att := table.AppendEmpty()
-		att.SetKey(fmt.Sprintf("key_%d", i))
+		att.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 		att.Value().SetStr(fmt.Sprintf("value_%d", i))
 	}
 
@@ -170,7 +150,7 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 	b.ReportAllocs()
 
 	for n := 0; n < b.N; n++ {
-		_ = FromAttributeIndices(table, obj)
+		_ = FromAttributeIndices(table, obj, dic)
 	}
 }
 
@@ -180,7 +160,7 @@ func BenchmarkPutAttribute(b *testing.B) {
 		key   string
 		value pcommon.Value
 
-		runBefore func(*testing.B, AttributeTableSlice, attributable)
+		runBefore func(*testing.B, KeyValueAndUnitSlice, attributable, ProfilesDictionary)
 	}{
 		{
 			name:  "with a new string attribute",
@@ -192,9 +172,10 @@ func BenchmarkPutAttribute(b *testing.B) {
 			key:   "attribute",
 			value: pcommon.NewValueStr("test"),
 
-			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice, _ attributable, dic ProfilesDictionary) {
+				dic.StringTable().Append("attribute")
 				entry := table.AppendEmpty()
-				entry.SetKey("attribute")
+				entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 				entry.Value().SetStr("test")
 			},
 		},
@@ -203,8 +184,8 @@ func BenchmarkPutAttribute(b *testing.B) {
 			key:   "attribute",
 			value: pcommon.NewValueStr("test"),
 
-			runBefore: func(_ *testing.B, table AttributeTableSlice, obj attributable) {
-				require.NoError(b, PutAttribute(table, obj, "attribute", pcommon.NewValueStr("test")))
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice, obj attributable, dic ProfilesDictionary) {
+				require.NoError(b, PutAttribute(table, obj, dic, "attribute", pcommon.NewValueStr("test")))
 			},
 		},
 		{
@@ -212,32 +193,36 @@ func BenchmarkPutAttribute(b *testing.B) {
 			key:   "attribute",
 			value: pcommon.NewValueStr("test"),
 
-			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice, _ attributable, dic ProfilesDictionary) {
 				for i := range 100 {
+					dic.StringTable().Append(fmt.Sprintf("attr_%d", i))
+
 					entry := table.AppendEmpty()
-					entry.SetKey(fmt.Sprintf("attr_%d", i))
+					entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 					entry.Value().SetStr("test")
 				}
 
+				dic.StringTable().Append("attribute")
 				entry := table.AppendEmpty()
-				entry.SetKey("attribute")
+				entry.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
 				entry.Value().SetStr("test")
 			},
 		},
 	} {
 		b.Run(bb.name, func(b *testing.B) {
-			table := NewAttributeTableSlice()
+			dic := NewProfilesDictionary()
+			table := NewKeyValueAndUnitSlice()
 			obj := NewLocation()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table, obj, dic)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
 			for n := 0; n < b.N; n++ {
-				_ = PutAttribute(table, obj, bb.key, bb.value)
+				_ = PutAttribute(table, obj, dic, bb.key, bb.value)
 			}
 		})
 	}

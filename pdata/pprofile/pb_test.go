@@ -8,7 +8,44 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	goproto "google.golang.org/protobuf/proto"
 )
+
+func TestProfilesProtoWireCompatibility(t *testing.T) {
+	// This test verifies that OTLP ProtoBufs generated using goproto lib in
+	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
+	// this repository are wire compatible.
+
+	// Generate Profiles as pdata struct.
+	td := generateTestProfiles()
+
+	// Marshal its underlying ProtoBuf to wire.
+	marshaler := &ProtoMarshaler{}
+	wire1, err := marshaler.MarshalProfiles(td)
+	require.NoError(t, err)
+	assert.NotNil(t, wire1)
+
+	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
+	var goprotoMessage gootlpprofiles.ProfilesData
+	err = goproto.Unmarshal(wire1, &goprotoMessage)
+	require.NoError(t, err)
+
+	// Marshal to the wire again.
+	wire2, err := goproto.Marshal(&goprotoMessage)
+	require.NoError(t, err)
+	assert.NotNil(t, wire2)
+
+	// Unmarshal from the wire into gogoproto's representation.
+	var td2 Profiles
+	unmarshaler := &ProtoUnmarshaler{}
+	td2, err = unmarshaler.UnmarshalProfiles(wire2)
+	require.NoError(t, err)
+
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	assert.Equal(t, td, td2)
+}
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
 	p := &ProtoUnmarshaler{}
@@ -19,11 +56,8 @@ func TestProtoProfilesUnmarshalerError(t *testing.T) {
 func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	td := NewProfiles()
-	td.ResourceProfiles().AppendEmpty().
-		ScopeProfiles().AppendEmpty().
-		Profiles().AppendEmpty()
-	td.ProfilesDictionary().
-		StringTable().Append("foobar")
+	td.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	td.Dictionary().StringTable().Append("foobar")
 
 	size := marshaler.ProfilesSize(td)
 
@@ -70,8 +104,7 @@ func generateBenchmarkProfiles(samplesCount int) Profiles {
 	ilm.Sample().EnsureCapacity(samplesCount)
 	for i := 0; i < samplesCount; i++ {
 		im := ilm.Sample().AppendEmpty()
-		im.SetLocationsStartIndex(2)
-		im.SetLocationsLength(10)
+		im.SetStackIndex(0)
 	}
 	return md
 }

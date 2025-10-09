@@ -4,11 +4,9 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
-	"bytes"
-
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -22,9 +20,8 @@ const (
 )
 
 var (
-	pbEncoder       = &protoEncoder{}
-	jsEncoder       = &jsonEncoder{}
-	jsonPbMarshaler = &jsonpb.Marshaler{}
+	pbEncoder = &protoEncoder{}
+	jsEncoder = &jsonEncoder{}
 )
 
 type encoder interface {
@@ -136,9 +133,7 @@ func (jsonEncoder) marshalProfilesResponse(resp pprofileotlp.ExportResponse) ([]
 }
 
 func (jsonEncoder) marshalStatus(resp *spb.Status) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	err := jsonPbMarshaler.Marshal(buf, resp)
-	return buf.Bytes(), err
+	return protojson.Marshal(resp)
 }
 
 func (jsonEncoder) contentType() string {

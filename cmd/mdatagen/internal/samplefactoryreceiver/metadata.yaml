@@ -1,0 +1,27 @@
+# Sample metadata file with all available configurations for a receiver.
+
+type: sample
+scope_name: go.opentelemetry.io/collector/internal/receiver/samplefactoryreceiver
+github_project: open-telemetry/opentelemetry-collector
+
+sem_conv_version: 1.9.0
+
+status:
+  disable_codecov_badge: true
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+    deprecated: [profiles]
+  deprecation:
+    profiles:
+      migration: "no migration needed"
+      date: "2025-02-05"
+  distributions: []
+  unsupported_platforms: [freebsd, illumos]
+  codeowners:
+    active: [dmitryax]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+

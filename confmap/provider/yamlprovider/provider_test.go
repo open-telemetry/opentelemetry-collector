@@ -38,13 +38,13 @@ func TestInvalidYAML(t *testing.T) {
 
 func TestOneValue(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
+	ret, err := sp.Retrieve(context.Background(), "yaml:processors::test::timeout: 2s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"processors": map[string]any{
-			"batch": map[string]any{
+			"test": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -54,13 +54,13 @@ func TestOneValue(t *testing.T) {
 
 func TestNamedComponent(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
+	ret, err := sp.Retrieve(context.Background(), "yaml:processors::test/foo::timeout: 3s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"processors": map[string]any{
-			"batch/foo": map[string]any{
+			"test/foo": map[string]any{
 				"timeout": "3s",
 			},
 		},
@@ -70,16 +70,16 @@ func TestNamedComponent(t *testing.T) {
 
 func TestMapEntry(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
+	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {test/foo::timeout: 3s, test::timeout: 2s}", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"processors": map[string]any{
-			"batch/foo": map[string]any{
+			"test/foo": map[string]any{
 				"timeout": "3s",
 			},
-			"batch": map[string]any{
+			"test": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -106,16 +106,16 @@ func TestArrayEntry(t *testing.T) {
 
 func TestNewLine(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
+	ret, err := sp.Retrieve(context.Background(), "yaml:processors::test/foo::timeout: 3s\nprocessors::test::timeout: 2s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"processors": map[string]any{
-			"batch/foo": map[string]any{
+			"test/foo": map[string]any{
 				"timeout": "3s",
 			},
-			"batch": map[string]any{
+			"test": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -125,11 +125,11 @@ func TestNewLine(t *testing.T) {
 
 func TestDotSeparator(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
+	ret, err := sp.Retrieve(context.Background(), "yaml:processors.test.timeout: 4s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
+	assert.Equal(t, map[string]any{"processors.test.timeout": "4s"}, retMap.ToStringMap())
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 

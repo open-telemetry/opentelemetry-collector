@@ -7,6 +7,184 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.43.0/v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Remove all experimental symbols in exporterhelper (#11143)
+  They have all been moved to xexporterhelper
+  
+
+### 🚩 Deprecations 🚩
+
+- `all`: service/telemetry.TracesConfig is deprecated (#13904)
+  This type alias has been added to otelconftelemetry.TracesConfig,
+  where the otelconf-based telemetry implementation now lives.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Mark configoptional as stable (#13403)
+- `all`: Mark configauth module as 1.0 (#9476)
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
+## v1.42.0/v0.136.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated function NewRequestsSizer (#13803)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758, #13825, #13839)
+- `pdata/pprofile`: Remove deprecated ProfilesDictionary method (#13858)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate all experimental symbols in exporterhelper and move them to xexporterhelper (#11143)
+
+### 💡 Enhancements 💡
+
+- `configoptional`: Add `GetOrInsertDefault` method to `configoptional.Optional` (#13856)
+  This method inserts a default or zero value into a `None`/`Default` `Optional` before `Get`ting its inner value.
+  
+- `exporter`: Stabilize exporter module. (#12978)
+  This does not stabilize the exporterhelper module or configuration
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758)
+
+<!-- previous-version -->
+
+## v1.41.0/v0.135.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated AddAttribute method (#13764)
+
+### 💡 Enhancements 💡
+
+- `configmiddleware`: Stabilize `configmiddleware` module (#13422)
+  This only stabilizes the configuration interface but does not stabilize the middlewares themselves or the way of implementing them.
+- `xpdata`: Add experimental MapBuilder struct to optimize pcommon.Map construction (#13617)
+
+<!-- previous-version -->
+
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Split exporterhelper into a separate module (#12985)
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Set `tcp` as the default transport type (#13657)
+  gRPC is generally used with HTTP/2, so this will simplify usage for most components.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecate Profiles.ProfilesDictionary in favor of Profiles.Dictionary. (#13644)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+
+### 🧰 Bug fixes 🧰
+
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+
+<!-- previous-version -->
+
+## v1.38.0/v0.132.0
+
+### 🛑 Breaking changes 🛑
+
+- `componenttest`: Remove `GetFactory` from the host returned by `NewNopHost` (#13577)
+  This method is no longer part of the `component.Host` interface.
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Provide an interface `queue_batch.Setting.MergeCtx` so users can control how context values are preserved or combined (#13320)
+  By supplying a custom mergeCtx function, users can control how context values are preserved or combined.
+  The default behavior is to preserve no context values.
+  
+- `pdata`: Generate Logs/Traces/Metrics/Profiles and p[log|trace|metric|profile]ExportResponse with pdatagen. (#13597)
+  This change brings consistency on how these structs are written and remove JSON marshaling/unmarshaling hand written logic.
+- `pdata`: Avoid unnecessary buffer copy when JSON marshal fails. (#13598)
+- `pipeline`: Mark module as stable (#12831)
+
+<!-- previous-version -->
+
+## v1.37.0/v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13252, #13364)
+  Specifically, the following fields have been updated to `configoptional`:
+  - `KeepaliveServerConfig.ServerParameters` (`KeepaliveServerParameters` type)
+  - `KeepaliveServerConfig.EnforcementPolicy` (`KeepaliveEnforcementPolicy` type)
+  
+- `xexporterhelper`: Remove deprecated NewProfilesExporter function from xexporterhelper package (#13391)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add new "Downstream" error marker (#13234)
+  This new error wrapper type indicates that the error returned by a component's
+  `Consume` method is not an internal failure of the component, but instead
+  was passed through from another component further downstream.
+  This is used internally by the new pipeline instrumentation feature to
+  determine the `outcome` of a component call. This wrapper is not intended to
+  be used by components directly.
+  
+- `pdata/pprofile`: Introduce `Equal` method on the `Function` type (#13222)
+- `pdata/pprofile`: Introduce `Equal` method on the `Link` type (#13223)
+- `pdata/pprofile`: Add new helper method `SetFunction` to set a new function on a line. (#13222)
+- `pdata/pprofile`: Add new helper method `SetLink` to set a new link on a sample. (#13223)
+- `pdata/pprofile`: Add new helper method `SetString` to set or retrieve the index of a value in the StringTable. (#13225)
+
+<!-- previous-version -->
+
+## v1.36.1/v0.130.1
+
+<!-- previous-version -->
+
+No API-only changes in this release.
+
+## v1.36.0/v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Use configoptional for sending_queue::batch field (#13345)
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13250, #13252)
+  Components using `configgrpc` package may need to update config values.
+- `confighttp`: Use configoptional.Optional in confighttp (#9478)
+- `exporterhelper`: Remove sizer map in favor of items/bytes sizers. Request based is automatically supported. (#13262)
+- `pdata/pprofile`: Remove field Profile.StartTime from pdata/pprofile (#13315)
+  Remove Profile.StartTime from OTel Profiling signal.
+- `exporterhelper`: Remove deprecated old batcher config (#13003)
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate NewRequestsSizer always supported. (#13262)
+- `xexporterhelper`: Introduce NewProfiles method and deprecate NewProfilesExporter (#13372)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add `Error` type (#7047)
+  This type can contain information about errors that allow components (e.g. exporters)
+  to communicate error information back up the pipeline.
+  
+- `pdata`: Document that changing pcommon.Map (Remove/removeIf/Put*) invalidates Value references obtained via Get. (#13073)
+- `cmd/mdatagen`: Add support for optional attribute (#12571)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `pdata`: Add support for the new resource-entity reference API as part of the experimental xpdata package. (#13264)
+
+<!-- previous-version -->
+
 ## v1.35.0/v0.129.0
 
 ### 🛑 Breaking changes 🛑

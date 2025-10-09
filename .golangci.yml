@@ -8,6 +8,10 @@ formatters:
       # simplify code: gofmt with `-s` option, true by default
       simplify: true
 
+    gofumpt:
+      # Choose whether to use the extra rules
+      extra-rules: true
+
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
       # it's a comma-separated list of prefixes
@@ -22,10 +26,14 @@ issues:
 
 linters:
   enable:
+    - asasalint
+    - contextcheck
     - copyloopvar
+    - decorder
     - depguard
     - errcheck
     - errorlint
+    - fatcontext
     - gocritic
     - gosec
     - govet
@@ -77,6 +85,18 @@ linters:
           deny:
             - pkg: go.opentelemetry.io/proto
               desc: Use go.opentelemetry.io/collector/pdata instead
+
+    gocritic:
+      disabled-checks:
+        - commentedOutCode
+        - deferInLoop
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+      enable-all: true
 
     gosec:
       excludes:

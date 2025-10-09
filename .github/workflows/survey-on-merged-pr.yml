@@ -1,0 +1,48 @@
+name: Survey on Merged PR by Non-Member
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+env:
+  PR_NUM: ${{ github.event.pull_request.number }}
+  SURVEY_URL: https://docs.google.com/forms/d/e/1FAIpQLSf2FfCsW-DimeWzdQgfl0KDzT2UEAqu69_f7F2BVPSxVae1cQ/viewform?entry.1540511742=open-telemetry/opentelemetry-collector
+
+jobs:
+  comment-on-pr:
+    name: Add survey to PR if author is not a member
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+
+      - name: Add survey comment if author is not a member or bot
+        run: |
+          USERNAME="${{ github.event.pull_request.user.login }}"
+          USER_TYPE="${{ github.event.pull_request.user.type }}"
+          ORG="${{ github.repository_owner }}"
+          
+          # Skip if user is a bot
+          if [[ "$USER_TYPE" == "Bot" ]]; then
+            echo "Skipping survey for bot user: $USERNAME"
+            exit 0
+          fi
+          
+          # Skip if user is an org member
+          if gh api "orgs/$ORG/members/$USERNAME" --silent; then
+            echo "Skipping survey for org member: $USERNAME"
+            exit 0
+          fi
+          
+          # Add survey comment for external contributor
+          echo "Adding survey comment for external contributor: $USERNAME"
+          gh pr comment ${PR_NUM} --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
+        env:
+          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}

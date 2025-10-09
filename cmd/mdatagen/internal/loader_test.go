@@ -15,6 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestTwoPackagesInDirectory(t *testing.T) {
 	contents, err := os.ReadFile("testdata/twopackages.yaml")
 	require.NoError(t, err)
@@ -44,6 +48,7 @@ func TestLoadMetadata(t *testing.T) {
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
 				SemConvVersion:       "1.9.0",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -69,7 +74,7 @@ func TestLoadMetadata(t *testing.T) {
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -77,7 +82,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Enum:        []string{"one", "two"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
@@ -86,7 +91,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
-						Enabled:     false,
+						EnabledPtr:  boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -94,7 +99,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
@@ -102,7 +107,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
@@ -113,7 +118,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -124,7 +129,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: false,
+						EnabledPtr: boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -135,7 +140,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -399,7 +404,7 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           Tests{Host: "componenttest.NewNopHost()"},
+				Tests:           Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
 		{
@@ -409,8 +414,9 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
 		{
@@ -419,8 +425,9 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -437,8 +444,9 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{

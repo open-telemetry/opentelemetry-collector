@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	_ "go.opentelemetry.io/collector/pdata/internal/grpcencoding" // enforces custom gRPC encoding to be loaded.
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
@@ -44,8 +45,7 @@ func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...
 	if err != nil {
 		return ExportResponse{}, err
 	}
-	state := internal.StateMutable
-	return ExportResponse{orig: rsp, state: &state}, err
+	return ExportResponse{orig: rsp, state: internal.NewState()}, err
 }
 
 func (c *grpcClient) unexported() {}
@@ -85,7 +85,6 @@ type rawProfilesServer struct {
 
 func (s rawProfilesServer) Export(ctx context.Context, request *otlpcollectorprofile.ExportProfilesServiceRequest) (*otlpcollectorprofile.ExportProfilesServiceResponse, error) {
 	otlp.MigrateProfiles(request.ResourceProfiles)
-	state := internal.StateMutable
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: &state})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
 	return rsp.orig, err
 }

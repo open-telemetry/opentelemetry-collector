@@ -6,7 +6,7 @@ status:
   class: pkg
   codeowners:
     active:
-      - BogdanDrutu
+      - bogdandrutu
       - dmitryax
   stability:
     stable: [traces, metrics, logs]

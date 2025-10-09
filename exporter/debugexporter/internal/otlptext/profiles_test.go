@@ -32,6 +32,11 @@ func TestProfilesText(t *testing.T) {
 			in:   extendProfiles(testdata.GenerateProfiles(2)),
 			out:  "two_profiles.out",
 		},
+		{
+			name: "profiles_with_entity_refs",
+			in:   generateProfilesWithEntityRefs(),
+			out:  "profiles_with_entity_refs.out",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -47,7 +52,7 @@ func TestProfilesText(t *testing.T) {
 
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
 func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	location := dic.LocationTable().AppendEmpty()
 	location.SetMappingIndex(3)
 	location.SetAddress(4)
@@ -55,14 +60,14 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	line.SetFunctionIndex(1)
 	line.SetLine(2)
 	line.SetColumn(3)
-	location.SetIsFolded(true)
 	location.AttributeIndices().FromRaw([]int32{6, 7})
+	dic.StringTable().Append("intValue")
 	at := dic.AttributeTable()
 	a := at.AppendEmpty()
-	a.SetKey("intValue")
+	a.SetKeyStrindex(1)
 	a.Value().SetInt(42)
-	attributeUnits := dic.AttributeUnits().AppendEmpty()
-	attributeUnits.SetAttributeKeyStrindex(1)
+	attributeUnits := dic.AttributeTable().AppendEmpty()
+	attributeUnits.SetKeyStrindex(2)
 	attributeUnits.SetUnitStrindex(5)
 	dic.StringTable().Append("foobar")
 	mapping := dic.MappingTable().AppendEmpty()
@@ -71,10 +76,6 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	mapping.SetFileOffset(4)
 	mapping.SetFilenameStrindex(5)
 	mapping.AttributeIndices().FromRaw([]int32{7, 8})
-	mapping.SetHasFunctions(true)
-	mapping.SetHasFilenames(true)
-	mapping.SetHasLineNumbers(true)
-	mapping.SetHasInlineFrames(true)
 	function := dic.FunctionTable().AppendEmpty()
 	function.SetNameStrindex(2)
 	function.SetSystemNameStrindex(3)
@@ -91,11 +92,36 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 		switch i % 2 {
 		case 0:
 			profile := sc.Profiles().At(i)
-			profile.LocationIndices().FromRaw([]int32{1})
+			profile.AttributeIndices().FromRaw([]int32{1})
 		case 1:
 			profile := sc.Profiles().At(i)
 			profile.CommentStrindices().FromRaw([]int32{1, 2})
 		}
 	}
 	return profiles
+}
+
+func generateProfilesWithEntityRefs() pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+	rp := pd.ResourceProfiles().AppendEmpty()
+
+	setupResourceWithEntityRefs(rp.Resource())
+
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("test-scope")
+	profile := sp.Profiles().AppendEmpty()
+
+	sample := profile.Sample().AppendEmpty()
+	sample.Values().Append(100)
+
+	dic := pd.Dictionary()
+	dic.StringTable().Append("")
+	dic.StringTable().Append("cpu")
+	dic.StringTable().Append("nanoseconds")
+
+	sampleType := profile.SampleType()
+	sampleType.SetTypeStrindex(1)
+	sampleType.SetUnitStrindex(2)
+
+	return pd
 }

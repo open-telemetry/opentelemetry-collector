@@ -73,6 +73,7 @@ var replaceModules = []string{
 	"/exporter/debugexporter",
 	"/exporter/xexporter",
 	"/exporter/exportertest",
+	"/exporter/exporterhelper",
 	"/exporter/exporterhelper/xexporterhelper",
 	"/exporter/nopexporter",
 	"/exporter/otlpexporter",
@@ -113,6 +114,7 @@ var replaceModules = []string{
 	"/receiver/xreceiver",
 	"/service",
 	"/service/hostcapabilities",
+	"/service/telemetry/telemetrytest",
 }
 
 func newTestConfig(tb testing.TB) *Config {

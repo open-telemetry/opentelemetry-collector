@@ -37,12 +37,13 @@ func TestDisabledBatcher(t *testing.T) {
 			sink := requesttest.NewSink()
 			ba := newDisabledBatcher(sink.Export)
 
-			q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
+			q, err := queue.NewQueue(queue.Settings[request.Request]{
 				ItemsSizer:      request.NewItemsSizer(),
 				BytesSizer:      requesttest.NewBytesSizer(),
 				Capacity:        1000,
 				BlockOnOverflow: true,
 				NumConsumers:    tt.maxWorkers,
+				Telemetry:       componenttest.NewNopTelemetrySettings(),
 			}, ba.Consume)
 			require.NoError(t, err)
 
