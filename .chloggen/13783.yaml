@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confighttp
+component: pkg/confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all HTTP servers

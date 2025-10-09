@@ -25,6 +25,7 @@ cmd/mdatagen/internal/samplefactoryreceiver/ @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleprocessor/       @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/        @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/         @open-telemetry/collector-approvers @dmitryax
+config/confighttp/                           @open-telemetry/collector-approvers
 confmap/                                     @open-telemetry/collector-approvers @mx-psi @evan-bradley
 confmap/provider/envprovider/                @open-telemetry/collector-approvers
 confmap/provider/fileprovider/               @open-telemetry/collector-approvers
@@ -47,6 +48,7 @@ extension/memorylimiterextension/            @open-telemetry/collector-approvers
 extension/xextension/                        @open-telemetry/collector-approvers
 extension/xextension/storage/                @open-telemetry/collector-approvers @swiatekm
 extension/zpagesextension/                   @open-telemetry/collector-approvers
+otelcol/                                     @open-telemetry/collector-approvers
 pdata/                                       @open-telemetry/collector-approvers @bogdandrutu @dmitryax
 pdata/pprofile/                              @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/batchprocessor/                    @open-telemetry/collector-approvers

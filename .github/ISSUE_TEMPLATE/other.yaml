@@ -18,6 +18,7 @@ body:
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - cmd/mdatagen/internal/samplescraper
+      - config/confighttp
       - confmap
       - confmap/provider/envprovider
       - confmap/provider/fileprovider
@@ -40,6 +41,7 @@ body:
       - extension/x
       - extension/x/storage
       - extension/zpages
+      - otelcol
       - pdata
       - pdata/pprofile
       - processor/batch
