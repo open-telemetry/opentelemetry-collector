@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: otelcol
+component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add unified print-config command with mode support (redacted, unredacted), json support (unstable), and validation support.
