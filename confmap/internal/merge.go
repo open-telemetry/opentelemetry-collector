@@ -14,14 +14,12 @@ import (
 )
 
 type MergeOptions struct {
-	mode       string
-	duplicates bool
+	mode string
 }
 
-func NewOptions(mode string, duplicates bool) *MergeOptions {
+func newOptions(mode string) *MergeOptions {
 	return &MergeOptions{
-		mode:       mode,
-		duplicates: duplicates,
+		mode: mode,
 	}
 }
 
@@ -34,11 +32,13 @@ func FetchMergePaths(yamlBytes []byte) (map[string]*MergeOptions, error) {
 		return nil, fmt.Errorf("error unmarshalling yaml: %w", err)
 	}
 	m := map[string]*MergeOptions{}
-	walkYAML(nil, &root, m, []string{})
+	if err := walkYAML(nil, &root, m, []string{}); err != nil {
+		return nil, fmt.Errorf("failed to walk the yaml tree: %w", err)
+	}
 	return m, nil
 }
 
-func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string) {
+func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string) error {
 	// walkYAML recursively walks through the yaml tree and populates "res" with paths to merge.
 	// It keeps track of current path in "path" array. This is needed for final merge operation
 	if key != nil {
@@ -47,12 +47,16 @@ func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string)
 	switch node.Kind {
 	case yaml.DocumentNode:
 		for _, n := range node.Content {
-			walkYAML(nil, n, res, path)
+			if err := walkYAML(nil, n, res, path); err != nil {
+				return err
+			}
 		}
 
 	case yaml.MappingNode:
 		for i := 0; i < len(node.Content); i += 2 {
-			walkYAML(node.Content[i], node.Content[i+1], res, path)
+			if err := walkYAML(node.Content[i], node.Content[i+1], res, path); err != nil {
+				return err
+			}
 		}
 
 	case yaml.SequenceNode:
@@ -63,13 +67,18 @@ func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string)
 			if s != "!!seq" {
 				s = strings.TrimPrefix(s, "!")
 				q, err := url.ParseQuery(s)
-				if err == nil {
-					res[strings.Join(path, "::")] = NewOptions(q.Get("mode"), q.Get("duplicates") == "true")
-					walkYAML(nil, n, res, path)
+				if err != nil {
+					return fmt.Errorf("failed to parse tag (%v): %w", node.Tag, err)
 				}
+				if err := validateTag(q); err != nil {
+					return fmt.Errorf("failed to validate tag (%v): %w", node.Tag, err)
+				}
+				res[strings.Join(path, "::")] = newOptions(q.Get("mode"))
+				walkYAML(nil, n, res, path)
 			}
 		}
 	}
+	return nil
 }
 
 func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]any) error {
@@ -109,7 +118,7 @@ func mergeAppend(mergeOpts map[string]*MergeOptions) func(src, dest map[string]a
 			if opt.mode == "append" {
 				// Only merge if the value is a slice or array; let maps.Merge handle other types
 				if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
-					srcFlat[sKey] = mergeSlice(srcVal, destVal, opt.duplicates)
+					srcFlat[sKey] = mergeSlice(srcVal, destVal)
 				}
 			}
 		}
@@ -132,14 +141,14 @@ func isMatch(sKey string, mergeOpts map[string]*MergeOptions) *MergeOptions {
 	return nil
 }
 
-func mergeSlice(src, dest reflect.Value, duplicates bool) any {
+func mergeSlice(src, dest reflect.Value) any {
 	slice := reflect.MakeSlice(src.Type(), 0, src.Cap()+dest.Cap())
 	for i := 0; i < dest.Len(); i++ {
 		slice = reflect.Append(slice, dest.Index(i))
 	}
 
 	for i := 0; i < src.Len(); i++ {
-		if !duplicates && isPresent(slice, src.Index(i)) {
+		if isPresent(slice, src.Index(i)) {
 			continue
 		}
 		slice = reflect.Append(slice, src.Index(i))
@@ -154,4 +163,13 @@ func isPresent(slice, val reflect.Value) bool {
 		}
 	}
 	return false
+}
+
+func validateTag(query url.Values) error {
+	switch query.Get("mode") {
+	case "append":
+	default:
+		return fmt.Errorf("invalid mode specified: %v", query.Get("mode"))
+	}
+	return nil
 }
