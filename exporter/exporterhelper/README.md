@@ -140,3 +140,30 @@ service:
 ```
 
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
+
+### Handling Dropped Items
+
+When an exporter needs to drop items due to specification requirements or incompatibility (not due to actual errors), `DroppedItems` type can be used to properly track these dropped items in telemetry:
+
+```go
+import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+
+// When dropping all items due to specification requirements
+if !isCompatibleWithExporter(data) {
+    return internal.NewDroppedItems("non-monotonic delta sum metrics not supported", len(data))
+}
+
+// When dropping only some items (partial drop)
+compatible, incompatible := filterCompatibleItems(data)
+if len(incompatible) > 0 {
+    return internal.NewDroppedItems("incompatible data format", len(incompatible))
+}
+```
+
+This will:
+- Increment the `otelcol_exporter_dropped_*` metrics with the correct count
+- Provide clear telemetry about why items were dropped and how many
+- Allow operators to distinguish between actual failures and specification-compliant drops
+- Support partial drops where only some items are incompatible
+
+The `DroppedItems` is not treated as a failure by the pipeline, but it provides visibility into data that cannot be exported due to format or specification constraints.
