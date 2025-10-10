@@ -334,7 +334,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id component.ID, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
 	}
 
@@ -364,7 +364,7 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, nu
 	ld := testdata.GenerateLogs(1)
 	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		require.Equal(t, wantError, le.ConsumeLogs(ctx, ld))
 	}
 }
