@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -135,11 +134,11 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	set.TelemetrySettings = telemetry.WithoutAttributes(
+	set.TelemetrySettings = telemetry.DropInjectedAttributes(
 		set.TelemetrySettings,
-		componentattribute.SignalKey,
-		componentattribute.PipelineIDKey,
-		componentattribute.ComponentIDKey,
+		telemetry.SignalKey,
+		telemetry.PipelineIDKey,
+		telemetry.ComponentIDKey,
 	)
 	set.Logger.Debug("created singleton logger")
 

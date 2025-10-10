@@ -11,11 +11,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
@@ -53,7 +53,7 @@ func (n *exporterNode) buildComponent(
 ) error {
 	set := exporter.Settings{
 		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
+		TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *n.Set()),
 		BuildInfo:         info,
 	}
 
