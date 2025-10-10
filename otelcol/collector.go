@@ -55,6 +55,8 @@ func (s State) String() string {
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
 	// Factories service factories.
+	// TODO(13263) This is a dangerous "bare" function value, should define an interface
+	// following style guidelines.
 	Factories func() (Factories, error)
 
 	// BuildInfo provides collector start information.
