@@ -38,7 +38,7 @@ func TestProfilesMultiplexingNonMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateProfiles(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeProfiles(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -74,7 +74,7 @@ func TestProfilesMultiplexingMutating(t *testing.T) {
 	assert.True(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateProfiles(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeProfiles(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -114,7 +114,7 @@ func TestReadOnlyProfilesMultiplexingMutating(t *testing.T) {
 	td := testdata.GenerateProfiles(1)
 	td.MarkReadOnly()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeProfiles(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -149,7 +149,7 @@ func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateProfiles(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeProfiles(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -187,7 +187,7 @@ func TestProfilesMultiplexingMixLastNonMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateProfiles(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeProfiles(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -223,7 +223,7 @@ func TestProfilesWhenErrors(t *testing.T) {
 	tfc := NewProfiles([]xconsumer.Profiles{p1, p2, p3})
 	td := testdata.GenerateProfiles(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		require.Error(t, tfc.ConsumeProfiles(context.Background(), td))
 	}
 

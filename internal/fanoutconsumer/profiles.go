@@ -24,7 +24,7 @@ func NewProfiles(tcs []xconsumer.Profiles) xconsumer.Profiles {
 	}
 
 	tc := &profilesConsumer{}
-	for i := 0; i < len(tcs); i++ {
+	for i := range tcs {
 		if tcs[i].Capabilities().MutatesData {
 			tc.mutable = append(tc.mutable, tcs[i])
 		} else {

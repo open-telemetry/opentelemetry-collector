@@ -116,7 +116,7 @@ func BenchmarkSetLink(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				_ = SetLink(table, obj, bb.link)
 			}
 		})
