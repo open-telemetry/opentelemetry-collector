@@ -19,8 +19,6 @@ package=""
 output_dir="./internal/data/apidiff"
 repo_toplevel="$( git rev-parse --show-toplevel )"
 tools_mod_file="${repo_toplevel}/internal/tools/go.mod"
-apidiff_cmd=$( go tool -n -modfile "${tools_mod_file}" apidiff )
-
 
 while getopts "dp:o:" o; do
     case "${o}" in
@@ -62,7 +60,7 @@ trap clean_up EXIT
 
 mkdir -p "$tmp_dir/$package"
 
-${apidiff_cmd} -w "$tmp_dir"/"$package"/apidiff.state "$package"
+go tool -modfile "${tools_mod_file}" apidiff -w "$tmp_dir"/"$package"/apidiff.state "$package"
 
 # Copy files if not in dry-run mode.
 if [ $dry_run = false ]; then

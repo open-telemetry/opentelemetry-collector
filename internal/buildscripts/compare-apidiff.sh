@@ -19,7 +19,6 @@ input_dir="./internal/data/apidiff"
 check_only=false
 repo_toplevel="$( git rev-parse --show-toplevel )"
 tools_mod_file="${repo_toplevel}/internal/tools/go.mod"
-apidiff_cmd=$( go tool -n -modfile "${tools_mod_file}" apidiff )
 
 while getopts "cp:d:" o; do
     case "${o}" in
@@ -46,7 +45,7 @@ fi
 set -e
 
 if [ -e "$input_dir"/"$package"/apidiff.state ]; then
-  changes=$(${apidiff_cmd} "$input_dir"/"$package"/apidiff.state "$package")
+  changes=$(go tool -modfile "${tools_mod_file}" apidiff "$input_dir"/"$package"/apidiff.state "$package")
   if [ -n "$changes" ] && [ "$changes" != " " ]; then
     SUB='Incompatible changes:'
     if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then

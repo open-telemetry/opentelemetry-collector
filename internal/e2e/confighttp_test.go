@@ -33,6 +33,7 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"cors":                nil,
 		"idle_timeout":        60 * time.Second,
+		"keep_alives_enabled": true,
 		"read_header_timeout": 60 * time.Second,
 		"response_headers":    map[string]any{},
 		"tls":                 nil,
