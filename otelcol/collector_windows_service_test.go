@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -31,14 +32,14 @@ const (
 //   - make otelcorecol
 //
 // * Install the Windows service
-//   - New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
+//   - New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_$(go env GOARCH) --config ${PWD}\examples\local\otel-config.yaml"
 //
 // * Create event log source
 //   - eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
 //
 // The test also must be executed with administrative privileges.
 func TestCollectorAsService(t *testing.T) {
-	collector_executable, err := filepath.Abs(filepath.Join("..", "bin", "otelcorecol_windows_amd64"))
+	collector_executable, err := filepath.Abs(filepath.Join("..", "bin", fmt.Sprintf("otelcorecol_windows_%s", runtime.GOARCH)))
 	require.NoError(t, err)
 	_, err = os.Stat(collector_executable)
 	require.NoError(t, err)

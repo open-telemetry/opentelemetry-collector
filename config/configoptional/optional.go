@@ -135,6 +135,34 @@ func (o *Optional[T]) Get() *T {
 	return &o.value
 }
 
+// GetOrInsertDefault makes the Optional into a Some(val) and returns val.
+//
+// In particular, if it is Default(val) it turns it into Some(val)
+// and if it is None[T]() it turns it into Some(zeroVal) where zeroVal is T's zero value.
+// This method is useful for programmatic usage of an optional.
+//
+// It panics if
+// - T is not a struct OR
+// - T has a field with the mapstructure tag "enabled".
+func (o *Optional[T]) GetOrInsertDefault() *T {
+	err := errors.Join(assertStructKind[T](), assertNoEnabledField[T]())
+	if err != nil {
+		panic(err)
+	}
+
+	if o.HasValue() {
+		return o.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	if err := empty.Unmarshal(o); err != nil {
+		// This should never happen, if it happens it is a bug, so this panic is not documented.
+		panic(fmt.Errorf("failed to unmarshal empty map into %T type: %w. Please report this bug", o.value, err))
+	}
+
+	return o.Get()
+}
+
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.

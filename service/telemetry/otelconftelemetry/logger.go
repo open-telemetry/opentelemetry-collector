@@ -4,17 +4,27 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/log"
-	"go.opentelemetry.io/otel/sdk/resource"
+	"context"
+
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// newLogger creates a Logger and a LoggerProvider from Config.
-func newLogger(set telemetry.Settings, cfg *Config, sdk *config.SDK, res *resource.Resource) (*zap.Logger, log.LoggerProvider, error) {
+// createLogger creates a Logger and a LoggerProvider from Config.
+func createLogger(
+	ctx context.Context,
+	set telemetry.LoggerSettings,
+	componentConfig component.Config,
+) (*zap.Logger, component.ShutdownFunc, error) {
+	cfg := componentConfig.(*Config)
+	res := newResource(set.Settings, cfg)
+
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -70,6 +80,29 @@ func newLogger(set telemetry.Settings, cfg *Config, sdk *config.SDK, res *resour
 		}))
 	}
 
-	lp := sdk.LoggerProvider()
-	return logger, lp, nil
+	sdk, err := newSDK(ctx, res, otelconf.OpenTelemetryConfiguration{
+		LoggerProvider: &otelconf.LoggerProvider{
+			Processors: cfg.Logs.Processors,
+		},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Wrap the zap.Logger with componentattribute so scope attributes
+	// can be added and removed dynamically, and tee logs to the
+	// LoggerProvider.
+	loggerProvider := sdk.LoggerProvider()
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = componentattribute.NewOTelTeeCoreWithAttributes(
+			core,
+			loggerProvider,
+			"go.opentelemetry.io/collector/service",
+			attribute.NewSet(),
+		)
+		return core
+	}))
+
+	return logger, sdk.Shutdown, nil
 }

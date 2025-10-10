@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // State defines Collector's state.
@@ -105,6 +107,8 @@ type Collector struct {
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
+	shutdownOnce sync.Once
+
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
@@ -150,14 +154,9 @@ func (col *Collector) GetState() State {
 
 // Shutdown shuts down the collector server.
 func (col *Collector) Shutdown() {
-	// Only shutdown if we're in a Running or Starting State else noop
-	state := col.GetState()
-	if state == StateRunning || state == StateStarting {
-		defer func() {
-			_ = recover()
-		}()
+	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
-	}
+	})
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -218,6 +217,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+
+		// TODO: inject the telemetry factory through factories.
+		// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+		TelemetryFactory: otelconftelemetry.NewFactory(),
 	}, cfg.Service)
 	if err != nil {
 		return err
@@ -236,7 +239,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		grpclog.SetLogger(col.service.Logger(), cfg.Service.Telemetry.Logs.Level)
+		grpclog.SetLogger(col.service.Logger())
 	}
 
 	if err = col.service.Start(ctx); err != nil {

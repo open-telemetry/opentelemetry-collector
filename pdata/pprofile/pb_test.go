@@ -104,8 +104,7 @@ func generateBenchmarkProfiles(samplesCount int) Profiles {
 	ilm.Sample().EnsureCapacity(samplesCount)
 	for i := 0; i < samplesCount; i++ {
 		im := ilm.Sample().AppendEmpty()
-		im.SetLocationsStartIndex(2)
-		im.SetLocationsLength(10)
+		im.SetStackIndex(0)
 	}
 	return md
 }

@@ -67,12 +67,12 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
-		keyValueSlice,
-		keyValue,
-		attributeUnitSlice,
-		attributeUnit,
+		keyValueAndUnitSlice,
+		keyValueAndUnit,
 		linkSlice,
 		link,
+		stackSlice,
+		stack,
 	},
 }
 
@@ -165,13 +165,13 @@ var profilesDictionary = &messageStruct{
 			fieldName:   "AttributeTable",
 			protoID:     6,
 			protoType:   proto.TypeMessage,
-			returnSlice: keyValueSlice,
+			returnSlice: keyValueAndUnitSlice,
 		},
 		&SliceField{
-			fieldName:   "AttributeUnits",
+			fieldName:   "StackTable",
 			protoID:     7,
 			protoType:   proto.TypeMessage,
-			returnSlice: attributeUnitSlice,
+			returnSlice: stackSlice,
 		},
 	},
 }
@@ -217,11 +217,10 @@ var profile = &messageStruct{
 	description:    "// Profile are an implementation of the pprofextended data model.\n",
 	originFullName: "otlpprofiles.Profile",
 	fields: []Field{
-		&SliceField{
-			fieldName:   "SampleType",
-			protoID:     1,
-			protoType:   proto.TypeMessage,
-			returnSlice: valueTypeSlice,
+		&MessageField{
+			fieldName:     "SampleType",
+			protoID:       1,
+			returnMessage: valueType,
 		},
 		&SliceField{
 			fieldName:   "Sample",
@@ -229,61 +228,44 @@ var profile = &messageStruct{
 			protoType:   proto.TypeMessage,
 			returnSlice: sampleSlice,
 		},
-		&SliceField{
-			fieldName:   "LocationIndices",
-			protoID:     3,
-			protoType:   proto.TypeInt32,
-			returnSlice: int32Slice,
-		},
 		&TypedField{
 			fieldName:       "Time",
-			originFieldName: "TimeNanos",
+			originFieldName: "TimeUnixNano",
+			protoID:         3,
+			returnType:      timestampType,
+		},
+		&TypedField{
+			fieldName:       "Duration",
+			originFieldName: "DurationNano",
 			protoID:         4,
 			returnType: &TypedType{
 				structName:  "Timestamp",
 				packageName: "pcommon",
-				protoType:   proto.TypeInt64,
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
-		},
-		&TypedField{
-			fieldName:       "Duration",
-			originFieldName: "DurationNanos",
-			protoID:         5,
-			returnType: &TypedType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				protoType:   proto.TypeInt64,
+				protoType:   proto.TypeUint64,
 				defaultVal:  "0",
 				testVal:     "1234567890",
 			},
 		},
 		&MessageField{
 			fieldName:     "PeriodType",
-			protoID:       6,
+			protoID:       5,
 			returnMessage: valueType,
 		},
 		&PrimitiveField{
 			fieldName: "Period",
-			protoID:   7,
+			protoID:   6,
 			protoType: proto.TypeInt64,
 		},
 		&SliceField{
 			fieldName:   "CommentStrindices",
-			protoID:     8,
+			protoID:     7,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
-		},
-		&PrimitiveField{
-			fieldName: "DefaultSampleTypeIndex",
-			protoID:   9,
-			protoType: proto.TypeInt32,
 		},
 		&TypedField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			protoID:         10,
+			protoID:         8,
 			returnType: &TypedType{
 				structName:  "ProfileID",
 				protoType:   proto.TypeMessage,
@@ -294,48 +276,55 @@ var profile = &messageStruct{
 		},
 		&PrimitiveField{
 			fieldName: "DroppedAttributesCount",
-			protoID:   11,
+			protoID:   9,
 			protoType: proto.TypeUint32,
 		},
 		&PrimitiveField{
 			fieldName: "OriginalPayloadFormat",
-			protoID:   12,
+			protoID:   10,
 			protoType: proto.TypeString,
 		},
 		&SliceField{
 			fieldName:   "OriginalPayload",
-			protoID:     13,
+			protoID:     11,
 			protoType:   proto.TypeBytes,
 			returnSlice: byteSlice,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     14,
+			protoID:     12,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
 	},
 }
 
-var attributeUnitSlice = &messageSlice{
-	structName:      "AttributeUnitSlice",
+var keyValueAndUnitSlice = &messageSlice{
+	structName:      "KeyValueAndUnitSlice",
 	elementNullable: true,
-	element:         attributeUnit,
+	element:         keyValueAndUnit,
 }
 
-var attributeUnit = &messageStruct{
-	structName:     "AttributeUnit",
-	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
-	originFullName: "otlpprofiles.AttributeUnit",
+var keyValueAndUnit = &messageStruct{
+	structName: "KeyValueAndUnit",
+	description: `// KeyValueAndUnit represents a custom 'dictionary native'
+	// style of encoding attributes which is more convenient
+	// for profiles than opentelemetry.proto.common.v1.KeyValue.`,
+	originFullName: "otlpprofiles.KeyValueAndUnit",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName: "AttributeKeyStrindex",
+			fieldName: "KeyStrindex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
 		},
+		&MessageField{
+			fieldName:     "Value",
+			protoID:       2,
+			returnMessage: anyValue,
+		},
 		&PrimitiveField{
 			fieldName: "UnitStrindex",
-			protoID:   2,
+			protoID:   3,
 			protoType: proto.TypeInt32,
 		},
 	},
@@ -414,36 +403,31 @@ var sample = &messageStruct{
 	originFullName: "otlpprofiles.Sample",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName: "LocationsStartIndex",
+			fieldName: "StackIndex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
 		},
-		&PrimitiveField{
-			fieldName: "LocationsLength",
-			protoID:   2,
-			protoType: proto.TypeInt32,
-		},
 		&SliceField{
-			fieldName:   "Value",
-			protoID:     3,
+			fieldName:   "Values",
+			protoID:     2,
 			protoType:   proto.TypeInt64,
 			returnSlice: int64Slice,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     4,
+			protoID:     3,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
-		&OptionalPrimitiveField{
+		&PrimitiveField{
 			fieldName: "LinkIndex",
-			protoID:   5,
+			protoID:   4,
 			protoType: proto.TypeInt32,
 		},
 		&SliceField{
 			fieldName:   "TimestampsUnixNano",
-			protoID:     6,
-			protoType:   proto.TypeUint64,
+			protoID:     5,
+			protoType:   proto.TypeFixed64,
 			returnSlice: uInt64Slice,
 		},
 	},
@@ -486,26 +470,6 @@ var mapping = &messageStruct{
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
-		&PrimitiveField{
-			fieldName: "HasFunctions",
-			protoID:   6,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasFilenames",
-			protoID:   7,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasLineNumbers",
-			protoID:   8,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasInlineFrames",
-			protoID:   9,
-			protoType: proto.TypeBool,
-		},
 	},
 }
 
@@ -520,7 +484,7 @@ var location = &messageStruct{
 	description:    "// Location describes function and line table debug information.",
 	originFullName: "otlpprofiles.Location",
 	fields: []Field{
-		&OptionalPrimitiveField{
+		&PrimitiveField{
 			fieldName: "MappingIndex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
@@ -536,14 +500,9 @@ var location = &messageStruct{
 			protoType:   proto.TypeMessage,
 			returnSlice: lineSlice,
 		},
-		&PrimitiveField{
-			fieldName: "IsFolded",
-			protoID:   4,
-			protoType: proto.TypeBool,
-		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     5,
+			protoID:     4,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
@@ -613,26 +572,22 @@ var function = &messageStruct{
 	},
 }
 
-var keyValueSlice = &messageSlice{
-	structName:      "AttributeTableSlice",
-	elementNullable: false,
-	element:         keyValue,
+var stackSlice = &messageSlice{
+	structName:      "StackSlice",
+	elementNullable: true,
+	element:         stack,
 }
 
-var keyValue = &messageStruct{
-	structName:     "Attribute",
-	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
-	originFullName: "otlpcommon.KeyValue",
+var stack = &messageStruct{
+	structName:     "Stack",
+	description:    "// Stack represents a stack trace as a list of locations.\n",
+	originFullName: "otlpprofiles.Stack",
 	fields: []Field{
-		&PrimitiveField{
-			fieldName: "Key",
-			protoID:   1,
-			protoType: proto.TypeString,
-		},
-		&MessageField{
-			fieldName:     "Value",
-			protoID:       2,
-			returnMessage: anyValue,
+		&SliceField{
+			fieldName:   "LocationIndices",
+			protoID:     1,
+			protoType:   proto.TypeInt32,
+			returnSlice: int32Slice,
 		},
 	},
 }

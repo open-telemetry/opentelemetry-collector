@@ -56,7 +56,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(context.Background(), req)
 	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
-	assert.IsType(t, status.Error(codes.Unknown, ""), err)
+	require.ErrorIs(t, err, status.Error(codes.Unavailable, "my error"))
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 
@@ -67,7 +67,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := traceClient.Export(context.Background(), req)
 	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
-	assert.IsType(t, status.Error(codes.Unknown, ""), err)
+	require.ErrorIs(t, err, status.Error(codes.Internal, "Permanent error: my error"))
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 
