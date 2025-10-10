@@ -136,8 +136,6 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmid
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../../config/configcompression
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/extension => ../../../extension
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../../exporter/exporterhelper
