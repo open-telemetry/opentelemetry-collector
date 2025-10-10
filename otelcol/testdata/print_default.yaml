@@ -1,0 +1,10 @@
+receivers:
+  r:
+    other: lala
+exporters:
+  e:
+service:
+  pipelines:
+    logs:
+      receivers: [r]
+      exporters: [e]
