@@ -283,6 +283,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
+replace go.opentelemetry.io/collector/internal/maplist => ../../internal/maplist
+
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
@@ -336,5 +338,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/internal/maplist => ../../internal/maplist
