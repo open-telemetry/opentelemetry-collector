@@ -23,6 +23,7 @@ components:
     - extension/xextension
     - extension/zpages
     - pdata/pprofile
+    - pdata/xpdata
     - pkg/confmap
     - pkg/exporterhelper
     - pkg/otelcol

@@ -50,6 +50,7 @@ body:
       - otelcol
       - pdata
       - pdata/pprofile
+      - pdata/xpdata
       - processor/batch
       - processor/memorylimiter
       - processor/processorhelper
