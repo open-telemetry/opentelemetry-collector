@@ -115,6 +115,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.43.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.43.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.137.0 // indirect
+	go.opentelemetry.io/collector/internal/maplist v0.137.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.63.0 // indirect
@@ -257,3 +258,5 @@ replace go.opentelemetry.io/collector/config/configoptional => ../config/configo
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exporterhelper
+
+replace go.opentelemetry.io/collector/internal/maplist => ../internal/maplist

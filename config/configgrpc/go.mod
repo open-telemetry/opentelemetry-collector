@@ -55,6 +55,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
+	go.opentelemetry.io/collector/internal/maplist v0.137.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
@@ -96,6 +97,8 @@ replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension
 replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/internal/maplist => ../../internal/maplist
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 

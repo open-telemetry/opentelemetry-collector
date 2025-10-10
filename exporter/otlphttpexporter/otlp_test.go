@@ -325,7 +325,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:       EncodingProto,
 					TracesEndpoint: srv.URL + "/v1/traces",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: tt.headers,
+						Headers: configopaque.MapListFromMap(tt.headers),
 					},
 				}
 				exp, err := createTraces(context.Background(), set, cfg)
@@ -359,7 +359,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:        EncodingProto,
 					MetricsEndpoint: srv.URL + "/v1/metrics",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: tt.headers,
+						Headers: configopaque.MapListFromMap(tt.headers),
 					},
 				}
 				exp, err := createMetrics(context.Background(), set, cfg)
@@ -393,7 +393,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:     EncodingProto,
 					LogsEndpoint: srv.URL + "/v1/logs",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: tt.headers,
+						Headers: configopaque.MapListFromMap(tt.headers),
 					},
 				}
 				exp, err := createLogs(context.Background(), set, cfg)
@@ -429,7 +429,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding: EncodingProto,
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: srv.URL,
-						Headers:  test.headers,
+						Headers:  configopaque.MapListFromMap(test.headers),
 					},
 				}
 				exp, err := createProfiles(context.Background(), set, cfg)

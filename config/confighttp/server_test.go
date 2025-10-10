@@ -451,7 +451,7 @@ func TestHttpServerHeaders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
 				Endpoint:        "localhost:0",
-				ResponseHeaders: tt.headers,
+				ResponseHeaders: configopaque.MapListFromMap(tt.headers),
 			}
 
 			ln, err := sc.ToListener(context.Background())
@@ -950,7 +950,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
-	assert.NotNil(t, httpServerSettings.ResponseHeaders)
+	assert.Nil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
 	assert.NotNil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
@@ -1075,10 +1075,10 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 7200, serverConfig.CORS.Get().MaxAge)
 
 	// Verify response headers
-	expectedResponseHeaders := map[string]configopaque.String{
+	expectedResponseHeaders := configopaque.MapListFromMap(map[string]configopaque.String{
 		"Server":   "OpenTelemetry-Collector",
 		"X-Flavor": "apple",
-	}
+	})
 	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
 
 	// Verify compression algorithms

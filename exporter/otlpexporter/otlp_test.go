@@ -315,9 +315,9 @@ func TestSendTraces(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": "header-value",
-		},
+		}),
 	}
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
@@ -487,9 +487,9 @@ func TestSendMetrics(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": "header-value",
-		},
+		}),
 	}
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
@@ -888,9 +888,9 @@ func TestSendProfiles(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": "header-value",
-		},
+		}),
 	}
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"

@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -96,7 +95,7 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers Map `mapstructure:"headers,omitempty"`
+	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -222,31 +221,6 @@ func NewDefaultServerConfig() ServerConfig {
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
 		NetAddr:   netAddr,
 	}
-}
-
-type MapPair struct {
-	Name  string              `mapstructure:"name"`
-	Value configopaque.String `mapstructure:"value"`
-}
-
-type Map []MapPair
-
-var _ confmap.Unmarshaler = (*Map)(nil)
-
-func (m *Map) Unmarshal(conf *confmap.Conf) error {
-	var m2 map[string]configopaque.String
-	if err := conf.Unmarshal(&m2); err != nil {
-		return err
-	}
-
-	*m = make(Map, 0, len(m2))
-	for name, value := range m2 {
-		*m = append(*m, MapPair{
-			Name:  name,
-			Value: value,
-		})
-	}
-	return nil
 }
 
 func (cc *ClientConfig) Validate() error {
