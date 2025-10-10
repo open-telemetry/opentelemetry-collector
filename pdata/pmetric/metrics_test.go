@@ -41,7 +41,7 @@ func TestMetricCount(t *testing.T) {
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilmm := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	ilmm.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilmm.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -86,7 +86,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilms = rms.At(2).ScopeMetrics()
 	ilm := ilms.At(0).Metrics()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilm.AppendEmpty()
 	}
 	assert.Equal(t, 0, md.DataPointCount())
@@ -626,8 +626,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
@@ -652,8 +651,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -680,8 +678,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -708,8 +705,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -918,9 +914,8 @@ func BenchmarkMetricsUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			res := rm.Resource()
@@ -970,8 +965,8 @@ func BenchmarkMetricsMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalMetrics(md)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
