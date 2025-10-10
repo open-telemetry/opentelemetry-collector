@@ -10,9 +10,6 @@ components:
     - all
     - cmd/builder
     - cmd/mdatagen
-    - config/configgrpc
-    - config/confighttp
-    - config/configopaque
     - connector/forward
     - connector/sample
     - consumer/xconsumer
