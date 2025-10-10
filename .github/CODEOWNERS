@@ -47,8 +47,10 @@ extension/memorylimiterextension/            @open-telemetry/collector-approvers
 extension/xextension/                        @open-telemetry/collector-approvers
 extension/xextension/storage/                @open-telemetry/collector-approvers @swiatekm
 extension/zpagesextension/                   @open-telemetry/collector-approvers
+otelcol/                                     @open-telemetry/collector-approvers
 pdata/                                       @open-telemetry/collector-approvers @bogdandrutu @dmitryax
 pdata/pprofile/                              @open-telemetry/collector-approvers @mx-psi @dmathieu
+pdata/xpdata/                                @open-telemetry/collector-approvers
 processor/batchprocessor/                    @open-telemetry/collector-approvers
 processor/memorylimiterprocessor/            @open-telemetry/collector-approvers
 processor/processorhelper/                   @open-telemetry/collector-approvers
