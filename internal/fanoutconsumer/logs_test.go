@@ -37,7 +37,7 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := lfc.ConsumeLogs(context.Background(), ld)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -73,7 +73,7 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 	assert.True(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := lfc.ConsumeLogs(context.Background(), ld)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -112,7 +112,7 @@ func TestReadOnlyLogsMultiplexingMutating(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
 	ld.MarkReadOnly()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := lfc.ConsumeLogs(context.Background(), ld)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -147,7 +147,7 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := lfc.ConsumeLogs(context.Background(), ld)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -185,7 +185,7 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := lfc.ConsumeLogs(context.Background(), ld)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -221,7 +221,7 @@ func TestLogsWhenErrors(t *testing.T) {
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
 	ld := testdata.GenerateLogs(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		require.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 

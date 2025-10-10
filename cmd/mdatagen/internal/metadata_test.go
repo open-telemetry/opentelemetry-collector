@@ -158,7 +158,7 @@ func TestValidateMetricDuplicates(t *testing.T) {
 				receivers, allowed := allowedMetrics[metricName]
 				assert.Truef(
 					t,
-					allowed && contains(receiver, receivers) && contains(val, receivers),
+					allowed && slices.Contains(receivers, receiver) && slices.Contains(receivers, val),
 					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
 				)
 			}
@@ -170,10 +170,6 @@ func TestValidateMetricDuplicates(t *testing.T) {
 func TestSupportsSignal(t *testing.T) {
 	md := Metadata{}
 	assert.False(t, md.supportsSignal("logs"))
-}
-
-func contains(r string, rs []string) bool {
-	return slices.Contains(rs, r)
 }
 
 func TestCodeCovID(t *testing.T) {
