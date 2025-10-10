@@ -321,7 +321,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			done.OnDone(nil)
 			assert.Equal(t, int64(0), pq.Size())
 
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				result := pq.Offer(context.Background(), int64(10))
 				if i < 5 {
 					require.NoError(t, result)
@@ -340,7 +340,7 @@ func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createTestPersistentQueue(t, ext, request.SizerTypeRequests, 1001)
 	req := int64(10)
 
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		require.NoError(t, pq.Offer(context.Background(), req))
 	}
 	require.NoError(t, pq.Shutdown(context.Background()))
@@ -432,11 +432,11 @@ func TestPersistentBlockingQueue(t *testing.T) {
 
 			td := int64(10)
 			wg := &sync.WaitGroup{}
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					for j := 0; j < 100_000; j++ {
+					for range 100_000 {
 						assert.NoError(t, pq.Offer(context.Background(), td))
 					}
 				}()
@@ -587,7 +587,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
 			// Put some items, make sure they are loaded and shutdown the storage...
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				require.NoError(t, ps.Offer(context.Background(), int64(50)))
 			}
 			assert.Equal(t, int64(3), ps.Size())
@@ -626,7 +626,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
 	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 
@@ -655,7 +655,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 
 	// We should be able to pull all remaining items now
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		consume(newPs, func(_ context.Context, val int64) error {
 			assert.Equal(t, req, val)
 			return nil
@@ -685,7 +685,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 5)
 
 	// Put in items up to capacity
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 	require.Equal(t, int64(5), ps.Size())
@@ -710,12 +710,12 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 
 	proWg := sync.WaitGroup{}
 	// Sending small amount of data as windows test can't handle the test fast enough
-	for j := 0; j < 5; j++ {
+	for range 5 {
 		proWg.Add(1)
 		go func() {
 			defer proWg.Done()
 			// Put in items up to capacity
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				for {
 					// retry infinitely so the exact amount of items are added to the queue eventually
 					if err := pq.Offer(context.Background(), req); err == nil {
@@ -728,11 +728,11 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	}
 
 	conWg := sync.WaitGroup{}
-	for j := 0; j < 5; j++ {
+	for range 5 {
 		conWg.Add(1)
 		go func() {
 			defer conWg.Done()
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 			}
 		}()
@@ -805,13 +805,12 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	req := int64(100)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, ps.Offer(context.Background(), req))
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.True(b, consume(ps, func(context.Context, int64) error { return nil }))
 	}
 	require.NoError(b, ext.Shutdown(context.Background()))
@@ -1150,13 +1149,13 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 
 	assert.Equal(t, int64(0), pq.Size())
 
-	for i := 0; i < 6; i++ {
+	for range 6 {
 		require.NoError(t, pq.Offer(context.Background(), int64(10)))
 	}
 	assert.Equal(t, int64(60), pq.Size())
 
 	// Consume 30 items
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 	}
 	assert.Equal(t, int64(30), pq.Size())
