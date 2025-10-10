@@ -19,9 +19,6 @@ type MergeOptions struct {
 }
 
 func NewOptions(mode string, duplicates bool) *MergeOptions {
-	if mode == "" {
-		mode = "append"
-	}
 	return &MergeOptions{
 		mode:       mode,
 		duplicates: duplicates,
