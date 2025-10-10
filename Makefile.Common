@@ -17,68 +17,49 @@ GOTEST_OPT?= -timeout $(GOTEST_TIMEOUT) $(if $(and $(filter windows,$(GOOS)), $(
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
 TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
-TOOLS_BIN_DIR   := $(SRC_ROOT)/.tools
-TOOLS_MOD_REGEX := "\s+_\s+\".*\""
-TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"" | grep -vE '/v[0-9]+$$')
-TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
+TOOLS_MOD_FILE  := $(TOOLS_MOD_DIR)/go.mod
+GO_TOOL         := $(GOCMD) tool -modfile $(TOOLS_MOD_FILE)
 CHLOGGEN_CONFIG := .chloggen/config.yaml
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
-ACTIONLINT   := $(TOOLS_BIN_DIR)/actionlint
-ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
-APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
-CHECKAPI     := $(TOOLS_BIN_DIR)/checkapi
-CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
-CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
-CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
-ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
-GITHUBGEN    := $(TOOLS_BIN_DIR)/githubgen
-GOFUMPT      := $(TOOLS_BIN_DIR)/gofumpt
-GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
-GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
-LINT         := $(TOOLS_BIN_DIR)/golangci-lint
-PDATAGEN     := $(TOOLS_BIN_DIR)/pdatagen
-IMPI         := $(TOOLS_BIN_DIR)/impi
-MISSPELL     := $(TOOLS_BIN_DIR)/misspell
-MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
-PORTO        := $(TOOLS_BIN_DIR)/porto
-GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
-MODERNIZE    := $(TOOLS_BIN_DIR)/modernize
-
-.PHONY: install-tools
-install-tools: $(TOOLS_BIN_NAMES)
-
-$(TOOLS_BIN_DIR):
-	mkdir -p $@
-
-$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
-
 .PHONY: test
-test: $(GOTESTSUM)
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
+test:
+	$(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
-test-with-cover: $(GOTESTSUM)
+test-with-cover:
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GO_TOOL) gotestsum \
+		--packages="./..." -- \
+		$(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: test-with-junit
-test-with-junit: $(GOTESTSUM)
+test-with-junit:
 	mkdir -p $(JUNIT_OUT_DIR)
-	$(GOTESTSUM) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
+	$(GO_TOOL) gotestsum \
+		--packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- \
+		$(GOTEST_OPT) ./...
 
 .PHONY: benchmark
-benchmark: $(GOTESTSUM)
-	$(GOTESTSUM) --packages="$(ALL_PKGS)" -- -bench=. -run=notests ./... | tee benchmark.txt
+benchmark:
+	$(GO_TOOL) gotestsum \
+		--packages="$(ALL_PKGS)" -- \
+		-bench=. -run=notests ./... | tee benchmark.txt
 
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
+# `modernize' cannot be installed as a Go tool via `go get -tool'.
+#
+# See [1] for more details.
+#
+# [1]: https://github.com/golang/go/issues/73279
 .PHONY: modernize
-modernize: $(MODERNIZE)
-	$(MODERNIZE) -fix -test -v ./...
+modernize:
+	$(GOCMD) run \
+		golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest \
+		-fix -test -v ./...
 
 .PHONY: tidy
 tidy:
@@ -86,32 +67,34 @@ tidy:
 	$(GOCMD) mod tidy -compat=1.24.0
 
 .PHONY: lint
-lint: $(LINT)
-	$(LINT) run
+lint:
+	$(GO_TOOL) golangci-lint run
 
 .PHONY: common/gofmt
 common/gofmt:
 	gofmt -w -s ./
 
 .PHONY: common/goimports
-common/goimports: $(GOIMPORTS)
-	$(GOIMPORTS) -w  -local go.opentelemetry.io/collector ./
+common/goimports:
+	$(GO_TOOL) goimports -w -local go.opentelemetry.io/collector ./
 
 .PHONY: common/gofumpt
-common/gofumpt: $(GOFUMPT)
-	$(GOFUMPT) -l -w -extra .
+common/gofumpt:
+	$(GO_TOOL) gofumpt -l -w -extra .
 
 .PHONY: vulncheck
-vulncheck: $(GOVULNCHECK)
-	$(GOVULNCHECK) ./...
+vulncheck:
+	$(GO_TOOL) govulncheck ./...
 
 .PHONY: generate
 generate:
 	$(GOCMD) generate ./...
 
 .PHONY: impi
-impi: $(IMPI)
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...
+impi:
+	$(GO_TOOL) impi \
+		--local go.opentelemetry.io/collector \
+		--scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
 moddownload:
