@@ -99,7 +99,7 @@ func BenchmarkSetString(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				_, _ = SetString(table, bb.val)
 			}
 		})

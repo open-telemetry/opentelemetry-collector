@@ -53,15 +53,21 @@ type pooledZstdReadCloser struct {
 }
 
 func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
+	if pzrc.inner == nil {
+		return 0, zstd.ErrDecoderClosed
+	}
 	return pzrc.inner.Read(dst)
 }
 
 func (pzrc *pooledZstdReadCloser) Close() error {
-	err := pzrc.inner.Reset(nil)
-	if err != nil {
-		return err
+	if pzrc.inner != nil {
+		err := pzrc.inner.Reset(nil)
+		if err != nil {
+			return err
+		}
+		zstdReaderPool.Put(pzrc.inner)
+		pzrc.inner = nil
 	}
-	zstdReaderPool.Put(pzrc.inner)
 	return nil
 }
 
