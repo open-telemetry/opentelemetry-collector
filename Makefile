@@ -462,21 +462,24 @@ mdatagen-test:
 	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+GITHUBGEN_ARGS ?= -skipgithub
+GITHUBGEN := $(GO_TOOL) githubgen $(GITHUBGEN_ARGS)
+
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	$(GO_TOOL) githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
 .PHONY: generate-codeowners
 generate-codeowners:
-	$(GO_TOOL) githubgen --default-codeowner "open-telemetry/collector-approvers" -skipgithub codeowners
+	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
 
 .PHONY: gengithub
 gengithub: generate-codeowners generate-gh-issue-templates
 
 .PHONY: gendistributions
 gendistributions:
-	$(GO_TOOL) githubgen distributions
+	$(GITHUBGEN) distributions
 
 .PHONY: generate-chloggen-components
-generate-chloggen-components: $(GITHUBGEN)
-	$(GO_TOOL) githubgen chloggen-components
+generate-chloggen-components:
+	$(GITHUBGEN) chloggen-components
