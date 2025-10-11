@@ -26,6 +26,7 @@ const (
 // It supports a third flavor for struct types: Default(defaultVal).
 //
 // For struct types, it supports unmarshaling from a configuration source.
+// For struct types, it supports an 'enabled' field to explicitly disable a section.
 // The zero value of Optional is None.
 type Optional[T any] struct {
 	// value is the value of the Optional.
@@ -173,6 +174,10 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 //   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
 //     using val without overrides from the configuration if the configuration is nil.
 //
+// If the configuration contains an 'enabled' field:
+//   - if enabled is true: the Optional becomes Some after unmarshaling.
+//   - if enabled is false: the Optional becomes None regardless of other configuration values.
+//
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
@@ -186,11 +191,26 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
+	isEnabled := true
+	if conf.IsSet("enabled") {
+		enabled := conf.Get("enabled")
+		conf.Delete("enabled")
+		var ok bool
+		if isEnabled, ok = enabled.(bool); !ok {
+			return fmt.Errorf("unexpected type %T for 'enabled': got '%v' value expected 'true' or 'false'", enabled, enabled)
+		}
+	}
+
 	if err := conf.Unmarshal(&o.value); err != nil {
 		return err
 	}
 
-	o.flavor = someFlavor
+	if isEnabled {
+		o.flavor = someFlavor
+	} else {
+		o.flavor = noneFlavor
+	}
+
 	return nil
 }
 

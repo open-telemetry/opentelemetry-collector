@@ -362,6 +362,129 @@ func TestUnmarshalOptional(t *testing.T) {
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies
 		},
+		{
+			name: "none_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "none_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "none_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "default_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "baz",
+		},
+		{
+			name: "some_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -375,6 +498,20 @@ func TestUnmarshalOptional(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"sub": map[string]any{
+			"enabled": "something",
+			"foo":     "bar",
+		},
+	})
+	cfg := Config[Sub]{
+		Sub1: None[Sub](),
+	}
+	err := cm.Unmarshal(&cfg)
+	require.ErrorContains(t, err, "unexpected type string for 'enabled': got 'something' value expected 'true' or 'false'")
 }
 
 func TestUnmarshalErrorEnabledField(t *testing.T) {
