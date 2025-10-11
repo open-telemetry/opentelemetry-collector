@@ -447,12 +447,9 @@ func validateMappingKeysSorted(root *yaml.Node, path ...string) error {
 	for i := 0; i < len(n.Content); i += 2 {
 		keys = append(keys, n.Content[i].Value)
 	}
-	sorted := append([]string(nil), keys...)
-	slices.Sort(sorted)
-	for i := range keys {
-		if keys[i] != sorted[i] {
-			return fmt.Errorf("%v keys are not sorted: %v", path, keys)
-		}
+
+	if !slices.IsSorted(keys) {
+		return fmt.Errorf("%v keys are not sorted: %v", path, keys)
 	}
 	return nil
 }
