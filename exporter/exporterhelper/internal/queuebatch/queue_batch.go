@@ -18,8 +18,6 @@ import (
 type Settings[T any] struct {
 	ReferenceCounter queue.ReferenceCounter[T]
 	Encoding         queue.Encoding[T]
-	ItemsSizer       request.Sizer[T]
-	BytesSizer       request.Sizer[T]
 	Partitioner      Partitioner[T]
 	MergeCtx         func(context.Context, context.Context) context.Context
 }
@@ -43,8 +41,6 @@ func NewQueueBatch(
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
 	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
-		itemsSizer:  set.ItemsSizer,
-		bytesSizer:  set.BytesSizer,
 		partitioner: set.Partitioner,
 		mergeCtx:    set.MergeCtx,
 		next:        next,
@@ -62,8 +58,6 @@ func NewQueueBatch(
 
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
 		SizerType:        cfg.Sizer,
-		ItemsSizer:       set.ItemsSizer,
-		BytesSizer:       set.BytesSizer,
 		Capacity:         cfg.QueueSize,
 		NumConsumers:     cfg.NumConsumers,
 		WaitForResult:    cfg.WaitForResult,
