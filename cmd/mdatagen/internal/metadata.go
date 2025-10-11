@@ -217,6 +217,18 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 
 type AttributeName string
 
+// AttributeAvailability defines the availability of an attribute.
+type AttributeAvailability string
+
+const (
+	// AttributeAvailabilityDefault means the attribute is always available unless explicitly disabled in user config.
+	AttributeAvailabilityDefault AttributeAvailability = "default"
+	// AttributeAvailabilityConditional means the attribute is available only when certain conditions are met.
+	AttributeAvailabilityConditional AttributeAvailability = "conditional"
+	// AttributeAvailabilityOptIn means the attribute is not available unless explicitly enabled in user config.
+	AttributeAvailabilityOptIn AttributeAvailability = "opt_in"
+)
+
 func (mn AttributeName) Render() (string, error) {
 	return FormatIdentifier(string(mn), true)
 }
@@ -311,8 +323,31 @@ type Attribute struct {
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
-	// Optional defines whether the attribute is required.
-	Optional bool `mapstructure:"optional"`
+	// Availability defines the availability of the attribute.
+	Availability AttributeAvailability `mapstructure:"availability"`
+}
+
+// IsConditional returns true if the attribute is conditionally available.
+func (a Attribute) IsConditional() bool {
+	return a.Availability == AttributeAvailabilityConditional
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (aa *AttributeAvailability) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "default":
+		*aa = AttributeAvailabilityDefault
+	case "conditional":
+		*aa = AttributeAvailabilityConditional
+	case "opt_in":
+		*aa = AttributeAvailabilityOptIn
+	case "":
+		// Default value when not specified
+		*aa = AttributeAvailabilityDefault
+	default:
+		return fmt.Errorf("invalid availability %q", string(text))
+	}
+	return nil
 }
 
 // Enabled returns the boolean value of EnabledPtr.
@@ -380,9 +415,9 @@ type Signal struct {
 	Attributes []AttributeName `mapstructure:"attributes"`
 }
 
-func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool {
 	for _, attr := range s.Attributes {
-		if v, exists := attrs[attr]; exists && v.Optional {
+		if v, exists := attrs[attr]; exists && v.IsConditional() {
 			return true
 		}
 	}

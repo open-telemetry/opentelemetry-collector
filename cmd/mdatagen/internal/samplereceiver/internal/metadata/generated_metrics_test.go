@@ -99,7 +99,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
+			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, true, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -110,7 +110,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allMetricsCount++
-			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false, WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
+			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false, WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
@@ -175,12 +175,15 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					assert.True(t, ok)
 					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
-					attrVal, ok = dp.Attributes().Get("optional_int_attr")
+					attrVal, ok = dp.Attributes().Get("conditional_int_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, 17, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("optional_string_attr")
+					assert.EqualValues(t, 20, attrVal.Int())
+					attrVal, ok = dp.Attributes().Get("conditional_string_attr")
 					assert.True(t, ok)
-					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					assert.Equal(t, "conditional_string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("opt_in_bool_attr")
+					assert.True(t, ok)
+					assert.True(t, attrVal.Bool())
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
@@ -245,9 +248,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr2")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("optional_string_attr")
+					attrVal, ok = dp.Attributes().Get("conditional_string_attr")
 					assert.True(t, ok)
-					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					assert.Equal(t, "conditional_string_attr-val", attrVal.Str())
 				case "optional.metric.empty_unit":
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true
