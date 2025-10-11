@@ -9,14 +9,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type JSONMarshaler struct{}
 
-func (*JSONMarshaler) MarshalAnyValue(value *otlpcommon.AnyValue) ([]byte, error) {
+func (*JSONMarshaler) MarshalValue(value pcommon.Value) ([]byte, error) {
+	av := internal.GetOrigValue(internal.Value(value))
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigAnyValue(value, dest)
+	internal.MarshalJSONOrigAnyValue(av, dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -25,13 +27,13 @@ func (*JSONMarshaler) MarshalAnyValue(value *otlpcommon.AnyValue) ([]byte, error
 
 type JSONUnmarshaler struct{}
 
-func (*JSONUnmarshaler) UnmarshalAnyValue(buf []byte) (*otlpcommon.AnyValue, error) {
+func (*JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	value := &otlpcommon.AnyValue{}
 	internal.UnmarshalJSONOrigAnyValue(value, iter)
 	if iter.Error() != nil {
-		return nil, iter.Error()
+		return pcommon.NewValueEmpty(), iter.Error()
 	}
-	return value, nil
+	return pcommon.Value(internal.NewValue(value, internal.NewState())), nil
 }
