@@ -51,7 +51,7 @@ func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 			})
 		default:
 			metadataArray := make([]otlpcommon.AnyValue, 0, len(vals))
-			for i := 0; i < len(vals); i++ {
+			for i := range vals {
 				metadataArray = append(metadataArray, otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: vals[i]}})
 			}
 			rc.ClientMetadata = append(rc.ClientMetadata, otlpcommon.KeyValue{

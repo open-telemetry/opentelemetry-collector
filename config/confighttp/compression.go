@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"sync"
 
@@ -53,15 +54,21 @@ type pooledZstdReadCloser struct {
 }
 
 func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
+	if pzrc.inner == nil {
+		return 0, zstd.ErrDecoderClosed
+	}
 	return pzrc.inner.Read(dst)
 }
 
 func (pzrc *pooledZstdReadCloser) Close() error {
-	err := pzrc.inner.Reset(nil)
-	if err != nil {
-		return err
+	if pzrc.inner != nil {
+		err := pzrc.inner.Reset(nil)
+		if err != nil {
+			return err
+		}
+		zstdReaderPool.Put(pzrc.inner)
+		pzrc.inner = nil
 	}
-	zstdReaderPool.Put(pzrc.inner)
 	return nil
 }
 
@@ -246,9 +253,7 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		decoders:           enabled,
 	}
 
-	for key, dec := range decoders {
-		d.decoders[key] = dec
-	}
+	maps.Copy(d.decoders, decoders)
 
 	return d
 }

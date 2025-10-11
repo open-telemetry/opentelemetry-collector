@@ -28,7 +28,7 @@ func TestTracesSink(t *testing.T) {
 	sink := new(TracesSink)
 	td := testdata.GenerateTraces(1)
 	want := make([]ptrace.Traces, 0, 7)
-	for i := 0; i < 7; i++ {
+	for range 7 {
 		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
 		want = append(want, td)
 	}
@@ -43,7 +43,7 @@ func TestMetricsSink(t *testing.T) {
 	sink := new(MetricsSink)
 	md := testdata.GenerateMetrics(1)
 	want := make([]pmetric.Metrics, 0, 7)
-	for i := 0; i < 7; i++ {
+	for range 7 {
 		require.NoError(t, sink.ConsumeMetrics(context.Background(), md))
 		want = append(want, md)
 	}
@@ -58,7 +58,7 @@ func TestLogsSink(t *testing.T) {
 	sink := new(LogsSink)
 	md := testdata.GenerateLogs(1)
 	want := make([]plog.Logs, 0, 7)
-	for i := 0; i < 7; i++ {
+	for range 7 {
 		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
 		want = append(want, md)
 	}
@@ -73,7 +73,7 @@ func TestProfilesSink(t *testing.T) {
 	sink := new(ProfilesSink)
 	td := testdata.GenerateProfiles(1)
 	want := make([]pprofile.Profiles, 0, 7)
-	for i := 0; i < 7; i++ {
+	for range 7 {
 		require.NoError(t, sink.ConsumeProfiles(context.Background(), td))
 		want = append(want, td)
 	}
@@ -90,7 +90,7 @@ func TestTracesSinkWithContext(t *testing.T) {
 	want := make([]ptrace.Traces, 0, 7)
 	wantCtx := make([]context.Context, 0, 7)
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeTraces(ctx, td))
 		want = append(want, td)
@@ -119,7 +119,7 @@ func TestMetricsSinkWithContext(t *testing.T) {
 	want := make([]pmetric.Metrics, 0, 7)
 	wantCtx := make([]context.Context, 0, 7)
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeMetrics(ctx, md))
 		want = append(want, md)
@@ -148,7 +148,7 @@ func TestLogsSinkWithContext(t *testing.T) {
 	want := make([]plog.Logs, 0, 7)
 	wantCtx := make([]context.Context, 0, 7)
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeLogs(ctx, md))
 		want = append(want, md)
@@ -177,7 +177,7 @@ func TestProfilesSinkWithContext(t *testing.T) {
 	want := make([]pprofile.Profiles, 0, 7)
 	wantCtx := make([]context.Context, 0, 7)
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeProfiles(ctx, td))
 		want = append(want, td)
@@ -301,7 +301,7 @@ func TestConcurrentContextTransformations(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(idx int) {
 			defer wg.Done()
 			key := ctxKey(fmt.Sprintf("goroutine-%d", idx))
@@ -330,7 +330,7 @@ func TestConcurrentContextTransformations(t *testing.T) {
 	// Create a map to verify all expected values are present
 	contextValues := make(map[string]bool)
 	for _, ctx := range storedContexts {
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			key := ctxKey(fmt.Sprintf("goroutine-%d", i))
 			expectedValue := fmt.Sprintf("value-%d", i)
 			if val := ctx.Value(key); val == expectedValue {

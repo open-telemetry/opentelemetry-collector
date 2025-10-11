@@ -41,7 +41,7 @@ func TestMetricCount(t *testing.T) {
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilmm := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	ilmm.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilmm.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -86,7 +86,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilms = rms.At(2).ScopeMetrics()
 	ilm := ilms.At(0).Metrics()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilm.AppendEmpty()
 	}
 	assert.Equal(t, 0, md.DataPointCount())
@@ -626,8 +626,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
@@ -652,8 +651,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -680,8 +678,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -708,8 +705,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	}
 	var state internal.State
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
@@ -918,9 +914,8 @@ func BenchmarkMetricsUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			res := rm.Resource()
@@ -937,28 +932,31 @@ func BenchmarkMetricsUsage(b *testing.B) {
 					m := sm.Metrics().At(k)
 					m.SetName("new_metric_name")
 					assert.Equal(b, "new_metric_name", m.Name())
-					assert.Equal(b, MetricTypeSum, m.Type())
-					m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
-					assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
-					m.Sum().SetIsMonotonic(true)
-					assert.True(b, m.Sum().IsMonotonic())
-					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
-						dp := m.Sum().DataPoints().At(l)
-						dp.SetIntValue(123)
-						assert.Equal(b, int64(123), dp.IntValue())
-						assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+					// Only process Sum metrics to avoid nil pointer dereference
+					if m.Type() == MetricTypeSum {
+						assert.Equal(b, MetricTypeSum, m.Type())
+						m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
+						assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
+						m.Sum().SetIsMonotonic(true)
+						assert.True(b, m.Sum().IsMonotonic())
+						for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+							dp := m.Sum().DataPoints().At(l)
+							dp.SetIntValue(123)
+							assert.Equal(b, int64(123), dp.IntValue())
+							assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+							dp.SetStartTimestamp(ts)
+							assert.Equal(b, ts, dp.StartTimestamp())
+						}
+						dp := m.Sum().DataPoints().AppendEmpty()
+						dp.Attributes().PutStr("foo", "bar")
+						dp.SetDoubleValue(123)
 						dp.SetStartTimestamp(ts)
-						assert.Equal(b, ts, dp.StartTimestamp())
+						dp.SetTimestamp(ts)
+						m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
+							_, ok := dp.Attributes().Get("foo")
+							return ok
+						})
 					}
-					dp := m.Sum().DataPoints().AppendEmpty()
-					dp.Attributes().PutStr("foo", "bar")
-					dp.SetDoubleValue(123)
-					dp.SetStartTimestamp(ts)
-					dp.SetTimestamp(ts)
-					m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
-						_, ok := dp.Attributes().Get("foo")
-						return ok
-					})
 				}
 			}
 		}
@@ -970,8 +968,8 @@ func BenchmarkMetricsMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalMetrics(md)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)

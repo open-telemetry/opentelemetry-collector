@@ -225,7 +225,7 @@ func TestMetricsTelemetry(t *testing.T) {
 
 	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
-	for requestNum := 0; requestNum < 10; requestNum++ {
+	for range 10 {
 		require.NoError(t, metrics.ConsumeMetrics(context.Background(), md))
 	}
 	require.NoError(t, metrics.Shutdown(context.Background()))

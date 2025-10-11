@@ -304,7 +304,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 }
 
 func TestExtractProfiles(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		ld := testdata.GenerateProfiles(10)
 		extractedProfiles, _ := extractProfiles(ld, i, &sizer.ProfilesCountSizer{})
 		assert.Equal(t, i, extractedProfiles.SampleCount())
@@ -317,7 +317,7 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 
 	// All requests merge into a single batch.
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
-	for j := 0; j < 1000; j++ {
+	for range 1000 {
 		lr2 := newProfilesRequest(testdata.GenerateProfiles(10))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
@@ -328,9 +328,9 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(10))}
-		for j := 0; j < 1000; j++ {
+		for range 1000 {
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
@@ -347,9 +347,9 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(0))}
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
@@ -367,7 +367,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 	// One request splits into many batches.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(0))}
 		pr2 := newProfilesRequest(testdata.GenerateProfiles(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(

@@ -76,8 +76,8 @@ func TestProtoSizerEmptyMetrics(t *testing.T) {
 func BenchmarkMetricsToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	metrics := generateBenchmarkMetrics(128)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		buf, err := marshaler.MarshalMetrics(metrics)
 		require.NoError(b, err)
 		assert.NotEmpty(b, buf)
@@ -91,9 +91,9 @@ func BenchmarkMetricsFromProto(b *testing.B) {
 	buf, err := marshaler.MarshalMetrics(baseMetrics)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		metrics, err := unmarshaler.UnmarshalMetrics(buf)
 		require.NoError(b, err)
 		assert.Equal(b, baseMetrics.ResourceMetrics().Len(), metrics.ResourceMetrics().Len())
@@ -108,7 +108,7 @@ func generateBenchmarkMetrics(metricsCount int) Metrics {
 	md := NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(metricsCount)
-	for i := 0; i < metricsCount; i++ {
+	for range metricsCount {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
 		idp := im.SetEmptySum().DataPoints().AppendEmpty()

@@ -25,7 +25,7 @@ func NewLogs(lcs []consumer.Logs) consumer.Logs {
 	}
 
 	lc := &logsConsumer{}
-	for i := 0; i < len(lcs); i++ {
+	for i := range lcs {
 		if lcs[i].Capabilities().MutatesData {
 			lc.mutable = append(lc.mutable, lcs[i])
 		} else {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
@@ -144,7 +145,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create concurrent goroutines that use the generator.
 	// The total number of generator calls will be equal to params.GenerateCount.
 
-	for j := 0; j < concurrency; j++ {
+	for range concurrency {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -253,9 +254,7 @@ func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVa
 // Also returns a list of any duplicate ids found.
 func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
-	for k, v := range ds {
-		union[k] = v
-	}
+	maps.Copy(union, ds)
 	for k, v := range other {
 		if _, ok := union[k]; ok {
 			duplicates = append(duplicates, k)

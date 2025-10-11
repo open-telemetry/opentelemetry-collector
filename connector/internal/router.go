@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/connector/internal"
 import (
 	"errors"
 	"fmt"
+	"maps"
 
 	"go.uber.org/multierr"
 
@@ -19,9 +20,7 @@ type BaseRouter[T any] struct {
 
 func NewBaseRouter[T any](fanout func([]T) T, cm map[pipeline.ID]T) BaseRouter[T] {
 	consumers := make(map[pipeline.ID]T, len(cm))
-	for k, v := range cm {
-		consumers[k] = v
-	}
+	maps.Copy(consumers, cm)
 	return BaseRouter[T]{fanout: fanout, Consumers: consumers}
 }
 

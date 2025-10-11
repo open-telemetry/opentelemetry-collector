@@ -238,7 +238,7 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 		return resp.StatusCode == http.StatusOK
 	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		sendTestData(t, otelPort)
 	}
 

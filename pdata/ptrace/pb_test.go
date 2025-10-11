@@ -77,8 +77,8 @@ func TestProtoSizerEmptyTraces(t *testing.T) {
 func BenchmarkTracesToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	traces := generateBenchmarkTraces(128)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		buf, err := marshaler.MarshalTraces(traces)
 		require.NoError(b, err)
 		assert.NotEmpty(b, buf)
@@ -92,9 +92,9 @@ func BenchmarkTracesFromProto(b *testing.B) {
 	buf, err := marshaler.MarshalTraces(baseTraces)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		traces, err := unmarshaler.UnmarshalTraces(buf)
 		require.NoError(b, err)
 		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
@@ -109,7 +109,7 @@ func generateBenchmarkTraces(metricsCount int) Traces {
 	md := NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(metricsCount)
-	for i := 0; i < metricsCount; i++ {
+	for range metricsCount {
 		im := ilm.Spans().AppendEmpty()
 		im.SetName("test_name")
 		im.SetStartTimestamp(startTime)

@@ -502,7 +502,7 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
 	lenCDI := len(pq.metadata.CurrentlyDispatchedItems)
-	for i := 0; i < lenCDI; i++ {
+	for i := range lenCDI {
 		if pq.metadata.CurrentlyDispatchedItems[i] == index {
 			pq.metadata.CurrentlyDispatchedItems[i] = pq.metadata.CurrentlyDispatchedItems[lenCDI-1]
 			pq.metadata.CurrentlyDispatchedItems = pq.metadata.CurrentlyDispatchedItems[:lenCDI-1]
@@ -597,7 +597,7 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	}
 
 	val := make([]uint64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		val[i] = binary.LittleEndian.Uint64(buf)
 		buf = buf[8:]
 	}

@@ -23,7 +23,7 @@ func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
 	}
 
 	mc := &metricsConsumer{}
-	for i := 0; i < len(mcs); i++ {
+	for i := range mcs {
 		if mcs[i].Capabilities().MutatesData {
 			mc.mutable = append(mc.mutable, mcs[i])
 		} else {

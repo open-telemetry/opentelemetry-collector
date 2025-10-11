@@ -337,7 +337,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -368,7 +368,7 @@ func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me exporter.Metri
 	md := testdata.GenerateMetrics(1)
 	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
 	defer span.End()
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		require.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
 	}
 }

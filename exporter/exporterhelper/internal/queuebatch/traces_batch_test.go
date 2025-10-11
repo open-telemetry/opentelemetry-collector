@@ -294,7 +294,7 @@ func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 }
 
 func TestExtractTraces(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		td := testdata.GenerateTraces(10)
 		extractedTraces, removedSize := extractTraces(td, i, &sizer.TracesCountSizer{})
 		assert.Equal(t, i, extractedTraces.SpanCount())
@@ -305,7 +305,7 @@ func TestExtractTraces(t *testing.T) {
 
 func TestMergeSplitManySmallTraces(t *testing.T) {
 	merged := []request.Request{newTracesRequest(testdata.GenerateTraces(1))}
-	for j := 0; j < 1000; j++ {
+	for range 1000 {
 		lr2 := newTracesRequest(testdata.GenerateTraces(10))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
@@ -340,9 +340,9 @@ func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(10))}
-		for j := 0; j < 1000; j++ {
+		for range 1000 {
 			lr2 := newTracesRequest(testdata.GenerateTraces(10))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -354,9 +354,9 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(0))}
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			lr2 := newTracesRequest(testdata.GenerateTraces(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -368,7 +368,7 @@ func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B
 func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	// One request splits into many batches.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(0))}
 		lr2 := newTracesRequest(testdata.GenerateTraces(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)

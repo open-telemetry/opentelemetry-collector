@@ -237,9 +237,8 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 		}
 	}()
 
-	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, q.Offer(context.Background(), int64(1)))
 	}
 	require.NoError(b, q.Shutdown(context.Background()))

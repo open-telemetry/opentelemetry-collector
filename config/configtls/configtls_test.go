@@ -921,18 +921,20 @@ func TestCurvePreferences(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		tlsSetting := ClientConfig{
-			Config: Config{
-				CurvePreferences: test.preferences,
-			},
-		}
-		config, err := tlsSetting.LoadTLSConfig(context.Background())
-		if test.expectedErr == "" {
-			require.NoError(t, err)
-			require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
-		} else {
-			require.ErrorContains(t, err, test.expectedErr)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			tlsSetting := ClientConfig{
+				Config: Config{
+					CurvePreferences: test.preferences,
+				},
+			}
+			config, err := tlsSetting.LoadTLSConfig(context.Background())
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+			} else {
+				require.ErrorContains(t, err, test.expectedErr)
+			}
+		})
 	}
 }
 

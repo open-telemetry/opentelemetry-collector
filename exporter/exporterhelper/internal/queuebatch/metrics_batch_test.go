@@ -149,27 +149,27 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 		switch metricType {
 		case pmetric.MetricTypeSum:
 			sum := m.SetEmptySum()
-			for i := 0; i < numDataPoints; i++ {
+			for i := range numDataPoints {
 				sum.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
 			}
 		case pmetric.MetricTypeGauge:
 			gauge := m.SetEmptyGauge()
-			for i := 0; i < numDataPoints; i++ {
+			for i := range numDataPoints {
 				gauge.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
 			}
 		case pmetric.MetricTypeHistogram:
 			hist := m.SetEmptyHistogram()
-			for i := uint64(0); i < uint64(numDataPoints); i++ {
+			for i := range uint64(numDataPoints) {
 				hist.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			expHist := m.SetEmptyExponentialHistogram()
-			for i := uint64(0); i < uint64(numDataPoints); i++ {
+			for i := range uint64(numDataPoints) {
 				expHist.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		case pmetric.MetricTypeSummary:
 			summary := m.SetEmptySummary()
-			for i := uint64(0); i < uint64(numDataPoints); i++ {
+			for i := range uint64(numDataPoints) {
 				summary.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		}
@@ -237,7 +237,7 @@ func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 }
 
 func TestExtractMetrics(t *testing.T) {
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		md := testdata.GenerateMetrics(10)
 		extractedMetrics, _ := extractMetrics(md, i, &sizer.MetricsCountSizer{})
 		assert.Equal(t, i, extractedMetrics.DataPointCount())
@@ -255,7 +255,7 @@ func TestExtractMetricsInvalidMetric(t *testing.T) {
 func TestMergeSplitManySmallMetrics(t *testing.T) {
 	// All requests merge into a single batch.
 	merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(1))}
-	for j := 0; j < 1000; j++ {
+	for range 1000 {
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
@@ -266,9 +266,9 @@ func TestMergeSplitManySmallMetrics(t *testing.T) {
 func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(10))}
-		for j := 0; j < 1000; j++ {
+		for range 1000 {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20020, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -280,9 +280,9 @@ func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -294,7 +294,7 @@ func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.
 func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 	// One request splits into many batches.
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)

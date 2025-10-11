@@ -50,7 +50,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 		allConsMap := make(map[pipeline.ID]xconsumer.Profiles)
 
 		// If any consumer is mutating, the router must report mutating
-		for i := 0; i < numCons; i++ {
+		for i := range numCons {
 			allIDs = append(allIDs, pipeline.NewIDWithName(xpipeline.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
@@ -68,10 +68,10 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 		// This will be validated after every call to RouteProfiles.
 		expected := make(map[pipeline.ID]int, numCons)
 
-		for i := 0; i < numProfiles; i++ {
+		for i := range numProfiles {
 			// Build a random set of ids (no duplicates)
 			randCons := make(map[pipeline.ID]bool, numIDs)
-			for j := 0; j < numIDs; j++ {
+			for j := range numIDs {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
 				randCons[allIDs[conNum]] = true

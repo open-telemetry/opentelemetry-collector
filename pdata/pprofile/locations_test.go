@@ -97,10 +97,9 @@ func BenchmarkFromLocationIndices(b *testing.B) {
 	obj := NewStack()
 	obj.LocationIndices().Append(1, 3, 7)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for range b.N {
+	for b.Loop() {
 		_ = FromLocationIndices(table, obj)
 	}
 }
@@ -167,7 +166,7 @@ func BenchmarkPutLocation(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				_ = PutLocation(table, obj, bb.location)
 			}
 		})

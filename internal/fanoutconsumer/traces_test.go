@@ -37,7 +37,7 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -73,7 +73,7 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 	assert.True(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -113,7 +113,7 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	td.MarkReadOnly()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -148,7 +148,7 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -186,7 +186,7 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -222,7 +222,7 @@ func TestTracesWhenErrors(t *testing.T) {
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	td := testdata.GenerateTraces(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		require.Error(t, tfc.ConsumeTraces(context.Background(), td))
 	}
 

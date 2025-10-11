@@ -146,10 +146,9 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 	obj := NewLocation()
 	obj.AttributeIndices().Append(1, 3, 7)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_ = FromAttributeIndices(table, obj, dic)
 	}
 }
@@ -221,7 +220,7 @@ func BenchmarkPutAttribute(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				_ = PutAttribute(table, obj, dic, bb.key, bb.value)
 			}
 		})

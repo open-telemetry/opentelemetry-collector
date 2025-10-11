@@ -253,7 +253,7 @@ type workerPool struct {
 
 func newWorkerPool(maxWorkers int) *workerPool {
 	workers := make(chan struct{}, maxWorkers)
-	for i := 0; i < maxWorkers; i++ {
+	for range maxWorkers {
 		workers <- struct{}{}
 	}
 	return &workerPool{workers: workers}
