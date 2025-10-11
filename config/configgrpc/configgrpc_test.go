@@ -163,9 +163,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with gzip compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"test": "test",
-				},
+				}),
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeGzip,
 				TLS: configtls.ClientConfig{
@@ -192,9 +192,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with snappy compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"test": "test",
-				},
+				}),
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeSnappy,
 				TLS: configtls.ClientConfig{
@@ -221,9 +221,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with zstd compression",
 			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"test": "test",
-				},
+				}),
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeZstd,
 				TLS: configtls.ClientConfig{
@@ -285,9 +285,9 @@ func TestHeaders(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"testheader": "testvalue",
-		},
+		}),
 	})
 	require.NoError(t, errResp)
 	assert.NotNil(t, resp)
@@ -434,9 +434,9 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 	settings := ClientConfig{
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"test": "test",
-		},
+		}),
 		Endpoint:    "localhost:1234",
 		Compression: "gzip",
 		TLS: configtls.ClientConfig{

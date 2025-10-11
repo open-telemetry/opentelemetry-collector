@@ -59,7 +59,7 @@ func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSe
 		clientConfig.Endpoint = endpoint
 	}
 	if headers != nil {
-		clientConfig.Headers = headers
+		clientConfig.Headers = configopaque.MapListFromMap(headers)
 	}
 	return clientConfig
 }

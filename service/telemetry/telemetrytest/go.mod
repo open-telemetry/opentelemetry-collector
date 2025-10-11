@@ -187,3 +187,5 @@ replace go.opentelemetry.io/collector/connector/connectortest => ../../../connec
 replace go.opentelemetry.io/collector/component/componenttest => ../../../component/componenttest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../../component/componentstatus
+
+replace go.opentelemetry.io/collector/internal/maplist => ../../../internal/maplist
