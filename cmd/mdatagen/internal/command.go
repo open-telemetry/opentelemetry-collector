@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -76,6 +77,15 @@ func run(ymlPath string) error {
 
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
+
+	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	if readErr != nil {
+		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
+	}
+
+	if err = validateYAMLKeyOrder(raw); err != nil {
+		return fmt.Errorf("metadata.yaml ordering check failed: %w", err)
+	}
 
 	md, err := LoadMetadata(ymlPath)
 	if err != nil {
@@ -403,4 +413,63 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) er
 	}
 
 	return formatErr
+}
+
+func validateMappingKeysSorted(root *yaml.Node, path ...string) error {
+	// unwrap doc
+	n := root
+	if n.Kind == yaml.DocumentNode && len(n.Content) > 0 {
+		n = n.Content[0]
+	}
+	// follow path
+	for _, seg := range path {
+		if n.Kind != yaml.MappingNode {
+			return nil
+		}
+		var next *yaml.Node
+		for i := 0; i < len(n.Content); i += 2 {
+			if n.Content[i].Value == seg {
+				next = n.Content[i+1]
+				break
+			}
+		}
+		if next == nil {
+			return nil
+		}
+		n = next
+	}
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	// collect keys
+	keys := make([]string, 0, len(n.Content)/2)
+	for i := 0; i < len(n.Content); i += 2 {
+		keys = append(keys, n.Content[i].Value)
+	}
+
+	if !slices.IsSorted(keys) {
+		return fmt.Errorf("%v keys are not sorted: %v", path, keys)
+	}
+	return nil
+}
+
+// ValidateYAMLKeyOrder checks the sections we care about.
+func validateYAMLKeyOrder(raw []byte) error {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(raw, &doc); err != nil {
+		return err
+	}
+	for _, p := range [][]string{
+		{"resource_attributes"},
+		{"attributes"},
+		{"metrics"},
+		{"events"},
+		{"telemetry", "metrics"},
+	} {
+		if err := validateMappingKeysSorted(&doc, p...); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -90,9 +90,9 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | deprecated |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Double |
 
 #### Attributes
 

@@ -19,15 +19,9 @@ status:
     - Any additional information that should be brought to the consumer's attention
 
 resource_attributes:
-  string.resource.attr:
-    description: Resource attribute with any string value.
-    type: string
-    enabled: true
-
-  string.enum.resource.attr:
-    description: Resource attribute with a known set of string values.
-    type: string
-    enum: [one, two]
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map
     enabled: true
 
   optional.resource.attr:
@@ -40,9 +34,15 @@ resource_attributes:
     type: slice
     enabled: true
 
-  map.resource.attr:
-    description: Resource attribute with a map value.
-    type: map
+  string.enum.resource.attr:
+    description: Resource attribute with a known set of string values.
+    type: string
+    enum: [one, two]
+    enabled: true
+
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    type: string
     enabled: true
 
   string.resource.attr_disable_warning:
@@ -67,20 +67,6 @@ resource_attributes:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
 attributes:
-  string_attr:
-    description: Attribute with any string value.
-    type: string
-
-  overridden_int_attr:
-    name_override: state
-    description: Integer attribute with overridden name.
-    type: int
-
-  enum_attr:
-    description: Attribute with a known set of string values.
-    type: string
-    enum: [red, green, blue]
-
   boolean_attr:
     description: Attribute with a boolean value.
     type: bool
@@ -91,13 +77,27 @@ attributes:
     description: Another attribute with a boolean value.
     type: bool
 
-  slice_attr:
-    description: Attribute with a slice value.
-    type: slice
+  enum_attr:
+    description: Attribute with a known set of string values.
+    type: string
+    enum: [red, green, blue]
 
   map_attr:
     description: Attribute with a map value.
     type: map
+
+  overridden_int_attr:
+    name_override: state
+    description: Integer attribute with overridden name.
+    type: int
+
+  slice_attr:
+    description: Attribute with a slice value.
+    type: slice
+
+  string_attr:
+    description: Attribute with any string value.
+    type: string
 
 metrics:
   default.metric:
@@ -109,31 +109,10 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    attributes:
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
-
-  optional.metric:
-    enabled: false
-    description: "[DEPRECATED] Gauge double metric disabled by default."
-    unit: "1"
-    gauge:
-      value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2]
-    warnings:
-      if_configured: This metric is deprecated and will be removed soon.
-
-  optional.metric.empty_unit:
-    enabled: false
-    stability:
-      level: deprecated
-    description: "[DEPRECATED] Gauge double metric disabled by default."
-    unit: ""
-    gauge:
-      value_type: double
-    attributes: [string_attr, boolean_attr]
-    warnings:
-      if_configured: This metric is deprecated and will be removed soon.
 
   default.metric.to_be_removed:
     enabled: true
@@ -158,4 +137,25 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+    attributes:
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+
+  optional.metric:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr, boolean_attr2]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.empty_unit:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.

@@ -21,15 +21,9 @@ status:
     - Any additional information that should be brought to the consumer's attention
 
 resource_attributes:
-  string.resource.attr:
-    description: Resource attribute with any string value.
-    type: string
-    enabled: true
-
-  string.enum.resource.attr:
-    description: Resource attribute with a known set of string values.
-    type: string
-    enum: [one, two]
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map
     enabled: true
 
   optional.resource.attr:
@@ -42,9 +36,15 @@ resource_attributes:
     type: slice
     enabled: true
 
-  map.resource.attr:
-    description: Resource attribute with a map value.
-    type: map
+  string.enum.resource.attr:
+    description: Resource attribute with a known set of string values.
+    type: string
+    enum: [one, two]
+    enabled: true
+
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    type: string
     enabled: true
 
   string.resource.attr_disable_warning:
