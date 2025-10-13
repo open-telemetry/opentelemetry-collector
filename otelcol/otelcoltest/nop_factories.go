@@ -16,6 +16,10 @@ import (
 
 // NopFactories returns a otelcol.Factories with all nop factories.
 func NopFactories() (otelcol.Factories, error) {
+	return nopFactories(), nil
+}
+
+func nopFactories() otelcol.Factories {
 	var factories otelcol.Factories
 
 	// MakeFactoryMap can never return an error with a single Factory
@@ -28,5 +32,5 @@ func NopFactories() (otelcol.Factories, error) {
 		func() component.Config { return struct{}{} },
 	)
 
-	return factories, nil
+	return factories
 }

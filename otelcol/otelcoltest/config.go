@@ -16,7 +16,12 @@ import (
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
+//
+// If factories.Telemetry is nil, it uses a no-op telemetry factory.
 func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
+	if factories.Telemetry == nil {
+		factories.Telemetry = nopFactories().Telemetry
+	}
 	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
