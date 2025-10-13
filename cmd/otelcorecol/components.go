@@ -21,11 +21,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func components() (otelcol.Factories, error) {
 	var err error
-	factories := otelcol.Factories{}
+	factories := otelcol.Factories{
+		Telemetry: otelconftelemetry.NewFactory(),
+	}
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		memorylimiterextension.NewFactory(),

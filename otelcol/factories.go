@@ -34,8 +34,6 @@ type Factories struct {
 	Connectors map[component.Type]connector.Factory
 
 	// Telemetry is the factory to create the telemetry providers for the service.
-	//
-	// If Telemetry is nil, otelconftelemetry will be used by default.
 	Telemetry telemetry.Factory
 
 	// ReceiverModules maps receiver types to their respective go modules.

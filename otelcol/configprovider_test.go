@@ -14,7 +14,6 @@ import (
 	yaml "go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -24,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestConfigProvider(t *testing.T) {
@@ -73,38 +71,6 @@ func TestConfigProvider(t *testing.T) {
 							Receivers:  []component.ID{nopComponentID, nopConComponentID},
 							Processors: []component.ID{nopComponentID},
 							Exporters:  []component.ID{nopComponentID},
-						},
-					},
-				},
-			},
-		},
-		"default_telemetry": {
-			filename: "otelcol-otelconftelemetry.yaml",
-			factories: func() (Factories, error) {
-				factories, err := nopFactories()
-				if err != nil {
-					return Factories{}, err
-				}
-				factories.Telemetry = nil
-				return factories, nil
-			},
-			expectedConfig: &Config{
-				Exporters: map[component.ID]component.Config{
-					nopComponentID: exportertest.NewNopFactory().CreateDefaultConfig(),
-				},
-				Receivers: map[component.ID]component.Config{
-					nopComponentID: receivertest.NewNopFactory().CreateDefaultConfig(),
-				},
-				Service: service.Config{
-					Telemetry: func() component.Config {
-						cfg := otelconftelemetry.NewFactory().CreateDefaultConfig().(*otelconftelemetry.Config)
-						cfg.Metrics.Level = configtelemetry.LevelNone
-						return cfg
-					}(),
-					Pipelines: map[pipeline.ID]*pipelines.PipelineConfig{
-						pipeline.NewID(pipeline.SignalMetrics): {
-							Receivers: []component.ID{nopComponentID},
-							Exporters: []component.ID{nopComponentID},
 						},
 					},
 				},

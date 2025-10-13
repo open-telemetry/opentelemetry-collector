@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // ConfigProvider provides the service configuration.
@@ -57,10 +56,6 @@ func (cm *ConfigProvider) Get(ctx context.Context, factories Factories) (*Config
 	conf, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
-	}
-
-	if factories.Telemetry == nil {
-		factories.Telemetry = otelconftelemetry.NewFactory()
 	}
 
 	var cfg *configSettings
