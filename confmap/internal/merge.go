@@ -68,13 +68,15 @@ func walkYAML(key, node *yaml.Node, res map[string]*MergeOptions, path []string)
 				s = strings.TrimPrefix(s, "!")
 				q, err := url.ParseQuery(s)
 				if err != nil {
-					return fmt.Errorf("failed to parse tag (%v): %w", node.Tag, err)
+					return fmt.Errorf("failed to parse tag %v at path %v: %w", node.Tag, path, err)
 				}
 				if err := validateTag(q); err != nil {
-					return fmt.Errorf("failed to validate tag (%v): %w", node.Tag, err)
+					return fmt.Errorf("failed to validate tag %v at path %v: %w", node.Tag, path, err)
 				}
 				res[strings.Join(path, "::")] = newOptions(q.Get("mode"))
-				walkYAML(nil, n, res, path)
+				if err := walkYAML(nil, n, res, path); err != nil {
+					return err
+				}
 			}
 		}
 	}
