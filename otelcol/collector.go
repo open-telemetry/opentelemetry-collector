@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // State defines Collector's state.
@@ -178,6 +179,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
+	if factories.Telemetry == nil {
+		factories.Telemetry = otelconftelemetry.NewFactory()
+	}
 
 	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
@@ -269,6 +273,9 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	factories, err := col.set.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
+	}
+	if factories.Telemetry == nil {
+		factories.Telemetry = otelconftelemetry.NewFactory()
 	}
 
 	cfg, err := col.configProvider.Get(ctx, factories)

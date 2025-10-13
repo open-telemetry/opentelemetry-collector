@@ -389,19 +389,44 @@ func TestNewCollectorValidatesResolverSettings(t *testing.T) {
 }
 
 func TestCollectorRun(t *testing.T) {
-	set := CollectorSettings{
-		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	tests := map[string]struct {
+		factories  func() (Factories, error)
+		configFile string
+	}{
+		"nop": {
+			factories:  nopFactories,
+			configFile: "otelcol-nop.yaml",
+		},
+		"defaul_telemetry_factory": {
+			factories: func() (Factories, error) {
+				factories, err := nopFactories()
+				if err != nil {
+					return Factories{}, err
+				}
+				factories.Telemetry = nil
+				return factories, nil
+			},
+			configFile: "otelcol-otelconftelemetry.yaml",
+		},
 	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
 
-	wg := startCollector(context.Background(), t, col)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			set := CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              test.factories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", test.configFile)}),
+			}
+			col, err := NewCollector(set)
+			require.NoError(t, err)
 
-	col.Shutdown()
-	wg.Wait()
-	assert.Equal(t, StateClosed, col.GetState())
+			wg := startCollector(context.Background(), t, col)
+
+			col.Shutdown()
+			wg.Wait()
+			assert.Equal(t, StateClosed, col.GetState())
+		})
+	}
 }
 
 func TestCollectorRun_AfterShutdown(t *testing.T) {
@@ -428,6 +453,15 @@ func TestCollectorRun_Errors(t *testing.T) {
 		settings    CollectorSettings
 		expectedErr string
 	}{
+		"factories_error": {
+			settings: CollectorSettings{
+				Factories: func() (Factories, error) {
+					return Factories{}, errors.New("no factories for you")
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+			},
+			expectedErr: "failed to initialize factories: no factories for you",
+		},
 		"invalid_processor": {
 			settings: CollectorSettings{
 				Factories:              nopFactories,
@@ -442,21 +476,6 @@ func TestCollectorRun_Errors(t *testing.T) {
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
-		},
-		"missing_telemetry_factory": {
-			settings: CollectorSettings{
-				BuildInfo: component.NewDefaultBuildInfo(),
-				Factories: func() (Factories, error) {
-					factories, err := nopFactories()
-					if err != nil {
-						return Factories{}, err
-					}
-					factories.Telemetry = nil
-					return factories, nil
-				},
-				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
-			},
-			expectedErr: "failed to get config: cannot unmarshal the configuration: Factories.Telemetry must not be nil",
 		},
 	}
 
@@ -480,6 +499,15 @@ func TestCollectorDryRun(t *testing.T) {
 		settings    CollectorSettings
 		expectedErr string
 	}{
+		"factories_error": {
+			settings: CollectorSettings{
+				Factories: func() (Factories, error) {
+					return Factories{}, errors.New("no factories for you")
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+			},
+			expectedErr: "failed to initialize factories: no factories for you",
+		},
 		"invalid_processor": {
 			settings: CollectorSettings{
 				BuildInfo:              component.NewDefaultBuildInfo(),
@@ -520,7 +548,7 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
 		},
-		"missing_telemetry_factory": {
+		"default_telemetry_factory": {
 			settings: CollectorSettings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Factories: func() (Factories, error) {
@@ -531,9 +559,8 @@ func TestCollectorDryRun(t *testing.T) {
 					factories.Telemetry = nil
 					return factories, nil
 				},
-				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
 			},
-			expectedErr: "failed to get config: cannot unmarshal the configuration: Factories.Telemetry must not be nil",
 		},
 	}
 
