@@ -306,10 +306,6 @@ func generateConfig() *Config {
 	}
 }
 
-func newPtr[T int | string](str T) *T {
-	return &str
-}
-
 type fakeTelemetryConfig struct {
 	Invalid bool `mapstructure:"invalid"`
 }
