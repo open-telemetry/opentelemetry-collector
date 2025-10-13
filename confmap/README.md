@@ -103,15 +103,19 @@ This lets you combine slices from multiple configuration sources, with control o
 Annotate any list in your YAML config with a custom tag (URI-style parameters) to specify how it should be merged.
 
 **Tag format:**  
-`!mode=append&duplicates=false`
+`!mode=append`
+- This tag should be placed immediately before a list. It signals how the list should be treated during a merge operation.
 
 **Options:**
-- `mode`: `append` (default)
-- `duplicates`: `true` or `false` (default: `false`)
-  - Setting this to `true` allows duplicate entries in the final list.
+- `mode`: `append`
+  - As of now, we only support `append` mode for annotated lists. 
+  - This mode adds annotated list’s items to the end of the existing list instead of replacing it.
 
 > [!WARNING]
-> Specifying incorrect values in YAML tags will result in fallback to the default behavior.
+> Specifying incorrect values in YAML tags will result in a runtime failure.
+
+> [!NOTE]
+> If duplicate values are encountered during the merging process, only the first occurrence is kept.
 
 #### Default Behavior (Override)
 
