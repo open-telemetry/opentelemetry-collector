@@ -81,7 +81,7 @@ func GenerateMetrics(count int) pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	ms.EnsureCapacity(count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 7 {
 		case 0:
 			initGaugeIntMetric(ms.AppendEmpty())

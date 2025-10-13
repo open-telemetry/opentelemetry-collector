@@ -17,7 +17,7 @@ func GenerateLogs(count int) plog.Logs {
 	initResource(ld.ResourceLogs().AppendEmpty().Resource())
 	logs := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords()
 	logs.EnsureCapacity(count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 2 {
 		case 0:
 			fillLogOne(logs.AppendEmpty())

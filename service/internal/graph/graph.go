@@ -460,7 +460,7 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	// that each component has a chance to drain to its consumer
 	// before the consumer is stopped.
 	var errs error
-	for i := 0; i < len(nodes); i++ {
+	for i := range nodes {
 		node := nodes[i]
 		comp, ok := node.(component.Component)
 
