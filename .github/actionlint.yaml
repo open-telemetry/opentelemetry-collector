@@ -1,8 +1,5 @@
 self-hosted-runner:
-  labels:
-    # Actionlint doesn't include yet windows-11-arm as a known runner, adding it
-    # manually, see https://github.com/rhysd/actionlint/issues/533.
-    - windows-11-arm
+  labels: []
 
 config-variables: null
 
