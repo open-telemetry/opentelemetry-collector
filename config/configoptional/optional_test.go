@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type Config[T any] struct {
@@ -362,6 +363,29 @@ func TestUnmarshalOptional(t *testing.T) {
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies
 		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := test.defaultCfg
+			conf := confmap.NewFromStringMap(test.config)
+			require.NoError(t, conf.Unmarshal(&cfg))
+			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
+			if test.expectedSub {
+				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
+			}
+		})
+	}
+}
+
+func TestAddFieldEnabledFeatureGate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		defaultCfg  Config[Sub]
+		expectedSub bool
+		expectedFoo string
+	}{
 		{
 			name: "none_with_enabled_true",
 			config: map[string]any{
@@ -487,6 +511,10 @@ func TestUnmarshalOptional(t *testing.T) {
 		},
 	}
 
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true)
+	defer func() { featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal) }()
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
@@ -501,6 +529,10 @@ func TestUnmarshalOptional(t *testing.T) {
 }
 
 func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true)
+	defer func() { featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal) }()
+
 	cm := confmap.NewFromStringMap(map[string]any{
 		"sub": map[string]any{
 			"enabled": "something",
