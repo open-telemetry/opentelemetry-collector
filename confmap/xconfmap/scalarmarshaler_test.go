@@ -103,15 +103,15 @@ func (wt *wrapperType[T]) ScalarType() any {
 
 type testConfig struct {
 	// Handled by confmap, treated as string
-	Tma         textMarshalerAlias                            `mapstructure:"tma"`
-	Ntma        nonTextMarshalerAlias                         `mapstructure:"ntma"`
+	Tma         textMarshalerAlias                            `mapstructure:"text_marshaler_alias"`
+	Ntma        nonTextMarshalerAlias                         `mapstructure:"non_text_marshaler_alias"`
 	Nonimplint  NonImplWrapperType[int]                       `mapstructure:"non_impl_int"`
 	Nonimplstr  NonImplWrapperType[string]                    `mapstructure:"non_impl_str"`
 	Nonimpltms  NonImplWrapperType[textMarshalerStruct]       `mapstructure:"non_impl_text_marshaler_struct"`
 	Nonimplntms NonImplWrapperType[nonTextMarshalerStruct]    `mapstructure:"non_impl_non_text_marshaler_struct"`
 	Implint     wrapperType[int]                              `mapstructure:"impl_int"`
 	Implstr     wrapperType[string]                           `mapstructure:"impl_str"`
-	Impltms     wrapperType[textMarshalerStruct]              `mapstructure:"impl_tms"`
+	Impltms     wrapperType[textMarshalerStruct]              `mapstructure:"impl_text_marshaler_struct"`
 	Implntms    wrapperType[nonTextMarshalerStruct]           `mapstructure:"impl_non_text_marshaler_struct"`
 	Recursive   wrapperType[wrapperType[textMarshalerStruct]] `mapstructure:"recursive"`
 }

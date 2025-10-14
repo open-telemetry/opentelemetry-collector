@@ -1,11 +1,11 @@
 impl_int: 1
 impl_non_text_marshaler_struct: {}
 impl_str: test
-impl_tms: P
+impl_text_marshaler_struct: P
 non_impl_int: {}
 non_impl_non_text_marshaler_struct: {}
 non_impl_str: {}
 non_impl_text_marshaler_struct: {}
-ntma: test
-tma: test
+non_text_marshaler_alias: test
+text_marshaler_alias: test
 recursive: P
