@@ -15,14 +15,16 @@ import (
 type asyncQueue[T any] struct {
 	readableQueue[T]
 	numConsumers int
+	refCounter   ReferenceCounter[T]
 	consumeFunc  ConsumeFunc[T]
 	stopWG       sync.WaitGroup
 }
 
-func newAsyncQueue[T any](q readableQueue[T], numConsumers int, consumeFunc ConsumeFunc[T]) Queue[T] {
+func newAsyncQueue[T any](q readableQueue[T], numConsumers int, consumeFunc ConsumeFunc[T], refCounter ReferenceCounter[T]) Queue[T] {
 	return &asyncQueue[T]{
 		readableQueue: q,
 		numConsumers:  numConsumers,
+		refCounter:    refCounter,
 		consumeFunc:   consumeFunc,
 	}
 }
@@ -36,7 +38,7 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 	for i := 0; i < qc.numConsumers; i++ {
 		qc.stopWG.Add(1)
 		startWG.Add(1)
-		go func() {
+		go func() { //nolint:contextcheck
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
@@ -45,6 +47,9 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 					return
 				}
 				qc.consumeFunc(ctx, req, done)
+				if qc.refCounter != nil {
+					qc.refCounter.Unref(req)
+				}
 			}
 		}()
 	}

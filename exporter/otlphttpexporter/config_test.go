@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -57,6 +58,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
+				Batch: configoptional.Default(exporterhelper.BatchConfig{
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					FlushTimeout: 200 * time.Millisecond,
+					MinSize:      8192,
+				}),
 			},
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
@@ -82,7 +88,9 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 				MaxConnsPerHost:     defaultMaxConnsPerHost,
 				IdleConnTimeout:     defaultIdleConnTimeout,
+				ForceAttemptHTTP2:   true,
 			},
+			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
 		}, cfg)
 }
 
@@ -135,6 +143,70 @@ func TestUnmarshalEncoding(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, encoding)
+			}
+		})
+	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "no endpoints specified",
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "main endpoint specified",
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "http://localhost:4318",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "only traces endpoint specified",
+			cfg: &Config{
+				ClientConfig:   confighttp.ClientConfig{},
+				TracesEndpoint: "http://localhost:4318/v1/traces",
+			},
+			wantErr: false,
+		},
+		{
+			name: "only profiles endpoint specified",
+			cfg: &Config{
+				ClientConfig:     confighttp.ClientConfig{},
+				ProfilesEndpoint: "http://localhost:4318/v1development/profiles",
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple endpoints specified",
+			cfg: &Config{
+				ClientConfig:     confighttp.ClientConfig{},
+				TracesEndpoint:   "http://localhost:4318/v1/traces",
+				MetricsEndpoint:  "http://localhost:4318/v1/metrics",
+				LogsEndpoint:     "http://localhost:4318/v1/logs",
+				ProfilesEndpoint: "http://localhost:4318/v1development/profiles",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "at least one endpoint must be specified")
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

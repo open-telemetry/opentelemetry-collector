@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
+	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -25,12 +23,13 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState))
+		ms.MoveTo(newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -42,26 +41,11 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState))
+		ms.CopyTo(newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState))
 	})
-}
-
-func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExportPartialSuccess()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewExportPartialSuccess()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
@@ -69,30 +53,26 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedProfiles())
 	ms.SetRejectedProfiles(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedProfiles())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState).SetRejectedProfiles(int64(13))
+		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetRejectedProfiles(int64(13))
 	})
 }
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
-	sharedState := internal.StateReadOnly
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	tv := NewExportPartialSuccess()
-	fillTestExportPartialSuccess(tv)
-	return tv
-}
-
-func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedProfiles = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	ms := newExportPartialSuccess(internal.GenTestOrigExportProfilesPartialSuccess(), internal.NewState())
+	return ms
 }

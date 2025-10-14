@@ -3,8 +3,11 @@
 
 package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
+<<<<<<< HEAD
 import "github.com/go-viper/mapstructure/v2"
 
+=======
+>>>>>>> upstream/main
 type UnmarshalOption interface {
 	apply(*UnmarshalOptions)
 }
@@ -12,8 +15,12 @@ type UnmarshalOption interface {
 // UnmarshalOptions is used by (*Conf).Unmarshal to toggle unmarshaling settings.
 // It is in the `internal` package so experimental options can be added in xconfmap.
 type UnmarshalOptions struct {
+<<<<<<< HEAD
 	IgnoreUnused              bool
 	AdditionalDecodeHookFuncs []mapstructure.DecodeHookFunc
+=======
+	IgnoreUnused bool
+>>>>>>> upstream/main
 }
 
 type UnmarshalOptionFunc func(*UnmarshalOptions)
@@ -21,6 +28,7 @@ type UnmarshalOptionFunc func(*UnmarshalOptions)
 func (fn UnmarshalOptionFunc) apply(set *UnmarshalOptions) {
 	fn(set)
 }
+<<<<<<< HEAD
 
 // Apply Option simply calls (UnmarshalOption).apply. This function allows us
 // to keep the `apply“ function private and therefore keep `confmap.UnmarshalOption`
@@ -28,3 +36,5 @@ func (fn UnmarshalOptionFunc) apply(set *UnmarshalOptions) {
 func ApplyUnmarshalOption(uo UnmarshalOption, set *UnmarshalOptions) {
 	uo.apply(set)
 }
+=======
+>>>>>>> upstream/main

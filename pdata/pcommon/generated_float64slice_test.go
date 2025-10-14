@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestNewFloat64Slice(t *testing.T) {
@@ -52,8 +50,9 @@ func TestNewFloat64Slice(t *testing.T) {
 
 func TestFloat64SliceReadOnly(t *testing.T) {
 	raw := []float64{1.1, 2.2, 3.3}
-	state := internal.StateReadOnly
-	ms := Float64Slice(internal.NewFloat64Slice(&raw, &state))
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	ms := Float64Slice(internal.NewFloat64Slice(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.InDelta(t, float64(1.1), ms.At(0), 0.01)
@@ -129,22 +128,6 @@ func TestFloat64SliceEqual(t *testing.T) {
 
 	ms2.Append(1.1, 2.2, 3.3)
 	assert.True(t, ms.Equal(ms2))
-}
-
-func TestFloat64Slice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := NewFloat64Slice()
-	internal.FillTestFloat64Slice(internal.Float64Slice(src))
-	internal.MarshalJSONStreamFloat64Slice(internal.Float64Slice(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewFloat64Slice()
-	internal.UnmarshalJSONIterFloat64Slice(internal.Float64Slice(dest), iter)
-
-	assert.Equal(t, src, dest)
 }
 
 func BenchmarkFloat64SliceEqual(b *testing.B) {

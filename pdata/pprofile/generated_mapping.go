@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newMapping(orig *otlpprofiles.Mapping, state *internal.State) Mapping {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMapping() Mapping {
-	state := internal.StateMutable
-	return newMapping(&otlpprofiles.Mapping{}, &state)
+	return newMapping(internal.NewOrigMapping(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,8 +45,8 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Mapping{}
+	internal.DeleteOrigMapping(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MemoryStart returns the memorystart associated with this Mapping.
@@ -100,106 +98,8 @@ func (ms Mapping) AttributeIndices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
 }
 
-// HasFunctions returns the hasfunctions associated with this Mapping.
-func (ms Mapping) HasFunctions() bool {
-	return ms.orig.HasFunctions
-}
-
-// SetHasFunctions replaces the hasfunctions associated with this Mapping.
-func (ms Mapping) SetHasFunctions(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasFunctions = v
-}
-
-// HasFilenames returns the hasfilenames associated with this Mapping.
-func (ms Mapping) HasFilenames() bool {
-	return ms.orig.HasFilenames
-}
-
-// SetHasFilenames replaces the hasfilenames associated with this Mapping.
-func (ms Mapping) SetHasFilenames(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasFilenames = v
-}
-
-// HasLineNumbers returns the haslinenumbers associated with this Mapping.
-func (ms Mapping) HasLineNumbers() bool {
-	return ms.orig.HasLineNumbers
-}
-
-// SetHasLineNumbers replaces the haslinenumbers associated with this Mapping.
-func (ms Mapping) SetHasLineNumbers(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasLineNumbers = v
-}
-
-// HasInlineFrames returns the hasinlineframes associated with this Mapping.
-func (ms Mapping) HasInlineFrames() bool {
-	return ms.orig.HasInlineFrames
-}
-
-// SetHasInlineFrames replaces the hasinlineframes associated with this Mapping.
-func (ms Mapping) SetHasInlineFrames(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.HasInlineFrames = v
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	copyOrigMapping(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Mapping) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.MemoryStart != uint64(0) {
-		dest.WriteObjectField("memoryStart")
-		dest.WriteUint64(ms.orig.MemoryStart)
-	}
-	if ms.orig.MemoryLimit != uint64(0) {
-		dest.WriteObjectField("memoryLimit")
-		dest.WriteUint64(ms.orig.MemoryLimit)
-	}
-	if ms.orig.FileOffset != uint64(0) {
-		dest.WriteObjectField("fileOffset")
-		dest.WriteUint64(ms.orig.FileOffset)
-	}
-	if ms.orig.FilenameStrindex != int32(0) {
-		dest.WriteObjectField("filenameStrindex")
-		dest.WriteInt32(ms.orig.FilenameStrindex)
-	}
-	if len(ms.orig.AttributeIndices) > 0 {
-		dest.WriteObjectField("attributeIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
-	}
-	if ms.orig.HasFunctions != false {
-		dest.WriteObjectField("hasFunctions")
-		dest.WriteBool(ms.orig.HasFunctions)
-	}
-	if ms.orig.HasFilenames != false {
-		dest.WriteObjectField("hasFilenames")
-		dest.WriteBool(ms.orig.HasFilenames)
-	}
-	if ms.orig.HasLineNumbers != false {
-		dest.WriteObjectField("hasLineNumbers")
-		dest.WriteBool(ms.orig.HasLineNumbers)
-	}
-	if ms.orig.HasInlineFrames != false {
-		dest.WriteObjectField("hasInlineFrames")
-		dest.WriteBool(ms.orig.HasInlineFrames)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigMapping(dest, src *otlpprofiles.Mapping) {
-	dest.MemoryStart = src.MemoryStart
-	dest.MemoryLimit = src.MemoryLimit
-	dest.FileOffset = src.FileOffset
-	dest.FilenameStrindex = src.FilenameStrindex
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	dest.HasFunctions = src.HasFunctions
-	dest.HasFilenames = src.HasFilenames
-	dest.HasLineNumbers = src.HasLineNumbers
-	dest.HasInlineFrames = src.HasInlineFrames
+	internal.CopyOrigMapping(dest.orig, ms.orig)
 }

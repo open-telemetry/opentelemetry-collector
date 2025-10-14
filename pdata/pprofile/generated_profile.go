@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -35,8 +34,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	state := internal.StateMutable
-	return newProfile(&otlpprofiles.Profile{}, &state)
+	return newProfile(internal.NewOrigProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -48,13 +46,13 @@ func (ms Profile) MoveTo(dest Profile) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Profile{}
+	internal.DeleteOrigProfile(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
-// SampleType returns the SampleType associated with this Profile.
-func (ms Profile) SampleType() ValueTypeSlice {
-	return newValueTypeSlice(&ms.orig.SampleType, ms.state)
+// SampleType returns the sampletype associated with this Profile.
+func (ms Profile) SampleType() ValueType {
+	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
 // Sample returns the Sample associated with this Profile.
@@ -62,31 +60,26 @@ func (ms Profile) Sample() SampleSlice {
 	return newSampleSlice(&ms.orig.Sample, ms.state)
 }
 
-// LocationIndices returns the LocationIndices associated with this Profile.
-func (ms Profile) LocationIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state))
-}
-
 // Time returns the time associated with this Profile.
 func (ms Profile) Time() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeNanos)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTime replaces the time associated with this Profile.
 func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
-	ms.orig.TimeNanos = int64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Duration returns the duration associated with this Profile.
 func (ms Profile) Duration() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.DurationNanos)
+	return pcommon.Timestamp(ms.orig.DurationNano)
 }
 
 // SetDuration replaces the duration associated with this Profile.
 func (ms Profile) SetDuration(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
-	ms.orig.DurationNanos = int64(v)
+	ms.orig.DurationNano = uint64(v)
 }
 
 // PeriodType returns the periodtype associated with this Profile.
@@ -108,17 +101,6 @@ func (ms Profile) SetPeriod(v int64) {
 // CommentStrindices returns the CommentStrindices associated with this Profile.
 func (ms Profile) CommentStrindices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
-}
-
-// DefaultSampleTypeIndex returns the defaultsampletypeindex associated with this Profile.
-func (ms Profile) DefaultSampleTypeIndex() int32 {
-	return ms.orig.DefaultSampleTypeIndex
-}
-
-// SetDefaultSampleTypeIndex replaces the defaultsampletypeindex associated with this Profile.
-func (ms Profile) SetDefaultSampleTypeIndex(v int32) {
-	ms.state.AssertMutable()
-	ms.orig.DefaultSampleTypeIndex = v
 }
 
 // ProfileID returns the profileid associated with this Profile.
@@ -167,82 +149,5 @@ func (ms Profile) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	copyOrigProfile(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Profile) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(ms.orig.SampleType) > 0 {
-		dest.WriteObjectField("sampleType")
-		ms.SampleType().marshalJSONStream(dest)
-	}
-	if len(ms.orig.Sample) > 0 {
-		dest.WriteObjectField("sample")
-		ms.Sample().marshalJSONStream(dest)
-	}
-	if len(ms.orig.LocationIndices) > 0 {
-		dest.WriteObjectField("locationIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state), dest)
-	}
-	if ms.orig.TimeNanos != 0 {
-		dest.WriteObjectField("timeNanos")
-		dest.WriteInt64(ms.orig.TimeNanos)
-	}
-	if ms.orig.DurationNanos != 0 {
-		dest.WriteObjectField("durationNanos")
-		dest.WriteInt64(ms.orig.DurationNanos)
-	}
-	dest.WriteObjectField("periodType")
-	ms.PeriodType().marshalJSONStream(dest)
-	if ms.orig.Period != int64(0) {
-		dest.WriteObjectField("period")
-		dest.WriteInt64(ms.orig.Period)
-	}
-	if len(ms.orig.CommentStrindices) > 0 {
-		dest.WriteObjectField("commentStrindices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state), dest)
-	}
-	if ms.orig.DefaultSampleTypeIndex != int32(0) {
-		dest.WriteObjectField("defaultSampleTypeIndex")
-		dest.WriteInt32(ms.orig.DefaultSampleTypeIndex)
-	}
-	if ms.orig.ProfileId != data.ProfileID([16]byte{}) {
-		dest.WriteObjectField("profileId")
-		ms.ProfileID().marshalJSONStream(dest)
-	}
-	if ms.orig.DroppedAttributesCount != uint32(0) {
-		dest.WriteObjectField("droppedAttributesCount")
-		dest.WriteUint32(ms.orig.DroppedAttributesCount)
-	}
-	if ms.orig.OriginalPayloadFormat != "" {
-		dest.WriteObjectField("originalPayloadFormat")
-		dest.WriteString(ms.orig.OriginalPayloadFormat)
-	}
-	if len(ms.orig.OriginalPayload) > 0 {
-		dest.WriteObjectField("originalPayload")
-		internal.MarshalJSONStreamByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state), dest)
-	}
-	if len(ms.orig.AttributeIndices) > 0 {
-		dest.WriteObjectField("attributeIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigProfile(dest, src *otlpprofiles.Profile) {
-	dest.SampleType = copyOrigValueTypeSlice(dest.SampleType, src.SampleType)
-	dest.Sample = copyOrigSampleSlice(dest.Sample, src.Sample)
-	dest.LocationIndices = internal.CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
-	dest.TimeNanos = src.TimeNanos
-	dest.DurationNanos = src.DurationNanos
-	copyOrigValueType(&dest.PeriodType, &src.PeriodType)
-	dest.Period = src.Period
-	dest.CommentStrindices = internal.CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
-	dest.DefaultSampleTypeIndex = src.DefaultSampleTypeIndex
-	dest.ProfileId = src.ProfileId
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
-	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	internal.CopyOrigProfile(dest.orig, ms.orig)
 }

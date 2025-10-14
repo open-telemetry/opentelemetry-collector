@@ -152,7 +152,7 @@ func ExampleSpan_Links() {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
-	span.SetName("batch-processor")
+	span.SetName("memlimit-processor")
 	span.SetKind(ptrace.SpanKindInternal)
 
 	// Add links to other spans

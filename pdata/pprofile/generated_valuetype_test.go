@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestValueType_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestValueType_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestValueType(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestValueType(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newValueType(&otlpprofiles.ValueType{}, &sharedState)) })
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewOrigValueType(), sharedState)) })
+	assert.Panics(t, func() { newValueType(internal.NewOrigValueType(), sharedState).MoveTo(dest) })
 }
 
 func TestValueType_CopyTo(t *testing.T) {
@@ -38,42 +37,29 @@ func TestValueType_CopyTo(t *testing.T) {
 	orig = generateTestValueType()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newValueType(&otlpprofiles.ValueType{}, &sharedState)) })
-}
-
-func TestValueType_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestValueType()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewValueType()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewOrigValueType(), sharedState)) })
 }
 
 func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.TypeStrindex())
-	ms.SetTypeStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.TypeStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(1)) })
+	ms.SetTypeStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.TypeStrindex())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetTypeStrindex(int32(13)) })
 }
 
 func TestValueType_UnitStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.UnitStrindex())
-	ms.SetUnitStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.UnitStrindex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(1)) })
+	ms.SetUnitStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.UnitStrindex())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func TestValueType_AggregationTemporality(t *testing.T) {
@@ -85,13 +71,6 @@ func TestValueType_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestValueType() ValueType {
-	tv := NewValueType()
-	fillTestValueType(tv)
-	return tv
-}
-
-func fillTestValueType(tv ValueType) {
-	tv.orig.TypeStrindex = int32(1)
-	tv.orig.UnitStrindex = int32(1)
-	tv.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+	ms := newValueType(internal.GenTestOrigValueType(), internal.NewState())
+	return ms
 }

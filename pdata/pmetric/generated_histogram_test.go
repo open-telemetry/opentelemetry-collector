@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestHistogram_MoveTo(t *testing.T) {
@@ -25,9 +23,10 @@ func TestHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogram(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestHistogram(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
-	assert.Panics(t, func() { newHistogram(&otlpmetrics.Histogram{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
+	assert.Panics(t, func() { newHistogram(internal.NewOrigHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -38,24 +37,16 @@ func TestHistogram_CopyTo(t *testing.T) {
 	orig = generateTestHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
 }
 
-func TestHistogram_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestHistogram()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewHistogram()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+func TestHistogram_DataPoints(t *testing.T) {
+	ms := NewHistogram()
+	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
+	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
@@ -66,20 +57,7 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestHistogram_DataPoints(t *testing.T) {
-	ms := NewHistogram()
-	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	fillTestHistogramDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestHistogram() Histogram {
-	tv := NewHistogram()
-	fillTestHistogram(tv)
-	return tv
-}
-
-func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := newHistogram(internal.GenTestOrigHistogram(), internal.NewState())
+	return ms
 }

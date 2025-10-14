@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // State defines Collector's state.
@@ -53,6 +55,8 @@ func (s State) String() string {
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
 	// Factories service factories.
+	// TODO(13263) This is a dangerous "bare" function value, should define an interface
+	// following style guidelines.
 	Factories func() (Factories, error)
 
 	// BuildInfo provides collector start information.
@@ -105,6 +109,8 @@ type Collector struct {
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
+	shutdownOnce sync.Once
+
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
@@ -150,14 +156,9 @@ func (col *Collector) GetState() State {
 
 // Shutdown shuts down the collector server.
 func (col *Collector) Shutdown() {
-	// Only shutdown if we're in a Running or Starting State else noop
-	state := col.GetState()
-	if state == StateRunning || state == StateStarting {
-		defer func() {
-			_ = recover()
-		}()
+	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
-	}
+	})
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -218,6 +219,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+
+		// TODO: inject the telemetry factory through factories.
+		// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+		TelemetryFactory: otelconftelemetry.NewFactory(),
 	}, cfg.Service)
 	if err != nil {
 		return err
@@ -236,7 +241,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		grpclog.SetLogger(col.service.Logger(), cfg.Service.Telemetry.Logs.Level)
+		grpclog.SetLogger(col.service.Logger())
 	}
 
 	if err = col.service.Start(ctx); err != nil {
@@ -368,7 +373,7 @@ LOOP:
 		case <-ctx.Done():
 			col.service.Logger().Info("Context done, terminating process", zap.Error(ctx.Err()))
 			// Call shutdown with background context as the passed in context has been canceled
-			return col.shutdown(context.Background())
+			return col.shutdown(context.Background()) //nolint:contextcheck
 		}
 	}
 	return col.shutdown(ctx)

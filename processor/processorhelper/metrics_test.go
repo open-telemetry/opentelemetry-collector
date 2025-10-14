@@ -90,11 +90,11 @@ func TestMetricsConcurrency(t *testing.T) {
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 10000; j++ {
+			for range 10000 {
 				assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
 			}
 		}()
@@ -179,4 +179,33 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestMetrics_ProcessInternalDuration(t *testing.T) {
+	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		return md, nil
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+
+	tel := componenttest.NewTelemetry()
+	mp, err := NewMetrics(context.Background(), newSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+	assert.NoError(t, mp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorInternalDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }

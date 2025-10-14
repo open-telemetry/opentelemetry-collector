@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestLogRecordSlice(t *testing.T) {
 	es := NewLogRecordSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, &state)
+	es = newLogRecordSlice(&[]*otlplogs.LogRecord{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLogRecord()
 	testVal := generateTestLogRecord()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLogRecord(el)
+		(*es.orig)[i] = internal.GenTestOrigLogRecord()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestLogRecordSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLogRecordSlice(&[]*otlplogs.LogRecord{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,16 +49,10 @@ func TestLogRecordSliceReadOnly(t *testing.T) {
 
 func TestLogRecordSlice_CopyTo(t *testing.T) {
 	dest := NewLogRecordSlice()
-	// Test CopyTo to empty
-	NewLogRecordSlice().CopyTo(dest)
-	assert.Equal(t, NewLogRecordSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestLogRecordSlice().CopyTo(dest)
+	src := generateTestLogRecordSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestLogRecordSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
 
@@ -127,9 +119,17 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestLogRecordSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLogRecordSlice()
+	got.RemoveIf(func(el LogRecord) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestLogRecordSliceAll(t *testing.T) {
@@ -142,22 +142,6 @@ func TestLogRecordSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestLogRecordSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLogRecordSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewLogRecordSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestLogRecordSlice_Sort(t *testing.T) {
@@ -177,15 +161,7 @@ func TestLogRecordSlice_Sort(t *testing.T) {
 }
 
 func generateTestLogRecordSlice() LogRecordSlice {
-	es := NewLogRecordSlice()
-	fillTestLogRecordSlice(es)
-	return es
-}
-
-func fillTestLogRecordSlice(es LogRecordSlice) {
-	*es.orig = make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.LogRecord{}
-		fillTestLogRecord(newLogRecord((*es.orig)[i], es.state))
-	}
+	ms := NewLogRecordSlice()
+	*ms.orig = internal.GenerateOrigTestLogRecordSlice()
+	return ms
 }

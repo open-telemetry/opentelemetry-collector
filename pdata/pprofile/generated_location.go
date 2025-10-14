@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newLocation(orig *otlpprofiles.Location, state *internal.State) Location {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLocation() Location {
-	state := internal.StateMutable
-	return newLocation(&otlpprofiles.Location{}, &state)
+	return newLocation(internal.NewOrigLocation(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,31 +45,19 @@ func (ms Location) MoveTo(dest Location) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Location{}
+	internal.DeleteOrigLocation(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingIndex returns the mappingindex associated with this Location.
 func (ms Location) MappingIndex() int32 {
-	return ms.orig.GetMappingIndex()
-}
-
-// HasMappingIndex returns true if the Location contains a
-// MappingIndex value, false otherwise.
-func (ms Location) HasMappingIndex() bool {
-	return ms.orig.MappingIndex_ != nil
+	return ms.orig.MappingIndex
 }
 
 // SetMappingIndex replaces the mappingindex associated with this Location.
 func (ms Location) SetMappingIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: v}
-}
-
-// RemoveMappingIndex removes the mappingindex associated with this Location.
-func (ms Location) RemoveMappingIndex() {
-	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = nil
+	ms.orig.MappingIndex = v
 }
 
 // Address returns the address associated with this Location.
@@ -90,17 +76,6 @@ func (ms Location) Line() LineSlice {
 	return newLineSlice(&ms.orig.Line, ms.state)
 }
 
-// IsFolded returns the isfolded associated with this Location.
-func (ms Location) IsFolded() bool {
-	return ms.orig.IsFolded
-}
-
-// SetIsFolded replaces the isfolded associated with this Location.
-func (ms Location) SetIsFolded(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.IsFolded = v
-}
-
 // AttributeIndices returns the AttributeIndices associated with this Location.
 func (ms Location) AttributeIndices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
@@ -109,48 +84,5 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	copyOrigLocation(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Location) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.HasMappingIndex() {
-		dest.WriteObjectField("mappingIndex")
-		dest.WriteInt32(ms.MappingIndex())
-	}
-	if ms.orig.Address != uint64(0) {
-		dest.WriteObjectField("address")
-		dest.WriteUint64(ms.orig.Address)
-	}
-	if len(ms.orig.Line) > 0 {
-		dest.WriteObjectField("line")
-		ms.Line().marshalJSONStream(dest)
-	}
-	if ms.orig.IsFolded != false {
-		dest.WriteObjectField("isFolded")
-		dest.WriteBool(ms.orig.IsFolded)
-	}
-	if len(ms.orig.AttributeIndices) > 0 {
-		dest.WriteObjectField("attributeIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigLocation(dest, src *otlpprofiles.Location) {
-	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
-		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
-		if !ok {
-			destMappingIndex = &otlpprofiles.Location_MappingIndex{}
-			dest.MappingIndex_ = destMappingIndex
-		}
-		destMappingIndex.MappingIndex = srcMappingIndex.MappingIndex
-	} else {
-		dest.MappingIndex_ = nil
-	}
-	dest.Address = src.Address
-	dest.Line = copyOrigLineSlice(dest.Line, src.Line)
-	dest.IsFolded = src.IsFolded
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	internal.CopyOrigLocation(dest.orig, ms.orig)
 }

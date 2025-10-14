@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestValueTypeSlice(t *testing.T) {
 	es := NewValueTypeSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &state)
+	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueType()
 	testVal := generateTestValueType()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestValueType(el)
+		(*es.orig)[i] = internal.GenTestOrigValueType()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestValueTypeSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,16 +49,10 @@ func TestValueTypeSliceReadOnly(t *testing.T) {
 
 func TestValueTypeSlice_CopyTo(t *testing.T) {
 	dest := NewValueTypeSlice()
-	// Test CopyTo to empty
-	NewValueTypeSlice().CopyTo(dest)
-	assert.Equal(t, NewValueTypeSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestValueTypeSlice().CopyTo(dest)
+	src := generateTestValueTypeSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestValueTypeSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
 }
 
@@ -127,9 +119,17 @@ func TestValueTypeSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el ValueType) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestValueTypeSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestValueTypeSlice()
+	got.RemoveIf(func(el ValueType) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestValueTypeSliceAll(t *testing.T) {
@@ -142,22 +142,6 @@ func TestValueTypeSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestValueTypeSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestValueTypeSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewValueTypeSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestValueTypeSlice_Sort(t *testing.T) {
@@ -177,15 +161,7 @@ func TestValueTypeSlice_Sort(t *testing.T) {
 }
 
 func generateTestValueTypeSlice() ValueTypeSlice {
-	es := NewValueTypeSlice()
-	fillTestValueTypeSlice(es)
-	return es
-}
-
-func fillTestValueTypeSlice(es ValueTypeSlice) {
-	*es.orig = make([]*otlpprofiles.ValueType, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.ValueType{}
-		fillTestValueType(newValueType((*es.orig)[i], es.state))
-	}
+	ms := NewValueTypeSlice()
+	*ms.orig = internal.GenerateOrigTestValueTypeSlice()
+	return ms
 }

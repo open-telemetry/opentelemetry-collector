@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
@@ -25,12 +23,13 @@ func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantile(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantile(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState))
+		ms.MoveTo(newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).MoveTo(dest)
+		newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -42,57 +41,38 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	orig = generateTestSummaryDataPointValueAtQuantile()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState))
+		ms.CopyTo(newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState))
 	})
-}
-
-func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSummaryDataPointValueAtQuantile()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSummaryDataPointValueAtQuantile()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
-	assert.InDelta(t, float64(0.0), ms.Quantile(), 0.01)
-	ms.SetQuantile(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.Quantile(), 0.01)
-	sharedState := internal.StateReadOnly
+	assert.InDelta(t, float64(0), ms.Quantile(), 0.01)
+	ms.SetQuantile(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.Quantile(), 0.01)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetQuantile(float64(17.13))
+		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState).SetQuantile(float64(3.1415926))
 	})
 }
 
 func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
-	assert.InDelta(t, float64(0.0), ms.Value(), 0.01)
-	ms.SetValue(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.Value(), 0.01)
-	sharedState := internal.StateReadOnly
+	assert.InDelta(t, float64(0), ms.Value(), 0.01)
+	ms.SetValue(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.Value(), 0.01)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetValue(float64(17.13))
+		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState).SetValue(float64(3.1415926))
 	})
 }
 
 func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(17.13)
-	tv.orig.Value = float64(17.13)
+	ms := newSummaryDataPointValueAtQuantile(internal.GenTestOrigSummaryDataPoint_ValueAtQuantile(), internal.NewState())
+	return ms
 }

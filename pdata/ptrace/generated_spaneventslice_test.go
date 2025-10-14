@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanEventSlice(t *testing.T) {
 	es := NewSpanEventSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, &state)
+	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpanEvent()
 	testVal := generateTestSpanEvent()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSpanEvent(el)
+		(*es.orig)[i] = internal.GenTestOrigSpan_Event()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSpanEventSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,16 +49,10 @@ func TestSpanEventSliceReadOnly(t *testing.T) {
 
 func TestSpanEventSlice_CopyTo(t *testing.T) {
 	dest := NewSpanEventSlice()
-	// Test CopyTo to empty
-	NewSpanEventSlice().CopyTo(dest)
-	assert.Equal(t, NewSpanEventSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestSpanEventSlice().CopyTo(dest)
+	src := generateTestSpanEventSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestSpanEventSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
 }
 
@@ -127,9 +119,17 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el SpanEvent) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestSpanEventSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanEventSlice()
+	got.RemoveIf(func(el SpanEvent) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSpanEventSliceAll(t *testing.T) {
@@ -142,22 +142,6 @@ func TestSpanEventSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestSpanEventSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpanEventSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSpanEventSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestSpanEventSlice_Sort(t *testing.T) {
@@ -177,15 +161,7 @@ func TestSpanEventSlice_Sort(t *testing.T) {
 }
 
 func generateTestSpanEventSlice() SpanEventSlice {
-	es := NewSpanEventSlice()
-	fillTestSpanEventSlice(es)
-	return es
-}
-
-func fillTestSpanEventSlice(es SpanEventSlice) {
-	*es.orig = make([]*otlptrace.Span_Event, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span_Event{}
-		fillTestSpanEvent(newSpanEvent((*es.orig)[i], es.state))
-	}
+	ms := NewSpanEventSlice()
+	*ms.orig = internal.GenerateOrigTestSpan_EventSlice()
+	return ms
 }

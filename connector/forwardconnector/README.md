@@ -43,7 +43,7 @@ connectors:
 
 ### Example Usage
 
-Annotate distinct log streams, then merge them together, batch, and export.
+Annotate distinct log streams, then merge them together, and export.
 
 ```yaml
 receivers:
@@ -119,7 +119,6 @@ service:
         - foo
       processors:
         - filter
-        - batch
       exporters:
         - bar
       # - forward

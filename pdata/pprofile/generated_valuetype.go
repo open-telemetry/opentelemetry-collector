@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ValueType describes the type and units of a value, with an optional aggregation temporality.
@@ -33,8 +32,7 @@ func newValueType(orig *otlpprofiles.ValueType, state *internal.State) ValueType
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewValueType() ValueType {
-	state := internal.StateMutable
-	return newValueType(&otlpprofiles.ValueType{}, &state)
+	return newValueType(internal.NewOrigValueType(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +44,8 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ValueType{}
+	internal.DeleteOrigValueType(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // TypeStrindex returns the typestrindex associated with this ValueType.
@@ -86,29 +84,5 @@ func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	copyOrigValueType(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ValueType) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.TypeStrindex != int32(0) {
-		dest.WriteObjectField("typeStrindex")
-		dest.WriteInt32(ms.orig.TypeStrindex)
-	}
-	if ms.orig.UnitStrindex != int32(0) {
-		dest.WriteObjectField("unitStrindex")
-		dest.WriteInt32(ms.orig.UnitStrindex)
-	}
-	if ms.orig.AggregationTemporality != otlpprofiles.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		ms.AggregationTemporality().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
-	dest.TypeStrindex = src.TypeStrindex
-	dest.UnitStrindex = src.UnitStrindex
-	dest.AggregationTemporality = src.AggregationTemporality
+	internal.CopyOrigValueType(dest.orig, ms.orig)
 }

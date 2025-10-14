@@ -44,18 +44,21 @@ func (is *bytesSizer) Sizeof(val int64) int64 {
 	return val * 10
 }
 
-type int64Encoding struct{}
+type int64Encoding struct {
+	rc ReferenceCounter[int64]
+}
 
 func (int64Encoding) Marshal(_ context.Context, val int64) ([]byte, error) {
 	str := strconv.FormatInt(val, 10)
 	return []byte(str), nil
 }
 
-func (int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
+func (ie int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
 	val, err := strconv.ParseInt(string(bytes), 10, 64)
 	if err != nil {
 		return context.Background(), 0, err
 	}
+	ie.rc.Ref(val)
 	return context.Background(), val, nil
 }
 
@@ -141,7 +144,7 @@ func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	return m.sizeInBytes
 }
 
-func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
@@ -217,16 +220,38 @@ func (m *fakeStorageClientWithErrors) Reset() {
 	m.nextErrorIndex = 0
 }
 
+type fakeReferenceCounter struct {
+	mu  sync.Mutex
+	ref int64
+}
+
+func (f *fakeReferenceCounter) Ref(int64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ref++
+}
+
+func (f *fakeReferenceCounter) Unref(int64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ref--
+	if f.ref < 0 {
+		panic("this should never happen")
+	}
+}
+
 func newSettings(sizerType request.SizerType, capacity int64) Settings[int64] {
+	rc := &fakeReferenceCounter{}
 	return Settings[int64]{
-		SizerType:  sizerType,
-		ItemsSizer: &itemsSizer{},
-		BytesSizer: &bytesSizer{},
-		Capacity:   capacity,
-		Signal:     pipeline.SignalTraces,
-		Encoding:   int64Encoding{},
-		ID:         component.NewID(exportertest.NopType),
-		Telemetry:  componenttest.NewNopTelemetrySettings(),
+		ReferenceCounter: rc,
+		SizerType:        sizerType,
+		ItemsSizer:       &itemsSizer{},
+		BytesSizer:       &bytesSizer{},
+		Capacity:         capacity,
+		Signal:           pipeline.SignalTraces,
+		Encoding:         int64Encoding{rc},
+		ID:               component.NewID(exportertest.NopType),
+		Telemetry:        componenttest.NewNopTelemetrySettings(),
 	}
 }
 
@@ -296,7 +321,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			done.OnDone(nil)
 			assert.Equal(t, int64(0), pq.Size())
 
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				result := pq.Offer(context.Background(), int64(10))
 				if i < 5 {
 					require.NoError(t, result)
@@ -315,7 +340,7 @@ func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createTestPersistentQueue(t, ext, request.SizerTypeRequests, 1001)
 	req := int64(10)
 
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		require.NoError(t, pq.Offer(context.Background(), req))
 	}
 	require.NoError(t, pq.Shutdown(context.Background()))
@@ -356,7 +381,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			aq := newAsyncQueue[int64](pq, c.numConsumers, func(_ context.Context, _ int64, done Done) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
-			})
+			}, nil)
 			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			},
@@ -400,18 +425,18 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ int64, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
-			})
+			}, set.ReferenceCounter)
 			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			})))
 
 			td := int64(10)
 			wg := &sync.WaitGroup{}
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					for j := 0; j < 100_000; j++ {
+					for range 100_000 {
 						assert.NoError(t, pq.Offer(context.Background(), td))
 					}
 				}()
@@ -561,7 +586,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
 			// Put some items, make sure they are loaded and shutdown the storage...
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				require.NoError(t, ps.Offer(context.Background(), int64(50)))
 			}
 			assert.Equal(t, int64(3), ps.Size())
@@ -600,7 +625,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
 	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 
@@ -629,7 +654,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 
 	// We should be able to pull all remaining items now
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		consume(newPs, func(_ context.Context, val int64) error {
 			assert.Equal(t, req, val)
 			return nil
@@ -659,7 +684,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 5)
 
 	// Put in items up to capacity
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 	require.Equal(t, int64(5), ps.Size())
@@ -684,12 +709,12 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 
 	proWg := sync.WaitGroup{}
 	// Sending small amount of data as windows test can't handle the test fast enough
-	for j := 0; j < 5; j++ {
+	for range 5 {
 		proWg.Add(1)
 		go func() {
 			defer proWg.Done()
 			// Put in items up to capacity
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				for {
 					// retry infinitely so the exact amount of items are added to the queue eventually
 					if err := pq.Offer(context.Background(), req); err == nil {
@@ -702,11 +727,11 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	}
 
 	conWg := sync.WaitGroup{}
-	for j := 0; j < 5; j++ {
+	for range 5 {
 		conWg.Add(1)
 		go func() {
 			defer conWg.Done()
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 			}
 		}()
@@ -779,13 +804,12 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	req := int64(100)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, ps.Offer(context.Background(), req))
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.True(b, consume(ps, func(context.Context, int64) error { return nil }))
 	}
 	require.NoError(b, ext.Shutdown(context.Background()))
@@ -1124,13 +1148,13 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 
 	assert.Equal(t, int64(0), pq.Size())
 
-	for i := 0; i < 6; i++ {
+	for range 6 {
 		require.NoError(t, pq.Offer(context.Background(), int64(10)))
 	}
 	assert.Equal(t, int64(60), pq.Size())
 
 	// Consume 30 items
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 	}
 	assert.Equal(t, int64(30), pq.Size())

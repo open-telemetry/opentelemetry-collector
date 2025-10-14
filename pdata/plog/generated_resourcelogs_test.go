@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,9 +24,10 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceLogs(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestResourceLogs(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
-	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { newResourceLogs(internal.NewOrigResourceLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -39,58 +38,36 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	orig = generateTestResourceLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
-}
-
-func TestResourceLogs_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceLogs()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceLogs()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceLogs_SchemaUrl(t *testing.T) {
-	ms := NewResourceLogs()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	ms.orig.Resource = *internal.GenTestOrigResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
-	fillTestScopeLogsSlice(ms.ScopeLogs())
+	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
 	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
 }
 
-func generateTestResourceLogs() ResourceLogs {
-	tv := NewResourceLogs()
-	fillTestResourceLogs(tv)
-	return tv
+func TestResourceLogs_SchemaUrl(t *testing.T) {
+	ms := NewResourceLogs()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs, tv.state))
+func generateTestResourceLogs() ResourceLogs {
+	ms := newResourceLogs(internal.GenTestOrigResourceLogs(), internal.NewState())
+	return ms
 }

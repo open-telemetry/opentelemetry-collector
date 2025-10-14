@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &state)
+	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPointValueAtQuantile()
 	testVal := generateTestSummaryDataPointValueAtQuantile()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSummaryDataPointValueAtQuantile(el)
+		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint_ValueAtQuantile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,16 +49,10 @@ func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointValueAtQuantileSlice()
-	// Test CopyTo to empty
-	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
-	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	src := generateTestSummaryDataPointValueAtQuantileSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
@@ -127,9 +119,17 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestSummaryDataPointValueAtQuantileSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointValueAtQuantileSlice()
+	got.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
@@ -142,22 +142,6 @@ func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestSummaryDataPointValueAtQuantileSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSummaryDataPointValueAtQuantileSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSummaryDataPointValueAtQuantileSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
@@ -177,15 +161,7 @@ func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 }
 
 func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
-	es := NewSummaryDataPointValueAtQuantileSlice()
-	fillTestSummaryDataPointValueAtQuantileSlice(es)
-	return es
-}
-
-func fillTestSummaryDataPointValueAtQuantileSlice(es SummaryDataPointValueAtQuantileSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.orig)[i], es.state))
-	}
+	ms := NewSummaryDataPointValueAtQuantileSlice()
+	*ms.orig = internal.GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	return ms
 }

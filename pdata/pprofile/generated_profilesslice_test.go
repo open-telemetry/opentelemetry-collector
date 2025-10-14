@@ -11,34 +11,32 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestProfilesSlice(t *testing.T) {
 	es := NewProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newProfilesSlice(&[]*otlpprofiles.Profile{}, &state)
+	es = newProfilesSlice(&[]*otlpprofiles.Profile{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewProfile()
 	testVal := generateTestProfile()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestProfile(el)
+		(*es.orig)[i] = internal.GenTestOrigProfile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
 func TestProfilesSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newProfilesSlice(&[]*otlpprofiles.Profile{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newProfilesSlice(&[]*otlpprofiles.Profile{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -51,16 +49,10 @@ func TestProfilesSliceReadOnly(t *testing.T) {
 
 func TestProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewProfilesSlice()
-	// Test CopyTo to empty
-	NewProfilesSlice().CopyTo(dest)
-	assert.Equal(t, NewProfilesSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestProfilesSlice().CopyTo(dest)
+	src := generateTestProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestProfilesSlice().CopyTo(dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
 }
 
@@ -127,9 +119,17 @@ func TestProfilesSlice_RemoveIf(t *testing.T) {
 	pos := 0
 	filtered.RemoveIf(func(el Profile) bool {
 		pos++
-		return pos%3 == 0
+		return pos%2 == 1
 	})
-	assert.Equal(t, 5, filtered.Len())
+	assert.Equal(t, 2, filtered.Len())
+}
+
+func TestProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestProfilesSlice()
+	got.RemoveIf(func(el Profile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestProfilesSliceAll(t *testing.T) {
@@ -142,22 +142,6 @@ func TestProfilesSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
-}
-
-func TestProfilesSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestProfilesSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewProfilesSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestProfilesSlice_Sort(t *testing.T) {
@@ -177,15 +161,7 @@ func TestProfilesSlice_Sort(t *testing.T) {
 }
 
 func generateTestProfilesSlice() ProfilesSlice {
-	es := NewProfilesSlice()
-	fillTestProfilesSlice(es)
-	return es
-}
-
-func fillTestProfilesSlice(es ProfilesSlice) {
-	*es.orig = make([]*otlpprofiles.Profile, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Profile{}
-		fillTestProfile(newProfile((*es.orig)[i], es.state))
-	}
+	ms := NewProfilesSlice()
+	*ms.orig = internal.GenerateOrigTestProfileSlice()
+	return ms
 }

@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,8 +33,7 @@ func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceProfiles() ResourceProfiles {
-	state := internal.StateMutable
-	return newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &state)
+	return newResourceProfiles(internal.NewOrigResourceProfiles(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,13 +45,18 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.ResourceProfiles{}
+	internal.DeleteOrigResourceProfiles(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceProfiles.
 func (ms ResourceProfiles) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+}
+
+// ScopeProfiles returns the ScopeProfiles associated with this ResourceProfiles.
+func (ms ResourceProfiles) ScopeProfiles() ScopeProfilesSlice {
+	return newScopeProfilesSlice(&ms.orig.ScopeProfiles, ms.state)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceProfiles.
@@ -67,35 +70,8 @@ func (ms ResourceProfiles) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// ScopeProfiles returns the ScopeProfiles associated with this ResourceProfiles.
-func (ms ResourceProfiles) ScopeProfiles() ScopeProfilesSlice {
-	return newScopeProfilesSlice(&ms.orig.ScopeProfiles, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceProfiles) CopyTo(dest ResourceProfiles) {
 	dest.state.AssertMutable()
-	copyOrigResourceProfiles(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ResourceProfiles) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("resource")
-	internal.MarshalJSONStreamResource(internal.NewResource(&ms.orig.Resource, ms.state), dest)
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if len(ms.orig.ScopeProfiles) > 0 {
-		dest.WriteObjectField("scopeProfiles")
-		ms.ScopeProfiles().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
-	internal.CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.ScopeProfiles = copyOrigScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
+	internal.CopyOrigResourceProfiles(dest.orig, ms.orig)
 }

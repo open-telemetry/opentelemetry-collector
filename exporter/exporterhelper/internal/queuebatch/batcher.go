@@ -26,6 +26,7 @@ type batcherSettings[T any] struct {
 	itemsSizer  request.Sizer[T]
 	bytesSizer  request.Sizer[T]
 	partitioner Partitioner[T]
+	mergeCtx    func(context.Context, context.Context) context.Context
 	next        sender.SendFunc[T]
 	maxWorkers  int
 	logger      *zap.Logger
@@ -33,7 +34,7 @@ type batcherSettings[T any] struct {
 
 func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[request.Request]) (Batcher[request.Request], error) {
 	if !cfg.HasValue() {
-		return newDisabledBatcher[request.Request](set.next), nil
+		return newDisabledBatcher(set.next), nil
 	}
 
 	sizer := activeSizer(cfg.Get().Sizer, set.itemsSizer, set.bytesSizer)
@@ -42,10 +43,10 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 	}
 
 	if set.partitioner == nil {
-		return newPartitionBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next, set.logger), nil
+		return newPartitionBatcher(*cfg.Get(), sizer, set.mergeCtx, newWorkerPool(set.maxWorkers), set.next, set.logger), nil
 	}
 
-	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next, set.logger), nil
+	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.mergeCtx, set.next, set.logger), nil
 }
 
 func activeSizer[T any](sizerType request.SizerType, itemsSizer, bytesSizer request.Sizer[T]) request.Sizer[T] {
