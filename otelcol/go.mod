@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.43.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.137.0
 	go.opentelemetry.io/collector/confmap v1.43.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.42.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.43.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0
 	go.opentelemetry.io/collector/connector v0.137.0
 	go.opentelemetry.io/collector/connector/connectortest v0.137.0
