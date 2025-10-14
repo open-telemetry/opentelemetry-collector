@@ -93,15 +93,15 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
+func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
 		encoding:        set.Encoding,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
 		activeSizer:     set.activeSizer(),
-		itemsSizer:      set.ItemsSizer,
-		bytesSizer:      set.BytesSizer,
+		itemsSizer:      request.NewItemsSizer[T](),
+		bytesSizer:      request.NewBytesSizer[T](),
 		storageID:       *set.StorageID,
 		id:              set.ID,
 		signal:          set.Signal,
