@@ -14,7 +14,7 @@ import (
 )
 
 func TestItemsSizer(t *testing.T) {
-	sz := request.NewItemsSizer[request.Request]()
+	sz := request.NewItemsSizer()
 	assert.EqualValues(t, 3, sz.Sizeof(&requesttest.FakeRequest{Items: 3}))
 }
 
