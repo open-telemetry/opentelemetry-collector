@@ -3,7 +3,7 @@
 
 //go:build requirefips
 
-package configtls
+package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import "crypto/tls"
 
