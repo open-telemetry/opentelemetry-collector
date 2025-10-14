@@ -7,10 +7,10 @@ change_type: bug_fix
 component: pkg/confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Close the channel after all providers are closed to avoid race conditions in future
+note: Fix a potential race condition in confmap by closing the providers first.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [14018]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
