@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: 'config/configgrpc'
+component: 'all'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Errors of type status.Status returned from an Authenticator extension are being propagated as is to the upstream client."
