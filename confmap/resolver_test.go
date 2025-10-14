@@ -535,7 +535,7 @@ func newRaceDetectorProvider() ProviderFactory {
 	})
 }
 
-func (p *provider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error) {
+func (p *provider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (*Retrieved, error) {
 	p.wg.Add(1)
 	go func() {
 		// mock a config change event and wait for goroutine to return.
@@ -566,5 +566,5 @@ func TestProviderRaceConfition(t *testing.T) {
 	c, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, c)
-	resolver.Shutdown(context.Background())
+	require.NoError(t, resolver.Shutdown(context.Background()))
 }
