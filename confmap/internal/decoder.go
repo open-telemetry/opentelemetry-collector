@@ -40,6 +40,20 @@ func WithIgnoreUnused() UnmarshalOption {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
+	hooks := []mapstructure.DecodeHookFunc{
+		useExpandValue(),
+		expandNilStructPointersHookFunc(),
+		mapstructure.StringToSliceHookFunc(","),
+		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+		mapstructure.StringToTimeDurationHookFunc(),
+		mapstructure.TextUnmarshallerHookFunc(),
+		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+		// after the main unmarshaler hook is called,
+		// we unmarshal the embedded structs if present to merge with the result:
+		unmarshalerEmbeddedStructsHookFunc(),
+		zeroSliceAndMapHookFunc(),
+	}
+	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,
@@ -47,20 +61,9 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeNil:        true,
-		DecodeHook: composehook.ComposeDecodeHookFunc(
-			useExpandValue(),
-			expandNilStructPointersHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
-			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
-			// after the main unmarshaler hook is called,
-			// we unmarshal the embedded structs if present to merge with the result:
-			unmarshalerEmbeddedStructsHookFunc(),
-			zeroSliceAndMapHookFunc(),
-		),
+		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks),
 	}
+
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
 		return err

@@ -13,10 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
-<<<<<<< HEAD
 	"go.opentelemetry.io/collector/confmap"
-=======
->>>>>>> upstream/main
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -39,11 +36,11 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfig()
 	cfg.WaitForResult = true
-	cfg.StorageID = configoptional.Some(StorageID)
+	cfg.StorageID = configoptional.Some(component.MustNewID("test"))
 	require.EqualError(t, xconfmap.Validate(cfg), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()
-	cfg.QueueSize = cfg.Batch.Get().MinSize - 1
+	cfg.QueueSize = int(cfg.Batch.Get().MinSize) - 1
 	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be less than or equal to `queue_size`")
 
 	cfg = newTestConfig()
