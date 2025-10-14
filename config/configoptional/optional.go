@@ -163,8 +163,10 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 	return o.Get()
 }
 
-var _ confmap.Unmarshaler = (*Optional[any])(nil)
-var _ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
+var (
+	_ confmap.Unmarshaler        = (*Optional[any])(nil)
+	_ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
+)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -218,8 +220,10 @@ func (o *Optional[T]) ScalarType() any {
 	return o.value
 }
 
-var _ confmap.Marshaler = (*Optional[any])(nil)
-var _ xconfmap.ScalarMarshaler = (*Optional[any])(nil)
+var (
+	_ confmap.Marshaler        = (*Optional[any])(nil)
+	_ xconfmap.ScalarMarshaler = (*Optional[any])(nil)
+)
 
 // Marshal the Optional value into the configuration.
 // If the Optional is None or Default, it does not marshal anything.
