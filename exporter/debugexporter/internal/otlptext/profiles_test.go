@@ -88,7 +88,7 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 
 	sc := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0)
 	profilesCount := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len()
-	for i := 0; i < profilesCount; i++ {
+	for i := range profilesCount {
 		switch i % 2 {
 		case 0:
 			profile := sc.Profiles().At(i)

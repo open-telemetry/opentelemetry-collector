@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -162,10 +163,8 @@ func (md *Metadata) supportsSignal(signal string) bool {
 	}
 
 	for _, signals := range md.Status.Stability {
-		for _, s := range signals {
-			if s == signal {
-				return true
-			}
+		if slices.Contains(signals, signal) {
+			return true
 		}
 	}
 

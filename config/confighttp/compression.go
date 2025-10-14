@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"sync"
 
@@ -252,9 +253,7 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		decoders:           enabled,
 	}
 
-	for key, dec := range decoders {
-		d.decoders[key] = dec
-	}
+	maps.Copy(d.decoders, decoders)
 
 	return d
 }
