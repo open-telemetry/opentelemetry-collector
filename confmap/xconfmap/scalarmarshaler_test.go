@@ -107,12 +107,12 @@ type testConfig struct {
 	Ntma        nonTextMarshalerAlias                         `mapstructure:"ntma"`
 	Nonimplint  NonImplWrapperType[int]                       `mapstructure:"non_impl_int"`
 	Nonimplstr  NonImplWrapperType[string]                    `mapstructure:"non_impl_str"`
-	Nonimpltms  NonImplWrapperType[textMarshalerStruct]       `mapstructure:"non_impl_tms"`
-	Nonimplntms NonImplWrapperType[nonTextMarshalerStruct]    `mapstructure:"non_impl_ntms"`
+	Nonimpltms  NonImplWrapperType[textMarshalerStruct]       `mapstructure:"non_impl_text_marshaler_struct"`
+	Nonimplntms NonImplWrapperType[nonTextMarshalerStruct]    `mapstructure:"non_impl_non_text_marshaler_struct"`
 	Implint     wrapperType[int]                              `mapstructure:"impl_int"`
 	Implstr     wrapperType[string]                           `mapstructure:"impl_str"`
 	Impltms     wrapperType[textMarshalerStruct]              `mapstructure:"impl_tms"`
-	Implntms    wrapperType[nonTextMarshalerStruct]           `mapstructure:"impl_ntms"`
+	Implntms    wrapperType[nonTextMarshalerStruct]           `mapstructure:"impl_non_text_marshaler_struct"`
 	Recursive   wrapperType[wrapperType[textMarshalerStruct]] `mapstructure:"recursive"`
 }
 
