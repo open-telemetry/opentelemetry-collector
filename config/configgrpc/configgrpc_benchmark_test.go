@@ -45,7 +45,7 @@ func BenchmarkCompressors(b *testing.B) {
 
 			b.Run(name, func(b *testing.B) {
 				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
+				for b.Loop() {
 					require.NoError(b, err, "marshal(_) returned an error")
 					_, err := compress(compressor, messageBytes)
 					require.NoError(b, err, "compress(_) returned an error")

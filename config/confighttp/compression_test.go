@@ -559,6 +559,38 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	}
 }
 
+func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
+	h := httpContentDecompressor(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			buf := make([]byte, 1024)
+			_, err := r.Body.Read(buf)
+			assert.NoError(t, err)
+			err = r.Body.Close()
+			assert.NoError(t, err)
+			_, err = r.Body.Read(buf)
+			assert.ErrorIs(t, err, zstd.ErrDecoderClosed)
+			w.WriteHeader(http.StatusBadRequest)
+		}),
+		defaultMaxRequestBodySize,
+		defaultErrorHandler,
+		defaultCompressionAlgorithms(),
+		availableDecoders,
+	)
+
+	payload := compressZstd(t, make([]byte, 2*1024)) // 2KB uncompressed payload
+	assert.NotEmpty(t, payload.Bytes(), "Must have data available")
+
+	req := httptest.NewRequest(http.MethodPost, "/", payload)
+	req.Header.Set("Content-Encoding", "zstd")
+
+	resp := httptest.NewRecorder()
+
+	h.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
+	assert.Empty(t, resp.Body.String(), "Must match the returned string")
+}
+
 func compressGzip(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	gw, _ := gzip.NewWriterLevel(&buf, gzip.DefaultCompression)

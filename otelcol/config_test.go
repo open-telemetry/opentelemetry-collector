@@ -50,10 +50,10 @@ func TestConfigValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "custom-service-telemetrySettings-encoding",
+			name: "valid-telemetry-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.Telemetry.Logs.Encoding = "json"
+				cfg.Service.Telemetry = fakeTelemetryConfig{}
 				return cfg
 			},
 			expected: nil,
@@ -88,6 +88,15 @@ func TestConfigValidate(t *testing.T) {
 				return cfg
 			},
 			expected: errMissingReceivers,
+		},
+		{
+			name: "invalid-telemetry-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Telemetry = fakeTelemetryConfig{Invalid: true}
+				return cfg
+			},
+			expected: errors.New("service::telemetry: invalid config"),
 		},
 		{
 			name: "invalid-extension-reference",
@@ -329,4 +338,15 @@ func generateConfig() *Config {
 
 func newPtr[T int | string](str T) *T {
 	return &str
+}
+
+type fakeTelemetryConfig struct {
+	Invalid bool `mapstructure:"invalid"`
+}
+
+func (cfg fakeTelemetryConfig) Validate() error {
+	if cfg.Invalid {
+		return errors.New("invalid config")
+	}
+	return nil
 }

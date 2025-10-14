@@ -33,7 +33,7 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	attr2.Value().SetStr("value")
 
 	ss.EnsureCapacity(profilesCount)
-	for i := 0; i < profilesCount; i++ {
+	for i := range profilesCount {
 		switch i % 2 {
 		case 0:
 			fillProfileOne(dic, ss.AppendEmpty())
