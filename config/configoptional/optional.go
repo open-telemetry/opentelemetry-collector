@@ -163,7 +163,10 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 	return o.Get()
 }
 
-var _ confmap.Unmarshaler = (*Optional[any])(nil)
+var (
+	_ confmap.Unmarshaler        = (*Optional[any])(nil)
+	_ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
+)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -186,7 +189,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	if err := conf.Unmarshal(&o.value); err != nil {
+	if err := conf.Unmarshal(&o.value, xconfmap.WithScalarUnmarshaler()); err != nil {
 		return err
 	}
 
@@ -194,7 +197,33 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ confmap.Marshaler = (*Optional[any])(nil)
+func (o *Optional[T]) UnmarshalScalar(val any) error {
+	if o.flavor == noneFlavor && val == nil {
+		// If the Optional is None and the configuration is nil, we do nothing.
+		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+		return nil
+	}
+
+	if val != nil {
+		v, ok := val.(T)
+		if !ok {
+			return fmt.Errorf("val is %T, not %T", val, v)
+		}
+		o.value = v
+		o.flavor = someFlavor
+	}
+
+	return nil
+}
+
+func (o *Optional[T]) ScalarType() any {
+	return o.value
+}
+
+var (
+	_ confmap.Marshaler        = (*Optional[any])(nil)
+	_ xconfmap.ScalarMarshaler = (*Optional[any])(nil)
+)
 
 // Marshal the Optional value into the configuration.
 // If the Optional is None or Default, it does not marshal anything.
@@ -212,11 +241,15 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 		return conf.Marshal(map[string]any(nil))
 	}
 
-	if err := conf.Marshal(o.value); err != nil {
+	if err := conf.Marshal(o.value, xconfmap.WithScalarMarshaler()); err != nil {
 		return fmt.Errorf("configoptional: failed to marshal Optional value: %w", err)
 	}
 
 	return nil
+}
+
+func (o Optional[T]) GetScalarValue() (any, error) {
+	return o.value, nil
 }
 
 var _ xconfmap.Validator = (*Optional[any])(nil)

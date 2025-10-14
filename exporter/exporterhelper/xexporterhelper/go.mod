@@ -6,6 +6,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.43.0
 	go.opentelemetry.io/collector/component/componenttest v0.137.0
+	go.opentelemetry.io/collector/config/configoptional v1.43.0
 	go.opentelemetry.io/collector/consumer v1.43.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.137.0
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.137.0
@@ -47,7 +48,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.43.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.43.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0 // indirect
