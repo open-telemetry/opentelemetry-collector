@@ -42,7 +42,7 @@ if [ -z "$package" ]; then
   usage
 fi
 
-set -ex
+set -e
 
 # Create temp dir for generated files.
 # Source: https://unix.stackexchange.com/a/84980

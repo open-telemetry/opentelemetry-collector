@@ -16,6 +16,7 @@ jobs:
   Check-Compatibility:
     runs-on: ubuntu-latest
     env:
+      CI: true
       BASE_REF: ${{ github.base_ref }}
       HEAD_REF: ${{ github.head_ref }}
     steps:
@@ -45,26 +46,9 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
 
-      # Generate apidiff states of Main
-      - name: Generate-States
+      - name: Check-API-Compatibility
         run: |
-          cd $BASE_REF
-          make apidiff-build
-
-      # Compare apidiff states of Main with PR
-      - name: Compare-States
-        env:
-          CI: true
-          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff"
-        run: |
-          cd $HEAD_REF
-          make apidiff-compare
-
-      # Fail GitHub Action if there are incompatible changes
-      - name: Check-States
-        env:
-          CI: true
-          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff" -c
-        run: |
-          cd $HEAD_REF
-          make apidiff-compare
+          base_states_path="${BASE_REF}/internal/data/apidiff"
+          env COMPARE_OPTS="-o ${base_states_path}" make -C ${BASE_REF} apidiff-build
+          env COMPARE_OPTS="-d $( realpath ${base_states_path} )" make -C ${HEAD_REF} apidiff-compare
+          env COMPARE_OPTS="-c -d $( realpath ${base_states_path} )" make -C ${HEAD_REF} apidiff-compare

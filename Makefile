@@ -345,7 +345,7 @@ endif
 # Compare API state snapshots
 .PHONY: apidiff-compare
 apidiff-compare:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg) $(APICOMPARE_OPTS)))
 
 .PHONY: multimod-verify
 multimod-verify:
