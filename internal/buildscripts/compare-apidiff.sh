@@ -50,7 +50,7 @@ if [ -e "$input_dir"/"$package"/apidiff.state ]; then
     SUB='Incompatible changes:'
     if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then
       echo "Incompatible Changes Found."
-      echo "Check the logs in the GitHub Action log group: 'Compare-States'."
+      echo "Check the logs in the GitHub Action log group: 'Check-API-Compatibility'."
       exit 1
     else
       echo "Changes found in $package:"
