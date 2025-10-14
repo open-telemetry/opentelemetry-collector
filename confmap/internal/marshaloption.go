@@ -21,7 +21,7 @@ func (fn MarshalOptionFunc) apply(set *MarshalOptions) {
 	fn(set)
 }
 
-// Apply Option simply calls (MarshalOption).apply. This function allows us
+// ApplyMarshalOption simply calls (MarshalOption).apply. This function allows us
 // to keep the `apply“ function private and therefore keep `confmap.MarshalOption`
 // without any exported methods.
 func ApplyMarshalOption(mo MarshalOption, set *MarshalOptions) {
