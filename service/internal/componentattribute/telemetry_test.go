@@ -152,11 +152,16 @@ func testTelemetryWithAttributes(t *testing.T, useTraceSdk bool) {
 		attribute.String("injected2", "val"),
 	))
 
-	// Check that SDK-only methods are accessible
-	_, ok := tswa.TracerProvider.(interface {
-		ForceFlush(ctx context.Context) error
+	// Check that SDK-only methods are accessible through Unwrap
+	wrapped, ok := tswa.TracerProvider.(interface {
+		Unwrap() trace.TracerProvider
 	})
-	assert.Equal(t, useTraceSdk, ok)
+	if assert.True(t, ok) {
+		_, ok := wrapped.Unwrap().(interface {
+			ForceFlush(ctx context.Context) error
+		})
+		assert.Equal(t, useTraceSdk, ok)
+	}
 
 	// Add extra log attribute
 	tswa.Logger = tswa.Logger.With(zap.String("after", "val"))
