@@ -61,7 +61,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeNil:        true,
-		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks),
+		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks...),
 	}
 
 	decoder, err := mapstructure.NewDecoder(dc)

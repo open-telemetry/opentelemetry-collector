@@ -14,7 +14,7 @@ import (
 
 func WithScalarMarshaler() confmap.MarshalOption {
 	return internal.MarshalOptionFunc(func(mo *internal.MarshalOptions) {
-		mo.ScalarMarshalingEncodeHookFunc = scalarmarshalerHookFunc()
+		mo.ScalarMarshalingEncodeHookFunc = scalarmarshalerHookFunc(*mo)
 	})
 }
 
@@ -30,7 +30,7 @@ type ScalarMarshaler interface {
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
-func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
+func scalarmarshalerHookFunc(mo internal.MarshalOptions) mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from reflect.Value, _ reflect.Value) (any, error) {
 		marshaler, ok := from.Interface().(ScalarMarshaler)
 		if !ok {
@@ -42,6 +42,6 @@ func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 
-		return v, nil
+		return internal.Encode(v, mo)
 	})
 }

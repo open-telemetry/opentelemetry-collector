@@ -33,7 +33,7 @@ type ScalarUnmarshaler interface {
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func scalarunmarshalerHookFunc(opts internal.UnmarshalOptions) mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		opts.AdditionalDecodeHookFuncs = append(opts.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(opts))
 
 		if !to.CanAddr() {
@@ -75,7 +75,7 @@ func scalarunmarshalerHookFunc(opts internal.UnmarshalOptions) mapstructure.Deco
 func safeWrapDecodeHookFunc(
 	f mapstructure.DecodeHookFuncValue,
 ) mapstructure.DecodeHookFuncValue {
-	return func(fromVal reflect.Value, toVal reflect.Value) (any, error) {
+	return func(fromVal, toVal reflect.Value) (any, error) {
 		if !fromVal.IsValid() {
 			return nil, nil
 		}
