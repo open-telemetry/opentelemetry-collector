@@ -52,7 +52,11 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 
 	tp := zpe.telemetry.TracerProvider
 	// If the TracerProvider was wrapped by the service implementation, access the underlying SDK provider
-	if wrapped, ok := tp.(interface{ Unwrap() trace.TracerProvider }); ok {
+	for {
+		wrapped, ok := tp.(interface{ Unwrap() trace.TracerProvider })
+		if !ok {
+			break
+		}
 		tp = wrapped.Unwrap()
 	}
 
