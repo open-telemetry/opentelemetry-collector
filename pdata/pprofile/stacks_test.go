@@ -16,44 +16,37 @@ func TestSetStack(t *testing.T) {
 	s.LocationIndices().Append(1)
 	s2 := NewStack()
 	s.LocationIndices().Append(2)
-	smpl := NewSample()
 
 	// Put a first stack
-	require.NoError(t, SetStack(table, smpl, s))
+	idx, err := SetStack(table, s)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), smpl.StackIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Put the same stack
 	// This should be a no-op.
-	require.NoError(t, SetStack(table, smpl, s))
+	idx, err = SetStack(table, s)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), smpl.StackIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Set a new stack
 	// This sets the index and adds to the table.
-	require.NoError(t, SetStack(table, smpl, s2))
+	idx, err = SetStack(table, s2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), smpl.StackIndex()) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 
 	// Set an existing stack
-	require.NoError(t, SetStack(table, smpl, s))
+	idx, err = SetStack(table, s)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(0), smpl.StackIndex())
+	assert.Equal(t, int32(0), idx)
 	// Set another existing stack
-	require.NoError(t, SetStack(table, smpl, s2))
+	idx, err = SetStack(table, s2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), smpl.StackIndex()) //nolint:gosec // G115
-}
-
-func TestSetStackCurrentTooHigh(t *testing.T) {
-	table := NewStackSlice()
-	smpl := NewSample()
-	smpl.SetStackIndex(42)
-
-	err := SetStack(table, smpl, NewStack())
-	require.Error(t, err)
-	assert.Equal(t, 0, table.Len())
-	assert.Equal(t, int32(42), smpl.StackIndex())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 }
 
 func BenchmarkSetStack(b *testing.B) {
@@ -61,7 +54,7 @@ func BenchmarkSetStack(b *testing.B) {
 		name  string
 		stack Stack
 
-		runBefore func(*testing.B, StackSlice, Sample)
+		runBefore func(*testing.B, StackSlice)
 	}{
 		{
 			name:  "with a new stack",
@@ -75,7 +68,7 @@ func BenchmarkSetStack(b *testing.B) {
 				return s
 			}(),
 
-			runBefore: func(_ *testing.B, table StackSlice, _ Sample) {
+			runBefore: func(_ *testing.B, table StackSlice) {
 				s := table.AppendEmpty()
 				s.LocationIndices().Append(1)
 			},
@@ -84,8 +77,9 @@ func BenchmarkSetStack(b *testing.B) {
 			name:  "with a duplicate stack",
 			stack: NewStack(),
 
-			runBefore: func(_ *testing.B, table StackSlice, obj Sample) {
-				require.NoError(b, SetStack(table, obj, NewStack()))
+			runBefore: func(_ *testing.B, table StackSlice) {
+				_, err := SetStack(table, NewStack())
+				require.NoError(b, err)
 			},
 		},
 		{
@@ -96,7 +90,7 @@ func BenchmarkSetStack(b *testing.B) {
 				return s
 			}(),
 
-			runBefore: func(_ *testing.B, table StackSlice, _ Sample) {
+			runBefore: func(_ *testing.B, table StackSlice) {
 				for range 100 {
 					table.AppendEmpty()
 				}
@@ -105,17 +99,16 @@ func BenchmarkSetStack(b *testing.B) {
 	} {
 		b.Run(bb.name, func(b *testing.B) {
 			table := NewStackSlice()
-			obj := NewSample()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
 			for b.Loop() {
-				_ = SetStack(table, obj, bb.stack)
+				_, _ = SetStack(table, bb.stack)
 			}
 		})
 	}
