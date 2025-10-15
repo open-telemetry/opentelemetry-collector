@@ -10,11 +10,11 @@ import (
 const (
 	// useExporterHelperGate controls whether to use exporterhelper components
 	// for batching instead of the legacy implementation.
-	useExporterHelperGate = "processor.batch.useexporterhelper"
+	useExporterHelperGate = "processor.batch.useExporterHelper"
 
 	// propagateErrorsGate controls whether to propagate errors from the next
 	// consumer instead of suppressing them (legacy behavior).
-	propagateErrorsGate = "processor.batch.propagateerrors"
+	propagateErrorsGate = "processor.batch.propagateErrors"
 )
 
 var (

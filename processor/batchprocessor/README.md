@@ -113,3 +113,10 @@ metadata-key values.
 
 The number of batch processors currently in use is exported as the
 `otelcol_processor_batch_metadata_cardinality` metric.
+
+## Modernization feature gates
+
+There are two feature gates currently defined for this component,
+which we are in the processor of modernizing.
+
+- 
