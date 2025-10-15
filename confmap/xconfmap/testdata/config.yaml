@@ -1,7 +1,7 @@
 impl_int: 1
 impl_non_text_marshaler_struct: {}
 impl_str: test
-impl_text_marshaler_struct: P
+impl_text_marshaler_struct: Q
 non_impl_int: {}
 non_impl_non_text_marshaler_struct: {}
 non_impl_str: {}

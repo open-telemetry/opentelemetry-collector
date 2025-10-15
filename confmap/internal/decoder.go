@@ -47,13 +47,15 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 		mapstructure.StringToTimeDurationHookFunc(),
 		mapstructure.TextUnmarshallerHookFunc(),
+	}
+	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
+	hooks = append(hooks,
 		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 		// after the main unmarshaler hook is called,
 		// we unmarshal the embedded structs if present to merge with the result:
 		unmarshalerEmbeddedStructsHookFunc(),
 		zeroSliceAndMapHookFunc(),
-	}
-	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
+	)
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,

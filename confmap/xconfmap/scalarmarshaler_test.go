@@ -142,7 +142,7 @@ func TestMarshalConfig(t *testing.T) {
 		Nonimplntms: NonImplWrapperType[nonTextMarshalerStruct]{inner: nonTextMarshalerStruct{id: 2, data: []byte{48}}},
 		Implint:     wrapperType[int]{inner: 1},
 		Implstr:     wrapperType[string]{inner: "test"},
-		Impltms:     wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{80}}},
+		Impltms:     wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{81}}},
 		Implntms:    wrapperType[nonTextMarshalerStruct]{inner: nonTextMarshalerStruct{id: 2, data: []byte{80}}},
 		Recursive:   wrapperType[wrapperType[textMarshalerStruct]]{inner: wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 2, data: []byte{80}}}},
 	}

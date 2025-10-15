@@ -249,6 +249,10 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 }
 
 func (o Optional[T]) GetScalarValue() (any, error) {
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		return nil, nil
+	}
+
 	return o.value, nil
 }
 

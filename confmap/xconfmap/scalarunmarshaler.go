@@ -14,7 +14,7 @@ import (
 
 func WithScalarUnmarshaler() confmap.UnmarshalOption {
 	return internal.UnmarshalOptionFunc(func(uo *internal.UnmarshalOptions) {
-		uo.AdditionalDecodeHookFuncs = append(uo.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(*uo))
+		uo.AdditionalDecodeHookFuncs = append(uo.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(uo))
 	})
 }
 
@@ -32,18 +32,16 @@ type ScalarUnmarshaler interface {
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
-func scalarunmarshalerHookFunc(opts internal.UnmarshalOptions) mapstructure.DecodeHookFuncValue {
+func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
-		opts.AdditionalDecodeHookFuncs = append(opts.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(opts))
-
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
 
-		if from.Kind() == reflect.Struct ||
-			from.Kind() == reflect.Pointer && from.Elem().Kind() == reflect.Struct {
-			return from.Interface(), nil
-		}
+		// if from.Kind() == reflect.Struct ||
+		// 	from.Kind() == reflect.Pointer && from.Elem().Kind() == reflect.Struct {
+		// 	return from.Interface(), nil
+		// }
 
 		toPtr := to.Addr().Interface()
 
@@ -52,9 +50,13 @@ func scalarunmarshalerHookFunc(opts internal.UnmarshalOptions) mapstructure.Deco
 			return from.Interface(), nil
 		}
 
+		if to.Addr().IsNil() {
+			unmarshaler = reflect.New(to.Type()).Interface().(ScalarUnmarshaler)
+		}
+
 		resultVal := reflect.New(reflect.TypeOf(unmarshaler.ScalarType()))
 
-		if err := internal.Decode(from.Interface(), resultVal.Interface(), opts, false); err != nil {
+		if err := internal.Decode(from.Interface(), resultVal.Interface(), *opts, false); err != nil {
 			return nil, err
 		}
 
