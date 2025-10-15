@@ -23,6 +23,8 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 		BlockOnOverflow: true,
 		Sizer:           exporterhelper.RequestSizerTypeItems,
 		QueueSize:       int64(runtime.NumCPU()) * int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 100)),
+		// Note: users could request to raise this, we could support a new
+		// option to add concurrency.
 		NumConsumers:    1,
 	}
 

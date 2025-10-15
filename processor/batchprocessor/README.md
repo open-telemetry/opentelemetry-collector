@@ -119,4 +119,15 @@ The number of batch processors currently in use is exported as the
 There are two feature gates currently defined for this component,
 which we are in the processor of modernizing.
 
-- 
+- `processor.batch.useExporterHelper`: Use the new exporterhelper-based QueueBatch logic, the same logic used in all exporters
+- `processor.batch.propagateErrors`: Sets the exporterhelper's `WaitForResult` to true, making it delay in order to return errors from the pipeline
+
+This mode is currently behind a feature gate and still experimental,
+mainly because metrics emitted by the component are incorrectly named.
+At present, when the exporterhelper mode is used, the component emits
+exporter metrics. See [#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038).
+
+As we move towards finalizing these feature gates, it would be reasonable
+to enable at least one more feature of the underlying QueueBatch logic,
+the `num_consumers` parameter which is currently set to 1 can be raised
+to enable concurrent-batching behavior.
