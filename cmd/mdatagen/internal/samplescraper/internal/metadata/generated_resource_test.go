@@ -21,15 +21,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			rb.SetStringTemplateResourceAttr("key", "val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -76,6 +77,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "string.resource.attr_to_be_removed-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("string.template.resource.attr.key")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "val", val.Str())
 			}
 		})
 	}
