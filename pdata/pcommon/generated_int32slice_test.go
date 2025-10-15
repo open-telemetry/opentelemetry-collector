@@ -118,6 +118,32 @@ func TestInt32SliceMoveAndAppendTo(t *testing.T) {
 	assert.Equal(t, ms2.Len(), 6)
 }
 
+func TestInt32SliceRemoveIf(t *testing.T) {
+	emptySlice := NewInt32Slice()
+	emptySlice.RemoveIf(func(el int32) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 2, 3})
+	pos := 0
+	ms.RemoveIf(func(el int32) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestInt32SliceRemoveIfAll(t *testing.T) {
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 2, 3})
+	ms.RemoveIf(func(el int32) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
+}
+
 func TestInt32SliceEqual(t *testing.T) {
 	ms := NewInt32Slice()
 	ms2 := NewInt32Slice()
