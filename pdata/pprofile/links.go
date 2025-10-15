@@ -10,8 +10,8 @@ import (
 
 var errTooManyLinkTableEntries = errors.New("too many entries in LinkTable")
 
-// SetLink updates a LinkTable and a Sample's LinkIndex to
-// add or update a link.
+// SetLink updates a LinkTable, adding or providing a value and returns its
+// index.
 func SetLink(table LinkSlice, li Link) (int32, error) {
 	for j, l := range table.All() {
 		if l.Equal(li) {
