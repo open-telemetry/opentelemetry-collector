@@ -11,9 +11,9 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -26,8 +26,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
-	t.Run(t.Name() + "Legacy", func(t *testing.T) { testCreateProcessor(t, false) }) // Test legacy implementation
-	t.Run(t.Name() + "Helper", func(t *testing.T) { testCreateProcessor(t, true) })  // Test new implementation
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testCreateProcessor(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testCreateProcessor(t, true) })  // Test new implementation
 }
 
 func testCreateProcessor(t *testing.T, useExporterHelper bool) {

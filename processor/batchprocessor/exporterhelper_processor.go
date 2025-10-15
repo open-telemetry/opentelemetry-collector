@@ -51,7 +51,7 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 }
 
 // newTracesProcessorWithExporterHelper creates a new traces processor using exporterhelper components.
-func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Traces, cfg *Config) (processor.Traces, error) {
+func newTracesProcessorWithExporterHelper(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg *Config) (processor.Traces, error) {
 	set.Logger.Info("Creating traces processor with ExporterHelper")
 
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
@@ -63,7 +63,7 @@ func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer c
 	}
 
 	result, err := exporterhelper.NewTraces(
-		context.Background(),
+		ctx,
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeTraces,
@@ -73,7 +73,7 @@ func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer c
 }
 
 // newMetricsProcessorWithExporterHelper creates a new metrics processor using exporterhelper components.
-func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Metrics, cfg *Config) (processor.Metrics, error) {
+func newMetricsProcessorWithExporterHelper(ctx context.Context, set processor.Settings, nextConsumer consumer.Metrics, cfg *Config) (processor.Metrics, error) {
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
 
 	exporterSet := exporter.Settings{
@@ -83,7 +83,7 @@ func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer 
 	}
 
 	return exporterhelper.NewMetrics(
-		context.Background(),
+		ctx,
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeMetrics,
@@ -92,7 +92,7 @@ func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer 
 }
 
 // newLogsProcessorWithExporterHelper creates a new logs processor using exporterhelper components.
-func newLogsProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
+func newLogsProcessorWithExporterHelper(ctx context.Context, set processor.Settings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
 
 	exporterSet := exporter.Settings{
@@ -102,7 +102,7 @@ func newLogsProcessorWithExporterHelper(set processor.Settings, nextConsumer con
 	}
 
 	return exporterhelper.NewLogs(
-		context.Background(),
+		ctx,
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeLogs,
