@@ -26,10 +26,10 @@ var (
 )
 
 // memoryQueue is an in-memory implementation of a Queue.
-type memoryQueue[T any] struct {
+type memoryQueue[T request.Request] struct {
 	component.StartFunc
 	refCounter ReferenceCounter[T]
-	sizer      request.Sizer[T]
+	sizer      request.Sizer
 	cap        int64
 
 	mu              sync.Mutex
@@ -47,7 +47,7 @@ type memoryQueue[T any] struct {
 func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
 		refCounter:      set.ReferenceCounter,
-		sizer:           set.activeSizer(),
+		sizer:           request.NewSizer(set.SizerType),
 		cap:             set.Capacity,
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,

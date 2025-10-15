@@ -122,7 +122,7 @@ type Collector struct {
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	bc := newBufferedCore(zapcore.DebugLevel)
-	cc := &collectorCore{core: bc}
+	cc := newCollectorCore(bc)
 	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
 	logger := zap.New(cc, options...)
 	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
