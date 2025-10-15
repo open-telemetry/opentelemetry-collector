@@ -1,4 +1,4 @@
-type: config/configoptional
+type: config/configretry
 github_project: open-telemetry/opentelemetry-collector
 
 status:
