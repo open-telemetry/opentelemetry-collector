@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -210,7 +211,7 @@ func TestTracesRequest_WithRecordMetrics(t *testing.T) {
 
 	te, err := internal.NewTracesRequest(context.Background(),
 		exporter.Settings{ID: fakeTracesName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[Request]())
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -236,7 +237,7 @@ func TestTracesRequest_WithRecordMetrics_RequestSenderError(t *testing.T) {
 
 	te, err := internal.NewTracesRequest(context.Background(),
 		exporter.Settings{ID: fakeTracesName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromTracesFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+		requesttest.RequestFromTracesFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -264,7 +265,7 @@ func TestTracesRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	te, err := internal.NewTracesRequest(context.Background(), set, requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[Request]())
+	te, err := internal.NewTracesRequest(context.Background(), set, requesttest.RequestFromTracesFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -294,7 +295,7 @@ func TestTracesRequest_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("export_error")
-	te, err := internal.NewTracesRequest(context.Background(), set, requesttest.RequestFromTracesFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+	te, err := internal.NewTracesRequest(context.Background(), set, requesttest.RequestFromTracesFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -342,7 +343,7 @@ func newTraceDataPusherModifiedDownstream(retError error) consumer.ConsumeTraces
 func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, te exporter.Traces, wantError error) {
 	td := testdata.GenerateTraces(2)
 	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		require.Equal(t, wantError, te.ConsumeTraces(context.Background(), td))
 	}
 
@@ -373,7 +374,7 @@ func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te exporter.Traces,
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	ctx, span := tracer.Start(context.Background(), fakeTraceParentSpanName)
 	defer span.End()
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
 	}
 }

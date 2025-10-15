@@ -92,6 +92,10 @@ type ServerConfig struct {
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -102,6 +106,7 @@ func NewDefaultServerConfig() ServerConfig {
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
+		KeepAlivesEnabled: true,
 	}
 }
 
@@ -275,6 +280,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 		IdleTimeout:       sc.IdleTimeout,
 		ErrorLog:          errorLog,
 	}
+
+	// Set keep-alives enabled/disabled
+	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
 
 	return server, err
 }

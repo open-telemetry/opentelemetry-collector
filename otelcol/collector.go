@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // State defines Collector's state.
@@ -54,6 +55,8 @@ func (s State) String() string {
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
 	// Factories service factories.
+	// TODO(13263) This is a dangerous "bare" function value, should define an interface
+	// following style guidelines.
 	Factories func() (Factories, error)
 
 	// BuildInfo provides collector start information.
@@ -119,7 +122,7 @@ type Collector struct {
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	bc := newBufferedCore(zapcore.DebugLevel)
-	cc := &collectorCore{core: bc}
+	cc := newCollectorCore(bc)
 	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
 	logger := zap.New(cc, options...)
 	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
@@ -216,6 +219,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+
+		// TODO: inject the telemetry factory through factories.
+		// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+		TelemetryFactory: otelconftelemetry.NewFactory(),
 	}, cfg.Service)
 	if err != nil {
 		return err

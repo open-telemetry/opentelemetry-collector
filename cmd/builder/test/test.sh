@@ -33,7 +33,8 @@ test_build_config() {
     echo "Starting test '${test}' at $(date)" >> "${out}/test.log"
 
     final_build_config=$(basename "${build_config}")
-    "${WORKSPACE_DIR}/.tools/envsubst" -o "${out}/${final_build_config}" -i <(cat "$build_config" "$replaces")
+    go tool -modfile "${WORKSPACE_DIR}/internal/tools/go.mod" envsubst \
+       -o "${out}/${final_build_config}" -i <(cat "$build_config" "$replaces")
     if ! go run . --config "${out}/${final_build_config}" --output-path "${out}" > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"

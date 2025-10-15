@@ -115,7 +115,7 @@ func BenchmarkSetFunction(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				_ = SetFunction(table, obj, bb.fn)
 			}
 		})

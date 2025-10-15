@@ -19,24 +19,12 @@ on:
 permissions: read-all
 
 jobs:
-  debug:
-    name: Debug merge queue
-    if: github.event_name == 'merge_group'
-    runs-on: ubuntu-latest
-    env:
-      MESSAGE: ${{ github.event.merge_group.head_commit.message }}
-      AUTHOR_NAME: ${{ github.event.merge_group.head_commit.author.name }}
-      AUTHOR_EMAIL: ${{ github.event.merge_group.head_commit.author.email }}
-    steps:
-      - run: |
-          echo "Merging commit '$MESSAGE' from '$AUTHOR_NAME' ('$AUTHOR_EMAIL')"
-
   check-merge-freeze:
     name: Check
     # This condition is to avoid blocking the PR causing the freeze in the first place.
     if: |
       (!startsWith(github.event.pull_request.title || github.event.merge_group.head_commit.message, '[chore] Prepare release')) ||
-      (!(github.event.pull_request.user.login == 'otelbot[bot]' || github.event.merge_group.head_commit.author.email == '197425009+otelbot@users.noreply.github.com'))
+      ((github.event.pull_request.user.login || github.event.merge_group.head_commit.author.name) != 'otelbot[bot]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0

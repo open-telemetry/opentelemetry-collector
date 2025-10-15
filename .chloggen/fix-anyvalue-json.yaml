@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: otelcol
+component: 'pdata/xpdata'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix a potential deadlock during collector shutdown.
+note: "Refactor JSON marshaling and unmarshaling to use `pcommon.Value` instead of `AnyValue`."
 
 # One or more tracking issues or pull requests related to the change
-issues: [13740]
+issues: [13837]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

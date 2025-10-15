@@ -7,6 +7,38 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.43.0/v0.137.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Improve validation for resource attribute `enabled` field in metadata files (#12722)
+  Resource attributes now require an explicit `enabled` field in metadata.yaml files, while regular attributes
+  are prohibited from having this field. This improves validation and prevents configuration errors.
+  
+- `all`: Changelog entries will now have their component field checked against a list of valid components. (#13924)
+  This will ensure a more standardized changelog format which makes it easier to parse.
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
+## v1.42.0/v0.136.0
+
+### 💡 Enhancements 💡
+
+- `xpdata`: Add Serialization and Deserialization of AnyValue (#12826)
+- `debugexporter`: add support for batching (#13791)
+  The default queue size is 1
+- `configtls`: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime. (#13130, #13245)
+- `mdatagen`: Expose stability level in generated metric documentation (#13748)
+- `internal/tools`: Add support for modernize in Makefile (#13796)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Fix a potential deadlock during collector shutdown. (#13740)
+- `otlpexporter`: fix the validation of unix socket endpoints (#13826)
+
+<!-- previous-version -->
+
 ## v1.41.0/v0.135.0
 
 ### 💡 Enhancements 💡

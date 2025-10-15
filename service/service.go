@@ -12,12 +12,10 @@ import (
 	"runtime"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/attribute"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -26,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -37,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
@@ -94,17 +90,20 @@ type Settings struct {
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
+
+	// TelemetryFactory is the factory for creating internal telemetry providers.
+	TelemetryFactory telemetry.Factory
 }
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo         component.BuildInfo
-	telemetrySettings component.TelemetrySettings
-	host              *graph.Host
-	collectorConf     *confmap.Conf
-	loggerProvider    telemetry.LoggerProvider
-	meterProvider     telemetry.MeterProvider
-	tracerProvider    telemetry.TracerProvider
+	buildInfo          component.BuildInfo
+	telemetrySettings  component.TelemetrySettings
+	host               *graph.Host
+	collectorConf      *confmap.Conf
+	loggerShutdownFunc component.ShutdownFunc
+	meterProvider      telemetry.MeterProvider
+	tracerProvider     telemetry.TracerProvider
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -125,50 +124,34 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		collectorConf: set.CollectorConf,
 	}
 
-	telemetryFactory := otelconftelemetry.NewFactory()
-	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
-
 	// Create the logger & LoggerProvider first. These may be used
 	// when creating the other telemetry providers.
+	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
 	loggerSettings := telemetry.LoggerSettings{
 		Settings:   telemetrySettings,
 		ZapOptions: set.LoggingOptions,
 	}
-	logger, loggerProvider, err := telemetryFactory.CreateLogger(ctx, loggerSettings, &cfg.Telemetry)
+	if set.TelemetryFactory == nil {
+		return nil, errors.New("telemetry factory not provided")
+	}
+	logger, loggerShutdownFunc, err := set.TelemetryFactory.CreateLogger(ctx, loggerSettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 	defer func() {
 		if resultErr != nil {
 			logger.Error("error found during service initialization", zap.Error(resultErr))
-			resultErr = multierr.Append(resultErr, loggerProvider.Shutdown(ctx))
+			resultErr = multierr.Append(resultErr, loggerShutdownFunc.Shutdown(ctx))
 		}
 	}()
-	srv.loggerProvider = loggerProvider
-
-	// Wrap the zap.Logger with componentattribute so scope attributes
-	// can be added and removed dynamically, and tee logs to the
-	// LoggerProvider.
-	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
-		core = componentattribute.NewOTelTeeCoreWithAttributes(
-			core,
-			loggerProvider,
-			"go.opentelemetry.io/collector/service",
-			attribute.NewSet(),
-		)
-		return core
-	}))
+	srv.loggerShutdownFunc = loggerShutdownFunc
 
 	meterSettings := telemetry.MeterSettings{
-		Settings: telemetrySettings,
-		Logger:   logger,
+		Settings:     telemetrySettings,
+		Logger:       logger,
+		DefaultViews: configureViews,
 	}
-	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
-	if mpConfig.Views == nil {
-		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
-	}
-	meterProvider, err := telemetryFactory.CreateMeterProvider(ctx, meterSettings, &cfg.Telemetry)
+	meterProvider, err := set.TelemetryFactory.CreateMeterProvider(ctx, meterSettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
@@ -183,7 +166,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		Settings: telemetrySettings,
 		Logger:   logger,
 	}
-	tracerProvider, err := telemetryFactory.CreateTracerProvider(ctx, tracerSettings, &cfg.Telemetry)
+	tracerProvider, err := set.TelemetryFactory.CreateTracerProvider(ctx, tracerSettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
@@ -194,7 +177,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	}()
 	srv.tracerProvider = tracerProvider
 
-	resource, err := telemetryFactory.CreateResource(ctx, telemetrySettings, &cfg.Telemetry)
+	resource, err := set.TelemetryFactory.CreateResource(ctx, telemetrySettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
@@ -297,8 +280,8 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	if err := srv.meterProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown meter provider: %w", err))
 	}
-	if err := srv.loggerProvider.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger provider: %w", err))
+	if err := srv.loggerShutdownFunc.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger: %w", err))
 	}
 
 	return errs

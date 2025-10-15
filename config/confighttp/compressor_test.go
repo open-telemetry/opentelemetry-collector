@@ -63,7 +63,7 @@ func benchmarkCompression(b *testing.B, _ configcompression.Type, buf *bytes.Buf
 		b.ResetTimer()
 		b.ReportAllocs()
 		b.SetBytes(int64(len(payload)))
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(5))
 			enc.(writeCloserReset).Reset(buf)
 			_, copyErr := io.Copy(enc, stringReadCloser)
@@ -82,7 +82,7 @@ func benchmarkCompressionNoConcurrency(b *testing.B, _ configcompression.Type, b
 		b.ResetTimer()
 		b.ReportAllocs()
 		b.SetBytes(int64(len(payload)))
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
 			enc.(writeCloserReset).Reset(buf)
 			_, copyErr := io.Copy(enc, stringReadCloser)

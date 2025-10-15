@@ -28,14 +28,28 @@ The following configuration options can be modified:
     - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
-  - `batch` disabled by default if not defined. You must set at least one of the fields below to enable batching.
-    - `flush_timeout`: time after which a batch will be sent regardless of its size. Must be a non-zero value
-    - `min_size`: the minimum size of a batch.
-    - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch.
-    - `sizer`: Overrides the sizer set at the `sending_queue` level for batching. Available options:
-      - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
-      - `bytes`: the size of serialized data in bytes (the least performant option).
+  - `batch`: see below.
 
+#### Sending queue batch settings
+
+Batch settings are available in the sending queue. Batching is disabled, by default. To enable default
+batch settings, use `batch: {}`. When `batch` is defined, the settings are:
+
+- `flush_timeout` (default = 200 ms): time after which a batch will be sent regardless of its size. Must be a non-zero value;
+- `min_size` (default = 8192): the minimum size of a batch;
+- `max_size` (default = 0): the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch. If set to zero, there is no maximum size;
+- `sizer`: see below.
+
+The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic. 
+
+If the `batch::sizer` field is not set, it takes its value from the parent structure. 
+
+If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`. 
+
+Available `batch::sizer` options:
+
+- `items`: number of the smallest parts of each signal (spans, metric data points, log records);
+- `bytes`: the size of serialized data in bytes (the least performant option).
 ### Timeout
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
