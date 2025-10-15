@@ -31,7 +31,7 @@ var (
 // PutLocation updates a LocationTable and a Stack's LocationIndices to
 // add or update a location.
 //
-// Deprecated: [v0.137.0] use SetLocation instead.
+// Deprecated: [v0.138.0] use SetLocation instead.
 func PutLocation(table LocationSlice, record Stack, loc Location) error {
 	for i, locIdx := range record.LocationIndices().All() {
 		idx := int(locIdx)
