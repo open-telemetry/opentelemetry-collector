@@ -290,8 +290,8 @@ func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 
-		for _, header := range headers {
-			h.Set(header.Name, string(header.Value))
+		for k, v := range headers.Pairs {
+			h.Set(k, string(v))
 		}
 
 		handler.ServeHTTP(w, r)

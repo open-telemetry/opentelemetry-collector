@@ -42,6 +42,8 @@ type OpaquePair = maplist.Pair[String]
 
 // MapList is equivalent to []OpaquePair,
 // but can additionally be unmarshalled from a map.
+//
+// Config validation enforces unicity of keys.
 type MapList = maplist.MapList[String]
 
 // MapListFromMap converts a map[string]String to a MapList.

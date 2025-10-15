@@ -289,9 +289,9 @@ func (cc *ClientConfig) ToClientConn(
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
 	kv := make([]string, 0, 2*len(cc.Headers))
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
-	for _, header := range cc.Headers {
-		if len(existingMd.Get(header.Name)) == 0 {
-			kv = append(kv, header.Name, string(header.Value))
+	for k, v := range cc.Headers.Pairs {
+		if len(existingMd.Get(k)) == 0 {
+			kv = append(kv, k, string(v))
 		}
 	}
 	return metadata.AppendToOutgoingContext(ctx, kv...)

@@ -25,11 +25,23 @@ headers:
   "foo": "bar"
 `
 
+const headersBad = `
+headers: "bad"
+`
+
+const headersDupe = `
+headers:
+- name: "foo"
+  value: "bar"
+- name: "foo"
+  value: "baz"
+`
+
 type testConfig struct {
 	Headers maplist.MapList[string] `mapstructure:"headers"`
 }
 
-func TestMapList(t *testing.T) {
+func TestMapListDuality(t *testing.T) {
 	retrieved1, err := confmap.NewRetrievedFromYAML([]byte(headersList))
 	require.NoError(t, err)
 	conf1, err := retrieved1.AsConf()
@@ -47,4 +59,60 @@ func TestMapList(t *testing.T) {
 	assert.NoError(t, xconfmap.Validate(&tc2))
 
 	assert.Equal(t, tc1, tc2)
+}
+
+func TestMapListUnmarshalError(t *testing.T) {
+	retrieved, err := confmap.NewRetrievedFromYAML([]byte(headersBad))
+	require.NoError(t, err)
+	conf, err := retrieved.AsConf()
+	require.NoError(t, err)
+	var tc testConfig
+	// Not sure if there is a way to change the error message to include the map case?
+	assert.EqualError(t, conf.Unmarshal(&tc),
+		"decoding failed due to the following error(s):\n\n"+
+			"'headers' source data must be an array or slice, got string")
+}
+
+func TestMapListValidate(t *testing.T) {
+	retrieved, err := confmap.NewRetrievedFromYAML([]byte(headersDupe))
+	require.NoError(t, err)
+	conf, err := retrieved.AsConf()
+	require.NoError(t, err)
+	var tc testConfig
+	require.NoError(t, conf.Unmarshal(&tc))
+	assert.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
+}
+
+func TestMapListFromMap(t *testing.T) {
+	assert.Equal(t, maplist.MapList[int]{
+		{"a", 1}, {"b", 2},
+	}, maplist.FromMap(map[string]int{
+		"a": 1,
+		"b": 2,
+	}))
+}
+
+func TestMapListMethods(t *testing.T) {
+	ml := maplist.MapList[int]{{"a", 1}, {"b", 2}}
+
+	type pair = struct {
+		k string
+		v int
+	}
+	var kvs []pair
+	for k, v := range ml.Pairs {
+		kvs = append(kvs, pair{k, v})
+	}
+	assert.Equal(t, []pair{{"a", 1}, {"b", 2}}, kvs)
+
+	v, ok := ml.Get("a")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, 1, v)
+	}
+	v, ok = ml.Get("c")
+	assert.False(t, ok)
+	assert.Zero(t, v)
+
+	assert.Equal(t, map[string]int{"a": 1, "b": 2}, ml.ToMap())
 }

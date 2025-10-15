@@ -293,8 +293,8 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 		// `Host` field should be set to override default `Host` header value which is Endpoint
 		req.Host = string(hostHeader)
 	}
-	for _, header := range interceptor.headers {
-		req.Header.Set(header.Name, string(header.Value))
+	for k, v := range interceptor.headers.Pairs {
+		req.Header.Set(k, string(v))
 	}
 
 	// Send the request to next transport.

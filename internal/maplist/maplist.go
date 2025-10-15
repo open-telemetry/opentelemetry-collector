@@ -5,9 +5,12 @@ package maplist // import "go.opentelemetry.io/collector/internal/maplist"
 
 import (
 	"cmp"
+	"fmt"
+	"iter"
 	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Pair[T any] struct {
@@ -17,6 +20,8 @@ type Pair[T any] struct {
 
 // MapList[T] is equivalent to []Pair[T],
 // but can additionally be unmarshalled from a map.
+//
+// Config validation enforces unicity of keys.
 type MapList[T any] []Pair[T]
 
 var _ confmap.Unmarshaler = (*MapList[string])(nil)
@@ -33,13 +38,43 @@ func (ml *MapList[T]) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
+var _ xconfmap.Validator = MapList[string]{}
+
+func (ml MapList[T]) Validate() error {
+	counts := make(map[string]int, len(ml))
+	for _, pair := range ml {
+		counts[pair.Name]++
+	}
+	if len(counts) == len(ml) {
+		return nil
+	}
+	var duplicates []string
+	for name, cnt := range counts {
+		if cnt > 1 {
+			duplicates = append(duplicates, name)
+		}
+	}
+	slices.Sort(duplicates)
+	return fmt.Errorf("duplicate keys in map-style list: %v", duplicates)
+}
+
+var _ iter.Seq2[string, string] = MapList[string]{}.Pairs
+
+func (ml MapList[T]) Pairs(yield func(name string, value T) bool) {
+	for _, pair := range ml {
+		if !yield(pair.Name, pair.Value) {
+			break
+		}
+	}
+}
+
 // Get looks up the first pair with the given name.
 // If one is found, returns its value and true.
 // Otherwise, returns a zero value and false.
 func (ml MapList[T]) Get(name string) (val T, ok bool) {
-	for _, header := range ml {
-		if header.Name == name {
-			return header.Value, true
+	for _, pair := range ml {
+		if pair.Name == name {
+			return pair.Value, true
 		}
 	}
 	return val, false
