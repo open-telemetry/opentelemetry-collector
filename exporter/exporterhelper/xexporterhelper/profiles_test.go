@@ -352,7 +352,7 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le xexporter.Pro
 	ld := testdata.GenerateProfiles(1)
 	ctx, span := tracer.Start(context.Background(), fakeProfilesParentSpanName)
 	defer span.End()
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		require.Equal(t, wantError, le.ConsumeProfiles(ctx, ld))
 	}
 }

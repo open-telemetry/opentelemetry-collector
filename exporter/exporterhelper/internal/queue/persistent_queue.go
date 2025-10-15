@@ -93,15 +93,15 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
+func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
 		encoding:        set.Encoding,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
 		activeSizer:     set.activeSizer(),
-		itemsSizer:      set.ItemsSizer,
-		bytesSizer:      set.BytesSizer,
+		itemsSizer:      request.NewItemsSizer[T](),
+		bytesSizer:      request.NewBytesSizer[T](),
 		storageID:       *set.StorageID,
 		id:              set.ID,
 		signal:          set.Signal,
@@ -502,7 +502,7 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
 	lenCDI := len(pq.metadata.CurrentlyDispatchedItems)
-	for i := 0; i < lenCDI; i++ {
+	for i := range lenCDI {
 		if pq.metadata.CurrentlyDispatchedItems[i] == index {
 			pq.metadata.CurrentlyDispatchedItems[i] = pq.metadata.CurrentlyDispatchedItems[lenCDI-1]
 			pq.metadata.CurrentlyDispatchedItems = pq.metadata.CurrentlyDispatchedItems[:lenCDI-1]
@@ -597,7 +597,7 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	}
 
 	val := make([]uint64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		val[i] = binary.LittleEndian.Uint64(buf)
 		buf = buf[8:]
 	}

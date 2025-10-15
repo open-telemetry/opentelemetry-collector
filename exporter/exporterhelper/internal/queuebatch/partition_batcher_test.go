@@ -35,25 +35,25 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 		{
 			name:       "items/one_worker",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "items/three_workers",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 3,
 		},
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 3,
 		},
 	}
@@ -101,25 +101,25 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "items/one_worker",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "items/three_workers",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 3,
 		},
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 3,
 		},
 	}
@@ -182,25 +182,25 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 		{
 			name:       "items/one_worker",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "items/three_workers",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 3,
 		},
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 3,
 		},
 	}
@@ -253,25 +253,25 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "items/one_worker",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "items/three_workers",
 			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
+			sizer:      request.NewItemsSizer[request.Request](),
 			maxWorkers: 3,
 		},
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewBytesSizer[request.Request](),
 			maxWorkers: 3,
 		},
 	}
@@ -333,7 +333,7 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop())
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), nil, newWorkerPool(2), sink.Export, zap.NewNop())
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -362,7 +362,7 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop())
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), nil, newWorkerPool(2), sink.Export, zap.NewNop())
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
@@ -396,7 +396,7 @@ func TestPartitionBatcher_PartialSuccessError(t *testing.T) {
 	core, observed := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, logger)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), nil, newWorkerPool(1), sink.Export, logger)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -438,7 +438,7 @@ func TestSPartitionBatcher_PartialSuccessError_AfterOkRequest(t *testing.T) {
 	core, observed := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, logger)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), nil, newWorkerPool(1), sink.Export, logger)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -498,7 +498,7 @@ func TestShardBatcher_EmptyRequestList(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop())
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), nil, newWorkerPool(1), sink.Export, zap.NewNop())
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
@@ -548,7 +548,7 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 				MinSize:      10,
 			}
 			sink := requesttest.NewSink()
-			ba := newPartitionBatcher(cfg, request.NewItemsSizer(), tt.mergeCtxFunc, newWorkerPool(1), sink.Export, zap.NewNop())
+			ba := newPartitionBatcher(cfg, request.NewItemsSizer[request.Request](), tt.mergeCtxFunc, newWorkerPool(1), sink.Export, zap.NewNop())
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()

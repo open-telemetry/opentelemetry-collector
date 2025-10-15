@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.137.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.137.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.137.0
-	go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.137.0
+	go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.0.0-20251010094443-567586048b9f
 	go.opentelemetry.io/contrib/otelconf v0.18.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.38.0
 	go.opentelemetry.io/otel v1.38.0
@@ -242,8 +242,6 @@ replace go.opentelemetry.io/collector/extension/xextension => ../extension/xexte
 
 replace go.opentelemetry.io/collector/otelcol => ../otelcol
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extension/extensionmiddleware
@@ -252,8 +250,8 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../config/confi
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extension/extensionmiddleware/extensionmiddlewaretest
 
-replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
-
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exporterhelper
+
+replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional

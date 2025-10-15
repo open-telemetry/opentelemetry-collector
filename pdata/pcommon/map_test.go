@@ -721,10 +721,9 @@ func BenchmarkMapEqual(b *testing.B) {
 	cmp := NewMap()
 	cmp.PutStr("hello", "world")
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_ = m.Equal(cmp)
 	}
 }

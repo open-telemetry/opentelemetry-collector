@@ -26,12 +26,6 @@ func NewMetricsQueueBatchSettings() Settings[request.Request] {
 	return Settings[request.Request]{
 		ReferenceCounter: metricsReferenceCounter{},
 		Encoding:         metricsEncoding{},
-		ItemsSizer:       request.NewItemsSizer(),
-		BytesSizer: request.BaseSizer{
-			SizeofFunc: func(req request.Request) int64 {
-				return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
-			},
-		},
 	}
 }
 

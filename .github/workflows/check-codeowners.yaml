@@ -54,8 +54,10 @@ jobs:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
 
+      # NOTE: the make command below intentionally uses the Makefile from the
+      # target branch, and not the PR checkout, since it runs with the
+      # pull_request_target event and has elevated permissions.
       - name: Gen CODEOWNERS
         run: |
-          cd pr
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} ../.tools/githubgen --default-codeowner "open-telemetry/collector-approvers" codeowners
+          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=./pr" make generate-codeowners
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make generate-codeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)
