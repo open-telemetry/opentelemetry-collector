@@ -127,6 +127,28 @@ func (ms Int32Slice) MoveAndAppendTo(dest Int32Slice) {
 	*ms.getOrig() = nil
 }
 
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (ms Int32Slice) RemoveIf(f func(int32) bool) {
+	ms.getState().AssertMutable()
+	newLen := 0
+	for i := 0; i < len(*ms.getOrig()); i++ {
+		if f((*ms.getOrig())[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*ms.getOrig())[newLen] = (*ms.getOrig())[i]
+		var zero int32
+		(*ms.getOrig())[i] = zero
+		newLen++
+	}
+	*ms.getOrig() = (*ms.getOrig())[:newLen]
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms Int32Slice) CopyTo(dest Int32Slice) {
 	dest.getState().AssertMutable()
