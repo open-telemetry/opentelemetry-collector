@@ -26,7 +26,8 @@ headers:
 `
 
 const headersBad = `
-headers: "bad"
+headers:
+  "bad": 1
 `
 
 const headersDupe = `
@@ -70,7 +71,8 @@ func TestMapListUnmarshalError(t *testing.T) {
 	// Not sure if there is a way to change the error message to include the map case?
 	assert.EqualError(t, conf.Unmarshal(&tc),
 		"decoding failed due to the following error(s):\n\n"+
-			"'headers' source data must be an array or slice, got string")
+			"'headers' decoding failed due to the following error(s):\n\n"+
+			"'[bad]' expected type 'string', got unconvertible type 'int'")
 }
 
 func TestMapListValidate(t *testing.T) {
@@ -93,7 +95,7 @@ func TestMapListFromMap(t *testing.T) {
 }
 
 func TestMapListMethods(t *testing.T) {
-	ml := maplist.MapList[int]{{"a", 1}, {"b", 2}}
+	ml := maplist.MapList[int]{{"a", 1}, {"b", 2}, {"c", 3}}
 
 	type pair = struct {
 		k string
@@ -102,6 +104,9 @@ func TestMapListMethods(t *testing.T) {
 	var kvs []pair
 	for k, v := range ml.Pairs {
 		kvs = append(kvs, pair{k, v})
+		if k == "b" {
+			break
+		}
 	}
 	assert.Equal(t, []pair{{"a", 1}, {"b", 2}}, kvs)
 
@@ -110,9 +115,9 @@ func TestMapListMethods(t *testing.T) {
 	if ok {
 		assert.Equal(t, 1, v)
 	}
-	v, ok = ml.Get("c")
+	v, ok = ml.Get("d")
 	assert.False(t, ok)
 	assert.Zero(t, v)
 
-	assert.Equal(t, map[string]int{"a": 1, "b": 2}, ml.ToMap())
+	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3}, ml.ToMap())
 }
