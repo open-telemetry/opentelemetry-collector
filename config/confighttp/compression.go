@@ -45,6 +45,7 @@ type compressRoundTripper struct {
 	compressionType   configcompression.Type
 	compressionParams configcompression.CompressionParams
 	compressor        *compressor
+	bufferPool        *sync.Pool
 }
 
 var zstdReaderPool sync.Pool
@@ -186,6 +187,11 @@ func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompres
 		compressionType:   compressionType,
 		compressionParams: compressionParams,
 		compressor:        encoder,
+		bufferPool: &sync.Pool{
+			New: func() any {
+				return &bytes.Buffer{}
+			},
+		},
 	}, nil
 }
 
@@ -199,7 +205,12 @@ func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	// Compress the body.
-	buf := bytes.NewBuffer([]byte{})
+	buf := r.bufferPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		r.bufferPool.Put(buf)
+	}()
+
 	if err := r.compressor.compress(buf, req.Body); err != nil {
 		return nil, err
 	}
