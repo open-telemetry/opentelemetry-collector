@@ -153,6 +153,32 @@ func Test{{ .structName }}MoveAndAppendTo(t *testing.T) {
   assert.Equal(t, ms2.Len(), 6)
 }
 
+func Test{{ .structName }}RemoveIf(t *testing.T) {
+	emptySlice := New{{ .structName }}()
+	emptySlice.RemoveIf(func(el {{ .itemType }}) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := New{{ .structName }}()
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
+	pos := 0
+	ms.RemoveIf(func(el {{ .itemType }}) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func Test{{ .structName }}RemoveIfAll(t *testing.T) {
+	ms := New{{ .structName }}()
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
+	ms.RemoveIf(func(el {{ .itemType }}) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
+}
+
 func Test{{ .structName }}Equal(t *testing.T) {
 	ms := New{{ .structName }}()
 	ms2 := New{{ .structName }}()
