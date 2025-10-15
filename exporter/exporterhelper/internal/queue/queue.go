@@ -78,17 +78,6 @@ type Settings[T request.Request] struct {
 	Telemetry        component.TelemetrySettings
 }
 
-func (set *Settings[T]) activeSizer() request.Sizer[T] {
-	switch set.SizerType {
-	case request.SizerTypeBytes:
-		return request.NewBytesSizer[T]()
-	case request.SizerTypeItems:
-		return request.NewItemsSizer[T]()
-	default:
-		return request.RequestsSizer[T]{}
-	}
-}
-
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
 	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
