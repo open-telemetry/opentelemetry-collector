@@ -15,3 +15,13 @@ func ResourceEntityRefs(res pcommon.Resource) EntityRefSlice {
 	ir := internal.Resource(res)
 	return newEntityRefSlice(&internal.GetOrigResource(ir).EntityRefs, internal.GetResourceState(ir))
 }
+
+// ResourceEntities returns the Entities associated with this Resource.
+// The returned EntityMap shares the resource's attributes map, so modifications
+// to entity attributes are immediately reflected in the resource.
+func ResourceEntities(res pcommon.Resource) EntityMap {
+	return EntityMap{
+		refs:       ResourceEntityRefs(res),
+		attributes: res.Attributes(),
+	}
+}
