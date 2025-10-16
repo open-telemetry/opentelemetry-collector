@@ -23,9 +23,18 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 		BlockOnOverflow: true,
 		Sizer:           exporterhelper.RequestSizerTypeItems,
 		QueueSize:       int64(runtime.NumCPU()) * int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 100)),
-		// Note: users could request to raise this, we could support a new
-		// option to add concurrency.
-		NumConsumers:    1,
+
+		// Note: the legacy batchprocessor used a single
+		// thread, which is why NumConsumers=1 is a safe
+		// default. However, it was designed prior to new
+		// exporterhelper features which make it possible,
+		// often necessary, to support concurrency. to raise
+		// this, we could support a new option to add
+		// concurrency as in the concurrent batch processor:
+		// https://github.com/open-telemetry/otel-arrow/tree/main/collector/processor/concurrentbatchprocessor
+		// This will be better introduced after the two
+		// feature gates are finished.
+		NumConsumers: 1,
 	}
 
 	if cfg.SendBatchSize > 0 || cfg.SendBatchMaxSize > 0 || cfg.Timeout > 0 {
