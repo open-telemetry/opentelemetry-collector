@@ -36,18 +36,6 @@ type QueueBatchEncoding[T any] interface {
 
 var ErrQueueIsFull = queue.ErrQueueIsFull
 
-// QueueBatchSettings are settings for the QueueBatch component.
-// They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
-type QueueBatchSettings = internal.QueueBatchSettings[Request]
-
-// WithQueueBatch enables queueing and batching for an exporter.
-// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
-	return internal.WithQueueBatch(cfg, set)
-}
-
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
 // By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig

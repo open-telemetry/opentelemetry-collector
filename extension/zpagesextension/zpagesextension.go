@@ -11,7 +11,8 @@ import (
 	"path"
 
 	"go.opentelemetry.io/contrib/zpages"
-	"go.opentelemetry.io/otel/sdk/trace"
+	traceSdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,17 +40,27 @@ type zpagesExtension struct {
 type registerableTracerProvider interface {
 	// RegisterSpanProcessor adds the given SpanProcessor to the list of SpanProcessors.
 	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#TracerProvider.RegisterSpanProcessor.
-	RegisterSpanProcessor(SpanProcessor trace.SpanProcessor)
+	RegisterSpanProcessor(SpanProcessor traceSdk.SpanProcessor)
 
 	// UnregisterSpanProcessor removes the given SpanProcessor from the list of SpanProcessors.
 	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#TracerProvider.UnregisterSpanProcessor.
-	UnregisterSpanProcessor(SpanProcessor trace.SpanProcessor)
+	UnregisterSpanProcessor(SpanProcessor traceSdk.SpanProcessor)
 }
 
 func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) error {
 	zPagesMux := http.NewServeMux()
 
-	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
+	tp := zpe.telemetry.TracerProvider
+	// If the TracerProvider was wrapped by the service implementation, access the underlying SDK provider
+	for {
+		wrapped, ok := tp.(interface{ Unwrap() trace.TracerProvider })
+		if !ok {
+			break
+		}
+		tp = wrapped.Unwrap()
+	}
+
+	sdktracer, ok := tp.(registerableTracerProvider)
 	if ok {
 		sdktracer.RegisterSpanProcessor(zpe.zpagesSpanProcessor)
 		zPagesMux.Handle(path.Join("/debug", tracezPath), zpages.NewTracezHandler(zpe.zpagesSpanProcessor))

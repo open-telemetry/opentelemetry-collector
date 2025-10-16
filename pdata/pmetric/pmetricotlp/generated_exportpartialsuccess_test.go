@@ -25,11 +25,9 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewOrigExportMetricsPartialSuccess(), sharedState)) })
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState))
-	})
-	assert.Panics(t, func() {
-		newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState).MoveTo(dest)
+		newExportPartialSuccess(internal.NewOrigExportMetricsPartialSuccess(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -43,9 +41,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(internal.NewOrigPtrExportMetricsPartialSuccess(), sharedState))
-	})
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewOrigExportMetricsPartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedDataPoints(t *testing.T) {
@@ -73,7 +69,6 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := NewExportPartialSuccess()
-	internal.FillOrigTestExportMetricsPartialSuccess(ms.orig)
+	ms := newExportPartialSuccess(internal.GenTestOrigExportMetricsPartialSuccess(), internal.NewState())
 	return ms
 }

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -51,7 +52,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]
 	defer resp.Body.Close()
 
 	reader := bufio.NewReader(resp.Body)
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(reader)
 	if err != nil {
 		return false
@@ -237,7 +238,7 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 		return resp.StatusCode == http.StatusOK
 	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		sendTestData(t, otelPort)
 	}
 

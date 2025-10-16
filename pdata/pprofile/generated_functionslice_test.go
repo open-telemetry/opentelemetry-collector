@@ -27,7 +27,7 @@ func TestFunctionSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestFunction((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigFunction()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestFunctionSlice_CopyTo(t *testing.T) {
 	dest := NewFunctionSlice()
 	src := generateTestFunctionSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestFunctionSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
 }
 

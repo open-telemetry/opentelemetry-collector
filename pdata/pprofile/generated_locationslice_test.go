@@ -27,7 +27,7 @@ func TestLocationSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLocation((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLocation()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestLocationSlice_CopyTo(t *testing.T) {
 	dest := NewLocationSlice()
 	src := generateTestLocationSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLocationSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 }
 

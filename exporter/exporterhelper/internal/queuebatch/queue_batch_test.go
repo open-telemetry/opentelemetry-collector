@@ -29,14 +29,14 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-func newFakeRequestSettings() Settings[request.Request] {
-	return Settings[request.Request]{
-		Signal:     pipeline.SignalMetrics,
-		ID:         component.NewID(exportertest.NopType),
-		Telemetry:  componenttest.NewNopTelemetrySettings(),
-		Encoding:   newFakeEncoding(&requesttest.FakeRequest{}),
-		ItemsSizer: request.NewItemsSizer(),
-		BytesSizer: requesttest.NewBytesSizer(),
+func newFakeRequestSettings() AllSettings[request.Request] {
+	return AllSettings[request.Request]{
+		Signal:    pipeline.SignalMetrics,
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Settings: Settings[request.Request]{
+			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
+		},
 	}
 }
 
@@ -103,7 +103,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: i + 1}))
 	}
 
@@ -486,7 +486,7 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 
 	// send 6 blockOnOverflow requests
 	wg := sync.WaitGroup{}
-	for i := 0; i < 6; i++ {
+	for range 6 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

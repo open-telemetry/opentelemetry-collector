@@ -27,12 +27,10 @@ type configSettings struct {
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
-	// TODO remove these params once SDK and resource creation are encapsulated
-	// within the otelconftelemetry factory. They are not used when creating
-	// the default config.
+	// TODO: inject the telemetry factory through factories, once available.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
-	telFactory := otelconftelemetry.NewFactory(nil, nil)
-	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
+	telFactory := otelconftelemetry.NewFactory()
+	defaultTelConfig := telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{

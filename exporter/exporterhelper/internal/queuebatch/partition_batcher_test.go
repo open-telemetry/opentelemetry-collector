@@ -29,7 +29,7 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
-		sizer      request.Sizer[request.Request]
+		sizer      request.Sizer
 		maxWorkers int
 	}{
 		{
@@ -47,13 +47,13 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -95,7 +95,7 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
-		sizer      request.Sizer[request.Request]
+		sizer      request.Sizer
 		maxWorkers int
 	}{
 		{
@@ -113,13 +113,13 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -176,7 +176,7 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
-		sizer      request.Sizer[request.Request]
+		sizer      request.Sizer
 		maxWorkers int
 	}{
 		{
@@ -194,13 +194,13 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -247,7 +247,7 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
-		sizer      request.Sizer[request.Request]
+		sizer      request.Sizer
 		maxWorkers int
 	}{
 		{
@@ -265,13 +265,13 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      requesttest.NewBytesSizer(),
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 3,
 		},
 	}

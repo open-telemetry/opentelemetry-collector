@@ -17,7 +17,7 @@ import (
 //
 // Following the OTLP 1.7.0 upgrade, this is currently a noop.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
-func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 Request) ([]Request, error) {
 	var sz sizer.ProfilesSizer
 	switch szt {
 	case exporterhelper.RequestSizerTypeItems:
@@ -38,7 +38,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 
 		// If no limit we can simply merge the new request into the current and return.
 		if maxSize == 0 {
-			return []exporterhelper.Request{req, req2}, nil
+			return []Request{req, req2}, nil
 		}
 
 		sp1, err1 := req.split(maxSize, sz)
@@ -49,7 +49,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
-		return []exporterhelper.Request{req}, nil
+		return []Request{req}, nil
 	}
 	return req.split(maxSize, sz)
 }
@@ -63,8 +63,8 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
 }*/
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]exporterhelper.Request, error) {
-	var res []exporterhelper.Request
+func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
+	var res []Request
 	for req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {

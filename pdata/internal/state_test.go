@@ -20,9 +20,9 @@ func TestAssertMutable(t *testing.T) {
 
 func BenchmarkAssertMutable(b *testing.B) {
 	b.ReportAllocs()
-	b.ResetTimer()
+
 	mutable := NewState()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		mutable.AssertMutable()
 	}
 }

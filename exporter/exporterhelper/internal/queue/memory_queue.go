@@ -26,10 +26,11 @@ var (
 )
 
 // memoryQueue is an in-memory implementation of a Queue.
-type memoryQueue[T any] struct {
+type memoryQueue[T request.Request] struct {
 	component.StartFunc
-	sizer request.Sizer[T]
-	cap   int64
+	refCounter ReferenceCounter[T]
+	sizer      request.Sizer
+	cap        int64
 
 	mu              sync.Mutex
 	hasMoreElements *sync.Cond
@@ -43,9 +44,10 @@ type memoryQueue[T any] struct {
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
-func newMemoryQueue[T any](set Settings[T]) readableQueue[T] {
+func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		sizer:           set.activeSizer(),
+		refCounter:      set.ReferenceCounter,
+		sizer:           request.NewSizer(set.SizerType),
 		cap:             set.Capacity,
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,
@@ -74,8 +76,16 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		return errSizeTooLarge
 	}
 
+	if mq.refCounter != nil {
+		mq.refCounter.Ref(el)
+	}
+
 	done, err := mq.add(ctx, el, elSize)
 	if err != nil {
+		// Unref in case of an error since there will not be any async worker to pick it up.
+		if mq.refCounter != nil {
+			mq.refCounter.Unref(el)
+		}
 		return err
 	}
 

@@ -27,7 +27,7 @@ func TestMappingSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestMapping((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigMapping()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestMappingSlice_CopyTo(t *testing.T) {
 	dest := NewMappingSlice()
 	src := generateTestMappingSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestMappingSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestMappingSlice(), dest)
 }
 

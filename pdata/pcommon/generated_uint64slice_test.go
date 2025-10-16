@@ -118,6 +118,32 @@ func TestUInt64SliceMoveAndAppendTo(t *testing.T) {
 	assert.Equal(t, ms2.Len(), 6)
 }
 
+func TestUInt64SliceRemoveIf(t *testing.T) {
+	emptySlice := NewUInt64Slice()
+	emptySlice.RemoveIf(func(el uint64) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 2, 3})
+	pos := 0
+	ms.RemoveIf(func(el uint64) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestUInt64SliceRemoveIfAll(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 2, 3})
+	ms.RemoveIf(func(el uint64) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
+}
+
 func TestUInt64SliceEqual(t *testing.T) {
 	ms := NewUInt64Slice()
 	ms2 := NewUInt64Slice()

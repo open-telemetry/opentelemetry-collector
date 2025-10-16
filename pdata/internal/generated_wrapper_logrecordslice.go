@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
@@ -19,19 +18,20 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLogRecord()
+			newDest[i] = NewOrigLogRecord()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigLogRecord(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrLogRecord()
+			newDest[i] = NewOrigLogRecord()
 		}
 	}
 	for i := range src {
@@ -42,23 +42,10 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 
 func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
 	orig := make([]*otlplogs.LogRecord, 5)
-	orig[0] = NewOrigPtrLogRecord()
-	orig[1] = NewOrigPtrLogRecord()
-	FillOrigTestLogRecord(orig[1])
-	orig[2] = NewOrigPtrLogRecord()
-	orig[3] = NewOrigPtrLogRecord()
-	FillOrigTestLogRecord(orig[3])
-	orig[4] = NewOrigPtrLogRecord()
-	return orig
-}
-
-// UnmarshalJSONOrigLogRecordSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLogRecordSlice(iter *json.Iterator) []*otlplogs.LogRecord {
-	var orig []*otlplogs.LogRecord
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrLogRecord())
-		UnmarshalJSONOrigLogRecord(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigLogRecord()
+	orig[1] = GenTestOrigLogRecord()
+	orig[2] = NewOrigLogRecord()
+	orig[3] = GenTestOrigLogRecord()
+	orig[4] = NewOrigLogRecord()
 	return orig
 }

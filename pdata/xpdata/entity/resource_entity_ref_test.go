@@ -13,6 +13,6 @@ import (
 )
 
 func TestResourceEntityRefs(t *testing.T) {
-	res := internal.GenerateTestResource()
+	res := internal.NewResource(internal.GenTestOrigResource(), internal.NewState())
 	assert.EqualValues(t, internal.GenerateTestEntityRefSlice(), ResourceEntityRefs(pcommon.Resource(res)))
 }

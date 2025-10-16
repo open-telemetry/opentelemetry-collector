@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/otel/attribute"
-	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -16,24 +15,10 @@ type tracerProviderWithAttributes struct {
 	attrs []attribute.KeyValue
 }
 
-// Necessary for components that use SDK-only methods, such as zpagesextension
-type tracerProviderWithAttributesSdk struct {
-	*sdkTrace.TracerProvider
-	attrs []attribute.KeyValue
-}
-
 // TracerProviderWithAttributes creates a TracerProvider with a new set of injected instrumentation scope attributes.
 func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) trace.TracerProvider {
-	switch tpwa := tp.(type) {
-	case tracerProviderWithAttributesSdk:
+	if tpwa, ok := tp.(tracerProviderWithAttributes); ok {
 		tp = tpwa.TracerProvider
-	case tracerProviderWithAttributes:
-		tp = tpwa.TracerProvider
-	case *sdkTrace.TracerProvider:
-		return tracerProviderWithAttributesSdk{
-			TracerProvider: tpwa,
-			attrs:          attrs.ToSlice(),
-		}
 	}
 	return tracerProviderWithAttributes{
 		TracerProvider: tp,
@@ -55,6 +40,6 @@ func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.Tr
 	return tracerWithAttributes(tpwa.TracerProvider, tpwa.attrs, name, options...)
 }
 
-func (tpwa tracerProviderWithAttributesSdk) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
-	return tracerWithAttributes(tpwa.TracerProvider, tpwa.attrs, name, options...)
+func (tpwa tracerProviderWithAttributes) Unwrap() trace.TracerProvider {
+	return tpwa.TracerProvider
 }

@@ -64,5 +64,7 @@ s+bytes profile_id = \(.*\);+bytes profile_id = \1\
 	(gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.ProfileID"\
 	];+g
 
+s+ValueType sample_type \(.*\);+ValueType sample_type \1\
+  [ (gogoproto.nullable) = false ];+g
 s+ValueType period_type \(.*\);+ValueType period_type \1\
   [ (gogoproto.nullable) = false ];+g

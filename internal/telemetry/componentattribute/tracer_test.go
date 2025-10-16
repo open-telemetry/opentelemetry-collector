@@ -98,7 +98,7 @@ func TestTPWA(t *testing.T) {
 			i := slices.IndexFunc(spans, func(s tracetest.SpanStub) bool {
 				return s.InstrumentationScope.Name == tracerName
 			})
-			assert.NotEqual(t, i, -1)
+			assert.NotEqual(t, -1, i)
 			span := spans[i]
 			assert.Equal(t, "testspan", span.Name)
 			assert.Equal(t, test.expAttrs, span.InstrumentationScope.Attributes)

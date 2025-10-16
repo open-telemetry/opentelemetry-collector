@@ -27,7 +27,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSummaryDataPoint((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointSlice()
 	src := generateTestSummaryDataPointSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 }
 

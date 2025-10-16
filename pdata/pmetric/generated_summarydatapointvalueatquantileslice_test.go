@@ -27,7 +27,7 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestSummaryDataPoint_ValueAtQuantile((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint_ValueAtQuantile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointValueAtQuantileSlice()
 	src := generateTestSummaryDataPointValueAtQuantileSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 

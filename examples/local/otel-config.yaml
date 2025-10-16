@@ -11,7 +11,6 @@ receivers:
         endpoint: localhost:4318
 
 processors:
-  batch:
   memory_limiter:
     # 75% of maximum memory up to 2G
     limit_mib: 1536
@@ -27,15 +26,15 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug]
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug]
 
   extensions: [zpages]

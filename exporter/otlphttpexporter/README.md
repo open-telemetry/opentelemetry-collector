@@ -41,6 +41,8 @@ The following settings can be optionally configured:
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
+- `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+- `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:
 

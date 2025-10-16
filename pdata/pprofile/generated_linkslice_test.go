@@ -27,7 +27,7 @@ func TestLinkSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLink((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLink()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestLinkSlice_CopyTo(t *testing.T) {
 	dest := NewLinkSlice()
 	src := generateTestLinkSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLinkSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLinkSlice(), dest)
 }
 

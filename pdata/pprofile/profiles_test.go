@@ -56,7 +56,7 @@ func TestSampleCount(t *testing.T) {
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilss.AppendEmpty()
 	}
 	// 5 + 2 (from rms.At(0) and rms.At(1) initialized first)
@@ -100,9 +100,8 @@ func BenchmarkProfilesUsage(b *testing.B) {
 	testSecondValProfileID := ProfileID(data.ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < pd.ResourceProfiles().Len(); i++ {
 			rs := pd.ResourceProfiles().At(i)
 			res := rs.Resource()
@@ -144,8 +143,8 @@ func BenchmarkProfilesMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalProfiles(pd)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)

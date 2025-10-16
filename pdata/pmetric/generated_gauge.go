@@ -32,7 +32,7 @@ func newGauge(orig *otlpmetrics.Gauge, state *internal.State) Gauge {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewGauge() Gauge {
-	return newGauge(internal.NewOrigPtrGauge(), internal.NewState())
+	return newGauge(internal.NewOrigGauge(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +44,8 @@ func (ms Gauge) MoveTo(dest Gauge) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Gauge{}
+	internal.DeleteOrigGauge(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // DataPoints returns the DataPoints associated with this Gauge.

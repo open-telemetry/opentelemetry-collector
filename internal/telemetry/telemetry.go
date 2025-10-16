@@ -31,6 +31,9 @@ type TelemetrySettings struct {
 	Logger *zap.Logger
 
 	// TracerProvider that the factory can pass to other instrumented third-party libraries.
+	//
+	// The service may wrap this provider for attribute injection. The wrapper may implement an
+	// additional `Unwrap() trace.TracerProvider` method to grant access to the underlying SDK.
 	TracerProvider trace.TracerProvider
 
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.

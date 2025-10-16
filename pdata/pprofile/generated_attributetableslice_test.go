@@ -26,7 +26,7 @@ func TestAttributeTableSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestKeyValue(&(*es.orig)[i])
+		(*es.orig)[i] = *internal.GenTestOrigKeyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -50,6 +50,8 @@ func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
 	src := generateTestAttributeTableSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestAttributeTableSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
 

@@ -81,7 +81,7 @@ func TestMPWA(t *testing.T) {
 			i := slices.IndexFunc(rm.ScopeMetrics, func(sm metricdata.ScopeMetrics) bool {
 				return sm.Scope.Name == meterName
 			})
-			assert.NotEqual(t, i, -1)
+			assert.NotEqual(t, -1, i)
 			assert.Equal(t, test.expAttrs, rm.ScopeMetrics[i].Scope.Attributes)
 			metrics := rm.ScopeMetrics[i].Metrics
 			require.Len(t, metrics, 1)

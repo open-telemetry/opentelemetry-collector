@@ -32,7 +32,7 @@ func newLine(orig *otlpprofiles.Line, state *internal.State) Line {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLine() Line {
-	return newLine(internal.NewOrigPtrLine(), internal.NewState())
+	return newLine(internal.NewOrigLine(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +44,8 @@ func (ms Line) MoveTo(dest Line) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Line{}
+	internal.DeleteOrigLine(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // FunctionIndex returns the functionindex associated with this Line.

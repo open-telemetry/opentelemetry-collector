@@ -5,7 +5,7 @@ status:
   disable_codecov_badge: true
   codeowners:
     active:
-      - BogdanDrutu
+      - bogdandrutu
       - dmitryax
   class: pkg
   stability:
@@ -107,17 +107,33 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Current size of the retry queue (in batches)
+      description: Current size of the retry queue (in batches).
       unit: "{batches}"
       gauge:
         value_type: int
         async: true
 
+    exporter_queue_batch_send_size:
+      enabled: true
+      description: Number of units in the batch
+      unit: "{units}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [ 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000 ]
+
+    exporter_queue_batch_send_size_bytes:
+      enabled: true
+      description: Number of bytes in batch that was sent. Only available on detailed level.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [ 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000 ]
+
     exporter_queue_capacity:
       enabled: true
       stability:
         level: alpha
-      description: Fixed capacity of the retry queue (in batches)
+      description: Fixed capacity of the retry queue (in batches).
       unit: "{batches}"
       gauge:
         value_type: int

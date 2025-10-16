@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type flavor int
@@ -134,6 +135,34 @@ func (o *Optional[T]) Get() *T {
 	return &o.value
 }
 
+// GetOrInsertDefault makes the Optional into a Some(val) and returns val.
+//
+// In particular, if it is Default(val) it turns it into Some(val)
+// and if it is None[T]() it turns it into Some(zeroVal) where zeroVal is T's zero value.
+// This method is useful for programmatic usage of an optional.
+//
+// It panics if
+// - T is not a struct OR
+// - T has a field with the mapstructure tag "enabled".
+func (o *Optional[T]) GetOrInsertDefault() *T {
+	err := errors.Join(assertStructKind[T](), assertNoEnabledField[T]())
+	if err != nil {
+		panic(err)
+	}
+
+	if o.HasValue() {
+		return o.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	if err := empty.Unmarshal(o); err != nil {
+		// This should never happen, if it happens it is a bug, so this panic is not documented.
+		panic(fmt.Errorf("failed to unmarshal empty map into %T type: %w. Please report this bug", o.value, err))
+	}
+
+	return o.Get()
+}
+
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.
@@ -188,4 +217,27 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+var _ xconfmap.Validator = (*Optional[any])(nil)
+
+// Validate implements [xconfmap.Validator]. This is required because the
+// private fields in [xconfmap.Validator] can't be seen by the reflection used
+// by [xconfmap.Validate], and therefore we have to continue the validation
+// chain manually. This method isn't meant to be called directly, and should
+// generally only be called by [xconfmap.Validate].
+func (o *Optional[T]) Validate() error {
+	// When the flavor is None, the user has not passed this value,
+	// and therefore we should not validate it. The parent struct holding
+	// the Optional type can determine whether a None value is valid for
+	// a given config.
+	//
+	// If the flavor is still Default, then the user has not passed this
+	// value and we should also not validate it.
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		return nil
+	}
+
+	// For the some flavor, validate the actual value.
+	return xconfmap.Validate(o.value)
 }

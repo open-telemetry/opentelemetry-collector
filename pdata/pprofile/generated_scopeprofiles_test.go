@@ -26,8 +26,8 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -40,14 +40,14 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigPtrScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
@@ -68,7 +68,6 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	ms := NewScopeProfiles()
-	internal.FillOrigTestScopeProfiles(ms.orig)
+	ms := newScopeProfiles(internal.GenTestOrigScopeProfiles(), internal.NewState())
 	return ms
 }

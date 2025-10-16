@@ -79,7 +79,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 
-	return
+	return err
 }
 
 func (e *baseExporter) shutdown(context.Context) error {

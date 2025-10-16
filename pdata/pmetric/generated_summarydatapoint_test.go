@@ -26,8 +26,8 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(internal.NewOrigPtrSummaryDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newSummaryDataPoint(internal.NewOrigPtrSummaryDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(internal.NewOrigPtrSummaryDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
@@ -102,7 +102,6 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	ms := NewSummaryDataPoint()
-	internal.FillOrigTestSummaryDataPoint(ms.orig)
+	ms := newSummaryDataPoint(internal.GenTestOrigSummaryDataPoint(), internal.NewState())
 	return ms
 }

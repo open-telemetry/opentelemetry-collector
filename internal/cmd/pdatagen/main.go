@@ -4,20 +4,31 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
+	"flag"
+	"fmt"
+	"os"
+
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 )
 
-func check(e error) {
+// checkErr prints the given error and exits when e is non-nil.
+func checkErr(e error) {
 	if e != nil {
-		panic(e)
+		fmt.Println(e)
+		os.Exit(1)
 	}
 }
 
 func main() {
-	for _, fp := range internal.AllPackages {
-		check(fp.GenerateFiles())
-		check(fp.GenerateTestFiles())
-		check(fp.GenerateInternalFiles())
-		check(fp.GenerateInternalTestsFiles())
+	var workdir string
+	flag.StringVar(&workdir, "C", ".", "set work directory")
+	flag.Parse()
+
+	checkErr(os.Chdir(workdir))
+	for _, fp := range pdata.AllPackages {
+		checkErr(fp.GenerateFiles())
+		checkErr(fp.GenerateTestFiles())
+		checkErr(fp.GenerateInternalFiles())
+		checkErr(fp.GenerateInternalTestsFiles())
 	}
 }

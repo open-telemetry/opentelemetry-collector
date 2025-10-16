@@ -202,3 +202,81 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
+
+func TestObsQueueLogsBatchSize(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    pipeline.SignalLogs,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](nil, 7, 9))
+	require.NoError(t, err)
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String())),
+				Count:        1,
+				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+				BucketCounts: []uint64{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Min:          metricdata.NewExtrema[int64](2),
+				Max:          metricdata.NewExtrema[int64](2),
+				Sum:          2,
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestObsQueueTracesBatchSize(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    pipeline.SignalTraces,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](nil, 17, 19))
+	require.NoError(t, err)
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12, Bytes: 200}))
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String())),
+				Count:        1,
+				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Min:          metricdata.NewExtrema[int64](12),
+				Max:          metricdata.NewExtrema[int64](12),
+				Sum:          12,
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestObsQueueMetricsBatchSize(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    pipeline.SignalMetrics,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](nil, 27, 29))
+	require.NoError(t, err)
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22, Bytes: 300}))
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String())),
+				Count:        1,
+				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Min:          metricdata.NewExtrema[int64](22),
+				Max:          metricdata.NewExtrema[int64](22),
+				Sum:          22,
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}

@@ -252,10 +252,10 @@ func getMimeTypeFromContentType(contentType string) string {
 
 func handleUnmatchedMethod(resp http.ResponseWriter) {
 	hst := http.StatusMethodNotAllowed
-	writeResponse(resp, "text/plain", hst, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", hst)))
+	writeResponse(resp, "text/plain", hst, fmt.Appendf(nil, "%v method not allowed, supported: [POST]", hst))
 }
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	hst := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", hst, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", hst, jsonContentType, pbContentType)))
+	writeResponse(resp, "text/plain", hst, fmt.Appendf(nil, "%v unsupported media type, supported: [%s, %s]", hst, jsonContentType, pbContentType))
 }

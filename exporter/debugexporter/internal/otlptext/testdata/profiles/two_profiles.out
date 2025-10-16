@@ -4,19 +4,13 @@ Mapping #0
     File offset: 4
     File name: 5
     Attributes: [7 8]
-    Has functions: true
-    Has filenames: true
-    Has line numbers: true
-    Has inline frames: true
 Location #0
     Mapping index: 0
     Address: 1
-    Is folded: false
     Attributes: []
 Location #1
     Mapping index: 0
     Address: 2
-    Is folded: false
     Attributes: []
 Location #2
     Mapping index: 3
@@ -25,21 +19,23 @@ Location #2
         Function index: 1
         Line: 2
         Column: 3
-    Is folded: true
     Attributes: [6 7]
 Function #0
     Name: 2
     System name: 3
     Filename: 4
     Start line: 5
-Attribute units:
-     -> attributeKey: Int(1)
+Attribute table:
+     -> Key: Int(2)
+     -> Value: Str()
      -> unit: Int(5)
 Link table:
      -> Trace ID: Str(0302030405060708090a0b0c0d0e0f10)
      -> Span ID: Str(1112131415161718)
 String table:
     
+    key
+    intValue
     foobar
 ResourceProfiles #0
 Resource SchemaURL: 
@@ -53,10 +49,8 @@ Profile #0
     Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
     Duration       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Dropped attributes count: 1
-    Location indices: [1]
     Sample #0
-        Location length: 1
-        Value: [4]
+        Values: [4]
         Attributes:
              -> key: value
 Profile #1
@@ -64,10 +58,8 @@ Profile #1
     Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
     Duration       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Dropped attributes count: 0
-    Location indices: [1]
     Sample #0
-        Location length: 1
-        Value: [9]
+        Values: [9]
         Attributes:
              -> key: value
     Comment:

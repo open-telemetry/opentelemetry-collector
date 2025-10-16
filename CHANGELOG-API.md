@@ -7,6 +7,97 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.43.0/v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Remove all experimental symbols in exporterhelper (#11143)
+  They have all been moved to xexporterhelper
+  
+
+### 🚩 Deprecations 🚩
+
+- `all`: service/telemetry.TracesConfig is deprecated (#13904)
+  This type alias has been added to otelconftelemetry.TracesConfig,
+  where the otelconf-based telemetry implementation now lives.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Mark configoptional as stable (#13403)
+- `all`: Mark configauth module as 1.0 (#9476)
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
+## v1.42.0/v0.136.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated function NewRequestsSizer (#13803)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758, #13825, #13839)
+- `pdata/pprofile`: Remove deprecated ProfilesDictionary method (#13858)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate all experimental symbols in exporterhelper and move them to xexporterhelper (#11143)
+
+### 💡 Enhancements 💡
+
+- `configoptional`: Add `GetOrInsertDefault` method to `configoptional.Optional` (#13856)
+  This method inserts a default or zero value into a `None`/`Default` `Optional` before `Get`ting its inner value.
+  
+- `exporter`: Stabilize exporter module. (#12978)
+  This does not stabilize the exporterhelper module or configuration
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758)
+
+<!-- previous-version -->
+
+## v1.41.0/v0.135.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated AddAttribute method (#13764)
+
+### 💡 Enhancements 💡
+
+- `configmiddleware`: Stabilize `configmiddleware` module (#13422)
+  This only stabilizes the configuration interface but does not stabilize the middlewares themselves or the way of implementing them.
+- `xpdata`: Add experimental MapBuilder struct to optimize pcommon.Map construction (#13617)
+
+<!-- previous-version -->
+
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Split exporterhelper into a separate module (#12985)
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Set `tcp` as the default transport type (#13657)
+  gRPC is generally used with HTTP/2, so this will simplify usage for most components.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecate Profiles.ProfilesDictionary in favor of Profiles.Dictionary. (#13644)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+
+### 🧰 Bug fixes 🧰
+
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+
+<!-- previous-version -->
+
 ## v1.38.0/v0.132.0
 
 ### 🛑 Breaking changes 🛑

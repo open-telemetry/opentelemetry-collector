@@ -33,7 +33,7 @@ func TestSpanCount(t *testing.T) {
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeSpans().AppendEmpty()
 	ilss := rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilss.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -64,15 +64,6 @@ func TestSpanCountWithEmpty(t *testing.T) {
 	}, new(internal.State)).SpanCount())
 }
 
-func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	traces := newTraces(otlp, new(internal.State))
-	assert.Equal(t, NewTraces(), traces)
-	assert.Equal(t, otlp, traces.getOrig())
-	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
-	// circular dependency.
-}
-
 func TestTracesCopyTo(t *testing.T) {
 	td := generateTestTraces()
 	tracesCopy := NewTraces()
@@ -95,9 +86,8 @@ func BenchmarkTracesUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			rs := td.ResourceSpans().At(i)
 			res := rs.Resource()
@@ -147,8 +137,8 @@ func BenchmarkTracesMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalTraces(td)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)

@@ -396,7 +396,7 @@ func createConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter
 
 func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(t, addr, factory.CreateDefaultConfig())
+	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
@@ -404,7 +404,7 @@ func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 
 func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(t, addr, factory.CreateDefaultConfig())
+	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
@@ -412,15 +412,15 @@ func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 
 func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(t, addr, factory.CreateDefaultConfig())
+	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(t *testing.T, addr string, defaultCfg component.Config) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = addr
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = addr
 	return cfg
 }
 

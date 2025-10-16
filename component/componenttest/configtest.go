@@ -45,7 +45,7 @@ func validateConfigDataType(t reflect.Type) error {
 	case reflect.Struct:
 		// Reflect on the pointed data and check each of its fields.
 		nf := t.NumField()
-		for i := 0; i < nf; i++ {
+		for i := range nf {
 			f := t.Field(i)
 			errs = multierr.Append(errs, checkStructFieldTags(f))
 		}

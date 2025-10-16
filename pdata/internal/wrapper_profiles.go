@@ -8,10 +8,6 @@ import (
 	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func SetProfilesState(ms Profiles, state State) {
-	*ms.state = state
-}
-
 // ProfilesToProto internal helper to convert Profiles to protobuf representation.
 func ProfilesToProto(l Profiles) otlpprofile.ProfilesData {
 	return otlpprofile.ProfilesData{

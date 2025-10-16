@@ -34,7 +34,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	return newProfile(internal.NewOrigPtrProfile(), internal.NewState())
+	return newProfile(internal.NewOrigProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,13 +46,13 @@ func (ms Profile) MoveTo(dest Profile) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Profile{}
+	internal.DeleteOrigProfile(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
-// SampleType returns the SampleType associated with this Profile.
-func (ms Profile) SampleType() ValueTypeSlice {
-	return newValueTypeSlice(&ms.orig.SampleType, ms.state)
+// SampleType returns the sampletype associated with this Profile.
+func (ms Profile) SampleType() ValueType {
+	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
 // Sample returns the Sample associated with this Profile.
@@ -60,31 +60,26 @@ func (ms Profile) Sample() SampleSlice {
 	return newSampleSlice(&ms.orig.Sample, ms.state)
 }
 
-// LocationIndices returns the LocationIndices associated with this Profile.
-func (ms Profile) LocationIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state))
-}
-
 // Time returns the time associated with this Profile.
 func (ms Profile) Time() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeNanos)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTime replaces the time associated with this Profile.
 func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
-	ms.orig.TimeNanos = int64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Duration returns the duration associated with this Profile.
 func (ms Profile) Duration() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.DurationNanos)
+	return pcommon.Timestamp(ms.orig.DurationNano)
 }
 
 // SetDuration replaces the duration associated with this Profile.
 func (ms Profile) SetDuration(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
-	ms.orig.DurationNanos = int64(v)
+	ms.orig.DurationNano = uint64(v)
 }
 
 // PeriodType returns the periodtype associated with this Profile.
@@ -106,17 +101,6 @@ func (ms Profile) SetPeriod(v int64) {
 // CommentStrindices returns the CommentStrindices associated with this Profile.
 func (ms Profile) CommentStrindices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
-}
-
-// DefaultSampleTypeIndex returns the defaultsampletypeindex associated with this Profile.
-func (ms Profile) DefaultSampleTypeIndex() int32 {
-	return ms.orig.DefaultSampleTypeIndex
-}
-
-// SetDefaultSampleTypeIndex replaces the defaultsampletypeindex associated with this Profile.
-func (ms Profile) SetDefaultSampleTypeIndex(v int32) {
-	ms.state.AssertMutable()
-	ms.orig.DefaultSampleTypeIndex = v
 }
 
 // ProfileID returns the profileid associated with this Profile.

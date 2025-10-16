@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_Link {
@@ -19,19 +18,20 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan_Link()
+			newDest[i] = NewOrigSpan_Link()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigSpan_Link(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrSpan_Link()
+			newDest[i] = NewOrigSpan_Link()
 		}
 	}
 	for i := range src {
@@ -42,23 +42,10 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 
 func GenerateOrigTestSpan_LinkSlice() []*otlptrace.Span_Link {
 	orig := make([]*otlptrace.Span_Link, 5)
-	orig[0] = NewOrigPtrSpan_Link()
-	orig[1] = NewOrigPtrSpan_Link()
-	FillOrigTestSpan_Link(orig[1])
-	orig[2] = NewOrigPtrSpan_Link()
-	orig[3] = NewOrigPtrSpan_Link()
-	FillOrigTestSpan_Link(orig[3])
-	orig[4] = NewOrigPtrSpan_Link()
-	return orig
-}
-
-// UnmarshalJSONOrigSpan_LinkSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSpan_LinkSlice(iter *json.Iterator) []*otlptrace.Span_Link {
-	var orig []*otlptrace.Span_Link
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrSpan_Link())
-		UnmarshalJSONOrigSpan_Link(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigSpan_Link()
+	orig[1] = GenTestOrigSpan_Link()
+	orig[2] = NewOrigSpan_Link()
+	orig[3] = GenTestOrigSpan_Link()
+	orig[4] = NewOrigSpan_Link()
 	return orig
 }

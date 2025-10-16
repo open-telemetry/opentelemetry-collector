@@ -24,8 +24,8 @@ func TestSummary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummary(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSummary(internal.NewOrigPtrSummary(), sharedState)) })
-	assert.Panics(t, func() { newSummary(internal.NewOrigPtrSummary(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSummary(internal.NewOrigSummary(), sharedState)) })
+	assert.Panics(t, func() { newSummary(internal.NewOrigSummary(), sharedState).MoveTo(dest) })
 }
 
 func TestSummary_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestSummary_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSummary(internal.NewOrigPtrSummary(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSummary(internal.NewOrigSummary(), sharedState)) })
 }
 
 func TestSummary_DataPoints(t *testing.T) {
@@ -49,7 +49,6 @@ func TestSummary_DataPoints(t *testing.T) {
 }
 
 func generateTestSummary() Summary {
-	ms := NewSummary()
-	internal.FillOrigTestSummary(ms.orig)
+	ms := newSummary(internal.GenTestOrigSummary(), internal.NewState())
 	return ms
 }

@@ -61,7 +61,7 @@ func ExampleMetric_SetEmptyGauge() {
 
 	gauge := metric.SetEmptyGauge()
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		dataPoint := gauge.DataPoints().AppendEmpty()
 		dataPoint.SetTimestamp(pcommon.Timestamp(1640995200000000000))
 		dataPoint.SetDoubleValue(45.5 + float64(i)*2.1)

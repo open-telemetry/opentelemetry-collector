@@ -4,15 +4,13 @@
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-)
-
-var (
-	jsonMarshaler   = &ptrace.JSONMarshaler{}
-	jsonUnmarshaler = &ptrace.JSONUnmarshaler{}
 )
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
@@ -42,9 +40,6 @@ func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	if !internal.UseCustomProtoEncoding.IsEnabled() {
-		return ms.orig.Marshal()
-	}
 	size := internal.SizeProtoOrigExportTraceServiceRequest(ms.orig)
 	buf := make([]byte, size)
 	_ = internal.MarshalProtoOrigExportTraceServiceRequest(ms.orig, buf)
@@ -53,9 +48,6 @@ func (ms ExportRequest) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	if !internal.UseCustomProtoEncoding.IsEnabled() {
-		return ms.orig.Unmarshal(data)
-	}
 	err := internal.UnmarshalProtoOrigExportTraceServiceRequest(ms.orig, data)
 	if err != nil {
 		return err
@@ -66,17 +58,21 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
-	return jsonMarshaler.MarshalTraces(ptrace.Traces(internal.NewTraces(ms.orig, nil)))
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	internal.MarshalJSONOrigExportTraceServiceRequest(ms.orig, dest)
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
-	td, err := jsonUnmarshaler.UnmarshalTraces(data)
-	if err != nil {
-		return err
-	}
-	*ms.orig = *internal.GetOrigTraces(internal.Traces(td))
-	return nil
+	iter := json.BorrowIterator(data)
+	defer json.ReturnIterator(iter)
+	internal.UnmarshalJSONOrigExportTraceServiceRequest(ms.orig, iter)
+	return iter.Error()
 }
 
 func (ms ExportRequest) Traces() ptrace.Traces {

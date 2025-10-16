@@ -33,7 +33,7 @@ func newScopeMetrics(orig *otlpmetrics.ScopeMetrics, state *internal.State) Scop
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeMetrics() ScopeMetrics {
-	return newScopeMetrics(internal.NewOrigPtrScopeMetrics(), internal.NewState())
+	return newScopeMetrics(internal.NewOrigScopeMetrics(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +45,8 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ScopeMetrics{}
+	internal.DeleteOrigScopeMetrics(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeMetrics.

@@ -69,7 +69,7 @@ func TestGRPCLogger(t *testing.T) {
 			require.NoError(t, err)
 
 			// create GRPCLogger
-			glogger := SetLogger(logger, test.cfg.Level.Level())
+			glogger := SetLogger(logger)
 			assert.NotNil(t, glogger)
 			// grpc does not usually call the logger directly, but through various wrappers that add extra depth
 			component := &mockComponent{logger: grpclog.Component("channelz")}

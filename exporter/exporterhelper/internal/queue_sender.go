@@ -5,22 +5,15 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
-
-// QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
-type QueueBatchSettings[T any] struct {
-	Encoding    queue.Encoding[T]
-	ItemsSizer  request.Sizer[T]
-	BytesSizer  request.Sizer[T]
-	Partitioner queuebatch.Partitioner[T]
-}
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
 // By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
@@ -34,11 +27,16 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		// This default is probably still too high, and may be adjusted further down in a future release
 		QueueSize:       1_000,
 		BlockOnOverflow: false,
+		Batch: configoptional.Default(queuebatch.BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        request.SizerTypeItems,
+			MinSize:      8192,
+		}),
 	}
 }
 
 func NewQueueSender(
-	qSet queuebatch.Settings[request.Request],
+	qSet queuebatch.AllSettings[request.Request],
 	qCfg queuebatch.Config,
 	exportFailureMessage string,
 	next sender.Sender[request.Request],

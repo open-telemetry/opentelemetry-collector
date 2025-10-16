@@ -6,11 +6,13 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -19,7 +21,7 @@ var (
 	metricsMarshaler                  = &pmetric.ProtoMarshaler{}
 )
 
-func NewMetrics(cons consumer.Metrics, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
+func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Metrics {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -29,18 +31,22 @@ func NewMetrics(cons consumer.Metrics, itemCounter, sizeCounter metric.Int64Coun
 		opt(&o)
 	}
 
+	consumerSet := Settings{
+		ItemCounter: set.ItemCounter,
+		SizeCounter: set.SizeCounter,
+		Logger:      set.Logger.With(componentattribute.ToZapFields(attribute.NewSet(o.staticDataPointAttributes...))...),
+	}
+
 	return obsMetrics{
 		consumer:        cons,
-		itemCounter:     itemCounter,
-		sizeCounter:     sizeCounter,
+		set:             consumerSet,
 		compiledOptions: o.compile(),
 	}
 }
 
 type obsMetrics struct {
-	consumer    consumer.Metrics
-	itemCounter metric.Int64Counter
-	sizeCounter metric.Int64Counter
+	consumer consumer.Metrics
+	set      Settings
 	compiledOptions
 }
 
@@ -51,13 +57,13 @@ func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	itemCount := md.DataPointCount()
 	defer func() {
-		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+		c.set.ItemCounter.Add(ctx, int64(itemCount), *attrs)
 	}()
 
-	if isEnabled(ctx, c.sizeCounter) {
+	if isEnabled(ctx, c.set.SizeCounter) {
 		byteCount := int64(metricsMarshaler.MetricsSize(md))
 		defer func() {
-			c.sizeCounter.Add(ctx, byteCount, *attrs)
+			c.set.SizeCounter.Add(ctx, byteCount, *attrs)
 		}()
 	}
 
@@ -68,6 +74,9 @@ func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		} else {
 			attrs = &c.withFailureAttrs
 			err = consumererror.NewDownstream(err)
+		}
+		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
+			c.set.Logger.Debug("Metrics pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
 		}
 	}
 	return err

@@ -33,7 +33,7 @@ func newScopeLogs(orig *otlplogs.ScopeLogs, state *internal.State) ScopeLogs {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeLogs() ScopeLogs {
-	return newScopeLogs(internal.NewOrigPtrScopeLogs(), internal.NewState())
+	return newScopeLogs(internal.NewOrigScopeLogs(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +45,8 @@ func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ScopeLogs{}
+	internal.DeleteOrigScopeLogs(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeLogs.

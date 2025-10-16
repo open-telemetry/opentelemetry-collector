@@ -42,11 +42,15 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.QueueSize = 1
+
 	return &Config{
 		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
+		QueueConfig:        queueCfg,
 	}
 }
 

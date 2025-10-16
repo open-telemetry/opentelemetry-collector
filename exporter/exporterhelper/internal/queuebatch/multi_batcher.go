@@ -14,12 +14,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-var _ Batcher[request.Request] = (*multiBatcher)(nil)
-
 type multiBatcher struct {
 	cfg         BatchConfig
 	wp          *workerPool
-	sizer       request.Sizer[request.Request]
+	sizer       request.Sizer
 	partitioner Partitioner[request.Request]
 	mergeCtx    func(context.Context, context.Context) context.Context
 	consumeFunc sender.SendFunc[request.Request]
@@ -29,7 +27,7 @@ type multiBatcher struct {
 
 func newMultiBatcher(
 	bCfg BatchConfig,
-	sizer request.Sizer[request.Request],
+	sizer request.Sizer,
 	wp *workerPool,
 	partitioner Partitioner[request.Request],
 	mergeCtx func(context.Context, context.Context) context.Context,

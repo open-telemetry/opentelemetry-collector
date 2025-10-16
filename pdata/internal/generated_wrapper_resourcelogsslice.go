@@ -8,7 +8,6 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.ResourceLogs {
@@ -19,19 +18,20 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceLogs()
+			newDest[i] = NewOrigResourceLogs()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
+			DeleteOrigResourceLogs(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigPtrResourceLogs()
+			newDest[i] = NewOrigResourceLogs()
 		}
 	}
 	for i := range src {
@@ -42,23 +42,10 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 
 func GenerateOrigTestResourceLogsSlice() []*otlplogs.ResourceLogs {
 	orig := make([]*otlplogs.ResourceLogs, 5)
-	orig[0] = NewOrigPtrResourceLogs()
-	orig[1] = NewOrigPtrResourceLogs()
-	FillOrigTestResourceLogs(orig[1])
-	orig[2] = NewOrigPtrResourceLogs()
-	orig[3] = NewOrigPtrResourceLogs()
-	FillOrigTestResourceLogs(orig[3])
-	orig[4] = NewOrigPtrResourceLogs()
-	return orig
-}
-
-// UnmarshalJSONOrigResourceLogsSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigResourceLogsSlice(iter *json.Iterator) []*otlplogs.ResourceLogs {
-	var orig []*otlplogs.ResourceLogs
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		orig = append(orig, NewOrigPtrResourceLogs())
-		UnmarshalJSONOrigResourceLogs(orig[len(orig)-1], iter)
-		return true
-	})
+	orig[0] = NewOrigResourceLogs()
+	orig[1] = GenTestOrigResourceLogs()
+	orig[2] = NewOrigResourceLogs()
+	orig[3] = GenTestOrigResourceLogs()
+	orig[4] = NewOrigResourceLogs()
 	return orig
 }

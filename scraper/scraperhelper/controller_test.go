@@ -178,7 +178,7 @@ func TestLogsScrapeController(t *testing.T) {
 					<-ch
 				}
 				// Consume the initial scrapes on start
-				for i := 0; i < iterations; i++ {
+				for range iterations {
 					tickerCh <- time.Now()
 
 					for _, ch := range scrapeLogsChs {
@@ -289,7 +289,7 @@ func TestMetricsScrapeController(t *testing.T) {
 					<-ch
 				}
 				// Consume the initial scrapes on start
-				for i := 0; i < iterations; i++ {
+				for range iterations {
 					tickerCh <- time.Now()
 
 					for _, ch := range scrapeMetricsChs {

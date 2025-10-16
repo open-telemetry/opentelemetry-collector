@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Config[T any] struct {
@@ -70,6 +73,16 @@ func TestDefaultPanics(t *testing.T) {
 		_ = None[WithEnabled]()
 	})
 
+	assert.Panics(t, func() {
+		opt := None[int]()
+		_ = opt.GetOrInsertDefault()
+	})
+
+	assert.Panics(t, func() {
+		var opt Optional[WithEnabled]
+		_ = opt.GetOrInsertDefault()
+	})
+
 	assert.NotPanics(t, func() {
 		_ = Default(NoMapstructure{})
 	})
@@ -97,12 +110,47 @@ func TestNoneZeroVal(t *testing.T) {
 	var none Optional[Sub]
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
 }
 
 func TestNone(t *testing.T) {
 	none := None[Sub]()
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
+}
+
+func ExampleNone() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := None[Person]()
+
+	// A None has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the zero value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Name = "John Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 0}
 }
 
 func TestSome(t *testing.T) {
@@ -110,13 +158,78 @@ func TestSome(t *testing.T) {
 		Foo: "foobar",
 	})
 	require.True(t, some.HasValue())
-	assert.Equal(t, "foobar", some.Get().Foo)
+	retGet := some.Get()
+	assert.Equal(t, "foobar", retGet.Foo)
+
+	retGetOrInsertDefault := some.GetOrInsertDefault()
+	require.True(t, some.HasValue())
+	assert.Equal(t, retGet, retGetOrInsertDefault)
+}
+
+func ExampleSome() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := Some(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Some has a value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault only returns a reference
+	// to the inner value without modifying it.
+	opt.GetOrInsertDefault().Name = "Jane Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// true
+	// &{John Doe 42}
+	// true
+	// &{Jane Doe 42}
 }
 
 func TestDefault(t *testing.T) {
-	defaultSub := Default(&subDefault)
+	defaultSub := Default(subDefault)
 	require.False(t, defaultSub.HasValue())
 	require.Nil(t, defaultSub.Get())
+
+	ret := defaultSub.GetOrInsertDefault()
+	require.True(t, defaultSub.HasValue())
+	assert.Equal(t, &subDefault, ret)
+}
+
+func ExampleDefault() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := Default(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Default has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the default value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Age = 38
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 38}
 }
 
 func TestUnmarshalOptional(t *testing.T) {
@@ -457,6 +570,126 @@ func TestComparePointerMarshal(t *testing.T) {
 			require.NoError(t, confOptional.Marshal(wrapOptional))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
+		})
+	}
+}
+
+type invalid struct{}
+
+func (invalid) Validate() error {
+	return errors.New("invalid")
+}
+
+var _ xconfmap.Validator = invalid{}
+
+type hasNested struct {
+	CouldBe Optional[invalid]
+}
+
+func TestOptionalValidate(t *testing.T) {
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: None[invalid](),
+	}))
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: Default(invalid{}),
+	}))
+	require.Error(t, xconfmap.Validate(hasNested{
+		CouldBe: Some(invalid{}),
+	}))
+}
+
+type validatedConfig struct {
+	Default Optional[optionalConfig] `mapstructure:"default"`
+	Some    Optional[someConfig]     `mapstructure:"some"`
+}
+
+var _ xconfmap.Validator = (*optionalConfig)(nil)
+
+type optionalConfig struct {
+	StringVal string `mapstructure:"string_val"`
+}
+
+func (n optionalConfig) Validate() error {
+	if n.StringVal == "invalid" {
+		return errors.New("field `string_val` cannot be set to `invalid`")
+	}
+
+	return nil
+}
+
+type someConfig struct {
+	Nested Optional[optionalConfig] `mapstructure:"nested"`
+}
+
+func newDefaultValidatedConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "valid"}),
+	}
+}
+
+func newInvalidDefaultConfig() validatedConfig {
+	return validatedConfig{
+		Default: Default(optionalConfig{StringVal: "invalid"}),
+	}
+}
+
+func TestOptionalFileValidate(t *testing.T) {
+	cases := []struct {
+		name    string
+		variant string
+		cfg     func() validatedConfig
+		err     error
+	}{
+		{
+			name:    "valid default with just key set and no subfields",
+			variant: "implicit",
+			cfg:     newDefaultValidatedConfig,
+		},
+		{
+			name:    "valid default with keys set in default",
+			variant: "explicit",
+			cfg:     newDefaultValidatedConfig,
+		},
+		{
+			name:    "invalid config",
+			variant: "invalid",
+			cfg:     newDefaultValidatedConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`\nsome: nested: field `string_val` cannot be set to `invalid`"),
+		},
+		{
+			name:    "invalid default throws an error",
+			variant: "implicit",
+			cfg:     newInvalidDefaultConfig,
+			err:     errors.New("default: field `string_val` cannot be set to `invalid`"),
+		},
+		{
+			name:    "invalid default does not throw an error when key is not set",
+			variant: "no_default",
+			cfg:     newInvalidDefaultConfig,
+		},
+		{
+			name:    "invalid default invalid default does not throw an error when the value is overridden",
+			variant: "explicit",
+			cfg:     newInvalidDefaultConfig,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(fmt.Sprintf("testdata/validate_%s.yaml", tt.variant))
+			require.NoError(t, err)
+
+			cfg := tt.cfg()
+
+			err = conf.Unmarshal(&cfg)
+			require.NoError(t, err)
+
+			err = xconfmap.Validate(cfg)
+			if tt.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tt.err.Error())
+			}
 		})
 	}
 }

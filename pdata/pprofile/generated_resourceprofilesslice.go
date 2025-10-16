@@ -99,7 +99,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceProfiles.
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigPtrResourceProfiles())
+	*es.orig = append(*es.orig, internal.NewOrigResourceProfiles())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,9 @@ func (es ResourceProfilesSlice) RemoveIf(f func(ResourceProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			internal.DeleteOrigResourceProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
+
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es ResourceProfilesSlice) RemoveIf(f func(ResourceProfiles) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
 		(*es.orig)[i] = nil
 		newLen++
 	}
@@ -146,6 +149,9 @@ func (es ResourceProfilesSlice) RemoveIf(f func(ResourceProfiles) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	dest.state.AssertMutable()
+	if es.orig == dest.orig {
+		return
+	}
 	*dest.orig = internal.CopyOrigResourceProfilesSlice(*dest.orig, *es.orig)
 }
 

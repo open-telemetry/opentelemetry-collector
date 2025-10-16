@@ -27,7 +27,7 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestExponentialHistogramDataPoint((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigExponentialHistogramDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
 	src := generateTestExponentialHistogramDataPointSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
 

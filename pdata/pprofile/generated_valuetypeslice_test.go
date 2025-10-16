@@ -27,7 +27,7 @@ func TestValueTypeSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestValueType((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigValueType()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestValueTypeSlice_CopyTo(t *testing.T) {
 	dest := NewValueTypeSlice()
 	src := generateTestValueTypeSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestValueTypeSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
 }
 

@@ -27,7 +27,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestHistogramDataPoint((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigHistogramDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewHistogramDataPointSlice()
 	src := generateTestHistogramDataPointSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
 

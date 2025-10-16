@@ -9,9 +9,9 @@ import (
 	"math"
 )
 
-// FromLocationIndices builds a slice containing all the locations of a Profile.
-// Updates made to the returned map will not be applied back to the Profile.
-func FromLocationIndices(table LocationSlice, record Profile) LocationSlice {
+// FromLocationIndices builds a slice containing all the locations of a Stack.
+// Updates made to the returned map will not be applied back to the Stack.
+func FromLocationIndices(table LocationSlice, record Stack) LocationSlice {
 	m := NewLocationSlice()
 	m.EnsureCapacity(record.LocationIndices().Len())
 
@@ -28,9 +28,11 @@ var (
 	errTooManyLocationIndicesEntries = errors.New("too many entries in LocationIndices")
 )
 
-// PutLocation updates a LocationTable and a Profile's LocationIndices to
+// PutLocation updates a LocationTable and a Stack's LocationIndices to
 // add or update a location.
-func PutLocation(table LocationSlice, record Profile, loc Location) error {
+//
+// Deprecated: [v0.138.0] use SetLocation instead.
+func PutLocation(table LocationSlice, record Stack, loc Location) error {
 	for i, locIdx := range record.LocationIndices().All() {
 		idx := int(locIdx)
 		if idx < 0 || idx >= table.Len() {
@@ -47,22 +49,30 @@ func PutLocation(table LocationSlice, record Profile, loc Location) error {
 		return errTooManyLocationIndicesEntries
 	}
 
+	id, err := SetLocation(table, loc)
+	if err != nil {
+		return err
+	}
+	record.LocationIndices().Append(id)
+	return nil
+}
+
+// SetLocation updates a LocationTable, adding or providing a value and returns
+// its index.
+func SetLocation(table LocationSlice, loc Location) (int32, error) {
 	for j, a := range table.All() {
 		if a.Equal(loc) {
 			if j > math.MaxInt32 {
-				return errTooManyLocationTableEntries
+				return 0, errTooManyLocationTableEntries
 			}
-			// Add the index of the existing location to the indices.
-			record.LocationIndices().Append(int32(j)) //nolint:gosec // G115 overflow checked
-			return nil
+			return int32(j), nil //nolint:gosec // G115 overflow checked
 		}
 	}
 
 	if table.Len() >= math.MaxInt32 {
-		return errTooManyLocationTableEntries
+		return 0, errTooManyLocationTableEntries
 	}
 
 	loc.CopyTo(table.AppendEmpty())
-	record.LocationIndices().Append(int32(table.Len() - 1)) //nolint:gosec // G115 overflow checked
-	return nil
+	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
 }

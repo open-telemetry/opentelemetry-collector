@@ -27,7 +27,7 @@ func TestLogRecordSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLogRecord((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLogRecord()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestLogRecordSlice_CopyTo(t *testing.T) {
 	dest := NewLogRecordSlice()
 	src := generateTestLogRecordSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLogRecordSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
 

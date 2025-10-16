@@ -32,9 +32,10 @@ var profilesRequestJSON = []byte(`
 						"scope": {},
 						"profiles": [
 							{
+								"sampleType": {},
 								"sample": [
 									{
-										"locationsStartIndex": 42
+										"stackIndex": 42
 									}
 								],
 								"periodType": {}
@@ -57,7 +58,7 @@ func TestRequestToPData(t *testing.T) {
 func TestRequestJSON(t *testing.T) {
 	tr := NewExportRequest()
 	require.NoError(t, tr.UnmarshalJSON(profilesRequestJSON))
-	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Sample().At(0).LocationsStartIndex())
+	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Sample().At(0).StackIndex())
 
 	got, err := tr.MarshalJSON()
 	require.NoError(t, err)
@@ -70,10 +71,10 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Profiles as pdata struct.
-	td := NewExportRequestFromProfiles(pprofile.Profiles(internal.GenerateTestProfiles()))
+	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.NewProfiles(internal.GenTestOrigExportProfilesServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := td.MarshalProto()
+	wire1, err := pd.MarshalProto()
 	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -94,5 +95,5 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, td, td2)
+	assert.Equal(t, pd, td2)
 }

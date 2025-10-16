@@ -33,7 +33,7 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	return newSample(internal.NewOrigPtrSample(), internal.NewState())
+	return newSample(internal.NewOrigSample(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,35 +45,24 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	*dest.orig = *ms.orig
-	*ms.orig = otlpprofiles.Sample{}
+	internal.DeleteOrigSample(dest.orig, false)
+	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
-// LocationsStartIndex returns the locationsstartindex associated with this Sample.
-func (ms Sample) LocationsStartIndex() int32 {
-	return ms.orig.LocationsStartIndex
+// StackIndex returns the stackindex associated with this Sample.
+func (ms Sample) StackIndex() int32 {
+	return ms.orig.StackIndex
 }
 
-// SetLocationsStartIndex replaces the locationsstartindex associated with this Sample.
-func (ms Sample) SetLocationsStartIndex(v int32) {
+// SetStackIndex replaces the stackindex associated with this Sample.
+func (ms Sample) SetStackIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.LocationsStartIndex = v
+	ms.orig.StackIndex = v
 }
 
-// LocationsLength returns the locationslength associated with this Sample.
-func (ms Sample) LocationsLength() int32 {
-	return ms.orig.LocationsLength
-}
-
-// SetLocationsLength replaces the locationslength associated with this Sample.
-func (ms Sample) SetLocationsLength(v int32) {
-	ms.state.AssertMutable()
-	ms.orig.LocationsLength = v
-}
-
-// Value returns the Value associated with this Sample.
-func (ms Sample) Value() pcommon.Int64Slice {
-	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state))
+// Values returns the Values associated with this Sample.
+func (ms Sample) Values() pcommon.Int64Slice {
+	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.Values, ms.state))
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Sample.
@@ -83,25 +72,13 @@ func (ms Sample) AttributeIndices() pcommon.Int32Slice {
 
 // LinkIndex returns the linkindex associated with this Sample.
 func (ms Sample) LinkIndex() int32 {
-	return ms.orig.GetLinkIndex()
-}
-
-// HasLinkIndex returns true if the Sample contains a
-// LinkIndex value, false otherwise.
-func (ms Sample) HasLinkIndex() bool {
-	return ms.orig.LinkIndex_ != nil
+	return ms.orig.LinkIndex
 }
 
 // SetLinkIndex replaces the linkindex associated with this Sample.
 func (ms Sample) SetLinkIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: v}
-}
-
-// RemoveLinkIndex removes the linkindex associated with this Sample.
-func (ms Sample) RemoveLinkIndex() {
-	ms.state.AssertMutable()
-	ms.orig.LinkIndex_ = nil
+	ms.orig.LinkIndex = v
 }
 
 // TimestampsUnixNano returns the TimestampsUnixNano associated with this Sample.

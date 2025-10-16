@@ -69,5 +69,5 @@ func resourceLRC(rs plog.ResourceLogs) (count int) {
 	for k := 0; k < rs.ScopeLogs().Len(); k++ {
 		count += rs.ScopeLogs().At(k).LogRecords().Len()
 	}
-	return
+	return count
 }

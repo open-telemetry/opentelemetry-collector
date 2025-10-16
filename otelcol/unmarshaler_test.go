@@ -56,7 +56,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		OutputPaths:       zapProdCfg.OutputPaths,
 		ErrorOutputPaths:  zapProdCfg.ErrorOutputPaths,
 		InitialFields:     zapProdCfg.InitialFields,
-	}, cfg.Service.Telemetry.Logs)
+	}, cfg.Service.Telemetry.(*otelconftelemetry.Config).Logs)
 }
 
 func TestUnmarshalUnknownTopLevel(t *testing.T) {
@@ -149,26 +149,13 @@ func TestServiceUnmarshalError(t *testing.T) {
 		expectError string
 	}{
 		{
-			name: "invalid-logs-level",
+			name: "invalid-telemetry-unknown-key",
 			conf: confmap.NewFromStringMap(map[string]any{
 				"telemetry": map[string]any{
-					"logs": map[string]any{
-						"level": "UNKNOWN",
-					},
+					"unknown": "key",
 				},
 			}),
-			expectError: "decoding failed due to the following error(s):\n\n'telemetry.logs' decoding failed due to the following error(s):\n\n'level' unrecognized level: \"UNKNOWN\"",
-		},
-		{
-			name: "invalid-metrics-level",
-			conf: confmap.NewFromStringMap(map[string]any{
-				"telemetry": map[string]any{
-					"metrics": map[string]any{
-						"level": "unknown",
-					},
-				},
-			}),
-			expectError: "decoding failed due to the following error(s):\n\n'telemetry.metrics' decoding failed due to the following error(s):\n\n'level' unknown metrics level \"unknown\"",
+			expectError: "decoding failed due to the following error(s):\n\n'telemetry' has invalid keys: unknown",
 		},
 		{
 			name: "invalid-service-extensions-section",
@@ -201,7 +188,9 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&service.Config{})
+			err := tt.conf.Unmarshal(&service.Config{
+				Telemetry: fakeTelemetryConfig{},
+			})
 			require.ErrorContains(t, err, tt.expectError)
 		})
 	}

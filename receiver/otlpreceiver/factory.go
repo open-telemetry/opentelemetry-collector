@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -42,9 +41,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	grpcCfg := configgrpc.NewDefaultServerConfig()
-	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
 	grpcCfg.NetAddr.Endpoint = "localhost:4317"
-	grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
 	// We almost write 0 bytes, so no need to tune WriteBufferSize.
 	grpcCfg.ReadBufferSize = 512 * 1024
 

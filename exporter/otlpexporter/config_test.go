@@ -89,6 +89,38 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
+func TestUnmarshalDefaultBatchConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default-batch.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, xconfmap.Validate(&cfg))
+	assert.Equal(t,
+		&Config{
+			TimeoutConfig: exporterhelper.TimeoutConfig{
+				Timeout: 10 * time.Second,
+			},
+			RetryConfig: configretry.NewDefaultBackOffConfig(),
+			QueueConfig: exporterhelper.QueueBatchConfig{
+				Enabled:      true,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
+				QueueSize:    1000,
+				NumConsumers: 10,
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      8192,
+				}),
+			},
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint:        "1.2.3.4:1234",
+				Compression:     "gzip",
+				WriteBufferSize: 512 * 1024,
+			},
+		}, cfg)
+}
+
 func TestUnmarshalInvalidConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_configs.yaml"))
 	require.NoError(t, err)
@@ -129,6 +161,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			name:     "invalid_port",
 			errorMsg: `invalid port "port"`,
 		},
+		{
+			name:     "invalid_unix_socket",
+			errorMsg: "unix socket path cannot be empty",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
@@ -144,6 +180,13 @@ func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidUnixSocketEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, cfg.Validate())
 }
 

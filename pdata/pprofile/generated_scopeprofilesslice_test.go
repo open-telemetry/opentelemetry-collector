@@ -27,7 +27,7 @@ func TestScopeProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestScopeProfiles((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigScopeProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewScopeProfilesSlice()
 	src := generateTestScopeProfilesSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 }
 

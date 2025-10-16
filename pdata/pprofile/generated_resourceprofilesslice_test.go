@@ -27,7 +27,7 @@ func TestResourceProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestResourceProfiles((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigResourceProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewResourceProfilesSlice()
 	src := generateTestResourceProfilesSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 }
 

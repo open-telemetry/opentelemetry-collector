@@ -29,6 +29,13 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	if after, ok := strings.CutPrefix(c.ClientConfig.Endpoint, "unix://"); ok {
+		if after == "" {
+			return errors.New("unix socket path cannot be empty")
+		}
+		return nil
+	}
+
 	endpoint := c.sanitizedEndpoint()
 	if endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)

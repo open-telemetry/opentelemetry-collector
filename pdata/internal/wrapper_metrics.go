@@ -8,10 +8,6 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func SetMetricsState(ms Metrics, state State) {
-	*ms.state = state
-}
-
 // MetricsToProto internal helper to convert Metrics to protobuf representation.
 func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
 	return otlpmetrics.MetricsData{

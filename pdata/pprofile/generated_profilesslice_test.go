@@ -27,7 +27,7 @@ func TestProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestProfile((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigProfile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewProfilesSlice()
 	src := generateTestProfilesSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
 }
 

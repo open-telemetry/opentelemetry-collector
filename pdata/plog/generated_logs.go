@@ -30,7 +30,7 @@ func newLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *internal.S
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogs() Logs {
-	return newLogs(internal.NewOrigPtrExportLogsServiceRequest(), internal.NewState())
+	return newLogs(internal.NewOrigExportLogsServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,8 +42,8 @@ func (ms Logs) MoveTo(dest Logs) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorlogs.ExportLogsServiceRequest{}
+	internal.DeleteOrigExportLogsServiceRequest(dest.getOrig(), false)
+	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
 // ResourceLogs returns the ResourceLogs associated with this Logs.

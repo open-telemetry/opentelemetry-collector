@@ -31,6 +31,8 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
+	ExporterQueueBatchSendSize        metric.Int64Histogram
+	ExporterQueueBatchSendSizeBytes   metric.Int64Histogram
 	ExporterQueueCapacity             metric.Int64ObservableGauge
 	ExporterQueueSize                 metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords      metric.Int64Counter
@@ -128,15 +130,29 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_queue_batch_send_size",
+		metric.WithDescription("Number of units in the batch"),
+		metric.WithUnit("{units}"),
+		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterQueueBatchSendSizeBytes, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_queue_batch_send_size_bytes",
+		metric.WithDescription("Number of bytes in batch that was sent. Only available on detailed level."),
+		metric.WithUnit("By"),
+		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000}...),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
-		metric.WithDescription("Fixed capacity of the retry queue (in batches) [alpha]"),
+		metric.WithDescription("Fixed capacity of the retry queue (in batches). [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
-		metric.WithDescription("Current size of the retry queue (in batches) [alpha]"),
+		metric.WithDescription("Current size of the retry queue (in batches). [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)

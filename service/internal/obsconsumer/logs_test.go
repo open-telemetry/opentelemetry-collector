@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -45,7 +47,7 @@ func TestLogsNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewLogs(cons, itemCounter, sizeCounter))
+	require.Equal(t, cons, obsconsumer.NewLogs(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()}))
 }
 
 func TestLogsItemsOnly(t *testing.T) {
@@ -63,7 +65,9 @@ func TestLogsItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounterDisabled)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -91,6 +95,9 @@ func TestLogsItemsOnly(t *testing.T) {
 	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestLogsConsumeSuccess(t *testing.T) {
@@ -108,7 +115,9 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -155,6 +164,9 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestLogsConsumeFailure(t *testing.T) {
@@ -174,7 +186,9 @@ func TestLogsConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -222,6 +236,10 @@ func TestLogsConsumeFailure(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
+
+	// Check that the logger was called with an error
+	require.Len(t, logs.All(), 1)
+	assert.Contains(t, logs.All()[0].Message, "Logs pipeline component had an error")
 }
 
 func TestLogsWithStaticAttributes(t *testing.T) {
@@ -240,7 +258,9 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter,
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	ld := plog.NewLogs()
@@ -293,6 +313,9 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
@@ -312,7 +335,9 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	// First batch: 2 successful items
 	ld1 := plog.NewLogs()
@@ -399,6 +424,12 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	}
 	require.Equal(t, int64(64), successSizeDP.Value)
 	require.Equal(t, int64(32), failureSizeDP.Value)
+
+	// Check that the logger was called for errors
+	require.Len(t, logs.All(), 2)
+	for _, log := range logs.All() {
+		assert.Contains(t, log.Message, "Logs pipeline component had an error")
+	}
 }
 
 func TestLogsCapabilities(t *testing.T) {
@@ -418,10 +449,10 @@ func TestLogsCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
+	consumer = obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

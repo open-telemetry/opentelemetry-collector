@@ -125,6 +125,8 @@ metrics:
 
   optional.metric.empty_unit:
     enabled: false
+    stability:
+      level: deprecated
     description: "[DEPRECATED] Gauge double metric disabled by default."
     unit: ""
     gauge:
@@ -147,6 +149,8 @@ metrics:
 
   metric.input_type:
     enabled: true
+    stability:
+      level: beta
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:

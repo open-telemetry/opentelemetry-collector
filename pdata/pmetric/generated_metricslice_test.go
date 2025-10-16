@@ -27,7 +27,7 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestMetric((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigMetric()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestMetricSlice_CopyTo(t *testing.T) {
 	dest := NewMetricSlice()
 	src := generateTestMetricSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestMetricSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 }
 

@@ -27,7 +27,7 @@ func TestLineSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillOrigTestLine((*es.orig)[i])
+		(*es.orig)[i] = internal.GenTestOrigLine()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,6 +51,8 @@ func TestLineSlice_CopyTo(t *testing.T) {
 	dest := NewLineSlice()
 	src := generateTestLineSlice()
 	src.CopyTo(dest)
+	assert.Equal(t, generateTestLineSlice(), dest)
+	dest.CopyTo(dest)
 	assert.Equal(t, generateTestLineSlice(), dest)
 }
 

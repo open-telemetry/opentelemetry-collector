@@ -8,32 +8,62 @@ package internal
 
 import (
 	"fmt"
+	"sync"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func NewOrigFunction() otlpprofiles.Function {
-	return otlpprofiles.Function{}
+var (
+	protoPoolFunction = sync.Pool{
+		New: func() any {
+			return &otlpprofiles.Function{}
+		},
+	}
+)
+
+func NewOrigFunction() *otlpprofiles.Function {
+	if !UseProtoPooling.IsEnabled() {
+		return &otlpprofiles.Function{}
+	}
+	return protoPoolFunction.Get().(*otlpprofiles.Function)
 }
 
-func NewOrigPtrFunction() *otlpprofiles.Function {
-	return &otlpprofiles.Function{}
+func DeleteOrigFunction(orig *otlpprofiles.Function, nullable bool) {
+	if orig == nil {
+		return
+	}
+
+	if !UseProtoPooling.IsEnabled() {
+		orig.Reset()
+		return
+	}
+
+	orig.Reset()
+	if nullable {
+		protoPoolFunction.Put(orig)
+	}
 }
 
 func CopyOrigFunction(dest, src *otlpprofiles.Function) {
+	// If copying to same object, just return.
+	if src == dest {
+		return
+	}
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex
 	dest.FilenameStrindex = src.FilenameStrindex
 	dest.StartLine = src.StartLine
 }
 
-func FillOrigTestFunction(orig *otlpprofiles.Function) {
+func GenTestOrigFunction() *otlpprofiles.Function {
+	orig := NewOrigFunction()
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)
 	orig.StartLine = int64(13)
+	return orig
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -60,7 +90,7 @@ func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
 
 // UnmarshalJSONOrigFunction unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "nameStrindex", "name_strindex":
 			orig.NameStrindex = iter.ReadInt32()
@@ -73,8 +103,7 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		default:
 			iter.Skip()
 		}
-		return true
-	})
+	}
 }
 
 func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {

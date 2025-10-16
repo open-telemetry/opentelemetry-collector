@@ -7,44 +7,22 @@ import (
 	"context"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/sdk/resource"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// NewSDK creates a new OpenTelemetry SDK with the provided configuration.
-func NewSDK(ctx context.Context, cfg *Config, res *resource.Resource) (*config.SDK, error) {
-	mpConfig := cfg.Metrics.MeterProvider
-	if cfg.Metrics.Level == configtelemetry.LevelNone {
-		mpConfig.Readers = nil
-	}
-
-	var resourceAttrs []config.AttributeNameValue
+func newSDK(ctx context.Context, res *sdkresource.Resource, conf config.OpenTelemetryConfiguration) (config.SDK, error) {
+	resourceAttrs := make([]config.AttributeNameValue, 0, res.Len())
 	for _, r := range res.Attributes() {
+		key := string(r.Key)
 		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
-			Name: string(r.Key), Value: r.Value.AsString(),
+			Name:  key,
+			Value: mustAttributeValueString(key, r.Value),
 		})
 	}
-
-	sdk, err := config.NewSDK(
-		config.WithContext(ctx),
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: cfg.Logs.Processors,
-				},
-				MeterProvider:  &mpConfig,
-				TracerProvider: &cfg.Traces.TracerProvider,
-				Resource: &config.Resource{
-					SchemaUrl:  ptr(semconv.SchemaURL),
-					Attributes: resourceAttrs,
-				},
-			},
-		),
-	)
-	if err != nil {
-		return nil, err
+	conf.Resource = &config.Resource{
+		SchemaUrl:  ptr(semconv.SchemaURL),
+		Attributes: resourceAttrs,
 	}
-	return &sdk, nil
+	return config.NewSDK(config.WithContext(ctx), config.WithOpenTelemetryConfiguration(conf))
 }

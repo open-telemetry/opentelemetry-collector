@@ -3,11 +3,6 @@
 
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
-// Deprecated: [v0.133.0] use Dictionary().
-func (ms Profiles) ProfilesDictionary() ProfilesDictionary {
-	return ms.Dictionary()
-}
-
 // MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
 func (ms Profiles) MarkReadOnly() {
 	ms.getState().MarkReadOnly()
