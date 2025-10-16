@@ -226,3 +226,112 @@ func BenchmarkPutAttribute(b *testing.B) {
 		})
 	}
 }
+
+func TestSetAttribute(t *testing.T) {
+	table := NewKeyValueAndUnitSlice()
+	attr := NewKeyValueAndUnit()
+	attr.SetKeyStrindex(1)
+	attr.SetUnitStrindex(2)
+	require.NoError(t, attr.Value().FromRaw("test"))
+	attr2 := NewKeyValueAndUnit()
+	attr2.SetKeyStrindex(3)
+	attr2.SetUnitStrindex(4)
+	require.NoError(t, attr.Value().FromRaw("test2"))
+
+	// Put a first value
+	idx, err := SetAttribute(table, attr)
+	require.NoError(t, err)
+	assert.Equal(t, 1, table.Len())
+	assert.Equal(t, int32(0), idx)
+
+	// Put the same attribute
+	// This should be a no-op.
+	idx, err = SetAttribute(table, attr)
+	require.NoError(t, err)
+	assert.Equal(t, 1, table.Len())
+	assert.Equal(t, int32(0), idx)
+
+	// Set a new value
+	// This sets the index and adds to the table.
+	idx, err = SetAttribute(table, attr2)
+	require.NoError(t, err)
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+
+	// Set an existing value
+	idx, err = SetAttribute(table, attr)
+	require.NoError(t, err)
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(0), idx)
+	// Set another existing value
+	idx, err = SetAttribute(table, attr2)
+	require.NoError(t, err)
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+}
+
+func BenchmarkSetAttribute(b *testing.B) {
+	for _, bb := range []struct {
+		name string
+		attr KeyValueAndUnit
+
+		runBefore func(*testing.B, KeyValueAndUnitSlice)
+	}{
+		{
+			name: "with a new attribute",
+			attr: NewKeyValueAndUnit(),
+		},
+		{
+			name: "with an existing attribute",
+			attr: func() KeyValueAndUnit {
+				a := NewKeyValueAndUnit()
+				a.SetKeyStrindex(1)
+				return a
+			}(),
+
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice) {
+				a := table.AppendEmpty()
+				a.SetKeyStrindex(1)
+			},
+		},
+		{
+			name: "with a duplicate attribute",
+			attr: NewKeyValueAndUnit(),
+
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice) {
+				_, err := SetAttribute(table, NewKeyValueAndUnit())
+				require.NoError(b, err)
+			},
+		},
+		{
+			name: "with a hundred locations to loop through",
+			attr: func() KeyValueAndUnit {
+				a := NewKeyValueAndUnit()
+				a.SetKeyStrindex(1)
+				return a
+			}(),
+
+			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice) {
+				for i := range 100 {
+					l := table.AppendEmpty()
+					l.SetKeyStrindex(int32(i)) //nolint:gosec // overflow checked
+				}
+			},
+		},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			table := NewKeyValueAndUnitSlice()
+
+			if bb.runBefore != nil {
+				bb.runBefore(b, table)
+			}
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for b.Loop() {
+				_, _ = SetAttribute(table, bb.attr)
+			}
+		})
+	}
+}
