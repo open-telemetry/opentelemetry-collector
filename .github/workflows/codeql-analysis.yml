@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: oldstable
           cache: false
@@ -39,12 +39,12 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@a8d1ac45b9a34d11fe398d5503176af0d06b303e # v3.30.7
+        uses: github/codeql-action/init@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
         with:
           languages: go
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@a8d1ac45b9a34d11fe398d5503176af0d06b303e # v3.30.7
+        uses: github/codeql-action/autobuild@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@a8d1ac45b9a34d11fe398d5503176af0d06b303e # v3.30.7
+        uses: github/codeql-action/analyze@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8

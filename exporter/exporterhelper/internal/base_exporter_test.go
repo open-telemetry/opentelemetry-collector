@@ -143,9 +143,7 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch() queuebatch.Settings[request.Request] {
 	return queuebatch.Settings[request.Request]{
-		Encoding:   fakeEncoding{},
-		ItemsSizer: request.NewItemsSizer(),
-		BytesSizer: requesttest.NewBytesSizer(),
+		Encoding: fakeEncoding{},
 	}
 }
 
