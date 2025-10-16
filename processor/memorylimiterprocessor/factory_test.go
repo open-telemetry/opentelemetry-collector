@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -40,7 +41,7 @@ func TestCreateProcessor(t *testing.T) {
 
 	set := processortest.NewNopSettings(factory.Type())
 	var droppedAttrs []string
-	set.Logger = telemetry.MockInjectorLogger(set.Logger, &droppedAttrs)
+	set.Logger = telemetrytest.MockInjectorLogger(set.Logger, &droppedAttrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -40,7 +41,7 @@ func TestCreateSameReceiver(t *testing.T) {
 
 	creationSet := receivertest.NewNopSettings(factory.Type())
 	var droppedAttrs []string
-	creationSet.Logger = telemetry.MockInjectorLogger(creationSet.Logger, &droppedAttrs)
+	creationSet.Logger = telemetrytest.MockInjectorLogger(creationSet.Logger, &droppedAttrs)
 
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)

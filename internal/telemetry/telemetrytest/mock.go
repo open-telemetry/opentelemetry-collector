@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
+package telemetrytest // import "go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 
 import (
 	"go.uber.org/zap"
