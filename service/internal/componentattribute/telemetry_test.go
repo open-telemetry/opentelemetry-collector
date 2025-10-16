@@ -30,10 +30,9 @@ import (
 
 func findScopeAttributesField(context []zap.Field) ([]attribute.KeyValue, bool) {
 	for _, field := range context {
-		if field.Type == zapcore.InlineMarshalerType {
-			if saf, ok := field.Interface.(componentattribute.ScopeAttributesField); ok {
-				return saf.Attrs, true
-			}
+		scope, ok := componentattribute.ExtractLogScopeAttributes(field)
+		if ok {
+			return scope, true
 		}
 	}
 	return nil, false

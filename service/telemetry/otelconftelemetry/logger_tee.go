@@ -49,19 +49,20 @@ type zapCore struct {
 var _ zapcore.Core = zapCore{}
 
 func (zc zapCore) With(fields []zapcore.Field) zapcore.Core {
-	if len(fields) == 1 && fields[0].Type == zapcore.InlineMarshalerType {
-		if saf, ok := fields[0].Interface.(componentattribute.ScopeAttributesField); ok {
-			// Reset scope attributes
-			zc.sourceCore = zc.provider.sourceCore.With(fields).With(zc.withFields)
-			zc.otelCore = otelzap.NewCore(
-				zc.provider.scopeName,
-				otelzap.WithLoggerProvider(zc.provider.lp),
-				otelzap.WithAttributes(saf.Attrs...),
-			).With(zc.withFields)
-			return zc
-		}
-	}
 	zc.sourceCore = zc.sourceCore.With(fields)
+	fields = slices.DeleteFunc(fields, func(field zapcore.Field) bool {
+		scope, ok := componentattribute.ExtractLogScopeAttributes(field)
+		if !ok {
+			return false
+		}
+		// Set scope attributes
+		zc.otelCore = otelzap.NewCore(
+			zc.provider.scopeName,
+			otelzap.WithLoggerProvider(zc.provider.lp),
+			otelzap.WithAttributes(scope...),
+		).With(zc.withFields)
+		return true
+	})
 	zc.otelCore = zc.otelCore.With(fields)
 	zc.withFields = append(slices.Clone(zc.withFields), fields...)
 	return zc

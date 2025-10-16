@@ -15,25 +15,36 @@ import (
 
 // This wrapper around zapcore.Field tells the Zap -> OTel bridge that the field
 // should be turned into an instrumentation scope instead of a set of log record attributes.
-type ScopeAttributesField struct {
-	Fields []zapcore.Field
-	Attrs  []attribute.KeyValue
+type scopeAttributesField struct {
+	fields []zapcore.Field
+	attrs  []attribute.KeyValue
 }
 
-var _ zapcore.ObjectMarshaler = ScopeAttributesField{}
+var _ zapcore.ObjectMarshaler = scopeAttributesField{}
 
-func (saf ScopeAttributesField) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	for _, field := range saf.Fields {
+func (saf scopeAttributesField) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, field := range saf.fields {
 		field.AddTo(enc)
 	}
 	return nil
 }
 
 func makeScopeField(attrs []attribute.KeyValue) zap.Field {
-	return zap.Inline(ScopeAttributesField{
-		Fields: telemetry.ToZapFields(attrs),
-		Attrs:  attrs,
+	return zap.Inline(scopeAttributesField{
+		fields: telemetry.ToZapFields(attrs),
+		attrs:  attrs,
 	})
+}
+
+func ExtractLogScopeAttributes(field zap.Field) ([]attribute.KeyValue, bool) {
+	if field.Type != zapcore.InlineMarshalerType {
+		return nil, false
+	}
+	saf, ok := field.Interface.(scopeAttributesField)
+	if !ok {
+		return nil, false
+	}
+	return saf.attrs, true
 }
 
 type coreWithAttributes struct {
@@ -65,6 +76,6 @@ func (cwa coreWithAttributes) DropInjectedAttributes(droppedAttrs ...string) zap
 	cwa.attrs = slices.DeleteFunc(slices.Clone(cwa.attrs), func(kv attribute.KeyValue) bool {
 		return slices.Contains(droppedAttrs, string(kv.Key))
 	})
-	cwa.Core = cwa.sourceCore.With([]zap.Field{makeScopeField(cwa.attrs)}).With(cwa.withFields)
+	cwa.Core = cwa.sourceCore.With(append([]zap.Field{makeScopeField(cwa.attrs)}, cwa.withFields...))
 	return cwa
 }
