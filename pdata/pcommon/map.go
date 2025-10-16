@@ -121,6 +121,18 @@ func (m Map) PutEmpty(k string) Value {
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value, m.getState())
 }
 
+// GetOrPutEmpty returns the Value associated with the key and true (loaded) if the key exists in the map,
+// otherwise inserts an empty value to the map under the given key and returns the inserted value
+// and false (loaded).
+func (m Map) GetOrPutEmpty(k string) (Value, bool) {
+	m.getState().AssertMutable()
+	if av, existing := m.Get(k); existing {
+		return av, true
+	}
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k})
+	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value, m.getState()), false
+}
+
 // PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
