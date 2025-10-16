@@ -38,12 +38,6 @@ func NewProfilesQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
 		ReferenceCounter: profilesReferenceCounter{},
 		Encoding:         profilesEncoding{},
-		ItemsSizer:       request.NewItemsSizer(),
-		BytesSizer: request.BaseSizer{
-			SizeofFunc: func(req request.Request) int64 {
-				return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
-			},
-		},
 	}
 }
 

@@ -92,6 +92,9 @@ type Factory interface {
 
 	// CreateTracerProvider creates a trace.TracerProvider that may be used
 	// by components to trace their internal operations.
+	//
+	// If the returned provider is a wrapper, consider implementing
+	// the `Unwrap() trace.TracerProvider` method to grant components access to the underlying SDK.
 	CreateTracerProvider(context.Context, TracerSettings, component.Config) (TracerProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
