@@ -240,11 +240,19 @@ func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterH
 	require.NoError(t, traces.Shutdown(context.Background()))
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
-	for i := 0; i < len(sink.AllTraces())-1; i++ {
-		assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i].SpanCount())
+	haveSizes := map[int]int{}
+	expectSizes := map[int]int{}
+	for i := 0; i < len(sink.AllTraces()); i++ {
+		haveSizes[sink.AllTraces()[i].SpanCount()]++
+		if i == 0 {
+			// the last batch has the remaining size
+			expectSizes[(requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize)]++
+		} else {
+			// full batches
+			expectSizes[int(cfg.SendBatchMaxSize)]++
+		}
 	}
-	// the last batch has the remaining size
-	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+	assert.Equal(t, expectSizes, haveSizes)
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
