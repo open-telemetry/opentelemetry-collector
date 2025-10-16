@@ -16,11 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
-
-// Deprecated: [v0.137.0] Use otelconftelemetry.TracesConfig instead.
-type TracesConfig = migration.TracesConfigV030
 
 // LoggerSettings holds settings for building logger providers.
 type LoggerSettings struct {
