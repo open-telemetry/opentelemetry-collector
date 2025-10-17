@@ -111,7 +111,7 @@ type batch[T any] interface {
 }
 
 // newBatchProcessor returns a new batch processor component.
-func newBatchProcessor[T any](set processor.Settings, cfg *Config, batchFunc func() batch[T]) (*batchProcessor[T], error) {
+func newBatchProcessor[T any](_ context.Context, set processor.Settings, cfg *Config, batchFunc func() batch[T]) (*batchProcessor[T], error) {
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
@@ -377,8 +377,8 @@ type tracesBatchProcessor struct {
 }
 
 // newTracesBatchProcessor creates a new batch processor that batches traces by size or with timeout
-func newTracesBatchProcessor(set processor.Settings, next consumer.Traces, cfg *Config) (processor.Traces, error) {
-	bp, err := newBatchProcessor(set, cfg, func() batch[ptrace.Traces] { return newBatchTraces(next) })
+func newTracesBatchProcessor(ctx context.Context, set processor.Settings, next consumer.Traces, cfg *Config) (processor.Traces, error) {
+	bp, err := newBatchProcessor(ctx, set, cfg, func() batch[ptrace.Traces] { return newBatchTraces(next) })
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +395,8 @@ type metricsBatchProcessor struct {
 }
 
 // newMetricsBatchProcessor creates a new batch processor that batches metrics by size or with timeout
-func newMetricsBatchProcessor(set processor.Settings, next consumer.Metrics, cfg *Config) (processor.Metrics, error) {
-	bp, err := newBatchProcessor(set, cfg, func() batch[pmetric.Metrics] { return newMetricsBatch(next) })
+func newMetricsBatchProcessor(ctx context.Context, set processor.Settings, next consumer.Metrics, cfg *Config) (processor.Metrics, error) {
+	bp, err := newBatchProcessor(ctx, set, cfg, func() batch[pmetric.Metrics] { return newMetricsBatch(next) })
 	if err != nil {
 		return nil, err
 	}
@@ -414,8 +414,8 @@ type logsBatchProcessor struct {
 }
 
 // newLogsBatchProcessor creates a new batch processor that batches logs by size or with timeout
-func newLogsBatchProcessor(set processor.Settings, next consumer.Logs, cfg *Config) (processor.Logs, error) {
-	bp, err := newBatchProcessor(set, cfg, func() batch[plog.Logs] { return newBatchLogs(next) })
+func newLogsBatchProcessor(ctx context.Context, set processor.Settings, next consumer.Logs, cfg *Config) (processor.Logs, error) {
+	bp, err := newBatchProcessor(ctx, set, cfg, func() batch[plog.Logs] { return newBatchLogs(next) })
 	if err != nil {
 		return nil, err
 	}
