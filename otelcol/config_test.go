@@ -9,17 +9,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 var (
@@ -297,33 +293,7 @@ func generateConfig() *Config {
 			component.MustNewID("nop"): &errConfig{},
 		},
 		Service: service.Config{
-			Telemetry: otelconftelemetry.Config{
-				Logs: otelconftelemetry.LogsConfig{
-					Level:             zapcore.DebugLevel,
-					Development:       true,
-					Encoding:          "console",
-					DisableCaller:     true,
-					DisableStacktrace: true,
-					OutputPaths:       []string{"stderr", "./output-logs"},
-					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-					InitialFields:     map[string]any{"fieldKey": "filed-value"},
-				},
-				Metrics: otelconftelemetry.MetricsConfig{
-					Level: configtelemetry.LevelNormal,
-					MeterProvider: config.MeterProvider{
-						Readers: []config.MetricReader{
-							{
-								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
-									Prometheus: &config.Prometheus{
-										Host: newPtr("localhost"),
-										Port: newPtr(8080),
-									},
-								}},
-							},
-						},
-					},
-				},
-			},
+			Telemetry:  fakeTelemetryConfig{},
 			Extensions: []component.ID{component.MustNewID("nop")},
 			Pipelines: pipelines.Config{
 				pipeline.NewID(pipeline.SignalTraces): {
@@ -334,10 +304,6 @@ func generateConfig() *Config {
 			},
 		},
 	}
-}
-
-func newPtr[T int | string](str T) *T {
-	return &str
 }
 
 type fakeTelemetryConfig struct {

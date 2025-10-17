@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/pipelines"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -58,6 +59,20 @@ func TestLoadConfig(t *testing.T) {
 		},
 		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)],
 		"Did not load pipeline config correctly")
+
+	// Verify telemetry
+	assert.Equal(t, struct{}{}, cfg.Service.Telemetry)
+}
+
+func TestLoadConfig_DefaultTelemetry(t *testing.T) {
+	factories, err := NopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = nil
+
+	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+
+	assert.Equal(t, otelconftelemetry.NewFactory().CreateDefaultConfig(), cfg.Service.Telemetry)
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {

@@ -1,11 +1,11 @@
 receivers:
   nop:
-
 exporters:
   nop:
 
 service:
   telemetry:
+    # Set configuration understood by otelconftelemetry
     metrics:
       level: none
   pipelines:

@@ -6,9 +6,7 @@ exporters:
 
 service:
   telemetry:
-    metrics:
-      level: none
-      readers: []
+    unknown: key
   pipelines:
     metrics:
       receivers: [nop]
