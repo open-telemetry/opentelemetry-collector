@@ -554,7 +554,7 @@ func (p *provider) Shutdown(context.Context) error {
 	return nil
 }
 
-func TestProviderRaceConfition(t *testing.T) {
+func TestProviderRaceCondition(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{
 		URIs: []string{"race:"},
 		ProviderFactories: []ProviderFactory{
