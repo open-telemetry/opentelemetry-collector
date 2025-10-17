@@ -1,11 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
 
 import (
-	"slices"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
@@ -18,17 +16,10 @@ const (
 	SignalOutputKey  = "otelcol.signal.output"
 )
 
-func RemoveAttributes(attrs attribute.Set, fields ...string) attribute.Set {
-	attrs, _ = attribute.NewSetWithFiltered(attrs.ToSlice(), func(kv attribute.KeyValue) bool {
-		return !slices.Contains(fields, string(kv.Key))
-	})
-	return attrs
-}
-
 // ToZapFields converts an OTel Go attribute set to a slice of zap fields.
-func ToZapFields(attrs attribute.Set) []zap.Field {
-	zapFields := make([]zap.Field, 0, attrs.Len())
-	for _, attr := range attrs.ToSlice() {
+func ToZapFields(attrs []attribute.KeyValue) []zap.Field {
+	zapFields := make([]zap.Field, 0, len(attrs))
+	for _, attr := range attrs {
 		var zapField zap.Field
 		key := string(attr.Key)
 		switch attr.Value.Type() {

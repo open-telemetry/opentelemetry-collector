@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -45,15 +45,15 @@ func TestReceiver(t *testing.T) {
 	for _, sig := range signals {
 		for _, id := range cIDs {
 			r := attribute.Receiver(sig, id)
-			componentKind, ok := r.Set().Value(componentattribute.ComponentKindKey)
+			componentKind, ok := r.Set().Value(telemetry.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, "receiver", componentKind.AsString())
 
-			signal, ok := r.Set().Value(componentattribute.SignalKey)
+			signal, ok := r.Set().Value(telemetry.SignalKey)
 			require.True(t, ok)
 			require.Equal(t, sig.String(), signal.AsString())
 
-			componentID, ok := r.Set().Value(componentattribute.ComponentIDKey)
+			componentID, ok := r.Set().Value(telemetry.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -64,15 +64,15 @@ func TestProcessor(t *testing.T) {
 	for _, pID := range pIDs {
 		for _, id := range cIDs {
 			p := attribute.Processor(pID, id)
-			componentKind, ok := p.Set().Value(componentattribute.ComponentKindKey)
+			componentKind, ok := p.Set().Value(telemetry.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, "processor", componentKind.AsString())
 
-			pipelineID, ok := p.Set().Value(componentattribute.PipelineIDKey)
+			pipelineID, ok := p.Set().Value(telemetry.PipelineIDKey)
 			require.True(t, ok)
 			require.Equal(t, pID.String(), pipelineID.AsString())
 
-			componentID, ok := p.Set().Value(componentattribute.ComponentIDKey)
+			componentID, ok := p.Set().Value(telemetry.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -83,15 +83,15 @@ func TestExporter(t *testing.T) {
 	for _, sig := range signals {
 		for _, id := range cIDs {
 			e := attribute.Exporter(sig, id)
-			componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
+			componentKind, ok := e.Set().Value(telemetry.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, "exporter", componentKind.AsString())
 
-			signal, ok := e.Set().Value(componentattribute.SignalKey)
+			signal, ok := e.Set().Value(telemetry.SignalKey)
 			require.True(t, ok)
 			require.Equal(t, sig.String(), signal.AsString())
 
-			componentID, ok := e.Set().Value(componentattribute.ComponentIDKey)
+			componentID, ok := e.Set().Value(telemetry.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -103,19 +103,19 @@ func TestConnector(t *testing.T) {
 		for _, rcvrSig := range signals {
 			for _, id := range cIDs {
 				c := attribute.Connector(exprSig, rcvrSig, id)
-				componentKind, ok := c.Set().Value(componentattribute.ComponentKindKey)
+				componentKind, ok := c.Set().Value(telemetry.ComponentKindKey)
 				require.True(t, ok)
 				require.Equal(t, "connector", componentKind.AsString())
 
-				signal, ok := c.Set().Value(componentattribute.SignalKey)
+				signal, ok := c.Set().Value(telemetry.SignalKey)
 				require.True(t, ok)
 				require.Equal(t, exprSig.String(), signal.AsString())
 
-				signalOutput, ok := c.Set().Value(componentattribute.SignalOutputKey)
+				signalOutput, ok := c.Set().Value(telemetry.SignalOutputKey)
 				require.True(t, ok)
 				require.Equal(t, rcvrSig.String(), signalOutput.AsString())
 
-				componentID, ok := c.Set().Value(componentattribute.ComponentIDKey)
+				componentID, ok := c.Set().Value(telemetry.ComponentIDKey)
 				require.True(t, ok)
 				require.Equal(t, id.String(), componentID.AsString())
 			}
@@ -125,7 +125,7 @@ func TestConnector(t *testing.T) {
 
 func TestExtension(t *testing.T) {
 	e := attribute.Extension(component.MustNewID("foo"))
-	componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
+	componentKind, ok := e.Set().Value(telemetry.ComponentKindKey)
 	require.True(t, ok)
 	require.Equal(t, "extension", componentKind.AsString())
 }
