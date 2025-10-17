@@ -102,3 +102,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../telemetry/telemetrytest
+
+replace go.opentelemetry.io/collector/internal/maplist => ../../internal/maplist
