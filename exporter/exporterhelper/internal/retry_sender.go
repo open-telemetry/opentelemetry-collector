@@ -79,9 +79,16 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 	}
 	span := trace.SpanFromContext(ctx)
 	retryNum := int64(0)
+	retried := false
 	var maxElapsedTime time.Time
 	if rs.cfg.MaxElapsedTime > 0 {
 		maxElapsedTime = time.Now().Add(rs.cfg.MaxElapsedTime)
+	}
+	wrapRetryErr := func(e error) error {
+		if retried {
+			return experr.NewRetriesExhaustedErr(e)
+		}
+		return e
 	}
 	for {
 		span.AddEvent(
@@ -104,7 +111,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			return fmt.Errorf("no more retries left: %w", err)
+			return wrapRetryErr(fmt.Errorf("no more retries left: %w", err))
 		}
 
 		throttleErr := throttleRetry{}
@@ -115,13 +122,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		nextRetryTime := time.Now().Add(backoffDelay)
 		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
 			// The delay is longer than the maxElapsedTime.
-			return fmt.Errorf("no more retries left: %w", err)
+			return wrapRetryErr(fmt.Errorf("no more retries left: %w", err))
 		}
 
 		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {
 			// The delay is longer than the deadline.  There is no point in
 			// waiting for cancelation.
-			return fmt.Errorf("request will be cancelled before next retry: %w", err)
+			return wrapRetryErr(fmt.Errorf("request will be cancelled before next retry: %w", err))
 		}
 
 		backoffDelayStr := backoffDelay.String()
@@ -140,10 +147,11 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out: %w", err)
+			return wrapRetryErr(fmt.Errorf("request is cancelled or timed out: %w", err))
 		case <-rs.stopCh:
 			return experr.NewShutdownErr(err)
 		case <-time.After(backoffDelay):
+			retried = true
 		}
 	}
 }
