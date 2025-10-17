@@ -117,6 +117,8 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     unit: "1"
+    stability:
+      level: deprecated
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
@@ -138,6 +140,8 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    stability:
+      level: deprecated
     extended_documentation: The metric will be removed soon.
     unit: s
     sum:

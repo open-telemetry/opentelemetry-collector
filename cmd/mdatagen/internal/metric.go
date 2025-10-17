@@ -6,7 +6,6 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -48,18 +47,19 @@ type Metric struct {
 }
 
 type Stability struct {
-	Level string `mapstructure:"level"`
-	From  string `mapstructure:"from"`
+	Level component.StabilityLevel `mapstructure:"level"`
+	From  string                   `mapstructure:"from"`
 }
 
 func (s Stability) String() string {
-	if s.Level == "" || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+	if s.Level == component.StabilityLevelUndefined ||
+		s.Level == component.StabilityLevelStable {
 		return ""
 	}
 	if s.From != "" {
-		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
+		return fmt.Sprintf(" [%s since %s]", s.Level.String(), s.From)
 	}
-	return fmt.Sprintf(" [%s]", s.Level)
+	return fmt.Sprintf(" [%s]", s.Level.String())
 }
 
 func (m *Metric) validate() error {
