@@ -76,6 +76,8 @@ func TestMapReadOnly(t *testing.T) {
 	assert.Panics(t, func() { m.PutInt("k2", 123) })
 	assert.Panics(t, func() { m.PutDouble("k2", 1.23) })
 	assert.Panics(t, func() { m.PutBool("k2", true) })
+	assert.Panics(t, func() { m.PutEmpty("foo") })
+	assert.Panics(t, func() { m.GetOrPutEmpty("foo") })
 	assert.Panics(t, func() { m.PutEmptyBytes("k2") })
 	assert.Panics(t, func() { m.PutEmptyMap("k2") })
 	assert.Panics(t, func() { m.PutEmptySlice("k2") })
@@ -109,6 +111,24 @@ func TestMapPutEmpty(t *testing.T) {
 	v2, ok := m.Get("k1")
 	assert.True(t, ok)
 	assert.Equal(t, int64(1), v2.Int())
+}
+
+func TestMapGetOrPutEmpty(t *testing.T) {
+	m := NewMap()
+	v := m.PutEmpty("k1")
+	v.SetStr("test")
+	assert.Equal(t, map[string]any{
+		"k1": "test",
+	}, m.AsRaw())
+
+	v, found := m.GetOrPutEmpty("k1")
+	assert.True(t, found)
+	require.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "test", v.Str())
+
+	v, found = m.GetOrPutEmpty("k2")
+	assert.False(t, found)
+	require.Equal(t, ValueTypeEmpty, v.Type())
 }
 
 func TestMapPutEmptyMap(t *testing.T) {
@@ -607,6 +627,7 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.Remove("foo") })
 	assert.Panics(t, func() { v.RemoveIf(testFunc) })
 	assert.Panics(t, func() { v.PutEmpty("foo") })
+	assert.Panics(t, func() { v.GetOrPutEmpty("foo") })
 	assert.Panics(t, func() { v.PutStr("foo", "bar") })
 	assert.Panics(t, func() { v.PutInt("foo", 1) })
 	assert.Panics(t, func() { v.PutDouble("foo", 1.1) })
