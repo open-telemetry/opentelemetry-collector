@@ -47,17 +47,17 @@ type MapList = maplist.MapList[String]
 // OpaquePair is an element of a MapList.
 type OpaquePair = maplist.Pair[String]
 
-// NewMapList() is the MapList equivalent of `make(map[string]configopaque.String)`.
+// NewMapList is the MapList equivalent of `make(map[string]configopaque.String)`.
 func NewMapList() *MapList {
 	return maplist.New[String]()
 }
 
-// WithCapacity(cap) is the MapList equivalent of `make(map[string]configopaque.String, cap)`.
-func MapListWithCapacity(cap int) *MapList {
-	return maplist.WithCapacity[String](cap)
+// MapListWithCapacity is the MapList equivalent of `make(map[string]configopaque.String, cap)`.
+func MapListWithCapacity(capacity int) *MapList {
+	return maplist.WithCapacity[String](capacity)
 }
 
-// FromMap converts a map[string]configopaque.String to a new *MapList.
+// MapListFromMap converts a map[string]configopaque.String to a new *MapList.
 // The resulting pairs are stored to facilitate comparisons in tests.
 func MapListFromMap(m map[string]String) *MapList {
 	return maplist.FromMap(m)

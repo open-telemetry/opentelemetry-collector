@@ -27,15 +27,15 @@ type Pair[T any] struct {
 // for read operations, but write operations will panic.
 type MapList[T any] []Pair[T]
 
-// New() is the MapList equivalent of `make(map[string]T)`.
+// New is the MapList equivalent of `make(map[string]T)`.
 func New[T any]() *MapList[T] {
 	return new(MapList[T])
 }
 
-// WithCapacity(cap) is the MapList equivalent of `make(map[string]T, cap)`.
-func WithCapacity[T any](cap int) *MapList[T] {
+// WithCapacity is the MapList equivalent of `make(map[string]T, cap)`.
+func WithCapacity[T any](capacity int) *MapList[T] {
 	ml := new(MapList[T])
-	*ml = make([]Pair[T], 0, cap)
+	*ml = make([]Pair[T], 0, capacity)
 	return ml
 }
 

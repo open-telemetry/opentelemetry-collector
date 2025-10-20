@@ -82,11 +82,7 @@ func TestMapListValidate(t *testing.T) {
 	require.NoError(t, err)
 	var tc testConfig
 	require.NoError(t, conf.Unmarshal(&tc))
-	assert.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
-
-	// nil is a valid MapList
-	var ml *maplist.MapList[int]
-	assert.NoError(t, ml.Validate())
+	require.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
 }
 
 func TestMapListNew(t *testing.T) {
@@ -140,8 +136,10 @@ func TestMapListMethods(t *testing.T) {
 	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3, "d": 5}, ml.ToMap())
 }
 
-func TestMapListMethodsNil(t *testing.T) {
+func TestMapListNil(t *testing.T) {
 	var ml *maplist.MapList[int]
+
+	require.NoError(t, ml.Validate())
 
 	called := false
 	for range ml.Iter {
