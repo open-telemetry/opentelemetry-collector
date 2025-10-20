@@ -6,7 +6,7 @@ package maplist_test
 import (
 	"testing"
 
-	"github.com/alecthomas/assert/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -39,7 +39,7 @@ headers:
 `
 
 type testConfig struct {
-	Headers maplist.MapList[string] `mapstructure:"headers"`
+	Headers *maplist.MapList[string] `mapstructure:"headers"`
 }
 
 func TestMapListDuality(t *testing.T) {
@@ -83,10 +83,20 @@ func TestMapListValidate(t *testing.T) {
 	var tc testConfig
 	require.NoError(t, conf.Unmarshal(&tc))
 	assert.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
+
+	// nil is a valid MapList
+	var ml *maplist.MapList[int]
+	assert.NoError(t, ml.Validate())
 }
 
-func TestMapListFromMap(t *testing.T) {
-	assert.Equal(t, maplist.MapList[int]{
+func TestMapListNew(t *testing.T) {
+	assert.Equal(t, new(maplist.MapList[int]), maplist.New[int]())
+
+	ml := maplist.WithCapacity[string](4)
+	require.NotNil(t, ml)
+	assert.Equal(t, 4, cap(*ml))
+
+	assert.Equal(t, &maplist.MapList[int]{
 		{"a", 1}, {"b", 2},
 	}, maplist.FromMap(map[string]int{
 		"a": 1,
@@ -95,14 +105,14 @@ func TestMapListFromMap(t *testing.T) {
 }
 
 func TestMapListMethods(t *testing.T) {
-	ml := maplist.MapList[int]{{"a", 1}, {"b", 2}, {"c", 3}}
+	ml := &maplist.MapList[int]{{"a", 1}, {"b", 2}, {"c", 3}}
 
 	type pair = struct {
 		k string
 		v int
 	}
 	var kvs []pair
-	for k, v := range ml.Pairs {
+	for k, v := range ml.Iter {
 		kvs = append(kvs, pair{k, v})
 		if k == "b" {
 			break
@@ -110,14 +120,44 @@ func TestMapListMethods(t *testing.T) {
 	}
 	assert.Equal(t, []pair{{"a", 1}, {"b", 2}}, kvs)
 
-	v, ok := ml.Get("a")
+	v, ok := ml.TryGet("a")
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, 1, v)
+		assert.Equal(t, 1, ml.Get("a"))
 	}
-	v, ok = ml.Get("d")
+	v, ok = ml.TryGet("d")
 	assert.False(t, ok)
 	assert.Zero(t, v)
+	assert.Zero(t, ml.Get("d"))
 
-	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3}, ml.ToMap())
+	ml.Set("d", 4)
+	assert.Equal(t, 4, ml.Len())
+	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}, ml.ToMap())
+
+	ml.Set("d", 5)
+	assert.Equal(t, 4, ml.Len())
+	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3, "d": 5}, ml.ToMap())
+}
+
+func TestMapListMethodsNil(t *testing.T) {
+	var ml *maplist.MapList[int]
+
+	called := false
+	for range ml.Iter {
+		called = true
+	}
+	assert.False(t, called)
+
+	v, ok := ml.TryGet("a")
+	assert.False(t, ok)
+	assert.Zero(t, v)
+	assert.Zero(t, ml.Get("a"))
+
+	assert.Panics(t, func() {
+		ml.Set("a", 0)
+	})
+
+	assert.Zero(t, ml.Len())
+	assert.Nil(t, ml.ToMap())
 }

@@ -37,17 +37,28 @@ func (s String) MarshalBinary() (text []byte, err error) {
 	return []byte(maskedString), nil
 }
 
-// OpaquePair is a string name/value pair, where the value is opaque.
-type OpaquePair = maplist.Pair[String]
-
-// MapList is equivalent to []OpaquePair,
-// but can additionally be unmarshalled from a map.
+// *MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value pairs.
 //
-// Config validation enforces unicity of keys.
+// Pairs are assumed to have distinct names. This is checked during config validation.
+//
+// Similar to native maps, a nil *MapList is treated the same as an empty one for read operations, but write operations will panic.
 type MapList = maplist.MapList[String]
 
-// MapListFromMap converts a map[string]String to a MapList.
-// The output pairs are sorted by name to allow comparisons in tests.
-func MapListFromMap(m map[string]String) MapList {
+// OpaquePair is an element of a MapList.
+type OpaquePair = maplist.Pair[String]
+
+// NewMapList() is the MapList equivalent of `make(map[string]configopaque.String)`.
+func NewMapList() *MapList {
+	return maplist.New[String]()
+}
+
+// WithCapacity(cap) is the MapList equivalent of `make(map[string]configopaque.String, cap)`.
+func MapListWithCapacity(cap int) *MapList {
+	return maplist.WithCapacity[String](cap)
+}
+
+// FromMap converts a map[string]configopaque.String to a new *MapList.
+// The resulting pairs are stored to facilitate comparisons in tests.
+func MapListFromMap(m map[string]String) *MapList {
 	return maplist.FromMap(m)
 }

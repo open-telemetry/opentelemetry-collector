@@ -95,7 +95,7 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
+	Headers *configopaque.MapList `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -287,9 +287,9 @@ func (cc *ClientConfig) ToClientConn(
 }
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
-	kv := make([]string, 0, 2*len(cc.Headers))
+	kv := make([]string, 0, 2*cc.Headers.Len())
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
-	for k, v := range cc.Headers.Pairs {
+	for k, v := range cc.Headers.Iter {
 		if len(existingMd.Get(k)) == 0 {
 			kv = append(kv, k, string(v))
 		}
@@ -376,7 +376,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
-	if len(cc.Headers) > 0 {
+	if cc.Headers.Len() > 0 {
 		opts = append(opts,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, gcc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 				return invoker(cc.addHeadersIfAbsent(ctx), method, req, reply, gcc, opts...)
