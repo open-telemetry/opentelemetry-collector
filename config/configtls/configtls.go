@@ -67,6 +67,13 @@ type Config struct {
 	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
 	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
 
+	// IncludeInsecureCipherSuites enables support for insecure cipher suites.
+	// When set to true, cipher suites returned by tls.InsecureCipherSuites() will be
+	// available for selection in addition to the secure ones. This should only be
+	// used when working with legacy systems that require insecure cipher suites.
+	// (optional, default false)
+	IncludeInsecureCipherSuites bool `mapstructure:"include_insecure_cipher_suites,omitempty"`
+
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
@@ -264,7 +271,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS max_version: %w", err)
 	}
-	cipherSuites, err := convertCipherSuites(c.CipherSuites)
+	cipherSuites, err := convertCipherSuites(c.CipherSuites, c.IncludeInsecureCipherSuites)
 	if err != nil {
 		return nil, err
 	}
@@ -288,12 +295,21 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	}, nil
 }
 
-func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
+func convertCipherSuites(cipherSuites []string, includeInsecure bool) ([]uint16, error) {
 	var result []uint16
 	var errs []error
+
+	// Get all available cipher suites (secure ones)
+	availableSuites := tls.CipherSuites()
+
+	// If insecure cipher suites are enabled, also include them
+	if includeInsecure {
+		availableSuites = append(availableSuites, tls.InsecureCipherSuites()...)
+	}
+
 	for _, suite := range cipherSuites {
 		found := false
-		for _, supported := range tls.CipherSuites() {
+		for _, supported := range availableSuites {
 			if suite == supported.Name {
 				result = append(result, supported.ID)
 				found = true
