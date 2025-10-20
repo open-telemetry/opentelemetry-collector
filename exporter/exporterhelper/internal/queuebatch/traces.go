@@ -29,12 +29,6 @@ func NewTracesQueueBatchSettings() Settings[request.Request] {
 	return Settings[request.Request]{
 		ReferenceCounter: tracesReferenceCounter{},
 		Encoding:         tracesEncoding{},
-		ItemsSizer:       request.NewItemsSizer(),
-		BytesSizer: request.BaseSizer{
-			SizeofFunc: func(req request.Request) int64 {
-				return int64(tracesMarshaler.TracesSize(req.(*tracesRequest).td))
-			},
-		},
 	}
 }
 

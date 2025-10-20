@@ -38,8 +38,6 @@ func TestDisabledBatcher(t *testing.T) {
 			ba := newDisabledBatcher(sink.Export)
 
 			q, err := queue.NewQueue(queue.Settings[request.Request]{
-				ItemsSizer:      request.NewItemsSizer(),
-				BytesSizer:      requesttest.NewBytesSizer(),
 				Capacity:        1000,
 				BlockOnOverflow: true,
 				NumConsumers:    tt.maxWorkers,
