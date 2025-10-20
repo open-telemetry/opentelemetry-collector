@@ -6,20 +6,20 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.43.0
+	go.opentelemetry.io/collector/component v1.44.0
 	go.opentelemetry.io/collector/component/componenttest v0.137.0
-	go.opentelemetry.io/collector/confmap v1.43.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.43.0
+	go.opentelemetry.io/collector/confmap v1.44.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.44.0
 	go.opentelemetry.io/collector/connector v0.137.0
 	go.opentelemetry.io/collector/connector/connectortest v0.137.0
-	go.opentelemetry.io/collector/consumer v1.43.0
+	go.opentelemetry.io/collector/consumer v1.44.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
 	go.opentelemetry.io/collector/filter v0.137.0
-	go.opentelemetry.io/collector/pdata v1.43.0
-	go.opentelemetry.io/collector/pipeline v1.43.0
-	go.opentelemetry.io/collector/processor v1.43.0
+	go.opentelemetry.io/collector/pdata v1.44.0
+	go.opentelemetry.io/collector/pipeline v1.44.0
+	go.opentelemetry.io/collector/processor v1.44.0
 	go.opentelemetry.io/collector/processor/processortest v0.137.0
-	go.opentelemetry.io/collector/receiver v1.43.0
+	go.opentelemetry.io/collector/receiver v1.44.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.137.0
 	go.opentelemetry.io/collector/scraper v0.137.0
 	go.opentelemetry.io/collector/scraper/scrapertest v0.137.0
@@ -59,7 +59,7 @@ require (
 	go.opentelemetry.io/collector/connector/xconnector v0.137.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.137.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.44.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.0 // indirect
