@@ -7,23 +7,23 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.44.0
-	go.opentelemetry.io/collector/component/componenttest v0.137.0
+	go.opentelemetry.io/collector/component/componenttest v0.138.0
 	go.opentelemetry.io/collector/confmap v1.44.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.44.0
-	go.opentelemetry.io/collector/connector v0.137.0
-	go.opentelemetry.io/collector/connector/connectortest v0.137.0
+	go.opentelemetry.io/collector/connector v0.138.0
+	go.opentelemetry.io/collector/connector/connectortest v0.138.0
 	go.opentelemetry.io/collector/consumer v1.44.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
-	go.opentelemetry.io/collector/filter v0.137.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.138.0
+	go.opentelemetry.io/collector/filter v0.138.0
 	go.opentelemetry.io/collector/pdata v1.44.0
 	go.opentelemetry.io/collector/pipeline v1.44.0
 	go.opentelemetry.io/collector/processor v1.44.0
-	go.opentelemetry.io/collector/processor/processortest v0.137.0
+	go.opentelemetry.io/collector/processor/processortest v0.138.0
 	go.opentelemetry.io/collector/receiver v1.44.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.137.0
-	go.opentelemetry.io/collector/scraper v0.137.0
-	go.opentelemetry.io/collector/scraper/scrapertest v0.137.0
-	go.opentelemetry.io/collector/service/hostcapabilities v0.137.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.138.0
+	go.opentelemetry.io/collector/scraper v0.138.0
+	go.opentelemetry.io/collector/scraper/scrapertest v0.138.0
+	go.opentelemetry.io/collector/service/hostcapabilities v0.138.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
@@ -55,19 +55,19 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.137.0 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.137.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.137.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.138.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.138.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.138.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.138.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.44.0 // indirect
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.137.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.137.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.137.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.137.0 // indirect
-	go.opentelemetry.io/collector/service v0.137.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.138.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.138.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.138.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.138.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.138.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.138.0 // indirect
+	go.opentelemetry.io/collector/service v0.138.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect

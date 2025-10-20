@@ -4,9 +4,9 @@ go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/consumer/consumererror v0.137.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.137.0
-	go.opentelemetry.io/collector/pdata/testdata v0.137.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.138.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.0
+	go.opentelemetry.io/collector/pdata/testdata v0.138.0
 )
 
 require (
