@@ -123,6 +123,22 @@ func TestCreateLogger(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log config with resource_as_zap_field disabled",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Development:         false,
+					Encoding:            "console",
+					OutputPaths:         []string{"stderr"},
+					ErrorOutputPaths:    []string{"stderr"},
+					DisableCaller:       false,
+					DisableStacktrace:   false,
+					InitialFields:       map[string]any(nil),
+					ResourceAsZapFields: false,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

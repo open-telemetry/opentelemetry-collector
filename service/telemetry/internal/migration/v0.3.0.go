@@ -162,6 +162,14 @@ type LogsConfigV030 struct {
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+
+	// ResourceAsZapFields indicates whether resource attributes should be added as zap fields.
+	// If true, resource attributes will be added to logs exported through the LoggerProvider
+	// and also to logs written to stdout/stderr.
+	// If false, resource attributes neither be added to logs exported through the LoggerProvider nor
+	// to the logs written to stdout/stderr.
+	// (default = true)
+	ResourceAsZapFields bool `mapstructure:"resource_as_zap_field"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
