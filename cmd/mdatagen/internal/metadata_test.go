@@ -214,3 +214,92 @@ func TestCodeCovID(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributeRequirementLevel(t *testing.T) {
+	tests := []struct {
+		name             string
+		requirementLevel AttributeRequirementLevel
+		wantConditional  bool
+	}{
+		{
+			name:             "required",
+			requirementLevel: AttributeRequirementLevelRequired,
+			wantConditional:  false,
+		},
+		{
+			name:             "conditionally_required",
+			requirementLevel: AttributeRequirementLevelConditionallyRequired,
+			wantConditional:  true,
+		},
+		{
+			name:             "recommended",
+			requirementLevel: AttributeRequirementLevelRecommended,
+			wantConditional:  false,
+		},
+		{
+			name:             "opt_in",
+			requirementLevel: AttributeRequirementLevelOptIn,
+			wantConditional:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := Attribute{RequirementLevel: tt.requirementLevel}
+			assert.Equal(t, tt.wantConditional, attr.IsConditional())
+		})
+	}
+}
+
+func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    AttributeRequirementLevel
+		wantErr bool
+	}{
+		{
+			name:  "required",
+			input: "required",
+			want:  AttributeRequirementLevelRequired,
+		},
+		{
+			name:  "conditionally_required",
+			input: "conditionally_required",
+			want:  AttributeRequirementLevelConditionallyRequired,
+		},
+		{
+			name:  "recommended",
+			input: "recommended",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:  "opt_in",
+			input: "opt_in",
+			want:  AttributeRequirementLevelOptIn,
+		},
+		{
+			name:  "empty defaults to recommended",
+			input: "",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:    "invalid value",
+			input:   "invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rl AttributeRequirementLevel
+			err := rl.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, rl)
+		})
+	}
+}

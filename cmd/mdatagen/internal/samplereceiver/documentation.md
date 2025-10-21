@@ -24,15 +24,16 @@ The metric will be become optional soon.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
-| optional_int_attr | An optional attribute with an integer value | Any Int | true |
-| optional_string_attr | An optional attribute with any string value | Any Str | true |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
+| conditional_int_attr | A conditional attribute with an integer value | Any Int | Conditionally Required |
+| conditional_string_attr | A conditional attribute with any string value | Any Str | Conditionally Required |
+| opt_in_bool_attr | An opt-in attribute with a boolean value | Any Bool | Opt-In |
 
 ### default.metric.to_be_removed
 
@@ -54,13 +55,13 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ## Optional Metrics
 
@@ -82,12 +83,12 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
-| optional_string_attr | An optional attribute with any string value | Any Str | true |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
+| conditional_string_attr | A conditional attribute with any string value | Any Str | Conditionally Required |
 
 ### optional.metric.empty_unit
 
@@ -99,10 +100,10 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
 ## Default Events
 
@@ -127,8 +128,9 @@ Example event enabled by default.
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
-| optional_int_attr | An optional attribute with an integer value | Any Int |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| conditional_int_attr | A conditional attribute with an integer value | Any Int |
+| conditional_string_attr | A conditional attribute with any string value | Any Str |
+| opt_in_bool_attr | An opt-in attribute with a boolean value | Any Bool |
 
 ### default.event.to_be_removed
 
@@ -169,7 +171,7 @@ The event will be renamed soon.
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
 | boolean_attr2 | Another attribute with a boolean value. | Any Bool |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| conditional_string_attr | A conditional attribute with any string value | Any Str |
 
 ## Resource Attributes
 

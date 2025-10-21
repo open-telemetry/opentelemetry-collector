@@ -193,7 +193,7 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
-			yml:                        "with_optional_attribute.yaml",
+			yml:                        "with_conditional_attribute.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantMetricsGenerated:       true,
