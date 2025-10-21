@@ -23,7 +23,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
-	go.opentelemetry.io/collector/internal/maplist v0.137.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
@@ -39,7 +38,5 @@ replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../prov
 replace go.opentelemetry.io/collector/config/configopaque => ../../../config/configopaque
 
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
-
-replace go.opentelemetry.io/collector/internal/maplist => ../../../internal/maplist
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../xconfmap

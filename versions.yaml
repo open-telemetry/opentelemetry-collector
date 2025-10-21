@@ -34,7 +34,6 @@ module-sets:
     version: v0.137.0
     modules:
       - go.opentelemetry.io/collector
-      - go.opentelemetry.io/collector/internal/maplist
       - go.opentelemetry.io/collector/internal/memorylimiter
       - go.opentelemetry.io/collector/internal/fanoutconsumer
       - go.opentelemetry.io/collector/internal/sharedcomponent

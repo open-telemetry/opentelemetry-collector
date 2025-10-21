@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package maplist_test
+package configopaque_test
 
 import (
 	"testing"
@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/internal/maplist"
 )
 
 const headersList = `
@@ -39,7 +39,7 @@ headers:
 `
 
 type testConfig struct {
-	Headers *maplist.MapList[string] `mapstructure:"headers"`
+	Headers *configopaque.MapList `mapstructure:"headers"`
 }
 
 func TestMapListDuality(t *testing.T) {
@@ -72,7 +72,7 @@ func TestMapListUnmarshalError(t *testing.T) {
 	assert.EqualError(t, conf.Unmarshal(&tc),
 		"decoding failed due to the following error(s):\n\n"+
 			"'headers' decoding failed due to the following error(s):\n\n"+
-			"'[bad]' expected type 'string', got unconvertible type 'int'")
+			"'[bad]' expected type 'configopaque.String', got unconvertible type 'int'")
 }
 
 func TestMapListValidate(t *testing.T) {
@@ -86,26 +86,15 @@ func TestMapListValidate(t *testing.T) {
 }
 
 func TestMapListNew(t *testing.T) {
-	assert.Equal(t, new(maplist.MapList[int]), maplist.New[int]())
-
-	ml := maplist.WithCapacity[string](4)
-	require.NotNil(t, ml)
-	assert.Equal(t, 4, cap(*ml))
-
-	assert.Equal(t, &maplist.MapList[int]{
-		{"a", 1}, {"b", 2},
-	}, maplist.FromMap(map[string]int{
-		"a": 1,
-		"b": 2,
-	}))
+	assert.Equal(t, new(configopaque.MapList), configopaque.NewMapList())
 }
 
 func TestMapListMethods(t *testing.T) {
-	ml := &maplist.MapList[int]{{"a", 1}, {"b", 2}, {"c", 3}}
+	ml := &configopaque.MapList{{"a", "1"}, {"b", "2"}, {"c", "3"}}
 
 	type pair = struct {
 		k string
-		v int
+		v configopaque.String
 	}
 	var kvs []pair
 	for k, v := range ml.Iter {
@@ -114,30 +103,26 @@ func TestMapListMethods(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, []pair{{"a", 1}, {"b", 2}}, kvs)
+	assert.Equal(t, []pair{{"a", "1"}, {"b", "2"}}, kvs)
 
-	v, ok := ml.TryGet("a")
+	v, ok := ml.Get("a")
 	assert.True(t, ok)
 	if ok {
-		assert.Equal(t, 1, v)
-		assert.Equal(t, 1, ml.Get("a"))
+		assert.Equal(t, configopaque.String("1"), v)
 	}
-	v, ok = ml.TryGet("d")
+	v, ok = ml.Get("d")
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Zero(t, ml.Get("d"))
 
-	ml.Set("d", 4)
+	assert.Equal(t, 3, ml.Len())
+	ml.Set("d", "4")
 	assert.Equal(t, 4, ml.Len())
-	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}, ml.ToMap())
-
-	ml.Set("d", 5)
+	ml.Set("d", "5")
 	assert.Equal(t, 4, ml.Len())
-	assert.Equal(t, map[string]int{"a": 1, "b": 2, "c": 3, "d": 5}, ml.ToMap())
 }
 
 func TestMapListNil(t *testing.T) {
-	var ml *maplist.MapList[int]
+	var ml *configopaque.MapList
 
 	require.NoError(t, ml.Validate())
 
@@ -147,15 +132,13 @@ func TestMapListNil(t *testing.T) {
 	}
 	assert.False(t, called)
 
-	v, ok := ml.TryGet("a")
+	v, ok := ml.Get("a")
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Zero(t, ml.Get("a"))
 
 	assert.Panics(t, func() {
-		ml.Set("a", 0)
+		ml.Set("a", "0")
 	})
 
 	assert.Zero(t, ml.Len())
-	assert.Nil(t, ml.ToMap())
 }

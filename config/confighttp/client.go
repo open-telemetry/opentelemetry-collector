@@ -289,7 +289,7 @@ type headerRoundTripper struct {
 // RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Set Host header if provided
-	hostHeader, found := interceptor.headers.TryGet("Host")
+	hostHeader, found := interceptor.headers.Get("Host")
 	if found && hostHeader != "" {
 		// `Host` field should be set to override default `Host` header value which is Endpoint
 		req.Host = string(hostHeader)
