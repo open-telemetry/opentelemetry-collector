@@ -5,16 +5,13 @@ package otelcol
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestUnmarshalEmpty(t *testing.T) {
@@ -40,23 +37,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 	cfg, err := unmarshal(conf, factories)
 	require.NoError(t, err)
 
-	zapProdCfg := zap.NewProductionConfig()
-	assert.Equal(t, otelconftelemetry.LogsConfig{
-		Level:       zapProdCfg.Level.Level(),
-		Development: zapProdCfg.Development,
-		Encoding:    "console",
-		Sampling: &otelconftelemetry.LogsSamplingConfig{
-			Enabled:    true,
-			Tick:       10 * time.Second,
-			Initial:    10,
-			Thereafter: 100,
-		},
-		DisableCaller:     zapProdCfg.DisableCaller,
-		DisableStacktrace: zapProdCfg.DisableStacktrace,
-		OutputPaths:       zapProdCfg.OutputPaths,
-		ErrorOutputPaths:  zapProdCfg.ErrorOutputPaths,
-		InitialFields:     zapProdCfg.InitialFields,
-	}, cfg.Service.Telemetry.(*otelconftelemetry.Config).Logs)
+	assert.Equal(t, fakeTelemetryConfig{}, cfg.Service.Telemetry)
 }
 
 func TestUnmarshalUnknownTopLevel(t *testing.T) {
