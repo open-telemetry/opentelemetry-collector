@@ -67,18 +67,9 @@ func TestUnmarshalConfig(t *testing.T) {
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
 				Headers: &configopaque.MapList{
-					{
-						Name:  "another",
-						Value: "somevalue",
-					},
-					{
-						Name:  "can you have a . here?",
-						Value: "F0000000-0000-0000-0000-000000000000",
-					},
-					{
-						Name:  "header1",
-						Value: "234",
-					},
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint: "https://1.2.3.4:1234",
 				TLS: configtls.ClientConfig{

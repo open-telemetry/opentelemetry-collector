@@ -430,10 +430,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 				Headers: &configopaque.MapList{
-					{
-						Name:  "foo",
-						Value: "bar",
-					},
+					{Name: "foo", Value: "bar"},
 				},
 			},
 			shouldErr: false,
@@ -730,14 +727,8 @@ func TestClientUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 
 	// Verify headers
 	expectedHeaders := &configopaque.MapList{
-		{
-			Name:  "User-Agent",
-			Value: "OpenTelemetry-Collector/1.0",
-		},
-		{
-			Name:  "X-Custom-Header",
-			Value: "custom-value",
-		},
+		{Name: "User-Agent", Value: "OpenTelemetry-Collector/1.0"},
+		{Name: "X-Custom-Header", Value: "custom-value"},
 	}
 	assert.Equal(t, expectedHeaders, clientConfig.Headers)
 

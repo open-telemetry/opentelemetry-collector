@@ -164,10 +164,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			name: "test all with gzip compression",
 			settings: ClientConfig{
 				Headers: &configopaque.MapList{
-					{
-						Name:  "test",
-						Value: "test",
-					},
+					{Name: "test", Value: "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeGzip,
@@ -196,10 +193,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			name: "test all with snappy compression",
 			settings: ClientConfig{
 				Headers: &configopaque.MapList{
-					{
-						Name:  "test",
-						Value: "test",
-					},
+					{Name: "test", Value: "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeSnappy,
@@ -228,10 +222,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			name: "test all with zstd compression",
 			settings: ClientConfig{
 				Headers: &configopaque.MapList{
-					{
-						Name:  "test",
-						Value: "test",
-					},
+					{Name: "test", Value: "test"},
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeZstd,
@@ -295,10 +286,7 @@ func TestHeaders(t *testing.T) {
 			Insecure: true,
 		},
 		Headers: &configopaque.MapList{
-			{
-				Name:  "testheader",
-				Value: "testvalue",
-			},
+			{Name: "testheader", Value: "testvalue"},
 		},
 	})
 	require.NoError(t, errResp)
@@ -447,10 +435,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 	settings := ClientConfig{
 		Headers: &configopaque.MapList{
-			{
-				Name:  "test",
-				Value: "test",
-			},
+			{Name: "test", Value: "test"},
 		},
 		Endpoint:    "localhost:1234",
 		Compression: "gzip",

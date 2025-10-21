@@ -1139,14 +1139,8 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 
 	// Verify response headers
 	expectedResponseHeaders := &configopaque.MapList{
-		{
-			Name:  "Server",
-			Value: "OpenTelemetry-Collector",
-		},
-		{
-			Name:  "X-Flavor",
-			Value: "apple",
-		},
+		{Name: "Server", Value: "OpenTelemetry-Collector"},
+		{Name: "X-Flavor", Value: "apple"},
 	}
 	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
 

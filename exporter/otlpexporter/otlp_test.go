@@ -316,10 +316,7 @@ func TestSendTraces(t *testing.T) {
 			Insecure: true,
 		},
 		Headers: &configopaque.MapList{
-			{
-				Name:  "header",
-				Value: "header-value",
-			},
+			{Name: "header", Value: "header-value"},
 		},
 	}
 	set := exportertest.NewNopSettings(factory.Type())
@@ -491,10 +488,7 @@ func TestSendMetrics(t *testing.T) {
 			Insecure: true,
 		},
 		Headers: &configopaque.MapList{
-			{
-				Name:  "header",
-				Value: "header-value",
-			},
+			{Name: "header", Value: "header-value"},
 		},
 	}
 	set := exportertest.NewNopSettings(factory.Type())
@@ -895,10 +889,7 @@ func TestSendProfiles(t *testing.T) {
 			Insecure: true,
 		},
 		Headers: &configopaque.MapList{
-			{
-				Name:  "header",
-				Value: "header-value",
-			},
+			{Name: "header", Value: "header-value"},
 		},
 	}
 	set := exportertest.NewNopSettings(factory.Type())
