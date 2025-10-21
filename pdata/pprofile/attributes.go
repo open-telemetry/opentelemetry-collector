@@ -32,13 +32,15 @@ func FromAttributeIndices(table KeyValueAndUnitSlice, record attributable, dic P
 	return m
 }
 
-var errTooManyTableEntries = errors.New("too many entries in AttributeTable")
+var errTooManyAttributeTableEntries = errors.New("too many entries in AttributeTable")
 
 // PutAttribute updates an AttributeTable and a record's AttributeIndices to
 // add or update an attribute.
 // The assumption is that attributes are a map as for other signals (metrics, logs, etc.), thus
 // the same key must not appear twice in a list of attributes / attribute indices.
 // The record can be any struct that implements an `AttributeIndices` method.
+//
+// Deprecated: [v0.138.0] use SetAttribute instead.
 func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesDictionary, key string, value pcommon.Value) error {
 	for i := range record.AttributeIndices().Len() {
 		idx := int(record.AttributeIndices().At(i))
@@ -58,7 +60,7 @@ func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesD
 				a := table.At(j)
 				if dic.StringTable().At(int(a.KeyStrindex())) == key && a.Value().Equal(value) {
 					if j > math.MaxInt32 {
-						return errTooManyTableEntries
+						return errTooManyAttributeTableEntries
 					}
 					record.AttributeIndices().SetAt(i, int32(j)) //nolint:gosec // overflow checked
 					return nil
@@ -66,7 +68,7 @@ func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesD
 			}
 
 			if table.Len() >= math.MaxInt32 {
-				return errTooManyTableEntries
+				return errTooManyAttributeTableEntries
 			}
 
 			// Find the key in the StringTable, or add it
@@ -94,7 +96,7 @@ func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesD
 		a := table.At(j)
 		if dic.StringTable().At(int(a.KeyStrindex())) == key && a.Value().Equal(value) {
 			if j > math.MaxInt32 {
-				return errTooManyTableEntries
+				return errTooManyAttributeTableEntries
 			}
 			// Add the index of the existing attribute to the indices.
 			record.AttributeIndices().Append(int32(j)) //nolint:gosec // overflow checked
@@ -103,7 +105,7 @@ func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesD
 	}
 
 	if table.Len() >= math.MaxInt32 {
-		return errTooManyTableEntries
+		return errTooManyAttributeTableEntries
 	}
 
 	// Find the key in the StringTable, or add it
@@ -120,4 +122,24 @@ func PutAttribute(table KeyValueAndUnitSlice, record attributable, dic ProfilesD
 	// ...and add a new index to the indices.
 	record.AttributeIndices().Append(int32(table.Len() - 1)) //nolint:gosec // overflow checked
 	return nil
+}
+
+// SetAttribute updates an AttributeTable, adding or providing a value and
+// returns its index.
+func SetAttribute(table KeyValueAndUnitSlice, attr KeyValueAndUnit) (int32, error) {
+	for j, a := range table.All() {
+		if a.Equal(attr) {
+			if j > math.MaxInt32 {
+				return 0, errTooManyAttributeTableEntries
+			}
+			return int32(j), nil //nolint:gosec // G115 overflow checked
+		}
+	}
+
+	if table.Len() >= math.MaxInt32 {
+		return 0, errTooManyAttributeTableEntries
+	}
+
+	attr.CopyTo(table.AppendEmpty())
+	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
 }

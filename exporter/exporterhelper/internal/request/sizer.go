@@ -55,33 +55,44 @@ func (s *SizerType) String() string {
 }
 
 // Sizer is an interface that returns the size of the given element.
-type Sizer[T any] interface {
-	Sizeof(T) int64
+type Sizer interface {
+	Sizeof(Request) int64
+}
+
+func NewSizer(sizerType SizerType) Sizer {
+	switch sizerType {
+	case SizerTypeBytes:
+		return NewBytesSizer()
+	case SizerTypeItems:
+		return NewItemsSizer()
+	default:
+		return RequestsSizer{}
+	}
 }
 
 // RequestsSizer is a Sizer implementation that returns the size of a queue element as one request.
-type RequestsSizer[T any] struct{}
+type RequestsSizer struct{}
 
-func (rs RequestsSizer[T]) Sizeof(T) int64 {
+func (rs RequestsSizer) Sizeof(Request) int64 {
 	return 1
 }
 
-type itemsSizer[T Request] struct{}
+type itemsSizer struct{}
 
-func (itemsSizer[T]) Sizeof(t T) int64 {
-	return int64(t.ItemsCount())
+func (itemsSizer) Sizeof(req Request) int64 {
+	return int64(req.ItemsCount())
 }
 
-type bytesSizer[T Request] struct{}
+type bytesSizer struct{}
 
-func (bytesSizer[T]) Sizeof(t T) int64 {
-	return int64(t.BytesSize())
+func (bytesSizer) Sizeof(req Request) int64 {
+	return int64(req.BytesSize())
 }
 
-func NewItemsSizer[T Request]() Sizer[T] {
-	return itemsSizer[T]{}
+func NewItemsSizer() Sizer {
+	return itemsSizer{}
 }
 
-func NewBytesSizer[T Request]() Sizer[T] {
-	return bytesSizer[T]{}
+func NewBytesSizer() Sizer {
+	return bytesSizer{}
 }

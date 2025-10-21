@@ -35,7 +35,7 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 		return newDisabledBatcher(set.next), nil
 	}
 
-	sizer := activeSizer[request.Request](cfg.Get().Sizer)
+	sizer := request.NewSizer(cfg.Get().Sizer)
 	if sizer == nil {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Get().Sizer)
 	}
@@ -45,15 +45,4 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 	}
 
 	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.mergeCtx, set.next, set.logger), nil
-}
-
-func activeSizer[T request.Request](sizerType request.SizerType) request.Sizer[T] {
-	switch sizerType {
-	case request.SizerTypeBytes:
-		return request.NewBytesSizer[T]()
-	case request.SizerTypeItems:
-		return request.NewItemsSizer[T]()
-	default:
-		return request.RequestsSizer[T]{}
-	}
 }

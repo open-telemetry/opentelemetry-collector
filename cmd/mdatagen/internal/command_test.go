@@ -48,11 +48,16 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
 		wantErr                         bool
+		wantOrderErr                    bool
 		wantAttributes                  []string
 	}{
 		{
 			yml:     "invalid.yaml",
 			wantErr: true,
+		},
+		{
+			yml:          "unsorted_rattr.yaml",
+			wantOrderErr: true,
 		},
 		{
 			yml:                        "basic_connector.yaml",
@@ -234,6 +239,11 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
 
 			err = run(metadataFile)
+			if tt.wantOrderErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
+				return
+			}
 			require.NoError(t, err)
 
 			var contents []byte
