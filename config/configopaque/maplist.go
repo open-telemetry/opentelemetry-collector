@@ -17,6 +17,9 @@ import (
 type OpaquePair struct {
 	Name  string `mapstructure:"name"`
 	Value String `mapstructure:"value"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // *MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value OpaquePairs.
