@@ -436,7 +436,7 @@ func TestHttpServerHeaders(t *testing.T) {
 		},
 		{
 			name:    "emptyHeaders",
-			headers: &configopaque.MapList{},
+			headers: configopaque.NewMapList(),
 		},
 		{
 			name: "withHeaders",

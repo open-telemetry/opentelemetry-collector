@@ -90,7 +90,11 @@ func TestMapListNew(t *testing.T) {
 }
 
 func TestMapListMethods(t *testing.T) {
-	ml := &configopaque.MapList{{"a", "1"}, {"b", "2"}, {"c", "3"}}
+	ml := &configopaque.MapList{
+		{Name: "a", Value: "1"},
+		{Name: "b", Value: "2"},
+		{Name: "c", Value: "3"},
+	}
 
 	type pair = struct {
 		k string
