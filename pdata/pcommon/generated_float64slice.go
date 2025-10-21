@@ -127,6 +127,28 @@ func (ms Float64Slice) MoveAndAppendTo(dest Float64Slice) {
 	*ms.getOrig() = nil
 }
 
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (ms Float64Slice) RemoveIf(f func(float64) bool) {
+	ms.getState().AssertMutable()
+	newLen := 0
+	for i := 0; i < len(*ms.getOrig()); i++ {
+		if f((*ms.getOrig())[i]) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*ms.getOrig())[newLen] = (*ms.getOrig())[i]
+		var zero float64
+		(*ms.getOrig())[i] = zero
+		newLen++
+	}
+	*ms.getOrig() = (*ms.getOrig())[:newLen]
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms Float64Slice) CopyTo(dest Float64Slice) {
 	dest.getState().AssertMutable()
