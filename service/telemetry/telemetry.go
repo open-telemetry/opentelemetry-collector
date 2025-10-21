@@ -16,11 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
-
-// Deprecated: [v0.137.0] Use otelconftelemetry.TracesConfig instead.
-type TracesConfig = migration.TracesConfigV030
 
 // LoggerSettings holds settings for building logger providers.
 type LoggerSettings struct {
@@ -92,6 +88,9 @@ type Factory interface {
 
 	// CreateTracerProvider creates a trace.TracerProvider that may be used
 	// by components to trace their internal operations.
+	//
+	// If the returned provider is a wrapper, consider implementing
+	// the `Unwrap() trace.TracerProvider` method to grant components access to the underlying SDK.
 	CreateTracerProvider(context.Context, TracerSettings, component.Config) (TracerProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.

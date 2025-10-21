@@ -21,8 +21,8 @@ func TestAsyncMemoryQueue(t *testing.T) {
 	consumed := &atomic.Int64{}
 
 	set := newSettings(request.SizerTypeItems, 100)
-	ac := newAsyncQueue(newMemoryQueue[int64](set),
-		1, func(_ context.Context, _ int64, done Done) {
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set),
+		1, func(_ context.Context, _ intRequest, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
 		}, set.ReferenceCounter)
@@ -38,8 +38,8 @@ func TestAsyncMemoryQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
 	set := newSettings(request.SizerTypeItems, 100)
 	set.BlockOnOverflow = true
-	ac := newAsyncQueue(newMemoryQueue[int64](set),
-		4, func(_ context.Context, _ int64, done Done) {
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set),
+		4, func(_ context.Context, _ intRequest, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
 		}, set.ReferenceCounter)
@@ -64,8 +64,8 @@ func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 	set := newSettings(request.SizerTypeItems, 100)
 	set.BlockOnOverflow = true
 	set.WaitForResult = true
-	ac := newAsyncQueue(newMemoryQueue[int64](set),
-		4, func(_ context.Context, _ int64, done Done) {
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set),
+		4, func(_ context.Context, _ intRequest, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
 		}, set.ReferenceCounter)
@@ -89,8 +89,8 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 	stop := make(chan struct{})
 	set := newSettings(request.SizerTypeItems, 10)
 	set.BlockOnOverflow = true
-	ac := newAsyncQueue(newMemoryQueue[int64](set),
-		1, func(_ context.Context, _ int64, done Done) {
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set),
+		1, func(_ context.Context, _ intRequest, done Done) {
 			<-stop
 			done.OnDone(nil)
 		}, set.ReferenceCounter)
@@ -119,7 +119,7 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 func BenchmarkAsyncMemoryQueue(b *testing.B) {
 	consumed := &atomic.Int64{}
 	set := newSettings(request.SizerTypeItems, int64(10*b.N))
-	ac := newAsyncQueue(newMemoryQueue[int64](set), 1, func(_ context.Context, _ int64, done Done) {
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set), 1, func(_ context.Context, _ intRequest, done Done) {
 		consumed.Add(1)
 		done.OnDone(nil)
 	}, set.ReferenceCounter)
