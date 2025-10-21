@@ -187,6 +187,7 @@ the role of the [release manager](./docs/release.md#release-manager).
 
 ### Triagers
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
