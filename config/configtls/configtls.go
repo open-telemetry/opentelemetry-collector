@@ -9,8 +9,10 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -268,13 +270,22 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	allowedCurves := slices.Collect(maps.Values(tlsCurveTypes))
 	curvePreferences := make([]tls.CurveID, 0, len(c.CurvePreferences))
 	for _, curve := range c.CurvePreferences {
 		curveID, ok := tlsCurveTypes[curve]
 		if !ok {
-			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519, X25519MLKEM768]", curve)
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are %s", curveID, allowedCurves)
 		}
 		curvePreferences = append(curvePreferences, curveID)
+	}
+
+	// If no curve preferences were explicitly specified in the configuration, use
+	// the ones we allow. This helps in particular with FIPS builds where not all curves
+	// are allowed.
+	if len(curvePreferences) == 0 {
+		curvePreferences = allowedCurves
 	}
 
 	return &tls.Config{
@@ -500,12 +511,4 @@ var tlsVersions = map[string]uint16{
 	"1.1": tls.VersionTLS11,
 	"1.2": tls.VersionTLS12,
 	"1.3": tls.VersionTLS13,
-}
-
-var tlsCurveTypes = map[string]tls.CurveID{
-	"P256":           tls.CurveP256,
-	"P384":           tls.CurveP384,
-	"P521":           tls.CurveP521,
-	"X25519":         tls.X25519,
-	"X25519MLKEM768": tls.X25519MLKEM768,
 }
