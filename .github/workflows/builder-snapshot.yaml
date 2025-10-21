@@ -34,7 +34,7 @@ jobs:
       - name: Copy release files
         run: cp -R ./opentelemetry-collector-releases/cmd/builder/. ./.core/cmd/builder/
 
-      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - uses: anchore/sbom-action/download-syft@aa0e114b2e19480f157109b9922bda359bd98b90 # v0.20.8
 
