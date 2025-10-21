@@ -10,7 +10,7 @@ import (
 
 var errTooManyStackTableEntries = errors.New("too many entries in StackTable")
 
-// SetStack updates a StackTable, adding or providing a stack and returns its
+// SetStack updates a StackSlice, adding or providing a stack and returns its
 // index.
 func SetStack(table StackSlice, st Stack) (int32, error) {
 	for j, l := range table.All() {
