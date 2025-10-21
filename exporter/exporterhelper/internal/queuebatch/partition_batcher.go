@@ -29,7 +29,7 @@ type batch struct {
 type partitionBatcher struct {
 	cfg            BatchConfig
 	wp             *workerPool
-	sizer          request.Sizer[request.Request]
+	sizer          request.Sizer
 	mergeCtx       func(context.Context, context.Context) context.Context
 	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
@@ -42,7 +42,7 @@ type partitionBatcher struct {
 
 func newPartitionBatcher(
 	cfg BatchConfig,
-	sizer request.Sizer[request.Request],
+	sizer request.Sizer,
 	mergeCtx func(context.Context, context.Context) context.Context,
 	wp *workerPool,
 	next sender.SendFunc[request.Request],

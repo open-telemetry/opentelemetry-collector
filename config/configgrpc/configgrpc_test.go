@@ -1031,6 +1031,31 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	assert.True(t, authCalled)
 }
 
+func TestDefaultUnaryInterceptorAuthFailureWithStatusErr(t *testing.T) {
+	// prepare
+	authCalled := false
+	expectedStatusErr := status.New(codes.Unavailable, "unavailable")
+	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+		authCalled = true
+		return context.Background(), expectedStatusErr.Err()
+	}
+	handler := func(context.Context, any) (any, error) {
+		assert.FailNow(t, "the handler should not have been called on auth failure!")
+		return nil, nil
+	}
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
+	interceptor := authUnaryServerInterceptor(newMockAuthServer(authFunc))
+
+	// test
+	res, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+
+	// verify
+	assert.Nil(t, res)
+	require.ErrorContains(t, err, expectedStatusErr.Err().Error())
+	assert.Equal(t, codes.Unavailable, status.Code(err))
+	assert.True(t, authCalled)
+}
+
 func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	// prepare
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
@@ -1081,6 +1106,32 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, authCalled)
 	assert.True(t, handlerCalled)
+}
+
+func TestDefaultStreamInterceptorAuthFailureWithStatusErr(t *testing.T) {
+	// prepare
+	authCalled := false
+	expectedStatusErr := status.New(codes.Unavailable, "unavailable")
+	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+		authCalled = true
+		return context.Background(), expectedStatusErr.Err()
+	}
+	handler := func(any, grpc.ServerStream) error {
+		assert.FailNow(t, "the handler should not have been called on auth failure!")
+		return nil
+	}
+	streamServer := &mockServerStream{
+		ctx: metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data")),
+	}
+	interceptor := authStreamServerInterceptor(newMockAuthServer(authFunc))
+
+	// test
+	err := interceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
+
+	// verify
+	require.ErrorContains(t, err, expectedStatusErr.Err().Error()) // unfortunately, grpc errors don't wrap the original ones
+	assert.Equal(t, codes.Unavailable, status.Code(err))
+	assert.True(t, authCalled)
 }
 
 func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {

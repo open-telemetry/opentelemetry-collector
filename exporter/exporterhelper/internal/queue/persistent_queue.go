@@ -68,15 +68,15 @@ var indexDonePool = sync.Pool{
 //	 write          read    x     └── currently dispatched item
 //	 index          index   x
 //	                        xxxx deleted
-type persistentQueue[T any] struct {
+type persistentQueue[T request.Request] struct {
 	logger      *zap.Logger
 	client      storage.Client
 	encoding    Encoding[T]
 	capacity    int64
 	sizerType   request.SizerType
-	activeSizer request.Sizer[T]
-	itemsSizer  request.Sizer[T]
-	bytesSizer  request.Sizer[T]
+	activeSizer request.Sizer
+	itemsSizer  request.Sizer
+	bytesSizer  request.Sizer
 	storageID   component.ID
 	id          component.ID
 	signal      pipeline.Signal
@@ -93,15 +93,15 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
+func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
 		encoding:        set.Encoding,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
-		activeSizer:     set.activeSizer(),
-		itemsSizer:      set.ItemsSizer,
-		bytesSizer:      set.BytesSizer,
+		activeSizer:     request.NewSizer(set.SizerType),
+		itemsSizer:      request.NewItemsSizer(),
+		bytesSizer:      request.NewBytesSizer(),
 		storageID:       *set.StorageID,
 		id:              set.ID,
 		signal:          set.Signal,
