@@ -179,7 +179,7 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 
 	var rr *http.Response
 	maxRetries := 5
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		rr, err = client.Do(req)
 		if err == nil && rr.StatusCode == http.StatusOK {
 			break

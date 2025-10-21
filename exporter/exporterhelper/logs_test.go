@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -47,17 +47,6 @@ var (
 	fakeLogsName   = component.MustNewIDWithName("fake_logs_exporter", "with_name")
 	fakeLogsConfig = struct{}{}
 )
-
-func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(testdata.GenerateLogs(1))
-
-	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
-	assert.Equal(
-		t,
-		newLogsRequest(plog.NewLogs()),
-		lr.(RequestErrorHandler).OnError(logErr),
-	)
-}
 
 func TestLogs_InvalidName(t *testing.T) {
 	le, err := NewLogs(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushLogsData(nil))
@@ -220,7 +209,7 @@ func TestLogsRequest_WithRecordMetrics(t *testing.T) {
 
 	le, err := internal.NewLogsRequest(context.Background(),
 		exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromLogsFunc(nil), sendertest.NewNopSenderFunc[Request]())
+		requesttest.RequestFromLogsFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -245,7 +234,7 @@ func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	le, err := internal.NewLogsRequest(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromLogsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+		requesttest.RequestFromLogsFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -272,7 +261,7 @@ func TestLogsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	le, err := internal.NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(nil), sendertest.NewNopSenderFunc[Request]())
+	le, err := internal.NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(nil), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil)
@@ -300,7 +289,7 @@ func TestLogsRequest_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	le, err := internal.NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
+	le, err := internal.NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(nil), sendertest.NewErrSenderFunc[request.Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want)
@@ -345,7 +334,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id component.ID, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
 	}
 
@@ -375,7 +364,7 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, nu
 	ld := testdata.GenerateLogs(1)
 	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		require.Equal(t, wantError, le.ConsumeLogs(ctx, ld))
 	}
 }

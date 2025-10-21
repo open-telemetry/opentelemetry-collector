@@ -7,6 +7,78 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xexporterhelper`: Remove definition of Sizer from public API and ability to configure. (#14001)
+  Now that Request has both Items/Bytes sizes no need to allow custom sizers.
+  
+- `pkg/service`: The `service.Settings` type now requires a `telemetry.Factory` to be provided (#4970)
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecated `PutAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Deprecated `PutLocation` helper method (#14019)
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/pdata`: Add pcommon.Map helper to add a key to the map if does not exists (#14023)
+- `pdata/pprofile`: Introduce `Equal` method on the `KeyValueAndUnit` type (#14041)
+- `pkg/pdata`: Add `RemoveIf` method to primitive slice types (StringSlice, Int64Slice, UInt64Slice, Float64Slice, Int32Slice, ByteSlice) (#14027)
+- `pdata/pprofile`: Introduce `SetAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Introduce `SetLocation` helper method (#14019)
+- `pdata/pprofile`: Introduce `Equal` method on the `Stack` type (#13952)
+
+<!-- previous-version -->
+
+## v1.43.0/v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Remove all experimental symbols in exporterhelper (#11143)
+  They have all been moved to xexporterhelper
+  
+
+### 🚩 Deprecations 🚩
+
+- `all`: service/telemetry.TracesConfig is deprecated (#13904)
+  This type alias has been added to otelconftelemetry.TracesConfig,
+  where the otelconf-based telemetry implementation now lives.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Mark configoptional as stable (#13403)
+- `all`: Mark configauth module as 1.0 (#9476)
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
+## v1.42.0/v0.136.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated function NewRequestsSizer (#13803)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758, #13825, #13839)
+- `pdata/pprofile`: Remove deprecated ProfilesDictionary method (#13858)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate all experimental symbols in exporterhelper and move them to xexporterhelper (#11143)
+
+### 💡 Enhancements 💡
+
+- `configoptional`: Add `GetOrInsertDefault` method to `configoptional.Optional` (#13856)
+  This method inserts a default or zero value into a `None`/`Default` `Optional` before `Get`ting its inner value.
+  
+- `exporter`: Stabilize exporter module. (#12978)
+  This does not stabilize the exporterhelper module or configuration
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.8.0 (#13758)
+
+<!-- previous-version -->
+
 ## v1.41.0/v0.135.0
 
 ### 🛑 Breaking changes 🛑
