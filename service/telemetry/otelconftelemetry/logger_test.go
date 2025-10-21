@@ -162,6 +162,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig map[string]*string
 		wantFields     map[string]string
+		cfg            *Config
 	}{
 		{
 			name: "auto-populated fields only",
@@ -174,6 +175,14 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceNameKey):       "mycommand",
 				string(semconv.ServiceVersionKey):    "1.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
+			},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					// ResourceAsZapFields: true,
+				},
+				Resource: map[string]*string{},
 			},
 		},
 		{
@@ -243,15 +252,16 @@ func TestCreateLoggerWithResource(t *testing.T) {
 					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
 				},
 			}
-			cfg := &Config{
+			/* cfg := &Config{
 				Logs: LogsConfig{
-					Level:    zapcore.InfoLevel,
-					Encoding: "json",
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: true,
 				},
 				Resource: tt.resourceConfig,
-			}
+			} */
 
-			logger, loggerProvider, err := createLogger(t.Context(), set, cfg)
+			logger, loggerProvider, err := createLogger(t.Context(), set, createDefaultConfig())
 			require.NoError(t, err)
 			defer func() {
 				assert.NoError(t, loggerProvider.Shutdown(t.Context()))

@@ -56,6 +56,7 @@ func createDefaultConfig() component.Config {
 			DisableCaller:     false,
 			DisableStacktrace: false,
 			InitialFields:     map[string]any(nil),
+			ResourceAsZapFields: true,
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
