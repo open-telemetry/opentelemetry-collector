@@ -120,12 +120,28 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/no_type_attr.yaml",
 			wantErr: "empty type for attribute: used_attr",
 		},
+		{
+			name:    "testdata/entity_undefined_id_attribute.yaml",
+			wantErr: `entity "host": id_attributes refers to undefined resource attribute: host.missing`,
+		},
+		{
+			name:    "testdata/entity_undefined_description_attribute.yaml",
+			wantErr: `entity "host": description_attributes refers to undefined resource attribute: host.missing`,
+		},
+		{
+			name:    "testdata/entity_empty_id_attributes.yaml",
+			wantErr: `entity "host": id_attributes is required`,
+		},
+		{
+			name:    "testdata/entity_duplicate_attributes.yaml",
+			wantErr: `attribute host.name is already used by entity`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
 			require.Error(t, err)
-			require.EqualError(t, err, tt.wantErr)
+			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }

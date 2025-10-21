@@ -64,6 +64,17 @@ resource_attributes:
       # Should be used for deprecated optional resource_attributes that will be removed soon.
       if_configured:
 
+# Optional: map of entity definitions with the key being the entity type and value
+# being described below. Entities organize resource attributes into logical entities
+# with identity and description attributes.
+entities:
+  <entity.type>:
+    # Required: array of resource attribute names that uniquely identify this entity.
+    # All referenced attributes must be defined in the resource_attributes section.
+    id_attributes: [string]
+    # Optional: array of resource attribute names that describe this entity.
+    # All referenced attributes must be defined in the resource_attributes section.
+    description_attributes: [string]
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.

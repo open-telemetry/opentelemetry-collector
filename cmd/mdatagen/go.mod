@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.138.0
 	go.opentelemetry.io/collector/filter v0.138.0
 	go.opentelemetry.io/collector/pdata v1.44.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.138.0
 	go.opentelemetry.io/collector/pipeline v1.44.0
 	go.opentelemetry.io/collector/processor v1.44.0
 	go.opentelemetry.io/collector/processor/processortest v0.138.0

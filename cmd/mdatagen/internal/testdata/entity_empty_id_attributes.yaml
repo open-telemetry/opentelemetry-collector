@@ -1,0 +1,17 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+
+entities:
+  host:
+    id_attributes: []
+    description_attributes:
+      - host.name

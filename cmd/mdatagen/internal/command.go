@@ -462,6 +462,7 @@ func validateYAMLKeyOrder(raw []byte) error {
 	}
 	for _, p := range [][]string{
 		{"resource_attributes"},
+		{"entities"},
 		{"attributes"},
 		{"metrics"},
 		{"events"},

@@ -30,6 +30,8 @@ type Metadata struct {
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	// Entities organizes resource attributes into logical entities.
+	Entities map[string]Entity `mapstructure:"entities"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
@@ -56,6 +58,10 @@ func (md Metadata) GetCodeCovComponentID() string {
 	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
 }
 
+func (md Metadata) HasEntities() bool {
+	return len(md.Entities) > 0
+}
+
 func (md *Metadata) Validate() error {
 	var errs error
 	if err := md.validateType(); err != nil {
@@ -72,6 +78,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateResourceAttributes(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateEntities(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -117,6 +127,41 @@ func (md *Metadata) validateResourceAttributes() error {
 		}
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
+		}
+	}
+	return errs
+}
+
+func (md *Metadata) validateEntities() error {
+	var errs error
+	usedAttrs := make(map[AttributeName]string)
+
+	for entityType, entity := range md.Entities {
+		if entityType == "" {
+			errs = errors.Join(errs, errors.New("entity type cannot be empty"))
+		}
+		if len(entity.IDAttributes) == 0 {
+			errs = errors.Join(errs, fmt.Errorf(`entity "%v": id_attributes is required`, entityType))
+		}
+		for _, attrName := range entity.IDAttributes {
+			if _, ok := md.ResourceAttributes[attrName]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": id_attributes refers to undefined resource attribute: %v`, entityType, attrName))
+			}
+			if otherEntity, used := usedAttrs[attrName]; used {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entityType, attrName, otherEntity))
+			} else {
+				usedAttrs[attrName] = entityType
+			}
+		}
+		for _, attrName := range entity.DescriptionAttributes {
+			if _, ok := md.ResourceAttributes[attrName]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": description_attributes refers to undefined resource attribute: %v`, entityType, attrName))
+			}
+			if otherEntity, used := usedAttrs[attrName]; used {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entityType, attrName, otherEntity))
+			} else {
+				usedAttrs[attrName] = entityType
+			}
 		}
 	}
 	return errs
@@ -387,4 +432,11 @@ func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
 		}
 	}
 	return false
+}
+
+type Entity struct {
+	// IDAttributes are the resource attributes that uniquely identify the entity.
+	IDAttributes []AttributeName `mapstructure:"id_attributes"`
+	// DescriptionAttributes are the resource attributes that describe the entity.
+	DescriptionAttributes []AttributeName `mapstructure:"description_attributes"`
 }
