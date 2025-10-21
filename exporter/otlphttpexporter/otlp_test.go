@@ -293,7 +293,7 @@ func TestUserAgent(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		headers    map[string]configopaque.String
+		headers    *configopaque.MapList
 		expectedUA string
 	}{
 		{
@@ -301,13 +301,13 @@ func TestUserAgent(t *testing.T) {
 			expectedUA: "Collector/1.2.3test",
 		},
 		{
-			name:       "custom_user_agent",
-			headers:    map[string]configopaque.String{"User-Agent": "My Custom Agent"},
+			name:    "custom_user_agent",
+			headers: &configopaque.MapList{{Name: "User-Agent", Value: "My Custom Agent"}},
 			expectedUA: "My Custom Agent",
 		},
 		{
-			name:       "custom_user_agent_lowercase",
-			headers:    map[string]configopaque.String{"user-agent": "My Custom Agent"},
+			name:    "custom_user_agent_lowercase",
+			headers: &configopaque.MapList{{Name: "user-agent", Value: "My Custom Agent"}},
 			expectedUA: "My Custom Agent",
 		},
 	}
@@ -325,7 +325,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:       EncodingProto,
 					TracesEndpoint: srv.URL + "/v1/traces",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: configopaque.MapListFromMap(tt.headers),
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createTraces(context.Background(), set, cfg)
@@ -359,7 +359,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:        EncodingProto,
 					MetricsEndpoint: srv.URL + "/v1/metrics",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: configopaque.MapListFromMap(tt.headers),
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createMetrics(context.Background(), set, cfg)
@@ -393,7 +393,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:     EncodingProto,
 					LogsEndpoint: srv.URL + "/v1/logs",
 					ClientConfig: confighttp.ClientConfig{
-						Headers: configopaque.MapListFromMap(tt.headers),
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createLogs(context.Background(), set, cfg)
@@ -429,7 +429,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding: EncodingProto,
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: srv.URL,
-						Headers:  configopaque.MapListFromMap(test.headers),
+						Headers:  test.headers,
 					},
 				}
 				exp, err := createProfiles(context.Background(), set, cfg)

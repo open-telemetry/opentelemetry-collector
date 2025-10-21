@@ -56,9 +56,3 @@ func NewMapList() *MapList {
 func MapListWithCapacity(capacity int) *MapList {
 	return maplist.WithCapacity[String](capacity)
 }
-
-// MapListFromMap converts a map[string]configopaque.String to a new *MapList.
-// The resulting pairs are stored to facilitate comparisons in tests.
-func MapListFromMap(m map[string]String) *MapList {
-	return maplist.FromMap(m)
-}
