@@ -1180,6 +1180,7 @@ func TestServerReusePort(t *testing.T) {
 
 		_, err := sc.ToListener(t.Context())
 		require.Error(t, err, "ReusePort is not supported on Windows")
+		return
 	}
 
 	tests := []struct {
