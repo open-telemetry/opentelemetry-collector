@@ -95,7 +95,7 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers *configopaque.MapList `mapstructure:"headers,omitempty"`
+	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md

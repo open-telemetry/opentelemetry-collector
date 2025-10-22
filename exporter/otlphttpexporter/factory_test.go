@@ -51,7 +51,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
-func clientConfig(endpoint string, headers *configopaque.MapList, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
+func clientConfig(endpoint string, headers configopaque.MapList, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.TLS = tlsSetting
 	clientConfig.Compression = compression
@@ -92,7 +92,7 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "Headers",
 			config: &Config{
-				ClientConfig: clientConfig(endpoint, &configopaque.MapList{
+				ClientConfig: clientConfig(endpoint, configopaque.MapList{
 					{Name: "hdr1", Value: "val1"},
 					{Name: "hdr2", Value: "val2"},
 				}, configtls.ClientConfig{}, configCompression),

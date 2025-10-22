@@ -315,7 +315,7 @@ func TestSendTraces(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: &configopaque.MapList{
+		Headers: configopaque.MapList{
 			{Name: "header", Value: "header-value"},
 		},
 	}
@@ -487,7 +487,7 @@ func TestSendMetrics(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: &configopaque.MapList{
+		Headers: configopaque.MapList{
 			{Name: "header", Value: "header-value"},
 		},
 	}
@@ -888,7 +888,7 @@ func TestSendProfiles(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: &configopaque.MapList{
+		Headers: configopaque.MapList{
 			{Name: "header", Value: "header-value"},
 		},
 	}

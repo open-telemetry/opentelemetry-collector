@@ -22,17 +22,11 @@ type OpaquePair struct {
 	_ struct{}
 }
 
-// *MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value OpaquePairs.
+// MapList is a replacement for map[string]configopaque.String with a similar API,
+// which can also be unmarshalled from (and is stored as) a list of name/value OpaquePairs.
 //
 // OpaquePairs are assumed to have distinct names. This is checked during config validation.
-//
-// Similar to native maps, a nil *MapList is treated the same as an empty one for read operations, but write operations will panic.
 type MapList []OpaquePair
-
-// NewMapList is the MapList equivalent of `make(map[string]configopaque.String)`.
-func NewMapList() *MapList {
-	return new(MapList)
-}
 
 var _ confmap.Unmarshaler = (*MapList)(nil)
 
@@ -57,19 +51,15 @@ func (ml *MapList) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ xconfmap.Validator = (*MapList)(nil)
+var _ xconfmap.Validator = MapList(nil)
 
-func (ml *MapList) Validate() error {
-	if ml == nil {
-		return nil
-	}
-
+func (ml MapList) Validate() error {
 	// Check for duplicate keys
-	counts := make(map[string]int, len(*ml))
-	for _, OpaquePair := range *ml {
+	counts := make(map[string]int, len(ml))
+	for _, OpaquePair := range ml {
 		counts[OpaquePair.Name]++
 	}
-	if len(counts) == len(*ml) {
+	if len(counts) == len(ml) {
 		return nil
 	}
 	var duplicates []string
@@ -82,15 +72,12 @@ func (ml *MapList) Validate() error {
 	return fmt.Errorf("duplicate keys in map-style list: %v", duplicates)
 }
 
-var _ iter.Seq2[string, String] = (*MapList)(nil).Iter
+var _ iter.Seq2[string, String] = MapList(nil).Iter
 
 // Iter is an iterator over key/value OpaquePairs for use in for-range loops.
 // It is the MapList equivalent of directly ranging over a map.
-func (ml *MapList) Iter(yield func(name string, value String) bool) {
-	if ml == nil {
-		return
-	}
-	for _, OpaquePair := range *ml {
+func (ml MapList) Iter(yield func(name string, value String) bool) {
+	for _, OpaquePair := range ml {
 		if !yield(OpaquePair.Name, OpaquePair.Value) {
 			break
 		}
@@ -100,11 +87,8 @@ func (ml *MapList) Iter(yield func(name string, value String) bool) {
 // Get looks up a OpaquePair's value based on its name.
 // It is the MapList equivalent of `val, ok := m[key]`.
 // However, it has linear time complexity.
-func (ml *MapList) Get(name string) (val String, ok bool) {
-	if ml == nil {
-		return val, false
-	}
-	for _, OpaquePair := range *ml {
+func (ml MapList) Get(name string) (val String, ok bool) {
+	for _, OpaquePair := range ml {
 		if OpaquePair.Name == name {
 			return OpaquePair.Value, true
 		}
@@ -115,24 +99,20 @@ func (ml *MapList) Get(name string) (val String, ok bool) {
 // Set sets the value corresponding to a given name.
 // It is the MapList equivalent of `m[key] = val`.
 // However, it has linear time complexity.
+//
+// The backing array is systematically cloned, which ensures that, unlike slices or maps,
+// modifying a shallow copy of a MapList does not affect the original.
 func (ml *MapList) Set(name string, val String) {
 	if ml == nil {
-		panic("assignment to entry in nil MapList")
+		panic("assignment to entry in nil *MapList")
 	}
 	for i, OpaquePair := range *ml {
 		if OpaquePair.Name == name {
+			*ml = slices.Clone(*ml)
 			(*ml)[i].Value = val
 			return
 		}
 	}
+	*ml = append(make(MapList, 0, len(*ml)+1), *ml...)
 	*ml = append(*ml, OpaquePair{Name: name, Value: val})
-}
-
-// Len returns a MapList's length.
-// It is the MapList equivalent of `len(m)`.
-func (ml *MapList) Len() int {
-	if ml == nil {
-		return 0
-	}
-	return len(*ml)
 }

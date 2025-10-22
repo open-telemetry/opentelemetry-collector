@@ -429,7 +429,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "foo", Value: "bar"},
 				},
 			},
@@ -507,11 +507,11 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 func TestHttpClientHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
-		headers *configopaque.MapList
+		headers configopaque.MapList
 	}{
 		{
 			name: "with_headers",
-			headers: &configopaque.MapList{
+			headers: configopaque.MapList{
 				{Name: "header1", Value: "value1"},
 			},
 		},
@@ -547,10 +547,10 @@ func TestHttpClientHostHeader(t *testing.T) {
 	hostHeader := "th"
 	tt := struct {
 		name    string
-		headers *configopaque.MapList
+		headers configopaque.MapList
 	}{
 		name: "with_host_header",
-		headers: &configopaque.MapList{
+		headers: configopaque.MapList{
 			{Name: "Host", Value: configopaque.String(hostHeader)},
 		},
 	}
@@ -726,7 +726,7 @@ func TestClientUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, "example.com", clientConfig.TLS.ServerName)
 
 	// Verify headers
-	expectedHeaders := &configopaque.MapList{
+	expectedHeaders := configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry-Collector/1.0"},
 		{Name: "X-Custom-Header", Value: "custom-value"},
 	}

@@ -16,13 +16,16 @@ import (
 
 const headersList = `
 headers:
-- name: "foo"
-  value: "bar"
+- name: "a"
+  value: "b"
+- name: "c"
+  value: "d"
 `
 
 const headersMap = `
 headers:
-  "foo": "bar"
+  "a": "b"
+  "c": "d"
 `
 
 const headersBad = `
@@ -39,7 +42,7 @@ headers:
 `
 
 type testConfig struct {
-	Headers *configopaque.MapList `mapstructure:"headers"`
+	Headers configopaque.MapList `mapstructure:"headers"`
 }
 
 func TestMapListDuality(t *testing.T) {
@@ -85,12 +88,8 @@ func TestMapListValidate(t *testing.T) {
 	require.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
 }
 
-func TestMapListNew(t *testing.T) {
-	assert.Equal(t, new(configopaque.MapList), configopaque.NewMapList())
-}
-
 func TestMapListMethods(t *testing.T) {
-	ml := &configopaque.MapList{
+	ml := configopaque.MapList{
 		{Name: "a", Value: "1"},
 		{Name: "b", Value: "2"},
 		{Name: "c", Value: "3"},
@@ -118,31 +117,32 @@ func TestMapListMethods(t *testing.T) {
 	assert.False(t, ok)
 	assert.Zero(t, v)
 
-	assert.Equal(t, 3, ml.Len())
-	ml.Set("d", "4")
-	assert.Equal(t, 4, ml.Len())
-	ml.Set("d", "5")
-	assert.Equal(t, 4, ml.Len())
+	ml2 := ml
+	assert.Len(t, ml2, 3)
+
+	// Set existing key
+	ml2.Set("c", "4")
+	assert.Len(t, ml, 3)
+	assert.Len(t, ml2, 3)
+	v, _ = ml.Get("c")
+	assert.Equal(t, configopaque.String("3"), v)
+	v, _ = ml2.Get("c")
+	assert.Equal(t, configopaque.String("4"), v)
+
+	// Set new key
+	ml2.Set("d", "5")
+	assert.Len(t, ml, 3)
+	assert.Len(t, ml2, 4)
+	_, ok = ml.Get("d")
+	assert.False(t, ok)
+	v, ok = ml2.Get("d")
+	assert.True(t, ok)
+	assert.Equal(t, configopaque.String("5"), v)
 }
 
 func TestMapListNil(t *testing.T) {
 	var ml *configopaque.MapList
-
-	require.NoError(t, ml.Validate())
-
-	called := false
-	for range ml.Iter {
-		called = true
-	}
-	assert.False(t, called)
-
-	v, ok := ml.Get("a")
-	assert.False(t, ok)
-	assert.Zero(t, v)
-
 	assert.Panics(t, func() {
 		ml.Set("a", "0")
 	})
-
-	assert.Zero(t, ml.Len())
 }
