@@ -8,24 +8,24 @@ import (
 	"math"
 )
 
-var errTooManyLinkTableEntries = errors.New("too many entries in LinkTable")
+var errTooManyStackTableEntries = errors.New("too many entries in StackTable")
 
-// SetLink updates a LinkTable, adding or providing a value and returns its
+// SetStack updates a StackSlice, adding or providing a stack and returns its
 // index.
-func SetLink(table LinkSlice, li Link) (int32, error) {
+func SetStack(table StackSlice, st Stack) (int32, error) {
 	for j, l := range table.All() {
-		if l.Equal(li) {
+		if l.Equal(st) {
 			if j > math.MaxInt32 {
-				return 0, errTooManyLinkTableEntries
+				return 0, errTooManyStackTableEntries
 			}
 			return int32(j), nil //nolint:gosec // G115 overflow checked
 		}
 	}
 
 	if table.Len() >= math.MaxInt32 {
-		return 0, errTooManyLinkTableEntries
+		return 0, errTooManyStackTableEntries
 	}
 
-	li.CopyTo(table.AppendEmpty())
+	st.CopyTo(table.AppendEmpty())
 	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
 }

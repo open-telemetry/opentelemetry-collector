@@ -16,44 +16,37 @@ func TestSetMapping(t *testing.T) {
 	m.SetMemoryLimit(1)
 	m2 := NewMapping()
 	m2.SetMemoryLimit(2)
-	loc := NewLocation()
 
 	// Put a first mapping
-	require.NoError(t, SetMapping(table, loc, m))
+	idx, err := SetMapping(table, m)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), loc.MappingIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Put the same mapping
 	// This should be a no-op.
-	require.NoError(t, SetMapping(table, loc, m))
+	idx, err = SetMapping(table, m)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), loc.MappingIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Set a new mapping
 	// This sets the index and adds to the table.
-	require.NoError(t, SetMapping(table, loc, m2))
+	idx, err = SetMapping(table, m2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), loc.MappingIndex()) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 
 	// Set an existing mapping
-	require.NoError(t, SetMapping(table, loc, m))
+	idx, err = SetMapping(table, m)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(0), loc.MappingIndex())
+	assert.Equal(t, int32(0), idx)
 	// Set another existing mapping
-	require.NoError(t, SetMapping(table, loc, m2))
+	idx, err = SetMapping(table, m2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), loc.MappingIndex()) //nolint:gosec // G115
-}
-
-func TestSetMappingCurrentTooHigh(t *testing.T) {
-	table := NewMappingSlice()
-	loc := NewLocation()
-	loc.SetMappingIndex(42)
-
-	err := SetMapping(table, loc, NewMapping())
-	require.Error(t, err)
-	assert.Equal(t, 0, table.Len())
-	assert.Equal(t, int32(42), loc.MappingIndex())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 }
 
 func BenchmarkSetMapping(b *testing.B) {
@@ -61,7 +54,7 @@ func BenchmarkSetMapping(b *testing.B) {
 		name    string
 		mapping Mapping
 
-		runBefore func(*testing.B, MappingSlice, Location)
+		runBefore func(*testing.B, MappingSlice)
 	}{
 		{
 			name:    "with a new mapping",
@@ -75,7 +68,7 @@ func BenchmarkSetMapping(b *testing.B) {
 				return m
 			}(),
 
-			runBefore: func(_ *testing.B, table MappingSlice, _ Location) {
+			runBefore: func(_ *testing.B, table MappingSlice) {
 				m := table.AppendEmpty()
 				m.SetMemoryLimit(1)
 			},
@@ -84,8 +77,9 @@ func BenchmarkSetMapping(b *testing.B) {
 			name:    "with a duplicate mapping",
 			mapping: NewMapping(),
 
-			runBefore: func(_ *testing.B, table MappingSlice, obj Location) {
-				require.NoError(b, SetMapping(table, obj, NewMapping()))
+			runBefore: func(_ *testing.B, table MappingSlice) {
+				_, err := SetMapping(table, NewMapping())
+				require.NoError(b, err)
 			},
 		},
 		{
@@ -96,7 +90,7 @@ func BenchmarkSetMapping(b *testing.B) {
 				return m
 			}(),
 
-			runBefore: func(_ *testing.B, table MappingSlice, _ Location) {
+			runBefore: func(_ *testing.B, table MappingSlice) {
 				for i := range 100 {
 					m := table.AppendEmpty()
 					m.SetMemoryLimit(uint64(i)) //nolint:gosec // overflow checked
@@ -106,17 +100,16 @@ func BenchmarkSetMapping(b *testing.B) {
 	} {
 		b.Run(bb.name, func(b *testing.B) {
 			table := NewMappingSlice()
-			obj := NewLocation()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
 			for b.Loop() {
-				_ = SetMapping(table, obj, bb.mapping)
+				_, _ = SetMapping(table, bb.mapping)
 			}
 		})
 	}
