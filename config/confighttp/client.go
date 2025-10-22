@@ -234,7 +234,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 		}
 	}
 
-	if cc.Headers.Len() > 0 {
+	if len(cc.Headers) > 0 {
 		clientTransport = &headerRoundTripper{
 			transport: clientTransport,
 			headers:   cc.Headers,

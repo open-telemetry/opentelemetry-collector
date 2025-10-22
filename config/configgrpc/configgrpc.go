@@ -287,7 +287,7 @@ func (cc *ClientConfig) ToClientConn(
 }
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
-	kv := make([]string, 0, 2*cc.Headers.Len())
+	kv := make([]string, 0, 2*len(cc.Headers))
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
 	for k, v := range cc.Headers.Iter {
 		if len(existingMd.Get(k)) == 0 {
@@ -376,7 +376,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
-	if cc.Headers.Len() > 0 {
+	if len(cc.Headers) > 0 {
 		opts = append(opts,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, gcc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 				return invoker(cc.addHeadersIfAbsent(ctx), method, req, reply, gcc, opts...)
