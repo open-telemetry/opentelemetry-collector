@@ -14,6 +14,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -66,7 +67,7 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Logs as pdata struct.
-	ld := NewExportRequestFromLogs(plog.Logs(internal.NewLogs(internal.GenTestOrigExportLogsServiceRequest(), internal.NewState())))
+	ld := NewExportRequestFromLogs(plog.Logs(internal.GenTestLogsWrapper()))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := ld.MarshalProto()
@@ -84,11 +85,13 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	assert.NotNil(t, wire2)
 
 	// Unmarshal from the wire into gogoproto's representation.
-	td2 := NewExportRequest()
-	err = td2.UnmarshalProto(wire2)
+	ld2 := NewExportRequest()
+	err = ld2.UnmarshalProto(wire2)
 	require.NoError(t, err)
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, ld, td2)
+	// Migration logic will run, so run it on the original message as well.
+	otlp.MigrateLogs(ld.orig.ResourceLogs)
+	assert.Equal(t, ld, ld2)
 }

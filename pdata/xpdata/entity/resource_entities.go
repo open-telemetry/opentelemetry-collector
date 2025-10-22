@@ -12,8 +12,8 @@ import (
 // Once EntityRefs is stabilized in the proto definition,
 // this function will be available in the pcommon package as part of a Resource method.
 func ResourceEntityRefs(res pcommon.Resource) EntityRefSlice {
-	ir := internal.Resource(res)
-	return newEntityRefSlice(&internal.GetOrigResource(ir).EntityRefs, internal.GetResourceState(ir))
+	ir := internal.ResourceWrapper(res)
+	return newEntityRefSlice(&internal.GetResourceOrig(ir).EntityRefs, internal.GetResourceState(ir))
 }
 
 // ResourceEntities returns the Entities associated with this Resource.

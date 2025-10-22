@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewMapping function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Mapping struct {
-	orig  *otlpprofiles.Mapping
+	orig  *internal.Mapping
 	state *internal.State
 }
 
-func newMapping(orig *otlpprofiles.Mapping, state *internal.State) Mapping {
+func newMapping(orig *internal.Mapping, state *internal.State) Mapping {
 	return Mapping{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newMapping(orig *otlpprofiles.Mapping, state *internal.State) Mapping {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMapping() Mapping {
-	return newMapping(internal.NewOrigMapping(), internal.NewState())
+	return newMapping(internal.NewMapping(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +44,7 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigMapping(dest.orig, false)
+	internal.DeleteMapping(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -95,11 +94,11 @@ func (ms Mapping) SetFilenameStrindex(v int32) {
 
 // AttributeIndices returns the AttributeIndices associated with this Mapping.
 func (ms Mapping) AttributeIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	internal.CopyOrigMapping(dest.orig, ms.orig)
+	internal.CopyMapping(dest.orig, ms.orig)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
@@ -26,10 +25,10 @@ func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState))
+		ms.MoveTo(newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState).MoveTo(dest)
+		newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -44,7 +43,7 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), sharedState))
+		ms.CopyTo(newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), sharedState))
 	})
 }
 
@@ -56,7 +55,7 @@ func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState).SetQuantile(float64(3.1415926))
+		newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), sharedState).SetQuantile(float64(3.1415926))
 	})
 }
 
@@ -68,11 +67,10 @@ func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState).SetValue(float64(3.1415926))
+		newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), sharedState).SetValue(float64(3.1415926))
 	})
 }
 
 func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	ms := newSummaryDataPointValueAtQuantile(internal.GenTestOrigSummaryDataPoint_ValueAtQuantile(), internal.NewState())
-	return ms
+	return newSummaryDataPointValueAtQuantile(internal.GenTestSummaryDataPointValueAtQuantile(), internal.NewState())
 }

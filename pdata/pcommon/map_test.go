@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestMap(t *testing.T) {
@@ -56,8 +55,8 @@ func TestMap(t *testing.T) {
 func TestMapReadOnly(t *testing.T) {
 	state := internal.NewState()
 	state.MarkReadOnly()
-	m := newMap(&[]otlpcommon.KeyValue{
-		{Key: "k1", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}}},
+	m := newMap(&[]internal.KeyValue{
+		{Key: "k1", Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "v1"}}},
 	}, state)
 
 	assert.Equal(t, 1, m.Len())
@@ -197,15 +196,15 @@ func TestMapPutEmptyBytes(t *testing.T) {
 }
 
 func TestMapWithEmpty(t *testing.T) {
-	origWithNil := []otlpcommon.KeyValue{
+	origWithNil := []internal.KeyValue{
 		{},
 		{
 			Key:   "test_key",
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+			Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		{
 			Key:   "test_key2",
-			Value: otlpcommon.AnyValue{Value: nil},
+			Value: internal.AnyValue{Value: nil},
 		},
 	}
 	sm := newMap(&origWithNil, internal.NewState())
@@ -427,9 +426,9 @@ func TestMap_MoveTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test MoveTo larger slice
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	src.MoveTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 	assert.Equal(t, 0, src.Len())
 
 	// Test MoveTo from empty to non-empty
@@ -449,29 +448,29 @@ func TestMap_CopyTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo with an empty Value in the destination
-	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	(*dest.getOrig())[0].Value = internal.AnyValue{}
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
 	dest.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_CopyToAndEnsureCapacity(t *testing.T) {
 	dest := NewMap()
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	dest.EnsureCapacity(src.Len())
 	src.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -564,7 +563,7 @@ func TestMap_RemoveIf(t *testing.T) {
 }
 
 func TestMap_RemoveIfAll(t *testing.T) {
-	am := Map(internal.GenerateTestMap())
+	am := Map(internal.GenTestMapWrapper())
 	assert.Equal(t, 5, am.Len())
 	am.RemoveIf(func(string, Value) bool {
 		return true
