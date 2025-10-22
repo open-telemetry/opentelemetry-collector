@@ -98,7 +98,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.template.resource.attr",
+						FullName:         "string.template.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",

@@ -23,12 +23,6 @@ resource_attributes:
     type: map
     enabled: true
 
-  string.template.resource.attr:
-    description: Resource attribute with a template string values.
-    type: string
-    is_template: true
-    enabled: true
-
   optional.resource.attr:
     description: Explicitly disabled ResourceAttribute.
     type: string
@@ -70,6 +64,12 @@ resource_attributes:
     enabled: true
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
+
+  string.template.resource.attr:
+    description: Resource attribute with a template string values.
+    type: string
+    is_template: true
+    enabled: true
 
 attributes:
   boolean_attr:
