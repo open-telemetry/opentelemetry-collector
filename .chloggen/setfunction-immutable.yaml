@@ -4,13 +4,13 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pkg/service
+component: pdata/pprofile
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The `service.Settings` type now requires a `telemetry.Factory` to be provided
+note: Update `SetFunction` to return the function's ID rather than update the Line
 
 # One or more tracking issues or pull requests related to the change
-issues: [4970]
+issues: [14016, 14032]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type printExporterConfig struct {
@@ -202,6 +203,9 @@ func TestPrintCommand(t *testing.T) {
 							Exporters: map[component.Type]exporter.Factory{
 								testE: testExporter,
 							},
+							Telemetry: telemetry.NewFactory(func() component.Config {
+								return fakeTelemetryConfig{}
+							}),
 						}, nil
 					},
 					ConfigProviderSettings: ConfigProviderSettings{

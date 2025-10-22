@@ -16,44 +16,37 @@ func TestSetFunction(t *testing.T) {
 	f.SetNameStrindex(1)
 	f2 := NewFunction()
 	f2.SetNameStrindex(2)
-	li := NewLine()
 
 	// Put a first function
-	require.NoError(t, SetFunction(table, li, f))
+	idx, err := SetFunction(table, f)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), li.FunctionIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Put the same function
 	// This should be a no-op.
-	require.NoError(t, SetFunction(table, li, f))
+	idx, err = SetFunction(table, f)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), li.FunctionIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Set a new function
 	// This sets the index and adds to the table.
-	require.NoError(t, SetFunction(table, li, f2))
+	idx, err = SetFunction(table, f2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), li.FunctionIndex()) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 
 	// Set an existing function
-	require.NoError(t, SetFunction(table, li, f))
+	idx, err = SetFunction(table, f)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(0), li.FunctionIndex())
+	assert.Equal(t, int32(0), idx)
 	// Set another existing function
-	require.NoError(t, SetFunction(table, li, f2))
+	idx, err = SetFunction(table, f2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), li.FunctionIndex()) //nolint:gosec // G115
-}
-
-func TestSetFunctionCurrentTooHigh(t *testing.T) {
-	table := NewFunctionSlice()
-	li := NewLine()
-	li.SetFunctionIndex(42)
-
-	err := SetFunction(table, li, NewFunction())
-	require.Error(t, err)
-	assert.Equal(t, 0, table.Len())
-	assert.Equal(t, int32(42), li.FunctionIndex())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 }
 
 func BenchmarkSetFunction(b *testing.B) {
@@ -61,7 +54,7 @@ func BenchmarkSetFunction(b *testing.B) {
 		name string
 		fn   Function
 
-		runBefore func(*testing.B, FunctionSlice, Line)
+		runBefore func(*testing.B, FunctionSlice)
 	}{
 		{
 			name: "with a new function",
@@ -75,7 +68,7 @@ func BenchmarkSetFunction(b *testing.B) {
 				return f
 			}(),
 
-			runBefore: func(_ *testing.B, table FunctionSlice, _ Line) {
+			runBefore: func(_ *testing.B, table FunctionSlice) {
 				f := table.AppendEmpty()
 				f.SetNameStrindex(1)
 			},
@@ -84,8 +77,9 @@ func BenchmarkSetFunction(b *testing.B) {
 			name: "with a duplicate function",
 			fn:   NewFunction(),
 
-			runBefore: func(_ *testing.B, table FunctionSlice, obj Line) {
-				require.NoError(b, SetFunction(table, obj, NewFunction()))
+			runBefore: func(b *testing.B, table FunctionSlice) {
+				_, err := SetFunction(table, NewFunction())
+				require.NoError(b, err)
 			},
 		},
 		{
@@ -96,7 +90,7 @@ func BenchmarkSetFunction(b *testing.B) {
 				return f
 			}(),
 
-			runBefore: func(_ *testing.B, table FunctionSlice, _ Line) {
+			runBefore: func(_ *testing.B, table FunctionSlice) {
 				for i := range 100 {
 					f := table.AppendEmpty()
 					f.SetNameStrindex(int32(i)) //nolint:gosec // overflow checked
@@ -106,17 +100,16 @@ func BenchmarkSetFunction(b *testing.B) {
 	} {
 		b.Run(bb.name, func(b *testing.B) {
 			table := NewFunctionSlice()
-			obj := NewLine()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
 			for b.Loop() {
-				_ = SetFunction(table, obj, bb.fn)
+				_, _ = SetFunction(table, bb.fn)
 			}
 		})
 	}
