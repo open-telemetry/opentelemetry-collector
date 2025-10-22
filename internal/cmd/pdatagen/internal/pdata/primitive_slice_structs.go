@@ -6,6 +6,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"strings"
 
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
@@ -42,10 +43,6 @@ func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []by
 	return []byte(template.Execute(primitiveSliceInternalTemplate, iss.templateFields(packageInfo)))
 }
 
-func (iss *primitiveSliceStruct) generateInternalTests(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(primitiveSliceInternalTestTemplate, iss.templateFields(packageInfo)))
-}
-
 func (iss *primitiveSliceStruct) getOriginName() string {
 	return iss.getName()
 }
@@ -58,7 +55,7 @@ func (iss *primitiveSliceStruct) getHasWrapper() bool {
 	return usedByOtherDataTypes(iss.packageName)
 }
 
-func (iss *primitiveSliceStruct) getHasOnlyOrig() bool {
+func (iss *primitiveSliceStruct) getHasOnlyInternal() bool {
 	return false
 }
 
@@ -68,6 +65,10 @@ func (iss *primitiveSliceStruct) getElementOriginName() string {
 
 func (iss *primitiveSliceStruct) getElementNullable() bool {
 	return false
+}
+
+func (iss *primitiveSliceStruct) getProtoMessage() *proto.Message {
+	return nil
 }
 
 func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[string]any {

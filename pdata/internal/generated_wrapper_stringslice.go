@@ -24,12 +24,8 @@ func NewStringSliceWrapper(orig *[]string, state *State) StringSliceWrapper {
 }
 
 func GenTestStringSliceWrapper() StringSliceWrapper {
-	orig := GenTestStringSlice()
+	orig := []string{"a", "b", "c"}
 	return NewStringSliceWrapper(&orig, NewState())
-}
-
-func CopyStringSlice(dst, src []string) []string {
-	return append(dst[:0], src...)
 }
 
 func GenTestStringSlice() []string {

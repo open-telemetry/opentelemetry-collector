@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
@@ -21,7 +20,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Metrics internal.MetricsWrapper
 
-func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *internal.State) Metrics {
+func newMetrics(orig *internal.ExportMetricsServiceRequest, state *internal.State) Metrics {
 	return Metrics(internal.NewMetricsWrapper(orig, state))
 }
 
@@ -57,7 +56,7 @@ func (ms Metrics) CopyTo(dest Metrics) {
 	internal.CopyExportMetricsServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
+func (ms Metrics) getOrig() *internal.ExportMetricsServiceRequest {
 	return internal.GetMetricsOrig(internal.MetricsWrapper(ms))
 }
 

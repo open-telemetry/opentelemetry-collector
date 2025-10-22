@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
@@ -19,11 +18,11 @@ import (
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Summary struct {
-	orig  *otlpmetrics.Summary
+	orig  *internal.Summary
 	state *internal.State
 }
 
-func newSummary(orig *otlpmetrics.Summary, state *internal.State) Summary {
+func newSummary(orig *internal.Summary, state *internal.State) Summary {
 	return Summary{orig: orig, state: state}
 }
 

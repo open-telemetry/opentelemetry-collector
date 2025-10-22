@@ -8,7 +8,6 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 // Status is an optional final status for this span. Semantically, when Status was not
@@ -20,11 +19,11 @@ import (
 // Must use NewStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Status struct {
-	orig  *otlptrace.Status
+	orig  *internal.Status
 	state *internal.State
 }
 
-func newStatus(orig *otlptrace.Status, state *internal.State) Status {
+func newStatus(orig *internal.Status, state *internal.State) Status {
 	return Status{orig: orig, state: state}
 }
 
@@ -68,7 +67,7 @@ func (ms Status) Code() StatusCode {
 // SetCode replaces the code associated with this Status.
 func (ms Status) SetCode(v StatusCode) {
 	ms.state.AssertMutable()
-	ms.orig.Code = otlptrace.Status_StatusCode(v)
+	ms.orig.Code = internal.StatusCode(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

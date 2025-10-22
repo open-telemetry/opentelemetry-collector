@@ -44,6 +44,5 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 {{ end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-	ms := new{{ .structName }}(internal.GenTest{{ .originName }}(), internal.NewState())
-	return ms
+	return new{{ .structName }}(internal.GenTest{{ .originName }}(), internal.NewState())
 }

@@ -6,21 +6,12 @@
 
 package internal
 
-import (
-	"fmt"
-	"sync"
-
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
-)
-
 type ProfilesWrapper struct {
-	orig  *otlpcollectorprofiles.ExportProfilesServiceRequest
+	orig  *ExportProfilesServiceRequest
 	state *State
 }
 
-func GetProfilesOrig(ms ProfilesWrapper) *otlpcollectorprofiles.ExportProfilesServiceRequest {
+func GetProfilesOrig(ms ProfilesWrapper) *ExportProfilesServiceRequest {
 	return ms.orig
 }
 
@@ -28,189 +19,10 @@ func GetProfilesState(ms ProfilesWrapper) *State {
 	return ms.state
 }
 
-func NewProfilesWrapper(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state *State) ProfilesWrapper {
+func NewProfilesWrapper(orig *ExportProfilesServiceRequest, state *State) ProfilesWrapper {
 	return ProfilesWrapper{orig: orig, state: state}
 }
 
 func GenTestProfilesWrapper() ProfilesWrapper {
-	orig := GenTestExportProfilesServiceRequest()
-	return NewProfilesWrapper(orig, NewState())
-}
-
-var (
-	protoPoolExportProfilesServiceRequest = sync.Pool{
-		New: func() any {
-			return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
-		},
-	}
-)
-
-func NewExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
-	if !UseProtoPooling.IsEnabled() {
-		return &otlpcollectorprofiles.ExportProfilesServiceRequest{}
-	}
-	return protoPoolExportProfilesServiceRequest.Get().(*otlpcollectorprofiles.ExportProfilesServiceRequest)
-}
-
-func DeleteExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, nullable bool) {
-	if orig == nil {
-		return
-	}
-
-	if !UseProtoPooling.IsEnabled() {
-		orig.Reset()
-		return
-	}
-
-	for i := range orig.ResourceProfiles {
-		DeleteResourceProfiles(orig.ResourceProfiles[i], true)
-	}
-	DeleteProfilesDictionary(&orig.Dictionary, false)
-
-	orig.Reset()
-	if nullable {
-		protoPoolExportProfilesServiceRequest.Put(orig)
-	}
-}
-
-func CopyExportProfilesServiceRequest(dest, src *otlpcollectorprofiles.ExportProfilesServiceRequest) {
-	// If copying to same object, just return.
-	if src == dest {
-		return
-	}
-	dest.ResourceProfiles = CopyResourceProfilesSlice(dest.ResourceProfiles, src.ResourceProfiles)
-	CopyProfilesDictionary(&dest.Dictionary, &src.Dictionary)
-}
-
-func GenTestExportProfilesServiceRequest() *otlpcollectorprofiles.ExportProfilesServiceRequest {
-	orig := NewExportProfilesServiceRequest()
-	orig.ResourceProfiles = GenTestResourceProfilesSlice()
-	orig.Dictionary = *GenTestProfilesDictionary()
-	return orig
-}
-
-// MarshalJSON marshals all properties from the current struct to the destination stream.
-func MarshalJSONExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.ResourceProfiles) > 0 {
-		dest.WriteObjectField("resourceProfiles")
-		dest.WriteArrayStart()
-		MarshalJSONResourceProfiles(orig.ResourceProfiles[0], dest)
-		for i := 1; i < len(orig.ResourceProfiles); i++ {
-			dest.WriteMore()
-			MarshalJSONResourceProfiles(orig.ResourceProfiles[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectField("dictionary")
-	MarshalJSONProfilesDictionary(&orig.Dictionary, dest)
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONProfiles unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, iter *json.Iterator) {
-	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
-		switch f {
-		case "resourceProfiles", "resource_profiles":
-			for iter.ReadArray() {
-				orig.ResourceProfiles = append(orig.ResourceProfiles, NewResourceProfiles())
-				UnmarshalJSONResourceProfiles(orig.ResourceProfiles[len(orig.ResourceProfiles)-1], iter)
-			}
-
-		case "dictionary":
-			UnmarshalJSONProfilesDictionary(&orig.Dictionary, iter)
-		default:
-			iter.Skip()
-		}
-	}
-}
-
-func SizeProtoExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.ResourceProfiles {
-		l = SizeProtoResourceProfiles(orig.ResourceProfiles[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	l = SizeProtoProfilesDictionary(&orig.Dictionary)
-	n += 1 + proto.Sov(uint64(l)) + l
-	return n
-}
-
-func MarshalProtoExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.ResourceProfiles) - 1; i >= 0; i-- {
-		l = MarshalProtoResourceProfiles(orig.ResourceProfiles[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-
-	l = MarshalProtoProfilesDictionary(&orig.Dictionary, buf[:pos])
-	pos -= l
-	pos = proto.EncodeVarint(buf, pos, uint64(l))
-	pos--
-	buf[pos] = 0x12
-
-	return len(buf) - pos
-}
-
-func UnmarshalProtoExportProfilesServiceRequest(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResourceProfiles", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ResourceProfiles = append(orig.ResourceProfiles, NewResourceProfiles())
-			err = UnmarshalProtoResourceProfiles(orig.ResourceProfiles[len(orig.ResourceProfiles)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-
-		case 2:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field Dictionary", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-
-			err = UnmarshalProtoProfilesDictionary(&orig.Dictionary, buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return NewProfilesWrapper(GenTestExportProfilesServiceRequest(), NewState())
 }

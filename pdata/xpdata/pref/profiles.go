@@ -27,7 +27,7 @@ func UnrefProfiles(pd pprofile.Profiles) {
 		if !internal.GetProfilesState(internal.ProfilesWrapper(pd)).Unref() {
 			return
 		}
-		// Don't call DeleteOrigExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 		if internal.UseProtoPooling.IsEnabled() {
 			internal.DeleteExportProfilesServiceRequest(internal.GetProfilesOrig(internal.ProfilesWrapper(pd)), true)
 		}

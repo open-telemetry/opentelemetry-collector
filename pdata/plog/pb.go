@@ -3,35 +3,31 @@
 
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
-import (
-	"go.opentelemetry.io/collector/pdata/internal"
-)
-
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
-	size := internal.SizeProtoExportLogsServiceRequest(ld.getOrig())
+	size := ld.getOrig().SizeProto()
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoExportLogsServiceRequest(ld.getOrig(), buf)
+	_ = ld.getOrig().MarshalProto(buf)
 	return buf, nil
 }
 
 func (e *ProtoMarshaler) LogsSize(ld Logs) int {
-	return internal.SizeProtoExportLogsServiceRequest(ld.getOrig())
+	return ld.getOrig().SizeProto()
 }
 
 func (e *ProtoMarshaler) ResourceLogsSize(ld ResourceLogs) int {
-	return internal.SizeProtoResourceLogs(ld.orig)
+	return ld.orig.SizeProto()
 }
 
 func (e *ProtoMarshaler) ScopeLogsSize(ld ScopeLogs) int {
-	return internal.SizeProtoScopeLogs(ld.orig)
+	return ld.orig.SizeProto()
 }
 
 func (e *ProtoMarshaler) LogRecordSize(ld LogRecord) int {
-	return internal.SizeProtoLogRecord(ld.orig)
+	return ld.orig.SizeProto()
 }
 
 var _ Unmarshaler = (*ProtoUnmarshaler)(nil)
@@ -40,7 +36,7 @@ type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	ld := NewLogs()
-	err := internal.UnmarshalProtoExportLogsServiceRequest(ld.getOrig(), buf)
+	err := ld.getOrig().UnmarshalProto(buf)
 	if err != nil {
 		return Logs{}, err
 	}

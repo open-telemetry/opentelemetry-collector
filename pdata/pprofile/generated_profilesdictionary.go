@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewProfilesDictionary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ProfilesDictionary struct {
-	orig  *otlpprofiles.ProfilesDictionary
+	orig  *internal.ProfilesDictionary
 	state *internal.State
 }
 
-func newProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, state *internal.State) ProfilesDictionary {
+func newProfilesDictionary(orig *internal.ProfilesDictionary, state *internal.State) ProfilesDictionary {
 	return ProfilesDictionary{orig: orig, state: state}
 }
 

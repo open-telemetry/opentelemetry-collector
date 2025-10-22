@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -50,14 +49,14 @@ func TestKeyValueAndUnit_KeyStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.KeyStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newKeyValueAndUnit(&otlpprofiles.KeyValueAndUnit{}, sharedState).SetKeyStrindex(int32(13)) })
+	assert.Panics(t, func() { newKeyValueAndUnit(internal.NewKeyValueAndUnit(), sharedState).SetKeyStrindex(int32(13)) })
 }
 
 func TestKeyValueAndUnit_Value(t *testing.T) {
 	ms := NewKeyValueAndUnit()
 	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
 	ms.orig.Value = *internal.GenTestAnyValue()
-	assert.Equal(t, pcommon.Value(internal.NewValueWrapper(internal.GenTestAnyValue(), ms.state)), ms.Value())
+	assert.Equal(t, pcommon.Value(internal.GenTestValueWrapper()), ms.Value())
 }
 
 func TestKeyValueAndUnit_UnitStrindex(t *testing.T) {
@@ -67,10 +66,9 @@ func TestKeyValueAndUnit_UnitStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newKeyValueAndUnit(&otlpprofiles.KeyValueAndUnit{}, sharedState).SetUnitStrindex(int32(13)) })
+	assert.Panics(t, func() { newKeyValueAndUnit(internal.NewKeyValueAndUnit(), sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func generateTestKeyValueAndUnit() KeyValueAndUnit {
-	ms := newKeyValueAndUnit(internal.GenTestKeyValueAndUnit(), internal.NewState())
-	return ms
+	return newKeyValueAndUnit(internal.GenTestKeyValueAndUnit(), internal.NewState())
 }
