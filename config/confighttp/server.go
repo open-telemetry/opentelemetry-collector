@@ -52,7 +52,7 @@ type ServerConfig struct {
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
-	ResponseHeaders configopaque.MapList `mapstructure:"response_headers"`
+	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
