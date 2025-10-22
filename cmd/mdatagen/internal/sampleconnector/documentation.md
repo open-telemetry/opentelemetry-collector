@@ -24,13 +24,13 @@ The metric will be become optional soon.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ### default.metric.to_be_removed
 
@@ -52,13 +52,13 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ## Optional Metrics
 
@@ -80,11 +80,11 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
 
 ### optional.metric.empty_unit
 
@@ -96,10 +96,10 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
 ## Resource Attributes
 
