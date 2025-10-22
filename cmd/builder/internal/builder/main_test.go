@@ -217,7 +217,7 @@ func TestVersioning(t *testing.T) {
 			// detect if it is and conditionally also add the tlsmklem=0 flag to disable
 			// these curves. See: https://pkg.go.dev/crypto/tls#Config.CurvePreferences
 			if strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
-				t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tlsmklem=0")
+				t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tlsmlkem=0")
 			}
 
 			cfg := tt.cfgBuilder()
