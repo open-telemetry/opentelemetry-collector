@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: config/configoptional
+component: pkg/config/configoptional
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds new `configoptional.AddEnabledField` feature gate that allows user to decide `configoptional` flavor through a new `enabled` field
+note: Adds new `configoptional.AddEnabledField` feature gate that allows users to explicitly disable a `configoptional.Optional` through a new `enabled` field.
 
 # One or more tracking issues or pull requests related to the change
 issues: [14021]

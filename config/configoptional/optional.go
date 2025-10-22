@@ -173,7 +173,7 @@ var (
 		addEnabledFieldFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterFromVersion("v0.138.0"),
-		featuregate.WithRegisterDescription("Allows optional fields to be configured via an 'enabled' field."),
+		featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
 	)
 )
