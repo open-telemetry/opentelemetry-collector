@@ -12,7 +12,7 @@ import (
 )
 
 func Test_collectorCore_Enabled(t *testing.T) {
-	cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
+	cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
 	assert.True(t, cc.Enabled(zapcore.ErrorLevel))
 	assert.False(t, cc.Enabled(zapcore.DebugLevel))
 }
@@ -20,29 +20,27 @@ func Test_collectorCore_Enabled(t *testing.T) {
 func Test_collectorCore_Check(t *testing.T) {
 	t.Run("check passed", func(t *testing.T) {
 		bc := newBufferedCore(zapcore.InfoLevel)
-		cc := collectorCore{core: bc}
+		cc := newCollectorCore(bc)
 		e := zapcore.Entry{
 			Level: zapcore.InfoLevel,
 		}
 		expected := &zapcore.CheckedEntry{}
-		expected = expected.AddCore(e, &cc)
-		ce := cc.Check(e, nil)
-		assert.Equal(t, expected, ce)
+		expected = expected.AddCore(e, bc)
+		assert.Equal(t, expected, cc.Check(e, nil))
 	})
 
 	t.Run("check did not pass", func(t *testing.T) {
-		cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
+		cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
 		e := zapcore.Entry{
 			Level: zapcore.DebugLevel,
 		}
-		ce := cc.Check(e, nil)
-		assert.Nil(t, ce)
+		assert.Nil(t, cc.Check(e, nil))
 	})
 }
 
 func Test_collectorCore_With(t *testing.T) {
-	cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
-	cc.core.(*bufferedCore).context = []zapcore.Field{
+	cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
+	cc.loadDelegate().(*bufferedCore).context = []zapcore.Field{
 		{Key: "original", String: "context"},
 	}
 	inputs := []zapcore.Field{
@@ -53,11 +51,11 @@ func Test_collectorCore_With(t *testing.T) {
 		{Key: "test", String: "passed"},
 	}
 	newCC := cc.With(inputs)
-	assert.Equal(t, expected, newCC.(*collectorCore).core.(*bufferedCore).context)
+	assert.Equal(t, expected, newCC.(*collectorCore).loadDelegate().(*bufferedCore).context)
 }
 
 func Test_collectorCore_Write(t *testing.T) {
-	cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
+	cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
 	e := zapcore.Entry{
 		Level:   zapcore.DebugLevel,
 		Message: "test",
@@ -72,18 +70,18 @@ func Test_collectorCore_Write(t *testing.T) {
 		e,
 		fields,
 	}
-	require.Len(t, cc.core.(*bufferedCore).logs, 1)
-	require.Equal(t, expected, cc.core.(*bufferedCore).logs[0])
+	require.Len(t, cc.loadDelegate().(*bufferedCore).logs, 1)
+	require.Equal(t, expected, cc.loadDelegate().(*bufferedCore).logs[0])
 }
 
 func Test_collectorCore_Sync(t *testing.T) {
-	cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
+	cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
 	assert.NoError(t, cc.Sync())
 }
 
 func Test_collectorCore_SetCore(t *testing.T) {
-	cc := collectorCore{core: newBufferedCore(zapcore.InfoLevel)}
+	cc := newCollectorCore(newBufferedCore(zapcore.InfoLevel))
 	newCore := newBufferedCore(zapcore.DebugLevel)
 	cc.SetCore(newCore)
-	assert.Equal(t, zapcore.DebugLevel, cc.core.(*bufferedCore).LevelEnabler)
+	assert.Equal(t, zapcore.DebugLevel, cc.loadDelegate().(*bufferedCore).LevelEnabler)
 }

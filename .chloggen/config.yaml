@@ -24,6 +24,17 @@ components:
     - extension/zpages
     - pdata/pprofile
     - pdata/xpdata
+    - pkg/config/configauth
+    - pkg/config/configcompression
+    - pkg/config/configgrpc
+    - pkg/config/confighttp
+    - pkg/config/configmiddleware
+    - pkg/config/confignet
+    - pkg/config/configopaque
+    - pkg/config/configoptional
+    - pkg/config/configretry
+    - pkg/config/configtelemetry
+    - pkg/config/configtls
     - pkg/confmap
     - pkg/exporterhelper
     - pkg/otelcol

@@ -64,9 +64,7 @@ type Queue[T any] interface {
 }
 
 // Settings define internal parameters for a new Queue creation.
-type Settings[T any] struct {
-	ItemsSizer       request.Sizer[T]
-	BytesSizer       request.Sizer[T]
+type Settings[T request.Request] struct {
 	SizerType        request.SizerType
 	Capacity         int64
 	NumConsumers     int
@@ -80,23 +78,8 @@ type Settings[T any] struct {
 	Telemetry        component.TelemetrySettings
 }
 
-func (set *Settings[T]) activeSizer() request.Sizer[T] {
-	switch set.SizerType {
-	case request.SizerTypeBytes:
-		return set.BytesSizer
-	case request.SizerTypeItems:
-		return set.ItemsSizer
-	default:
-		return request.RequestsSizer[T]{}
-	}
-}
-
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
-	q, err := newBaseQueue(set)
-	if err != nil {
-		return nil, err
-	}
-
+	q := newBaseQueue(set)
 	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
 	if err != nil {
 		return nil, err
@@ -105,19 +88,13 @@ func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T]
 	return oq, nil
 }
 
-func newBaseQueue[T any](set Settings[T]) (readableQueue[T], error) {
+func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	// Configure memory queue or persistent based on the config.
 	if set.StorageID == nil {
-		return newMemoryQueue[T](set), nil
-	}
-	if set.ItemsSizer == nil {
-		return nil, errors.New("PersistentQueue requires ItemsSizer to be set")
-	}
-	if set.BytesSizer == nil {
-		return nil, errors.New("PersistentQueue requires BytesSizer to be set")
+		return newMemoryQueue[T](set)
 	}
 
-	return newPersistentQueue[T](set), nil
+	return newPersistentQueue[T](set)
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.

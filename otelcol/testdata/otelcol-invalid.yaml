@@ -8,14 +8,6 @@ exporters:
   nop:
 
 service:
-  telemetry:
-    metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: "localhost"
-                port: 9999
   pipelines:
     traces:
       receivers: [nop]
