@@ -93,7 +93,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.template.resource.attr": {
 						Description: "Resource attribute with a template string values.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						IsTemplate:  true,
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
