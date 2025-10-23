@@ -18,44 +18,37 @@ func TestSetLink(t *testing.T) {
 	l.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	l2 := NewLink()
 	l.SetTraceID(pcommon.TraceID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 2}))
-	smpl := NewSample()
 
 	// Put a first link
-	require.NoError(t, SetLink(table, smpl, l))
+	idx, err := SetLink(table, l)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), smpl.LinkIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Put the same link
 	// This should be a no-op.
-	require.NoError(t, SetLink(table, smpl, l))
+	idx, err = SetLink(table, l)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, int32(0), smpl.LinkIndex())
+	assert.Equal(t, int32(0), idx)
 
 	// Set a new link
 	// This sets the index and adds to the table.
-	require.NoError(t, SetLink(table, smpl, l2))
+	idx, err = SetLink(table, l2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), smpl.LinkIndex()) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 
 	// Set an existing link
-	require.NoError(t, SetLink(table, smpl, l))
+	idx, err = SetLink(table, l)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(0), smpl.LinkIndex())
+	assert.Equal(t, int32(0), idx)
 	// Set another existing link
-	require.NoError(t, SetLink(table, smpl, l2))
+	idx, err = SetLink(table, l2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), smpl.LinkIndex()) //nolint:gosec // G115
-}
-
-func TestSetLinkCurrentTooHigh(t *testing.T) {
-	table := NewLinkSlice()
-	smpl := NewSample()
-	smpl.SetLinkIndex(42)
-
-	err := SetLink(table, smpl, NewLink())
-	require.Error(t, err)
-	assert.Equal(t, 0, table.Len())
-	assert.Equal(t, int32(42), smpl.LinkIndex())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 }
 
 func BenchmarkSetLink(b *testing.B) {
@@ -63,7 +56,7 @@ func BenchmarkSetLink(b *testing.B) {
 		name string
 		link Link
 
-		runBefore func(*testing.B, LinkSlice, Sample)
+		runBefore func(*testing.B, LinkSlice)
 	}{
 		{
 			name: "with a new link",
@@ -77,7 +70,7 @@ func BenchmarkSetLink(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LinkSlice, _ Sample) {
+			runBefore: func(_ *testing.B, table LinkSlice) {
 				l := table.AppendEmpty()
 				l.SetTraceID(pcommon.NewTraceIDEmpty())
 			},
@@ -86,8 +79,9 @@ func BenchmarkSetLink(b *testing.B) {
 			name: "with a duplicate link",
 			link: NewLink(),
 
-			runBefore: func(_ *testing.B, table LinkSlice, obj Sample) {
-				require.NoError(b, SetLink(table, obj, NewLink()))
+			runBefore: func(b *testing.B, table LinkSlice) {
+				_, err := SetLink(table, NewLink())
+				require.NoError(b, err)
 			},
 		},
 		{
@@ -98,7 +92,7 @@ func BenchmarkSetLink(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LinkSlice, _ Sample) {
+			runBefore: func(_ *testing.B, table LinkSlice) {
 				for range 100 {
 					table.AppendEmpty()
 				}
@@ -107,17 +101,16 @@ func BenchmarkSetLink(b *testing.B) {
 	} {
 		b.Run(bb.name, func(b *testing.B) {
 			table := NewLinkSlice()
-			obj := NewSample()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
 			for b.Loop() {
-				_ = SetLink(table, obj, bb.link)
+				_, _ = SetLink(table, bb.link)
 			}
 		})
 	}
