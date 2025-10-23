@@ -76,7 +76,7 @@ We work to add initial schemas by hand in libraries in opentelemetry-collector.
 
 The schemas are added to the library metadata.yaml files.
 
-[A PR is open to implememt this.](https://github.com/open-telemetry/opentelemetry-collector/pull/13726)
+[A PR is open to implement this.](https://github.com/open-telemetry/opentelemetry-collector/pull/13726)
 
 ### CheckAPI - optional
 
