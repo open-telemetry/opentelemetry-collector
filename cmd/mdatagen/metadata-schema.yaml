@@ -81,7 +81,7 @@ attributes:
     # Optional: indicates requirement level of the attribute.
     # - required: the attribute is always included and cannot be excluded.
     # - conditionally_required: the attribute is included by default when certain conditions are met.
-    # - recommended: the attribute is included by default but can be disabled via configuration.
+    # - recommended (default behavior): the attribute is included by default but can be disabled via configuration.
     # - opt_in: the attribute is not included unless explicitly enabled in user config.
     requirement_level: <required|conditionally_required|recommended|opt_in>
 
