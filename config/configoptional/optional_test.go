@@ -512,8 +512,8 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 	}
 
 	oldVal := addEnabledFieldFeatureGate.IsEnabled()
-	featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true)
-	defer func() { featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal) }()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -530,8 +530,8 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 
 func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
 	oldVal := addEnabledFieldFeatureGate.IsEnabled()
-	featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true)
-	defer func() { featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal) }()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
 
 	cm := confmap.NewFromStringMap(map[string]any{
 		"sub": map[string]any{
