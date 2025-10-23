@@ -28,6 +28,8 @@ all_set:
       enabled: true
     string.resource.attr_to_be_removed:
       enabled: true
+    string.template.resource.attr:
+      enabled: true
 none_set:
   metrics:
     default.metric:
@@ -56,6 +58,8 @@ none_set:
     string.resource.attr_remove_warning:
       enabled: false
     string.resource.attr_to_be_removed:
+      enabled: false
+    string.template.resource.attr:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -88,6 +92,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     string.resource.attr_to_be_removed:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    string.template.resource.attr:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -125,3 +133,7 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "string.resource.attr_to_be_removed-val"
+    string.template.resource.attr:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
