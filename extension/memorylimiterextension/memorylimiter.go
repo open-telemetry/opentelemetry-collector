@@ -5,6 +5,7 @@ package memorylimiterextension // import "go.opentelemetry.io/collector/extensio
 
 import (
 	"context"
+	"net/http"
 
 	"go.uber.org/zap"
 
@@ -37,4 +38,14 @@ func (ml *memoryLimiterExtension) Shutdown(ctx context.Context) error {
 // MustRefuse returns if the caller should deny because memory has reached it's configured limits
 func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
+}
+
+func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handler, error) {
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		if ml.MustRefuse() {
+			http.Error(resp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			return
+		}
+		base.ServeHTTP(resp, req)
+	}), nil
 }
