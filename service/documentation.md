@@ -8,96 +8,96 @@ The following telemetry is emitted by this component.
 
 ### otelcol.connector.consumed.items
 
-Number of items passed to the connector.
+Number of items passed to the connector. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol.connector.produced.items
 
-Number of items emitted from the connector.
+Number of items emitted from the connector. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol.exporter.consumed.items
 
-Number of items passed to the exporter.
+Number of items passed to the exporter. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol_process_cpu_seconds
 
-Total CPU user and system time in seconds [alpha]
+Total CPU user and system time in seconds [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| s | Sum | Double | true | alpha |
+| s | Sum | Double | true | Alpha |
 
 ### otelcol_process_memory_rss
 
-Total physical memory (resident set size) [alpha]
+Total physical memory (resident set size) [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | alpha |
+| By | Gauge | Int | Alpha |
 
 ### otelcol_process_runtime_heap_alloc_bytes
 
-Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]
+Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | alpha |
+| By | Gauge | Int | Alpha |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
-Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| By | Sum | Int | true | alpha |
+| By | Sum | Int | true | Alpha |
 
 ### otelcol_process_runtime_total_sys_memory_bytes
 
-Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]
+Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | alpha |
+| By | Gauge | Int | Alpha |
 
 ### otelcol_process_uptime
 
-Uptime of the process [alpha]
+Uptime of the process [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| s | Sum | Double | true | alpha |
+| s | Sum | Double | true | Alpha |
 
 ### otelcol.processor.consumed.items
 
-Number of items passed to the processor.
+Number of items passed to the processor. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol.processor.produced.items
 
-Number of items emitted from the processor.
+Number of items emitted from the processor. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol.receiver.produced.items
 
-Number of items emitted from the receiver.
+Number of items emitted from the receiver. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {item} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |

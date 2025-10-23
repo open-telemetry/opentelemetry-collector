@@ -122,9 +122,9 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
-    # Optional: the metric stability
+    # Required: the metric stability
     stability:
-      # Optional: the level of stability
+      # Required: the level of stability
       level: <development|alpha|beta|stable|deprecated>
       # Optional: the version current stability was introduced
       from:

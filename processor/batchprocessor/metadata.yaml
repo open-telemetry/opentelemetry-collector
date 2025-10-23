@@ -14,6 +14,8 @@ telemetry:
   metrics:
     processor_batch_batch_send_size:
       enabled: true
+      stability:
+        level: development
       description: Number of units in the batch
       unit: "{units}"
       histogram:
@@ -45,6 +47,8 @@ telemetry:
           ]
     processor_batch_batch_send_size_bytes:
       enabled: true
+      stability:
+        level: development
       description: Number of bytes in batch that was sent. Only available on detailed level.
       unit: By
       histogram:
@@ -93,6 +97,8 @@ telemetry:
           ]
     processor_batch_batch_size_trigger_send:
       enabled: true
+      stability:
+        level: development
       description: Number of times the batch was sent due to a size trigger
       unit: "{times}"
       sum:
@@ -100,6 +106,8 @@ telemetry:
         monotonic: true
     processor_batch_metadata_cardinality:
       enabled: true
+      stability:
+        level: development
       description: Number of distinct metadata value combinations being processed
       unit: "{combinations}"
       sum:
@@ -107,6 +115,8 @@ telemetry:
         async: true
     processor_batch_timeout_trigger_send:
       enabled: true
+      stability:
+        level: development
       description: Number of times the batch was sent due to a timeout trigger
       unit: "{times}"
       sum:
