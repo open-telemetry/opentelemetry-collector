@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
-// OpaquePair is an element of a MapList.
-type OpaquePair struct {
+// Pair is an element of a MapList, and consists of a name and an opaque value.
+type Pair struct {
 	Name  string `mapstructure:"name"`
 	Value String `mapstructure:"value"`
 
@@ -23,14 +23,14 @@ type OpaquePair struct {
 }
 
 // MapList is a replacement for map[string]configopaque.String with a similar API,
-// which can also be unmarshalled from (and is stored as) a list of name/value OpaquePairs.
+// which can also be unmarshalled from (and is stored as) a list of name/value pairs.
 //
-// OpaquePairs are assumed to have distinct names. This is checked during config validation.
-type MapList []OpaquePair
+// Pairs are assumed to have distinct names. This is checked during config validation.
+type MapList []Pair
 
 var _ confmap.Unmarshaler = (*MapList)(nil)
 
-// Unmarshal is called by the Collector when unmarshaling from a map.
+// Unmarshal is called by the Collector when unmarshalling from a map.
 // When the input config is a slice, this will be skipped,
 // and mapstructure's default unmarshalling logic will be used.
 func (ml *MapList) Unmarshal(conf *confmap.Conf) error {
@@ -40,12 +40,12 @@ func (ml *MapList) Unmarshal(conf *confmap.Conf) error {
 	}
 	*ml = make(MapList, 0, len(m2))
 	for name, value := range m2 {
-		*ml = append(*ml, OpaquePair{
+		*ml = append(*ml, Pair{
 			Name:  name,
 			Value: value,
 		})
 	}
-	slices.SortFunc(*ml, func(p1, p2 OpaquePair) int {
+	slices.SortFunc(*ml, func(p1, p2 Pair) int {
 		return cmp.Compare(p1.Name, p2.Name)
 	})
 	return nil
@@ -74,7 +74,7 @@ func (ml MapList) Validate() error {
 
 var _ iter.Seq2[string, String] = MapList(nil).Iter
 
-// Iter is an iterator over key/value OpaquePairs for use in for-range loops.
+// Iter is an iterator over key/value pairs for use in for-range loops.
 // It is the MapList equivalent of directly ranging over a map.
 func (ml MapList) Iter(yield func(name string, value String) bool) {
 	for _, OpaquePair := range ml {
@@ -84,7 +84,7 @@ func (ml MapList) Iter(yield func(name string, value String) bool) {
 	}
 }
 
-// Get looks up a OpaquePair's value based on its name.
+// Get looks up a pair's value based on its name.
 // It is the MapList equivalent of `val, ok := m[key]`.
 // However, it has linear time complexity.
 func (ml MapList) Get(name string) (val String, ok bool) {
@@ -98,10 +98,8 @@ func (ml MapList) Get(name string) (val String, ok bool) {
 
 // Set sets the value corresponding to a given name.
 // It is the MapList equivalent of `m[key] = val`.
-// However, it has linear time complexity.
-//
-// The backing array is systematically cloned, which ensures that, unlike slices or maps,
-// modifying a shallow copy of a MapList does not affect the original.
+// However, it has linear time complexity,
+// and does not affect shallow copies.
 func (ml *MapList) Set(name string, val String) {
 	if ml == nil {
 		panic("assignment to entry in nil *MapList")
@@ -114,5 +112,5 @@ func (ml *MapList) Set(name string, val String) {
 		}
 	}
 	*ml = append(make(MapList, 0, len(*ml)+1), *ml...)
-	*ml = append(*ml, OpaquePair{Name: name, Value: val})
+	*ml = append(*ml, Pair{Name: name, Value: val})
 }

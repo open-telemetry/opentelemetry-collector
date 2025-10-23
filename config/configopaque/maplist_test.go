@@ -28,9 +28,13 @@ headers:
   "c": "d"
 `
 
-const headersBad = `
+const headersBad1 = `
 headers:
   "bad": 1
+`
+
+const headersBad2 = `
+headers: "foo"
 `
 
 const headersDupe = `
@@ -66,16 +70,25 @@ func TestMapListDuality(t *testing.T) {
 }
 
 func TestMapListUnmarshalError(t *testing.T) {
-	retrieved, err := confmap.NewRetrievedFromYAML([]byte(headersBad))
+	var tc testConfig
+
+	retrieved, err := confmap.NewRetrievedFromYAML([]byte(headersBad1))
 	require.NoError(t, err)
 	conf, err := retrieved.AsConf()
 	require.NoError(t, err)
-	var tc testConfig
-	// Not sure if there is a way to change the error message to include the map case?
-	assert.EqualError(t, conf.Unmarshal(&tc),
+	require.EqualError(t, conf.Unmarshal(&tc),
 		"decoding failed due to the following error(s):\n\n"+
 			"'headers' decoding failed due to the following error(s):\n\n"+
 			"'[bad]' expected type 'configopaque.String', got unconvertible type 'int'")
+
+	retrieved, err = confmap.NewRetrievedFromYAML([]byte(headersBad2))
+	require.NoError(t, err)
+	conf, err = retrieved.AsConf()
+	require.NoError(t, err)
+	// Not sure if there is a way to change the error message to include the map case?
+	require.EqualError(t, conf.Unmarshal(&tc),
+		"decoding failed due to the following error(s):\n\n"+
+			"'headers' source data must be an array or slice, got string")
 }
 
 func TestMapListValidate(t *testing.T) {
