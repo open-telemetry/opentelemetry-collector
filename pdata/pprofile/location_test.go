@@ -130,6 +130,25 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			}(),
 		},
 		{
+			name: "with a mapping that cannot be found",
+			location: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(1)
+				return l
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantLocation: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(1)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid mapping index 1"),
+		},
+		{
 			name: "with an existing attribute",
 			location: func() Location {
 				l := NewLocation()
