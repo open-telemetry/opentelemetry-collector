@@ -26,8 +26,8 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState)) })
-	assert.Panics(t, func() { newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(internal.NewScopeMetrics(), sharedState)) })
+	assert.Panics(t, func() { newScopeMetrics(internal.NewScopeMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(internal.NewOrigScopeMetrics(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(internal.NewScopeMetrics(), sharedState)) })
 }
 
 func TestScopeMetrics_Scope(t *testing.T) {
 	ms := NewScopeMetrics()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
-	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+	ms.orig.Scope = *internal.GenTestInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScopeWrapper(internal.GenTestInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeMetrics_Metrics(t *testing.T) {
 	ms := NewScopeMetrics()
 	assert.Equal(t, NewMetricSlice(), ms.Metrics())
-	ms.orig.Metrics = internal.GenerateOrigTestMetricSlice()
+	ms.orig.Metrics = internal.GenTestMetricSlice()
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
 
@@ -68,6 +68,6 @@ func TestScopeMetrics_SchemaUrl(t *testing.T) {
 }
 
 func generateTestScopeMetrics() ScopeMetrics {
-	ms := newScopeMetrics(internal.GenTestOrigScopeMetrics(), internal.NewState())
+	ms := newScopeMetrics(internal.GenTestScopeMetrics(), internal.NewState())
 	return ms
 }

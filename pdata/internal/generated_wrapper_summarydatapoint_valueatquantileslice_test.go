@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigSummaryDataPoint_ValueAtQuantileSlice(t *testing.T) {
+func TestCopySummaryDataPoint_ValueAtQuantileSlice(t *testing.T) {
 	src := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 	dest := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 	// Test CopyTo empty
-	dest = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src)
+	dest = CopySummaryDataPoint_ValueAtQuantileSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
-	dest = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
+	src = GenTestSummaryDataPoint_ValueAtQuantileSlice()
+	dest = CopySummaryDataPoint_ValueAtQuantileSlice(dest, src)
+	assert.Equal(t, GenTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
+	dest = CopySummaryDataPoint_ValueAtQuantileSlice(dest, src)
+	assert.Equal(t, GenTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	dest = CopySummaryDataPoint_ValueAtQuantileSlice(dest, []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
+	dest = CopySummaryDataPoint_ValueAtQuantileSlice(dest, src)
+	assert.Equal(t, GenTestSummaryDataPoint_ValueAtQuantileSlice(), dest)
 }

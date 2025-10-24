@@ -43,14 +43,14 @@ var (
 	}
 )
 
-func NewOrigExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
+func NewExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.ExponentialHistogramDataPoint{}
 	}
 	return protoPoolExponentialHistogramDataPoint.Get().(*otlpmetrics.ExponentialHistogramDataPoint)
 }
 
-func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, nullable bool) {
+func DeleteExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -61,7 +61,7 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 	switch ov := orig.Sum_.(type) {
 	case *otlpmetrics.ExponentialHistogramDataPoint_Sum:
@@ -71,10 +71,10 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 		}
 
 	}
-	DeleteOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, false)
-	DeleteOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, false)
+	DeleteExponentialHistogramDataPoint_Buckets(&orig.Positive, false)
+	DeleteExponentialHistogramDataPoint_Buckets(&orig.Negative, false)
 	for i := range orig.Exemplars {
-		DeleteOrigExemplar(&orig.Exemplars[i], false)
+		DeleteExemplar(&orig.Exemplars[i], false)
 	}
 	switch ov := orig.Min_.(type) {
 	case *otlpmetrics.ExponentialHistogramDataPoint_Min:
@@ -99,12 +99,12 @@ func DeleteOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistog
 	}
 }
 
-func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
+func CopyExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
@@ -120,10 +120,10 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	}
 	dest.Scale = src.Scale
 	dest.ZeroCount = src.ZeroCount
-	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Positive, &src.Positive)
-	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Negative, &src.Negative)
+	CopyExponentialHistogramDataPoint_Buckets(&dest.Positive, &src.Positive)
+	CopyExponentialHistogramDataPoint_Buckets(&dest.Negative, &src.Negative)
 	dest.Flags = src.Flags
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
 	if srcMin, ok := src.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
 		destMin, ok := dest.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min)
 		if !ok {
@@ -147,35 +147,35 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	dest.ZeroThreshold = src.ZeroThreshold
 }
 
-func GenTestOrigExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
-	orig := NewOrigExponentialHistogramDataPoint()
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+func GenTestExponentialHistogramDataPoint() *otlpmetrics.ExponentialHistogramDataPoint {
+	orig := NewExponentialHistogramDataPoint()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Count = uint64(13)
 	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
 	orig.Scale = int32(13)
 	orig.ZeroCount = uint64(13)
-	orig.Positive = *GenTestOrigExponentialHistogramDataPoint_Buckets()
-	orig.Negative = *GenTestOrigExponentialHistogramDataPoint_Buckets()
+	orig.Positive = *GenTestExponentialHistogramDataPoint_Buckets()
+	orig.Negative = *GenTestExponentialHistogramDataPoint_Buckets()
 	orig.Flags = 1
-	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Exemplars = GenTestExemplarSlice()
 	orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
 	orig.ZeroThreshold = float64(3.1415926)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -204,9 +204,9 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 		dest.WriteUint64(orig.ZeroCount)
 	}
 	dest.WriteObjectField("positive")
-	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, dest)
+	MarshalJSONExponentialHistogramDataPoint_Buckets(&orig.Positive, dest)
 	dest.WriteObjectField("negative")
-	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, dest)
+	MarshalJSONExponentialHistogramDataPoint_Buckets(&orig.Negative, dest)
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
@@ -214,10 +214,10 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
 		dest.WriteArrayStart()
-		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		MarshalJSONExemplar(&orig.Exemplars[0], dest)
 		for i := 1; i < len(orig.Exemplars); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+			MarshalJSONExemplar(&orig.Exemplars[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -236,14 +236,14 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExponentialHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, iter *json.Iterator) {
+// UnmarshalJSONExponentialHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
@@ -269,15 +269,15 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 		case "zeroCount", "zero_count":
 			orig.ZeroCount = iter.ReadUint64()
 		case "positive":
-			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, iter)
+			UnmarshalJSONExponentialHistogramDataPoint_Buckets(&orig.Positive, iter)
 		case "negative":
-			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, iter)
+			UnmarshalJSONExponentialHistogramDataPoint_Buckets(&orig.Negative, iter)
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "exemplars":
 			for iter.ReadArray() {
 				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+				UnmarshalJSONExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
 			}
 
 		case "min":
@@ -312,12 +312,12 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 	}
 }
 
-func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) int {
+func SizeProtoExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.StartTimeUnixNano != 0 {
@@ -339,15 +339,15 @@ func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHis
 	if orig.ZeroCount != 0 {
 		n += 9
 	}
-	l = SizeProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Positive)
+	l = SizeProtoExponentialHistogramDataPoint_Buckets(&orig.Positive)
 	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Negative)
+	l = SizeProtoExponentialHistogramDataPoint_Buckets(&orig.Negative)
 	n += 1 + proto.Sov(uint64(l)) + l
 	if orig.Flags != 0 {
 		n += 1 + proto.Sov(uint64(orig.Flags))
 	}
 	for i := range orig.Exemplars {
-		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		l = SizeProtoExemplar(&orig.Exemplars[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig, ok := orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
@@ -364,12 +364,12 @@ func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHis
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, buf []byte) int {
+func MarshalProtoExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -411,13 +411,13 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 		buf[pos] = 0x39
 	}
 
-	l = MarshalProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, buf[:pos])
+	l = MarshalProtoExponentialHistogramDataPoint_Buckets(&orig.Positive, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0x42
 
-	l = MarshalProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, buf[:pos])
+	l = MarshalProtoExponentialHistogramDataPoint_Buckets(&orig.Negative, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -429,7 +429,7 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 		buf[pos] = 0x50
 	}
 	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		l = MarshalProtoExemplar(&orig.Exemplars[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -456,7 +456,7 @@ func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponential
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, buf []byte) error {
+func UnmarshalProtoExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -482,7 +482,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -576,7 +576,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, buf[startPos:pos])
+			err = UnmarshalProtoExponentialHistogramDataPoint_Buckets(&orig.Positive, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -592,7 +592,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, buf[startPos:pos])
+			err = UnmarshalProtoExponentialHistogramDataPoint_Buckets(&orig.Negative, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -620,7 +620,7 @@ func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponenti
 			}
 			startPos := pos - length
 			orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
+			err = UnmarshalProtoExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

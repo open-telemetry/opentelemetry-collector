@@ -27,7 +27,7 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigMetric()
+		(*es.orig)[i] = internal.GenTestMetric()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestMetricSlice_Sort(t *testing.T) {
 
 func generateTestMetricSlice() MetricSlice {
 	ms := NewMetricSlice()
-	*ms.orig = internal.GenerateOrigTestMetricSlice()
+	*ms.orig = internal.GenTestMetricSlice()
 	return ms
 }

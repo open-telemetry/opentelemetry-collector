@@ -30,7 +30,7 @@ func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint, state *inte
 	return SummaryDataPointSlice{orig: orig, state: state}
 }
 
-// NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
+// NewSummaryDataPointSlice creates a SummaryDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointSlice() SummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint(nil)
@@ -99,7 +99,7 @@ func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SummaryDataPoint.
 func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSummaryDataPoint())
+	*es.orig = append(*es.orig, internal.NewSummaryDataPoint())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSummaryDataPoint((*es.orig)[i], true)
+			internal.DeleteSummaryDataPoint((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSummaryDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySummaryDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the

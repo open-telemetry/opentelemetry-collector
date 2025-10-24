@@ -14,27 +14,27 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-func TestCopyOrigResourceLogsSlice(t *testing.T) {
+func TestCopyResourceLogsSlice(t *testing.T) {
 	src := []*otlplogs.ResourceLogs{}
 	dest := []*otlplogs.ResourceLogs{}
 	// Test CopyTo empty
-	dest = CopyOrigResourceLogsSlice(dest, src)
+	dest = CopyResourceLogsSlice(dest, src)
 	assert.Equal(t, []*otlplogs.ResourceLogs{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestResourceLogsSlice()
-	dest = CopyOrigResourceLogsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceLogsSlice(), dest)
+	src = GenTestResourceLogsSlice()
+	dest = CopyResourceLogsSlice(dest, src)
+	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigResourceLogsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceLogsSlice(), dest)
+	dest = CopyResourceLogsSlice(dest, src)
+	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigResourceLogsSlice(dest, []*otlplogs.ResourceLogs{})
+	dest = CopyResourceLogsSlice(dest, []*otlplogs.ResourceLogs{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigResourceLogsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceLogsSlice(), dest)
+	dest = CopyResourceLogsSlice(dest, src)
+	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 }

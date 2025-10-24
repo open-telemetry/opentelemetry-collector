@@ -27,7 +27,7 @@ func TestSpanLinkSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSpan_Link()
+		(*es.orig)[i] = internal.GenTestSpan_Link()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestSpanLinkSlice_Sort(t *testing.T) {
 
 func generateTestSpanLinkSlice() SpanLinkSlice {
 	ms := NewSpanLinkSlice()
-	*ms.orig = internal.GenerateOrigTestSpan_LinkSlice()
+	*ms.orig = internal.GenTestSpan_LinkSlice()
 	return ms
 }

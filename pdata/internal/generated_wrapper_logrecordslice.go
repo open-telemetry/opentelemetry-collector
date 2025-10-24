@@ -10,7 +10,7 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
+func CopyLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
 	var newDest []*otlplogs.LogRecord
 	if cap(dest) < len(src) {
 		newDest = make([]*otlplogs.LogRecord, len(src))
@@ -18,34 +18,34 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLogRecord()
+			newDest[i] = NewLogRecord()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigLogRecord(dest[i], true)
+			DeleteLogRecord(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLogRecord()
+			newDest[i] = NewLogRecord()
 		}
 	}
 	for i := range src {
-		CopyOrigLogRecord(newDest[i], src[i])
+		CopyLogRecord(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
+func GenTestLogRecordSlice() []*otlplogs.LogRecord {
 	orig := make([]*otlplogs.LogRecord, 5)
-	orig[0] = NewOrigLogRecord()
-	orig[1] = GenTestOrigLogRecord()
-	orig[2] = NewOrigLogRecord()
-	orig[3] = GenTestOrigLogRecord()
-	orig[4] = NewOrigLogRecord()
+	orig[0] = NewLogRecord()
+	orig[1] = GenTestLogRecord()
+	orig[2] = NewLogRecord()
+	orig[3] = GenTestLogRecord()
+	orig[4] = NewLogRecord()
 	return orig
 }

@@ -14,27 +14,27 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func TestCopyOrigScopeSpansSlice(t *testing.T) {
+func TestCopyScopeSpansSlice(t *testing.T) {
 	src := []*otlptrace.ScopeSpans{}
 	dest := []*otlptrace.ScopeSpans{}
 	// Test CopyTo empty
-	dest = CopyOrigScopeSpansSlice(dest, src)
+	dest = CopyScopeSpansSlice(dest, src)
 	assert.Equal(t, []*otlptrace.ScopeSpans{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestScopeSpansSlice()
-	dest = CopyOrigScopeSpansSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeSpansSlice(), dest)
+	src = GenTestScopeSpansSlice()
+	dest = CopyScopeSpansSlice(dest, src)
+	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigScopeSpansSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeSpansSlice(), dest)
+	dest = CopyScopeSpansSlice(dest, src)
+	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigScopeSpansSlice(dest, []*otlptrace.ScopeSpans{})
+	dest = CopyScopeSpansSlice(dest, []*otlptrace.ScopeSpans{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigScopeSpansSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeSpansSlice(), dest)
+	dest = CopyScopeSpansSlice(dest, src)
+	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 }

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigResourceLogs(t *testing.T) {
+func TestCopyResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigResourceLogs(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigResourceLogs()
-				CopyOrigResourceLogs(dest, src)
+				dest := NewResourceLogs()
+				CopyResourceLogs(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigResourceLogs(dest, dest)
+				CopyResourceLogs(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceLogsUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigResourceLogs()
-	UnmarshalJSONOrigResourceLogs(dest, iter)
+	dest := NewResourceLogs()
+	UnmarshalJSONResourceLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigResourceLogs(), dest)
+	assert.Equal(t, NewResourceLogs(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigResourceLogs(src, stream)
+				MarshalJSONResourceLogs(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigResourceLogs()
-				UnmarshalJSONOrigResourceLogs(dest, iter)
+				dest := NewResourceLogs()
+				UnmarshalJSONResourceLogs(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceLogs(dest, true)
+				DeleteResourceLogs(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceLogsFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceLogsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResourceLogs() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigResourceLogs()
-			require.Error(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+			dest := NewResourceLogs()
+			require.Error(t, UnmarshalProtoResourceLogs(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceLogsUnknown(t *testing.T) {
-	dest := NewOrigResourceLogs()
+func TestMarshalAndUnmarshalProtoResourceLogsUnknown(t *testing.T) {
+	dest := NewResourceLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigResourceLogs(), dest)
+	require.NoError(t, UnmarshalProtoResourceLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewResourceLogs(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigResourceLogs(src))
-				gotSize := MarshalProtoOrigResourceLogs(src, buf)
+				buf := make([]byte, SizeProtoResourceLogs(src))
+				gotSize := MarshalProtoResourceLogs(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigResourceLogs()
-				require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+				dest := NewResourceLogs()
+				require.NoError(t, UnmarshalProtoResourceLogs(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceLogs(dest, true)
+				DeleteResourceLogs(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceLogs() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceLogs(src))
-			gotSize := MarshalProtoOrigResourceLogs(src, buf)
+			buf := make([]byte, SizeProtoResourceLogs(src))
+			gotSize := MarshalProtoResourceLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlplogs.ResourceLogs{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigResourceLogs()
-			require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, goBuf))
+			dest := NewResourceLogs()
+			require.NoError(t, UnmarshalProtoResourceLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesResourceLogs() map[string][]byte {
 
 func genTestEncodingValuesResourceLogs() map[string]*otlplogs.ResourceLogs {
 	return map[string]*otlplogs.ResourceLogs{
-		"empty":                      NewOrigResourceLogs(),
-		"Resource/test":              {Resource: *GenTestOrigResource()},
-		"ScopeLogs/default_and_test": {ScopeLogs: []*otlplogs.ScopeLogs{{}, GenTestOrigScopeLogs()}},
+		"empty":                      NewResourceLogs(),
+		"Resource/test":              {Resource: *GenTestResource()},
+		"ScopeLogs/default_and_test": {ScopeLogs: []*otlplogs.ScopeLogs{{}, GenTestScopeLogs()}},
 		"SchemaUrl/test":             {SchemaUrl: "test_schemaurl"},
 	}
 }

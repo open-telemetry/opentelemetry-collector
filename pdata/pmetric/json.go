@@ -20,7 +20,7 @@ type JSONMarshaler struct{}
 func (*JSONMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportMetricsServiceRequest(md.getOrig(), dest)
+	internal.MarshalJSONExportMetricsServiceRequest(md.getOrig(), dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -35,7 +35,7 @@ func (*JSONUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	md := NewMetrics()
-	internal.UnmarshalJSONOrigExportMetricsServiceRequest(md.getOrig(), iter)
+	internal.UnmarshalJSONExportMetricsServiceRequest(md.getOrig(), iter)
 	if iter.Error() != nil {
 		return Metrics{}, iter.Error()
 	}

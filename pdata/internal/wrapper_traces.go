@@ -9,7 +9,7 @@ import (
 )
 
 // TracesToProto internal helper to convert Traces to protobuf representation.
-func TracesToProto(l Traces) otlptrace.TracesData {
+func TracesToProto(l TracesWrapper) otlptrace.TracesData {
 	return otlptrace.TracesData{
 		ResourceSpans: l.orig.ResourceSpans,
 	}
@@ -17,8 +17,8 @@ func TracesToProto(l Traces) otlptrace.TracesData {
 
 // TracesFromProto internal helper to convert protobuf representation to Traces.
 // This function set exclusive state assuming that it's called only once per Traces.
-func TracesFromProto(orig otlptrace.TracesData) Traces {
-	return NewTraces(&otlpcollectortrace.ExportTraceServiceRequest{
+func TracesFromProto(orig otlptrace.TracesData) TracesWrapper {
+	return NewTracesWrapper(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: orig.ResourceSpans,
 	}, NewState())
 }

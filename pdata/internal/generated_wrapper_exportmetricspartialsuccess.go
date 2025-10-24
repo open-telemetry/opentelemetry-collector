@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
+func NewExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectormetrics.ExportMetricsPartialSuccess{}
 	}
 	return protoPoolExportMetricsPartialSuccess.Get().(*otlpcollectormetrics.ExportMetricsPartialSuccess)
 }
 
-func DeleteOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, nullable bool) {
+func DeleteExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetr
 	}
 }
 
-func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
+func CopyExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,15 +55,15 @@ func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportM
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func GenTestOrigExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
-	orig := NewOrigExportMetricsPartialSuccess()
+func GenTestExportMetricsPartialSuccess() *otlpcollectormetrics.ExportMetricsPartialSuccess {
+	orig := NewExportMetricsPartialSuccess()
 	orig.RejectedDataPoints = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.RejectedDataPoints != int64(0) {
 		dest.WriteObjectField("rejectedDataPoints")
@@ -76,8 +76,8 @@ func MarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.Expor
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, iter *json.Iterator) {
+// UnmarshalJSONExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedDataPoints", "rejected_data_points":
@@ -90,7 +90,7 @@ func UnmarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.Exp
 	}
 }
 
-func SizeProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) int {
+func SizeProtoExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) int {
 	var n int
 	var l int
 	_ = l
@@ -104,7 +104,7 @@ func SizeProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportM
 	return n
 }
 
-func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) int {
+func MarshalProtoExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -124,7 +124,7 @@ func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.Expo
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) error {
+func UnmarshalProtoExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigResourceProfilesSlice(dest, src []*otlpprofiles.ResourceProfiles) []*otlpprofiles.ResourceProfiles {
+func CopyResourceProfilesSlice(dest, src []*otlpprofiles.ResourceProfiles) []*otlpprofiles.ResourceProfiles {
 	var newDest []*otlpprofiles.ResourceProfiles
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.ResourceProfiles, len(src))
@@ -18,34 +18,34 @@ func CopyOrigResourceProfilesSlice(dest, src []*otlpprofiles.ResourceProfiles) [
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigResourceProfiles()
+			newDest[i] = NewResourceProfiles()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigResourceProfiles(dest[i], true)
+			DeleteResourceProfiles(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigResourceProfiles()
+			newDest[i] = NewResourceProfiles()
 		}
 	}
 	for i := range src {
-		CopyOrigResourceProfiles(newDest[i], src[i])
+		CopyResourceProfiles(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestResourceProfilesSlice() []*otlpprofiles.ResourceProfiles {
+func GenTestResourceProfilesSlice() []*otlpprofiles.ResourceProfiles {
 	orig := make([]*otlpprofiles.ResourceProfiles, 5)
-	orig[0] = NewOrigResourceProfiles()
-	orig[1] = GenTestOrigResourceProfiles()
-	orig[2] = NewOrigResourceProfiles()
-	orig[3] = GenTestOrigResourceProfiles()
-	orig[4] = NewOrigResourceProfiles()
+	orig[0] = NewResourceProfiles()
+	orig[1] = GenTestResourceProfiles()
+	orig[2] = NewResourceProfiles()
+	orig[3] = GenTestResourceProfiles()
+	orig[4] = NewResourceProfiles()
 	return orig
 }

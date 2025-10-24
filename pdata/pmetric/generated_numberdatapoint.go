@@ -33,7 +33,7 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint, state *internal.State
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	return newNumberDataPoint(internal.NewOrigNumberDataPoint(), internal.NewState())
+	return newNumberDataPoint(internal.NewNumberDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,13 +45,13 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigNumberDataPoint(dest.orig, false)
+	internal.DeleteNumberDataPoint(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Attributes returns the Attributes associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.Attributes, ms.state))
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
@@ -143,5 +143,5 @@ func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.state.AssertMutable()
-	internal.CopyOrigNumberDataPoint(dest.orig, ms.orig)
+	internal.CopyNumberDataPoint(dest.orig, ms.orig)
 }

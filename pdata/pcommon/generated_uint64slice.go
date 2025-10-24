@@ -18,31 +18,31 @@ import (
 //
 // Must use NewUInt64Slice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type UInt64Slice internal.UInt64Slice
+type UInt64Slice internal.UInt64SliceWrapper
 
 func (ms UInt64Slice) getOrig() *[]uint64 {
-	return internal.GetOrigUInt64Slice(internal.UInt64Slice(ms))
+	return internal.GetUInt64SliceOrig(internal.UInt64SliceWrapper(ms))
 }
 
 func (ms UInt64Slice) getState() *internal.State {
-	return internal.GetUInt64SliceState(internal.UInt64Slice(ms))
+	return internal.GetUInt64SliceState(internal.UInt64SliceWrapper(ms))
 }
 
 // NewUInt64Slice creates a new empty UInt64Slice.
 func NewUInt64Slice() UInt64Slice {
 	orig := []uint64(nil)
-	return UInt64Slice(internal.NewUInt64Slice(&orig, internal.NewState()))
+	return UInt64Slice(internal.NewUInt64SliceWrapper(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []uint64 slice.
 func (ms UInt64Slice) AsRaw() []uint64 {
-	return internal.CopyOrigUint64Slice(nil, *ms.getOrig())
+	return internal.CopyUint64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
 func (ms UInt64Slice) FromRaw(val []uint64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyOrigUint64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyUint64Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []uint64 slice value.
@@ -155,7 +155,7 @@ func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrigUint64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyUint64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another UInt64Slice

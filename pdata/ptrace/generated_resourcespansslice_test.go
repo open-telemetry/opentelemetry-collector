@@ -27,7 +27,7 @@ func TestResourceSpansSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigResourceSpans()
+		(*es.orig)[i] = internal.GenTestResourceSpans()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestResourceSpansSlice_Sort(t *testing.T) {
 
 func generateTestResourceSpansSlice() ResourceSpansSlice {
 	ms := NewResourceSpansSlice()
-	*ms.orig = internal.GenerateOrigTestResourceSpansSlice()
+	*ms.orig = internal.GenTestResourceSpansSlice()
 	return ms
 }

@@ -14,7 +14,7 @@ import (
 
 // MarshalProfiles marshals pprofile.Profiles along with the context into a byte slice.
 func MarshalProfiles(ctx context.Context, ld pprofile.Profiles) ([]byte, error) {
-	otlpProfiles := internal.ProfilesToProto(internal.Profiles(ld))
+	otlpProfiles := internal.ProfilesToProto(internal.ProfilesWrapper(ld))
 	rc := encodeContext(ctx)
 	pr := reqint.ProfilesRequest{
 		FormatVersion:  requestFormatVersion,

@@ -13,30 +13,30 @@ import (
 )
 {{ if .hasWrapper }}
 
-type {{ .structName }} struct {
+type {{ .structName }}Wrapper struct {
 	orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+func Get{{ .structName }}Orig(ms {{ .structName }}Wrapper) *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
 	return ms.orig
 }
 
-func Get{{ .structName }}State(ms {{ .structName }}) *State {
+func Get{{ .structName }}State(ms {{ .structName }}Wrapper) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, state *State) {{ .structName }} {
-	return {{ .structName }}{orig: orig, state: state}
+func New{{ .structName }}Wrapper(orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, state *State) {{ .structName }}Wrapper {
+	return {{ .structName }}Wrapper{orig: orig, state: state}
 }
 
-func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
-	return New{{ .structName }}(&orig, NewState())
+func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
+	orig := GenTest{{ .elementOriginName }}Slice()
+	return New{{ .structName }}Wrapper(&orig, NewState())
 }
 {{ end }}
 
-func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+func Copy{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}) []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
 	var newDest []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
 	if cap(dest) < len(src) {
 		{{ if .elementNullable -}}
@@ -45,7 +45,7 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrig{{ .elementOriginName }}()
+			newDest[i] = New{{ .elementOriginName }}()
 		}{{ else -}}
 		newDest = make([]{{ .elementOriginFullName }}, len(src))
         {{- end }}
@@ -55,36 +55,36 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ if .elementNullable }}
 		// This can happen when len(src) < len(dest) < cap(dest).
 		{{ if .elementNullable -}}
 		for i := len(src); i < len(dest); i++ {
-            DeleteOrig{{ .elementOriginName }}(dest[i], true)
+            Delete{{ .elementOriginName }}(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrig{{ .elementOriginName }}()
+			newDest[i] = New{{ .elementOriginName }}()
 		}{{ else -}}
 		for i := len(src); i < len(dest); i++ {
-            DeleteOrig{{ .elementOriginName }}(&dest[i], false)
+            Delete{{ .elementOriginName }}(&dest[i], false)
 		}
         {{- end }}
 	}
 	for i := range src {
-	    CopyOrig{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}newDest[i], {{ if not .elementNullable }}&{{ end }}src[i])
+	    Copy{{ .elementOriginName }}({{ if not .elementNullable }}&{{ end }}newDest[i], {{ if not .elementNullable }}&{{ end }}src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
+func GenTest{{ .elementOriginName }}Slice() []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
     {{ if .elementNullable -}}
     orig := make([]*{{ .elementOriginFullName }}, 5)
-	orig[0] = NewOrig{{ .elementOriginName }}()
-	orig[1] = GenTestOrig{{ .elementOriginName }}()
-    orig[2] = NewOrig{{ .elementOriginName }}()
-	orig[3] = GenTestOrig{{ .elementOriginName }}()
-    orig[4] = NewOrig{{ .elementOriginName }}(){{ else -}}
+	orig[0] = New{{ .elementOriginName }}()
+	orig[1] = GenTest{{ .elementOriginName }}()
+    orig[2] = New{{ .elementOriginName }}()
+	orig[3] = GenTest{{ .elementOriginName }}()
+    orig[4] = New{{ .elementOriginName }}(){{ else -}}
     orig := make([]{{ .elementOriginFullName }}, 5)
-    orig[1] = *GenTestOrig{{ .elementOriginName }}()
-    orig[3] = *GenTestOrig{{ .elementOriginName }}()
+    orig[1] = *GenTest{{ .elementOriginName }}()
+    orig[3] = *GenTest{{ .elementOriginName }}()
     {{- end }}
 	return orig
 }

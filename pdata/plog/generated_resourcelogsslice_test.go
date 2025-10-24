@@ -27,7 +27,7 @@ func TestResourceLogsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigResourceLogs()
+		(*es.orig)[i] = internal.GenTestResourceLogs()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestResourceLogsSlice_Sort(t *testing.T) {
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {
 	ms := NewResourceLogsSlice()
-	*ms.orig = internal.GenerateOrigTestResourceLogsSlice()
+	*ms.orig = internal.GenTestResourceLogsSlice()
 	return ms
 }

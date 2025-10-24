@@ -26,8 +26,8 @@ func TestMapping_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMapping(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newMapping(internal.NewOrigMapping(), sharedState)) })
-	assert.Panics(t, func() { newMapping(internal.NewOrigMapping(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newMapping(internal.NewMapping(), sharedState)) })
+	assert.Panics(t, func() { newMapping(internal.NewMapping(), sharedState).MoveTo(dest) })
 }
 
 func TestMapping_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestMapping_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newMapping(internal.NewOrigMapping(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newMapping(internal.NewMapping(), sharedState)) })
 }
 
 func TestMapping_MemoryStart(t *testing.T) {
@@ -86,11 +86,11 @@ func TestMapping_FilenameStrindex(t *testing.T) {
 func TestMapping_AttributeIndices(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
+	ms.orig.AttributeIndices = internal.GenTestInt32Slice()
+	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.AttributeIndices())
 }
 
 func generateTestMapping() Mapping {
-	ms := newMapping(internal.GenTestOrigMapping(), internal.NewState())
+	ms := newMapping(internal.GenTestMapping(), internal.NewState())
 	return ms
 }

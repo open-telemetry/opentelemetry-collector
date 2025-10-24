@@ -14,27 +14,27 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func TestCopyOrigSpan_LinkSlice(t *testing.T) {
+func TestCopySpan_LinkSlice(t *testing.T) {
 	src := []*otlptrace.Span_Link{}
 	dest := []*otlptrace.Span_Link{}
 	// Test CopyTo empty
-	dest = CopyOrigSpan_LinkSlice(dest, src)
+	dest = CopySpan_LinkSlice(dest, src)
 	assert.Equal(t, []*otlptrace.Span_Link{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestSpan_LinkSlice()
-	dest = CopyOrigSpan_LinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSpan_LinkSlice(), dest)
+	src = GenTestSpan_LinkSlice()
+	dest = CopySpan_LinkSlice(dest, src)
+	assert.Equal(t, GenTestSpan_LinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigSpan_LinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSpan_LinkSlice(), dest)
+	dest = CopySpan_LinkSlice(dest, src)
+	assert.Equal(t, GenTestSpan_LinkSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigSpan_LinkSlice(dest, []*otlptrace.Span_Link{})
+	dest = CopySpan_LinkSlice(dest, []*otlptrace.Span_Link{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigSpan_LinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestSpan_LinkSlice(), dest)
+	dest = CopySpan_LinkSlice(dest, src)
+	assert.Equal(t, GenTestSpan_LinkSlice(), dest)
 }

@@ -26,8 +26,8 @@ func TestLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLink(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewOrigLink(), sharedState)) })
-	assert.Panics(t, func() { newLink(internal.NewOrigLink(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewLink(), sharedState)) })
+	assert.Panics(t, func() { newLink(internal.NewLink(), sharedState).MoveTo(dest) })
 }
 
 func TestLink_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewOrigLink(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewLink(), sharedState)) })
 }
 
 func TestLink_TraceID(t *testing.T) {
@@ -60,6 +60,6 @@ func TestLink_SpanID(t *testing.T) {
 }
 
 func generateTestLink() Link {
-	ms := newLink(internal.GenTestOrigLink(), internal.NewState())
+	ms := newLink(internal.GenTestLink(), internal.NewState())
 	return ms
 }

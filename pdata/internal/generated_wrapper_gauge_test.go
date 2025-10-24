@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigGauge(t *testing.T) {
+func TestCopyGauge(t *testing.T) {
 	for name, src := range genTestEncodingValuesGauge() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigGauge(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigGauge()
-				CopyOrigGauge(dest, src)
+				dest := NewGauge()
+				CopyGauge(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigGauge(dest, dest)
+				CopyGauge(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONGaugeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigGauge()
-	UnmarshalJSONOrigGauge(dest, iter)
+	dest := NewGauge()
+	UnmarshalJSONGauge(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigGauge(), dest)
+	assert.Equal(t, NewGauge(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
+func TestMarshalAndUnmarshalJSONGauge(t *testing.T) {
 	for name, src := range genTestEncodingValuesGauge() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigGauge(src, stream)
+				MarshalJSONGauge(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigGauge()
-				UnmarshalJSONOrigGauge(dest, iter)
+				dest := NewGauge()
+				UnmarshalJSONGauge(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigGauge(dest, true)
+				DeleteGauge(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigGaugeFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoGaugeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesGauge() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigGauge()
-			require.Error(t, UnmarshalProtoOrigGauge(dest, buf))
+			dest := NewGauge()
+			require.Error(t, UnmarshalProtoGauge(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigGaugeUnknown(t *testing.T) {
-	dest := NewOrigGauge()
+func TestMarshalAndUnmarshalProtoGaugeUnknown(t *testing.T) {
+	dest := NewGauge()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigGauge(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigGauge(), dest)
+	require.NoError(t, UnmarshalProtoGauge(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewGauge(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
+func TestMarshalAndUnmarshalProtoGauge(t *testing.T) {
 	for name, src := range genTestEncodingValuesGauge() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigGauge(src))
-				gotSize := MarshalProtoOrigGauge(src, buf)
+				buf := make([]byte, SizeProtoGauge(src))
+				gotSize := MarshalProtoGauge(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigGauge()
-				require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
+				dest := NewGauge()
+				require.NoError(t, UnmarshalProtoGauge(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigGauge(dest, true)
+				DeleteGauge(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 	for name, src := range genTestEncodingValuesGauge() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigGauge(src))
-			gotSize := MarshalProtoOrigGauge(src, buf)
+			buf := make([]byte, SizeProtoGauge(src))
+			gotSize := MarshalProtoGauge(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.Gauge{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigGauge()
-			require.NoError(t, UnmarshalProtoOrigGauge(dest, goBuf))
+			dest := NewGauge()
+			require.NoError(t, UnmarshalProtoGauge(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -147,7 +147,7 @@ func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
 
 func genTestEncodingValuesGauge() map[string]*otlpmetrics.Gauge {
 	return map[string]*otlpmetrics.Gauge{
-		"empty":                       NewOrigGauge(),
-		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestOrigNumberDataPoint()}},
+		"empty":                       NewGauge(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.NumberDataPoint{{}, GenTestNumberDataPoint()}},
 	}
 }

@@ -14,27 +14,27 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestCopyOrigLinkSlice(t *testing.T) {
+func TestCopyLinkSlice(t *testing.T) {
 	src := []*otlpprofiles.Link{}
 	dest := []*otlpprofiles.Link{}
 	// Test CopyTo empty
-	dest = CopyOrigLinkSlice(dest, src)
+	dest = CopyLinkSlice(dest, src)
 	assert.Equal(t, []*otlpprofiles.Link{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestLinkSlice()
-	dest = CopyOrigLinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestLinkSlice(), dest)
+	src = GenTestLinkSlice()
+	dest = CopyLinkSlice(dest, src)
+	assert.Equal(t, GenTestLinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigLinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestLinkSlice(), dest)
+	dest = CopyLinkSlice(dest, src)
+	assert.Equal(t, GenTestLinkSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigLinkSlice(dest, []*otlpprofiles.Link{})
+	dest = CopyLinkSlice(dest, []*otlpprofiles.Link{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigLinkSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestLinkSlice(), dest)
+	dest = CopyLinkSlice(dest, src)
+	assert.Equal(t, GenTestLinkSlice(), dest)
 }

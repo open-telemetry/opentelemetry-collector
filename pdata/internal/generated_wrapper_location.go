@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigLocation() *otlpprofiles.Location {
+func NewLocation() *otlpprofiles.Location {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Location{}
 	}
 	return protoPoolLocation.Get().(*otlpprofiles.Location)
 }
 
-func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
+func DeleteLocation(orig *otlpprofiles.Location, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 	}
 
 	for i := range orig.Line {
-		DeleteOrigLine(orig.Line[i], true)
+		DeleteLine(orig.Line[i], true)
 	}
 
 	orig.Reset()
@@ -50,28 +50,28 @@ func DeleteOrigLocation(orig *otlpprofiles.Location, nullable bool) {
 	}
 }
 
-func CopyOrigLocation(dest, src *otlpprofiles.Location) {
+func CopyLocation(dest, src *otlpprofiles.Location) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.MappingIndex = src.MappingIndex
 	dest.Address = src.Address
-	dest.Line = CopyOrigLineSlice(dest.Line, src.Line)
-	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.Line = CopyLineSlice(dest.Line, src.Line)
+	dest.AttributeIndices = CopyInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func GenTestOrigLocation() *otlpprofiles.Location {
-	orig := NewOrigLocation()
+func GenTestLocation() *otlpprofiles.Location {
+	orig := NewLocation()
 	orig.MappingIndex = int32(13)
 	orig.Address = uint64(13)
-	orig.Line = GenerateOrigTestLineSlice()
-	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.Line = GenTestLineSlice()
+	orig.AttributeIndices = GenTestInt32Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.MappingIndex != int32(0) {
 		dest.WriteObjectField("mappingIndex")
@@ -84,10 +84,10 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	if len(orig.Line) > 0 {
 		dest.WriteObjectField("line")
 		dest.WriteArrayStart()
-		MarshalJSONOrigLine(orig.Line[0], dest)
+		MarshalJSONLine(orig.Line[0], dest)
 		for i := 1; i < len(orig.Line); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigLine(orig.Line[i], dest)
+			MarshalJSONLine(orig.Line[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -104,8 +104,8 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigLocation unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator) {
+// UnmarshalJSONLocation unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONLocation(orig *otlpprofiles.Location, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingIndex", "mapping_index":
@@ -114,8 +114,8 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 			orig.Address = iter.ReadUint64()
 		case "line":
 			for iter.ReadArray() {
-				orig.Line = append(orig.Line, NewOrigLine())
-				UnmarshalJSONOrigLine(orig.Line[len(orig.Line)-1], iter)
+				orig.Line = append(orig.Line, NewLine())
+				UnmarshalJSONLine(orig.Line[len(orig.Line)-1], iter)
 			}
 
 		case "attributeIndices", "attribute_indices":
@@ -129,7 +129,7 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 	}
 }
 
-func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
+func SizeProtoLocation(orig *otlpprofiles.Location) int {
 	var n int
 	var l int
 	_ = l
@@ -140,7 +140,7 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 		n += 1 + proto.Sov(uint64(orig.Address))
 	}
 	for i := range orig.Line {
-		l = SizeProtoOrigLine(orig.Line[i])
+		l = SizeProtoLine(orig.Line[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if len(orig.AttributeIndices) > 0 {
@@ -153,7 +153,7 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 	return n
 }
 
-func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
+func MarshalProtoLocation(orig *otlpprofiles.Location, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -168,7 +168,7 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 		buf[pos] = 0x10
 	}
 	for i := len(orig.Line) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigLine(orig.Line[i], buf[:pos])
+		l = MarshalProtoLine(orig.Line[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -187,7 +187,7 @@ func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
+func UnmarshalProtoLocation(orig *otlpprofiles.Location, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -236,8 +236,8 @@ func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Line = append(orig.Line, NewOrigLine())
-			err = UnmarshalProtoOrigLine(orig.Line[len(orig.Line)-1], buf[startPos:pos])
+			orig.Line = append(orig.Line, NewLine())
+			err = UnmarshalProtoLine(orig.Line[len(orig.Line)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

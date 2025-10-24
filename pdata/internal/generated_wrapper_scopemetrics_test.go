@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigScopeMetrics(t *testing.T) {
+func TestCopyScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigScopeMetrics(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigScopeMetrics()
-				CopyOrigScopeMetrics(dest, src)
+				dest := NewScopeMetrics()
+				CopyScopeMetrics(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigScopeMetrics(dest, dest)
+				CopyScopeMetrics(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeMetricsUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeMetricsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigScopeMetrics()
-	UnmarshalJSONOrigScopeMetrics(dest, iter)
+	dest := NewScopeMetrics()
+	UnmarshalJSONScopeMetrics(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigScopeMetrics(), dest)
+	assert.Equal(t, NewScopeMetrics(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigScopeMetrics(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigScopeMetrics(src, stream)
+				MarshalJSONScopeMetrics(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigScopeMetrics()
-				UnmarshalJSONOrigScopeMetrics(dest, iter)
+				dest := NewScopeMetrics()
+				UnmarshalJSONScopeMetrics(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeMetrics(dest, true)
+				DeleteScopeMetrics(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeMetricsFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeMetricsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigScopeMetrics()
-			require.Error(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+			dest := NewScopeMetrics()
+			require.Error(t, UnmarshalProtoScopeMetrics(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeMetricsUnknown(t *testing.T) {
-	dest := NewOrigScopeMetrics()
+func TestMarshalAndUnmarshalProtoScopeMetricsUnknown(t *testing.T) {
+	dest := NewScopeMetrics()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigScopeMetrics(), dest)
+	require.NoError(t, UnmarshalProtoScopeMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewScopeMetrics(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigScopeMetrics(src))
-				gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+				buf := make([]byte, SizeProtoScopeMetrics(src))
+				gotSize := MarshalProtoScopeMetrics(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigScopeMetrics()
-				require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, buf))
+				dest := NewScopeMetrics()
+				require.NoError(t, UnmarshalProtoScopeMetrics(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeMetrics(dest, true)
+				DeleteScopeMetrics(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeMetrics(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeMetrics() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeMetrics(src))
-			gotSize := MarshalProtoOrigScopeMetrics(src, buf)
+			buf := make([]byte, SizeProtoScopeMetrics(src))
+			gotSize := MarshalProtoScopeMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.ScopeMetrics{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigScopeMetrics()
-			require.NoError(t, UnmarshalProtoOrigScopeMetrics(dest, goBuf))
+			dest := NewScopeMetrics()
+			require.NoError(t, UnmarshalProtoScopeMetrics(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
 
 func genTestEncodingValuesScopeMetrics() map[string]*otlpmetrics.ScopeMetrics {
 	return map[string]*otlpmetrics.ScopeMetrics{
-		"empty":                    NewOrigScopeMetrics(),
-		"Scope/test":               {Scope: *GenTestOrigInstrumentationScope()},
-		"Metrics/default_and_test": {Metrics: []*otlpmetrics.Metric{{}, GenTestOrigMetric()}},
+		"empty":                    NewScopeMetrics(),
+		"Scope/test":               {Scope: *GenTestInstrumentationScope()},
+		"Metrics/default_and_test": {Metrics: []*otlpmetrics.Metric{{}, GenTestMetric()}},
 		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},
 	}
 }

@@ -32,7 +32,7 @@ func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_Value
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile(internal.NewOrigSummaryDataPoint_ValueAtQuantile(), internal.NewState())
+	return newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPoint_ValueAtQuantile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQua
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSummaryDataPoint_ValueAtQuantile(dest.orig, false)
+	internal.DeleteSummaryDataPoint_ValueAtQuantile(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -73,5 +73,5 @@ func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSummaryDataPoint_ValueAtQuantile(dest.orig, ms.orig)
+	internal.CopySummaryDataPoint_ValueAtQuantile(dest.orig, ms.orig)
 }

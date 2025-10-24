@@ -30,7 +30,7 @@ func newMappingSlice(orig *[]*otlpprofiles.Mapping, state *internal.State) Mappi
 	return MappingSlice{orig: orig, state: state}
 }
 
-// NewMappingSlice creates a MappingSlice with 0 elements.
+// NewMappingSlice creates a MappingSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMappingSlice() MappingSlice {
 	orig := []*otlpprofiles.Mapping(nil)
@@ -99,7 +99,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Mapping.
 func (es MappingSlice) AppendEmpty() Mapping {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigMapping())
+	*es.orig = append(*es.orig, internal.NewMapping())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigMapping((*es.orig)[i], true)
+			internal.DeleteMapping((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigMappingSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyMappingSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Mapping elements within MappingSlice given the

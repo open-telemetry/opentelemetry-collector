@@ -14,7 +14,7 @@ import (
 
 // MarshalTraces marshals ptrace.Traces along with the context into a byte slice.
 func MarshalTraces(ctx context.Context, ld ptrace.Traces) ([]byte, error) {
-	otlpTraces := internal.TracesToProto(internal.Traces(ld))
+	otlpTraces := internal.TracesToProto(internal.TracesWrapper(ld))
 	rc := encodeContext(ctx)
 	tr := reqint.TracesRequest{
 		FormatVersion:  requestFormatVersion,

@@ -25,8 +25,8 @@ func TestInstrumentationScope_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestInstrumentationScope(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState)) })
-	assert.Panics(t, func() { newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(internal.NewInstrumentationScope(), sharedState)) })
+	assert.Panics(t, func() { newInstrumentationScope(internal.NewInstrumentationScope(), sharedState).MoveTo(dest) })
 }
 
 func TestInstrumentationScope_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(internal.NewInstrumentationScope(), sharedState)) })
 }
 
 func TestInstrumentationScope_Name(t *testing.T) {
@@ -67,8 +67,8 @@ func TestInstrumentationScope_Version(t *testing.T) {
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.getOrig().Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
@@ -84,6 +84,6 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestInstrumentationScope() InstrumentationScope {
-	ms := newInstrumentationScope(internal.GenTestOrigInstrumentationScope(), internal.NewState())
+	ms := newInstrumentationScope(internal.GenTestInstrumentationScope(), internal.NewState())
 	return ms
 }

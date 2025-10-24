@@ -35,7 +35,7 @@ func newKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, state *internal.Stat
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewKeyValueAndUnit() KeyValueAndUnit {
-	return newKeyValueAndUnit(internal.NewOrigKeyValueAndUnit(), internal.NewState())
+	return newKeyValueAndUnit(internal.NewKeyValueAndUnit(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,7 +47,7 @@ func (ms KeyValueAndUnit) MoveTo(dest KeyValueAndUnit) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigKeyValueAndUnit(dest.orig, false)
+	internal.DeleteKeyValueAndUnit(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -64,7 +64,7 @@ func (ms KeyValueAndUnit) SetKeyStrindex(v int32) {
 
 // Value returns the value associated with this KeyValueAndUnit.
 func (ms KeyValueAndUnit) Value() pcommon.Value {
-	return pcommon.Value(internal.NewValue(&ms.orig.Value, ms.state))
+	return pcommon.Value(internal.NewValueWrapper(&ms.orig.Value, ms.state))
 }
 
 // UnitStrindex returns the unitstrindex associated with this KeyValueAndUnit.
@@ -81,5 +81,5 @@ func (ms KeyValueAndUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms KeyValueAndUnit) CopyTo(dest KeyValueAndUnit) {
 	dest.state.AssertMutable()
-	internal.CopyOrigKeyValueAndUnit(dest.orig, ms.orig)
+	internal.CopyKeyValueAndUnit(dest.orig, ms.orig)
 }

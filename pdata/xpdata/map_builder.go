@@ -30,7 +30,7 @@ func (mb *MapBuilder) EnsureCapacity(capacity int) {
 }
 
 func (mb *MapBuilder) getValue(i int) pcommon.Value {
-	return pcommon.Value(internal.NewValue(&mb.pairs[i].Value, &mb.state))
+	return pcommon.Value(internal.NewValueWrapper(&mb.pairs[i].Value, &mb.state))
 }
 
 // AppendEmpty appends a key/value pair to the MapBuilder and return the inserted value.
@@ -45,7 +45,7 @@ func (mb *MapBuilder) AppendEmpty(k string) pcommon.Value {
 // This operation has constant time complexity and makes no allocations.
 // After this operation, the MapBuilder is reset to an empty state.
 func (mb *MapBuilder) UnsafeIntoMap(m pcommon.Map) {
-	internal.GetMapState(internal.Map(m)).AssertMutable()
-	*internal.GetOrigMap(internal.Map(m)) = mb.pairs
+	internal.GetMapState(internal.MapWrapper(m)).AssertMutable()
+	*internal.GetMapOrig(internal.MapWrapper(m)) = mb.pairs
 	mb.pairs = nil
 }

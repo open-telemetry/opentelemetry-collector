@@ -27,7 +27,7 @@ func TestLocationSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigLocation()
+		(*es.orig)[i] = internal.GenTestLocation()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestLocationSlice_Sort(t *testing.T) {
 
 func generateTestLocationSlice() LocationSlice {
 	ms := NewLocationSlice()
-	*ms.orig = internal.GenerateOrigTestLocationSlice()
+	*ms.orig = internal.GenTestLocationSlice()
 	return ms
 }

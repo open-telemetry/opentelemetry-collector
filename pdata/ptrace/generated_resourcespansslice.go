@@ -30,7 +30,7 @@ func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans, state *internal.Sta
 	return ResourceSpansSlice{orig: orig, state: state}
 }
 
-// NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
+// NewResourceSpansSlice creates a ResourceSpansSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
@@ -99,7 +99,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigResourceSpans())
+	*es.orig = append(*es.orig, internal.NewResourceSpans())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigResourceSpans((*es.orig)[i], true)
+			internal.DeleteResourceSpans((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigResourceSpansSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceSpansSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the

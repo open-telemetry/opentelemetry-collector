@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigStatus() *otlptrace.Status {
+func NewStatus() *otlptrace.Status {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlptrace.Status{}
 	}
 	return protoPoolStatus.Get().(*otlptrace.Status)
 }
 
-func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
+func DeleteStatus(orig *otlptrace.Status, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigStatus(orig *otlptrace.Status, nullable bool) {
 	}
 }
 
-func CopyOrigStatus(dest, src *otlptrace.Status) {
+func CopyStatus(dest, src *otlptrace.Status) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,15 +55,15 @@ func CopyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 }
 
-func GenTestOrigStatus() *otlptrace.Status {
-	orig := NewOrigStatus()
+func GenTestStatus() *otlptrace.Status {
+	orig := NewStatus()
 	orig.Message = "test_message"
 	orig.Code = otlptrace.Status_StatusCode(1)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONStatus(orig *otlptrace.Status, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Message != "" {
 		dest.WriteObjectField("message")
@@ -77,8 +77,8 @@ func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigStatus unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
+// UnmarshalJSONStatus unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONStatus(orig *otlptrace.Status, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "message":
@@ -91,7 +91,7 @@ func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigStatus(orig *otlptrace.Status) int {
+func SizeProtoStatus(orig *otlptrace.Status) int {
 	var n int
 	var l int
 	_ = l
@@ -105,7 +105,7 @@ func SizeProtoOrigStatus(orig *otlptrace.Status) int {
 	return n
 }
 
-func MarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) int {
+func MarshalProtoStatus(orig *otlptrace.Status, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -125,7 +125,7 @@ func MarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) error {
+func UnmarshalProtoStatus(orig *otlptrace.Status, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -7,24 +7,24 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-type Map struct {
+type MapWrapper struct {
 	orig  *[]otlpcommon.KeyValue
 	state *State
 }
 
-func GetOrigMap(ms Map) *[]otlpcommon.KeyValue {
+func GetMapOrig(ms MapWrapper) *[]otlpcommon.KeyValue {
 	return ms.orig
 }
 
-func GetMapState(ms Map) *State {
+func GetMapState(ms MapWrapper) *State {
 	return ms.state
 }
 
-func NewMap(orig *[]otlpcommon.KeyValue, state *State) Map {
-	return Map{orig: orig, state: state}
+func NewMapWrapper(orig *[]otlpcommon.KeyValue, state *State) MapWrapper {
+	return MapWrapper{orig: orig, state: state}
 }
 
-func GenerateTestMap() Map {
-	orig := GenerateOrigTestKeyValueSlice()
-	return NewMap(&orig, NewState())
+func GenTestMapWrapper() MapWrapper {
+	orig := GenTestKeyValueSlice()
+	return NewMapWrapper(&orig, NewState())
 }

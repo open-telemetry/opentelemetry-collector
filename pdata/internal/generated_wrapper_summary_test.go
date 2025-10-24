@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSummary(t *testing.T) {
+func TestCopySummary(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummary() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigSummary(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSummary()
-				CopyOrigSummary(dest, src)
+				dest := NewSummary()
+				CopySummary(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSummary(dest, dest)
+				CopySummary(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummaryUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSummary()
-	UnmarshalJSONOrigSummary(dest, iter)
+	dest := NewSummary()
+	UnmarshalJSONSummary(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSummary(), dest)
+	assert.Equal(t, NewSummary(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummary(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummary(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummary() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigSummary(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSummary(src, stream)
+				MarshalJSONSummary(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSummary()
-				UnmarshalJSONOrigSummary(dest, iter)
+				dest := NewSummary()
+				UnmarshalJSONSummary(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummary(dest, true)
+				DeleteSummary(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummaryFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSummary() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSummary()
-			require.Error(t, UnmarshalProtoOrigSummary(dest, buf))
+			dest := NewSummary()
+			require.Error(t, UnmarshalProtoSummary(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryUnknown(t *testing.T) {
-	dest := NewOrigSummary()
+func TestMarshalAndUnmarshalProtoSummaryUnknown(t *testing.T) {
+	dest := NewSummary()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSummary(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSummary(), dest)
+	require.NoError(t, UnmarshalProtoSummary(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSummary(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummary(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummary(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummary() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigSummary(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSummary(src))
-				gotSize := MarshalProtoOrigSummary(src, buf)
+				buf := make([]byte, SizeProtoSummary(src))
+				gotSize := MarshalProtoSummary(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSummary()
-				require.NoError(t, UnmarshalProtoOrigSummary(dest, buf))
+				dest := NewSummary()
+				require.NoError(t, UnmarshalProtoSummary(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummary(dest, true)
+				DeleteSummary(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigSummary(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufSummary(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummary() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSummary(src))
-			gotSize := MarshalProtoOrigSummary(src, buf)
+			buf := make([]byte, SizeProtoSummary(src))
+			gotSize := MarshalProtoSummary(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.Summary{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummary(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSummary()
-			require.NoError(t, UnmarshalProtoOrigSummary(dest, goBuf))
+			dest := NewSummary()
+			require.NoError(t, UnmarshalProtoSummary(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -147,7 +147,7 @@ func genTestFailingUnmarshalProtoValuesSummary() map[string][]byte {
 
 func genTestEncodingValuesSummary() map[string]*otlpmetrics.Summary {
 	return map[string]*otlpmetrics.Summary{
-		"empty":                       NewOrigSummary(),
-		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.SummaryDataPoint{{}, GenTestOrigSummaryDataPoint()}},
+		"empty":                       NewSummary(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.SummaryDataPoint{{}, GenTestSummaryDataPoint()}},
 	}
 }

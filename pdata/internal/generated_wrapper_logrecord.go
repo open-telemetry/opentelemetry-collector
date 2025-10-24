@@ -26,14 +26,14 @@ var (
 	}
 )
 
-func NewOrigLogRecord() *otlplogs.LogRecord {
+func NewLogRecord() *otlplogs.LogRecord {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlplogs.LogRecord{}
 	}
 	return protoPoolLogRecord.Get().(*otlplogs.LogRecord)
 }
 
-func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
+func DeleteLogRecord(orig *otlplogs.LogRecord, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -43,12 +43,12 @@ func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
 		return
 	}
 
-	DeleteOrigAnyValue(&orig.Body, false)
+	DeleteAnyValue(&orig.Body, false)
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
-	DeleteOrigTraceID(&orig.TraceId, false)
-	DeleteOrigSpanID(&orig.SpanId, false)
+	DeleteTraceID(&orig.TraceId, false)
+	DeleteSpanID(&orig.SpanId, false)
 
 	orig.Reset()
 	if nullable {
@@ -56,7 +56,7 @@ func DeleteOrigLogRecord(orig *otlplogs.LogRecord, nullable bool) {
 	}
 }
 
-func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
+func CopyLogRecord(dest, src *otlplogs.LogRecord) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -65,8 +65,8 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
 	dest.SeverityNumber = src.SeverityNumber
 	dest.SeverityText = src.SeverityText
-	CopyOrigAnyValue(&dest.Body, &src.Body)
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	CopyAnyValue(&dest.Body, &src.Body)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.Flags = src.Flags
 	dest.TraceId = src.TraceId
@@ -74,14 +74,14 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.EventName = src.EventName
 }
 
-func GenTestOrigLogRecord() *otlplogs.LogRecord {
-	orig := NewOrigLogRecord()
+func GenTestLogRecord() *otlplogs.LogRecord {
+	orig := NewLogRecord()
 	orig.TimeUnixNano = 1234567890
 	orig.ObservedTimeUnixNano = 1234567890
 	orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	orig.SeverityText = "test_severitytext"
-	orig.Body = *GenTestOrigAnyValue()
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.Body = *GenTestAnyValue()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = 1
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -90,8 +90,8 @@ func GenTestOrigLogRecord() *otlplogs.LogRecord {
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
@@ -111,14 +111,14 @@ func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 		dest.WriteString(orig.SeverityText)
 	}
 	dest.WriteObjectField("body")
-	MarshalJSONOrigAnyValue(&orig.Body, dest)
+	MarshalJSONAnyValue(&orig.Body, dest)
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -132,11 +132,11 @@ func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 	}
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		MarshalJSONOrigTraceID(&orig.TraceId, dest)
+		MarshalJSONTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		MarshalJSONOrigSpanID(&orig.SpanId, dest)
+		MarshalJSONSpanID(&orig.SpanId, dest)
 	}
 	if orig.EventName != "" {
 		dest.WriteObjectField("eventName")
@@ -145,8 +145,8 @@ func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigLogRecord unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
+// UnmarshalJSONLogRecord unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
@@ -158,11 +158,11 @@ func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 		case "severityText", "severity_text":
 			orig.SeverityText = iter.ReadString()
 		case "body":
-			UnmarshalJSONOrigAnyValue(&orig.Body, iter)
+			UnmarshalJSONAnyValue(&orig.Body, iter)
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -170,9 +170,9 @@ func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "traceId", "trace_id":
-			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
+			UnmarshalJSONTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
+			UnmarshalJSONSpanID(&orig.SpanId, iter)
 		case "eventName", "event_name":
 			orig.EventName = iter.ReadString()
 		default:
@@ -181,7 +181,7 @@ func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
+func SizeProtoLogRecord(orig *otlplogs.LogRecord) int {
 	var n int
 	var l int
 	_ = l
@@ -198,10 +198,10 @@ func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	l = SizeProtoOrigAnyValue(&orig.Body)
+	l = SizeProtoAnyValue(&orig.Body)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedAttributesCount != 0 {
@@ -210,9 +210,9 @@ func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
 	if orig.Flags != 0 {
 		n += 5
 	}
-	l = SizeProtoOrigTraceID(&orig.TraceId)
+	l = SizeProtoTraceID(&orig.TraceId)
 	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigSpanID(&orig.SpanId)
+	l = SizeProtoSpanID(&orig.SpanId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	l = len(orig.EventName)
 	if l > 0 {
@@ -221,7 +221,7 @@ func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
 	return n
 }
 
-func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
+func MarshalProtoLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -251,14 +251,14 @@ func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
 		buf[pos] = 0x1a
 	}
 
-	l = MarshalProtoOrigAnyValue(&orig.Body, buf[:pos])
+	l = MarshalProtoAnyValue(&orig.Body, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0x2a
 
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -276,13 +276,13 @@ func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
 		buf[pos] = 0x45
 	}
 
-	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	l = MarshalProtoTraceID(&orig.TraceId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0x4a
 
-	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	l = MarshalProtoSpanID(&orig.SpanId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -299,7 +299,7 @@ func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
+func UnmarshalProtoLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -373,7 +373,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigAnyValue(&orig.Body, buf[startPos:pos])
+			err = UnmarshalProtoAnyValue(&orig.Body, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -389,7 +389,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -429,7 +429,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
+			err = UnmarshalProtoTraceID(&orig.TraceId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -445,7 +445,7 @@ func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
+			err = UnmarshalProtoSpanID(&orig.SpanId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

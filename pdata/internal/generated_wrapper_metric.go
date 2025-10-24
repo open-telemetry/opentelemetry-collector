@@ -54,14 +54,14 @@ var (
 	}
 )
 
-func NewOrigMetric() *otlpmetrics.Metric {
+func NewMetric() *otlpmetrics.Metric {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.Metric{}
 	}
 	return protoPoolMetric.Get().(*otlpmetrics.Metric)
 }
 
-func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
+func DeleteMetric(orig *otlpmetrics.Metric, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -73,29 +73,29 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 
 	switch ov := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		DeleteOrigGauge(ov.Gauge, true)
+		DeleteGauge(ov.Gauge, true)
 		ov.Gauge = nil
 		ProtoPoolMetric_Gauge.Put(ov)
 	case *otlpmetrics.Metric_Sum:
-		DeleteOrigSum(ov.Sum, true)
+		DeleteSum(ov.Sum, true)
 		ov.Sum = nil
 		ProtoPoolMetric_Sum.Put(ov)
 	case *otlpmetrics.Metric_Histogram:
-		DeleteOrigHistogram(ov.Histogram, true)
+		DeleteHistogram(ov.Histogram, true)
 		ov.Histogram = nil
 		ProtoPoolMetric_Histogram.Put(ov)
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		DeleteOrigExponentialHistogram(ov.ExponentialHistogram, true)
+		DeleteExponentialHistogram(ov.ExponentialHistogram, true)
 		ov.ExponentialHistogram = nil
 		ProtoPoolMetric_ExponentialHistogram.Put(ov)
 	case *otlpmetrics.Metric_Summary:
-		DeleteOrigSummary(ov.Summary, true)
+		DeleteSummary(ov.Summary, true)
 		ov.Summary = nil
 		ProtoPoolMetric_Summary.Put(ov)
 
 	}
 	for i := range orig.Metadata {
-		DeleteOrigKeyValue(&orig.Metadata[i], false)
+		DeleteKeyValue(&orig.Metadata[i], false)
 	}
 
 	orig.Reset()
@@ -104,7 +104,7 @@ func DeleteOrigMetric(orig *otlpmetrics.Metric, nullable bool) {
 	}
 }
 
-func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
+func CopyMetric(dest, src *otlpmetrics.Metric) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -120,8 +120,8 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		} else {
 			ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 		}
-		ov.Gauge = NewOrigGauge()
-		CopyOrigGauge(ov.Gauge, t.Gauge)
+		ov.Gauge = NewGauge()
+		CopyGauge(ov.Gauge, t.Gauge)
 		dest.Data = ov
 	case *otlpmetrics.Metric_Sum:
 		var ov *otlpmetrics.Metric_Sum
@@ -130,8 +130,8 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		} else {
 			ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 		}
-		ov.Sum = NewOrigSum()
-		CopyOrigSum(ov.Sum, t.Sum)
+		ov.Sum = NewSum()
+		CopySum(ov.Sum, t.Sum)
 		dest.Data = ov
 	case *otlpmetrics.Metric_Histogram:
 		var ov *otlpmetrics.Metric_Histogram
@@ -140,8 +140,8 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		} else {
 			ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 		}
-		ov.Histogram = NewOrigHistogram()
-		CopyOrigHistogram(ov.Histogram, t.Histogram)
+		ov.Histogram = NewHistogram()
+		CopyHistogram(ov.Histogram, t.Histogram)
 		dest.Data = ov
 	case *otlpmetrics.Metric_ExponentialHistogram:
 		var ov *otlpmetrics.Metric_ExponentialHistogram
@@ -150,8 +150,8 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		} else {
 			ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 		}
-		ov.ExponentialHistogram = NewOrigExponentialHistogram()
-		CopyOrigExponentialHistogram(ov.ExponentialHistogram, t.ExponentialHistogram)
+		ov.ExponentialHistogram = NewExponentialHistogram()
+		CopyExponentialHistogram(ov.ExponentialHistogram, t.ExponentialHistogram)
 		dest.Data = ov
 	case *otlpmetrics.Metric_Summary:
 		var ov *otlpmetrics.Metric_Summary
@@ -160,25 +160,25 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		} else {
 			ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 		}
-		ov.Summary = NewOrigSummary()
-		CopyOrigSummary(ov.Summary, t.Summary)
+		ov.Summary = NewSummary()
+		CopySummary(ov.Summary, t.Summary)
 		dest.Data = ov
 	}
-	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
+	dest.Metadata = CopyKeyValueSlice(dest.Metadata, src.Metadata)
 }
 
-func GenTestOrigMetric() *otlpmetrics.Metric {
-	orig := NewOrigMetric()
+func GenTestMetric() *otlpmetrics.Metric {
+	orig := NewMetric()
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
-	orig.Data = &otlpmetrics.Metric_Sum{Sum: GenTestOrigSum()}
-	orig.Metadata = GenerateOrigTestKeyValueSlice()
+	orig.Data = &otlpmetrics.Metric_Sum{Sum: GenTestSum()}
+	orig.Metadata = GenTestKeyValueSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Name != "" {
 		dest.WriteObjectField("name")
@@ -196,44 +196,44 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 	case *otlpmetrics.Metric_Gauge:
 		if orig.Gauge != nil {
 			dest.WriteObjectField("gauge")
-			MarshalJSONOrigGauge(orig.Gauge, dest)
+			MarshalJSONGauge(orig.Gauge, dest)
 		}
 	case *otlpmetrics.Metric_Sum:
 		if orig.Sum != nil {
 			dest.WriteObjectField("sum")
-			MarshalJSONOrigSum(orig.Sum, dest)
+			MarshalJSONSum(orig.Sum, dest)
 		}
 	case *otlpmetrics.Metric_Histogram:
 		if orig.Histogram != nil {
 			dest.WriteObjectField("histogram")
-			MarshalJSONOrigHistogram(orig.Histogram, dest)
+			MarshalJSONHistogram(orig.Histogram, dest)
 		}
 	case *otlpmetrics.Metric_ExponentialHistogram:
 		if orig.ExponentialHistogram != nil {
 			dest.WriteObjectField("exponentialHistogram")
-			MarshalJSONOrigExponentialHistogram(orig.ExponentialHistogram, dest)
+			MarshalJSONExponentialHistogram(orig.ExponentialHistogram, dest)
 		}
 	case *otlpmetrics.Metric_Summary:
 		if orig.Summary != nil {
 			dest.WriteObjectField("summary")
-			MarshalJSONOrigSummary(orig.Summary, dest)
+			MarshalJSONSummary(orig.Summary, dest)
 		}
 	}
 	if len(orig.Metadata) > 0 {
 		dest.WriteObjectField("metadata")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Metadata[0], dest)
+		MarshalJSONKeyValue(&orig.Metadata[0], dest)
 		for i := 1; i < len(orig.Metadata); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Metadata[i], dest)
+			MarshalJSONKeyValue(&orig.Metadata[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigMetric unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
+// UnmarshalJSONMetric unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
@@ -251,8 +251,8 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 				}
-				ov.Gauge = NewOrigGauge()
-				UnmarshalJSONOrigGauge(ov.Gauge, iter)
+				ov.Gauge = NewGauge()
+				UnmarshalJSONGauge(ov.Gauge, iter)
 				orig.Data = ov
 			}
 
@@ -264,8 +264,8 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 				}
-				ov.Sum = NewOrigSum()
-				UnmarshalJSONOrigSum(ov.Sum, iter)
+				ov.Sum = NewSum()
+				UnmarshalJSONSum(ov.Sum, iter)
 				orig.Data = ov
 			}
 
@@ -277,8 +277,8 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 				}
-				ov.Histogram = NewOrigHistogram()
-				UnmarshalJSONOrigHistogram(ov.Histogram, iter)
+				ov.Histogram = NewHistogram()
+				UnmarshalJSONHistogram(ov.Histogram, iter)
 				orig.Data = ov
 			}
 
@@ -290,8 +290,8 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 				}
-				ov.ExponentialHistogram = NewOrigExponentialHistogram()
-				UnmarshalJSONOrigExponentialHistogram(ov.ExponentialHistogram, iter)
+				ov.ExponentialHistogram = NewExponentialHistogram()
+				UnmarshalJSONExponentialHistogram(ov.ExponentialHistogram, iter)
 				orig.Data = ov
 			}
 
@@ -303,15 +303,15 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 				}
-				ov.Summary = NewOrigSummary()
-				UnmarshalJSONOrigSummary(ov.Summary, iter)
+				ov.Summary = NewSummary()
+				UnmarshalJSONSummary(ov.Summary, iter)
 				orig.Data = ov
 			}
 
 		case "metadata":
 			for iter.ReadArray() {
 				orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Metadata[len(orig.Metadata)-1], iter)
 			}
 
 		default:
@@ -320,7 +320,7 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
+func SizeProtoMetric(orig *otlpmetrics.Metric) int {
 	var n int
 	var l int
 	_ = l
@@ -341,29 +341,29 @@ func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
 		_ = orig
 		break
 	case *otlpmetrics.Metric_Gauge:
-		l = SizeProtoOrigGauge(orig.Gauge)
+		l = SizeProtoGauge(orig.Gauge)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Sum:
-		l = SizeProtoOrigSum(orig.Sum)
+		l = SizeProtoSum(orig.Sum)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Histogram:
-		l = SizeProtoOrigHistogram(orig.Histogram)
+		l = SizeProtoHistogram(orig.Histogram)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		l = SizeProtoOrigExponentialHistogram(orig.ExponentialHistogram)
+		l = SizeProtoExponentialHistogram(orig.ExponentialHistogram)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpmetrics.Metric_Summary:
-		l = SizeProtoOrigSummary(orig.Summary)
+		l = SizeProtoSummary(orig.Summary)
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Metadata {
-		l = SizeProtoOrigKeyValue(&orig.Metadata[i])
+		l = SizeProtoKeyValue(&orig.Metadata[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
+func MarshalProtoMetric(orig *otlpmetrics.Metric, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -394,7 +394,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 	switch orig := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 
-		l = MarshalProtoOrigGauge(orig.Gauge, buf[:pos])
+		l = MarshalProtoGauge(orig.Gauge, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -402,7 +402,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Sum:
 
-		l = MarshalProtoOrigSum(orig.Sum, buf[:pos])
+		l = MarshalProtoSum(orig.Sum, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -410,7 +410,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Histogram:
 
-		l = MarshalProtoOrigHistogram(orig.Histogram, buf[:pos])
+		l = MarshalProtoHistogram(orig.Histogram, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -418,7 +418,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_ExponentialHistogram:
 
-		l = MarshalProtoOrigExponentialHistogram(orig.ExponentialHistogram, buf[:pos])
+		l = MarshalProtoExponentialHistogram(orig.ExponentialHistogram, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -426,7 +426,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	case *otlpmetrics.Metric_Summary:
 
-		l = MarshalProtoOrigSummary(orig.Summary, buf[:pos])
+		l = MarshalProtoSummary(orig.Summary, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -434,7 +434,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 
 	}
 	for i := len(orig.Metadata) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Metadata[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Metadata[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -443,7 +443,7 @@ func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
+func UnmarshalProtoMetric(orig *otlpmetrics.Metric, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -510,8 +510,8 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			} else {
 				ov = ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 			}
-			ov.Gauge = NewOrigGauge()
-			err = UnmarshalProtoOrigGauge(ov.Gauge, buf[startPos:pos])
+			ov.Gauge = NewGauge()
+			err = UnmarshalProtoGauge(ov.Gauge, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -533,8 +533,8 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			} else {
 				ov = ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 			}
-			ov.Sum = NewOrigSum()
-			err = UnmarshalProtoOrigSum(ov.Sum, buf[startPos:pos])
+			ov.Sum = NewSum()
+			err = UnmarshalProtoSum(ov.Sum, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -556,8 +556,8 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			} else {
 				ov = ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 			}
-			ov.Histogram = NewOrigHistogram()
-			err = UnmarshalProtoOrigHistogram(ov.Histogram, buf[startPos:pos])
+			ov.Histogram = NewHistogram()
+			err = UnmarshalProtoHistogram(ov.Histogram, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -579,8 +579,8 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			} else {
 				ov = ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 			}
-			ov.ExponentialHistogram = NewOrigExponentialHistogram()
-			err = UnmarshalProtoOrigExponentialHistogram(ov.ExponentialHistogram, buf[startPos:pos])
+			ov.ExponentialHistogram = NewExponentialHistogram()
+			err = UnmarshalProtoExponentialHistogram(ov.ExponentialHistogram, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -602,8 +602,8 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			} else {
 				ov = ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 			}
-			ov.Summary = NewOrigSummary()
-			err = UnmarshalProtoOrigSummary(ov.Summary, buf[startPos:pos])
+			ov.Summary = NewSummary()
+			err = UnmarshalProtoSummary(ov.Summary, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -620,7 +620,7 @@ func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Metadata = append(orig.Metadata, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Metadata[len(orig.Metadata)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Metadata[len(orig.Metadata)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

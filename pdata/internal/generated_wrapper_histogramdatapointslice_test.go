@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigHistogramDataPointSlice(t *testing.T) {
+func TestCopyHistogramDataPointSlice(t *testing.T) {
 	src := []*otlpmetrics.HistogramDataPoint{}
 	dest := []*otlpmetrics.HistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyOrigHistogramDataPointSlice(dest, src)
+	dest = CopyHistogramDataPointSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.HistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestHistogramDataPointSlice()
-	dest = CopyOrigHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestHistogramDataPointSlice(), dest)
+	src = GenTestHistogramDataPointSlice()
+	dest = CopyHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestHistogramDataPointSlice(), dest)
+	dest = CopyHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigHistogramDataPointSlice(dest, []*otlpmetrics.HistogramDataPoint{})
+	dest = CopyHistogramDataPointSlice(dest, []*otlpmetrics.HistogramDataPoint{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestHistogramDataPointSlice(), dest)
+	dest = CopyHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 }

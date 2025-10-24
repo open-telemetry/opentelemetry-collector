@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigSummary() *otlpmetrics.Summary {
+func NewSummary() *otlpmetrics.Summary {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.Summary{}
 	}
 	return protoPoolSummary.Get().(*otlpmetrics.Summary)
 }
 
-func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
+func DeleteSummary(orig *otlpmetrics.Summary, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
 	}
 
 	for i := range orig.DataPoints {
-		DeleteOrigSummaryDataPoint(orig.DataPoints[i], true)
+		DeleteSummaryDataPoint(orig.DataPoints[i], true)
 	}
 
 	orig.Reset()
@@ -50,44 +50,44 @@ func DeleteOrigSummary(orig *otlpmetrics.Summary, nullable bool) {
 	}
 }
 
-func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
+func CopySummary(dest, src *otlpmetrics.Summary) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopySummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func GenTestOrigSummary() *otlpmetrics.Summary {
-	orig := NewOrigSummary()
-	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
+func GenTestSummary() *otlpmetrics.Summary {
+	orig := NewSummary()
+	orig.DataPoints = GenTestSummaryDataPointSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSummaryDataPoint(orig.DataPoints[0], dest)
+		MarshalJSONSummaryDataPoint(orig.DataPoints[0], dest)
 		for i := 1; i < len(orig.DataPoints); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSummaryDataPoint(orig.DataPoints[i], dest)
+			MarshalJSONSummaryDataPoint(orig.DataPoints[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
+// UnmarshalJSONSummary unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
-				UnmarshalJSONOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+				orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
+				UnmarshalJSONSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
 			}
 
 		default:
@@ -96,23 +96,23 @@ func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {
+func SizeProtoSummary(orig *otlpmetrics.Summary) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.DataPoints {
-		l = SizeProtoOrigSummaryDataPoint(orig.DataPoints[i])
+		l = SizeProtoSummaryDataPoint(orig.DataPoints[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) int {
+func MarshalProtoSummary(orig *otlpmetrics.Summary, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSummaryDataPoint(orig.DataPoints[i], buf[:pos])
+		l = MarshalProtoSummaryDataPoint(orig.DataPoints[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -121,7 +121,7 @@ func MarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
+func UnmarshalProtoSummary(orig *otlpmetrics.Summary, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -146,8 +146,8 @@ func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigSummaryDataPoint())
-			err = UnmarshalProtoOrigSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
+			err = UnmarshalProtoSummaryDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

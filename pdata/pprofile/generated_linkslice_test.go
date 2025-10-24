@@ -27,7 +27,7 @@ func TestLinkSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigLink()
+		(*es.orig)[i] = internal.GenTestLink()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestLinkSlice_Sort(t *testing.T) {
 
 func generateTestLinkSlice() LinkSlice {
 	ms := NewLinkSlice()
-	*ms.orig = internal.GenerateOrigTestLinkSlice()
+	*ms.orig = internal.GenTestLinkSlice()
 	return ms
 }

@@ -34,7 +34,7 @@ func newLogRecord(orig *otlplogs.LogRecord, state *internal.State) LogRecord {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
-	return newLogRecord(internal.NewOrigLogRecord(), internal.NewState())
+	return newLogRecord(internal.NewLogRecord(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +46,7 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigLogRecord(dest.orig, false)
+	internal.DeleteLogRecord(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -96,12 +96,12 @@ func (ms LogRecord) SetSeverityText(v string) {
 
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() pcommon.Value {
-	return pcommon.Value(internal.NewValue(&ms.orig.Body, ms.state))
+	return pcommon.Value(internal.NewValueWrapper(&ms.orig.Body, ms.state))
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
 func (ms LogRecord) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
@@ -162,5 +162,5 @@ func (ms LogRecord) SetEventName(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.state.AssertMutable()
-	internal.CopyOrigLogRecord(dest.orig, ms.orig)
+	internal.CopyLogRecord(dest.orig, ms.orig)
 }

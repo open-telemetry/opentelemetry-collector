@@ -24,14 +24,14 @@ func Test{{ .structName }}(t *testing.T) {
 	emptyVal := New{{ .elementName }}()
 	{{- end }}
 	{{- if .hasWrapper }}
-	testVal := {{ .elementName }}(internal.New{{ .elementName }}(internal.GenTestOrig{{ .elementOriginName }}(), internal.NewState()))
+	testVal := {{ .elementName }}(internal.GenTest{{ .elementName }}Wrapper())
 	{{- else }}
 	testVal := generateTest{{ .elementName }}()
 	{{- end }}
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-        (*es.{{ .origAccessor }})[i] = {{ if not .elementNullable }}*{{ end }}internal.GenTestOrig{{ .elementOriginName }}()
+        (*es.{{ .origAccessor }})[i] = {{ if not .elementNullable }}*{{ end }}internal.GenTest{{ .elementOriginName }}()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -168,6 +168,6 @@ func Test{{ .structName }}_Sort(t *testing.T) {
 
 func generateTest{{ .structName }}() {{ .structName }} {
 	ms := New{{ .structName }}()
-	*ms.{{ .origAccessor }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
+	*ms.{{ .origAccessor }} = internal.GenTest{{ .elementOriginName }}Slice()
 	return ms
 }

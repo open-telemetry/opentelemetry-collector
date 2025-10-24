@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigNumberDataPoint(t *testing.T) {
+func TestCopyNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigNumberDataPoint(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigNumberDataPoint()
-				CopyOrigNumberDataPoint(dest, src)
+				dest := NewNumberDataPoint()
+				CopyNumberDataPoint(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigNumberDataPoint(dest, dest)
+				CopyNumberDataPoint(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONNumberDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigNumberDataPoint()
-	UnmarshalJSONOrigNumberDataPoint(dest, iter)
+	dest := NewNumberDataPoint()
+	UnmarshalJSONNumberDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigNumberDataPoint(), dest)
+	assert.Equal(t, NewNumberDataPoint(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
+func TestMarshalAndUnmarshalJSONNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigNumberDataPoint(src, stream)
+				MarshalJSONNumberDataPoint(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigNumberDataPoint()
-				UnmarshalJSONOrigNumberDataPoint(dest, iter)
+				dest := NewNumberDataPoint()
+				UnmarshalJSONNumberDataPoint(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigNumberDataPoint(dest, true)
+				DeleteNumberDataPoint(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigNumberDataPointFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoNumberDataPointFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesNumberDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigNumberDataPoint()
-			require.Error(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+			dest := NewNumberDataPoint()
+			require.Error(t, UnmarshalProtoNumberDataPoint(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigNumberDataPointUnknown(t *testing.T) {
-	dest := NewOrigNumberDataPoint()
+func TestMarshalAndUnmarshalProtoNumberDataPointUnknown(t *testing.T) {
+	dest := NewNumberDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigNumberDataPoint(), dest)
+	require.NoError(t, UnmarshalProtoNumberDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewNumberDataPoint(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
+func TestMarshalAndUnmarshalProtoNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
-				gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
+				buf := make([]byte, SizeProtoNumberDataPoint(src))
+				gotSize := MarshalProtoNumberDataPoint(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigNumberDataPoint()
-				require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+				dest := NewNumberDataPoint()
+				require.NoError(t, UnmarshalProtoNumberDataPoint(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigNumberDataPoint(dest, true)
+				DeleteNumberDataPoint(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
-			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
+			buf := make([]byte, SizeProtoNumberDataPoint(src))
+			gotSize := MarshalProtoNumberDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.NumberDataPoint{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigNumberDataPoint()
-			require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, goBuf))
+			dest := NewNumberDataPoint()
+			require.NoError(t, UnmarshalProtoNumberDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -162,15 +162,15 @@ func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
 
 func genTestEncodingValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
 	return map[string]*otlpmetrics.NumberDataPoint{
-		"empty":                       NewOrigNumberDataPoint(),
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"empty":                       NewNumberDataPoint(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"AsDouble/default":            {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":               {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}},
 		"AsInt/default":               {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
 		"AsInt/test":                  {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(13)}},
-		"Exemplars/default_and_test":  {Exemplars: []otlpmetrics.Exemplar{{}, *GenTestOrigExemplar()}},
+		"Exemplars/default_and_test":  {Exemplars: []otlpmetrics.Exemplar{{}, *GenTestExemplar()}},
 		"Flags/test":                  {Flags: uint32(13)},
 	}
 }

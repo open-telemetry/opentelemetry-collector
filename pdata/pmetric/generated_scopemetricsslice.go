@@ -30,7 +30,7 @@ func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics, state *internal.Sta
 	return ScopeMetricsSlice{orig: orig, state: state}
 }
 
-// NewScopeMetricsSlice creates a ScopeMetricsSlice with 0 elements.
+// NewScopeMetricsSlice creates a ScopeMetricsSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeMetricsSlice() ScopeMetricsSlice {
 	orig := []*otlpmetrics.ScopeMetrics(nil)
@@ -99,7 +99,7 @@ func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeMetrics.
 func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigScopeMetrics())
+	*es.orig = append(*es.orig, internal.NewScopeMetrics())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigScopeMetrics((*es.orig)[i], true)
+			internal.DeleteScopeMetrics((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigScopeMetricsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyScopeMetricsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the

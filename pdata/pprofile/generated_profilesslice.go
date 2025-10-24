@@ -30,7 +30,7 @@ func newProfilesSlice(orig *[]*otlpprofiles.Profile, state *internal.State) Prof
 	return ProfilesSlice{orig: orig, state: state}
 }
 
-// NewProfilesSlice creates a ProfilesSlice with 0 elements.
+// NewProfilesSlice creates a ProfilesSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfilesSlice() ProfilesSlice {
 	orig := []*otlpprofiles.Profile(nil)
@@ -99,7 +99,7 @@ func (es ProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Profile.
 func (es ProfilesSlice) AppendEmpty() Profile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigProfile())
+	*es.orig = append(*es.orig, internal.NewProfile())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigProfile((*es.orig)[i], true)
+			internal.DeleteProfile((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigProfileSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyProfileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Profile elements within ProfilesSlice given the

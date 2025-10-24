@@ -32,7 +32,7 @@ func newValueType(orig *otlpprofiles.ValueType, state *internal.State) ValueType
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewValueType() ValueType {
-	return newValueType(internal.NewOrigValueType(), internal.NewState())
+	return newValueType(internal.NewValueType(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigValueType(dest.orig, false)
+	internal.DeleteValueType(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -84,5 +84,5 @@ func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	internal.CopyOrigValueType(dest.orig, ms.orig)
+	internal.CopyValueType(dest.orig, ms.orig)
 }

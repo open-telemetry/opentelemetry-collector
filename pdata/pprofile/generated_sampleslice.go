@@ -30,7 +30,7 @@ func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleS
 	return SampleSlice{orig: orig, state: state}
 }
 
-// NewSampleSlice creates a SampleSlice with 0 elements.
+// NewSampleSlice creates a SampleSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
 	orig := []*otlpprofiles.Sample(nil)
@@ -99,7 +99,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSample())
+	*es.orig = append(*es.orig, internal.NewSample())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSample((*es.orig)[i], true)
+			internal.DeleteSample((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSampleSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySampleSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Sample elements within SampleSlice given the

@@ -32,7 +32,7 @@ func newExportResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	return newExportResponse(internal.NewOrigExportProfilesServiceResponse(), internal.NewState())
+	return newExportResponse(internal.NewExportProfilesServiceResponse(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportProfilesServiceResponse(dest.orig, false)
+	internal.DeleteExportProfilesServiceResponse(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -56,5 +56,5 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportResponse) CopyTo(dest ExportResponse) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportProfilesServiceResponse(dest.orig, ms.orig)
+	internal.CopyExportProfilesServiceResponse(dest.orig, ms.orig)
 }

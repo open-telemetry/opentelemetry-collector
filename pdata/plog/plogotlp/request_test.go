@@ -66,7 +66,7 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Logs as pdata struct.
-	ld := NewExportRequestFromLogs(plog.Logs(internal.NewLogs(internal.GenTestOrigExportLogsServiceRequest(), internal.NewState())))
+	ld := NewExportRequestFromLogs(plog.Logs(internal.NewLogsWrapper(internal.GenTestExportLogsServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := ld.MarshalProto()

@@ -27,7 +27,7 @@ func TestResourceProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigResourceProfiles()
+		(*es.orig)[i] = internal.GenTestResourceProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestResourceProfilesSlice_Sort(t *testing.T) {
 
 func generateTestResourceProfilesSlice() ResourceProfilesSlice {
 	ms := NewResourceProfilesSlice()
-	*ms.orig = internal.GenerateOrigTestResourceProfilesSlice()
+	*ms.orig = internal.GenTestResourceProfilesSlice()
 	return ms
 }

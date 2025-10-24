@@ -30,7 +30,7 @@ func newSpanEventSlice(orig *[]*otlptrace.Span_Event, state *internal.State) Spa
 	return SpanEventSlice{orig: orig, state: state}
 }
 
-// NewSpanEventSlice creates a SpanEventSlice with 0 elements.
+// NewSpanEventSlice creates a SpanEventSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanEventSlice() SpanEventSlice {
 	orig := []*otlptrace.Span_Event(nil)
@@ -99,7 +99,7 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSpan_Event())
+	*es.orig = append(*es.orig, internal.NewSpan_Event())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSpan_Event((*es.orig)[i], true)
+			internal.DeleteSpan_Event((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSpan_EventSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySpan_EventSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanEvent elements within SpanEventSlice given the
