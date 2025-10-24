@@ -4,6 +4,7 @@
 package pprofile
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -121,6 +122,87 @@ func TestMappingSwitchDictionary(t *testing.T) {
 				d.StringTable().Append("", "foo", "test")
 				return d
 			}(),
+		},
+		{
+			name: "with a filename index that does not match anything",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(1)
+				return m
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(1)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid filename index 1"),
+		},
+		{
+			name: "with an existing attribute",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(1)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(2)
+				return m
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(2)
+				return d
+			}(),
+		},
+		{
+			name: "with an attribute index that does not match anything",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(1)
+				return m
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(1)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 1"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
