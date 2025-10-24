@@ -25,7 +25,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_send_size",
-		Description: "Number of units in the batch",
+		Description: "Number of units in the batch [Development]",
 		Unit:        "{units}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Tele
 func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_send_size_bytes",
-		Description: "Number of bytes in batch that was sent. Only available on detailed level.",
+		Description: "Number of bytes in batch that was sent. Only available on detailed level. [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -55,7 +55,7 @@ func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest
 func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_size_trigger_send",
-		Description: "Number of times the batch was sent due to a size trigger",
+		Description: "Number of times the batch was sent due to a size trigger [Development]",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +71,7 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componentte
 func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_metadata_cardinality",
-		Description: "Number of distinct metadata value combinations being processed",
+		Description: "Number of distinct metadata value combinations being processed [Development]",
 		Unit:        "{combinations}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -87,7 +87,7 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttes
 func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_timeout_trigger_send",
-		Description: "Number of times the batch was sent due to a timeout trigger",
+		Description: "Number of times the batch was sent due to a timeout trigger [Development]",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

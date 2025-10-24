@@ -8,32 +8,32 @@ The following telemetry is emitted by this component.
 
 ### otelcol_scraper_errored_log_records
 
-Number of log records that were unable to be scraped. [alpha]
+Number of log records that were unable to be scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_errored_metric_points
 
-Number of metric points that were unable to be scraped. [alpha]
+Number of metric points that were unable to be scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_scraped_log_records
 
-Number of log records successfully scraped. [alpha]
+Number of log records successfully scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_scraped_metric_points
 
-Number of metric points successfully scraped. [alpha]
+Number of metric points successfully scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
