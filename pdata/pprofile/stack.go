@@ -3,6 +3,8 @@
 
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
+import "fmt"
+
 // Equal checks equality with another Stack
 func (ms Stack) Equal(val Stack) bool {
 	if ms.LocationIndices().Len() != val.LocationIndices().Len() {
@@ -16,4 +18,18 @@ func (ms Stack) Equal(val Stack) bool {
 	}
 
 	return true
+}
+
+// switchDictionary updates the stack, switching its indices from one
+// dictionary to another.
+func (ms Stack) switchDictionary(src, dst ProfilesDictionary) error {
+	for i, v := range ms.LocationIndices().All() {
+		idx, err := SetLocation(dst.LocationTable(), src.LocationTable().At(int(v)))
+		if err != nil {
+			return fmt.Errorf("couldn't set location %d: %w", i, err)
+		}
+		ms.LocationIndices().SetAt(i, idx)
+	}
+
+	return nil
 }
