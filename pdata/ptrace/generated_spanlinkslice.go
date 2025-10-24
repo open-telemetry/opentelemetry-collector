@@ -30,7 +30,7 @@ func newSpanLinkSlice(orig *[]*otlptrace.Span_Link, state *internal.State) SpanL
 	return SpanLinkSlice{orig: orig, state: state}
 }
 
-// NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
+// NewSpanLinkSlice creates a SpanLinkSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanLinkSlice() SpanLinkSlice {
 	orig := []*otlptrace.Span_Link(nil)
@@ -99,7 +99,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSpan_Link())
+	*es.orig = append(*es.orig, internal.NewSpan_Link())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSpan_Link((*es.orig)[i], true)
+			internal.DeleteSpan_Link((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSpan_LinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySpan_LinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the

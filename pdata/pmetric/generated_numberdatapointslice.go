@@ -30,7 +30,7 @@ func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint, state *intern
 	return NumberDataPointSlice{orig: orig, state: state}
 }
 
-// NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
+// NewNumberDataPointSlice creates a NumberDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewNumberDataPointSlice() NumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
@@ -99,7 +99,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added NumberDataPoint.
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigNumberDataPoint())
+	*es.orig = append(*es.orig, internal.NewNumberDataPoint())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigNumberDataPoint((*es.orig)[i], true)
+			internal.DeleteNumberDataPoint((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigNumberDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyNumberDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the

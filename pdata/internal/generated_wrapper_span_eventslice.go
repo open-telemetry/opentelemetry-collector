@@ -10,7 +10,7 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
+func CopySpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
 	var newDest []*otlptrace.Span_Event
 	if cap(dest) < len(src) {
 		newDest = make([]*otlptrace.Span_Event, len(src))
@@ -18,34 +18,34 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigSpan_Event()
+			newDest[i] = NewSpan_Event()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigSpan_Event(dest[i], true)
+			DeleteSpan_Event(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigSpan_Event()
+			newDest[i] = NewSpan_Event()
 		}
 	}
 	for i := range src {
-		CopyOrigSpan_Event(newDest[i], src[i])
+		CopySpan_Event(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
+func GenTestSpan_EventSlice() []*otlptrace.Span_Event {
 	orig := make([]*otlptrace.Span_Event, 5)
-	orig[0] = NewOrigSpan_Event()
-	orig[1] = GenTestOrigSpan_Event()
-	orig[2] = NewOrigSpan_Event()
-	orig[3] = GenTestOrigSpan_Event()
-	orig[4] = NewOrigSpan_Event()
+	orig[0] = NewSpan_Event()
+	orig[1] = GenTestSpan_Event()
+	orig[2] = NewSpan_Event()
+	orig[3] = GenTestSpan_Event()
+	orig[4] = NewSpan_Event()
 	return orig
 }

@@ -83,11 +83,11 @@ const sizeProtoBytesString = `{{ if .repeated -}}
 
 const sizeProtoMessage = `{{ if .repeated -}}
 	for i := range orig.{{ .fieldName }} {
-		l = SizeProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i])
+		l = SizeProto{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i])
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
 {{- else -}}
-	l = SizeProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }})
+	l = SizeProto{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }})
 	n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 {{- end }}`
 

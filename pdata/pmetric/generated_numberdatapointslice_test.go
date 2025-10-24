@@ -27,7 +27,7 @@ func TestNumberDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigNumberDataPoint()
+		(*es.orig)[i] = internal.GenTestNumberDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestNumberDataPointSlice_Sort(t *testing.T) {
 
 func generateTestNumberDataPointSlice() NumberDataPointSlice {
 	ms := NewNumberDataPointSlice()
-	*ms.orig = internal.GenerateOrigTestNumberDataPointSlice()
+	*ms.orig = internal.GenTestNumberDataPointSlice()
 	return ms
 }

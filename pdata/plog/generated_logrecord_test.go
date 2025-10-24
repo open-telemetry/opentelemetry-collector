@@ -27,8 +27,8 @@ func TestLogRecord_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLogRecord(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLogRecord(internal.NewOrigLogRecord(), sharedState)) })
-	assert.Panics(t, func() { newLogRecord(internal.NewOrigLogRecord(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLogRecord(internal.NewLogRecord(), sharedState)) })
+	assert.Panics(t, func() { newLogRecord(internal.NewLogRecord(), sharedState).MoveTo(dest) })
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {
@@ -41,7 +41,7 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLogRecord(internal.NewOrigLogRecord(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLogRecord(internal.NewLogRecord(), sharedState)) })
 }
 
 func TestLogRecord_Timestamp(t *testing.T) {
@@ -81,15 +81,15 @@ func TestLogRecord_SeverityText(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
-	ms.orig.Body = *internal.GenTestOrigAnyValue()
-	assert.Equal(t, pcommon.Value(internal.NewValue(internal.GenTestOrigAnyValue(), ms.state)), ms.Body())
+	ms.orig.Body = *internal.GenTestAnyValue()
+	assert.Equal(t, pcommon.Value(internal.NewValueWrapper(internal.GenTestAnyValue(), ms.state)), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestLogRecord_DroppedAttributesCount(t *testing.T) {
@@ -137,6 +137,6 @@ func TestLogRecord_EventName(t *testing.T) {
 }
 
 func generateTestLogRecord() LogRecord {
-	ms := newLogRecord(internal.GenTestOrigLogRecord(), internal.NewState())
+	ms := newLogRecord(internal.GenTestLogRecord(), internal.NewState())
 	return ms
 }

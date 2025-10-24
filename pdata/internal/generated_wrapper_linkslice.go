@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
+func CopyLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 	var newDest []*otlpprofiles.Link
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.Link, len(src))
@@ -18,34 +18,34 @@ func CopyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLink()
+			newDest[i] = NewLink()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigLink(dest[i], true)
+			DeleteLink(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLink()
+			newDest[i] = NewLink()
 		}
 	}
 	for i := range src {
-		CopyOrigLink(newDest[i], src[i])
+		CopyLink(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
+func GenTestLinkSlice() []*otlpprofiles.Link {
 	orig := make([]*otlpprofiles.Link, 5)
-	orig[0] = NewOrigLink()
-	orig[1] = GenTestOrigLink()
-	orig[2] = NewOrigLink()
-	orig[3] = GenTestOrigLink()
-	orig[4] = NewOrigLink()
+	orig[0] = NewLink()
+	orig[1] = GenTestLink()
+	orig[2] = NewLink()
+	orig[3] = GenTestLink()
+	orig[4] = NewLink()
 	return orig
 }

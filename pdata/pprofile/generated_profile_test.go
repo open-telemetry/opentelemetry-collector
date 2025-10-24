@@ -27,8 +27,8 @@ func TestProfile_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfile(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfile(internal.NewOrigProfile(), sharedState)) })
-	assert.Panics(t, func() { newProfile(internal.NewOrigProfile(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfile(internal.NewProfile(), sharedState)) })
+	assert.Panics(t, func() { newProfile(internal.NewProfile(), sharedState).MoveTo(dest) })
 }
 
 func TestProfile_CopyTo(t *testing.T) {
@@ -41,20 +41,20 @@ func TestProfile_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfile(internal.NewOrigProfile(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfile(internal.NewProfile(), sharedState)) })
 }
 
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueType(), ms.SampleType())
-	ms.orig.SampleType = *internal.GenTestOrigValueType()
+	ms.orig.SampleType = *internal.GenTestValueType()
 	assert.Equal(t, generateTestValueType(), ms.SampleType())
 }
 
 func TestProfile_Sample(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewSampleSlice(), ms.Sample())
-	ms.orig.Sample = internal.GenerateOrigTestSampleSlice()
+	ms.orig.Sample = internal.GenTestSampleSlice()
 	assert.Equal(t, generateTestSampleSlice(), ms.Sample())
 }
 
@@ -77,7 +77,7 @@ func TestProfile_Duration(t *testing.T) {
 func TestProfile_PeriodType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueType(), ms.PeriodType())
-	ms.orig.PeriodType = *internal.GenTestOrigValueType()
+	ms.orig.PeriodType = *internal.GenTestValueType()
 	assert.Equal(t, generateTestValueType(), ms.PeriodType())
 }
 
@@ -94,8 +94,8 @@ func TestProfile_Period(t *testing.T) {
 func TestProfile_CommentStrindices(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.CommentStrindices())
-	ms.orig.CommentStrindices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.CommentStrindices())
+	ms.orig.CommentStrindices = internal.GenTestInt32Slice()
+	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.CommentStrindices())
 }
 
 func TestProfile_ProfileID(t *testing.T) {
@@ -131,18 +131,18 @@ func TestProfile_OriginalPayloadFormat(t *testing.T) {
 func TestProfile_OriginalPayload(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewByteSlice(), ms.OriginalPayload())
-	ms.orig.OriginalPayload = internal.GenerateOrigTestByteSlice()
-	assert.Equal(t, pcommon.ByteSlice(internal.GenerateTestByteSlice()), ms.OriginalPayload())
+	ms.orig.OriginalPayload = internal.GenTestByteSlice()
+	assert.Equal(t, pcommon.ByteSlice(internal.GenTestByteSliceWrapper()), ms.OriginalPayload())
 }
 
 func TestProfile_AttributeIndices(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
+	ms.orig.AttributeIndices = internal.GenTestInt32Slice()
+	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.AttributeIndices())
 }
 
 func generateTestProfile() Profile {
-	ms := newProfile(internal.GenTestOrigProfile(), internal.NewState())
+	ms := newProfile(internal.GenTestProfile(), internal.NewState())
 	return ms
 }

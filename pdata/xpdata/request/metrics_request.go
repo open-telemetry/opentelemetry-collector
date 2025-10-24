@@ -14,7 +14,7 @@ import (
 
 // MarshalMetrics marshals pmetric.Metrics along with the context into a byte slice.
 func MarshalMetrics(ctx context.Context, ld pmetric.Metrics) ([]byte, error) {
-	otlpMetrics := internal.MetricsToProto(internal.Metrics(ld))
+	otlpMetrics := internal.MetricsToProto(internal.MetricsWrapper(ld))
 	rc := encodeContext(ctx)
 	mr := reqint.MetricsRequest{
 		FormatVersion:  requestFormatVersion,

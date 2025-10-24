@@ -30,7 +30,7 @@ func newMetricSlice(orig *[]*otlpmetrics.Metric, state *internal.State) MetricSl
 	return MetricSlice{orig: orig, state: state}
 }
 
-// NewMetricSlice creates a MetricSlice with 0 elements.
+// NewMetricSlice creates a MetricSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMetricSlice() MetricSlice {
 	orig := []*otlpmetrics.Metric(nil)
@@ -99,7 +99,7 @@ func (es MetricSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Metric.
 func (es MetricSlice) AppendEmpty() Metric {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigMetric())
+	*es.orig = append(*es.orig, internal.NewMetric())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigMetric((*es.orig)[i], true)
+			internal.DeleteMetric((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigMetricSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyMetricSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Metric elements within MetricSlice given the

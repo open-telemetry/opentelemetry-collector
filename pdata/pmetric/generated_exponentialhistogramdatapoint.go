@@ -36,7 +36,7 @@ func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramData
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint(internal.NewOrigExponentialHistogramDataPoint(), internal.NewState())
+	return newExponentialHistogramDataPoint(internal.NewExponentialHistogramDataPoint(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -48,13 +48,13 @@ func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoin
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExponentialHistogramDataPoint(dest.orig, false)
+	internal.DeleteExponentialHistogramDataPoint(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.Attributes, ms.state))
 }
 
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
@@ -221,5 +221,5 @@ func (ms ExponentialHistogramDataPoint) SetZeroThreshold(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExponentialHistogramDataPoint(dest.orig, ms.orig)
+	internal.CopyExponentialHistogramDataPoint(dest.orig, ms.orig)
 }

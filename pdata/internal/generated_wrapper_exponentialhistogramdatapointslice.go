@@ -10,7 +10,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.ExponentialHistogramDataPoint) []*otlpmetrics.ExponentialHistogramDataPoint {
+func CopyExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.ExponentialHistogramDataPoint) []*otlpmetrics.ExponentialHistogramDataPoint {
 	var newDest []*otlpmetrics.ExponentialHistogramDataPoint
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpmetrics.ExponentialHistogramDataPoint, len(src))
@@ -18,34 +18,34 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigExponentialHistogramDataPoint()
+			newDest[i] = NewExponentialHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigExponentialHistogramDataPoint(dest[i], true)
+			DeleteExponentialHistogramDataPoint(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigExponentialHistogramDataPoint()
+			newDest[i] = NewExponentialHistogramDataPoint()
 		}
 	}
 	for i := range src {
-		CopyOrigExponentialHistogramDataPoint(newDest[i], src[i])
+		CopyExponentialHistogramDataPoint(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
+func GenTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
 	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 5)
-	orig[0] = NewOrigExponentialHistogramDataPoint()
-	orig[1] = GenTestOrigExponentialHistogramDataPoint()
-	orig[2] = NewOrigExponentialHistogramDataPoint()
-	orig[3] = GenTestOrigExponentialHistogramDataPoint()
-	orig[4] = NewOrigExponentialHistogramDataPoint()
+	orig[0] = NewExponentialHistogramDataPoint()
+	orig[1] = GenTestExponentialHistogramDataPoint()
+	orig[2] = NewExponentialHistogramDataPoint()
+	orig[3] = GenTestExponentialHistogramDataPoint()
+	orig[4] = NewExponentialHistogramDataPoint()
 	return orig
 }

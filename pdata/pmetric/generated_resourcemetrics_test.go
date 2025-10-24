@@ -26,8 +26,8 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
-	assert.Panics(t, func() { newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(internal.NewResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewResourceMetrics(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewOrigResourceMetrics(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(internal.NewResourceMetrics(), sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	ms.orig.Resource = *internal.GenTestOrigResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
+	ms.orig.Resource = *internal.GenTestResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
-	ms.orig.ScopeMetrics = internal.GenerateOrigTestScopeMetricsSlice()
+	ms.orig.ScopeMetrics = internal.GenTestScopeMetricsSlice()
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
@@ -68,6 +68,6 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	ms := newResourceMetrics(internal.GenTestOrigResourceMetrics(), internal.NewState())
+	ms := newResourceMetrics(internal.GenTestResourceMetrics(), internal.NewState())
 	return ms
 }

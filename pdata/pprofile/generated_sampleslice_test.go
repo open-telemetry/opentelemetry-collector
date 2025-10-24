@@ -27,7 +27,7 @@ func TestSampleSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSample()
+		(*es.orig)[i] = internal.GenTestSample()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestSampleSlice_Sort(t *testing.T) {
 
 func generateTestSampleSlice() SampleSlice {
 	ms := NewSampleSlice()
-	*ms.orig = internal.GenerateOrigTestSampleSlice()
+	*ms.orig = internal.GenTestSampleSlice()
 	return ms
 }

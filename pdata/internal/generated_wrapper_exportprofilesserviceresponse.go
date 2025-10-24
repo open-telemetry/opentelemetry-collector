@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
+func NewExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectorprofiles.ExportProfilesServiceResponse{}
 	}
 	return protoPoolExportProfilesServiceResponse.Get().(*otlpcollectorprofiles.ExportProfilesServiceResponse)
 }
 
-func DeleteOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, nullable bool) {
+func DeleteExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func DeleteOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportP
 		return
 	}
 
-	DeleteOrigExportProfilesPartialSuccess(&orig.PartialSuccess, false)
+	DeleteExportProfilesPartialSuccess(&orig.PartialSuccess, false)
 
 	orig.Reset()
 	if nullable {
@@ -48,55 +48,55 @@ func DeleteOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportP
 	}
 }
 
-func CopyOrigExportProfilesServiceResponse(dest, src *otlpcollectorprofiles.ExportProfilesServiceResponse) {
+func CopyExportProfilesServiceResponse(dest, src *otlpcollectorprofiles.ExportProfilesServiceResponse) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
+	CopyExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func GenTestOrigExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
-	orig := NewOrigExportProfilesServiceResponse()
-	orig.PartialSuccess = *GenTestOrigExportProfilesPartialSuccess()
+func GenTestExportProfilesServiceResponse() *otlpcollectorprofiles.ExportProfilesServiceResponse {
+	orig := NewExportProfilesServiceResponse()
+	orig.PartialSuccess = *GenTestExportProfilesPartialSuccess()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("partialSuccess")
-	MarshalJSONOrigExportProfilesPartialSuccess(&orig.PartialSuccess, dest)
+	MarshalJSONExportProfilesPartialSuccess(&orig.PartialSuccess, dest)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, iter *json.Iterator) {
+// UnmarshalJSONExportResponse unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
-			UnmarshalJSONOrigExportProfilesPartialSuccess(&orig.PartialSuccess, iter)
+			UnmarshalJSONExportProfilesPartialSuccess(&orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) int {
+func SizeProtoExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess)
+	l = SizeProtoExportProfilesPartialSuccess(&orig.PartialSuccess)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) int {
+func MarshalProtoExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess, buf[:pos])
+	l = MarshalProtoExportProfilesPartialSuccess(&orig.PartialSuccess, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -105,7 +105,7 @@ func MarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.E
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) error {
+func UnmarshalProtoExportProfilesServiceResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -131,7 +131,7 @@ func UnmarshalProtoOrigExportProfilesServiceResponse(orig *otlpcollectorprofiles
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigExportProfilesPartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
+			err = UnmarshalProtoExportProfilesPartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

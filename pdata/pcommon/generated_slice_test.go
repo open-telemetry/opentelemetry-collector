@@ -22,11 +22,11 @@ func TestSlice(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueEmpty()
-	testVal := Value(internal.NewValue(internal.GenTestOrigAnyValue(), internal.NewState()))
+	testVal := Value(internal.GenTestValueWrapper())
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.getOrig())[i] = *internal.GenTestOrigAnyValue()
+		(*es.getOrig())[i] = *internal.GenTestAnyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -145,6 +145,6 @@ func TestSliceAll(t *testing.T) {
 
 func generateTestSlice() Slice {
 	ms := NewSlice()
-	*ms.getOrig() = internal.GenerateOrigTestAnyValueSlice()
+	*ms.getOrig() = internal.GenTestAnyValueSlice()
 	return ms
 }

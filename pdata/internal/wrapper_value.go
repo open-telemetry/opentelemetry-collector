@@ -7,21 +7,26 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-type Value struct {
+type ValueWrapper struct {
 	orig  *otlpcommon.AnyValue
 	state *State
 }
 
-func GetOrigValue(ms Value) *otlpcommon.AnyValue {
+func GetValueOrig(ms ValueWrapper) *otlpcommon.AnyValue {
 	return ms.orig
 }
 
-func GetValueState(ms Value) *State {
+func GetValueState(ms ValueWrapper) *State {
 	return ms.state
 }
 
-func NewValue(orig *otlpcommon.AnyValue, state *State) Value {
-	return Value{orig: orig, state: state}
+func NewValueWrapper(orig *otlpcommon.AnyValue, state *State) ValueWrapper {
+	return ValueWrapper{orig: orig, state: state}
+}
+
+func GenTestValueWrapper() ValueWrapper {
+	orig := GenTestAnyValue()
+	return NewValueWrapper(orig, NewState())
 }
 
 func NewOrigAnyValueStringValue() *otlpcommon.AnyValue_StringValue {

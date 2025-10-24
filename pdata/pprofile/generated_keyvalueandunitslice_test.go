@@ -27,7 +27,7 @@ func TestKeyValueAndUnitSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigKeyValueAndUnit()
+		(*es.orig)[i] = internal.GenTestKeyValueAndUnit()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestKeyValueAndUnitSlice_Sort(t *testing.T) {
 
 func generateTestKeyValueAndUnitSlice() KeyValueAndUnitSlice {
 	ms := NewKeyValueAndUnitSlice()
-	*ms.orig = internal.GenerateOrigTestKeyValueAndUnitSlice()
+	*ms.orig = internal.GenTestKeyValueAndUnitSlice()
 	return ms
 }

@@ -15,21 +15,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-type EntityRef struct {
+type EntityRefWrapper struct {
 	orig  *otlpcommon.EntityRef
 	state *State
 }
 
-func GetOrigEntityRef(ms EntityRef) *otlpcommon.EntityRef {
+func GetEntityRefOrig(ms EntityRefWrapper) *otlpcommon.EntityRef {
 	return ms.orig
 }
 
-func GetEntityRefState(ms EntityRef) *State {
+func GetEntityRefState(ms EntityRefWrapper) *State {
 	return ms.state
 }
 
-func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
-	return EntityRef{orig: orig, state: state}
+func NewEntityRefWrapper(orig *otlpcommon.EntityRef, state *State) EntityRefWrapper {
+	return EntityRefWrapper{orig: orig, state: state}
+}
+
+func GenTestEntityRefWrapper() EntityRefWrapper {
+	orig := GenTestEntityRef()
+	return NewEntityRefWrapper(orig, NewState())
 }
 
 var (
@@ -40,14 +45,14 @@ var (
 	}
 )
 
-func NewOrigEntityRef() *otlpcommon.EntityRef {
+func NewEntityRef() *otlpcommon.EntityRef {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.EntityRef{}
 	}
 	return protoPoolEntityRef.Get().(*otlpcommon.EntityRef)
 }
 
-func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
+func DeleteEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -63,28 +68,28 @@ func DeleteOrigEntityRef(orig *otlpcommon.EntityRef, nullable bool) {
 	}
 }
 
-func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+func CopyEntityRef(dest, src *otlpcommon.EntityRef) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Type = src.Type
-	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
-	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
+	dest.IdKeys = CopyStringSlice(dest.IdKeys, src.IdKeys)
+	dest.DescriptionKeys = CopyStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
 }
 
-func GenTestOrigEntityRef() *otlpcommon.EntityRef {
-	orig := NewOrigEntityRef()
+func GenTestEntityRef() *otlpcommon.EntityRef {
+	orig := NewEntityRef()
 	orig.SchemaUrl = "test_schemaurl"
 	orig.Type = "test_type"
-	orig.IdKeys = GenerateOrigTestStringSlice()
-	orig.DescriptionKeys = GenerateOrigTestStringSlice()
+	orig.IdKeys = GenTestStringSlice()
+	orig.DescriptionKeys = GenTestStringSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
@@ -117,8 +122,8 @@ func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
+// UnmarshalJSONEntityRef unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "schemaUrl", "schema_url":
@@ -141,7 +146,7 @@ func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator)
 	}
 }
 
-func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
+func SizeProtoEntityRef(orig *otlpcommon.EntityRef) int {
 	var n int
 	var l int
 	_ = l
@@ -164,7 +169,7 @@ func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
 	return n
 }
 
-func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
+func MarshalProtoEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -203,7 +208,7 @@ func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
+func UnmarshalProtoEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

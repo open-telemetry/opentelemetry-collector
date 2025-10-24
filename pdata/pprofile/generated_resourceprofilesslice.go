@@ -30,7 +30,7 @@ func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles, state *int
 	return ResourceProfilesSlice{orig: orig, state: state}
 }
 
-// NewResourceProfilesSlice creates a ResourceProfilesSlice with 0 elements.
+// NewResourceProfilesSlice creates a ResourceProfilesSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceProfilesSlice() ResourceProfilesSlice {
 	orig := []*otlpprofiles.ResourceProfiles(nil)
@@ -99,7 +99,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceProfiles.
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigResourceProfiles())
+	*es.orig = append(*es.orig, internal.NewResourceProfiles())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ResourceProfilesSlice) RemoveIf(f func(ResourceProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigResourceProfiles((*es.orig)[i], true)
+			internal.DeleteResourceProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigResourceProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceProfilesSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceProfiles elements within ResourceProfilesSlice given the

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigKeyValueAndUnit(t *testing.T) {
+func TestCopyKeyValueAndUnit(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValueAndUnit() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigKeyValueAndUnit(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigKeyValueAndUnit()
-				CopyOrigKeyValueAndUnit(dest, src)
+				dest := NewKeyValueAndUnit()
+				CopyKeyValueAndUnit(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigKeyValueAndUnit(dest, dest)
+				CopyKeyValueAndUnit(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigKeyValueAndUnitUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONKeyValueAndUnitUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigKeyValueAndUnit()
-	UnmarshalJSONOrigKeyValueAndUnit(dest, iter)
+	dest := NewKeyValueAndUnit()
+	UnmarshalJSONKeyValueAndUnit(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigKeyValueAndUnit(), dest)
+	assert.Equal(t, NewKeyValueAndUnit(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigKeyValueAndUnit(t *testing.T) {
+func TestMarshalAndUnmarshalJSONKeyValueAndUnit(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValueAndUnit() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigKeyValueAndUnit(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigKeyValueAndUnit(src, stream)
+				MarshalJSONKeyValueAndUnit(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigKeyValueAndUnit()
-				UnmarshalJSONOrigKeyValueAndUnit(dest, iter)
+				dest := NewKeyValueAndUnit()
+				UnmarshalJSONKeyValueAndUnit(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigKeyValueAndUnit(dest, true)
+				DeleteKeyValueAndUnit(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValueAndUnitFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoKeyValueAndUnitFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesKeyValueAndUnit() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigKeyValueAndUnit()
-			require.Error(t, UnmarshalProtoOrigKeyValueAndUnit(dest, buf))
+			dest := NewKeyValueAndUnit()
+			require.Error(t, UnmarshalProtoKeyValueAndUnit(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValueAndUnitUnknown(t *testing.T) {
-	dest := NewOrigKeyValueAndUnit()
+func TestMarshalAndUnmarshalProtoKeyValueAndUnitUnknown(t *testing.T) {
+	dest := NewKeyValueAndUnit()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigKeyValueAndUnit(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigKeyValueAndUnit(), dest)
+	require.NoError(t, UnmarshalProtoKeyValueAndUnit(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewKeyValueAndUnit(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValueAndUnit(t *testing.T) {
+func TestMarshalAndUnmarshalProtoKeyValueAndUnit(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValueAndUnit() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigKeyValueAndUnit(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigKeyValueAndUnit(src))
-				gotSize := MarshalProtoOrigKeyValueAndUnit(src, buf)
+				buf := make([]byte, SizeProtoKeyValueAndUnit(src))
+				gotSize := MarshalProtoKeyValueAndUnit(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigKeyValueAndUnit()
-				require.NoError(t, UnmarshalProtoOrigKeyValueAndUnit(dest, buf))
+				dest := NewKeyValueAndUnit()
+				require.NoError(t, UnmarshalProtoKeyValueAndUnit(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigKeyValueAndUnit(dest, true)
+				DeleteKeyValueAndUnit(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigKeyValueAndUnit(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufKeyValueAndUnit(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValueAndUnit() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigKeyValueAndUnit(src))
-			gotSize := MarshalProtoOrigKeyValueAndUnit(src, buf)
+			buf := make([]byte, SizeProtoKeyValueAndUnit(src))
+			gotSize := MarshalProtoKeyValueAndUnit(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.KeyValueAndUnit{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValueAndUnit(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigKeyValueAndUnit()
-			require.NoError(t, UnmarshalProtoOrigKeyValueAndUnit(dest, goBuf))
+			dest := NewKeyValueAndUnit()
+			require.NoError(t, UnmarshalProtoKeyValueAndUnit(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesKeyValueAndUnit() map[string][]byte {
 
 func genTestEncodingValuesKeyValueAndUnit() map[string]*otlpprofiles.KeyValueAndUnit {
 	return map[string]*otlpprofiles.KeyValueAndUnit{
-		"empty":             NewOrigKeyValueAndUnit(),
+		"empty":             NewKeyValueAndUnit(),
 		"KeyStrindex/test":  {KeyStrindex: int32(13)},
-		"Value/test":        {Value: *GenTestOrigAnyValue()},
+		"Value/test":        {Value: *GenTestAnyValue()},
 		"UnitStrindex/test": {UnitStrindex: int32(13)},
 	}
 }

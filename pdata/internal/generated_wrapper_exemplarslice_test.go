@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigExemplarSlice(t *testing.T) {
+func TestCopyExemplarSlice(t *testing.T) {
 	src := []otlpmetrics.Exemplar{}
 	dest := []otlpmetrics.Exemplar{}
 	// Test CopyTo empty
-	dest = CopyOrigExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src)
 	assert.Equal(t, []otlpmetrics.Exemplar{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestExemplarSlice()
-	dest = CopyOrigExemplarSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExemplarSlice(), dest)
+	src = GenTestExemplarSlice()
+	dest = CopyExemplarSlice(dest, src)
+	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigExemplarSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExemplarSlice(), dest)
+	dest = CopyExemplarSlice(dest, src)
+	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigExemplarSlice(dest, []otlpmetrics.Exemplar{})
+	dest = CopyExemplarSlice(dest, []otlpmetrics.Exemplar{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigExemplarSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExemplarSlice(), dest)
+	dest = CopyExemplarSlice(dest, src)
+	assert.Equal(t, GenTestExemplarSlice(), dest)
 }

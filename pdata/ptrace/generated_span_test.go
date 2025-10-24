@@ -27,8 +27,8 @@ func TestSpan_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpan(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpan(internal.NewOrigSpan(), sharedState)) })
-	assert.Panics(t, func() { newSpan(internal.NewOrigSpan(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpan(internal.NewSpan(), sharedState)) })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).MoveTo(dest) })
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSpan_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpan(internal.NewOrigSpan(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpan(internal.NewSpan(), sharedState)) })
 }
 
 func TestSpan_TraceID(t *testing.T) {
@@ -63,8 +63,8 @@ func TestSpan_SpanID(t *testing.T) {
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
-	ms.orig.TraceState = *internal.GenTestOrigTraceState()
-	assert.Equal(t, pcommon.TraceState(internal.NewTraceState(internal.GenTestOrigTraceState(), ms.state)), ms.TraceState())
+	ms.orig.TraceState = *internal.GenTestTraceState()
+	assert.Equal(t, pcommon.TraceState(internal.NewTraceStateWrapper(internal.GenTestTraceState(), ms.state)), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -122,8 +122,8 @@ func TestSpan_EndTimestamp(t *testing.T) {
 func TestSpan_Attributes(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestSpan_DroppedAttributesCount(t *testing.T) {
@@ -139,7 +139,7 @@ func TestSpan_DroppedAttributesCount(t *testing.T) {
 func TestSpan_Events(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewSpanEventSlice(), ms.Events())
-	ms.orig.Events = internal.GenerateOrigTestSpan_EventSlice()
+	ms.orig.Events = internal.GenTestSpan_EventSlice()
 	assert.Equal(t, generateTestSpanEventSlice(), ms.Events())
 }
 
@@ -156,7 +156,7 @@ func TestSpan_DroppedEventsCount(t *testing.T) {
 func TestSpan_Links(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewSpanLinkSlice(), ms.Links())
-	ms.orig.Links = internal.GenerateOrigTestSpan_LinkSlice()
+	ms.orig.Links = internal.GenTestSpan_LinkSlice()
 	assert.Equal(t, generateTestSpanLinkSlice(), ms.Links())
 }
 
@@ -173,11 +173,11 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewStatus(), ms.Status())
-	ms.orig.Status = *internal.GenTestOrigStatus()
+	ms.orig.Status = *internal.GenTestStatus()
 	assert.Equal(t, generateTestStatus(), ms.Status())
 }
 
 func generateTestSpan() Span {
-	ms := newSpan(internal.GenTestOrigSpan(), internal.NewState())
+	ms := newSpan(internal.GenTestSpan(), internal.NewState())
 	return ms
 }

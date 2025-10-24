@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigResourceLogs() *otlplogs.ResourceLogs {
+func NewResourceLogs() *otlplogs.ResourceLogs {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlplogs.ResourceLogs{}
 	}
 	return protoPoolResourceLogs.Get().(*otlplogs.ResourceLogs)
 }
 
-func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
+func DeleteResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,9 +40,9 @@ func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
 		return
 	}
 
-	DeleteOrigResource(&orig.Resource, false)
+	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeLogs {
-		DeleteOrigScopeLogs(orig.ScopeLogs[i], true)
+		DeleteScopeLogs(orig.ScopeLogs[i], true)
 	}
 
 	orig.Reset()
@@ -51,36 +51,36 @@ func DeleteOrigResourceLogs(orig *otlplogs.ResourceLogs, nullable bool) {
 	}
 }
 
-func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
+func CopyResourceLogs(dest, src *otlplogs.ResourceLogs) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.ScopeLogs = CopyOrigScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
+	CopyResource(&dest.Resource, &src.Resource)
+	dest.ScopeLogs = CopyScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func GenTestOrigResourceLogs() *otlplogs.ResourceLogs {
-	orig := NewOrigResourceLogs()
-	orig.Resource = *GenTestOrigResource()
-	orig.ScopeLogs = GenerateOrigTestScopeLogsSlice()
+func GenTestResourceLogs() *otlplogs.ResourceLogs {
+	orig := NewResourceLogs()
+	orig.Resource = *GenTestResource()
+	orig.ScopeLogs = GenTestScopeLogsSlice()
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("resource")
-	MarshalJSONOrigResource(&orig.Resource, dest)
+	MarshalJSONResource(&orig.Resource, dest)
 	if len(orig.ScopeLogs) > 0 {
 		dest.WriteObjectField("scopeLogs")
 		dest.WriteArrayStart()
-		MarshalJSONOrigScopeLogs(orig.ScopeLogs[0], dest)
+		MarshalJSONScopeLogs(orig.ScopeLogs[0], dest)
 		for i := 1; i < len(orig.ScopeLogs); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigScopeLogs(orig.ScopeLogs[i], dest)
+			MarshalJSONScopeLogs(orig.ScopeLogs[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -91,16 +91,16 @@ func MarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigResourceLogs unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Iterator) {
+// UnmarshalJSONResourceLogs unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
-			UnmarshalJSONOrigResource(&orig.Resource, iter)
+			UnmarshalJSONResource(&orig.Resource, iter)
 		case "scopeLogs", "scope_logs":
 			for iter.ReadArray() {
-				orig.ScopeLogs = append(orig.ScopeLogs, NewOrigScopeLogs())
-				UnmarshalJSONOrigScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], iter)
+				orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
+				UnmarshalJSONScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], iter)
 			}
 
 		case "schemaUrl", "schema_url":
@@ -111,14 +111,14 @@ func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Itera
 	}
 }
 
-func SizeProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) int {
+func SizeProtoResourceLogs(orig *otlplogs.ResourceLogs) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigResource(&orig.Resource)
+	l = SizeProtoResource(&orig.Resource)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.ScopeLogs {
-		l = SizeProtoOrigScopeLogs(orig.ScopeLogs[i])
+		l = SizeProtoScopeLogs(orig.ScopeLogs[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	l = len(orig.SchemaUrl)
@@ -128,19 +128,19 @@ func SizeProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) int {
 	return n
 }
 
-func MarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) int {
+func MarshalProtoResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+	l = MarshalProtoResource(&orig.Resource, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.ScopeLogs) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigScopeLogs(orig.ScopeLogs[i], buf[:pos])
+		l = MarshalProtoScopeLogs(orig.ScopeLogs[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -157,7 +157,7 @@ func MarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) error {
+func UnmarshalProtoResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -183,7 +183,7 @@ func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) err
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigResource(&orig.Resource, buf[startPos:pos])
+			err = UnmarshalProtoResource(&orig.Resource, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -198,8 +198,8 @@ func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) err
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeLogs = append(orig.ScopeLogs, NewOrigScopeLogs())
-			err = UnmarshalProtoOrigScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], buf[startPos:pos])
+			orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
+			err = UnmarshalProtoScopeLogs(orig.ScopeLogs[len(orig.ScopeLogs)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

@@ -64,7 +64,7 @@ func TestMetricsProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Metrics as pdata struct.
-	md := NewExportRequestFromMetrics(pmetric.Metrics(internal.NewMetrics(internal.GenTestOrigExportMetricsServiceRequest(), internal.NewState())))
+	md := NewExportRequestFromMetrics(pmetric.Metrics(internal.NewMetricsWrapper(internal.GenTestExportMetricsServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := md.MarshalProto()

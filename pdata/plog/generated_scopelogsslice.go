@@ -30,7 +30,7 @@ func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs, state *internal.State) Scope
 	return ScopeLogsSlice{orig: orig, state: state}
 }
 
-// NewScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
+// NewScopeLogsSlice creates a ScopeLogsSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeLogsSlice() ScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs(nil)
@@ -99,7 +99,7 @@ func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeLogs.
 func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigScopeLogs())
+	*es.orig = append(*es.orig, internal.NewScopeLogs())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigScopeLogs((*es.orig)[i], true)
+			internal.DeleteScopeLogs((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigScopeLogsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyScopeLogsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the

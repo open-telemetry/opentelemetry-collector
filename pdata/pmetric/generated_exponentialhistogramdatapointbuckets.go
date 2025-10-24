@@ -33,7 +33,7 @@ func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistog
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), internal.NewState())
+	return newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPoint_Buckets(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +45,7 @@ func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramD
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExponentialHistogramDataPoint_Buckets(dest.orig, false)
+	internal.DeleteExponentialHistogramDataPoint_Buckets(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -62,11 +62,11 @@ func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 
 // BucketCounts returns the BucketCounts associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
+	return pcommon.UInt64Slice(internal.NewUInt64SliceWrapper(&ms.orig.BucketCounts, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
+	internal.CopyExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
 }

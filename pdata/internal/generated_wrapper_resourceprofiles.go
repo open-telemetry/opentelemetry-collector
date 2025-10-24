@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
+func NewResourceProfiles() *otlpprofiles.ResourceProfiles {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.ResourceProfiles{}
 	}
 	return protoPoolResourceProfiles.Get().(*otlpprofiles.ResourceProfiles)
 }
 
-func DeleteOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, nullable bool) {
+func DeleteResourceProfiles(orig *otlpprofiles.ResourceProfiles, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,9 +40,9 @@ func DeleteOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, nullable bo
 		return
 	}
 
-	DeleteOrigResource(&orig.Resource, false)
+	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeProfiles {
-		DeleteOrigScopeProfiles(orig.ScopeProfiles[i], true)
+		DeleteScopeProfiles(orig.ScopeProfiles[i], true)
 	}
 
 	orig.Reset()
@@ -51,36 +51,36 @@ func DeleteOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, nullable bo
 	}
 }
 
-func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
+func CopyResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.ScopeProfiles = CopyOrigScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
+	CopyResource(&dest.Resource, &src.Resource)
+	dest.ScopeProfiles = CopyScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func GenTestOrigResourceProfiles() *otlpprofiles.ResourceProfiles {
-	orig := NewOrigResourceProfiles()
-	orig.Resource = *GenTestOrigResource()
-	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
+func GenTestResourceProfiles() *otlpprofiles.ResourceProfiles {
+	orig := NewResourceProfiles()
+	orig.Resource = *GenTestResource()
+	orig.ScopeProfiles = GenTestScopeProfilesSlice()
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("resource")
-	MarshalJSONOrigResource(&orig.Resource, dest)
+	MarshalJSONResource(&orig.Resource, dest)
 	if len(orig.ScopeProfiles) > 0 {
 		dest.WriteObjectField("scopeProfiles")
 		dest.WriteArrayStart()
-		MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[0], dest)
+		MarshalJSONScopeProfiles(orig.ScopeProfiles[0], dest)
 		for i := 1; i < len(orig.ScopeProfiles); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[i], dest)
+			MarshalJSONScopeProfiles(orig.ScopeProfiles[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -91,16 +91,16 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigResourceProfiles unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter *json.Iterator) {
+// UnmarshalJSONResourceProfiles unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
-			UnmarshalJSONOrigResource(&orig.Resource, iter)
+			UnmarshalJSONResource(&orig.Resource, iter)
 		case "scopeProfiles", "scope_profiles":
 			for iter.ReadArray() {
-				orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
-				UnmarshalJSONOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], iter)
+				orig.ScopeProfiles = append(orig.ScopeProfiles, NewScopeProfiles())
+				UnmarshalJSONScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], iter)
 			}
 
 		case "schemaUrl", "schema_url":
@@ -111,14 +111,14 @@ func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter
 	}
 }
 
-func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
+func SizeProtoResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigResource(&orig.Resource)
+	l = SizeProtoResource(&orig.Resource)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.ScopeProfiles {
-		l = SizeProtoOrigScopeProfiles(orig.ScopeProfiles[i])
+		l = SizeProtoScopeProfiles(orig.ScopeProfiles[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	l = len(orig.SchemaUrl)
@@ -128,19 +128,19 @@ func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
 	return n
 }
 
-func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) int {
+func MarshalProtoResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+	l = MarshalProtoResource(&orig.Resource, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.ScopeProfiles) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigScopeProfiles(orig.ScopeProfiles[i], buf[:pos])
+		l = MarshalProtoScopeProfiles(orig.ScopeProfiles[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -157,7 +157,7 @@ func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf [
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) error {
+func UnmarshalProtoResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -183,7 +183,7 @@ func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigResource(&orig.Resource, buf[startPos:pos])
+			err = UnmarshalProtoResource(&orig.Resource, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -198,8 +198,8 @@ func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = append(orig.ScopeProfiles, NewOrigScopeProfiles())
-			err = UnmarshalProtoOrigScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], buf[startPos:pos])
+			orig.ScopeProfiles = append(orig.ScopeProfiles, NewScopeProfiles())
+			err = UnmarshalProtoScopeProfiles(orig.ScopeProfiles[len(orig.ScopeProfiles)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

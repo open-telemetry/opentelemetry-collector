@@ -17,19 +17,19 @@ const deleteOrigOther = `{{ if ne .oneOfGroup "" -}}
 const deleteOrigMessage = `{{ if .repeated -}}
 	for i := range orig.{{ .fieldName }} {
 	{{ if .nullable -}}
-		DeleteOrig{{ .origName }}(orig.{{ .fieldName }}[i], true)
+		Delete{{ .origName }}(orig.{{ .fieldName }}[i], true)
 	{{- else -}}
-		DeleteOrig{{ .origName }}(&orig.{{ .fieldName }}[i], false)
+		Delete{{ .origName }}(&orig.{{ .fieldName }}[i], false)
 	{{- end }}
 	}
 {{- else if ne .oneOfGroup "" -}}
-	DeleteOrig{{ .origName }}(ov.{{ .fieldName }}, true)
+	Delete{{ .origName }}(ov.{{ .fieldName }}, true)
 	ov.{{ .fieldName }} = nil
 	ProtoPool{{ .oneOfMessageName }}.Put(ov)
 {{- else if .nullable -}}
-	DeleteOrig{{ .origName }}(orig.{{ .fieldName }}, true)
+	Delete{{ .origName }}(orig.{{ .fieldName }}, true)
 {{- else -}}
-	DeleteOrig{{ .origName }}(&orig.{{ .fieldName }}, false)
+	Delete{{ .origName }}(&orig.{{ .fieldName }}, false)
 {{- end }}
 `
 

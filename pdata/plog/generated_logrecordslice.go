@@ -30,7 +30,7 @@ func newLogRecordSlice(orig *[]*otlplogs.LogRecord, state *internal.State) LogRe
 	return LogRecordSlice{orig: orig, state: state}
 }
 
-// NewLogRecordSlice creates a LogRecordSlice with 0 elements.
+// NewLogRecordSlice creates a LogRecordSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogRecordSlice() LogRecordSlice {
 	orig := []*otlplogs.LogRecord(nil)
@@ -99,7 +99,7 @@ func (es LogRecordSlice) EnsureCapacity(newCap int) {
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigLogRecord())
+	*es.orig = append(*es.orig, internal.NewLogRecord())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigLogRecord((*es.orig)[i], true)
+			internal.DeleteLogRecord((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigLogRecordSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLogRecordSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the LogRecord elements within LogRecordSlice given the

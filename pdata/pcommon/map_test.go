@@ -427,9 +427,9 @@ func TestMap_MoveTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test MoveTo larger slice
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	src.MoveTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 	assert.Equal(t, 0, src.Len())
 
 	// Test MoveTo from empty to non-empty
@@ -449,29 +449,29 @@ func TestMap_CopyTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo with an empty Value in the destination
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
 	dest.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_CopyToAndEnsureCapacity(t *testing.T) {
 	dest := NewMap()
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	dest.EnsureCapacity(src.Len())
 	src.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -564,7 +564,7 @@ func TestMap_RemoveIf(t *testing.T) {
 }
 
 func TestMap_RemoveIfAll(t *testing.T) {
-	am := Map(internal.GenerateTestMap())
+	am := Map(internal.GenTestMapWrapper())
 	assert.Equal(t, 5, am.Len())
 	am.RemoveIf(func(string, Value) bool {
 		return true

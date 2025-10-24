@@ -10,7 +10,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
+func CopyHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
 	var newDest []*otlpmetrics.HistogramDataPoint
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpmetrics.HistogramDataPoint, len(src))
@@ -18,34 +18,34 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigHistogramDataPoint()
+			newDest[i] = NewHistogramDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigHistogramDataPoint(dest[i], true)
+			DeleteHistogramDataPoint(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigHistogramDataPoint()
+			newDest[i] = NewHistogramDataPoint()
 		}
 	}
 	for i := range src {
-		CopyOrigHistogramDataPoint(newDest[i], src[i])
+		CopyHistogramDataPoint(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
+func GenTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
 	orig := make([]*otlpmetrics.HistogramDataPoint, 5)
-	orig[0] = NewOrigHistogramDataPoint()
-	orig[1] = GenTestOrigHistogramDataPoint()
-	orig[2] = NewOrigHistogramDataPoint()
-	orig[3] = GenTestOrigHistogramDataPoint()
-	orig[4] = NewOrigHistogramDataPoint()
+	orig[0] = NewHistogramDataPoint()
+	orig[1] = GenTestHistogramDataPoint()
+	orig[2] = NewHistogramDataPoint()
+	orig[3] = GenTestHistogramDataPoint()
+	orig[4] = NewHistogramDataPoint()
 	return orig
 }

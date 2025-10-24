@@ -25,14 +25,14 @@ var (
 	}
 )
 
-func NewOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func NewSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 	}
 	return protoPoolSummaryDataPoint_ValueAtQuantile.Get().(*otlpmetrics.SummaryDataPoint_ValueAtQuantile)
 }
 
-func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, nullable bool) {
+func DeleteSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -48,7 +48,7 @@ func DeleteOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoi
 	}
 }
 
-func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+func CopySummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -57,15 +57,15 @@ func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryData
 	dest.Value = src.Value
 }
 
-func GenTestOrigSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	orig := NewOrigSummaryDataPoint_ValueAtQuantile()
+func GenTestSummaryDataPoint_ValueAtQuantile() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	orig := NewSummaryDataPoint_ValueAtQuantile()
 	orig.Quantile = float64(3.1415926)
 	orig.Value = float64(3.1415926)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Quantile != float64(0) {
 		dest.WriteObjectField("quantile")
@@ -78,8 +78,8 @@ func MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDa
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSummaryDataPointValueAtQuantile unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, iter *json.Iterator) {
+// UnmarshalJSONSummaryDataPointValueAtQuantile unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "quantile":
@@ -92,7 +92,7 @@ func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.Summary
 	}
 }
 
-func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {
+func SizeProtoSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {
 	var n int
 	var l int
 	_ = l
@@ -105,7 +105,7 @@ func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryData
 	return n
 }
 
-func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) int {
+func MarshalProtoSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -124,7 +124,7 @@ func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryD
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) error {
+func UnmarshalProtoSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigScopeSpans() *otlptrace.ScopeSpans {
+func NewScopeSpans() *otlptrace.ScopeSpans {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlptrace.ScopeSpans{}
 	}
 	return protoPoolScopeSpans.Get().(*otlptrace.ScopeSpans)
 }
 
-func DeleteOrigScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
+func DeleteScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,9 +40,9 @@ func DeleteOrigScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
 		return
 	}
 
-	DeleteOrigInstrumentationScope(&orig.Scope, false)
+	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Spans {
-		DeleteOrigSpan(orig.Spans[i], true)
+		DeleteSpan(orig.Spans[i], true)
 	}
 
 	orig.Reset()
@@ -51,36 +51,36 @@ func DeleteOrigScopeSpans(orig *otlptrace.ScopeSpans, nullable bool) {
 	}
 }
 
-func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
+func CopyScopeSpans(dest, src *otlptrace.ScopeSpans) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.Spans = CopyOrigSpanSlice(dest.Spans, src.Spans)
+	CopyInstrumentationScope(&dest.Scope, &src.Scope)
+	dest.Spans = CopySpanSlice(dest.Spans, src.Spans)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func GenTestOrigScopeSpans() *otlptrace.ScopeSpans {
-	orig := NewOrigScopeSpans()
-	orig.Scope = *GenTestOrigInstrumentationScope()
-	orig.Spans = GenerateOrigTestSpanSlice()
+func GenTestScopeSpans() *otlptrace.ScopeSpans {
+	orig := NewScopeSpans()
+	orig.Scope = *GenTestInstrumentationScope()
+	orig.Spans = GenTestSpanSlice()
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONScopeSpans(orig *otlptrace.ScopeSpans, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("scope")
-	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
+	MarshalJSONInstrumentationScope(&orig.Scope, dest)
 	if len(orig.Spans) > 0 {
 		dest.WriteObjectField("spans")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSpan(orig.Spans[0], dest)
+		MarshalJSONSpan(orig.Spans[0], dest)
 		for i := 1; i < len(orig.Spans); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSpan(orig.Spans[i], dest)
+			MarshalJSONSpan(orig.Spans[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -91,16 +91,16 @@ func MarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigScopeSpans unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, iter *json.Iterator) {
+// UnmarshalJSONScopeSpans unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONScopeSpans(orig *otlptrace.ScopeSpans, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
-			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
+			UnmarshalJSONInstrumentationScope(&orig.Scope, iter)
 		case "spans":
 			for iter.ReadArray() {
-				orig.Spans = append(orig.Spans, NewOrigSpan())
-				UnmarshalJSONOrigSpan(orig.Spans[len(orig.Spans)-1], iter)
+				orig.Spans = append(orig.Spans, NewSpan())
+				UnmarshalJSONSpan(orig.Spans[len(orig.Spans)-1], iter)
 			}
 
 		case "schemaUrl", "schema_url":
@@ -111,14 +111,14 @@ func UnmarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, iter *json.Iterator
 	}
 }
 
-func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
+func SizeProtoScopeSpans(orig *otlptrace.ScopeSpans) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	l = SizeProtoInstrumentationScope(&orig.Scope)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.Spans {
-		l = SizeProtoOrigSpan(orig.Spans[i])
+		l = SizeProtoSpan(orig.Spans[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	l = len(orig.SchemaUrl)
@@ -128,19 +128,19 @@ func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
 	return n
 }
 
-func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
+func MarshalProtoScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+	l = MarshalProtoInstrumentationScope(&orig.Scope, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.Spans) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSpan(orig.Spans[i], buf[:pos])
+		l = MarshalProtoSpan(orig.Spans[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -157,7 +157,7 @@ func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {
+func UnmarshalProtoScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -183,7 +183,7 @@ func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error 
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[startPos:pos])
+			err = UnmarshalProtoInstrumentationScope(&orig.Scope, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -198,8 +198,8 @@ func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error 
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = append(orig.Spans, NewOrigSpan())
-			err = UnmarshalProtoOrigSpan(orig.Spans[len(orig.Spans)-1], buf[startPos:pos])
+			orig.Spans = append(orig.Spans, NewSpan())
+			err = UnmarshalProtoSpan(orig.Spans[len(orig.Spans)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

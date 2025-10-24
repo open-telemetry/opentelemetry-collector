@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigStackSlice(dest, src []*otlpprofiles.Stack) []*otlpprofiles.Stack {
+func CopyStackSlice(dest, src []*otlpprofiles.Stack) []*otlpprofiles.Stack {
 	var newDest []*otlpprofiles.Stack
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.Stack, len(src))
@@ -18,34 +18,34 @@ func CopyOrigStackSlice(dest, src []*otlpprofiles.Stack) []*otlpprofiles.Stack {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigStack()
+			newDest[i] = NewStack()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigStack(dest[i], true)
+			DeleteStack(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigStack()
+			newDest[i] = NewStack()
 		}
 	}
 	for i := range src {
-		CopyOrigStack(newDest[i], src[i])
+		CopyStack(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestStackSlice() []*otlpprofiles.Stack {
+func GenTestStackSlice() []*otlpprofiles.Stack {
 	orig := make([]*otlpprofiles.Stack, 5)
-	orig[0] = NewOrigStack()
-	orig[1] = GenTestOrigStack()
-	orig[2] = NewOrigStack()
-	orig[3] = GenTestOrigStack()
-	orig[4] = NewOrigStack()
+	orig[0] = NewStack()
+	orig[1] = GenTestStack()
+	orig[2] = NewStack()
+	orig[3] = GenTestStack()
+	orig[4] = NewStack()
 	return orig
 }

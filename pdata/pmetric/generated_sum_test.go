@@ -25,8 +25,8 @@ func TestSum_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSum(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSum(internal.NewOrigSum(), sharedState)) })
-	assert.Panics(t, func() { newSum(internal.NewOrigSum(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSum(internal.NewSum(), sharedState)) })
+	assert.Panics(t, func() { newSum(internal.NewSum(), sharedState).MoveTo(dest) })
 }
 
 func TestSum_CopyTo(t *testing.T) {
@@ -39,13 +39,13 @@ func TestSum_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSum(internal.NewOrigSum(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSum(internal.NewSum(), sharedState)) })
 }
 
 func TestSum_DataPoints(t *testing.T) {
 	ms := NewSum()
 	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
+	ms.orig.DataPoints = internal.GenTestNumberDataPointSlice()
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
@@ -68,6 +68,6 @@ func TestSum_IsMonotonic(t *testing.T) {
 }
 
 func generateTestSum() Sum {
-	ms := newSum(internal.GenTestOrigSum(), internal.NewState())
+	ms := newSum(internal.GenTestSum(), internal.NewState())
 	return ms
 }

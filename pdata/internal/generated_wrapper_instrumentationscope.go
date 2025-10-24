@@ -15,21 +15,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-type InstrumentationScope struct {
+type InstrumentationScopeWrapper struct {
 	orig  *otlpcommon.InstrumentationScope
 	state *State
 }
 
-func GetOrigInstrumentationScope(ms InstrumentationScope) *otlpcommon.InstrumentationScope {
+func GetInstrumentationScopeOrig(ms InstrumentationScopeWrapper) *otlpcommon.InstrumentationScope {
 	return ms.orig
 }
 
-func GetInstrumentationScopeState(ms InstrumentationScope) *State {
+func GetInstrumentationScopeState(ms InstrumentationScopeWrapper) *State {
 	return ms.state
 }
 
-func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State) InstrumentationScope {
-	return InstrumentationScope{orig: orig, state: state}
+func NewInstrumentationScopeWrapper(orig *otlpcommon.InstrumentationScope, state *State) InstrumentationScopeWrapper {
+	return InstrumentationScopeWrapper{orig: orig, state: state}
+}
+
+func GenTestInstrumentationScopeWrapper() InstrumentationScopeWrapper {
+	orig := GenTestInstrumentationScope()
+	return NewInstrumentationScopeWrapper(orig, NewState())
 }
 
 var (
@@ -40,14 +45,14 @@ var (
 	}
 )
 
-func NewOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
+func NewInstrumentationScope() *otlpcommon.InstrumentationScope {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.InstrumentationScope{}
 	}
 	return protoPoolInstrumentationScope.Get().(*otlpcommon.InstrumentationScope)
 }
 
-func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nullable bool) {
+func DeleteInstrumentationScope(orig *otlpcommon.InstrumentationScope, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -58,7 +63,7 @@ func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nulla
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 
 	orig.Reset()
@@ -67,28 +72,28 @@ func DeleteOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, nulla
 	}
 }
 
-func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
+func CopyInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.Name = src.Name
 	dest.Version = src.Version
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func GenTestOrigInstrumentationScope() *otlpcommon.InstrumentationScope {
-	orig := NewOrigInstrumentationScope()
+func GenTestInstrumentationScope() *otlpcommon.InstrumentationScope {
+	orig := NewInstrumentationScope()
 	orig.Name = "test_name"
 	orig.Version = "test_version"
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONInstrumentationScope(orig *otlpcommon.InstrumentationScope, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Name != "" {
 		dest.WriteObjectField("name")
@@ -101,10 +106,10 @@ func MarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, 
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -115,8 +120,8 @@ func MarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, 
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigInstrumentationScope unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, iter *json.Iterator) {
+// UnmarshalJSONInstrumentationScope unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONInstrumentationScope(orig *otlpcommon.InstrumentationScope, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
@@ -126,7 +131,7 @@ func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -137,7 +142,7 @@ func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope
 	}
 }
 
-func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
+func SizeProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
 	var n int
 	var l int
 	_ = l
@@ -150,7 +155,7 @@ func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) in
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedAttributesCount != 0 {
@@ -159,7 +164,7 @@ func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) in
 	return n
 }
 
-func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) int {
+func MarshalProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -180,7 +185,7 @@ func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope,
 		buf[pos] = 0x12
 	}
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -194,7 +199,7 @@ func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope,
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) error {
+func UnmarshalProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -244,7 +249,7 @@ func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScop
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

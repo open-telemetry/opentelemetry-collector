@@ -26,14 +26,14 @@ var (
 	}
 )
 
-func NewOrigSpan() *otlptrace.Span {
+func NewSpan() *otlptrace.Span {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlptrace.Span{}
 	}
 	return protoPoolSpan.Get().(*otlptrace.Span)
 }
 
-func DeleteOrigSpan(orig *otlptrace.Span, nullable bool) {
+func DeleteSpan(orig *otlptrace.Span, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -43,19 +43,19 @@ func DeleteOrigSpan(orig *otlptrace.Span, nullable bool) {
 		return
 	}
 
-	DeleteOrigTraceID(&orig.TraceId, false)
-	DeleteOrigSpanID(&orig.SpanId, false)
-	DeleteOrigSpanID(&orig.ParentSpanId, false)
+	DeleteTraceID(&orig.TraceId, false)
+	DeleteSpanID(&orig.SpanId, false)
+	DeleteSpanID(&orig.ParentSpanId, false)
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 	for i := range orig.Events {
-		DeleteOrigSpan_Event(orig.Events[i], true)
+		DeleteSpan_Event(orig.Events[i], true)
 	}
 	for i := range orig.Links {
-		DeleteOrigSpan_Link(orig.Links[i], true)
+		DeleteSpan_Link(orig.Links[i], true)
 	}
-	DeleteOrigStatus(&orig.Status, false)
+	DeleteStatus(&orig.Status, false)
 
 	orig.Reset()
 	if nullable {
@@ -63,60 +63,60 @@ func DeleteOrigSpan(orig *otlptrace.Span, nullable bool) {
 	}
 }
 
-func CopyOrigSpan(dest, src *otlptrace.Span) {
+func CopySpan(dest, src *otlptrace.Span) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
-	CopyOrigTraceState(&dest.TraceState, &src.TraceState)
+	CopyTraceState(&dest.TraceState, &src.TraceState)
 	dest.ParentSpanId = src.ParentSpanId
 	dest.Flags = src.Flags
 	dest.Name = src.Name
 	dest.Kind = src.Kind
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.EndTimeUnixNano = src.EndTimeUnixNano
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.Events = CopyOrigSpan_EventSlice(dest.Events, src.Events)
+	dest.Events = CopySpan_EventSlice(dest.Events, src.Events)
 	dest.DroppedEventsCount = src.DroppedEventsCount
-	dest.Links = CopyOrigSpan_LinkSlice(dest.Links, src.Links)
+	dest.Links = CopySpan_LinkSlice(dest.Links, src.Links)
 	dest.DroppedLinksCount = src.DroppedLinksCount
-	CopyOrigStatus(&dest.Status, &src.Status)
+	CopyStatus(&dest.Status, &src.Status)
 }
 
-func GenTestOrigSpan() *otlptrace.Span {
-	orig := NewOrigSpan()
+func GenTestSpan() *otlptrace.Span {
+	orig := NewSpan()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	orig.TraceState = *GenTestOrigTraceState()
+	orig.TraceState = *GenTestTraceState()
 	orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	orig.Flags = uint32(13)
 	orig.Name = "test_name"
 	orig.Kind = otlptrace.Span_SpanKind(3)
 	orig.StartTimeUnixNano = 1234567890
 	orig.EndTimeUnixNano = 1234567890
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
-	orig.Events = GenerateOrigTestSpan_EventSlice()
+	orig.Events = GenTestSpan_EventSlice()
 	orig.DroppedEventsCount = uint32(13)
-	orig.Links = GenerateOrigTestSpan_LinkSlice()
+	orig.Links = GenTestSpan_LinkSlice()
 	orig.DroppedLinksCount = uint32(13)
-	orig.Status = *GenTestOrigStatus()
+	orig.Status = *GenTestStatus()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSpan(orig *otlptrace.Span, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		MarshalJSONOrigTraceID(&orig.TraceId, dest)
+		MarshalJSONTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		MarshalJSONOrigSpanID(&orig.SpanId, dest)
+		MarshalJSONSpanID(&orig.SpanId, dest)
 	}
 	if orig.TraceState != "" {
 		dest.WriteObjectField("traceState")
@@ -124,7 +124,7 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	}
 	if orig.ParentSpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("parentSpanId")
-		MarshalJSONOrigSpanID(&orig.ParentSpanId, dest)
+		MarshalJSONSpanID(&orig.ParentSpanId, dest)
 	}
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
@@ -150,10 +150,10 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -164,10 +164,10 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	if len(orig.Events) > 0 {
 		dest.WriteObjectField("events")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSpan_Event(orig.Events[0], dest)
+		MarshalJSONSpan_Event(orig.Events[0], dest)
 		for i := 1; i < len(orig.Events); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSpan_Event(orig.Events[i], dest)
+			MarshalJSONSpan_Event(orig.Events[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -178,10 +178,10 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	if len(orig.Links) > 0 {
 		dest.WriteObjectField("links")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSpan_Link(orig.Links[0], dest)
+		MarshalJSONSpan_Link(orig.Links[0], dest)
 		for i := 1; i < len(orig.Links); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSpan_Link(orig.Links[i], dest)
+			MarshalJSONSpan_Link(orig.Links[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -190,22 +190,22 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 		dest.WriteUint32(orig.DroppedLinksCount)
 	}
 	dest.WriteObjectField("status")
-	MarshalJSONOrigStatus(&orig.Status, dest)
+	MarshalJSONStatus(&orig.Status, dest)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSpan unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
+// UnmarshalJSONSpan unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSpan(orig *otlptrace.Span, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
+			UnmarshalJSONTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
+			UnmarshalJSONSpanID(&orig.SpanId, iter)
 		case "traceState", "trace_state":
 			orig.TraceState = iter.ReadString()
 		case "parentSpanId", "parent_span_id":
-			UnmarshalJSONOrigSpanID(&orig.ParentSpanId, iter)
+			UnmarshalJSONSpanID(&orig.ParentSpanId, iter)
 		case "flags":
 			orig.Flags = iter.ReadUint32()
 		case "name":
@@ -219,48 +219,48 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "events":
 			for iter.ReadArray() {
-				orig.Events = append(orig.Events, NewOrigSpan_Event())
-				UnmarshalJSONOrigSpan_Event(orig.Events[len(orig.Events)-1], iter)
+				orig.Events = append(orig.Events, NewSpan_Event())
+				UnmarshalJSONSpan_Event(orig.Events[len(orig.Events)-1], iter)
 			}
 
 		case "droppedEventsCount", "dropped_events_count":
 			orig.DroppedEventsCount = iter.ReadUint32()
 		case "links":
 			for iter.ReadArray() {
-				orig.Links = append(orig.Links, NewOrigSpan_Link())
-				UnmarshalJSONOrigSpan_Link(orig.Links[len(orig.Links)-1], iter)
+				orig.Links = append(orig.Links, NewSpan_Link())
+				UnmarshalJSONSpan_Link(orig.Links[len(orig.Links)-1], iter)
 			}
 
 		case "droppedLinksCount", "dropped_links_count":
 			orig.DroppedLinksCount = iter.ReadUint32()
 		case "status":
-			UnmarshalJSONOrigStatus(&orig.Status, iter)
+			UnmarshalJSONStatus(&orig.Status, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigSpan(orig *otlptrace.Span) int {
+func SizeProtoSpan(orig *otlptrace.Span) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigTraceID(&orig.TraceId)
+	l = SizeProtoTraceID(&orig.TraceId)
 	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigSpanID(&orig.SpanId)
+	l = SizeProtoSpanID(&orig.SpanId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	l = len(orig.TraceState)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	l = SizeProtoOrigSpanID(&orig.ParentSpanId)
+	l = SizeProtoSpanID(&orig.ParentSpanId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	if orig.Flags != 0 {
 		n += 6
@@ -279,43 +279,43 @@ func SizeProtoOrigSpan(orig *otlptrace.Span) int {
 		n += 9
 	}
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedAttributesCount != 0 {
 		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
 	}
 	for i := range orig.Events {
-		l = SizeProtoOrigSpan_Event(orig.Events[i])
+		l = SizeProtoSpan_Event(orig.Events[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedEventsCount != 0 {
 		n += 1 + proto.Sov(uint64(orig.DroppedEventsCount))
 	}
 	for i := range orig.Links {
-		l = SizeProtoOrigSpan_Link(orig.Links[i])
+		l = SizeProtoSpan_Link(orig.Links[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedLinksCount != 0 {
 		n += 1 + proto.Sov(uint64(orig.DroppedLinksCount))
 	}
-	l = SizeProtoOrigStatus(&orig.Status)
+	l = SizeProtoStatus(&orig.Status)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
+func MarshalProtoSpan(orig *otlptrace.Span, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	l = MarshalProtoTraceID(&orig.TraceId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
-	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	l = MarshalProtoSpanID(&orig.SpanId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -330,7 +330,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		buf[pos] = 0x1a
 	}
 
-	l = MarshalProtoOrigSpanID(&orig.ParentSpanId, buf[:pos])
+	l = MarshalProtoSpanID(&orig.ParentSpanId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -370,7 +370,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		buf[pos] = 0x41
 	}
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -382,7 +382,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		buf[pos] = 0x50
 	}
 	for i := len(orig.Events) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSpan_Event(orig.Events[i], buf[:pos])
+		l = MarshalProtoSpan_Event(orig.Events[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -394,7 +394,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		buf[pos] = 0x60
 	}
 	for i := len(orig.Links) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSpan_Link(orig.Links[i], buf[:pos])
+		l = MarshalProtoSpan_Link(orig.Links[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -406,7 +406,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 		buf[pos] = 0x70
 	}
 
-	l = MarshalProtoOrigStatus(&orig.Status, buf[:pos])
+	l = MarshalProtoStatus(&orig.Status, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -415,7 +415,7 @@ func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
+func UnmarshalProtoSpan(orig *otlptrace.Span, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -441,7 +441,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
+			err = UnmarshalProtoTraceID(&orig.TraceId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -457,7 +457,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
+			err = UnmarshalProtoSpanID(&orig.SpanId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -485,7 +485,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigSpanID(&orig.ParentSpanId, buf[startPos:pos])
+			err = UnmarshalProtoSpanID(&orig.ParentSpanId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -561,7 +561,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -588,8 +588,8 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Events = append(orig.Events, NewOrigSpan_Event())
-			err = UnmarshalProtoOrigSpan_Event(orig.Events[len(orig.Events)-1], buf[startPos:pos])
+			orig.Events = append(orig.Events, NewSpan_Event())
+			err = UnmarshalProtoSpan_Event(orig.Events[len(orig.Events)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -616,8 +616,8 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Links = append(orig.Links, NewOrigSpan_Link())
-			err = UnmarshalProtoOrigSpan_Link(orig.Links[len(orig.Links)-1], buf[startPos:pos])
+			orig.Links = append(orig.Links, NewSpan_Link())
+			err = UnmarshalProtoSpan_Link(orig.Links[len(orig.Links)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -645,7 +645,7 @@ func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigStatus(&orig.Status, buf[startPos:pos])
+			err = UnmarshalProtoStatus(&orig.Status, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

@@ -24,14 +24,14 @@ var (
 	}
 )
 
-func NewOrigSample() *otlpprofiles.Sample {
+func NewSample() *otlpprofiles.Sample {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Sample{}
 	}
 	return protoPoolSample.Get().(*otlpprofiles.Sample)
 }
 
-func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
+func DeleteSample(orig *otlpprofiles.Sample, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -47,30 +47,30 @@ func DeleteOrigSample(orig *otlpprofiles.Sample, nullable bool) {
 	}
 }
 
-func CopyOrigSample(dest, src *otlpprofiles.Sample) {
+func CopySample(dest, src *otlpprofiles.Sample) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.StackIndex = src.StackIndex
-	dest.Values = CopyOrigInt64Slice(dest.Values, src.Values)
-	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.Values = CopyInt64Slice(dest.Values, src.Values)
+	dest.AttributeIndices = CopyInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 	dest.LinkIndex = src.LinkIndex
-	dest.TimestampsUnixNano = CopyOrigUint64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
+	dest.TimestampsUnixNano = CopyUint64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }
 
-func GenTestOrigSample() *otlpprofiles.Sample {
-	orig := NewOrigSample()
+func GenTestSample() *otlpprofiles.Sample {
+	orig := NewSample()
 	orig.StackIndex = int32(13)
-	orig.Values = GenerateOrigTestInt64Slice()
-	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.Values = GenTestInt64Slice()
+	orig.AttributeIndices = GenTestInt32Slice()
 	orig.LinkIndex = int32(13)
-	orig.TimestampsUnixNano = GenerateOrigTestUint64Slice()
+	orig.TimestampsUnixNano = GenTestUint64Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.StackIndex != int32(0) {
 		dest.WriteObjectField("stackIndex")
@@ -113,8 +113,8 @@ func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSample unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
+// UnmarshalJSONSample unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "stackIndex", "stack_index":
@@ -142,7 +142,7 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
+func SizeProtoSample(orig *otlpprofiles.Sample) int {
 	var n int
 	var l int
 	_ = l
@@ -174,7 +174,7 @@ func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
 	return n
 }
 
-func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
+func MarshalProtoSample(orig *otlpprofiles.Sample, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -221,7 +221,7 @@ func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
+func UnmarshalProtoSample(orig *otlpprofiles.Sample, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

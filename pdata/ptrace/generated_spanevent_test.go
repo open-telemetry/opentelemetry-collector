@@ -26,8 +26,8 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanEvent(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewOrigSpan_Event(), sharedState)) })
-	assert.Panics(t, func() { newSpanEvent(internal.NewOrigSpan_Event(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewSpan_Event(), sharedState)) })
+	assert.Panics(t, func() { newSpanEvent(internal.NewSpan_Event(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewOrigSpan_Event(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewSpan_Event(), sharedState)) })
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
@@ -64,8 +64,8 @@ func TestSpanEvent_Name(t *testing.T) {
 func TestSpanEvent_Attributes(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
@@ -79,6 +79,6 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	ms := newSpanEvent(internal.GenTestOrigSpan_Event(), internal.NewState())
+	ms := newSpanEvent(internal.GenTestSpan_Event(), internal.NewState())
 	return ms
 }

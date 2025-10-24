@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSummaryDataPoint(t *testing.T) {
+func TestCopySummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigSummaryDataPoint(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSummaryDataPoint()
-				CopyOrigSummaryDataPoint(dest, src)
+				dest := NewSummaryDataPoint()
+				CopySummaryDataPoint(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSummaryDataPoint(dest, dest)
+				CopySummaryDataPoint(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryDataPointUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummaryDataPointUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSummaryDataPoint()
-	UnmarshalJSONOrigSummaryDataPoint(dest, iter)
+	dest := NewSummaryDataPoint()
+	UnmarshalJSONSummaryDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSummaryDataPoint(), dest)
+	assert.Equal(t, NewSummaryDataPoint(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSummaryDataPoint(src, stream)
+				MarshalJSONSummaryDataPoint(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSummaryDataPoint()
-				UnmarshalJSONOrigSummaryDataPoint(dest, iter)
+				dest := NewSummaryDataPoint()
+				UnmarshalJSONSummaryDataPoint(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummaryDataPoint(dest, true)
+				DeleteSummaryDataPoint(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPointFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummaryDataPointFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSummaryDataPoint()
-			require.Error(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+			dest := NewSummaryDataPoint()
+			require.Error(t, UnmarshalProtoSummaryDataPoint(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPointUnknown(t *testing.T) {
-	dest := NewOrigSummaryDataPoint()
+func TestMarshalAndUnmarshalProtoSummaryDataPointUnknown(t *testing.T) {
+	dest := NewSummaryDataPoint()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSummaryDataPoint(), dest)
+	require.NoError(t, UnmarshalProtoSummaryDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSummaryDataPoint(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
-				gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+				buf := make([]byte, SizeProtoSummaryDataPoint(src))
+				gotSize := MarshalProtoSummaryDataPoint(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSummaryDataPoint()
-				require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
+				dest := NewSummaryDataPoint()
+				require.NoError(t, UnmarshalProtoSummaryDataPoint(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummaryDataPoint(dest, true)
+				DeleteSummaryDataPoint(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
-			gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+			buf := make([]byte, SizeProtoSummaryDataPoint(src))
+			gotSize := MarshalProtoSummaryDataPoint(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.SummaryDataPoint{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSummaryDataPoint()
-			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, goBuf))
+			dest := NewSummaryDataPoint()
+			require.NoError(t, UnmarshalProtoSummaryDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -160,13 +160,13 @@ func genTestFailingUnmarshalProtoValuesSummaryDataPoint() map[string][]byte {
 
 func genTestEncodingValuesSummaryDataPoint() map[string]*otlpmetrics.SummaryDataPoint {
 	return map[string]*otlpmetrics.SummaryDataPoint{
-		"empty":                           NewOrigSummaryDataPoint(),
-		"Attributes/default_and_test":     {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"empty":                           NewSummaryDataPoint(),
+		"Attributes/default_and_test":     {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test":          {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":               {TimeUnixNano: uint64(13)},
 		"Count/test":                      {Count: uint64(13)},
 		"Sum/test":                        {Sum: float64(3.1415926)},
-		"QuantileValues/default_and_test": {QuantileValues: []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{{}, GenTestOrigSummaryDataPoint_ValueAtQuantile()}},
+		"QuantileValues/default_and_test": {QuantileValues: []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{{}, GenTestSummaryDataPoint_ValueAtQuantile()}},
 		"Flags/test":                      {Flags: uint32(13)},
 	}
 }

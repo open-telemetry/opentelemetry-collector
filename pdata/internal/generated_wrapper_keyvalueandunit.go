@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigKeyValueAndUnit() *otlpprofiles.KeyValueAndUnit {
+func NewKeyValueAndUnit() *otlpprofiles.KeyValueAndUnit {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.KeyValueAndUnit{}
 	}
 	return protoPoolKeyValueAndUnit.Get().(*otlpprofiles.KeyValueAndUnit)
 }
 
-func DeleteOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, nullable bool) {
+func DeleteKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func DeleteOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, nullable bool
 		return
 	}
 
-	DeleteOrigAnyValue(&orig.Value, false)
+	DeleteAnyValue(&orig.Value, false)
 
 	orig.Reset()
 	if nullable {
@@ -48,33 +48,33 @@ func DeleteOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, nullable bool
 	}
 }
 
-func CopyOrigKeyValueAndUnit(dest, src *otlpprofiles.KeyValueAndUnit) {
+func CopyKeyValueAndUnit(dest, src *otlpprofiles.KeyValueAndUnit) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.KeyStrindex = src.KeyStrindex
-	CopyOrigAnyValue(&dest.Value, &src.Value)
+	CopyAnyValue(&dest.Value, &src.Value)
 	dest.UnitStrindex = src.UnitStrindex
 }
 
-func GenTestOrigKeyValueAndUnit() *otlpprofiles.KeyValueAndUnit {
-	orig := NewOrigKeyValueAndUnit()
+func GenTestKeyValueAndUnit() *otlpprofiles.KeyValueAndUnit {
+	orig := NewKeyValueAndUnit()
 	orig.KeyStrindex = int32(13)
-	orig.Value = *GenTestOrigAnyValue()
+	orig.Value = *GenTestAnyValue()
 	orig.UnitStrindex = int32(13)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.KeyStrindex != int32(0) {
 		dest.WriteObjectField("keyStrindex")
 		dest.WriteInt32(orig.KeyStrindex)
 	}
 	dest.WriteObjectField("value")
-	MarshalJSONOrigAnyValue(&orig.Value, dest)
+	MarshalJSONAnyValue(&orig.Value, dest)
 	if orig.UnitStrindex != int32(0) {
 		dest.WriteObjectField("unitStrindex")
 		dest.WriteInt32(orig.UnitStrindex)
@@ -82,14 +82,14 @@ func MarshalJSONOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, dest *js
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigKeyValueAndUnit unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, iter *json.Iterator) {
+// UnmarshalJSONKeyValueAndUnit unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "keyStrindex", "key_strindex":
 			orig.KeyStrindex = iter.ReadInt32()
 		case "value":
-			UnmarshalJSONOrigAnyValue(&orig.Value, iter)
+			UnmarshalJSONAnyValue(&orig.Value, iter)
 		case "unitStrindex", "unit_strindex":
 			orig.UnitStrindex = iter.ReadInt32()
 		default:
@@ -98,14 +98,14 @@ func UnmarshalJSONOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, iter *
 	}
 }
 
-func SizeProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit) int {
+func SizeProtoKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit) int {
 	var n int
 	var l int
 	_ = l
 	if orig.KeyStrindex != 0 {
 		n += 1 + proto.Sov(uint64(orig.KeyStrindex))
 	}
-	l = SizeProtoOrigAnyValue(&orig.Value)
+	l = SizeProtoAnyValue(&orig.Value)
 	n += 1 + proto.Sov(uint64(l)) + l
 	if orig.UnitStrindex != 0 {
 		n += 1 + proto.Sov(uint64(orig.UnitStrindex))
@@ -113,7 +113,7 @@ func SizeProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit) int {
 	return n
 }
 
-func MarshalProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []byte) int {
+func MarshalProtoKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -123,7 +123,7 @@ func MarshalProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []b
 		buf[pos] = 0x8
 	}
 
-	l = MarshalProtoOrigAnyValue(&orig.Value, buf[:pos])
+	l = MarshalProtoAnyValue(&orig.Value, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -137,7 +137,7 @@ func MarshalProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []b
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []byte) error {
+func UnmarshalProtoKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -175,7 +175,7 @@ func UnmarshalProtoOrigKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, buf [
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigAnyValue(&orig.Value, buf[startPos:pos])
+			err = UnmarshalProtoAnyValue(&orig.Value, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

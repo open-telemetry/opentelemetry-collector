@@ -76,7 +76,7 @@ func (pf *Field) TestValue() string {
 	case TypeString:
 		return `"test_` + strings.ToLower(pf.Name) + `"`
 	case TypeMessage:
-		return `GenTestOrig` + pf.messageName() + `()`
+		return `GenTest` + pf.messageName() + `()`
 	default:
 		panic("unsupported field type")
 	}

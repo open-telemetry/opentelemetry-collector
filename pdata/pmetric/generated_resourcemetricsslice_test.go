@@ -27,7 +27,7 @@ func TestResourceMetricsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigResourceMetrics()
+		(*es.orig)[i] = internal.GenTestResourceMetrics()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestResourceMetricsSlice_Sort(t *testing.T) {
 
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 	ms := NewResourceMetricsSlice()
-	*ms.orig = internal.GenerateOrigTestResourceMetricsSlice()
+	*ms.orig = internal.GenTestResourceMetricsSlice()
 	return ms
 }

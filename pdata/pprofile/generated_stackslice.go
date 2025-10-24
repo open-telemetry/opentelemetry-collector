@@ -30,7 +30,7 @@ func newStackSlice(orig *[]*otlpprofiles.Stack, state *internal.State) StackSlic
 	return StackSlice{orig: orig, state: state}
 }
 
-// NewStackSlice creates a StackSlice with 0 elements.
+// NewStackSlice creates a StackSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewStackSlice() StackSlice {
 	orig := []*otlpprofiles.Stack(nil)
@@ -99,7 +99,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Stack.
 func (es StackSlice) AppendEmpty() Stack {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigStack())
+	*es.orig = append(*es.orig, internal.NewStack())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es StackSlice) RemoveIf(f func(Stack) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigStack((*es.orig)[i], true)
+			internal.DeleteStack((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es StackSlice) CopyTo(dest StackSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigStackSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyStackSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Stack elements within StackSlice given the

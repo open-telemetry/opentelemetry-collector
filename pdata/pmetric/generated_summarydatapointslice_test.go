@@ -27,7 +27,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint()
+		(*es.orig)[i] = internal.GenTestSummaryDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestSummaryDataPointSlice_Sort(t *testing.T) {
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 	ms := NewSummaryDataPointSlice()
-	*ms.orig = internal.GenerateOrigTestSummaryDataPointSlice()
+	*ms.orig = internal.GenTestSummaryDataPointSlice()
 	return ms
 }
