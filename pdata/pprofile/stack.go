@@ -20,7 +20,7 @@ func (ms Stack) Equal(val Stack) bool {
 	return true
 }
 
-// switchDictionary updates the stack, switching its indices from one
+// switchDictionary updates the Stack, switching its indices from one
 // dictionary to another.
 func (ms Stack) switchDictionary(src, dst ProfilesDictionary) error {
 	for i, v := range ms.LocationIndices().All() {
