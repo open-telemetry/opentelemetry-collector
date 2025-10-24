@@ -9,6 +9,10 @@ import "fmt"
 // dictionary to another.
 func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 	if ms.LinkIndex() > 0 {
+		if src.LinkTable().Len() < int(ms.LinkIndex()) {
+			return fmt.Errorf("invalid link index %d", ms.LinkIndex())
+		}
+
 		idx, err := SetLink(dst.LinkTable(), src.LinkTable().At(int(ms.LinkIndex())))
 		if err != nil {
 			return fmt.Errorf("couldn't set link: %w", err)
@@ -17,6 +21,10 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if ms.StackIndex() > 0 {
+		if src.StackTable().Len() < int(ms.StackIndex()) {
+			return fmt.Errorf("invalid stack index %d", ms.StackIndex())
+		}
+
 		stack := src.StackTable().At(int(ms.StackIndex()))
 		err := stack.switchDictionary(src, dst)
 		if err != nil {

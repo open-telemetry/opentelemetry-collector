@@ -4,6 +4,7 @@
 package pprofile
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,25 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 		},
 		{
+			name: "with a link index that does not match anything",
+			sample: func() Sample {
+				s := NewSample()
+				s.SetLinkIndex(1)
+				return s
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantSample: func() Sample {
+				s := NewSample()
+				s.SetLinkIndex(1)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid link index 1"),
+		},
+		{
 			name: "with an existing stack",
 			sample: func() Sample {
 				s := NewSample()
@@ -110,6 +130,25 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				return d
 			}(),
 		},
+		{
+			name: "with a stack index that does not match anything",
+			sample: func() Sample {
+				s := NewSample()
+				s.SetStackIndex(1)
+				return s
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantSample: func() Sample {
+				s := NewSample()
+				s.SetStackIndex(1)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid stack index 1"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			sample := tt.sample
@@ -119,7 +158,7 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
-				require.ErrorIs(t, tt.wantErr, err)
+				require.Equal(t, tt.wantErr, err)
 			}
 
 			assert.Equal(t, tt.wantSample, sample)

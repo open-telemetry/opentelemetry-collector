@@ -4,6 +4,7 @@
 package pprofile
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -157,6 +158,26 @@ func TestStackSwitchDictionary(t *testing.T) {
 				return d
 			}(),
 		},
+		{
+			name: "with a location index that does not match anything",
+			stack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2)
+				return s
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantStack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+
+			wantErr: errors.New("invalid location index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			stack := tt.stack
@@ -166,7 +187,7 @@ func TestStackSwitchDictionary(t *testing.T) {
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
-				require.ErrorIs(t, tt.wantErr, err)
+				require.Equal(t, tt.wantErr, err)
 			}
 
 			assert.Equal(t, tt.wantStack, stack)
