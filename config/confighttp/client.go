@@ -56,7 +56,7 @@ type ClientConfig struct {
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
-	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
@@ -130,7 +130,6 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		Headers:           map[string]configopaque.String{},
 		MaxIdleConns:      defaultTransport.MaxIdleConns,
 		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
 		ForceAttemptHTTP2: true,
@@ -283,18 +282,18 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
-	headers   map[string]configopaque.String
+	headers   configopaque.MapList
 }
 
 // RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Set Host header if provided
-	hostHeader, found := interceptor.headers["Host"]
+	hostHeader, found := interceptor.headers.Get("Host")
 	if found && hostHeader != "" {
 		// `Host` field should be set to override default `Host` header value which is Endpoint
 		req.Host = string(hostHeader)
 	}
-	for k, v := range interceptor.headers {
+	for k, v := range interceptor.headers.Iter {
 		req.Header.Set(k, string(v))
 	}
 

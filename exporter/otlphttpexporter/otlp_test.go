@@ -293,7 +293,7 @@ func TestUserAgent(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		headers    map[string]configopaque.String
+		headers    configopaque.MapList
 		expectedUA string
 	}{
 		{
@@ -302,12 +302,12 @@ func TestUserAgent(t *testing.T) {
 		},
 		{
 			name:       "custom_user_agent",
-			headers:    map[string]configopaque.String{"User-Agent": "My Custom Agent"},
+			headers:    configopaque.MapList{{Name: "User-Agent", Value: "My Custom Agent"}},
 			expectedUA: "My Custom Agent",
 		},
 		{
 			name:       "custom_user_agent_lowercase",
-			headers:    map[string]configopaque.String{"user-agent": "My Custom Agent"},
+			headers:    configopaque.MapList{{Name: "user-agent", Value: "My Custom Agent"}},
 			expectedUA: "My Custom Agent",
 		},
 	}
