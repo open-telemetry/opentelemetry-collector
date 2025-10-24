@@ -8,6 +8,9 @@ import (
 	"net/http"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
@@ -48,4 +51,15 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handle
 		}
 		base.ServeHTTP(resp, req)
 	}), nil
+}
+
+func (ml *memoryLimiterExtension) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
+	return []grpc.ServerOption{grpc.UnaryInterceptor(
+		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+			if ml.MustRefuse() {
+				return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+			}
+			return handler(ctx, req)
+		},
+	)}, nil
 }
