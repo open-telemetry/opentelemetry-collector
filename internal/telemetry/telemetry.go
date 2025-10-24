@@ -4,14 +4,13 @@
 package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
 
 import (
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
@@ -22,42 +21,30 @@ var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
 )
 
-// IMPORTANT: This struct is reexported as part of the public API of
-// go.opentelemetry.io/collector/component, a stable module.
-// DO NOT MAKE BREAKING CHANGES TO EXPORTED FIELDS.
-type TelemetrySettings struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// TracerProvider that the factory can pass to other instrumented third-party libraries.
-	//
-	// The service may wrap this provider for attribute injection. The wrapper may implement an
-	// additional `Unwrap() trace.TracerProvider` method to grant access to the underlying SDK.
-	TracerProvider trace.TracerProvider
-
-	// MeterProvider that the factory can pass to other instrumented third-party libraries.
-	MeterProvider metric.MeterProvider
-
-	// Resource contains the resource attributes for the collector's telemetry.
-	Resource pcommon.Resource
-
-	// Extra attributes added to instrumentation scopes
-	extraAttributes attribute.Set
+type injectorCore interface {
+	DropInjectedAttributes(droppedAttrs ...string) zapcore.Core
 }
 
-// The publicization of this API is tracked in https://github.com/open-telemetry/opentelemetry-collector/issues/12405
-
-func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings {
-	return WithAttributeSet(ts, componentattribute.RemoveAttributes(ts.extraAttributes, fields...))
+type injectorTracerProvider interface {
+	DropInjectedAttributes(droppedAttrs ...string) trace.TracerProvider
 }
 
-func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettings {
-	ts.extraAttributes = attrs
-	ts.Logger = componentattribute.ZapLoggerWithAttributes(ts.Logger, ts.extraAttributes)
-	ts.TracerProvider = componentattribute.TracerProviderWithAttributes(ts.TracerProvider, ts.extraAttributes)
-	if NewPipelineTelemetryGate.IsEnabled() {
-		ts.MeterProvider = componentattribute.MeterProviderWithAttributes(ts.MeterProvider, ts.extraAttributes)
+type injectorMeterProvider interface {
+	DropInjectedAttributes(droppedAttrs ...string) metric.MeterProvider
+}
+
+func DropInjectedAttributes(ts component.TelemetrySettings, attrs ...string) component.TelemetrySettings {
+	ts.Logger = ts.Logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		if ic, ok := c.(injectorCore); ok {
+			return ic.DropInjectedAttributes(attrs...)
+		}
+		return c
+	}))
+	if itp, ok := ts.TracerProvider.(injectorTracerProvider); ok {
+		ts.TracerProvider = itp.DropInjectedAttributes(attrs...)
+	}
+	if imp, ok := ts.MeterProvider.(injectorMeterProvider); ok {
+		ts.MeterProvider = imp.DropInjectedAttributes(attrs...)
 	}
 	return ts
 }
