@@ -44,5 +44,14 @@ func (ms Profile) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 	}
 
+	err := ms.PeriodType().switchDictionary(src, dst)
+	if err != nil {
+		return fmt.Errorf("error switching dictionary for period type: %w", err)
+	}
+	err = ms.SampleType().switchDictionary(src, dst)
+	if err != nil {
+		return fmt.Errorf("error switching dictionary for sample type: %w", err)
+	}
+
 	return nil
 }

@@ -183,6 +183,66 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				return d
 			}(),
 		},
+		{
+			name: "with a profile that has a period type",
+			profile: func() Profile {
+				p := NewProfile()
+				p.PeriodType().SetTypeStrindex(1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+				return d
+			}(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.PeriodType().SetTypeStrindex(2)
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+				return d
+			}(),
+		},
+		{
+			name: "with a profile that has a sample type",
+			profile: func() Profile {
+				p := NewProfile()
+				p.SampleType().SetTypeStrindex(1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+				return d
+			}(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.SampleType().SetTypeStrindex(2)
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+				return d
+			}(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			profile := tt.profile
