@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMappingEqual(t *testing.T) {
@@ -65,6 +66,76 @@ func TestMappingEqual(t *testing.T) {
 			} else {
 				assert.False(t, tt.orig.Equal(tt.dest))
 			}
+		})
+	}
+}
+
+func TestMappingSwitchDictionary(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		mapping Mapping
+
+		src ProfilesDictionary
+		dst ProfilesDictionary
+
+		wantMapping    Mapping
+		wantDictionary ProfilesDictionary
+		wantErr        error
+	}{
+		{
+			name:    "with an empty mapping",
+			mapping: NewMapping(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping:    NewMapping(),
+			wantDictionary: NewProfilesDictionary(),
+		},
+		{
+			name: "with an existing filename",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(1)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+				return d
+			}(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(2)
+				return m
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+				return d
+			}(),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.mapping
+			dst := tt.dst
+			err := m.switchDictionary(tt.src, dst)
+
+			if tt.wantErr == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tt.wantErr, err)
+			}
+
+			assert.Equal(t, tt.wantMapping, m)
+			assert.Equal(t, tt.wantDictionary, dst)
 		})
 	}
 }
