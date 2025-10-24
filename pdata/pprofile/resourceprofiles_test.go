@@ -35,7 +35,7 @@ func TestResourceProfilesSwitchDictionary(t *testing.T) {
 			wantDictionary:       NewProfilesDictionary(),
 		},
 		{
-			name: "with a scope profiles that has a profile",
+			name: "with a resource profiles that has a profile",
 			resourceProfiles: func() ResourceProfiles {
 				r := NewResourceProfiles()
 				profile := r.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
