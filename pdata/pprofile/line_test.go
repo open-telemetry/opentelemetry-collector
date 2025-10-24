@@ -4,9 +4,11 @@
 package pprofile
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLineSliceEqual(t *testing.T) {
@@ -115,6 +117,107 @@ func TestLineEqual(t *testing.T) {
 			} else {
 				assert.False(t, tt.orig.Equal(tt.dest))
 			}
+		})
+	}
+}
+
+func TestLineSwitchDictionary(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		line Line
+
+		src ProfilesDictionary
+		dst ProfilesDictionary
+
+		wantLine       Line
+		wantDictionary ProfilesDictionary
+		wantErr        error
+	}{
+		{
+			name: "with an empty line",
+			line: NewLine(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantLine:       NewLine(),
+			wantDictionary: NewProfilesDictionary(),
+		},
+		{
+			name: "with an existing function",
+			line: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(1)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+
+				d.FunctionTable().AppendEmpty()
+				f := d.FunctionTable().AppendEmpty()
+				f.SetNameStrindex(1)
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+
+				d.FunctionTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				return d
+			}(),
+
+			wantLine: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(2)
+				return l
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+
+				d.FunctionTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				f := d.FunctionTable().AppendEmpty()
+				f.SetNameStrindex(2)
+				return d
+			}(),
+		},
+		{
+			name: "with a function index that does not match anything",
+			line: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(1)
+				return l
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantLine: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(1)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid function index 1"),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			line := tt.line
+			dst := tt.dst
+			err := line.switchDictionary(tt.src, dst)
+
+			if tt.wantErr == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tt.wantErr, err)
+			}
+
+			assert.Equal(t, tt.wantLine, line)
+			assert.Equal(t, tt.wantDictionary, dst)
 		})
 	}
 }
