@@ -4,6 +4,7 @@
 package pprofile
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,118 @@ func TestProfileSwitchDictionary(t *testing.T) {
 
 			wantProfile:    NewProfile(),
 			wantDictionary: NewProfilesDictionary(),
+		},
+		{
+			name: "with an existing attribute",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(2)
+				return d
+			}(),
+		},
+		{
+			name: "with an attribute index that does not match anything",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(1)
+				return p
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(1)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 1"),
+		},
+		{
+			name: "with an existing comment",
+			profile: func() Profile {
+				p := NewProfile()
+				p.CommentStrindices().Append(1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+				return d
+			}(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.CommentStrindices().Append(2)
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+
+				return d
+			}(),
+		},
+		{
+			name: "with a comment index that does not match anything",
+			profile: func() Profile {
+				p := NewProfile()
+				p.CommentStrindices().Append(1)
+				return p
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.CommentStrindices().Append(1)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid comment index 1"),
 		},
 		{
 			name: "with a profile that has a sample",

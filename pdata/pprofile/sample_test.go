@@ -79,10 +79,10 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 		},
 		{
-			name: "with a link index that does not match anything",
+			name: "with an attribute index that does not match anything",
 			sample: func() Sample {
 				s := NewSample()
-				s.SetLinkIndex(1)
+				s.AttributeIndices().Append(1)
 				return s
 			}(),
 
@@ -91,11 +91,11 @@ func TestSampleSwitchDictionary(t *testing.T) {
 
 			wantSample: func() Sample {
 				s := NewSample()
-				s.SetLinkIndex(1)
+				s.AttributeIndices().Append(1)
 				return s
 			}(),
 			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid link index 1"),
+			wantErr:        errors.New("invalid attribute index 1"),
 		},
 		{
 			name: "with an existing link",
