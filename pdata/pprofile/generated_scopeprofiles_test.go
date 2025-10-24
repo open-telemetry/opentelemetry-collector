@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,13 +46,13 @@ func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
 	ms.orig.Scope = *internal.GenTestInstrumentationScope()
-	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScopeWrapper(internal.GenTestInstrumentationScope(), ms.state)), ms.Scope())
+	assert.Equal(t, pcommon.InstrumentationScope(internal.GenTestInstrumentationScopeWrapper()), ms.Scope())
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	ms.orig.Profiles = internal.GenTestProfileSlice()
+	ms.orig.Profiles = internal.GenTestProfilePtrSlice()
 	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
@@ -64,10 +63,9 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewScopeProfiles(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	ms := newScopeProfiles(internal.GenTestScopeProfiles(), internal.NewState())
-	return ms
+	return newScopeProfiles(internal.GenTestScopeProfiles(), internal.NewState())
 }

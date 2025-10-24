@@ -18,10 +18,6 @@ var (
 	messageInternalTemplateBytes []byte
 	messageInternalTemplate      = template.Parse("message_internal.go", messageInternalTemplateBytes)
 
-	//go:embed templates/message_internal_test.go.tmpl
-	messageInternalTestTemplateBytes []byte
-	messageInternalTestTemplate      = template.Parse("message_internal_test.go", messageInternalTestTemplateBytes)
-
 	//go:embed templates/message_test.go.tmpl
 	messageTestTemplateBytes []byte
 	messageTestTemplate      = template.Parse("message_test.go", messageTestTemplateBytes)
@@ -34,10 +30,6 @@ var (
 	primitiveSliceInternalTemplateBytes []byte
 	primitiveSliceInternalTemplate      = template.Parse("primitive_slice_internal.go", primitiveSliceInternalTemplateBytes)
 
-	//go:embed templates/primitive_slice_internal_test.go.tmpl
-	primitiveSliceInternalTestTemplateBytes []byte
-	primitiveSliceInternalTestTemplate      = template.Parse("primitive_slice_internal_test.go", primitiveSliceInternalTestTemplateBytes)
-
 	//go:embed templates/primitive_slice_test.go.tmpl
 	primitiveSliceTestTemplateBytes []byte
 	primitiveSliceTestTemplate      = template.Parse("primitive_slice_test.go", primitiveSliceTestTemplateBytes)
@@ -49,10 +41,6 @@ var (
 	//go:embed templates/slice_internal.go.tmpl
 	sliceInternalTemplateBytes []byte
 	sliceInternalTemplate      = template.Parse("slice_internal.go", sliceInternalTemplateBytes)
-
-	//go:embed templates/slice_internal_test.go.tmpl
-	sliceInternalTestTemplateBytes []byte
-	sliceInternalTestTemplate      = template.Parse("slice_internal_test.go", sliceInternalTestTemplateBytes)
 
 	//go:embed templates/slice_test.go.tmpl
 	sliceTestTemplateBytes []byte

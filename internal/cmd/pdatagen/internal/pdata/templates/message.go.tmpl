@@ -23,12 +23,12 @@ import (
 type {{ .structName }} internal.{{ .structName }}Wrapper
 {{- else }}
 type {{ .structName }} struct {
-	orig *{{ .originFullName }}
+	orig *internal.{{ .originName }}
 	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{ .structName }} {
+func new{{ .structName }}(orig *internal.{{ .originName }}, state *internal.State) {{ .structName }} {
 	{{- if .hasWrapper }}
 	return {{ .structName }}(internal.New{{ .structName }}Wrapper(orig, state))
 	{{- else }}
@@ -68,7 +68,7 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 }
 
 {{ if .hasWrapper -}}
-func (ms {{ .structName }}) getOrig() *{{ .originFullName }} {
+func (ms {{ .structName }}) getOrig() *internal.{{ .originName }} {
 	return internal.Get{{ .structName }}Orig(internal.{{ .structName }}Wrapper(ms))
 }
 

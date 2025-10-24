@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewLocation function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Location struct {
-	orig  *otlpprofiles.Location
+	orig  *internal.Location
 	state *internal.State
 }
 
-func newLocation(orig *otlpprofiles.Location, state *internal.State) Location {
+func newLocation(orig *internal.Location, state *internal.State) Location {
 	return Location{orig: orig, state: state}
 }
 

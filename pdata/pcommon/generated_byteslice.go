@@ -36,13 +36,13 @@ func NewByteSlice() ByteSlice {
 
 // AsRaw returns a copy of the []byte slice.
 func (ms ByteSlice) AsRaw() []byte {
-	return internal.CopyByteSlice(nil, *ms.getOrig())
+	return copyByteSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyByteSlice(*ms.getOrig(), val)
+	*ms.getOrig() = copyByteSlice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []byte slice value.
@@ -155,10 +155,14 @@ func (ms ByteSlice) CopyTo(dest ByteSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyByteSlice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another ByteSlice
 func (ms ByteSlice) Equal(val ByteSlice) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
+}
+
+func copyByteSlice(dst, src []byte) []byte {
+	return append(dst[:0], src...)
 }

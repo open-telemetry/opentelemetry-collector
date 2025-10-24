@@ -6,21 +6,12 @@
 
 package internal
 
-import (
-	"fmt"
-	"sync"
-
-	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
-)
-
 type MetricsWrapper struct {
-	orig  *otlpcollectormetrics.ExportMetricsServiceRequest
+	orig  *ExportMetricsServiceRequest
 	state *State
 }
 
-func GetMetricsOrig(ms MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
+func GetMetricsOrig(ms MetricsWrapper) *ExportMetricsServiceRequest {
 	return ms.orig
 }
 
@@ -28,157 +19,10 @@ func GetMetricsState(ms MetricsWrapper) *State {
 	return ms.state
 }
 
-func NewMetricsWrapper(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *State) MetricsWrapper {
+func NewMetricsWrapper(orig *ExportMetricsServiceRequest, state *State) MetricsWrapper {
 	return MetricsWrapper{orig: orig, state: state}
 }
 
 func GenTestMetricsWrapper() MetricsWrapper {
-	orig := GenTestExportMetricsServiceRequest()
-	return NewMetricsWrapper(orig, NewState())
-}
-
-var (
-	protoPoolExportMetricsServiceRequest = sync.Pool{
-		New: func() any {
-			return &otlpcollectormetrics.ExportMetricsServiceRequest{}
-		},
-	}
-)
-
-func NewExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	if !UseProtoPooling.IsEnabled() {
-		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	}
-	return protoPoolExportMetricsServiceRequest.Get().(*otlpcollectormetrics.ExportMetricsServiceRequest)
-}
-
-func DeleteExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, nullable bool) {
-	if orig == nil {
-		return
-	}
-
-	if !UseProtoPooling.IsEnabled() {
-		orig.Reset()
-		return
-	}
-
-	for i := range orig.ResourceMetrics {
-		DeleteResourceMetrics(orig.ResourceMetrics[i], true)
-	}
-
-	orig.Reset()
-	if nullable {
-		protoPoolExportMetricsServiceRequest.Put(orig)
-	}
-}
-
-func CopyExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
-	// If copying to same object, just return.
-	if src == dest {
-		return
-	}
-	dest.ResourceMetrics = CopyResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
-}
-
-func GenTestExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	orig := NewExportMetricsServiceRequest()
-	orig.ResourceMetrics = GenTestResourceMetricsSlice()
-	return orig
-}
-
-// MarshalJSON marshals all properties from the current struct to the destination stream.
-func MarshalJSONExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.ResourceMetrics) > 0 {
-		dest.WriteObjectField("resourceMetrics")
-		dest.WriteArrayStart()
-		MarshalJSONResourceMetrics(orig.ResourceMetrics[0], dest)
-		for i := 1; i < len(orig.ResourceMetrics); i++ {
-			dest.WriteMore()
-			MarshalJSONResourceMetrics(orig.ResourceMetrics[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONMetrics unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
-	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
-		switch f {
-		case "resourceMetrics", "resource_metrics":
-			for iter.ReadArray() {
-				orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-				UnmarshalJSONResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
-			}
-
-		default:
-			iter.Skip()
-		}
-	}
-}
-
-func SizeProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.ResourceMetrics {
-		l = SizeProtoResourceMetrics(orig.ResourceMetrics[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.ResourceMetrics) - 1; i >= 0; i-- {
-		l = MarshalProtoResourceMetrics(orig.ResourceMetrics[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResourceMetrics", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-			err = UnmarshalProtoResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return NewMetricsWrapper(GenTestExportMetricsServiceRequest(), NewState())
 }

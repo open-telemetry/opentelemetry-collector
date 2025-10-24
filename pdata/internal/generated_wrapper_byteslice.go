@@ -24,12 +24,8 @@ func NewByteSliceWrapper(orig *[]byte, state *State) ByteSliceWrapper {
 }
 
 func GenTestByteSliceWrapper() ByteSliceWrapper {
-	orig := GenTestByteSlice()
+	orig := []byte{1, 2, 3}
 	return NewByteSliceWrapper(&orig, NewState())
-}
-
-func CopyByteSlice(dst, src []byte) []byte {
-	return append(dst[:0], src...)
 }
 
 func GenTestByteSlice() []byte {

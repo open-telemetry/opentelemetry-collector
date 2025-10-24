@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLineSlice(t *testing.T) {
 	es := NewLineSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newLineSlice(&[]*otlpprofiles.Line{}, internal.NewState())
+	es = newLineSlice(&[]*internal.Line{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLine()
@@ -36,7 +35,7 @@ func TestLineSlice(t *testing.T) {
 func TestLineSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newLineSlice(&[]*otlpprofiles.Line{}, sharedState)
+	es := newLineSlice(&[]*internal.Line{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestLineSlice_Sort(t *testing.T) {
 
 func generateTestLineSlice() LineSlice {
 	ms := NewLineSlice()
-	*ms.orig = internal.GenTestLineSlice()
+	*ms.orig = internal.GenTestLinePtrSlice()
 	return ms
 }

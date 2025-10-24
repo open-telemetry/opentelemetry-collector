@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestResourceSpansSlice(t *testing.T) {
 	es := NewResourceSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, internal.NewState())
+	es = newResourceSpansSlice(&[]*internal.ResourceSpans{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceSpans()
@@ -36,7 +35,7 @@ func TestResourceSpansSlice(t *testing.T) {
 func TestResourceSpansSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newResourceSpansSlice(&[]*otlptrace.ResourceSpans{}, sharedState)
+	es := newResourceSpansSlice(&[]*internal.ResourceSpans{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestResourceSpansSlice_Sort(t *testing.T) {
 
 func generateTestResourceSpansSlice() ResourceSpansSlice {
 	ms := NewResourceSpansSlice()
-	*ms.orig = internal.GenTestResourceSpansSlice()
+	*ms.orig = internal.GenTestResourceSpansPtrSlice()
 	return ms
 }

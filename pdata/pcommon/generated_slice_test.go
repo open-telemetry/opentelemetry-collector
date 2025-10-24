@@ -12,13 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSlice(&[]otlpcommon.AnyValue{}, internal.NewState())
+	es = newSlice(&[]internal.AnyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueEmpty()
@@ -35,7 +34,7 @@ func TestSlice(t *testing.T) {
 func TestSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSlice(&[]otlpcommon.AnyValue{}, sharedState)
+	es := newSlice(&[]internal.AnyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

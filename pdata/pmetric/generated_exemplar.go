@@ -8,8 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -24,11 +22,11 @@ import (
 // Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Exemplar struct {
-	orig  *otlpmetrics.Exemplar
+	orig  *internal.Exemplar
 	state *internal.State
 }
 
-func newExemplar(orig *otlpmetrics.Exemplar, state *internal.State) Exemplar {
+func newExemplar(orig *internal.Exemplar, state *internal.State) Exemplar {
 	return Exemplar{orig: orig, state: state}
 }
 
@@ -73,9 +71,9 @@ func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) ValueType() ExemplarValueType {
 	switch ms.orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
+	case *internal.Exemplar_AsDouble:
 		return ExemplarValueTypeDouble
-	case *otlpmetrics.Exemplar_AsInt:
+	case *internal.Exemplar_AsInt:
 		return ExemplarValueTypeInt
 	}
 	return ExemplarValueTypeEmpty
@@ -89,11 +87,11 @@ func (ms Exemplar) DoubleValue() float64 {
 // SetDoubleValue replaces the double associated with this Exemplar.
 func (ms Exemplar) SetDoubleValue(v float64) {
 	ms.state.AssertMutable()
-	var ov *otlpmetrics.Exemplar_AsDouble
+	var ov *internal.Exemplar_AsDouble
 	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &otlpmetrics.Exemplar_AsDouble{}
+		ov = &internal.Exemplar_AsDouble{}
 	} else {
-		ov = internal.ProtoPoolExemplar_AsDouble.Get().(*otlpmetrics.Exemplar_AsDouble)
+		ov = internal.ProtoPoolExemplar_AsDouble.Get().(*internal.Exemplar_AsDouble)
 	}
 	ov.AsDouble = v
 	ms.orig.Value = ov
@@ -107,25 +105,14 @@ func (ms Exemplar) IntValue() int64 {
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	var ov *otlpmetrics.Exemplar_AsInt
+	var ov *internal.Exemplar_AsInt
 	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &otlpmetrics.Exemplar_AsInt{}
+		ov = &internal.Exemplar_AsInt{}
 	} else {
-		ov = internal.ProtoPoolExemplar_AsInt.Get().(*otlpmetrics.Exemplar_AsInt)
+		ov = internal.ProtoPoolExemplar_AsInt.Get().(*internal.Exemplar_AsInt)
 	}
 	ov.AsInt = v
 	ms.orig.Value = ov
-}
-
-// SpanID returns the spanid associated with this Exemplar.
-func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
-}
-
-// SetSpanID replaces the spanid associated with this Exemplar.
-func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.state.AssertMutable()
-	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceID returns the traceid associated with this Exemplar.
@@ -136,7 +123,18 @@ func (ms Exemplar) TraceID() pcommon.TraceID {
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
 	ms.state.AssertMutable()
-	ms.orig.TraceId = data.TraceID(v)
+	ms.orig.TraceId = internal.TraceID(v)
+}
+
+// SpanID returns the spanid associated with this Exemplar.
+func (ms Exemplar) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.orig.SpanId)
+}
+
+// SetSpanID replaces the spanid associated with this Exemplar.
+func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
+	ms.orig.SpanId = internal.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

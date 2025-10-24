@@ -49,6 +49,5 @@ func TestExportResponse_PartialSuccess(t *testing.T) {
 }
 
 func generateTestExportResponse() ExportResponse {
-	ms := newExportResponse(internal.GenTestExportLogsServiceResponse(), internal.NewState())
-	return ms
+	return newExportResponse(internal.GenTestExportLogsServiceResponse(), internal.NewState())
 }

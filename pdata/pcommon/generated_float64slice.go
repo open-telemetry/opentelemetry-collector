@@ -36,13 +36,13 @@ func NewFloat64Slice() Float64Slice {
 
 // AsRaw returns a copy of the []float64 slice.
 func (ms Float64Slice) AsRaw() []float64 {
-	return internal.CopyFloat64Slice(nil, *ms.getOrig())
+	return copyFloat64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []float64 into the slice Float64Slice.
 func (ms Float64Slice) FromRaw(val []float64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyFloat64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = copyFloat64Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []float64 slice value.
@@ -155,10 +155,14 @@ func (ms Float64Slice) CopyTo(dest Float64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyFloat64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = copyFloat64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another Float64Slice
 func (ms Float64Slice) Equal(val Float64Slice) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
+}
+
+func copyFloat64Slice(dst, src []float64) []float64 {
+	return append(dst[:0], src...)
 }

@@ -3,16 +3,12 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
-import (
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-)
-
 type MapWrapper struct {
-	orig  *[]otlpcommon.KeyValue
+	orig  *[]KeyValue
 	state *State
 }
 
-func GetMapOrig(ms MapWrapper) *[]otlpcommon.KeyValue {
+func GetMapOrig(ms MapWrapper) *[]KeyValue {
 	return ms.orig
 }
 
@@ -20,7 +16,7 @@ func GetMapState(ms MapWrapper) *State {
 	return ms.state
 }
 
-func NewMapWrapper(orig *[]otlpcommon.KeyValue, state *State) MapWrapper {
+func NewMapWrapper(orig *[]KeyValue, state *State) MapWrapper {
 	return MapWrapper{orig: orig, state: state}
 }
 

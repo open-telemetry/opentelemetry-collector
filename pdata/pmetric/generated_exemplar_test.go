@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -72,7 +70,7 @@ func TestExemplar_DoubleValue(t *testing.T) {
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, sharedState).SetDoubleValue(float64(3.1415926)) })
+	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).SetDoubleValue(float64(3.1415926)) })
 }
 
 func TestExemplar_IntValue(t *testing.T) {
@@ -83,26 +81,25 @@ func TestExemplar_IntValue(t *testing.T) {
 	assert.Equal(t, ExemplarValueTypeInt, ms.ValueType())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, sharedState).SetIntValue(int64(13)) })
-}
-
-func TestExemplar_SpanID(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetSpanID(testValSpanID)
-	assert.Equal(t, testValSpanID, ms.SpanID())
+	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).SetIntValue(int64(13)) })
 }
 
 func TestExemplar_TraceID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(internal.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(internal.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
+func TestExemplar_SpanID(t *testing.T) {
+	ms := NewExemplar()
+	assert.Equal(t, pcommon.SpanID(internal.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(internal.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetSpanID(testValSpanID)
+	assert.Equal(t, testValSpanID, ms.SpanID())
+}
+
 func generateTestExemplar() Exemplar {
-	ms := newExemplar(internal.GenTestExemplar(), internal.NewState())
-	return ms
+	return newExemplar(internal.GenTestExemplar(), internal.NewState())
 }

@@ -24,12 +24,8 @@ func NewInt64SliceWrapper(orig *[]int64, state *State) Int64SliceWrapper {
 }
 
 func GenTestInt64SliceWrapper() Int64SliceWrapper {
-	orig := GenTestInt64Slice()
+	orig := []int64{1, 2, 3}
 	return NewInt64SliceWrapper(&orig, NewState())
-}
-
-func CopyInt64Slice(dst, src []int64) []int64 {
-	return append(dst[:0], src...)
 }
 
 func GenTestInt64Slice() []int64 {

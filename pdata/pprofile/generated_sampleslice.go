@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // SampleSlice logically represents a slice of Sample.
@@ -22,18 +21,18 @@ import (
 // Must use NewSampleSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SampleSlice struct {
-	orig  *[]*otlpprofiles.Sample
+	orig  *[]*internal.Sample
 	state *internal.State
 }
 
-func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleSlice {
+func newSampleSlice(orig *[]*internal.Sample, state *internal.State) SampleSlice {
 	return SampleSlice{orig: orig, state: state}
 }
 
 // NewSampleSlice creates a SampleSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
-	orig := []*otlpprofiles.Sample(nil)
+	orig := []*internal.Sample(nil)
 	return newSampleSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Sample, len(*es.orig), newCap)
+	newOrig := make([]*internal.Sample, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopySampleSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySamplePtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Sample elements within SampleSlice given the

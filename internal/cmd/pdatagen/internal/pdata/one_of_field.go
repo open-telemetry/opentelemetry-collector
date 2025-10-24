@@ -6,6 +6,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"strings"
 
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
@@ -35,65 +36,80 @@ const oneOfAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncName }
 `
 
 const oneOfTestFailingUnmarshalProtoValuesTemplate = `
-	{{- range .values }}
-	{{ .GenerateTestFailingUnmarshalProtoValues $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	{{ .GenTestFailingUnmarshalProtoValues }}
 	{{- end }}`
 
 const oneOfTestValuesTemplate = `
-	{{- range .values }}
-	{{ .GenerateTestEncodingValues $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	{{ .GenTestEncodingValues }}
 	{{- end }}`
 
 const oneOfPoolOrigTemplate = `
-	{{- range .values }}
-		{{ .GeneratePoolOrig $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	{{ .GenPool }}
 	{{- end }}`
 
+const oneOfMessageOrigTemplate = `
+func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
+	if m != nil {
+		return m.{{ .originFieldName }}
+	}
+	return nil
+}
+
+{{- range .fields }}
+{{ .GenOneOfMessages }}
+{{- end }}`
+
 const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
-	{{ range .values -}}
-	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
-		{{ .GenerateDeleteOrig $.baseStruct $.OneOfField }}{{- end }}
+	{{ range .fields -}}
+	case *{{ $.protoName }}_{{ .GetName }}:
+		{{ .GenDelete }}{{- end }}
 	}
 `
 
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
-{{- range .values }}
-{{ .GenerateCopyOrig $.baseStruct $.OneOfField }}
+{{- range .fields }}
+	case *{{ $.protoName }}_{{ .GetName }}:
+		{{ .GenCopy }}
 {{- end }}
+	default:
+		dest.{{ .originFieldName }} = nil
 }`
 
 const oneOfMarshalJSONTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
-	{{- range .values }}
-	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
-		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	case *{{ $.protoName }}_{{ .GetName }}:
+		{{ .GenMarshalJSON }}
 	{{- end }}
 }`
 
 const oneOfUnmarshalJSONTemplate = `
-	{{- range .values }}
-	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	{{ .GenUnmarshalJSON }}
 	{{- end }}`
 
 const oneOfSizeProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
 	case nil:
 		_ = orig
 		break
-	{{ range .values -}}
-	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
-		{{ .GenerateSizeProto $.baseStruct $.OneOfField }}
+	{{ range .fields -}}
+	case *{{ $.protoName }}_{{ .GetName }}:
+		{{ .GenSizeProto }}
 	{{ end -}}
 }`
 
 const oneOfMarshalProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
-	{{- range .values }}
-	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
-		{{ .GenerateMarshalProto $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+	case *{{ $.protoName }}_{{ .GetName }}:
+		{{ .GenMarshalProto }}
 	{{- end }}
 }`
 
 const oneOfUnmarshalProtoTemplate = `
-	{{- range .values }}
-		{{ .GenerateUnmarshalProto $.baseStruct $.OneOfField }}
+	{{- range .fields }}
+		{{ .GenUnmarshalProto }}
 	{{- end }}`
 
 type OneOfField struct {
@@ -124,47 +140,97 @@ func (of *OneOfField) GenerateTestValue(ms *messageStruct) string {
 	return of.values[of.testValueIdx].GenerateTestValue(ms, of)
 }
 
-func (of *OneOfField) GenerateTestFailingUnmarshalProtoValues(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfTestFailingUnmarshalProtoValuesTemplate", []byte(oneOfTestFailingUnmarshalProtoValuesTemplate)), of.templateFields(ms))
+func (of *OneOfField) toProtoField(ms *messageStruct) proto.FieldInterface {
+	fields := make([]proto.FieldInterface, len(of.values))
+	for i := range of.values {
+		fields[i] = of.values[i].toProtoField(ms, of)
+	}
+	return &oneOfProtoField{
+		originFieldName: of.originFieldName,
+		protoName:       ms.protoName,
+		fields:          fields,
+	}
 }
 
-func (of *OneOfField) GenerateTestEncodingValues(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields(ms))
+type oneOfProtoField struct {
+	originFieldName string
+	protoName       string
+	fields          []proto.FieldInterface
 }
 
-func (of *OneOfField) GeneratePoolOrig(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields(ms))
+func (of *oneOfProtoField) GenMessageField() string {
+	return of.originFieldName + " any"
 }
 
-func (of *OneOfField) GenerateDeleteOrig(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields(ms))
+func (of *oneOfProtoField) GenOneOfMessages() string {
+	return template.Execute(template.Parse("oneOfMessageOrigTemplate", []byte(oneOfMessageOrigTemplate)), of.templateFields())
 }
 
-func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfCopyOrigTemplate", []byte(oneOfCopyOrigTemplate)), of.templateFields(ms))
+func (of *oneOfProtoField) GetName() string {
+	return of.originFieldName
 }
 
-func (of *OneOfField) GenerateMarshalJSON(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfMarshalJSONTemplate", []byte(oneOfMarshalJSONTemplate)), of.templateFields(ms))
+func (of *oneOfProtoField) GoType() string {
+	panic("implement me")
 }
 
-func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	return template.Execute(template.Parse("oneOfUnmarshalJSONTemplate", []byte(oneOfUnmarshalJSONTemplate)), of.templateFields(ms))
+func (of *oneOfProtoField) DefaultValue() string {
+	panic("implement me")
 }
 
-func (of *OneOfField) GenerateSizeProto(ms *messageStruct) string {
+func (of *oneOfProtoField) TestValue() string {
+	return "&" + of.protoName + "_" + of.fields[0].GetName() + "{" + of.fields[0].GetName() + ": " + of.fields[0].TestValue() + "}"
+}
+
+func (of *oneOfProtoField) GenTestFailingUnmarshalProtoValues() string {
+	return template.Execute(template.Parse("oneOfTestFailingUnmarshalProtoValuesTemplate", []byte(oneOfTestFailingUnmarshalProtoValuesTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenTestEncodingValues() string {
+	return template.Execute(template.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenPool() string {
+	return template.Execute(template.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenDelete() string {
+	return template.Execute(template.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenCopy() string {
+	return template.Execute(template.Parse("oneOfCopyOrigTemplate", []byte(oneOfCopyOrigTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenMarshalJSON() string {
+	return template.Execute(template.Parse("oneOfMarshalJSONTemplate", []byte(oneOfMarshalJSONTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenUnmarshalJSON() string {
+	return template.Execute(template.Parse("oneOfUnmarshalJSONTemplate", []byte(oneOfUnmarshalJSONTemplate)), of.templateFields())
+}
+
+func (of *oneOfProtoField) GenSizeProto() string {
 	t := template.Parse("oneOfSizeProtoTemplate", []byte(oneOfSizeProtoTemplate))
-	return template.Execute(t, of.templateFields(ms))
+	return template.Execute(t, of.templateFields())
 }
 
-func (of *OneOfField) GenerateMarshalProto(ms *messageStruct) string {
+func (of *oneOfProtoField) GenMarshalProto() string {
 	t := template.Parse("oneOfMarshalProtoTemplate", []byte(oneOfMarshalProtoTemplate))
-	return template.Execute(t, of.templateFields(ms))
+	return template.Execute(t, of.templateFields())
 }
 
-func (of *OneOfField) GenerateUnmarshalProto(ms *messageStruct) string {
+func (of *oneOfProtoField) GenUnmarshalProto() string {
 	t := template.Parse("oneOfUnmarshalProtoTemplate", []byte(oneOfUnmarshalProtoTemplate))
-	return template.Execute(t, of.templateFields(ms))
+	return template.Execute(t, of.templateFields())
+}
+
+func (of *oneOfProtoField) templateFields() map[string]any {
+	return map[string]any{
+		"originFieldName": of.originFieldName,
+		"fields":          of.fields,
+		"protoName":       of.protoName,
+	}
 }
 
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
@@ -181,7 +247,6 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"origAccessor":         origAccessor(ms.getHasWrapper()),
 		"stateAccessor":        stateAccessor(ms.getHasWrapper()),
 		"values":               of.values,
-		"originTypePrefix":     ms.originFullName + "_",
 	}
 }
 
@@ -190,17 +255,8 @@ var _ Field = (*OneOfField)(nil)
 type oneOfValue interface {
 	GetOriginFieldName() string
 	GenerateAccessors(ms *messageStruct, of *OneOfField) string
+	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateTests(ms *messageStruct, of *OneOfField) string
 	GenerateTestValue(ms *messageStruct, of *OneOfField) string
-	GenerateTestFailingUnmarshalProtoValues(ms *messageStruct, of *OneOfField) string
-	GenerateTestEncodingValues(ms *messageStruct, of *OneOfField) string
-	GeneratePoolOrig(ms *messageStruct, of *OneOfField) string
-	GenerateDeleteOrig(ms *messageStruct, of *OneOfField) string
-	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
-	GenerateType(ms *messageStruct, of *OneOfField) string
-	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
-	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
-	GenerateSizeProto(ms *messageStruct, of *OneOfField) string
-	GenerateMarshalProto(ms *messageStruct, of *OneOfField) string
-	GenerateUnmarshalProto(ms *messageStruct, of *OneOfField) string
+	toProtoField(ms *messageStruct, of *OneOfField) proto.FieldInterface
 }

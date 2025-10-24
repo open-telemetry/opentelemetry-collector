@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, internal.NewState())
+	es = newExponentialHistogramDataPointSlice(&[]*internal.ExponentialHistogramDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExponentialHistogramDataPoint()
@@ -36,7 +35,7 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, sharedState)
+	es := newExponentialHistogramDataPointSlice(&[]*internal.ExponentialHistogramDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
 	ms := NewExponentialHistogramDataPointSlice()
-	*ms.orig = internal.GenTestExponentialHistogramDataPointSlice()
+	*ms.orig = internal.GenTestExponentialHistogramDataPointPtrSlice()
 	return ms
 }

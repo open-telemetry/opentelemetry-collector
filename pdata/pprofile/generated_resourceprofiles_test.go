@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,13 +46,13 @@ func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
 	ms.orig.Resource = *internal.GenTestResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
+	assert.Equal(t, pcommon.Resource(internal.GenTestResourceWrapper()), ms.Resource())
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
-	ms.orig.ScopeProfiles = internal.GenTestScopeProfilesSlice()
+	ms.orig.ScopeProfiles = internal.GenTestScopeProfilesPtrSlice()
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
@@ -65,11 +64,10 @@ func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, sharedState).SetSchemaUrl("test_schemaurl")
+		newResourceProfiles(internal.NewResourceProfiles(), sharedState).SetSchemaUrl("test_schemaurl")
 	})
 }
 
 func generateTestResourceProfiles() ResourceProfiles {
-	ms := newResourceProfiles(internal.GenTestResourceProfiles(), internal.NewState())
-	return ms
+	return newResourceProfiles(internal.GenTestResourceProfiles(), internal.NewState())
 }

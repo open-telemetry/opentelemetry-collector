@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 // SpanSlice logically represents a slice of Span.
@@ -22,18 +21,18 @@ import (
 // Must use NewSpanSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice struct {
-	orig  *[]*otlptrace.Span
+	orig  *[]*internal.Span
 	state *internal.State
 }
 
-func newSpanSlice(orig *[]*otlptrace.Span, state *internal.State) SpanSlice {
+func newSpanSlice(orig *[]*internal.Span, state *internal.State) SpanSlice {
 	return SpanSlice{orig: orig, state: state}
 }
 
 // NewSpanSlice creates a SpanSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanSlice() SpanSlice {
-	orig := []*otlptrace.Span(nil)
+	orig := []*internal.Span(nil)
 	return newSpanSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlptrace.Span, len(*es.orig), newCap)
+	newOrig := make([]*internal.Span, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopySpanSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySpanPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Span elements within SpanSlice given the

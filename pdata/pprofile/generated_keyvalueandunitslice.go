@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // KeyValueAndUnitSlice logically represents a slice of KeyValueAndUnit.
@@ -22,18 +21,18 @@ import (
 // Must use NewKeyValueAndUnitSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type KeyValueAndUnitSlice struct {
-	orig  *[]*otlpprofiles.KeyValueAndUnit
+	orig  *[]*internal.KeyValueAndUnit
 	state *internal.State
 }
 
-func newKeyValueAndUnitSlice(orig *[]*otlpprofiles.KeyValueAndUnit, state *internal.State) KeyValueAndUnitSlice {
+func newKeyValueAndUnitSlice(orig *[]*internal.KeyValueAndUnit, state *internal.State) KeyValueAndUnitSlice {
 	return KeyValueAndUnitSlice{orig: orig, state: state}
 }
 
 // NewKeyValueAndUnitSlice creates a KeyValueAndUnitSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewKeyValueAndUnitSlice() KeyValueAndUnitSlice {
-	orig := []*otlpprofiles.KeyValueAndUnit(nil)
+	orig := []*internal.KeyValueAndUnit(nil)
 	return newKeyValueAndUnitSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es KeyValueAndUnitSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.KeyValueAndUnit, len(*es.orig), newCap)
+	newOrig := make([]*internal.KeyValueAndUnit, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es KeyValueAndUnitSlice) CopyTo(dest KeyValueAndUnitSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyKeyValueAndUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyKeyValueAndUnitPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the KeyValueAndUnit elements within KeyValueAndUnitSlice given the

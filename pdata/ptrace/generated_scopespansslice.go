@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 // ScopeSpansSlice logically represents a slice of ScopeSpans.
@@ -22,18 +21,18 @@ import (
 // Must use NewScopeSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeSpansSlice struct {
-	orig  *[]*otlptrace.ScopeSpans
+	orig  *[]*internal.ScopeSpans
 	state *internal.State
 }
 
-func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, state *internal.State) ScopeSpansSlice {
+func newScopeSpansSlice(orig *[]*internal.ScopeSpans, state *internal.State) ScopeSpansSlice {
 	return ScopeSpansSlice{orig: orig, state: state}
 }
 
 // NewScopeSpansSlice creates a ScopeSpansSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
-	orig := []*otlptrace.ScopeSpans(nil)
+	orig := []*internal.ScopeSpans(nil)
 	return newScopeSpansSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlptrace.ScopeSpans, len(*es.orig), newCap)
+	newOrig := make([]*internal.ScopeSpans, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyScopeSpansSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyScopeSpansPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the

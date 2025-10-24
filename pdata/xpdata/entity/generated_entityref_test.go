@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -50,7 +49,7 @@ func TestEntityRef_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestEntityRef_Type(t *testing.T) {
@@ -60,7 +59,7 @@ func TestEntityRef_Type(t *testing.T) {
 	assert.Equal(t, "test_type", ms.Type())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetType("test_type") })
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).SetType("test_type") })
 }
 
 func TestEntityRef_IdKeys(t *testing.T) {
@@ -78,6 +77,5 @@ func TestEntityRef_DescriptionKeys(t *testing.T) {
 }
 
 func generateTestEntityRef() EntityRef {
-	ms := newEntityRef(internal.GenTestEntityRef(), internal.NewState())
-	return ms
+	return newEntityRef(internal.GenTestEntityRef(), internal.NewState())
 }

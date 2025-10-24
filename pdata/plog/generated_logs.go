@@ -8,7 +8,6 @@ package plog
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
@@ -21,7 +20,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Logs internal.LogsWrapper
 
-func newLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *internal.State) Logs {
+func newLogs(orig *internal.ExportLogsServiceRequest, state *internal.State) Logs {
 	return Logs(internal.NewLogsWrapper(orig, state))
 }
 
@@ -57,7 +56,7 @@ func (ms Logs) CopyTo(dest Logs) {
 	internal.CopyExportLogsServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Logs) getOrig() *otlpcollectorlogs.ExportLogsServiceRequest {
+func (ms Logs) getOrig() *internal.ExportLogsServiceRequest {
 	return internal.GetLogsOrig(internal.LogsWrapper(ms))
 }
 

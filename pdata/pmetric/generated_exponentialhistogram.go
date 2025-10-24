@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
@@ -20,11 +19,11 @@ import (
 // Must use NewExponentialHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogram struct {
-	orig  *otlpmetrics.ExponentialHistogram
+	orig  *internal.ExponentialHistogram
 	state *internal.State
 }
 
-func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, state *internal.State) ExponentialHistogram {
+func newExponentialHistogram(orig *internal.ExponentialHistogram, state *internal.State) ExponentialHistogram {
 	return ExponentialHistogram{orig: orig, state: state}
 }
 
@@ -62,7 +61,7 @@ func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = internal.AggregationTemporality(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

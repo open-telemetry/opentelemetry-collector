@@ -8,8 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +19,11 @@ import (
 // Must use NewLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Link struct {
-	orig  *otlpprofiles.Link
+	orig  *internal.Link
 	state *internal.State
 }
 
-func newLink(orig *otlpprofiles.Link, state *internal.State) Link {
+func newLink(orig *internal.Link, state *internal.State) Link {
 	return Link{orig: orig, state: state}
 }
 
@@ -58,7 +56,7 @@ func (ms Link) TraceID() pcommon.TraceID {
 // SetTraceID replaces the traceid associated with this Link.
 func (ms Link) SetTraceID(v pcommon.TraceID) {
 	ms.state.AssertMutable()
-	ms.orig.TraceId = data.TraceID(v)
+	ms.orig.TraceId = internal.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Link.
@@ -69,7 +67,7 @@ func (ms Link) SpanID() pcommon.SpanID {
 // SetSpanID replaces the spanid associated with this Link.
 func (ms Link) SetSpanID(v pcommon.SpanID) {
 	ms.state.AssertMutable()
-	ms.orig.SpanId = data.SpanID(v)
+	ms.orig.SpanId = internal.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

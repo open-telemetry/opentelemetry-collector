@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ResourceProfilesSlice logically represents a slice of ResourceProfiles.
@@ -22,18 +21,18 @@ import (
 // Must use NewResourceProfilesSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfilesSlice struct {
-	orig  *[]*otlpprofiles.ResourceProfiles
+	orig  *[]*internal.ResourceProfiles
 	state *internal.State
 }
 
-func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfilesSlice {
+func newResourceProfilesSlice(orig *[]*internal.ResourceProfiles, state *internal.State) ResourceProfilesSlice {
 	return ResourceProfilesSlice{orig: orig, state: state}
 }
 
 // NewResourceProfilesSlice creates a ResourceProfilesSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceProfilesSlice() ResourceProfilesSlice {
-	orig := []*otlpprofiles.ResourceProfiles(nil)
+	orig := []*internal.ResourceProfiles(nil)
 	return newResourceProfilesSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.ResourceProfiles, len(*es.orig), newCap)
+	newOrig := make([]*internal.ResourceProfiles, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyResourceProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceProfilesPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceProfiles elements within ResourceProfilesSlice given the

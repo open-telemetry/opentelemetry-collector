@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // Profiles is the top-level struct that is propagated through the profiles pipeline.
@@ -21,7 +20,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Profiles internal.ProfilesWrapper
 
-func newProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state *internal.State) Profiles {
+func newProfiles(orig *internal.ExportProfilesServiceRequest, state *internal.State) Profiles {
 	return Profiles(internal.NewProfilesWrapper(orig, state))
 }
 
@@ -62,7 +61,7 @@ func (ms Profiles) CopyTo(dest Profiles) {
 	internal.CopyExportProfilesServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Profiles) getOrig() *otlpcollectorprofiles.ExportProfilesServiceRequest {
+func (ms Profiles) getOrig() *internal.ExportProfilesServiceRequest {
 	return internal.GetProfilesOrig(internal.ProfilesWrapper(ms))
 }
 

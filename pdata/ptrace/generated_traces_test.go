@@ -44,11 +44,10 @@ func TestTraces_CopyTo(t *testing.T) {
 func TestTraces_ResourceSpans(t *testing.T) {
 	ms := NewTraces()
 	assert.Equal(t, NewResourceSpansSlice(), ms.ResourceSpans())
-	ms.getOrig().ResourceSpans = internal.GenTestResourceSpansSlice()
+	ms.getOrig().ResourceSpans = internal.GenTestResourceSpansPtrSlice()
 	assert.Equal(t, generateTestResourceSpansSlice(), ms.ResourceSpans())
 }
 
 func generateTestTraces() Traces {
-	ms := newTraces(internal.GenTestExportTraceServiceRequest(), internal.NewState())
-	return ms
+	return newTraces(internal.GenTestExportTraceServiceRequest(), internal.NewState())
 }

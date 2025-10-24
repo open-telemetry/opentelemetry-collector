@@ -50,6 +50,5 @@ func TestStack_LocationIndices(t *testing.T) {
 }
 
 func generateTestStack() Stack {
-	ms := newStack(internal.GenTestStack(), internal.NewState())
-	return ms
+	return newStack(internal.GenTestStack(), internal.NewState())
 }

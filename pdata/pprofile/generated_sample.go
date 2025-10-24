@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewSample function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Sample struct {
-	orig  *otlpprofiles.Sample
+	orig  *internal.Sample
 	state *internal.State
 }
 
-func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
+func newSample(orig *internal.Sample, state *internal.State) Sample {
 	return Sample{orig: orig, state: state}
 }
 

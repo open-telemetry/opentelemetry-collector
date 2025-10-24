@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
 func TestResource_MoveTo(t *testing.T) {
@@ -56,10 +55,9 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestResource() Resource {
-	ms := newResource(internal.GenTestResource(), internal.NewState())
-	return ms
+	return newResource(internal.GenTestResource(), internal.NewState())
 }

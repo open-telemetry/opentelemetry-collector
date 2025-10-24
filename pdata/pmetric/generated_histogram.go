@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
@@ -19,11 +18,11 @@ import (
 // Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Histogram struct {
-	orig  *otlpmetrics.Histogram
+	orig  *internal.Histogram
 	state *internal.State
 }
 
-func newHistogram(orig *otlpmetrics.Histogram, state *internal.State) Histogram {
+func newHistogram(orig *internal.Histogram, state *internal.State) Histogram {
 	return Histogram{orig: orig, state: state}
 }
 
@@ -61,7 +60,7 @@ func (ms Histogram) AggregationTemporality() AggregationTemporality {
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
 func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = internal.AggregationTemporality(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewResourceProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfiles struct {
-	orig  *otlpprofiles.ResourceProfiles
+	orig  *internal.ResourceProfiles
 	state *internal.State
 }
 
-func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfiles {
+func newResourceProfiles(orig *internal.ResourceProfiles, state *internal.State) ResourceProfiles {
 	return ResourceProfiles{orig: orig, state: state}
 }
 

@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // MetricSlice logically represents a slice of Metric.
@@ -22,18 +21,18 @@ import (
 // Must use NewMetricSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice struct {
-	orig  *[]*otlpmetrics.Metric
+	orig  *[]*internal.Metric
 	state *internal.State
 }
 
-func newMetricSlice(orig *[]*otlpmetrics.Metric, state *internal.State) MetricSlice {
+func newMetricSlice(orig *[]*internal.Metric, state *internal.State) MetricSlice {
 	return MetricSlice{orig: orig, state: state}
 }
 
 // NewMetricSlice creates a MetricSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMetricSlice() MetricSlice {
-	orig := []*otlpmetrics.Metric(nil)
+	orig := []*internal.Metric(nil)
 	return newMetricSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es MetricSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.Metric, len(*es.orig), newCap)
+	newOrig := make([]*internal.Metric, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyMetricSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyMetricPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Metric elements within MetricSlice given the

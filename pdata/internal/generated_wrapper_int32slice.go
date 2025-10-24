@@ -24,12 +24,8 @@ func NewInt32SliceWrapper(orig *[]int32, state *State) Int32SliceWrapper {
 }
 
 func GenTestInt32SliceWrapper() Int32SliceWrapper {
-	orig := GenTestInt32Slice()
+	orig := []int32{1, 2, 3}
 	return NewInt32SliceWrapper(&orig, NewState())
-}
-
-func CopyInt32Slice(dst, src []int32) []int32 {
-	return append(dst[:0], src...)
 }
 
 func GenTestInt32Slice() []int32 {

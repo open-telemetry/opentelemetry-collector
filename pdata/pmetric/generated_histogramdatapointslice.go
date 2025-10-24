@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -22,18 +21,18 @@ import (
 // Must use NewHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice struct {
-	orig  *[]*otlpmetrics.HistogramDataPoint
+	orig  *[]*internal.HistogramDataPoint
 	state *internal.State
 }
 
-func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint, state *internal.State) HistogramDataPointSlice {
+func newHistogramDataPointSlice(orig *[]*internal.HistogramDataPoint, state *internal.State) HistogramDataPointSlice {
 	return HistogramDataPointSlice{orig: orig, state: state}
 }
 
 // NewHistogramDataPointSlice creates a HistogramDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewHistogramDataPointSlice() HistogramDataPointSlice {
-	orig := []*otlpmetrics.HistogramDataPoint(nil)
+	orig := []*internal.HistogramDataPoint(nil)
 	return newHistogramDataPointSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.HistogramDataPoint, len(*es.orig), newCap)
+	newOrig := make([]*internal.HistogramDataPoint, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyHistogramDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyHistogramDataPointPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the

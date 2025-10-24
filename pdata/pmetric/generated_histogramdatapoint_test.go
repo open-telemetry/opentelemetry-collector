@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -73,7 +72,7 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, sharedState).SetCount(uint64(13)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewHistogramDataPoint(), sharedState).SetCount(uint64(13)) })
 }
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
@@ -148,6 +147,5 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	ms := newHistogramDataPoint(internal.GenTestHistogramDataPoint(), internal.NewState())
-	return ms
+	return newHistogramDataPoint(internal.GenTestHistogramDataPoint(), internal.NewState())
 }

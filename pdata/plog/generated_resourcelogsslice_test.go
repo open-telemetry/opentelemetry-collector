@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
 func TestResourceLogsSlice(t *testing.T) {
 	es := NewResourceLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, internal.NewState())
+	es = newResourceLogsSlice(&[]*internal.ResourceLogs{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceLogs()
@@ -36,7 +35,7 @@ func TestResourceLogsSlice(t *testing.T) {
 func TestResourceLogsSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, sharedState)
+	es := newResourceLogsSlice(&[]*internal.ResourceLogs{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestResourceLogsSlice_Sort(t *testing.T) {
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {
 	ms := NewResourceLogsSlice()
-	*ms.orig = internal.GenTestResourceLogsSlice()
+	*ms.orig = internal.GenTestResourceLogsPtrSlice()
 	return ms
 }

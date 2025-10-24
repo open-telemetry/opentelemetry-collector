@@ -30,14 +30,10 @@ func New{{ .structName }}Wrapper(orig *[]{{ .itemType }}, state *State) {{ .stru
 }
 
 func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
-	orig := GenTest{{ .elementOriginName }}Slice()
+	orig := []{{ .itemType }}{ {{ .testOrigVal }} }
 	return New{{ .structName }}Wrapper(&orig, NewState())
 }
 
-func Copy{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
-	return append(dst[:0], src...)
-}
-
 func GenTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
-	return []{{ .itemType }}{ {{ .testOrigVal }} }
+    return []{{ .itemType }}{ {{ .testOrigVal }} }
 }

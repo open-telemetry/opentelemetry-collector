@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
-	orig  *otlpmetrics.ResourceMetrics
+	orig  *internal.ResourceMetrics
 	state *internal.State
 }
 
-func newResourceMetrics(orig *otlpmetrics.ResourceMetrics, state *internal.State) ResourceMetrics {
+func newResourceMetrics(orig *internal.ResourceMetrics, state *internal.State) ResourceMetrics {
 	return ResourceMetrics{orig: orig, state: state}
 }
 

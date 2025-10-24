@@ -24,10 +24,6 @@ func GenTestTraceStateWrapper() TraceStateWrapper {
 	return NewTraceStateWrapper(GenTestTraceState(), NewState())
 }
 
-func CopyTraceState(dest, src *string) {
-	*dest = *src
-}
-
 func GenTestTraceState() *string {
 	orig := new(string)
 	*orig = "rojo=00f067aa0ba902b7"

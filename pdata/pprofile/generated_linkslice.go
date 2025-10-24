@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // LinkSlice logically represents a slice of Link.
@@ -22,18 +21,18 @@ import (
 // Must use NewLinkSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LinkSlice struct {
-	orig  *[]*otlpprofiles.Link
+	orig  *[]*internal.Link
 	state *internal.State
 }
 
-func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
+func newLinkSlice(orig *[]*internal.Link, state *internal.State) LinkSlice {
 	return LinkSlice{orig: orig, state: state}
 }
 
 // NewLinkSlice creates a LinkSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
-	orig := []*otlpprofiles.Link(nil)
+	orig := []*internal.Link(nil)
 	return newLinkSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Link, len(*es.orig), newCap)
+	newOrig := make([]*internal.Link, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLinkPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Link elements within LinkSlice given the

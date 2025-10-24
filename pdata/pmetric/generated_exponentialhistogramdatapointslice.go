@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
@@ -22,18 +21,18 @@ import (
 // Must use NewExponentialHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPointSlice struct {
-	orig  *[]*otlpmetrics.ExponentialHistogramDataPoint
+	orig  *[]*internal.ExponentialHistogramDataPoint
 	state *internal.State
 }
 
-func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint, state *internal.State) ExponentialHistogramDataPointSlice {
+func newExponentialHistogramDataPointSlice(orig *[]*internal.ExponentialHistogramDataPoint, state *internal.State) ExponentialHistogramDataPointSlice {
 	return ExponentialHistogramDataPointSlice{orig: orig, state: state}
 }
 
 // NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
-	orig := []*otlpmetrics.ExponentialHistogramDataPoint(nil)
+	orig := []*internal.ExponentialHistogramDataPoint(nil)
 	return newExponentialHistogramDataPointSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ExponentialHistogramDataPoint, len(*es.orig), newCap)
+	newOrig := make([]*internal.ExponentialHistogramDataPoint, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyExponentialHistogramDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyExponentialHistogramDataPointPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the

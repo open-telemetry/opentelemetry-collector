@@ -8,7 +8,6 @@ package ptraceotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectortrace.ExportTracePartialSuccess
+	orig  *internal.ExportTracePartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *internal.ExportTracePartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 

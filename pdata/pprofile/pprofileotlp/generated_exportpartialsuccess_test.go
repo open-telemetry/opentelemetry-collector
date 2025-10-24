@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -50,7 +49,7 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetRejectedProfiles(int64(13))
+		newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState).SetRejectedProfiles(int64(13))
 	})
 }
 
@@ -62,11 +61,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := newExportPartialSuccess(internal.GenTestExportProfilesPartialSuccess(), internal.NewState())
-	return ms
+	return newExportPartialSuccess(internal.GenTestExportProfilesPartialSuccess(), internal.NewState())
 }

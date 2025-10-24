@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
@@ -19,11 +18,11 @@ import (
 // Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Sum struct {
-	orig  *otlpmetrics.Sum
+	orig  *internal.Sum
 	state *internal.State
 }
 
-func newSum(orig *otlpmetrics.Sum, state *internal.State) Sum {
+func newSum(orig *internal.Sum, state *internal.State) Sum {
 	return Sum{orig: orig, state: state}
 }
 
@@ -61,7 +60,7 @@ func (ms Sum) AggregationTemporality() AggregationTemporality {
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
 func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = internal.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.

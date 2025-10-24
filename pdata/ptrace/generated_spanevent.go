@@ -8,7 +8,6 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +20,11 @@ import (
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
-	orig  *otlptrace.Span_Event
+	orig  *internal.SpanEvent
 	state *internal.State
 }
 
-func newSpanEvent(orig *otlptrace.Span_Event, state *internal.State) SpanEvent {
+func newSpanEvent(orig *internal.SpanEvent, state *internal.State) SpanEvent {
 	return SpanEvent{orig: orig, state: state}
 }
 
@@ -34,7 +33,7 @@ func newSpanEvent(orig *otlptrace.Span_Event, state *internal.State) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	return newSpanEvent(internal.NewSpan_Event(), internal.NewState())
+	return newSpanEvent(internal.NewSpanEvent(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +45,7 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteSpan_Event(dest.orig, false)
+	internal.DeleteSpanEvent(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -91,5 +90,5 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.state.AssertMutable()
-	internal.CopySpan_Event(dest.orig, ms.orig)
+	internal.CopySpanEvent(dest.orig, ms.orig)
 }

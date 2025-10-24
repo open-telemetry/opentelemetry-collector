@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewScopeMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeMetrics struct {
-	orig  *otlpmetrics.ScopeMetrics
+	orig  *internal.ScopeMetrics
 	state *internal.State
 }
 
-func newScopeMetrics(orig *otlpmetrics.ScopeMetrics, state *internal.State) ScopeMetrics {
+func newScopeMetrics(orig *internal.ScopeMetrics, state *internal.State) ScopeMetrics {
 	return ScopeMetrics{orig: orig, state: state}
 }
 

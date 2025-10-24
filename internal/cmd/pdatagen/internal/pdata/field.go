@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
+import (
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
+)
 
 type Field interface {
 	GenerateAccessors(ms *messageStruct) string
@@ -10,25 +13,7 @@ type Field interface {
 
 	GenerateTestValue(ms *messageStruct) string
 
-	GenerateTestFailingUnmarshalProtoValues(ms *messageStruct) string
-
-	GenerateTestEncodingValues(ms *messageStruct) string
-
-	GeneratePoolOrig(ms *messageStruct) string
-
-	GenerateDeleteOrig(ms *messageStruct) string
-
-	GenerateCopyOrig(ms *messageStruct) string
-
-	GenerateMarshalJSON(ms *messageStruct) string
-
-	GenerateUnmarshalJSON(ms *messageStruct) string
-
-	GenerateSizeProto(ms *messageStruct) string
-
-	GenerateMarshalProto(ms *messageStruct) string
-
-	GenerateUnmarshalProto(*messageStruct) string
+	toProtoField(ms *messageStruct) proto.FieldInterface
 }
 
 func origAccessor(hasWrapper bool) string {

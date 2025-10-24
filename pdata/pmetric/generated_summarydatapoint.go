@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint struct {
-	orig  *otlpmetrics.SummaryDataPoint
+	orig  *internal.SummaryDataPoint
 	state *internal.State
 }
 
-func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, state *internal.State) SummaryDataPoint {
+func newSummaryDataPoint(orig *internal.SummaryDataPoint, state *internal.State) SummaryDataPoint {
 	return SummaryDataPoint{orig: orig, state: state}
 }
 

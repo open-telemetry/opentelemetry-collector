@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanEvent(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewSpan_Event(), sharedState)) })
-	assert.Panics(t, func() { newSpanEvent(internal.NewSpan_Event(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(internal.NewSpanEvent(), sharedState)) })
+	assert.Panics(t, func() { newSpanEvent(internal.NewSpanEvent(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
@@ -40,7 +39,7 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewSpan_Event(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(internal.NewSpanEvent(), sharedState)) })
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
@@ -58,7 +57,7 @@ func TestSpanEvent_Name(t *testing.T) {
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, sharedState).SetName("test_name") })
+	assert.Panics(t, func() { newSpanEvent(internal.NewSpanEvent(), sharedState).SetName("test_name") })
 }
 
 func TestSpanEvent_Attributes(t *testing.T) {
@@ -75,10 +74,9 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+	assert.Panics(t, func() { newSpanEvent(internal.NewSpanEvent(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestSpanEvent() SpanEvent {
-	ms := newSpanEvent(internal.GenTestSpan_Event(), internal.NewState())
-	return ms
+	return newSpanEvent(internal.GenTestSpanEvent(), internal.NewState())
 }

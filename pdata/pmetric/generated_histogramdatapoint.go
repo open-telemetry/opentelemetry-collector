@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
-	orig  *otlpmetrics.HistogramDataPoint
+	orig  *internal.HistogramDataPoint
 	state *internal.State
 }
 
-func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, state *internal.State) HistogramDataPoint {
+func newHistogramDataPoint(orig *internal.HistogramDataPoint, state *internal.State) HistogramDataPoint {
 	return HistogramDataPoint{orig: orig, state: state}
 }
 
@@ -101,7 +100,7 @@ func (ms HistogramDataPoint) HasSum() bool {
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
 	ms.state.AssertMutable()
-	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
+	ms.orig.Sum_ = &internal.HistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this HistogramDataPoint.
@@ -150,7 +149,7 @@ func (ms HistogramDataPoint) HasMin() bool {
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
 	ms.state.AssertMutable()
-	ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+	ms.orig.Min_ = &internal.HistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this HistogramDataPoint.
@@ -173,7 +172,7 @@ func (ms HistogramDataPoint) HasMax() bool {
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
 	ms.state.AssertMutable()
-	ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+	ms.orig.Max_ = &internal.HistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this HistogramDataPoint.

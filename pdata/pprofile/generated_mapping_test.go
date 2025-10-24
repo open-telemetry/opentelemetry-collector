@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -50,7 +49,7 @@ func TestMapping_MemoryStart(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.MemoryStart())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetMemoryStart(uint64(13)) })
+	assert.Panics(t, func() { newMapping(internal.NewMapping(), sharedState).SetMemoryStart(uint64(13)) })
 }
 
 func TestMapping_MemoryLimit(t *testing.T) {
@@ -60,7 +59,7 @@ func TestMapping_MemoryLimit(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.MemoryLimit())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetMemoryLimit(uint64(13)) })
+	assert.Panics(t, func() { newMapping(internal.NewMapping(), sharedState).SetMemoryLimit(uint64(13)) })
 }
 
 func TestMapping_FileOffset(t *testing.T) {
@@ -70,7 +69,7 @@ func TestMapping_FileOffset(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.FileOffset())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetFileOffset(uint64(13)) })
+	assert.Panics(t, func() { newMapping(internal.NewMapping(), sharedState).SetFileOffset(uint64(13)) })
 }
 
 func TestMapping_FilenameStrindex(t *testing.T) {
@@ -80,7 +79,7 @@ func TestMapping_FilenameStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.FilenameStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, sharedState).SetFilenameStrindex(int32(13)) })
+	assert.Panics(t, func() { newMapping(internal.NewMapping(), sharedState).SetFilenameStrindex(int32(13)) })
 }
 
 func TestMapping_AttributeIndices(t *testing.T) {
@@ -91,6 +90,5 @@ func TestMapping_AttributeIndices(t *testing.T) {
 }
 
 func generateTestMapping() Mapping {
-	ms := newMapping(internal.GenTestMapping(), internal.NewState())
-	return ms
+	return newMapping(internal.GenTestMapping(), internal.NewState())
 }

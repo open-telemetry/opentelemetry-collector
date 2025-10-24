@@ -25,7 +25,7 @@ func UnrefTraces(td ptrace.Traces) {
 		if !internal.GetTracesState(internal.TracesWrapper(td)).Unref() {
 			return
 		}
-		// Don't call DeleteOrigExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 		if internal.UseProtoPooling.IsEnabled() {
 			internal.DeleteExportTraceServiceRequest(internal.GetTracesOrig(internal.TracesWrapper(td)), true)
 		}

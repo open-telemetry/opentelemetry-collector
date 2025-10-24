@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, internal.NewState())
+	es = newHistogramDataPointSlice(&[]*internal.HistogramDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewHistogramDataPoint()
@@ -36,7 +35,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 func TestHistogramDataPointSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, sharedState)
+	es := newHistogramDataPointSlice(&[]*internal.HistogramDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestHistogramDataPointSlice_Sort(t *testing.T) {
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 	ms := NewHistogramDataPointSlice()
-	*ms.orig = internal.GenTestHistogramDataPointSlice()
+	*ms.orig = internal.GenTestHistogramDataPointPtrSlice()
 	return ms
 }

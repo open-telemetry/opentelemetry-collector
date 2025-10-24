@@ -6,16 +6,12 @@
 
 package internal
 
-import (
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-)
-
 type EntityRefSliceWrapper struct {
-	orig  *[]*otlpcommon.EntityRef
+	orig  *[]*EntityRef
 	state *State
 }
 
-func GetEntityRefSliceOrig(ms EntityRefSliceWrapper) *[]*otlpcommon.EntityRef {
+func GetEntityRefSliceOrig(ms EntityRefSliceWrapper) *[]*EntityRef {
 	return ms.orig
 }
 
@@ -23,51 +19,11 @@ func GetEntityRefSliceState(ms EntityRefSliceWrapper) *State {
 	return ms.state
 }
 
-func NewEntityRefSliceWrapper(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSliceWrapper {
+func NewEntityRefSliceWrapper(orig *[]*EntityRef, state *State) EntityRefSliceWrapper {
 	return EntityRefSliceWrapper{orig: orig, state: state}
 }
 
 func GenTestEntityRefSliceWrapper() EntityRefSliceWrapper {
-	orig := GenTestEntityRefSlice()
+	orig := GenTestEntityRefPtrSlice()
 	return NewEntityRefSliceWrapper(&orig, NewState())
-}
-
-func CopyEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
-	var newDest []*otlpcommon.EntityRef
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpcommon.EntityRef, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewEntityRef()
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			DeleteEntityRef(dest[i], true)
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewEntityRef()
-		}
-	}
-	for i := range src {
-		CopyEntityRef(newDest[i], src[i])
-	}
-	return newDest
-}
-
-func GenTestEntityRefSlice() []*otlpcommon.EntityRef {
-	orig := make([]*otlpcommon.EntityRef, 5)
-	orig[0] = NewEntityRef()
-	orig[1] = GenTestEntityRef()
-	orig[2] = NewEntityRef()
-	orig[3] = GenTestEntityRef()
-	orig[4] = NewEntityRef()
-	return orig
 }

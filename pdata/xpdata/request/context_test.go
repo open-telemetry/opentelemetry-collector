@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/pdata/xpdata/request/internal"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestEncodeDecodeContext(t *testing.T) {
@@ -77,13 +77,12 @@ func TestEncodeDecodeContext(t *testing.T) {
 			ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
 			ctx = client.NewContext(ctx, tt.clientInfo)
 			reqCtx := encodeContext(ctx)
-			buf, err := reqCtx.Marshal()
-			require.NoError(t, err)
+			buf := make([]byte, reqCtx.SizeProto())
+			reqCtx.MarshalProto(buf)
 
 			// Decode the context
 			gotReqCtx := internal.RequestContext{}
-			err = gotReqCtx.Unmarshal(buf)
-			require.NoError(t, err)
+			require.NoError(t, gotReqCtx.UnmarshalProto(buf))
 			gotCtx := decodeContext(context.Background(), &gotReqCtx)
 			assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
 			assert.Equal(t, tt.clientInfo, client.FromContext(gotCtx))
