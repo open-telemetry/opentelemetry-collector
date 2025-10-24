@@ -36,6 +36,68 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 		},
 		{
+			name: "with an existing attribute",
+			sample: func() Sample {
+				s := NewSample()
+				s.AttributeIndices().Append(1)
+				return s
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+
+			wantSample: func() Sample {
+				s := NewSample()
+				s.AttributeIndices().Append(2)
+				return s
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "foo", "test")
+
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(2)
+				return d
+			}(),
+		},
+		{
+			name: "with a link index that does not match anything",
+			sample: func() Sample {
+				s := NewSample()
+				s.SetLinkIndex(1)
+				return s
+			}(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantSample: func() Sample {
+				s := NewSample()
+				s.SetLinkIndex(1)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid link index 1"),
+		},
+		{
 			name: "with an existing link",
 			sample: func() Sample {
 				s := NewSample()

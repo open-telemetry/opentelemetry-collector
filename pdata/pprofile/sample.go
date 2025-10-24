@@ -8,6 +8,23 @@ import "fmt"
 // switchDictionary updates the Sample, switching its indices from one
 // dictionary to another.
 func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
+	for i, v := range ms.AttributeIndices().All() {
+		if src.AttributeTable().Len() < int(v) {
+			return fmt.Errorf("invalid attribute index %d", v)
+		}
+
+		attr := src.AttributeTable().At(int(v))
+		err := attr.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
+		}
+		idx, err := SetAttribute(dst.AttributeTable(), attr)
+		if err != nil {
+			return fmt.Errorf("couldn't set attribute %d: %w", i, err)
+		}
+		ms.AttributeIndices().SetAt(i, idx)
+	}
+
 	if ms.LinkIndex() > 0 {
 		if src.LinkTable().Len() < int(ms.LinkIndex()) {
 			return fmt.Errorf("invalid link index %d", ms.LinkIndex())
