@@ -60,6 +60,7 @@ receiver/otlpreceiver/                       @open-telemetry/collector-approvers
 receiver/receiverhelper/                     @open-telemetry/collector-approvers
 receiver/xreceiver/                          @open-telemetry/collector-approvers @mx-psi @dmathieu
 scraper/                                     @open-telemetry/collector-approvers
+scraper/xscraper                             @open-telemetry/collector-approvers
 scraper/scraperhelper/                       @open-telemetry/collector-approvers
 service/                                     @open-telemetry/collector-approvers
 service/internal/graph/                      @open-telemetry/collector-approvers
