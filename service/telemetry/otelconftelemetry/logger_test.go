@@ -180,7 +180,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Logs: LogsConfig{
 					Level:               zapcore.InfoLevel,
 					Encoding:            "json",
-					// ResourceAsZapFields: true,
+					ResourceAsZapFields: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -199,6 +199,14 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceVersionKey):    "1.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
 			},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: true,
+				},
+				Resource: map[string]*string{},
+			},
 		},
 		{
 			name: "override service.version",
@@ -213,6 +221,14 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceNameKey):       "mycommand",
 				string(semconv.ServiceVersionKey):    "2.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
+			},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: true,
+				},
+				Resource: map[string]*string{},
 			},
 		},
 		{
@@ -230,6 +246,14 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceInstanceIDKey): "", // Just check presence
 				"custom.field":                       "custom-value",
 			},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: true,
+				},
+				Resource: map[string]*string{},
+			},
 		},
 		{
 			name:           "resource with no attributes",
@@ -238,6 +262,31 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			wantFields: map[string]string{
 				// A random UUID is injected for service.instance.id by default
 				string(semconv.ServiceInstanceIDKey): "", // Just check presence
+			},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: true,
+				},
+				Resource: map[string]*string{},
+			},
+		},
+		{
+			name: "validate `ResourceAsZapFields=false` shouldn't add resource fields",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{},
+			wantFields:     map[string]string{},
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:               zapcore.InfoLevel,
+					Encoding:            "json",
+					ResourceAsZapFields: false,
+				},
+				Resource: map[string]*string{},
 			},
 		},
 	}
@@ -252,16 +301,16 @@ func TestCreateLoggerWithResource(t *testing.T) {
 					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
 				},
 			}
-			/* cfg := &Config{
-				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
-				},
-				Resource: tt.resourceConfig,
-			} */
 
-			logger, loggerProvider, err := createLogger(t.Context(), set, createDefaultConfig())
+			cfg := tt.cfg
+			if cfg == nil {
+				cfg = createDefaultConfig().(*Config)
+			}
+			if tt.resourceConfig != nil {
+				cfg.Resource = tt.resourceConfig
+			}
+
+			logger, loggerProvider, err := createLogger(t.Context(), set, cfg)
 			require.NoError(t, err)
 			defer func() {
 				assert.NoError(t, loggerProvider.Shutdown(t.Context()))
@@ -271,7 +320,8 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			require.Len(t, observedLogs.All(), 1)
 
 			entry := observedLogs.All()[0]
-			if tt.wantFields == nil {
+			// treat empty map as "no expected fields"
+			if len(tt.wantFields) == 0 {
 				assert.Empty(t, entry.Context)
 				return
 			}
