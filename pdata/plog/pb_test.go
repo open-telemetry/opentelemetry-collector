@@ -76,8 +76,8 @@ func TestProtoSizerEmptyLogs(t *testing.T) {
 func BenchmarkLogsToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	logs := generateBenchmarkLogs(128)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		buf, err := marshaler.MarshalLogs(logs)
 		require.NoError(b, err)
 		assert.NotEmpty(b, buf)
@@ -91,9 +91,9 @@ func BenchmarkLogsFromProto(b *testing.B) {
 	buf, err := marshaler.MarshalLogs(baseLogs)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		logs, err := unmarshaler.UnmarshalLogs(buf)
 		require.NoError(b, err)
 		assert.Equal(b, baseLogs.ResourceLogs().Len(), logs.ResourceLogs().Len())
@@ -106,7 +106,7 @@ func generateBenchmarkLogs(logsCount int) Logs {
 	md := NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(logsCount)
-	for i := 0; i < logsCount; i++ {
+	for range logsCount {
 		im := ilm.LogRecords().AppendEmpty()
 		im.SetTimestamp(endTime)
 	}

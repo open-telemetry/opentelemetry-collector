@@ -6,6 +6,7 @@ package internal
 import (
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -157,7 +158,7 @@ func TestValidateMetricDuplicates(t *testing.T) {
 				receivers, allowed := allowedMetrics[metricName]
 				assert.Truef(
 					t,
-					allowed && contains(receiver, receivers) && contains(val, receivers),
+					allowed && slices.Contains(receivers, receiver) && slices.Contains(receivers, val),
 					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
 				)
 			}
@@ -169,15 +170,6 @@ func TestValidateMetricDuplicates(t *testing.T) {
 func TestSupportsSignal(t *testing.T) {
 	md := Metadata{}
 	assert.False(t, md.supportsSignal("logs"))
-}
-
-func contains(r string, rs []string) bool {
-	for _, s := range rs {
-		if s == r {
-			return true
-		}
-	}
-	return false
 }
 
 func TestCodeCovID(t *testing.T) {
@@ -219,6 +211,95 @@ func TestCodeCovID(t *testing.T) {
 		t.Run(tt.md.Type, func(t *testing.T) {
 			got := tt.md.GetCodeCovComponentID()
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestAttributeRequirementLevel(t *testing.T) {
+	tests := []struct {
+		name             string
+		requirementLevel AttributeRequirementLevel
+		wantConditional  bool
+	}{
+		{
+			name:             "required",
+			requirementLevel: AttributeRequirementLevelRequired,
+			wantConditional:  false,
+		},
+		{
+			name:             "conditionally_required",
+			requirementLevel: AttributeRequirementLevelConditionallyRequired,
+			wantConditional:  true,
+		},
+		{
+			name:             "recommended",
+			requirementLevel: AttributeRequirementLevelRecommended,
+			wantConditional:  false,
+		},
+		{
+			name:             "opt_in",
+			requirementLevel: AttributeRequirementLevelOptIn,
+			wantConditional:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := Attribute{RequirementLevel: tt.requirementLevel}
+			assert.Equal(t, tt.wantConditional, attr.IsConditional())
+		})
+	}
+}
+
+func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    AttributeRequirementLevel
+		wantErr bool
+	}{
+		{
+			name:  "required",
+			input: "required",
+			want:  AttributeRequirementLevelRequired,
+		},
+		{
+			name:  "conditionally_required",
+			input: "conditionally_required",
+			want:  AttributeRequirementLevelConditionallyRequired,
+		},
+		{
+			name:  "recommended",
+			input: "recommended",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:  "opt_in",
+			input: "opt_in",
+			want:  AttributeRequirementLevelOptIn,
+		},
+		{
+			name:  "empty defaults to recommended",
+			input: "",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:    "invalid value",
+			input:   "invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rl AttributeRequirementLevel
+			err := rl.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, rl)
 		})
 	}
 }

@@ -142,5 +142,8 @@
   "prConcurrentLimit": 200,
   "suppressNotifications": [
     "prEditedNotification"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy",
   ]
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -114,6 +115,9 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.Type == empty {
 			errs = errors.Join(errs, fmt.Errorf("empty type for resource attribute: %v", name))
 		}
+		if attr.EnabledPtr == nil {
+			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
+		}
 	}
 	return errs
 }
@@ -140,6 +144,9 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 		if attr.Type == empty {
 			errs = errors.Join(errs, fmt.Errorf("empty type for attribute: %v", attrName))
 		}
+		if attr.EnabledPtr != nil {
+			errs = errors.Join(errs, fmt.Errorf("enabled field is not allowed for regular attribute: %v", attrName))
+		}
 		if !usedAttrs[attrName] {
 			unusedAttrs = append(unusedAttrs, attrName)
 		}
@@ -156,10 +163,8 @@ func (md *Metadata) supportsSignal(signal string) bool {
 	}
 
 	for _, signals := range md.Status.Stability {
-		for _, s := range signals {
-			if s == signal {
-				return true
-			}
+		if slices.Contains(signals, signal) {
+			return true
 		}
 	}
 
@@ -211,6 +216,35 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 }
 
 type AttributeName string
+
+// AttributeRequirementLevel defines the requirement level of an attribute.
+type AttributeRequirementLevel string
+
+const (
+	// AttributeRequirementLevelRequired means the attribute is always included and cannot be excluded.
+	AttributeRequirementLevelRequired AttributeRequirementLevel = "required"
+	// AttributeRequirementLevelConditionallyRequired means the attribute is included by default when certain conditions are met.
+	AttributeRequirementLevelConditionallyRequired AttributeRequirementLevel = "conditionally_required"
+	// AttributeRequirementLevelRecommended means the attribute is included by default but can be disabled via configuration.
+	AttributeRequirementLevelRecommended AttributeRequirementLevel = "recommended"
+	// AttributeRequirementLevelOptIn means the attribute is not included unless explicitly enabled in user config.
+	AttributeRequirementLevelOptIn AttributeRequirementLevel = "opt_in"
+)
+
+// String returns capitalized display name of the requirement level for documentation.
+func (rl AttributeRequirementLevel) String() string {
+	switch rl {
+	case AttributeRequirementLevelRequired:
+		return "Required"
+	case AttributeRequirementLevelConditionallyRequired:
+		return "Conditionally Required"
+	case AttributeRequirementLevelRecommended:
+		return "Recommended"
+	case AttributeRequirementLevelOptIn:
+		return "Opt-In"
+	}
+	return ""
+}
 
 func (mn AttributeName) Render() (string, error) {
 	return FormatIdentifier(string(mn), true)
@@ -292,8 +326,8 @@ type Attribute struct {
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
-	// Enabled defines whether the attribute is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
+	// EnabledPtr defines whether the attribute is enabled by default.
+	EnabledPtr *bool `mapstructure:"enabled"`
 	// Include can be used to filter attributes.
 	Include []filter.Config `mapstructure:"include"`
 	// Include can be used to filter attributes.
@@ -306,8 +340,44 @@ type Attribute struct {
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
-	// Optional defines whether the attribute is required.
-	Optional bool `mapstructure:"optional"`
+	// RequirementLevel defines the requirement level of the attribute.
+	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
+}
+
+// IsConditional returns true if the attribute is conditionally required.
+func (a Attribute) IsConditional() bool {
+	return a.RequirementLevel == AttributeRequirementLevelConditionallyRequired
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (rl *AttributeRequirementLevel) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "required":
+		*rl = AttributeRequirementLevelRequired
+	case "conditionally_required":
+		*rl = AttributeRequirementLevelConditionallyRequired
+	case "recommended":
+		*rl = AttributeRequirementLevelRecommended
+	case "opt_in":
+		*rl = AttributeRequirementLevelOptIn
+	case "":
+		*rl = AttributeRequirementLevelRecommended
+	default:
+		return fmt.Errorf("invalid requirement_level %q", string(text))
+	}
+	return nil
+}
+
+// Enabled returns the boolean value of EnabledPtr.
+// This method is needed to differentiate between different types of attributes:
+// - Resource attributes: EnabledPtr is always set (non-nil) due to validation
+// - Regular attributes: EnabledPtr is always nil due to validation
+// Panics if EnabledPtr is nil, indicating incorrect template usage.
+func (a Attribute) Enabled() bool {
+	if a.EnabledPtr == nil {
+		panic("Enabled() must not be called on regular attributes, only on resource attributes")
+	}
+	return *a.EnabledPtr
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -363,9 +433,9 @@ type Signal struct {
 	Attributes []AttributeName `mapstructure:"attributes"`
 }
 
-func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool {
 	for _, attr := range s.Attributes {
-		if v, exists := attrs[attr]; exists && v.Optional {
+		if v, exists := attrs[attr]; exists && v.IsConditional() {
 			return true
 		}
 	}

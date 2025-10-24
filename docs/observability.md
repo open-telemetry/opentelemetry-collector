@@ -125,14 +125,14 @@ service:
             interval: 5000
             exporter:
               otlp:
-                protocol: grpc/protobuf
+                protocol: grpc
                 endpoint: https://backend:4317
     traces:
       processors:
         - batch:
             exporter:
               otlp:
-                protocol: grpc/protobuf
+                protocol: grpc
                 endpoint: https://backend2:4317
 ```
 
@@ -153,7 +153,7 @@ service:
         batch:
           exporter:
             otlp:
-              protocol: grpc/protobuf
+              protocol: grpc
               endpoint: ${MY_POD_IP}:4317
 ```
 

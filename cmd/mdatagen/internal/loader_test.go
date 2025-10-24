@@ -15,6 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestTwoPackagesInDirectory(t *testing.T) {
 	contents, err := os.ReadFile("testdata/twopackages.yaml")
 	require.NoError(t, err)
@@ -70,77 +74,85 @@ func TestLoadMetadata(t *testing.T) {
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr",
+						FullName:         "string.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Enum:        []string{"one", "two"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.enum.resource.attr",
+						FullName:         "string.enum.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
-						Enabled:     false,
+						EnabledPtr:  boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional.resource.attr",
+						FullName:         "optional.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice.resource.attr",
+						FullName:         "slice.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map.resource.attr",
+						FullName:         "map.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_disable_warning",
+						FullName:         "string.resource.attr_disable_warning",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_remove_warning": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: false,
+						EnabledPtr: boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_remove_warning",
+						FullName:         "string.resource.attr_remove_warning",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_to_be_removed": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_to_be_removed",
+						FullName:         "string.resource.attr_to_be_removed",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 				},
 
@@ -152,7 +164,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "enum_attr",
+						FullName:         "enum_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -160,7 +173,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string_attr",
+						FullName:         "string_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -168,51 +182,64 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "overridden_int_attr",
+						FullName:         "overridden_int_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr",
+						FullName:         "boolean_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"boolean_attr2": {
 						Description: "Another attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr2",
+						FullName:         "boolean_attr2",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice_attr",
+						FullName:         "slice_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map_attr",
+						FullName:         "map_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
-					"optional_int_attr": {
-						Description: "An optional attribute with an integer value",
+					"conditional_int_attr": {
+						Description: "A conditional attribute with an integer value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "optional_int_attr",
-						Optional: true,
+						FullName:         "conditional_int_attr",
+						RequirementLevel: AttributeRequirementLevelConditionallyRequired,
 					},
-					"optional_string_attr": {
-						Description: "An optional attribute with any string value",
+					"conditional_string_attr": {
+						Description: "A conditional attribute with any string value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional_string_attr",
-						Optional: true,
+						FullName:         "conditional_string_attr",
+						RequirementLevel: AttributeRequirementLevelConditionallyRequired,
+					},
+					"opt_in_bool_attr": {
+						Description: "An opt-in attribute with a boolean value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+						FullName:         "opt_in_bool_attr",
+						RequirementLevel: AttributeRequirementLevelOptIn,
 					},
 				},
 				Metrics: map[MetricName]Metric{
@@ -224,7 +251,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -240,7 +267,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -301,7 +328,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This event will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
 					},
 					"default.event.to_be_renamed": {
@@ -312,7 +339,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
 					},
 					"default.event.to_be_removed": {

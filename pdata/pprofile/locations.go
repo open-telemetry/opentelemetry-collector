@@ -30,6 +30,8 @@ var (
 
 // PutLocation updates a LocationTable and a Stack's LocationIndices to
 // add or update a location.
+//
+// Deprecated: [v0.138.0] use SetLocation instead.
 func PutLocation(table LocationSlice, record Stack, loc Location) error {
 	for i, locIdx := range record.LocationIndices().All() {
 		idx := int(locIdx)
@@ -47,22 +49,30 @@ func PutLocation(table LocationSlice, record Stack, loc Location) error {
 		return errTooManyLocationIndicesEntries
 	}
 
+	id, err := SetLocation(table, loc)
+	if err != nil {
+		return err
+	}
+	record.LocationIndices().Append(id)
+	return nil
+}
+
+// SetLocation updates a LocationTable, adding or providing a value and returns
+// its index.
+func SetLocation(table LocationSlice, loc Location) (int32, error) {
 	for j, a := range table.All() {
 		if a.Equal(loc) {
 			if j > math.MaxInt32 {
-				return errTooManyLocationTableEntries
+				return 0, errTooManyLocationTableEntries
 			}
-			// Add the index of the existing location to the indices.
-			record.LocationIndices().Append(int32(j)) //nolint:gosec // G115 overflow checked
-			return nil
+			return int32(j), nil //nolint:gosec // G115 overflow checked
 		}
 	}
 
 	if table.Len() >= math.MaxInt32 {
-		return errTooManyLocationTableEntries
+		return 0, errTooManyLocationTableEntries
 	}
 
 	loc.CopyTo(table.AppendEmpty())
-	record.LocationIndices().Append(int32(table.Len() - 1)) //nolint:gosec // G115 overflow checked
-	return nil
+	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
 }
