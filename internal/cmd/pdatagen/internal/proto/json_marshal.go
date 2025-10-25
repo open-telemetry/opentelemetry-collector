@@ -52,10 +52,10 @@ const marshalJSONMessage = `{{ if .repeated -}}
 	if len(orig.{{ .fieldName }}) > 0 {
 		dest.WriteObjectField("{{ .jsonTag }}")
 		dest.WriteArrayStart()
-		MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[0], dest)
+		MarshalJSON{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[0], dest)
 		for i := 1; i < len(orig.{{ .fieldName }}); i++ {
 			dest.WriteMore()
-			MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], dest)
+			MarshalJSON{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -64,7 +64,7 @@ const marshalJSONMessage = `{{ if .repeated -}}
 	if orig.{{ .fieldName }} != nil {
 {{ end -}}
 	dest.WriteObjectField("{{ .jsonTag }}")
-	MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, dest)
+	MarshalJSON{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, dest)
 {{- if .nullable -}}
 	}
 {{- end }}{{- end }}`

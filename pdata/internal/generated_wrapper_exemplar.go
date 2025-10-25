@@ -39,14 +39,14 @@ var (
 	}
 )
 
-func NewOrigExemplar() *otlpmetrics.Exemplar {
+func NewExemplar() *otlpmetrics.Exemplar {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.Exemplar{}
 	}
 	return protoPoolExemplar.Get().(*otlpmetrics.Exemplar)
 }
 
-func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
+func DeleteExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -57,7 +57,7 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 	}
 
 	for i := range orig.FilteredAttributes {
-		DeleteOrigKeyValue(&orig.FilteredAttributes[i], false)
+		DeleteKeyValue(&orig.FilteredAttributes[i], false)
 	}
 	switch ov := orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
@@ -72,8 +72,8 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 		}
 
 	}
-	DeleteOrigSpanID(&orig.SpanId, false)
-	DeleteOrigTraceID(&orig.TraceId, false)
+	DeleteSpanID(&orig.SpanId, false)
+	DeleteTraceID(&orig.TraceId, false)
 
 	orig.Reset()
 	if nullable {
@@ -81,12 +81,12 @@ func DeleteOrigExemplar(orig *otlpmetrics.Exemplar, nullable bool) {
 	}
 }
 
-func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
+func CopyExemplar(dest, src *otlpmetrics.Exemplar) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.FilteredAttributes = CopyOrigKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
+	dest.FilteredAttributes = CopyKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
@@ -112,9 +112,9 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TraceId = src.TraceId
 }
 
-func GenTestOrigExemplar() *otlpmetrics.Exemplar {
-	orig := NewOrigExemplar()
-	orig.FilteredAttributes = GenerateOrigTestKeyValueSlice()
+func GenTestExemplar() *otlpmetrics.Exemplar {
+	orig := NewExemplar()
+	orig.FilteredAttributes = GenTestKeyValueSlice()
 	orig.TimeUnixNano = 1234567890
 	orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
@@ -122,16 +122,16 @@ func GenTestOrigExemplar() *otlpmetrics.Exemplar {
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.FilteredAttributes) > 0 {
 		dest.WriteObjectField("filteredAttributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.FilteredAttributes[0], dest)
+		MarshalJSONKeyValue(&orig.FilteredAttributes[0], dest)
 		for i := 1; i < len(orig.FilteredAttributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.FilteredAttributes[i], dest)
+			MarshalJSONKeyValue(&orig.FilteredAttributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -149,23 +149,23 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		MarshalJSONOrigSpanID(&orig.SpanId, dest)
+		MarshalJSONSpanID(&orig.SpanId, dest)
 	}
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		MarshalJSONOrigTraceID(&orig.TraceId, dest)
+		MarshalJSONTraceID(&orig.TraceId, dest)
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExemplar unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
+// UnmarshalJSONExemplar unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "filteredAttributes", "filtered_attributes":
 			for iter.ReadArray() {
 				orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], iter)
 			}
 
 		case "timeUnixNano", "time_unix_nano":
@@ -196,21 +196,21 @@ func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) 
 			}
 
 		case "spanId", "span_id":
-			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
+			UnmarshalJSONSpanID(&orig.SpanId, iter)
 		case "traceId", "trace_id":
-			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
+			UnmarshalJSONTraceID(&orig.TraceId, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
+func SizeProtoExemplar(orig *otlpmetrics.Exemplar) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.FilteredAttributes {
-		l = SizeProtoOrigKeyValue(&orig.FilteredAttributes[i])
+		l = SizeProtoKeyValue(&orig.FilteredAttributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.TimeUnixNano != 0 {
@@ -225,19 +225,19 @@ func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
 	case *otlpmetrics.Exemplar_AsInt:
 		n += 9
 	}
-	l = SizeProtoOrigSpanID(&orig.SpanId)
+	l = SizeProtoSpanID(&orig.SpanId)
 	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigTraceID(&orig.TraceId)
+	l = SizeProtoTraceID(&orig.TraceId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
+func MarshalProtoExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.FilteredAttributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.FilteredAttributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.FilteredAttributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -264,13 +264,13 @@ func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
 
 	}
 
-	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	l = MarshalProtoSpanID(&orig.SpanId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0x22
 
-	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	l = MarshalProtoTraceID(&orig.TraceId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -279,7 +279,7 @@ func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
+func UnmarshalProtoExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -305,7 +305,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			}
 			startPos := pos - length
 			orig.FilteredAttributes = append(orig.FilteredAttributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.FilteredAttributes[len(orig.FilteredAttributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -369,7 +369,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
+			err = UnmarshalProtoSpanID(&orig.SpanId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -385,7 +385,7 @@ func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
+			err = UnmarshalProtoTraceID(&orig.TraceId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

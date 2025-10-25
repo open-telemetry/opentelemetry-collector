@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigScopeLogs(t *testing.T) {
+func TestCopyScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigScopeLogs(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigScopeLogs()
-				CopyOrigScopeLogs(dest, src)
+				dest := NewScopeLogs()
+				CopyScopeLogs(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigScopeLogs(dest, dest)
+				CopyScopeLogs(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeLogsUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeLogsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigScopeLogs()
-	UnmarshalJSONOrigScopeLogs(dest, iter)
+	dest := NewScopeLogs()
+	UnmarshalJSONScopeLogs(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigScopeLogs(), dest)
+	assert.Equal(t, NewScopeLogs(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigScopeLogs(src, stream)
+				MarshalJSONScopeLogs(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigScopeLogs()
-				UnmarshalJSONOrigScopeLogs(dest, iter)
+				dest := NewScopeLogs()
+				UnmarshalJSONScopeLogs(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeLogs(dest, true)
+				DeleteScopeLogs(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeLogsFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeLogsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeLogs() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigScopeLogs()
-			require.Error(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+			dest := NewScopeLogs()
+			require.Error(t, UnmarshalProtoScopeLogs(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeLogsUnknown(t *testing.T) {
-	dest := NewOrigScopeLogs()
+func TestMarshalAndUnmarshalProtoScopeLogsUnknown(t *testing.T) {
+	dest := NewScopeLogs()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigScopeLogs(), dest)
+	require.NoError(t, UnmarshalProtoScopeLogs(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewScopeLogs(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigScopeLogs(src))
-				gotSize := MarshalProtoOrigScopeLogs(src, buf)
+				buf := make([]byte, SizeProtoScopeLogs(src))
+				gotSize := MarshalProtoScopeLogs(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigScopeLogs()
-				require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
+				dest := NewScopeLogs()
+				require.NoError(t, UnmarshalProtoScopeLogs(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeLogs(dest, true)
+				DeleteScopeLogs(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeLogs() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeLogs(src))
-			gotSize := MarshalProtoOrigScopeLogs(src, buf)
+			buf := make([]byte, SizeProtoScopeLogs(src))
+			gotSize := MarshalProtoScopeLogs(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlplogs.ScopeLogs{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeLogs(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigScopeLogs()
-			require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, goBuf))
+			dest := NewScopeLogs()
+			require.NoError(t, UnmarshalProtoScopeLogs(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesScopeLogs() map[string][]byte {
 
 func genTestEncodingValuesScopeLogs() map[string]*otlplogs.ScopeLogs {
 	return map[string]*otlplogs.ScopeLogs{
-		"empty":                       NewOrigScopeLogs(),
-		"Scope/test":                  {Scope: *GenTestOrigInstrumentationScope()},
-		"LogRecords/default_and_test": {LogRecords: []*otlplogs.LogRecord{{}, GenTestOrigLogRecord()}},
+		"empty":                       NewScopeLogs(),
+		"Scope/test":                  {Scope: *GenTestInstrumentationScope()},
+		"LogRecords/default_and_test": {LogRecords: []*otlplogs.LogRecord{{}, GenTestLogRecord()}},
 		"SchemaUrl/test":              {SchemaUrl: "test_schemaurl"},
 	}
 }

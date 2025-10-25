@@ -52,7 +52,7 @@ func TestInt32SliceReadOnly(t *testing.T) {
 	raw := []int32{1, 2, 3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := Int32Slice(internal.NewInt32Slice(&raw, sharedState))
+	ms := Int32Slice(internal.NewInt32SliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, int32(1), ms.At(0))
@@ -116,6 +116,32 @@ func TestInt32SliceMoveAndAppendTo(t *testing.T) {
 	ms.FromRaw([]int32{1, 2, 3})
 	ms.MoveAndAppendTo(ms2)
 	assert.Equal(t, ms2.Len(), 6)
+}
+
+func TestInt32SliceRemoveIf(t *testing.T) {
+	emptySlice := NewInt32Slice()
+	emptySlice.RemoveIf(func(el int32) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 2, 3})
+	pos := 0
+	ms.RemoveIf(func(el int32) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestInt32SliceRemoveIfAll(t *testing.T) {
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 2, 3})
+	ms.RemoveIf(func(el int32) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
 }
 
 func TestInt32SliceEqual(t *testing.T) {

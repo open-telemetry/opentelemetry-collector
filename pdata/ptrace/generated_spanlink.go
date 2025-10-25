@@ -36,7 +36,7 @@ func newSpanLink(orig *otlptrace.Span_Link, state *internal.State) SpanLink {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanLink() SpanLink {
-	return newSpanLink(internal.NewOrigSpan_Link(), internal.NewState())
+	return newSpanLink(internal.NewSpan_Link(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -48,7 +48,7 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSpan_Link(dest.orig, false)
+	internal.DeleteSpan_Link(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -76,12 +76,12 @@ func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
 
 // TraceState returns the tracestate associated with this SpanLink.
 func (ms SpanLink) TraceState() pcommon.TraceState {
-	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state))
+	return pcommon.TraceState(internal.NewTraceStateWrapper(&ms.orig.TraceState, ms.state))
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
@@ -109,5 +109,5 @@ func (ms SpanLink) SetFlags(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSpan_Link(dest.orig, ms.orig)
+	internal.CopySpan_Link(dest.orig, ms.orig)
 }

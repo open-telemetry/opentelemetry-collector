@@ -26,8 +26,8 @@ func TestResourceSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceSpans(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceSpans(internal.NewOrigResourceSpans(), sharedState)) })
-	assert.Panics(t, func() { newResourceSpans(internal.NewOrigResourceSpans(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceSpans(internal.NewResourceSpans(), sharedState)) })
+	assert.Panics(t, func() { newResourceSpans(internal.NewResourceSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceSpans_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(internal.NewOrigResourceSpans(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(internal.NewResourceSpans(), sharedState)) })
 }
 
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	ms.orig.Resource = *internal.GenTestOrigResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
+	ms.orig.Resource = *internal.GenTestResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceSpans_ScopeSpans(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
-	ms.orig.ScopeSpans = internal.GenerateOrigTestScopeSpansSlice()
+	ms.orig.ScopeSpans = internal.GenTestScopeSpansSlice()
 	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
 }
 
@@ -68,6 +68,6 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceSpans() ResourceSpans {
-	ms := newResourceSpans(internal.GenTestOrigResourceSpans(), internal.NewState())
+	ms := newResourceSpans(internal.GenTestResourceSpans(), internal.NewState())
 	return ms
 }

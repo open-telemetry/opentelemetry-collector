@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigLogRecord(t *testing.T) {
+func TestCopyLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigLogRecord(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigLogRecord()
-				CopyOrigLogRecord(dest, src)
+				dest := NewLogRecord()
+				CopyLogRecord(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigLogRecord(dest, dest)
+				CopyLogRecord(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONLogRecordUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigLogRecord()
-	UnmarshalJSONOrigLogRecord(dest, iter)
+	dest := NewLogRecord()
+	UnmarshalJSONLogRecord(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigLogRecord(), dest)
+	assert.Equal(t, NewLogRecord(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
+func TestMarshalAndUnmarshalJSONLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigLogRecord(src, stream)
+				MarshalJSONLogRecord(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigLogRecord()
-				UnmarshalJSONOrigLogRecord(dest, iter)
+				dest := NewLogRecord()
+				UnmarshalJSONLogRecord(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigLogRecord(dest, true)
+				DeleteLogRecord(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigLogRecordFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoLogRecordFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLogRecord() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigLogRecord()
-			require.Error(t, UnmarshalProtoOrigLogRecord(dest, buf))
+			dest := NewLogRecord()
+			require.Error(t, UnmarshalProtoLogRecord(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigLogRecordUnknown(t *testing.T) {
-	dest := NewOrigLogRecord()
+func TestMarshalAndUnmarshalProtoLogRecordUnknown(t *testing.T) {
+	dest := NewLogRecord()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigLogRecord(), dest)
+	require.NoError(t, UnmarshalProtoLogRecord(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewLogRecord(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
+func TestMarshalAndUnmarshalProtoLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigLogRecord(src))
-				gotSize := MarshalProtoOrigLogRecord(src, buf)
+				buf := make([]byte, SizeProtoLogRecord(src))
+				gotSize := MarshalProtoLogRecord(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigLogRecord()
-				require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
+				dest := NewLogRecord()
+				require.NoError(t, UnmarshalProtoLogRecord(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigLogRecord(dest, true)
+				DeleteLogRecord(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 	for name, src := range genTestEncodingValuesLogRecord() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigLogRecord(src))
-			gotSize := MarshalProtoOrigLogRecord(src, buf)
+			buf := make([]byte, SizeProtoLogRecord(src))
+			gotSize := MarshalProtoLogRecord(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlplogs.LogRecord{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigLogRecord()
-			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, goBuf))
+			dest := NewLogRecord()
+			require.NoError(t, UnmarshalProtoLogRecord(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -168,17 +168,17 @@ func genTestFailingUnmarshalProtoValuesLogRecord() map[string][]byte {
 
 func genTestEncodingValuesLogRecord() map[string]*otlplogs.LogRecord {
 	return map[string]*otlplogs.LogRecord{
-		"empty":                       NewOrigLogRecord(),
+		"empty":                       NewLogRecord(),
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"ObservedTimeUnixNano/test":   {ObservedTimeUnixNano: uint64(13)},
 		"SeverityNumber/test":         {SeverityNumber: otlplogs.SeverityNumber(13)},
 		"SeverityText/test":           {SeverityText: "test_severitytext"},
-		"Body/test":                   {Body: *GenTestOrigAnyValue()},
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"Body/test":                   {Body: *GenTestAnyValue()},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 		"Flags/test":                  {Flags: uint32(13)},
-		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
-		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"TraceId/test":                {TraceId: *GenTestTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestSpanID()},
 		"EventName/test":              {EventName: "test_eventname"},
 	}
 }

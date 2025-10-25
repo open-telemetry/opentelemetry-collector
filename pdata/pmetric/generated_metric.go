@@ -34,7 +34,7 @@ func newMetric(orig *otlpmetrics.Metric, state *internal.State) Metric {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetric() Metric {
-	return newMetric(internal.NewOrigMetric(), internal.NewState())
+	return newMetric(internal.NewMetric(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +46,7 @@ func (ms Metric) MoveTo(dest Metric) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigMetric(dest.orig, false)
+	internal.DeleteMetric(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -128,7 +128,7 @@ func (ms Metric) SetEmptyGauge() Gauge {
 	} else {
 		ov = internal.ProtoPoolMetric_Gauge.Get().(*otlpmetrics.Metric_Gauge)
 	}
-	ov.Gauge = internal.NewOrigGauge()
+	ov.Gauge = internal.NewGauge()
 	ms.orig.Data = ov
 	return newGauge(ov.Gauge, ms.state)
 }
@@ -160,7 +160,7 @@ func (ms Metric) SetEmptySum() Sum {
 	} else {
 		ov = internal.ProtoPoolMetric_Sum.Get().(*otlpmetrics.Metric_Sum)
 	}
-	ov.Sum = internal.NewOrigSum()
+	ov.Sum = internal.NewSum()
 	ms.orig.Data = ov
 	return newSum(ov.Sum, ms.state)
 }
@@ -192,7 +192,7 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 	} else {
 		ov = internal.ProtoPoolMetric_Histogram.Get().(*otlpmetrics.Metric_Histogram)
 	}
-	ov.Histogram = internal.NewOrigHistogram()
+	ov.Histogram = internal.NewHistogram()
 	ms.orig.Data = ov
 	return newHistogram(ov.Histogram, ms.state)
 }
@@ -224,7 +224,7 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 	} else {
 		ov = internal.ProtoPoolMetric_ExponentialHistogram.Get().(*otlpmetrics.Metric_ExponentialHistogram)
 	}
-	ov.ExponentialHistogram = internal.NewOrigExponentialHistogram()
+	ov.ExponentialHistogram = internal.NewExponentialHistogram()
 	ms.orig.Data = ov
 	return newExponentialHistogram(ov.ExponentialHistogram, ms.state)
 }
@@ -256,18 +256,18 @@ func (ms Metric) SetEmptySummary() Summary {
 	} else {
 		ov = internal.ProtoPoolMetric_Summary.Get().(*otlpmetrics.Metric_Summary)
 	}
-	ov.Summary = internal.NewOrigSummary()
+	ov.Summary = internal.NewSummary()
 	ms.orig.Data = ov
 	return newSummary(ov.Summary, ms.state)
 }
 
 // Metadata returns the Metadata associated with this Metric.
 func (ms Metric) Metadata() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Metadata, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.Metadata, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.state.AssertMutable()
-	internal.CopyOrigMetric(dest.orig, ms.orig)
+	internal.CopyMetric(dest.orig, ms.orig)
 }

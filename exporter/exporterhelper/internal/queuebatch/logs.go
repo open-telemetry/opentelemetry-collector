@@ -29,12 +29,6 @@ func NewLogsQueueBatchSettings() Settings[request.Request] {
 	return Settings[request.Request]{
 		ReferenceCounter: logsReferenceCounter{},
 		Encoding:         logsEncoding{},
-		ItemsSizer:       request.NewItemsSizer(),
-		BytesSizer: request.BaseSizer{
-			SizeofFunc: func(req request.Request) int64 {
-				return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
-			},
-		},
 	}
 }
 

@@ -169,7 +169,7 @@ func TestServiceTelemetryLogging(t *testing.T) {
 func TestServiceTelemetryMetrics(t *testing.T) {
 	// Start a service and check that metrics are produced as expected.
 	// We do this twice to ensure that the server is stopped cleanly.
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		reader := metric.NewManualReader()
 		set := newNopSettings()
 		set.TelemetryFactory = telemetry.NewFactory(
@@ -272,7 +272,7 @@ func testZPages(t *testing.T, zpagesAddr string) {
 
 	// Start a service and check that zpages is healthy.
 	// We do this twice to ensure that the server is stopped cleanly.
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		srv, err := New(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NoError(t, srv.Start(context.Background()))
@@ -330,7 +330,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 		),
 	)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		// Create and start a service, telemetry should be created.
 		srv, err := New(context.Background(), set, newNopConfig())
 		require.NoError(t, err)

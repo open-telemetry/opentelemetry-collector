@@ -15,21 +15,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-type Logs struct {
+type LogsWrapper struct {
 	orig  *otlpcollectorlogs.ExportLogsServiceRequest
 	state *State
 }
 
-func GetOrigLogs(ms Logs) *otlpcollectorlogs.ExportLogsServiceRequest {
+func GetLogsOrig(ms LogsWrapper) *otlpcollectorlogs.ExportLogsServiceRequest {
 	return ms.orig
 }
 
-func GetLogsState(ms Logs) *State {
+func GetLogsState(ms LogsWrapper) *State {
 	return ms.state
 }
 
-func NewLogs(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) Logs {
-	return Logs{orig: orig, state: state}
+func NewLogsWrapper(orig *otlpcollectorlogs.ExportLogsServiceRequest, state *State) LogsWrapper {
+	return LogsWrapper{orig: orig, state: state}
+}
+
+func GenTestLogsWrapper() LogsWrapper {
+	orig := GenTestExportLogsServiceRequest()
+	return NewLogsWrapper(orig, NewState())
 }
 
 var (
@@ -40,14 +45,14 @@ var (
 	}
 )
 
-func NewOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+func NewExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectorlogs.ExportLogsServiceRequest{}
 	}
 	return protoPoolExportLogsServiceRequest.Get().(*otlpcollectorlogs.ExportLogsServiceRequest)
 }
 
-func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, nullable bool) {
+func DeleteExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -58,7 +63,7 @@ func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServic
 	}
 
 	for i := range orig.ResourceLogs {
-		DeleteOrigResourceLogs(orig.ResourceLogs[i], true)
+		DeleteResourceLogs(orig.ResourceLogs[i], true)
 	}
 
 	orig.Reset()
@@ -67,44 +72,44 @@ func DeleteOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServic
 	}
 }
 
-func CopyOrigExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {
+func CopyExportLogsServiceRequest(dest, src *otlpcollectorlogs.ExportLogsServiceRequest) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.ResourceLogs = CopyOrigResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
+	dest.ResourceLogs = CopyResourceLogsSlice(dest.ResourceLogs, src.ResourceLogs)
 }
 
-func GenTestOrigExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
-	orig := NewOrigExportLogsServiceRequest()
-	orig.ResourceLogs = GenerateOrigTestResourceLogsSlice()
+func GenTestExportLogsServiceRequest() *otlpcollectorlogs.ExportLogsServiceRequest {
+	orig := NewExportLogsServiceRequest()
+	orig.ResourceLogs = GenTestResourceLogsSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.ResourceLogs) > 0 {
 		dest.WriteObjectField("resourceLogs")
 		dest.WriteArrayStart()
-		MarshalJSONOrigResourceLogs(orig.ResourceLogs[0], dest)
+		MarshalJSONResourceLogs(orig.ResourceLogs[0], dest)
 		for i := 1; i < len(orig.ResourceLogs); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigResourceLogs(orig.ResourceLogs[i], dest)
+			MarshalJSONResourceLogs(orig.ResourceLogs[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigLogs unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, iter *json.Iterator) {
+// UnmarshalJSONLogs unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceLogs", "resource_logs":
 			for iter.ReadArray() {
-				orig.ResourceLogs = append(orig.ResourceLogs, NewOrigResourceLogs())
-				UnmarshalJSONOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], iter)
+				orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
+				UnmarshalJSONResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], iter)
 			}
 
 		default:
@@ -113,23 +118,23 @@ func UnmarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLog
 	}
 }
 
-func SizeProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) int {
+func SizeProtoExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.ResourceLogs {
-		l = SizeProtoOrigResourceLogs(orig.ResourceLogs[i])
+		l = SizeProtoResourceLogs(orig.ResourceLogs[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) int {
+func MarshalProtoExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.ResourceLogs) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigResourceLogs(orig.ResourceLogs[i], buf[:pos])
+		l = MarshalProtoResourceLogs(orig.ResourceLogs[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -138,7 +143,7 @@ func MarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogs
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) error {
+func UnmarshalProtoExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLogsServiceRequest, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -163,8 +168,8 @@ func UnmarshalProtoOrigExportLogsServiceRequest(orig *otlpcollectorlogs.ExportLo
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = append(orig.ResourceLogs, NewOrigResourceLogs())
-			err = UnmarshalProtoOrigResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
+			orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
+			err = UnmarshalProtoResourceLogs(orig.ResourceLogs[len(orig.ResourceLogs)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

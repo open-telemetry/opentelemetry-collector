@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigResourceMetrics(t *testing.T) {
+func TestCopyResourceMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigResourceMetrics(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigResourceMetrics()
-				CopyOrigResourceMetrics(dest, src)
+				dest := NewResourceMetrics()
+				CopyResourceMetrics(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigResourceMetrics(dest, dest)
+				CopyResourceMetrics(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceMetricsUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceMetricsUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigResourceMetrics()
-	UnmarshalJSONOrigResourceMetrics(dest, iter)
+	dest := NewResourceMetrics()
+	UnmarshalJSONResourceMetrics(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigResourceMetrics(), dest)
+	assert.Equal(t, NewResourceMetrics(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigResourceMetrics(src, stream)
+				MarshalJSONResourceMetrics(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigResourceMetrics()
-				UnmarshalJSONOrigResourceMetrics(dest, iter)
+				dest := NewResourceMetrics()
+				UnmarshalJSONResourceMetrics(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceMetrics(dest, true)
+				DeleteResourceMetrics(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceMetricsFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceMetricsFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResourceMetrics() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigResourceMetrics()
-			require.Error(t, UnmarshalProtoOrigResourceMetrics(dest, buf))
+			dest := NewResourceMetrics()
+			require.Error(t, UnmarshalProtoResourceMetrics(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceMetricsUnknown(t *testing.T) {
-	dest := NewOrigResourceMetrics()
+func TestMarshalAndUnmarshalProtoResourceMetricsUnknown(t *testing.T) {
+	dest := NewResourceMetrics()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigResourceMetrics(), dest)
+	require.NoError(t, UnmarshalProtoResourceMetrics(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewResourceMetrics(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceMetrics() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigResourceMetrics(src))
-				gotSize := MarshalProtoOrigResourceMetrics(src, buf)
+				buf := make([]byte, SizeProtoResourceMetrics(src))
+				gotSize := MarshalProtoResourceMetrics(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigResourceMetrics()
-				require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, buf))
+				dest := NewResourceMetrics()
+				require.NoError(t, UnmarshalProtoResourceMetrics(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceMetrics(dest, true)
+				DeleteResourceMetrics(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceMetrics() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceMetrics(src))
-			gotSize := MarshalProtoOrigResourceMetrics(src, buf)
+			buf := make([]byte, SizeProtoResourceMetrics(src))
+			gotSize := MarshalProtoResourceMetrics(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.ResourceMetrics{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigResourceMetrics()
-			require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, goBuf))
+			dest := NewResourceMetrics()
+			require.NoError(t, UnmarshalProtoResourceMetrics(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesResourceMetrics() map[string][]byte {
 
 func genTestEncodingValuesResourceMetrics() map[string]*otlpmetrics.ResourceMetrics {
 	return map[string]*otlpmetrics.ResourceMetrics{
-		"empty":                         NewOrigResourceMetrics(),
-		"Resource/test":                 {Resource: *GenTestOrigResource()},
-		"ScopeMetrics/default_and_test": {ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}, GenTestOrigScopeMetrics()}},
+		"empty":                         NewResourceMetrics(),
+		"Resource/test":                 {Resource: *GenTestResource()},
+		"ScopeMetrics/default_and_test": {ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}, GenTestScopeMetrics()}},
 		"SchemaUrl/test":                {SchemaUrl: "test_schemaurl"},
 	}
 }

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigResourceProfiles(t *testing.T) {
+func TestCopyResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigResourceProfiles(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigResourceProfiles()
-				CopyOrigResourceProfiles(dest, src)
+				dest := NewResourceProfiles()
+				CopyResourceProfiles(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigResourceProfiles(dest, dest)
+				CopyResourceProfiles(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceProfilesUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceProfilesUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigResourceProfiles()
-	UnmarshalJSONOrigResourceProfiles(dest, iter)
+	dest := NewResourceProfiles()
+	UnmarshalJSONResourceProfiles(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigResourceProfiles(), dest)
+	assert.Equal(t, NewResourceProfiles(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigResourceProfiles(src, stream)
+				MarshalJSONResourceProfiles(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigResourceProfiles()
-				UnmarshalJSONOrigResourceProfiles(dest, iter)
+				dest := NewResourceProfiles()
+				UnmarshalJSONResourceProfiles(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceProfiles(dest, true)
+				DeleteResourceProfiles(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceProfilesFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceProfilesFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigResourceProfiles()
-			require.Error(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
+			dest := NewResourceProfiles()
+			require.Error(t, UnmarshalProtoResourceProfiles(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceProfilesUnknown(t *testing.T) {
-	dest := NewOrigResourceProfiles()
+func TestMarshalAndUnmarshalProtoResourceProfilesUnknown(t *testing.T) {
+	dest := NewResourceProfiles()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigResourceProfiles(), dest)
+	require.NoError(t, UnmarshalProtoResourceProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewResourceProfiles(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigResourceProfiles(src))
-				gotSize := MarshalProtoOrigResourceProfiles(src, buf)
+				buf := make([]byte, SizeProtoResourceProfiles(src))
+				gotSize := MarshalProtoResourceProfiles(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigResourceProfiles()
-				require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, buf))
+				dest := NewResourceProfiles()
+				require.NoError(t, UnmarshalProtoResourceProfiles(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResourceProfiles(dest, true)
+				DeleteResourceProfiles(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigResourceProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufResourceProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesResourceProfiles() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResourceProfiles(src))
-			gotSize := MarshalProtoOrigResourceProfiles(src, buf)
+			buf := make([]byte, SizeProtoResourceProfiles(src))
+			gotSize := MarshalProtoResourceProfiles(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.ResourceProfiles{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceProfiles(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigResourceProfiles()
-			require.NoError(t, UnmarshalProtoOrigResourceProfiles(dest, goBuf))
+			dest := NewResourceProfiles()
+			require.NoError(t, UnmarshalProtoResourceProfiles(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesResourceProfiles() map[string][]byte {
 
 func genTestEncodingValuesResourceProfiles() map[string]*otlpprofiles.ResourceProfiles {
 	return map[string]*otlpprofiles.ResourceProfiles{
-		"empty":                          NewOrigResourceProfiles(),
-		"Resource/test":                  {Resource: *GenTestOrigResource()},
-		"ScopeProfiles/default_and_test": {ScopeProfiles: []*otlpprofiles.ScopeProfiles{{}, GenTestOrigScopeProfiles()}},
+		"empty":                          NewResourceProfiles(),
+		"Resource/test":                  {Resource: *GenTestResource()},
+		"ScopeProfiles/default_and_test": {ScopeProfiles: []*otlpprofiles.ScopeProfiles{{}, GenTestScopeProfiles()}},
 		"SchemaUrl/test":                 {SchemaUrl: "test_schemaurl"},
 	}
 }

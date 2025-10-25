@@ -13,21 +13,26 @@ import (
 )
 {{ if .hasWrapper }}
 
-type {{ .structName }} struct {
+type {{ .structName }}Wrapper struct {
 	orig *{{ .originFullName }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originFullName }} {
+func Get{{ .structName }}Orig(ms {{ .structName }}Wrapper) *{{ .originFullName }} {
 	return ms.orig
 }
 
-func Get{{ .structName }}State(ms {{ .structName }}) *State {
+func Get{{ .structName }}State(ms {{ .structName }}Wrapper) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structName }} {
-	return {{ .structName }}{orig: orig, state: state}
+func New{{ .structName }}Wrapper(orig *{{ .originFullName }}, state *State) {{ .structName }}Wrapper {
+	return {{ .structName }}Wrapper{orig: orig, state: state}
+}
+
+func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
+    orig := GenTest{{ .originName }}()
+    return New{{ .structName }}Wrapper(orig, NewState())
 }
 
 {{ end }}
@@ -42,14 +47,14 @@ var (
 )
 
 
-func NewOrig{{ .originName }}() *{{ .originFullName }} {
+func New{{ .originName }}() *{{ .originFullName }} {
     if !UseProtoPooling.IsEnabled() {
         return &{{ .originFullName }}{}
     }
     return protoPool{{ .originName }}.Get().(*{{ .originFullName }})
 }
 
-func DeleteOrig{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
+func Delete{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
     if orig == nil {
         return
     }
@@ -66,7 +71,7 @@ func DeleteOrig{{ .originName }}(orig *{{ .originFullName }}, nullable bool) {
     }
 }
 
-func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
+func Copy{{ .originName }}(dest, src *{{ .originFullName }}) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -77,16 +82,16 @@ func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
 	{{- end }}
 }
 
-func GenTestOrig{{ .originName }}() *{{ .originFullName }} {
-	orig := NewOrig{{ .originName }}()
+func GenTest{{ .originName }}() *{{ .originFullName }} {
+	orig := New{{ .originName }}()
 	{{- range .fields }}
 	{{ .GenerateTestValue $.messageStruct }}
 	{{- end }}
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSON{{ .originName }}(orig *{{ .originFullName }}, dest *json.Stream) {
 	dest.WriteObjectStart()
 	{{ range .fields -}}
 	{{ .GenerateMarshalJSON $.messageStruct }}
@@ -94,8 +99,8 @@ func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.St
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrig{{ .structName }} unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
+// UnmarshalJSON{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSON{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		{{ range .fields -}}
@@ -107,7 +112,7 @@ func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.
 	}
 }
 
-func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
+func SizeProto{{ .originName }}(orig *{{ .originFullName }}) int {
 	var n int
 	var l int
 	_ = l
@@ -117,7 +122,7 @@ func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
 	return n
 }
 
-func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) int {
+func MarshalProto{{ .originName }}(orig *{{ .originFullName }}, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -127,7 +132,7 @@ func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) 
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {
+func UnmarshalProto{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

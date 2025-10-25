@@ -33,22 +33,22 @@ func NewExportRequest() ExportRequest {
 // any changes to the provided Metrics struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
 	return ExportRequest{
-		orig:  internal.GetOrigMetrics(internal.Metrics(md)),
-		state: internal.GetMetricsState(internal.Metrics(md)),
+		orig:  internal.GetMetricsOrig(internal.MetricsWrapper(md)),
+		state: internal.GetMetricsState(internal.MetricsWrapper(md)),
 	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	size := internal.SizeProtoOrigExportMetricsServiceRequest(ms.orig)
+	size := internal.SizeProtoExportMetricsServiceRequest(ms.orig)
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportMetricsServiceRequest(ms.orig, buf)
+	_ = internal.MarshalProtoExportMetricsServiceRequest(ms.orig, buf)
 	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	err := internal.UnmarshalProtoOrigExportMetricsServiceRequest(ms.orig, data)
+	err := internal.UnmarshalProtoExportMetricsServiceRequest(ms.orig, data)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportMetricsServiceRequest(ms.orig, dest)
+	internal.MarshalJSONExportMetricsServiceRequest(ms.orig, dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -71,10 +71,10 @@ func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	internal.UnmarshalJSONOrigExportMetricsServiceRequest(ms.orig, iter)
+	internal.UnmarshalJSONExportMetricsServiceRequest(ms.orig, iter)
 	return iter.Error()
 }
 
 func (ms ExportRequest) Metrics() pmetric.Metrics {
-	return pmetric.Metrics(internal.NewMetrics(ms.orig, ms.state))
+	return pmetric.Metrics(internal.NewMetricsWrapper(ms.orig, ms.state))
 }

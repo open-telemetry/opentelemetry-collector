@@ -23,11 +23,11 @@ func TestEntityRefSlice(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewEntityRef()
-	testVal := EntityRef(internal.NewEntityRef(internal.GenTestOrigEntityRef(), internal.NewState()))
+	testVal := EntityRef(internal.GenTestEntityRefWrapper())
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.getOrig())[i] = internal.GenTestOrigEntityRef()
+		(*es.getOrig())[i] = internal.GenTestEntityRef()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestEntityRefSlice_Sort(t *testing.T) {
 
 func generateTestEntityRefSlice() EntityRefSlice {
 	ms := NewEntityRefSlice()
-	*ms.getOrig() = internal.GenerateOrigTestEntityRefSlice()
+	*ms.getOrig() = internal.GenTestEntityRefSlice()
 	return ms
 }

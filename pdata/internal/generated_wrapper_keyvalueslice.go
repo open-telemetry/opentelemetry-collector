@@ -10,7 +10,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
+func CopyKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
 	var newDest []otlpcommon.KeyValue
 	if cap(dest) < len(src) {
 		newDest = make([]otlpcommon.KeyValue, len(src))
@@ -19,18 +19,18 @@ func CopyOrigKeyValueSlice(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigKeyValue(&dest[i], false)
+			DeleteKeyValue(&dest[i], false)
 		}
 	}
 	for i := range src {
-		CopyOrigKeyValue(&newDest[i], &src[i])
+		CopyKeyValue(&newDest[i], &src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestKeyValueSlice() []otlpcommon.KeyValue {
+func GenTestKeyValueSlice() []otlpcommon.KeyValue {
 	orig := make([]otlpcommon.KeyValue, 5)
-	orig[1] = *GenTestOrigKeyValue()
-	orig[3] = *GenTestOrigKeyValue()
+	orig[1] = *GenTestKeyValue()
+	orig[3] = *GenTestKeyValue()
 	return orig
 }

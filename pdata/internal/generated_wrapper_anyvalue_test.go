@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigAnyValue(t *testing.T) {
+func TestCopyAnyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesAnyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigAnyValue(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigAnyValue()
-				CopyOrigAnyValue(dest, src)
+				dest := NewAnyValue()
+				CopyAnyValue(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigAnyValue(dest, dest)
+				CopyAnyValue(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigAnyValueUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONAnyValueUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigAnyValue()
-	UnmarshalJSONOrigAnyValue(dest, iter)
+	dest := NewAnyValue()
+	UnmarshalJSONAnyValue(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigAnyValue(), dest)
+	assert.Equal(t, NewAnyValue(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigAnyValue(t *testing.T) {
+func TestMarshalAndUnmarshalJSONAnyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesAnyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigAnyValue(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigAnyValue(src, stream)
+				MarshalJSONAnyValue(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigAnyValue()
-				UnmarshalJSONOrigAnyValue(dest, iter)
+				dest := NewAnyValue()
+				UnmarshalJSONAnyValue(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigAnyValue(dest, true)
+				DeleteAnyValue(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigAnyValueFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoAnyValueFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesAnyValue() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigAnyValue()
-			require.Error(t, UnmarshalProtoOrigAnyValue(dest, buf))
+			dest := NewAnyValue()
+			require.Error(t, UnmarshalProtoAnyValue(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigAnyValueUnknown(t *testing.T) {
-	dest := NewOrigAnyValue()
+func TestMarshalAndUnmarshalProtoAnyValueUnknown(t *testing.T) {
+	dest := NewAnyValue()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigAnyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigAnyValue(), dest)
+	require.NoError(t, UnmarshalProtoAnyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewAnyValue(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigAnyValue(t *testing.T) {
+func TestMarshalAndUnmarshalProtoAnyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesAnyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigAnyValue(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigAnyValue(src))
-				gotSize := MarshalProtoOrigAnyValue(src, buf)
+				buf := make([]byte, SizeProtoAnyValue(src))
+				gotSize := MarshalProtoAnyValue(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigAnyValue()
-				require.NoError(t, UnmarshalProtoOrigAnyValue(dest, buf))
+				dest := NewAnyValue()
+				require.NoError(t, UnmarshalProtoAnyValue(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigAnyValue(dest, true)
+				DeleteAnyValue(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigAnyValue(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufAnyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesAnyValue() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigAnyValue(src))
-			gotSize := MarshalProtoOrigAnyValue(src, buf)
+			buf := make([]byte, SizeProtoAnyValue(src))
+			gotSize := MarshalProtoAnyValue(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpcommon.AnyValue{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufAnyValue(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigAnyValue()
-			require.NoError(t, UnmarshalProtoOrigAnyValue(dest, goBuf))
+			dest := NewAnyValue()
+			require.NoError(t, UnmarshalProtoAnyValue(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -166,7 +166,7 @@ func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
 
 func genTestEncodingValuesAnyValue() map[string]*otlpcommon.AnyValue {
 	return map[string]*otlpcommon.AnyValue{
-		"empty":               NewOrigAnyValue(),
+		"empty":               NewAnyValue(),
 		"StringValue/default": {Value: &otlpcommon.AnyValue_StringValue{StringValue: ""}},
 		"StringValue/test":    {Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_stringvalue"}},
 		"BoolValue/default":   {Value: &otlpcommon.AnyValue_BoolValue{BoolValue: false}},
@@ -176,9 +176,9 @@ func genTestEncodingValuesAnyValue() map[string]*otlpcommon.AnyValue {
 		"DoubleValue/default": {Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: float64(0)}},
 		"DoubleValue/test":    {Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: float64(3.1415926)}},
 		"ArrayValue/default":  {Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}},
-		"ArrayValue/test":     {Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: GenTestOrigArrayValue()}},
+		"ArrayValue/test":     {Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: GenTestArrayValue()}},
 		"KvlistValue/default": {Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}},
-		"KvlistValue/test":    {Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: GenTestOrigKeyValueList()}},
+		"KvlistValue/test":    {Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: GenTestKeyValueList()}},
 		"BytesValue/default":  {Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}},
 		"BytesValue/test":     {Value: &otlpcommon.AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}},
 	}

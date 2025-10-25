@@ -14,27 +14,27 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestCopyOrigResourceProfilesSlice(t *testing.T) {
+func TestCopyResourceProfilesSlice(t *testing.T) {
 	src := []*otlpprofiles.ResourceProfiles{}
 	dest := []*otlpprofiles.ResourceProfiles{}
 	// Test CopyTo empty
-	dest = CopyOrigResourceProfilesSlice(dest, src)
+	dest = CopyResourceProfilesSlice(dest, src)
 	assert.Equal(t, []*otlpprofiles.ResourceProfiles{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestResourceProfilesSlice()
-	dest = CopyOrigResourceProfilesSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceProfilesSlice(), dest)
+	src = GenTestResourceProfilesSlice()
+	dest = CopyResourceProfilesSlice(dest, src)
+	assert.Equal(t, GenTestResourceProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigResourceProfilesSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceProfilesSlice(), dest)
+	dest = CopyResourceProfilesSlice(dest, src)
+	assert.Equal(t, GenTestResourceProfilesSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigResourceProfilesSlice(dest, []*otlpprofiles.ResourceProfiles{})
+	dest = CopyResourceProfilesSlice(dest, []*otlpprofiles.ResourceProfiles{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigResourceProfilesSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestResourceProfilesSlice(), dest)
+	dest = CopyResourceProfilesSlice(dest, src)
+	assert.Equal(t, GenTestResourceProfilesSlice(), dest)
 }

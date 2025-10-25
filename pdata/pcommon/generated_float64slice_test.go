@@ -52,7 +52,7 @@ func TestFloat64SliceReadOnly(t *testing.T) {
 	raw := []float64{1.1, 2.2, 3.3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := Float64Slice(internal.NewFloat64Slice(&raw, sharedState))
+	ms := Float64Slice(internal.NewFloat64SliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.InDelta(t, float64(1.1), ms.At(0), 0.01)
@@ -116,6 +116,32 @@ func TestFloat64SliceMoveAndAppendTo(t *testing.T) {
 	ms.FromRaw([]float64{1.1, 2.2, 3.3})
 	ms.MoveAndAppendTo(ms2)
 	assert.Equal(t, ms2.Len(), 6)
+}
+
+func TestFloat64SliceRemoveIf(t *testing.T) {
+	emptySlice := NewFloat64Slice()
+	emptySlice.RemoveIf(func(el float64) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1.1, 2.2, 3.3})
+	pos := 0
+	ms.RemoveIf(func(el float64) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestFloat64SliceRemoveIfAll(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1.1, 2.2, 3.3})
+	ms.RemoveIf(func(el float64) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
 }
 
 func TestFloat64SliceEqual(t *testing.T) {

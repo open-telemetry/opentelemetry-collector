@@ -10,29 +10,29 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-type EntityRefSlice struct {
+type EntityRefSliceWrapper struct {
 	orig  *[]*otlpcommon.EntityRef
 	state *State
 }
 
-func GetOrigEntityRefSlice(ms EntityRefSlice) *[]*otlpcommon.EntityRef {
+func GetEntityRefSliceOrig(ms EntityRefSliceWrapper) *[]*otlpcommon.EntityRef {
 	return ms.orig
 }
 
-func GetEntityRefSliceState(ms EntityRefSlice) *State {
+func GetEntityRefSliceState(ms EntityRefSliceWrapper) *State {
 	return ms.state
 }
 
-func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSlice {
-	return EntityRefSlice{orig: orig, state: state}
+func NewEntityRefSliceWrapper(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSliceWrapper {
+	return EntityRefSliceWrapper{orig: orig, state: state}
 }
 
-func GenerateTestEntityRefSlice() EntityRefSlice {
-	orig := GenerateOrigTestEntityRefSlice()
-	return NewEntityRefSlice(&orig, NewState())
+func GenTestEntityRefSliceWrapper() EntityRefSliceWrapper {
+	orig := GenTestEntityRefSlice()
+	return NewEntityRefSliceWrapper(&orig, NewState())
 }
 
-func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
+func CopyEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
 	var newDest []*otlpcommon.EntityRef
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpcommon.EntityRef, len(src))
@@ -40,34 +40,34 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigEntityRef()
+			newDest[i] = NewEntityRef()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigEntityRef(dest[i], true)
+			DeleteEntityRef(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigEntityRef()
+			newDest[i] = NewEntityRef()
 		}
 	}
 	for i := range src {
-		CopyOrigEntityRef(newDest[i], src[i])
+		CopyEntityRef(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
+func GenTestEntityRefSlice() []*otlpcommon.EntityRef {
 	orig := make([]*otlpcommon.EntityRef, 5)
-	orig[0] = NewOrigEntityRef()
-	orig[1] = GenTestOrigEntityRef()
-	orig[2] = NewOrigEntityRef()
-	orig[3] = GenTestOrigEntityRef()
-	orig[4] = NewOrigEntityRef()
+	orig[0] = NewEntityRef()
+	orig[1] = GenTestEntityRef()
+	orig[2] = NewEntityRef()
+	orig[3] = GenTestEntityRef()
+	orig[4] = NewEntityRef()
 	return orig
 }

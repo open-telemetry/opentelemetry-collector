@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigExemplar(t *testing.T) {
+func TestCopyExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigExemplar(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigExemplar()
-				CopyOrigExemplar(dest, src)
+				dest := NewExemplar()
+				CopyExemplar(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigExemplar(dest, dest)
+				CopyExemplar(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigExemplarUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExemplarUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigExemplar()
-	UnmarshalJSONOrigExemplar(dest, iter)
+	dest := NewExemplar()
+	UnmarshalJSONExemplar(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigExemplar(), dest)
+	assert.Equal(t, NewExemplar(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigExemplar(src, stream)
+				MarshalJSONExemplar(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigExemplar()
-				UnmarshalJSONOrigExemplar(dest, iter)
+				dest := NewExemplar()
+				UnmarshalJSONExemplar(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExemplar(dest, true)
+				DeleteExemplar(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExemplarFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExemplarFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExemplar() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigExemplar()
-			require.Error(t, UnmarshalProtoOrigExemplar(dest, buf))
+			dest := NewExemplar()
+			require.Error(t, UnmarshalProtoExemplar(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExemplarUnknown(t *testing.T) {
-	dest := NewOrigExemplar()
+func TestMarshalAndUnmarshalProtoExemplarUnknown(t *testing.T) {
+	dest := NewExemplar()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigExemplar(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigExemplar(), dest)
+	require.NoError(t, UnmarshalProtoExemplar(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewExemplar(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigExemplar(src))
-				gotSize := MarshalProtoOrigExemplar(src, buf)
+				buf := make([]byte, SizeProtoExemplar(src))
+				gotSize := MarshalProtoExemplar(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigExemplar()
-				require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
+				dest := NewExemplar()
+				require.NoError(t, UnmarshalProtoExemplar(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExemplar(dest, true)
+				DeleteExemplar(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExemplar(src))
-			gotSize := MarshalProtoOrigExemplar(src, buf)
+			buf := make([]byte, SizeProtoExemplar(src))
+			gotSize := MarshalProtoExemplar(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.Exemplar{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigExemplar()
-			require.NoError(t, UnmarshalProtoOrigExemplar(dest, goBuf))
+			dest := NewExemplar()
+			require.NoError(t, UnmarshalProtoExemplar(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -160,14 +160,14 @@ func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 
 func genTestEncodingValuesExemplar() map[string]*otlpmetrics.Exemplar {
 	return map[string]*otlpmetrics.Exemplar{
-		"empty":                               NewOrigExemplar(),
-		"FilteredAttributes/default_and_test": {FilteredAttributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"empty":                               NewExemplar(),
+		"FilteredAttributes/default_and_test": {FilteredAttributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"TimeUnixNano/test":                   {TimeUnixNano: uint64(13)},
 		"AsDouble/default":                    {Value: &otlpmetrics.Exemplar_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":                       {Value: &otlpmetrics.Exemplar_AsDouble{AsDouble: float64(3.1415926)}},
 		"AsInt/default":                       {Value: &otlpmetrics.Exemplar_AsInt{AsInt: int64(0)}},
 		"AsInt/test":                          {Value: &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}},
-		"SpanId/test":                         {SpanId: *GenTestOrigSpanID()},
-		"TraceId/test":                        {TraceId: *GenTestOrigTraceID()},
+		"SpanId/test":                         {SpanId: *GenTestSpanID()},
+		"TraceId/test":                        {TraceId: *GenTestTraceID()},
 	}
 }

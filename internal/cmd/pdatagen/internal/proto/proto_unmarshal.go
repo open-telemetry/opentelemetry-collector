@@ -312,21 +312,21 @@ const unmarshalProtoMessage = `
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
 		}
-		ov.{{ .fieldName }} = NewOrig{{ .origName }}()
-		err = UnmarshalProtoOrig{{ .origName }}(ov.{{ .fieldName }}, buf[startPos:pos])
+		ov.{{ .fieldName }} = New{{ .origName }}()
+		err = UnmarshalProto{{ .origName }}(ov.{{ .fieldName }}, buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}NewOrig{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1], buf[startPos:pos])
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
+		err = UnmarshalProto{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1], buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 {{- else }}
-		{{ if .nullable }}orig.{{ .fieldName }} = NewOrig{{ .origName }}(){{ end }}
-		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[startPos:pos]) 
+		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .origName }}(){{ end }}
+		err = UnmarshalProto{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[startPos:pos]) 
 		if err != nil {
 			return err
 		}

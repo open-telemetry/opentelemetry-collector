@@ -41,7 +41,7 @@ func TestUnmarshalUnpackedHistogramDataPoint(t *testing.T) {
 	pb = binary.LittleEndian.AppendUint64(pb, math.Float64bits(42.0))
 
 	var hdp otlpmetrics.HistogramDataPoint
-	err := UnmarshalProtoOrigHistogramDataPoint(&hdp, pb)
+	err := UnmarshalProtoHistogramDataPoint(&hdp, pb)
 	require.NoError(t, err)
 	assert.Equal(t, otlpmetrics.HistogramDataPoint{
 		BucketCounts:   []uint64{42},
@@ -55,7 +55,7 @@ func TestUnmarshalUnpackedExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	pb = appendVarint(pb, 42)
 
 	var ehdpb otlpmetrics.ExponentialHistogramDataPoint_Buckets
-	err := UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(&ehdpb, pb)
+	err := UnmarshalProtoExponentialHistogramDataPoint_Buckets(&ehdpb, pb)
 	require.NoError(t, err)
 	assert.Equal(t, otlpmetrics.ExponentialHistogramDataPoint_Buckets{
 		BucketCounts: []uint64{42},

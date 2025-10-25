@@ -30,7 +30,7 @@ func newLocationSlice(orig *[]*otlpprofiles.Location, state *internal.State) Loc
 	return LocationSlice{orig: orig, state: state}
 }
 
-// NewLocationSlice creates a LocationSlice with 0 elements.
+// NewLocationSlice creates a LocationSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
 	orig := []*otlpprofiles.Location(nil)
@@ -99,7 +99,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigLocation())
+	*es.orig = append(*es.orig, internal.NewLocation())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigLocation((*es.orig)[i], true)
+			internal.DeleteLocation((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLocationSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the

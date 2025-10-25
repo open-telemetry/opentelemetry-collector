@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
+func CopyValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
 	var newDest []*otlpprofiles.ValueType
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.ValueType, len(src))
@@ -18,34 +18,34 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigValueType()
+			newDest[i] = NewValueType()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigValueType(dest[i], true)
+			DeleteValueType(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigValueType()
+			newDest[i] = NewValueType()
 		}
 	}
 	for i := range src {
-		CopyOrigValueType(newDest[i], src[i])
+		CopyValueType(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
+func GenTestValueTypeSlice() []*otlpprofiles.ValueType {
 	orig := make([]*otlpprofiles.ValueType, 5)
-	orig[0] = NewOrigValueType()
-	orig[1] = GenTestOrigValueType()
-	orig[2] = NewOrigValueType()
-	orig[3] = GenTestOrigValueType()
-	orig[4] = NewOrigValueType()
+	orig[0] = NewValueType()
+	orig[1] = GenTestValueType()
+	orig[2] = NewValueType()
+	orig[3] = GenTestValueType()
+	orig[4] = NewValueType()
 	return orig
 }

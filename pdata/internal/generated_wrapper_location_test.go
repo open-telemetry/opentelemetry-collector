@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigLocation(t *testing.T) {
+func TestCopyLocation(t *testing.T) {
 	for name, src := range genTestEncodingValuesLocation() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigLocation(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigLocation()
-				CopyOrigLocation(dest, src)
+				dest := NewLocation()
+				CopyLocation(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigLocation(dest, dest)
+				CopyLocation(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigLocationUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONLocationUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigLocation()
-	UnmarshalJSONOrigLocation(dest, iter)
+	dest := NewLocation()
+	UnmarshalJSONLocation(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigLocation(), dest)
+	assert.Equal(t, NewLocation(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
+func TestMarshalAndUnmarshalJSONLocation(t *testing.T) {
 	for name, src := range genTestEncodingValuesLocation() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigLocation(src, stream)
+				MarshalJSONLocation(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigLocation()
-				UnmarshalJSONOrigLocation(dest, iter)
+				dest := NewLocation()
+				UnmarshalJSONLocation(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigLocation(dest, true)
+				DeleteLocation(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigLocationFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoLocationFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesLocation() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigLocation()
-			require.Error(t, UnmarshalProtoOrigLocation(dest, buf))
+			dest := NewLocation()
+			require.Error(t, UnmarshalProtoLocation(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigLocationUnknown(t *testing.T) {
-	dest := NewOrigLocation()
+func TestMarshalAndUnmarshalProtoLocationUnknown(t *testing.T) {
+	dest := NewLocation()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigLocation(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigLocation(), dest)
+	require.NoError(t, UnmarshalProtoLocation(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewLocation(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
+func TestMarshalAndUnmarshalProtoLocation(t *testing.T) {
 	for name, src := range genTestEncodingValuesLocation() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigLocation(src))
-				gotSize := MarshalProtoOrigLocation(src, buf)
+				buf := make([]byte, SizeProtoLocation(src))
+				gotSize := MarshalProtoLocation(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigLocation()
-				require.NoError(t, UnmarshalProtoOrigLocation(dest, buf))
+				dest := NewLocation()
+				require.NoError(t, UnmarshalProtoLocation(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigLocation(dest, true)
+				DeleteLocation(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 	for name, src := range genTestEncodingValuesLocation() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigLocation(src))
-			gotSize := MarshalProtoOrigLocation(src, buf)
+			buf := make([]byte, SizeProtoLocation(src))
+			gotSize := MarshalProtoLocation(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.Location{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigLocation()
-			require.NoError(t, UnmarshalProtoOrigLocation(dest, goBuf))
+			dest := NewLocation()
+			require.NoError(t, UnmarshalProtoLocation(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -153,10 +153,10 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 
 func genTestEncodingValuesLocation() map[string]*otlpprofiles.Location {
 	return map[string]*otlpprofiles.Location{
-		"empty":                             NewOrigLocation(),
+		"empty":                             NewLocation(),
 		"MappingIndex/test":                 {MappingIndex: int32(13)},
 		"Address/test":                      {Address: uint64(13)},
-		"Line/default_and_test":             {Line: []*otlpprofiles.Line{{}, GenTestOrigLine()}},
+		"Line/default_and_test":             {Line: []*otlpprofiles.Line{{}, GenTestLine()}},
 		"AttributeIndices/default_and_test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

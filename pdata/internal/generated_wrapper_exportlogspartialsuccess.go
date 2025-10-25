@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+func NewExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectorlogs.ExportLogsPartialSuccess{}
 	}
 	return protoPoolExportLogsPartialSuccess.Get().(*otlpcollectorlogs.ExportLogsPartialSuccess)
 }
 
-func DeleteOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, nullable bool) {
+func DeleteExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartia
 	}
 }
 
-func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPartialSuccess) {
+func CopyExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPartialSuccess) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,15 +55,15 @@ func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlogs.ExportLogsPar
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func GenTestOrigExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
-	orig := NewOrigExportLogsPartialSuccess()
+func GenTestExportLogsPartialSuccess() *otlpcollectorlogs.ExportLogsPartialSuccess {
+	orig := NewExportLogsPartialSuccess()
 	orig.RejectedLogRecords = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.RejectedLogRecords != int64(0) {
 		dest.WriteObjectField("rejectedLogRecords")
@@ -76,8 +76,8 @@ func MarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsP
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, iter *json.Iterator) {
+// UnmarshalJSONExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedLogRecords", "rejected_log_records":
@@ -90,7 +90,7 @@ func UnmarshalJSONOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLog
 	}
 }
 
-func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) int {
+func SizeProtoExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess) int {
 	var n int
 	var l int
 	_ = l
@@ -104,7 +104,7 @@ func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPar
 	return n
 }
 
-func MarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) int {
+func MarshalProtoExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -124,7 +124,7 @@ func MarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogs
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) error {
+func UnmarshalProtoExportLogsPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

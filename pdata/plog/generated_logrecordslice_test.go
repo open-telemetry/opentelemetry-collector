@@ -27,7 +27,7 @@ func TestLogRecordSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigLogRecord()
+		(*es.orig)[i] = internal.GenTestLogRecord()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestLogRecordSlice_Sort(t *testing.T) {
 
 func generateTestLogRecordSlice() LogRecordSlice {
 	ms := NewLogRecordSlice()
-	*ms.orig = internal.GenerateOrigTestLogRecordSlice()
+	*ms.orig = internal.GenTestLogRecordSlice()
 	return ms
 }

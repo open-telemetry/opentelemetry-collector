@@ -30,7 +30,7 @@ func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
 	return LinkSlice{orig: orig, state: state}
 }
 
-// NewLinkSlice creates a LinkSlice with 0 elements.
+// NewLinkSlice creates a LinkSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
 	orig := []*otlpprofiles.Link(nil)
@@ -99,7 +99,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigLink())
+	*es.orig = append(*es.orig, internal.NewLink())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigLink((*es.orig)[i], true)
+			internal.DeleteLink((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Link elements within LinkSlice given the

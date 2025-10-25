@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigKeyValue(t *testing.T) {
+func TestCopyKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigKeyValue(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigKeyValue()
-				CopyOrigKeyValue(dest, src)
+				dest := NewKeyValue()
+				CopyKeyValue(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigKeyValue(dest, dest)
+				CopyKeyValue(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONKeyValueUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigKeyValue()
-	UnmarshalJSONOrigKeyValue(dest, iter)
+	dest := NewKeyValue()
+	UnmarshalJSONKeyValue(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigKeyValue(), dest)
+	assert.Equal(t, NewKeyValue(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
+func TestMarshalAndUnmarshalJSONKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigKeyValue(src, stream)
+				MarshalJSONKeyValue(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigKeyValue()
-				UnmarshalJSONOrigKeyValue(dest, iter)
+				dest := NewKeyValue()
+				UnmarshalJSONKeyValue(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigKeyValue(dest, true)
+				DeleteKeyValue(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValueFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoKeyValueFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigKeyValue()
-			require.Error(t, UnmarshalProtoOrigKeyValue(dest, buf))
+			dest := NewKeyValue()
+			require.Error(t, UnmarshalProtoKeyValue(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValueUnknown(t *testing.T) {
-	dest := NewOrigKeyValue()
+func TestMarshalAndUnmarshalProtoKeyValueUnknown(t *testing.T) {
+	dest := NewKeyValue()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigKeyValue(), dest)
+	require.NoError(t, UnmarshalProtoKeyValue(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewKeyValue(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
+func TestMarshalAndUnmarshalProtoKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigKeyValue(src))
-				gotSize := MarshalProtoOrigKeyValue(src, buf)
+				buf := make([]byte, SizeProtoKeyValue(src))
+				gotSize := MarshalProtoKeyValue(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigKeyValue()
-				require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
+				dest := NewKeyValue()
+				require.NoError(t, UnmarshalProtoKeyValue(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigKeyValue(dest, true)
+				DeleteKeyValue(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
 	for name, src := range genTestEncodingValuesKeyValue() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigKeyValue(src))
-			gotSize := MarshalProtoOrigKeyValue(src, buf)
+			buf := make([]byte, SizeProtoKeyValue(src))
+			gotSize := MarshalProtoKeyValue(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpcommon.KeyValue{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValue(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigKeyValue()
-			require.NoError(t, UnmarshalProtoOrigKeyValue(dest, goBuf))
+			dest := NewKeyValue()
+			require.NoError(t, UnmarshalProtoKeyValue(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -149,8 +149,8 @@ func genTestFailingUnmarshalProtoValuesKeyValue() map[string][]byte {
 
 func genTestEncodingValuesKeyValue() map[string]*otlpcommon.KeyValue {
 	return map[string]*otlpcommon.KeyValue{
-		"empty":      NewOrigKeyValue(),
+		"empty":      NewKeyValue(),
 		"Key/test":   {Key: "test_key"},
-		"Value/test": {Value: *GenTestOrigAnyValue()},
+		"Value/test": {Value: *GenTestAnyValue()},
 	}
 }

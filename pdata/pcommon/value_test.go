@@ -250,9 +250,9 @@ func TestValue_MoveTo(t *testing.T) {
 
 func TestValue_CopyTo(t *testing.T) {
 	dest := NewValueEmpty()
-	orig := internal.GenTestOrigAnyValue()
+	orig := internal.GenTestAnyValue()
 	newValue(orig, internal.NewState()).CopyTo(dest)
-	assert.Equal(t, internal.GenTestOrigAnyValue(), dest.getOrig())
+	assert.Equal(t, internal.GenTestAnyValue(), dest.getOrig())
 }
 
 func TestSliceWithNilValues(t *testing.T) {
@@ -808,7 +808,7 @@ func BenchmarkValueEqual(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				_ = bb.value.Equal(bb.comparison)
 			}
 		})

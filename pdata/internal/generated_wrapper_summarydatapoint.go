@@ -26,14 +26,14 @@ var (
 	}
 )
 
-func NewOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
+func NewSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.SummaryDataPoint{}
 	}
 	return protoPoolSummaryDataPoint.Get().(*otlpmetrics.SummaryDataPoint)
 }
 
-func DeleteOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, nullable bool) {
+func DeleteSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -44,10 +44,10 @@ func DeleteOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, nullable boo
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 	for i := range orig.QuantileValues {
-		DeleteOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], true)
+		DeleteSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], true)
 	}
 
 	orig.Reset()
@@ -56,42 +56,42 @@ func DeleteOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, nullable boo
 	}
 }
 
-func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
+func CopySummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
 	dest.Sum = src.Sum
-	dest.QuantileValues = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
+	dest.QuantileValues = CopySummaryDataPoint_ValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
 	dest.Flags = src.Flags
 }
 
-func GenTestOrigSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
-	orig := NewOrigSummaryDataPoint()
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+func GenTestSummaryDataPoint() *otlpmetrics.SummaryDataPoint {
+	orig := NewSummaryDataPoint()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Count = uint64(13)
 	orig.Sum = float64(3.1415926)
-	orig.QuantileValues = GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	orig.QuantileValues = GenTestSummaryDataPoint_ValueAtQuantileSlice()
 	orig.Flags = 1
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -114,10 +114,10 @@ func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *j
 	if len(orig.QuantileValues) > 0 {
 		dest.WriteObjectField("quantileValues")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[0], dest)
+		MarshalJSONSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[0], dest)
 		for i := 1; i < len(orig.QuantileValues); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], dest)
+			MarshalJSONSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -128,14 +128,14 @@ func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *j
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSummaryDataPoint unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter *json.Iterator) {
+// UnmarshalJSONSummaryDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
@@ -148,8 +148,8 @@ func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter 
 			orig.Sum = iter.ReadFloat64()
 		case "quantileValues", "quantile_values":
 			for iter.ReadArray() {
-				orig.QuantileValues = append(orig.QuantileValues, NewOrigSummaryDataPoint_ValueAtQuantile())
-				UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], iter)
+				orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPoint_ValueAtQuantile())
+				UnmarshalJSONSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], iter)
 			}
 
 		case "flags":
@@ -160,12 +160,12 @@ func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter 
 	}
 }
 
-func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
+func SizeProtoSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.StartTimeUnixNano != 0 {
@@ -181,7 +181,7 @@ func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
 		n += 9
 	}
 	for i := range orig.QuantileValues {
-		l = SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i])
+		l = SizeProtoSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.Flags != 0 {
@@ -190,12 +190,12 @@ func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
 	return n
 }
 
-func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) int {
+func MarshalProtoSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -226,7 +226,7 @@ func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []
 		buf[pos] = 0x29
 	}
 	for i := len(orig.QuantileValues) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], buf[:pos])
+		l = MarshalProtoSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -240,7 +240,7 @@ func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) error {
+func UnmarshalProtoSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -266,7 +266,7 @@ func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf 
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -329,8 +329,8 @@ func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf 
 				return err
 			}
 			startPos := pos - length
-			orig.QuantileValues = append(orig.QuantileValues, NewOrigSummaryDataPoint_ValueAtQuantile())
-			err = UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], buf[startPos:pos])
+			orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPoint_ValueAtQuantile())
+			err = UnmarshalProtoSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[len(orig.QuantileValues)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

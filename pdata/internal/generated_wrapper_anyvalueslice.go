@@ -10,29 +10,29 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-type Slice struct {
+type SliceWrapper struct {
 	orig  *[]otlpcommon.AnyValue
 	state *State
 }
 
-func GetOrigSlice(ms Slice) *[]otlpcommon.AnyValue {
+func GetSliceOrig(ms SliceWrapper) *[]otlpcommon.AnyValue {
 	return ms.orig
 }
 
-func GetSliceState(ms Slice) *State {
+func GetSliceState(ms SliceWrapper) *State {
 	return ms.state
 }
 
-func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
-	return Slice{orig: orig, state: state}
+func NewSliceWrapper(orig *[]otlpcommon.AnyValue, state *State) SliceWrapper {
+	return SliceWrapper{orig: orig, state: state}
 }
 
-func GenerateTestSlice() Slice {
-	orig := GenerateOrigTestAnyValueSlice()
-	return NewSlice(&orig, NewState())
+func GenTestSliceWrapper() SliceWrapper {
+	orig := GenTestAnyValueSlice()
+	return NewSliceWrapper(&orig, NewState())
 }
 
-func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
+func CopyAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
 	var newDest []otlpcommon.AnyValue
 	if cap(dest) < len(src) {
 		newDest = make([]otlpcommon.AnyValue, len(src))
@@ -41,18 +41,18 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigAnyValue(&dest[i], false)
+			DeleteAnyValue(&dest[i], false)
 		}
 	}
 	for i := range src {
-		CopyOrigAnyValue(&newDest[i], &src[i])
+		CopyAnyValue(&newDest[i], &src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
+func GenTestAnyValueSlice() []otlpcommon.AnyValue {
 	orig := make([]otlpcommon.AnyValue, 5)
-	orig[1] = *GenTestOrigAnyValue()
-	orig[3] = *GenTestOrigAnyValue()
+	orig[1] = *GenTestAnyValue()
+	orig[3] = *GenTestAnyValue()
 	return orig
 }

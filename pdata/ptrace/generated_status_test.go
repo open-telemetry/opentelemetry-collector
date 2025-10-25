@@ -25,8 +25,8 @@ func TestStatus_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestStatus(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewOrigStatus(), sharedState)) })
-	assert.Panics(t, func() { newStatus(internal.NewOrigStatus(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewStatus(), sharedState)) })
+	assert.Panics(t, func() { newStatus(internal.NewStatus(), sharedState).MoveTo(dest) })
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewOrigStatus(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewStatus(), sharedState)) })
 }
 
 func TestStatus_Message(t *testing.T) {
@@ -61,6 +61,6 @@ func TestStatus_Code(t *testing.T) {
 }
 
 func generateTestStatus() Status {
-	ms := newStatus(internal.GenTestOrigStatus(), internal.NewState())
+	ms := newStatus(internal.GenTestStatus(), internal.NewState())
 	return ms
 }

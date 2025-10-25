@@ -76,6 +76,8 @@ func TestMapReadOnly(t *testing.T) {
 	assert.Panics(t, func() { m.PutInt("k2", 123) })
 	assert.Panics(t, func() { m.PutDouble("k2", 1.23) })
 	assert.Panics(t, func() { m.PutBool("k2", true) })
+	assert.Panics(t, func() { m.PutEmpty("foo") })
+	assert.Panics(t, func() { m.GetOrPutEmpty("foo") })
 	assert.Panics(t, func() { m.PutEmptyBytes("k2") })
 	assert.Panics(t, func() { m.PutEmptyMap("k2") })
 	assert.Panics(t, func() { m.PutEmptySlice("k2") })
@@ -109,6 +111,24 @@ func TestMapPutEmpty(t *testing.T) {
 	v2, ok := m.Get("k1")
 	assert.True(t, ok)
 	assert.Equal(t, int64(1), v2.Int())
+}
+
+func TestMapGetOrPutEmpty(t *testing.T) {
+	m := NewMap()
+	v := m.PutEmpty("k1")
+	v.SetStr("test")
+	assert.Equal(t, map[string]any{
+		"k1": "test",
+	}, m.AsRaw())
+
+	v, found := m.GetOrPutEmpty("k1")
+	assert.True(t, found)
+	require.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "test", v.Str())
+
+	v, found = m.GetOrPutEmpty("k2")
+	assert.False(t, found)
+	require.Equal(t, ValueTypeEmpty, v.Type())
 }
 
 func TestMapPutEmptyMap(t *testing.T) {
@@ -407,9 +427,9 @@ func TestMap_MoveTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test MoveTo larger slice
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	src.MoveTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 	assert.Equal(t, 0, src.Len())
 
 	// Test MoveTo from empty to non-empty
@@ -429,29 +449,29 @@ func TestMap_CopyTo(t *testing.T) {
 	assert.Equal(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo with an empty Value in the destination
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	Map(internal.GenTestMapWrapper()).CopyTo(dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 
 	// Test CopyTo same size slice
 	dest.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_CopyToAndEnsureCapacity(t *testing.T) {
 	dest := NewMap()
-	src := Map(internal.GenerateTestMap())
+	src := Map(internal.GenTestMapWrapper())
 	dest.EnsureCapacity(src.Len())
 	src.CopyTo(dest)
-	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -544,7 +564,7 @@ func TestMap_RemoveIf(t *testing.T) {
 }
 
 func TestMap_RemoveIfAll(t *testing.T) {
-	am := Map(internal.GenerateTestMap())
+	am := Map(internal.GenTestMapWrapper())
 	assert.Equal(t, 5, am.Len())
 	am.RemoveIf(func(string, Value) bool {
 		return true
@@ -607,6 +627,7 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.Remove("foo") })
 	assert.Panics(t, func() { v.RemoveIf(testFunc) })
 	assert.Panics(t, func() { v.PutEmpty("foo") })
+	assert.Panics(t, func() { v.GetOrPutEmpty("foo") })
 	assert.Panics(t, func() { v.PutStr("foo", "bar") })
 	assert.Panics(t, func() { v.PutInt("foo", 1) })
 	assert.Panics(t, func() { v.PutDouble("foo", 1.1) })
@@ -721,10 +742,9 @@ func BenchmarkMapEqual(b *testing.B) {
 	cmp := NewMap()
 	cmp.PutStr("hello", "world")
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_ = m.Equal(cmp)
 	}
 }

@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigValueType() *otlpprofiles.ValueType {
+func NewValueType() *otlpprofiles.ValueType {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.ValueType{}
 	}
 	return protoPoolValueType.Get().(*otlpprofiles.ValueType)
 }
 
-func DeleteOrigValueType(orig *otlpprofiles.ValueType, nullable bool) {
+func DeleteValueType(orig *otlpprofiles.ValueType, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigValueType(orig *otlpprofiles.ValueType, nullable bool) {
 	}
 }
 
-func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
+func CopyValueType(dest, src *otlpprofiles.ValueType) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -56,16 +56,16 @@ func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func GenTestOrigValueType() *otlpprofiles.ValueType {
-	orig := NewOrigValueType()
+func GenTestValueType() *otlpprofiles.ValueType {
+	orig := NewValueType()
 	orig.TypeStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
 	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TypeStrindex != int32(0) {
 		dest.WriteObjectField("typeStrindex")
@@ -83,8 +83,8 @@ func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigValueType unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterator) {
+// UnmarshalJSONValueType unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONValueType(orig *otlpprofiles.ValueType, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "typeStrindex", "type_strindex":
@@ -99,7 +99,7 @@ func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterato
 	}
 }
 
-func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {
+func SizeProtoValueType(orig *otlpprofiles.ValueType) int {
 	var n int
 	var l int
 	_ = l
@@ -115,7 +115,7 @@ func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {
 	return n
 }
 
-func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) int {
+func MarshalProtoValueType(orig *otlpprofiles.ValueType, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -137,7 +137,7 @@ func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) error {
+func UnmarshalProtoValueType(orig *otlpprofiles.ValueType, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

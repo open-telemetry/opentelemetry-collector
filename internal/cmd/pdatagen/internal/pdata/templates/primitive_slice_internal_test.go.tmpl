@@ -12,13 +12,13 @@ import (
 	{{ end }}
 )
 
-func TestCopyOrig{{ .elementOriginName }}Slice(t *testing.T) {
+func TestCopy{{ .elementOriginName }}Slice(t *testing.T) {
 	src := []{{ .itemType }}{}
 	dest := []{{ .itemType }}{}
 	// Copy empty
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
 	assert.Equal(t, src, dest)
-	src = GenerateOrigTest{{ .elementOriginName }}Slice()
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
+	src = GenTest{{ .elementOriginName }}Slice()
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
 	assert.Equal(t, src, dest)
 }

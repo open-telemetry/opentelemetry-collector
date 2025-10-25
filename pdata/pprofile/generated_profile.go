@@ -34,7 +34,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	return newProfile(internal.NewOrigProfile(), internal.NewState())
+	return newProfile(internal.NewProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +46,7 @@ func (ms Profile) MoveTo(dest Profile) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigProfile(dest.orig, false)
+	internal.DeleteProfile(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -100,7 +100,7 @@ func (ms Profile) SetPeriod(v int64) {
 
 // CommentStrindices returns the CommentStrindices associated with this Profile.
 func (ms Profile) CommentStrindices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.CommentStrindices, ms.state))
 }
 
 // ProfileID returns the profileid associated with this Profile.
@@ -138,16 +138,16 @@ func (ms Profile) SetOriginalPayloadFormat(v string) {
 
 // OriginalPayload returns the OriginalPayload associated with this Profile.
 func (ms Profile) OriginalPayload() pcommon.ByteSlice {
-	return pcommon.ByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state))
+	return pcommon.ByteSlice(internal.NewByteSliceWrapper(&ms.orig.OriginalPayload, ms.state))
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Profile.
 func (ms Profile) AttributeIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	internal.CopyOrigProfile(dest.orig, ms.orig)
+	internal.CopyProfile(dest.orig, ms.orig)
 }

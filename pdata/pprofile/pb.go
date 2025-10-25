@@ -12,33 +12,33 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
-	size := internal.SizeProtoOrigExportProfilesServiceRequest(pd.getOrig())
+	size := internal.SizeProtoExportProfilesServiceRequest(pd.getOrig())
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportProfilesServiceRequest(pd.getOrig(), buf)
+	_ = internal.MarshalProtoExportProfilesServiceRequest(pd.getOrig(), buf)
 	return buf, nil
 }
 
 func (e *ProtoMarshaler) ProfilesSize(pd Profiles) int {
-	return internal.SizeProtoOrigExportProfilesServiceRequest(pd.getOrig())
+	return internal.SizeProtoExportProfilesServiceRequest(pd.getOrig())
 }
 
 func (e *ProtoMarshaler) ResourceProfilesSize(pd ResourceProfiles) int {
-	return internal.SizeProtoOrigResourceProfiles(pd.orig)
+	return internal.SizeProtoResourceProfiles(pd.orig)
 }
 
 func (e *ProtoMarshaler) ScopeProfilesSize(pd ScopeProfiles) int {
-	return internal.SizeProtoOrigScopeProfiles(pd.orig)
+	return internal.SizeProtoScopeProfiles(pd.orig)
 }
 
 func (e *ProtoMarshaler) ProfileSize(pd Profile) int {
-	return internal.SizeProtoOrigProfile(pd.orig)
+	return internal.SizeProtoProfile(pd.orig)
 }
 
 type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	pd := NewProfiles()
-	err := internal.UnmarshalProtoOrigExportProfilesServiceRequest(pd.getOrig(), buf)
+	err := internal.UnmarshalProtoExportProfilesServiceRequest(pd.getOrig(), buf)
 	if err != nil {
 		return Profiles{}, err
 	}

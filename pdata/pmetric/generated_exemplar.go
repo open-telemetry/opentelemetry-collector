@@ -37,7 +37,7 @@ func newExemplar(orig *otlpmetrics.Exemplar, state *internal.State) Exemplar {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
-	return newExemplar(internal.NewOrigExemplar(), internal.NewState())
+	return newExemplar(internal.NewExemplar(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -49,13 +49,13 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExemplar(dest.orig, false)
+	internal.DeleteExemplar(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes, ms.state))
+	return pcommon.Map(internal.NewMapWrapper(&ms.orig.FilteredAttributes, ms.state))
 }
 
 // Timestamp returns the timestamp associated with this Exemplar.
@@ -142,5 +142,5 @@ func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExemplar(dest.orig, ms.orig)
+	internal.CopyExemplar(dest.orig, ms.orig)
 }

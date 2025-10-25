@@ -25,8 +25,8 @@ func TestValueType_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestValueType(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewOrigValueType(), sharedState)) })
-	assert.Panics(t, func() { newValueType(internal.NewOrigValueType(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewValueType(), sharedState)) })
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).MoveTo(dest) })
 }
 
 func TestValueType_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestValueType_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewOrigValueType(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewValueType(), sharedState)) })
 }
 
 func TestValueType_TypeStrindex(t *testing.T) {
@@ -71,6 +71,6 @@ func TestValueType_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestValueType() ValueType {
-	ms := newValueType(internal.GenTestOrigValueType(), internal.NewState())
+	ms := newValueType(internal.GenTestValueType(), internal.NewState())
 	return ms
 }
