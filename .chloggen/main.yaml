@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "otelconftelemetry"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add support to disable resource attribute"
+note: "Add support to disabling adding resource attributes as zap fields in internal logging"
 
 # One or more tracking issues or pull requests related to the change
 issues: [13869]

@@ -133,15 +133,15 @@ func TestCreateLogger(t *testing.T) {
 			name: "log config with resource_as_zap_field disabled",
 			cfg: Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Development:         false,
-					Encoding:            "console",
-					OutputPaths:         []string{"stderr"},
-					ErrorOutputPaths:    []string{"stderr"},
-					DisableCaller:       false,
-					DisableStacktrace:   false,
-					InitialFields:       map[string]any(nil),
-					ResourceAsZapFields: false,
+					Level:                     zapcore.InfoLevel,
+					Development:               false,
+					Encoding:                  "console",
+					OutputPaths:               []string{"stderr"},
+					ErrorOutputPaths:          []string{"stderr"},
+					DisableCaller:             false,
+					DisableStacktrace:         false,
+					InitialFields:             map[string]any(nil),
+					DisableResourceAttributes: false,
 				},
 			},
 		},
@@ -184,9 +184,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -207,9 +207,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -230,9 +230,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -254,9 +254,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -271,9 +271,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: true,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: true,
 				},
 				Resource: map[string]*string{},
 			},
@@ -288,9 +288,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			wantFields:     map[string]string{},
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:               zapcore.InfoLevel,
-					Encoding:            "json",
-					ResourceAsZapFields: false,
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: false,
 				},
 				Resource: map[string]*string{},
 			},
