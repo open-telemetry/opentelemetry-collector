@@ -186,7 +186,7 @@ DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
 
 PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue
 PROTO_FILES := $(foreach dir,$(PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
-PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} -I/usr/include/github.com/gogo/protobuf --gogofaster_out=plugins=grpc,paths=source_relative:.
+PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=plugins=grpc,paths=source_relative:.
 
 .PHONY: genproto
 genproto:
