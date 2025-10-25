@@ -10,7 +10,7 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
+func CopySpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 	var newDest []*otlptrace.Span
 	if cap(dest) < len(src) {
 		newDest = make([]*otlptrace.Span, len(src))
@@ -18,34 +18,34 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigSpan()
+			newDest[i] = NewSpan()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigSpan(dest[i], true)
+			DeleteSpan(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigSpan()
+			newDest[i] = NewSpan()
 		}
 	}
 	for i := range src {
-		CopyOrigSpan(newDest[i], src[i])
+		CopySpan(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestSpanSlice() []*otlptrace.Span {
+func GenTestSpanSlice() []*otlptrace.Span {
 	orig := make([]*otlptrace.Span, 5)
-	orig[0] = NewOrigSpan()
-	orig[1] = GenTestOrigSpan()
-	orig[2] = NewOrigSpan()
-	orig[3] = GenTestOrigSpan()
-	orig[4] = NewOrigSpan()
+	orig[0] = NewSpan()
+	orig[1] = GenTestSpan()
+	orig[2] = NewSpan()
+	orig[3] = GenTestSpan()
+	orig[4] = NewSpan()
 	return orig
 }

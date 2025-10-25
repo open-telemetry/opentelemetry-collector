@@ -14,27 +14,27 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestCopyOrigValueTypeSlice(t *testing.T) {
+func TestCopyValueTypeSlice(t *testing.T) {
 	src := []*otlpprofiles.ValueType{}
 	dest := []*otlpprofiles.ValueType{}
 	// Test CopyTo empty
-	dest = CopyOrigValueTypeSlice(dest, src)
+	dest = CopyValueTypeSlice(dest, src)
 	assert.Equal(t, []*otlpprofiles.ValueType{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestValueTypeSlice()
-	dest = CopyOrigValueTypeSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestValueTypeSlice(), dest)
+	src = GenTestValueTypeSlice()
+	dest = CopyValueTypeSlice(dest, src)
+	assert.Equal(t, GenTestValueTypeSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigValueTypeSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestValueTypeSlice(), dest)
+	dest = CopyValueTypeSlice(dest, src)
+	assert.Equal(t, GenTestValueTypeSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigValueTypeSlice(dest, []*otlpprofiles.ValueType{})
+	dest = CopyValueTypeSlice(dest, []*otlpprofiles.ValueType{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigValueTypeSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestValueTypeSlice(), dest)
+	dest = CopyValueTypeSlice(dest, src)
+	assert.Equal(t, GenTestValueTypeSlice(), dest)
 }

@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigMetricSlice(t *testing.T) {
+func TestCopyMetricSlice(t *testing.T) {
 	src := []*otlpmetrics.Metric{}
 	dest := []*otlpmetrics.Metric{}
 	// Test CopyTo empty
-	dest = CopyOrigMetricSlice(dest, src)
+	dest = CopyMetricSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.Metric{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestMetricSlice()
-	dest = CopyOrigMetricSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestMetricSlice(), dest)
+	src = GenTestMetricSlice()
+	dest = CopyMetricSlice(dest, src)
+	assert.Equal(t, GenTestMetricSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigMetricSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestMetricSlice(), dest)
+	dest = CopyMetricSlice(dest, src)
+	assert.Equal(t, GenTestMetricSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigMetricSlice(dest, []*otlpmetrics.Metric{})
+	dest = CopyMetricSlice(dest, []*otlpmetrics.Metric{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigMetricSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestMetricSlice(), dest)
+	dest = CopyMetricSlice(dest, src)
+	assert.Equal(t, GenTestMetricSlice(), dest)
 }

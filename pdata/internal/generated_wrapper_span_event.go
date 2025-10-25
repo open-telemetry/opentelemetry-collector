@@ -25,14 +25,14 @@ var (
 	}
 )
 
-func NewOrigSpan_Event() *otlptrace.Span_Event {
+func NewSpan_Event() *otlptrace.Span_Event {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlptrace.Span_Event{}
 	}
 	return protoPoolSpan_Event.Get().(*otlptrace.Span_Event)
 }
 
-func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
+func DeleteSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -43,7 +43,7 @@ func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 
 	orig.Reset()
@@ -52,28 +52,28 @@ func DeleteOrigSpan_Event(orig *otlptrace.Span_Event, nullable bool) {
 	}
 }
 
-func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
+func CopySpan_Event(dest, src *otlptrace.Span_Event) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Name = src.Name
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-func GenTestOrigSpan_Event() *otlptrace.Span_Event {
-	orig := NewOrigSpan_Event()
+func GenTestSpan_Event() *otlptrace.Span_Event {
+	orig := NewSpan_Event()
 	orig.TimeUnixNano = 1234567890
 	orig.Name = "test_name"
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.DroppedAttributesCount = uint32(13)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
@@ -86,10 +86,10 @@ func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -100,8 +100,8 @@ func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigSpanEvent unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator) {
+// UnmarshalJSONSpanEvent unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
@@ -111,7 +111,7 @@ func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -122,7 +122,7 @@ func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator
 	}
 }
 
-func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
+func SizeProtoSpan_Event(orig *otlptrace.Span_Event) int {
 	var n int
 	var l int
 	_ = l
@@ -134,7 +134,7 @@ func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.DroppedAttributesCount != 0 {
@@ -143,7 +143,7 @@ func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
 	return n
 }
 
-func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) int {
+func MarshalProtoSpan_Event(orig *otlptrace.Span_Event, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -162,7 +162,7 @@ func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) int {
 		buf[pos] = 0x12
 	}
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -176,7 +176,7 @@ func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error {
+func UnmarshalProtoSpan_Event(orig *otlptrace.Span_Event, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -226,7 +226,7 @@ func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error 
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

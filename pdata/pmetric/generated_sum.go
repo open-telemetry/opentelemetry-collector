@@ -32,7 +32,7 @@ func newSum(orig *otlpmetrics.Sum, state *internal.State) Sum {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
-	return newSum(internal.NewOrigSum(), internal.NewState())
+	return newSum(internal.NewSum(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms Sum) MoveTo(dest Sum) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSum(dest.orig, false)
+	internal.DeleteSum(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -78,5 +78,5 @@ func (ms Sum) SetIsMonotonic(v bool) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSum(dest.orig, ms.orig)
+	internal.CopySum(dest.orig, ms.orig)
 }

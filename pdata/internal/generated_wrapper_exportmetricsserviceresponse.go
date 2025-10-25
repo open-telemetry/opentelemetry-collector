@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportMetricsServiceResponse() *otlpcollectormetrics.ExportMetricsServiceResponse {
+func NewExportMetricsServiceResponse() *otlpcollectormetrics.ExportMetricsServiceResponse {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectormetrics.ExportMetricsServiceResponse{}
 	}
 	return protoPoolExportMetricsServiceResponse.Get().(*otlpcollectormetrics.ExportMetricsServiceResponse)
 }
 
-func DeleteOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, nullable bool) {
+func DeleteExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func DeleteOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMet
 		return
 	}
 
-	DeleteOrigExportMetricsPartialSuccess(&orig.PartialSuccess, false)
+	DeleteExportMetricsPartialSuccess(&orig.PartialSuccess, false)
 
 	orig.Reset()
 	if nullable {
@@ -48,55 +48,55 @@ func DeleteOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMet
 	}
 }
 
-func CopyOrigExportMetricsServiceResponse(dest, src *otlpcollectormetrics.ExportMetricsServiceResponse) {
+func CopyExportMetricsServiceResponse(dest, src *otlpcollectormetrics.ExportMetricsServiceResponse) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigExportMetricsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
+	CopyExportMetricsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
 }
 
-func GenTestOrigExportMetricsServiceResponse() *otlpcollectormetrics.ExportMetricsServiceResponse {
-	orig := NewOrigExportMetricsServiceResponse()
-	orig.PartialSuccess = *GenTestOrigExportMetricsPartialSuccess()
+func GenTestExportMetricsServiceResponse() *otlpcollectormetrics.ExportMetricsServiceResponse {
+	orig := NewExportMetricsServiceResponse()
+	orig.PartialSuccess = *GenTestExportMetricsPartialSuccess()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("partialSuccess")
-	MarshalJSONOrigExportMetricsPartialSuccess(&orig.PartialSuccess, dest)
+	MarshalJSONExportMetricsPartialSuccess(&orig.PartialSuccess, dest)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportResponse unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, iter *json.Iterator) {
+// UnmarshalJSONExportResponse unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
-			UnmarshalJSONOrigExportMetricsPartialSuccess(&orig.PartialSuccess, iter)
+			UnmarshalJSONExportMetricsPartialSuccess(&orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse) int {
+func SizeProtoExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigExportMetricsPartialSuccess(&orig.PartialSuccess)
+	l = SizeProtoExportMetricsPartialSuccess(&orig.PartialSuccess)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, buf []byte) int {
+func MarshalProtoExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigExportMetricsPartialSuccess(&orig.PartialSuccess, buf[:pos])
+	l = MarshalProtoExportMetricsPartialSuccess(&orig.PartialSuccess, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -105,7 +105,7 @@ func MarshalProtoOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.Exp
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, buf []byte) error {
+func UnmarshalProtoExportMetricsServiceResponse(orig *otlpcollectormetrics.ExportMetricsServiceResponse, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -131,7 +131,7 @@ func UnmarshalProtoOrigExportMetricsServiceResponse(orig *otlpcollectormetrics.E
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigExportMetricsPartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
+			err = UnmarshalProtoExportMetricsPartialSuccess(&orig.PartialSuccess, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

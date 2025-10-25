@@ -30,7 +30,7 @@ func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs, state *internal.State)
 	return ResourceLogsSlice{orig: orig, state: state}
 }
 
-// NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
+// NewResourceLogsSlice creates a ResourceLogsSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceLogsSlice() ResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
@@ -99,7 +99,7 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigResourceLogs())
+	*es.orig = append(*es.orig, internal.NewResourceLogs())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigResourceLogs((*es.orig)[i], true)
+			internal.DeleteResourceLogs((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigResourceLogsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceLogsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the

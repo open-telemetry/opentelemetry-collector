@@ -26,7 +26,7 @@ func TestExemplarSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = *internal.GenTestOrigExemplar()
+		(*es.orig)[i] = *internal.GenTestExemplar()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -145,6 +145,6 @@ func TestExemplarSliceAll(t *testing.T) {
 
 func generateTestExemplarSlice() ExemplarSlice {
 	ms := NewExemplarSlice()
-	*ms.orig = internal.GenerateOrigTestExemplarSlice()
+	*ms.orig = internal.GenTestExemplarSlice()
 	return ms
 }

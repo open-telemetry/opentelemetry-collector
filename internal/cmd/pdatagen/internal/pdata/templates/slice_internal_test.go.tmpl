@@ -12,27 +12,27 @@ import (
 	{{ end }}
 )
 
-func TestCopyOrig{{ .elementOriginName }}Slice(t *testing.T) {
+func TestCopy{{ .elementOriginName }}Slice(t *testing.T) {
 	src := []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{}
 	dest := []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{}
 	// Test CopyTo empty
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
 	assert.Equal(t, []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTest{{ .elementOriginName }}Slice()
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
-	assert.Equal(t, GenerateOrigTest{{ .elementOriginName }}Slice(), dest)
+	src = GenTest{{ .elementOriginName }}Slice()
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .elementOriginName }}Slice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
-	assert.Equal(t, GenerateOrigTest{{ .elementOriginName }}Slice(), dest)
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .elementOriginName }}Slice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{})
+	dest = Copy{{ .elementOriginName }}Slice(dest, []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
-	assert.Equal(t, GenerateOrigTest{{ .elementOriginName }}Slice(), dest)
+	dest = Copy{{ .elementOriginName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .elementOriginName }}Slice(), dest)
 }

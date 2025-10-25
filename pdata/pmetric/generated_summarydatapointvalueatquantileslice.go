@@ -30,7 +30,7 @@ func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoi
 	return SummaryDataPointValueAtQuantileSlice{orig: orig, state: state}
 }
 
-// NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
+// NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
@@ -99,7 +99,7 @@ func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SummaryDataPointValueAtQuantile.
 func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSummaryDataPoint_ValueAtQuantile())
+	*es.orig = append(*es.orig, internal.NewSummaryDataPoint_ValueAtQuantile())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSummaryDataPoint_ValueAtQuantile((*es.orig)[i], true)
+			internal.DeleteSummaryDataPoint_ValueAtQuantile((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValue
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSummaryDataPoint_ValueAtQuantileSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySummaryDataPoint_ValueAtQuantileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the

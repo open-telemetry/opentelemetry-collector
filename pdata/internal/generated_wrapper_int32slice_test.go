@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCopyOrigInt32Slice(t *testing.T) {
+func TestCopyInt32Slice(t *testing.T) {
 	src := []int32{}
 	dest := []int32{}
 	// Copy empty
-	dest = CopyOrigInt32Slice(dest, src)
+	dest = CopyInt32Slice(dest, src)
 	assert.Equal(t, src, dest)
-	src = GenerateOrigTestInt32Slice()
-	dest = CopyOrigInt32Slice(dest, src)
+	src = GenTestInt32Slice()
+	dest = CopyInt32Slice(dest, src)
 	assert.Equal(t, src, dest)
 }

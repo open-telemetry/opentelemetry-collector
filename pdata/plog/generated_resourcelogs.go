@@ -33,7 +33,7 @@ func newResourceLogs(orig *otlplogs.ResourceLogs, state *internal.State) Resourc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceLogs() ResourceLogs {
-	return newResourceLogs(internal.NewOrigResourceLogs(), internal.NewState())
+	return newResourceLogs(internal.NewResourceLogs(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,13 +45,13 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigResourceLogs(dest.orig, false)
+	internal.DeleteResourceLogs(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+	return pcommon.Resource(internal.NewResourceWrapper(&ms.orig.Resource, ms.state))
 }
 
 // ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
@@ -73,5 +73,5 @@ func (ms ResourceLogs) SetSchemaUrl(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	dest.state.AssertMutable()
-	internal.CopyOrigResourceLogs(dest.orig, ms.orig)
+	internal.CopyResourceLogs(dest.orig, ms.orig)
 }

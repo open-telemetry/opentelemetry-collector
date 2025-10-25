@@ -33,7 +33,7 @@ func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, state *inte
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(internal.NewOrigExponentialHistogram(), internal.NewState())
+	return newExponentialHistogram(internal.NewExponentialHistogram(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +45,7 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExponentialHistogram(dest.orig, false)
+	internal.DeleteExponentialHistogram(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -68,5 +68,5 @@ func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporalit
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExponentialHistogram(dest.orig, ms.orig)
+	internal.CopyExponentialHistogram(dest.orig, ms.orig)
 }

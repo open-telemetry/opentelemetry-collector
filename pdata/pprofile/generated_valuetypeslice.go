@@ -30,7 +30,7 @@ func newValueTypeSlice(orig *[]*otlpprofiles.ValueType, state *internal.State) V
 	return ValueTypeSlice{orig: orig, state: state}
 }
 
-// NewValueTypeSlice creates a ValueTypeSlice with 0 elements.
+// NewValueTypeSlice creates a ValueTypeSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewValueTypeSlice() ValueTypeSlice {
 	orig := []*otlpprofiles.ValueType(nil)
@@ -99,7 +99,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ValueType.
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigValueType())
+	*es.orig = append(*es.orig, internal.NewValueType())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigValueType((*es.orig)[i], true)
+			internal.DeleteValueType((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigValueTypeSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyValueTypeSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ValueType elements within ValueTypeSlice given the

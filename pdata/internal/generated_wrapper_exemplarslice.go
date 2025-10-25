@@ -10,7 +10,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
+func CopyExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
 	var newDest []otlpmetrics.Exemplar
 	if cap(dest) < len(src) {
 		newDest = make([]otlpmetrics.Exemplar, len(src))
@@ -19,18 +19,18 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigExemplar(&dest[i], false)
+			DeleteExemplar(&dest[i], false)
 		}
 	}
 	for i := range src {
-		CopyOrigExemplar(&newDest[i], &src[i])
+		CopyExemplar(&newDest[i], &src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestExemplarSlice() []otlpmetrics.Exemplar {
+func GenTestExemplarSlice() []otlpmetrics.Exemplar {
 	orig := make([]otlpmetrics.Exemplar, 5)
-	orig[1] = *GenTestOrigExemplar()
-	orig[3] = *GenTestOrigExemplar()
+	orig[1] = *GenTestExemplar()
+	orig[3] = *GenTestExemplar()
 	return orig
 }

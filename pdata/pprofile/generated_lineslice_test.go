@@ -27,7 +27,7 @@ func TestLineSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigLine()
+		(*es.orig)[i] = internal.GenTestLine()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestLineSlice_Sort(t *testing.T) {
 
 func generateTestLineSlice() LineSlice {
 	ms := NewLineSlice()
-	*ms.orig = internal.GenerateOrigTestLineSlice()
+	*ms.orig = internal.GenTestLineSlice()
 	return ms
 }

@@ -30,7 +30,7 @@ func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics, state *intern
 	return ResourceMetricsSlice{orig: orig, state: state}
 }
 
-// NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
+// NewResourceMetricsSlice creates a ResourceMetricsSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceMetricsSlice() ResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
@@ -99,7 +99,7 @@ func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigResourceMetrics())
+	*es.orig = append(*es.orig, internal.NewResourceMetrics())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigResourceMetrics((*es.orig)[i], true)
+			internal.DeleteResourceMetrics((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigResourceMetricsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceMetricsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the

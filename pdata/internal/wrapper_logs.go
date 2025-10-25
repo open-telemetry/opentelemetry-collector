@@ -9,7 +9,7 @@ import (
 )
 
 // LogsToProto internal helper to convert Logs to protobuf representation.
-func LogsToProto(l Logs) otlplogs.LogsData {
+func LogsToProto(l LogsWrapper) otlplogs.LogsData {
 	return otlplogs.LogsData{
 		ResourceLogs: l.orig.ResourceLogs,
 	}
@@ -17,8 +17,8 @@ func LogsToProto(l Logs) otlplogs.LogsData {
 
 // LogsFromProto internal helper to convert protobuf representation to Logs.
 // This function set exclusive state assuming that it's called only once per Logs.
-func LogsFromProto(orig otlplogs.LogsData) Logs {
-	return NewLogs(&otlpcollectorlog.ExportLogsServiceRequest{
+func LogsFromProto(orig otlplogs.LogsData) LogsWrapper {
+	return NewLogsWrapper(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: orig.ResourceLogs,
 	}, NewState())
 }

@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigNumberDataPointSlice(t *testing.T) {
+func TestCopyNumberDataPointSlice(t *testing.T) {
 	src := []*otlpmetrics.NumberDataPoint{}
 	dest := []*otlpmetrics.NumberDataPoint{}
 	// Test CopyTo empty
-	dest = CopyOrigNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.NumberDataPoint{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestNumberDataPointSlice()
-	dest = CopyOrigNumberDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestNumberDataPointSlice(), dest)
+	src = GenTestNumberDataPointSlice()
+	dest = CopyNumberDataPointSlice(dest, src)
+	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigNumberDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestNumberDataPointSlice(), dest)
+	dest = CopyNumberDataPointSlice(dest, src)
+	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigNumberDataPointSlice(dest, []*otlpmetrics.NumberDataPoint{})
+	dest = CopyNumberDataPointSlice(dest, []*otlpmetrics.NumberDataPoint{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigNumberDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestNumberDataPointSlice(), dest)
+	dest = CopyNumberDataPointSlice(dest, src)
+	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 }

@@ -30,7 +30,7 @@ func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHisto
 	return ExponentialHistogramDataPointSlice{orig: orig, state: state}
 }
 
-// NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
+// NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
 	orig := []*otlpmetrics.ExponentialHistogramDataPoint(nil)
@@ -99,7 +99,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ExponentialHistogramDataPoint.
 func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigExponentialHistogramDataPoint())
+	*es.orig = append(*es.orig, internal.NewExponentialHistogramDataPoint())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigExponentialHistogramDataPoint((*es.orig)[i], true)
+			internal.DeleteExponentialHistogramDataPoint((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigExponentialHistogramDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyExponentialHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the

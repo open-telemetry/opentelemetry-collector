@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
+func NewExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectortrace.ExportTracePartialSuccess{}
 	}
 	return protoPoolExportTracePartialSuccess.Get().(*otlpcollectortrace.ExportTracePartialSuccess)
 }
 
-func DeleteOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, nullable bool) {
+func DeleteExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePar
 	}
 }
 
-func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
+func CopyExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,15 +55,15 @@ func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTrace
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func GenTestOrigExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
-	orig := NewOrigExportTracePartialSuccess()
+func GenTestExportTracePartialSuccess() *otlpcollectortrace.ExportTracePartialSuccess {
+	orig := NewExportTracePartialSuccess()
 	orig.RejectedSpans = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.RejectedSpans != int64(0) {
 		dest.WriteObjectField("rejectedSpans")
@@ -76,8 +76,8 @@ func MarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTra
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, iter *json.Iterator) {
+// UnmarshalJSONExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedSpans", "rejected_spans":
@@ -90,7 +90,7 @@ func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportT
 	}
 }
 
-func SizeProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) int {
+func SizeProtoExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) int {
 	var n int
 	var l int
 	_ = l
@@ -104,7 +104,7 @@ func SizeProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTrace
 	return n
 }
 
-func MarshalProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) int {
+func MarshalProtoExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -124,7 +124,7 @@ func MarshalProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTr
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) error {
+func UnmarshalProtoExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigResourceSpans() *otlptrace.ResourceSpans {
+func NewResourceSpans() *otlptrace.ResourceSpans {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlptrace.ResourceSpans{}
 	}
 	return protoPoolResourceSpans.Get().(*otlptrace.ResourceSpans)
 }
 
-func DeleteOrigResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
+func DeleteResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,9 +40,9 @@ func DeleteOrigResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
 		return
 	}
 
-	DeleteOrigResource(&orig.Resource, false)
+	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeSpans {
-		DeleteOrigScopeSpans(orig.ScopeSpans[i], true)
+		DeleteScopeSpans(orig.ScopeSpans[i], true)
 	}
 
 	orig.Reset()
@@ -51,36 +51,36 @@ func DeleteOrigResourceSpans(orig *otlptrace.ResourceSpans, nullable bool) {
 	}
 }
 
-func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
+func CopyResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
+	CopyResource(&dest.Resource, &src.Resource)
+	dest.ScopeSpans = CopyScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func GenTestOrigResourceSpans() *otlptrace.ResourceSpans {
-	orig := NewOrigResourceSpans()
-	orig.Resource = *GenTestOrigResource()
-	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
+func GenTestResourceSpans() *otlptrace.ResourceSpans {
+	orig := NewResourceSpans()
+	orig.Resource = *GenTestResource()
+	orig.ScopeSpans = GenTestScopeSpansSlice()
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("resource")
-	MarshalJSONOrigResource(&orig.Resource, dest)
+	MarshalJSONResource(&orig.Resource, dest)
 	if len(orig.ScopeSpans) > 0 {
 		dest.WriteObjectField("scopeSpans")
 		dest.WriteArrayStart()
-		MarshalJSONOrigScopeSpans(orig.ScopeSpans[0], dest)
+		MarshalJSONScopeSpans(orig.ScopeSpans[0], dest)
 		for i := 1; i < len(orig.ScopeSpans); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigScopeSpans(orig.ScopeSpans[i], dest)
+			MarshalJSONScopeSpans(orig.ScopeSpans[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -91,16 +91,16 @@ func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stre
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigResourceSpans unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.Iterator) {
+// UnmarshalJSONResourceSpans unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONResourceSpans(orig *otlptrace.ResourceSpans, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
-			UnmarshalJSONOrigResource(&orig.Resource, iter)
+			UnmarshalJSONResource(&orig.Resource, iter)
 		case "scopeSpans", "scope_spans":
 			for iter.ReadArray() {
-				orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
-				UnmarshalJSONOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], iter)
+				orig.ScopeSpans = append(orig.ScopeSpans, NewScopeSpans())
+				UnmarshalJSONScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], iter)
 			}
 
 		case "schemaUrl", "schema_url":
@@ -111,14 +111,14 @@ func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.It
 	}
 }
 
-func SizeProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) int {
+func SizeProtoResourceSpans(orig *otlptrace.ResourceSpans) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigResource(&orig.Resource)
+	l = SizeProtoResource(&orig.Resource)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.ScopeSpans {
-		l = SizeProtoOrigScopeSpans(orig.ScopeSpans[i])
+		l = SizeProtoScopeSpans(orig.ScopeSpans[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	l = len(orig.SchemaUrl)
@@ -128,19 +128,19 @@ func SizeProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) int {
 	return n
 }
 
-func MarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) int {
+func MarshalProtoResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+	l = MarshalProtoResource(&orig.Resource, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.ScopeSpans) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigScopeSpans(orig.ScopeSpans[i], buf[:pos])
+		l = MarshalProtoScopeSpans(orig.ScopeSpans[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -157,7 +157,7 @@ func MarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) in
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) error {
+func UnmarshalProtoResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -183,7 +183,7 @@ func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) 
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigResource(&orig.Resource, buf[startPos:pos])
+			err = UnmarshalProtoResource(&orig.Resource, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -198,8 +198,8 @@ func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) 
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigScopeSpans())
-			err = UnmarshalProtoOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], buf[startPos:pos])
+			orig.ScopeSpans = append(orig.ScopeSpans, NewScopeSpans())
+			err = UnmarshalProtoScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

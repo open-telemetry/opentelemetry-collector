@@ -26,8 +26,8 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(internal.NewSummaryDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newSummaryDataPoint(internal.NewSummaryDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
@@ -40,14 +40,14 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(internal.NewOrigSummaryDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(internal.NewSummaryDataPoint(), sharedState)) })
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
@@ -89,7 +89,7 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
-	ms.orig.QuantileValues = internal.GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	ms.orig.QuantileValues = internal.GenTestSummaryDataPoint_ValueAtQuantileSlice()
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
 }
 
@@ -102,6 +102,6 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	ms := newSummaryDataPoint(internal.GenTestOrigSummaryDataPoint(), internal.NewState())
+	ms := newSummaryDataPoint(internal.GenTestSummaryDataPoint(), internal.NewState())
 	return ms
 }

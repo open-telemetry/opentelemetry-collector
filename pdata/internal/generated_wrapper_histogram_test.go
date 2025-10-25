@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigHistogram(t *testing.T) {
+func TestCopyHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogram() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigHistogram(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigHistogram()
-				CopyOrigHistogram(dest, src)
+				dest := NewHistogram()
+				CopyHistogram(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigHistogram(dest, dest)
+				CopyHistogram(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigHistogramUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONHistogramUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigHistogram()
-	UnmarshalJSONOrigHistogram(dest, iter)
+	dest := NewHistogram()
+	UnmarshalJSONHistogram(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigHistogram(), dest)
+	assert.Equal(t, NewHistogram(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
+func TestMarshalAndUnmarshalJSONHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogram() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigHistogram(src, stream)
+				MarshalJSONHistogram(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigHistogram()
-				UnmarshalJSONOrigHistogram(dest, iter)
+				dest := NewHistogram()
+				UnmarshalJSONHistogram(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigHistogram(dest, true)
+				DeleteHistogram(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigHistogramFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoHistogramFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesHistogram() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigHistogram()
-			require.Error(t, UnmarshalProtoOrigHistogram(dest, buf))
+			dest := NewHistogram()
+			require.Error(t, UnmarshalProtoHistogram(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigHistogramUnknown(t *testing.T) {
-	dest := NewOrigHistogram()
+func TestMarshalAndUnmarshalProtoHistogramUnknown(t *testing.T) {
+	dest := NewHistogram()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigHistogram(), dest)
+	require.NoError(t, UnmarshalProtoHistogram(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewHistogram(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
+func TestMarshalAndUnmarshalProtoHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogram() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigHistogram(src))
-				gotSize := MarshalProtoOrigHistogram(src, buf)
+				buf := make([]byte, SizeProtoHistogram(src))
+				gotSize := MarshalProtoHistogram(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigHistogram()
-				require.NoError(t, UnmarshalProtoOrigHistogram(dest, buf))
+				dest := NewHistogram()
+				require.NoError(t, UnmarshalProtoHistogram(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigHistogram(dest, true)
+				DeleteHistogram(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
 	for name, src := range genTestEncodingValuesHistogram() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigHistogram(src))
-			gotSize := MarshalProtoOrigHistogram(src, buf)
+			buf := make([]byte, SizeProtoHistogram(src))
+			gotSize := MarshalProtoHistogram(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.Histogram{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigHistogram()
-			require.NoError(t, UnmarshalProtoOrigHistogram(dest, goBuf))
+			dest := NewHistogram()
+			require.NoError(t, UnmarshalProtoHistogram(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -149,8 +149,8 @@ func genTestFailingUnmarshalProtoValuesHistogram() map[string][]byte {
 
 func genTestEncodingValuesHistogram() map[string]*otlpmetrics.Histogram {
 	return map[string]*otlpmetrics.Histogram{
-		"empty":                       NewOrigHistogram(),
-		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.HistogramDataPoint{{}, GenTestOrigHistogramDataPoint()}},
+		"empty":                       NewHistogram(),
+		"DataPoints/default_and_test": {DataPoints: []*otlpmetrics.HistogramDataPoint{{}, GenTestHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: otlpmetrics.AggregationTemporality(13)},
 	}
 }

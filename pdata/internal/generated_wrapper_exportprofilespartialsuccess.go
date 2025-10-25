@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
+func NewExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectorprofiles.ExportProfilesPartialSuccess{}
 	}
 	return protoPoolExportProfilesPartialSuccess.Get().(*otlpcollectorprofiles.ExportProfilesPartialSuccess)
 }
 
-func DeleteOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, nullable bool) {
+func DeleteExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportPr
 	}
 }
 
-func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.ExportProfilesPartialSuccess) {
+func CopyExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.ExportProfilesPartialSuccess) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,15 +55,15 @@ func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofiles.Expor
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-func GenTestOrigExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
-	orig := NewOrigExportProfilesPartialSuccess()
+func GenTestExportProfilesPartialSuccess() *otlpcollectorprofiles.ExportProfilesPartialSuccess {
+	orig := NewExportProfilesPartialSuccess()
 	orig.RejectedProfiles = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.RejectedProfiles != int64(0) {
 		dest.WriteObjectField("rejectedProfiles")
@@ -76,8 +76,8 @@ func MarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.Exp
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, iter *json.Iterator) {
+// UnmarshalJSONExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedProfiles", "rejected_profiles":
@@ -90,7 +90,7 @@ func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.E
 	}
 }
 
-func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess) int {
+func SizeProtoExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess) int {
 	var n int
 	var l int
 	_ = l
@@ -104,7 +104,7 @@ func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.Expor
 	return n
 }
 
-func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) int {
+func MarshalProtoExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -124,7 +124,7 @@ func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.Ex
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) error {
+func UnmarshalProtoExportProfilesPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

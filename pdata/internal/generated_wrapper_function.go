@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigFunction() *otlpprofiles.Function {
+func NewFunction() *otlpprofiles.Function {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Function{}
 	}
 	return protoPoolFunction.Get().(*otlpprofiles.Function)
 }
 
-func DeleteOrigFunction(orig *otlpprofiles.Function, nullable bool) {
+func DeleteFunction(orig *otlpprofiles.Function, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigFunction(orig *otlpprofiles.Function, nullable bool) {
 	}
 }
 
-func CopyOrigFunction(dest, src *otlpprofiles.Function) {
+func CopyFunction(dest, src *otlpprofiles.Function) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -57,8 +57,8 @@ func CopyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.StartLine = src.StartLine
 }
 
-func GenTestOrigFunction() *otlpprofiles.Function {
-	orig := NewOrigFunction()
+func GenTestFunction() *otlpprofiles.Function {
+	orig := NewFunction()
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)
@@ -66,8 +66,8 @@ func GenTestOrigFunction() *otlpprofiles.Function {
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONFunction(orig *otlpprofiles.Function, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.NameStrindex != int32(0) {
 		dest.WriteObjectField("nameStrindex")
@@ -88,8 +88,8 @@ func MarshalJSONOrigFunction(orig *otlpprofiles.Function, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigFunction unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
+// UnmarshalJSONFunction unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONFunction(orig *otlpprofiles.Function, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "nameStrindex", "name_strindex":
@@ -106,7 +106,7 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 	}
 }
 
-func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
+func SizeProtoFunction(orig *otlpprofiles.Function) int {
 	var n int
 	var l int
 	_ = l
@@ -125,7 +125,7 @@ func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
 	return n
 }
 
-func MarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) int {
+func MarshalProtoFunction(orig *otlpprofiles.Function, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -152,7 +152,7 @@ func MarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) error {
+func UnmarshalProtoFunction(orig *otlpprofiles.Function, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -10,7 +10,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*otlpmetrics.NumberDataPoint {
+func CopyNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*otlpmetrics.NumberDataPoint {
 	var newDest []*otlpmetrics.NumberDataPoint
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpmetrics.NumberDataPoint, len(src))
@@ -18,34 +18,34 @@ func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*o
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigNumberDataPoint()
+			newDest[i] = NewNumberDataPoint()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigNumberDataPoint(dest[i], true)
+			DeleteNumberDataPoint(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigNumberDataPoint()
+			newDest[i] = NewNumberDataPoint()
 		}
 	}
 	for i := range src {
-		CopyOrigNumberDataPoint(newDest[i], src[i])
+		CopyNumberDataPoint(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestNumberDataPointSlice() []*otlpmetrics.NumberDataPoint {
+func GenTestNumberDataPointSlice() []*otlpmetrics.NumberDataPoint {
 	orig := make([]*otlpmetrics.NumberDataPoint, 5)
-	orig[0] = NewOrigNumberDataPoint()
-	orig[1] = GenTestOrigNumberDataPoint()
-	orig[2] = NewOrigNumberDataPoint()
-	orig[3] = GenTestOrigNumberDataPoint()
-	orig[4] = NewOrigNumberDataPoint()
+	orig[0] = NewNumberDataPoint()
+	orig[1] = GenTestNumberDataPoint()
+	orig[2] = NewNumberDataPoint()
+	orig[3] = GenTestNumberDataPoint()
+	orig[4] = NewNumberDataPoint()
 	return orig
 }

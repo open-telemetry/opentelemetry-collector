@@ -27,7 +27,7 @@ func TestMappingSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigMapping()
+		(*es.orig)[i] = internal.GenTestMapping()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestMappingSlice_Sort(t *testing.T) {
 
 func generateTestMappingSlice() MappingSlice {
 	ms := NewMappingSlice()
-	*ms.orig = internal.GenerateOrigTestMappingSlice()
+	*ms.orig = internal.GenTestMappingSlice()
 	return ms
 }

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigStack(t *testing.T) {
+func TestCopyStack(t *testing.T) {
 	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigStack(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigStack()
-				CopyOrigStack(dest, src)
+				dest := NewStack()
+				CopyStack(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigStack(dest, dest)
+				CopyStack(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigStackUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONStackUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigStack()
-	UnmarshalJSONOrigStack(dest, iter)
+	dest := NewStack()
+	UnmarshalJSONStack(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigStack(), dest)
+	assert.Equal(t, NewStack(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigStack(t *testing.T) {
+func TestMarshalAndUnmarshalJSONStack(t *testing.T) {
 	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigStack(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigStack(src, stream)
+				MarshalJSONStack(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigStack()
-				UnmarshalJSONOrigStack(dest, iter)
+				dest := NewStack()
+				UnmarshalJSONStack(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigStack(dest, true)
+				DeleteStack(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigStackFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoStackFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesStack() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigStack()
-			require.Error(t, UnmarshalProtoOrigStack(dest, buf))
+			dest := NewStack()
+			require.Error(t, UnmarshalProtoStack(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigStackUnknown(t *testing.T) {
-	dest := NewOrigStack()
+func TestMarshalAndUnmarshalProtoStackUnknown(t *testing.T) {
+	dest := NewStack()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigStack(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigStack(), dest)
+	require.NoError(t, UnmarshalProtoStack(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewStack(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigStack(t *testing.T) {
+func TestMarshalAndUnmarshalProtoStack(t *testing.T) {
 	for name, src := range genTestEncodingValuesStack() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigStack(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigStack(src))
-				gotSize := MarshalProtoOrigStack(src, buf)
+				buf := make([]byte, SizeProtoStack(src))
+				gotSize := MarshalProtoStack(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigStack()
-				require.NoError(t, UnmarshalProtoOrigStack(dest, buf))
+				dest := NewStack()
+				require.NoError(t, UnmarshalProtoStack(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigStack(dest, true)
+				DeleteStack(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigStack(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufStack(t *testing.T) {
 	for name, src := range genTestEncodingValuesStack() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigStack(src))
-			gotSize := MarshalProtoOrigStack(src, buf)
+			buf := make([]byte, SizeProtoStack(src))
+			gotSize := MarshalProtoStack(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.Stack{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufStack(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigStack()
-			require.NoError(t, UnmarshalProtoOrigStack(dest, goBuf))
+			dest := NewStack()
+			require.NoError(t, UnmarshalProtoStack(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -147,7 +147,7 @@ func genTestFailingUnmarshalProtoValuesStack() map[string][]byte {
 
 func genTestEncodingValuesStack() map[string]*otlpprofiles.Stack {
 	return map[string]*otlpprofiles.Stack{
-		"empty":                            NewOrigStack(),
+		"empty":                            NewStack(),
 		"LocationIndices/default_and_test": {LocationIndices: []int32{int32(0), int32(13)}},
 	}
 }

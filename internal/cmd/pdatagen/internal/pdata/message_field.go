@@ -13,7 +13,7 @@ import (
 const messageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .messageHasWrapper }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}Wrapper(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }})
 	{{- end }}
@@ -22,17 +22,17 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
-	ms.{{ .origAccessor }}.{{ .fieldOriginFullName }} = *internal.GenTestOrig{{ .fieldOriginName }}()
+	ms.{{ .origAccessor }}.{{ .fieldOriginFullName }} = *internal.GenTest{{ .fieldOriginName }}()
 	{{- if .messageHasWrapper }}
-	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(internal.GenTestOrig{{ .fieldOriginName }}(), ms.{{ .stateAccessor }})), ms.{{ .fieldName }}())
+	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}Wrapper(internal.GenTest{{ .fieldOriginName }}(), ms.{{ .stateAccessor }})), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTestOrig{{ .fieldOriginName }}()`
+const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTest{{ .fieldOriginName }}()`
 
-const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
+const messageCopyOrigTemplate = `Copy{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
 type MessageField struct {
 	fieldName     string

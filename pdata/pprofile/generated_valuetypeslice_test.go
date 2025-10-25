@@ -27,7 +27,7 @@ func TestValueTypeSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigValueType()
+		(*es.orig)[i] = internal.GenTestValueType()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestValueTypeSlice_Sort(t *testing.T) {
 
 func generateTestValueTypeSlice() ValueTypeSlice {
 	ms := NewValueTypeSlice()
-	*ms.orig = internal.GenerateOrigTestValueTypeSlice()
+	*ms.orig = internal.GenTestValueTypeSlice()
 	return ms
 }

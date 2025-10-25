@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigGauge() *otlpmetrics.Gauge {
+func NewGauge() *otlpmetrics.Gauge {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.Gauge{}
 	}
 	return protoPoolGauge.Get().(*otlpmetrics.Gauge)
 }
 
-func DeleteOrigGauge(orig *otlpmetrics.Gauge, nullable bool) {
+func DeleteGauge(orig *otlpmetrics.Gauge, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func DeleteOrigGauge(orig *otlpmetrics.Gauge, nullable bool) {
 	}
 
 	for i := range orig.DataPoints {
-		DeleteOrigNumberDataPoint(orig.DataPoints[i], true)
+		DeleteNumberDataPoint(orig.DataPoints[i], true)
 	}
 
 	orig.Reset()
@@ -50,44 +50,44 @@ func DeleteOrigGauge(orig *otlpmetrics.Gauge, nullable bool) {
 	}
 }
 
-func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
+func CopyGauge(dest, src *otlpmetrics.Gauge) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopyNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-func GenTestOrigGauge() *otlpmetrics.Gauge {
-	orig := NewOrigGauge()
-	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+func GenTestGauge() *otlpmetrics.Gauge {
+	orig := NewGauge()
+	orig.DataPoints = GenTestNumberDataPointSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
 		dest.WriteArrayStart()
-		MarshalJSONOrigNumberDataPoint(orig.DataPoints[0], dest)
+		MarshalJSONNumberDataPoint(orig.DataPoints[0], dest)
 		for i := 1; i < len(orig.DataPoints); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigNumberDataPoint(orig.DataPoints[i], dest)
+			MarshalJSONNumberDataPoint(orig.DataPoints[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigGauge unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
+// UnmarshalJSONGauge unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
-				UnmarshalJSONOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+				orig.DataPoints = append(orig.DataPoints, NewNumberDataPoint())
+				UnmarshalJSONNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
 			}
 
 		default:
@@ -96,23 +96,23 @@ func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigGauge(orig *otlpmetrics.Gauge) int {
+func SizeProtoGauge(orig *otlpmetrics.Gauge) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.DataPoints {
-		l = SizeProtoOrigNumberDataPoint(orig.DataPoints[i])
+		l = SizeProtoNumberDataPoint(orig.DataPoints[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) int {
+func MarshalProtoGauge(orig *otlpmetrics.Gauge, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
+		l = MarshalProtoNumberDataPoint(orig.DataPoints[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -121,7 +121,7 @@ func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {
+func UnmarshalProtoGauge(orig *otlpmetrics.Gauge, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -146,8 +146,8 @@ func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigNumberDataPoint())
-			err = UnmarshalProtoOrigNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			orig.DataPoints = append(orig.DataPoints, NewNumberDataPoint())
+			err = UnmarshalProtoNumberDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

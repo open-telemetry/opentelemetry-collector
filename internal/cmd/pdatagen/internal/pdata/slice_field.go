@@ -11,7 +11,7 @@ import (
 const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .elementHasWrapper }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}Wrapper(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
 	{{- end }}
@@ -20,17 +20,17 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}(), ms.{{ .fieldName }}())
-	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
+	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.GenTest{{ .elementOriginName }}Slice()
 	{{- if .elementHasWrapper }}
-	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
+	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenTest{{ .returnType }}Wrapper()), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .elementOriginName }}Slice()`
+const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenTest{{ .elementOriginName }}Slice()`
 
-const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
+const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = Copy{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
 type SliceField struct {
 	fieldName     string

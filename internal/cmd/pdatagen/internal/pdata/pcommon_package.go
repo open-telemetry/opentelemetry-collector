@@ -43,6 +43,7 @@ var pcommon = &Package{
 	structs: []baseStruct{
 		anyValueStruct,
 		arrayValueStruct,
+		keyValueStruct,
 		keyValueListStruct,
 		anyValueSlice,
 		scope,
@@ -92,21 +93,24 @@ var mapStruct = &messageSlice{
 	structName:      "Map",
 	packageName:     "pcommon",
 	elementNullable: false,
-	element: &messageStruct{
-		originFullName: "otlpcommon.KeyValue",
-		fields: []Field{
-			&PrimitiveField{
-				fieldName: "Key",
-				protoID:   1,
-				protoType: proto.TypeString,
-			},
-			&MessageField{
-				fieldName:     "Value",
-				protoID:       2,
-				returnMessage: anyValue,
-			},
+	element:         keyValueStruct,
+}
+
+var keyValueStruct = &messageStruct{
+	originFullName: "otlpcommon.KeyValue",
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "Key",
+			protoID:   1,
+			protoType: proto.TypeString,
+		},
+		&MessageField{
+			fieldName:     "Value",
+			protoID:       2,
+			returnMessage: anyValue,
 		},
 	},
+	hasOnlyOrig: true,
 }
 
 var anyValue = &messageStruct{

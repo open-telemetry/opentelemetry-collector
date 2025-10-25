@@ -14,7 +14,7 @@ import (
 
 // MarshalLogs marshals plog.Logs along with the context into a byte slice.
 func MarshalLogs(ctx context.Context, ld plog.Logs) ([]byte, error) {
-	otlpLogs := internal.LogsToProto(internal.Logs(ld))
+	otlpLogs := internal.LogsToProto(internal.LogsWrapper(ld))
 	rc := encodeContext(ctx)
 	lr := reqint.LogsRequest{
 		FormatVersion:  requestFormatVersion,

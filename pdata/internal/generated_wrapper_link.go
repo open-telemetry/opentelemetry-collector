@@ -24,14 +24,14 @@ var (
 	}
 )
 
-func NewOrigLink() *otlpprofiles.Link {
+func NewLink() *otlpprofiles.Link {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Link{}
 	}
 	return protoPoolLink.Get().(*otlpprofiles.Link)
 }
 
-func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
+func DeleteLink(orig *otlpprofiles.Link, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,8 +41,8 @@ func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
 		return
 	}
 
-	DeleteOrigTraceID(&orig.TraceId, false)
-	DeleteOrigSpanID(&orig.SpanId, false)
+	DeleteTraceID(&orig.TraceId, false)
+	DeleteSpanID(&orig.SpanId, false)
 
 	orig.Reset()
 	if nullable {
@@ -50,7 +50,7 @@ func DeleteOrigLink(orig *otlpprofiles.Link, nullable bool) {
 	}
 }
 
-func CopyOrigLink(dest, src *otlpprofiles.Link) {
+func CopyLink(dest, src *otlpprofiles.Link) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -59,64 +59,64 @@ func CopyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.SpanId = src.SpanId
 }
 
-func GenTestOrigLink() *otlpprofiles.Link {
-	orig := NewOrigLink()
+func GenTestLink() *otlpprofiles.Link {
+	orig := NewLink()
 	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONLink(orig *otlpprofiles.Link, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		MarshalJSONOrigTraceID(&orig.TraceId, dest)
+		MarshalJSONTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		MarshalJSONOrigSpanID(&orig.SpanId, dest)
+		MarshalJSONSpanID(&orig.SpanId, dest)
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigLink unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
+// UnmarshalJSONLink unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONLink(orig *otlpprofiles.Link, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
-			UnmarshalJSONOrigTraceID(&orig.TraceId, iter)
+			UnmarshalJSONTraceID(&orig.TraceId, iter)
 		case "spanId", "span_id":
-			UnmarshalJSONOrigSpanID(&orig.SpanId, iter)
+			UnmarshalJSONSpanID(&orig.SpanId, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigLink(orig *otlpprofiles.Link) int {
+func SizeProtoLink(orig *otlpprofiles.Link) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigTraceID(&orig.TraceId)
+	l = SizeProtoTraceID(&orig.TraceId)
 	n += 1 + proto.Sov(uint64(l)) + l
-	l = SizeProtoOrigSpanID(&orig.SpanId)
+	l = SizeProtoSpanID(&orig.SpanId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) int {
+func MarshalProtoLink(orig *otlpprofiles.Link, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	l = MarshalProtoTraceID(&orig.TraceId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
-	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	l = MarshalProtoSpanID(&orig.SpanId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -125,7 +125,7 @@ func MarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
+func UnmarshalProtoLink(orig *otlpprofiles.Link, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -151,7 +151,7 @@ func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigTraceID(&orig.TraceId, buf[startPos:pos])
+			err = UnmarshalProtoTraceID(&orig.TraceId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigSpanID(&orig.SpanId, buf[startPos:pos])
+			err = UnmarshalProtoSpanID(&orig.SpanId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

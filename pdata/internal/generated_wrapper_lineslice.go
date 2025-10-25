@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
+func CopyLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 	var newDest []*otlpprofiles.Line
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.Line, len(src))
@@ -18,34 +18,34 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLine()
+			newDest[i] = NewLine()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigLine(dest[i], true)
+			DeleteLine(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigLine()
+			newDest[i] = NewLine()
 		}
 	}
 	for i := range src {
-		CopyOrigLine(newDest[i], src[i])
+		CopyLine(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
+func GenTestLineSlice() []*otlpprofiles.Line {
 	orig := make([]*otlpprofiles.Line, 5)
-	orig[0] = NewOrigLine()
-	orig[1] = GenTestOrigLine()
-	orig[2] = NewOrigLine()
-	orig[3] = GenTestOrigLine()
-	orig[4] = NewOrigLine()
+	orig[0] = NewLine()
+	orig[1] = GenTestLine()
+	orig[2] = NewLine()
+	orig[3] = GenTestLine()
+	orig[4] = NewLine()
 	return orig
 }

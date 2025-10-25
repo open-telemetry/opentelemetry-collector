@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigKeyValueAndUnitSlice(dest, src []*otlpprofiles.KeyValueAndUnit) []*otlpprofiles.KeyValueAndUnit {
+func CopyKeyValueAndUnitSlice(dest, src []*otlpprofiles.KeyValueAndUnit) []*otlpprofiles.KeyValueAndUnit {
 	var newDest []*otlpprofiles.KeyValueAndUnit
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.KeyValueAndUnit, len(src))
@@ -18,34 +18,34 @@ func CopyOrigKeyValueAndUnitSlice(dest, src []*otlpprofiles.KeyValueAndUnit) []*
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigKeyValueAndUnit()
+			newDest[i] = NewKeyValueAndUnit()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigKeyValueAndUnit(dest[i], true)
+			DeleteKeyValueAndUnit(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigKeyValueAndUnit()
+			newDest[i] = NewKeyValueAndUnit()
 		}
 	}
 	for i := range src {
-		CopyOrigKeyValueAndUnit(newDest[i], src[i])
+		CopyKeyValueAndUnit(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestKeyValueAndUnitSlice() []*otlpprofiles.KeyValueAndUnit {
+func GenTestKeyValueAndUnitSlice() []*otlpprofiles.KeyValueAndUnit {
 	orig := make([]*otlpprofiles.KeyValueAndUnit, 5)
-	orig[0] = NewOrigKeyValueAndUnit()
-	orig[1] = GenTestOrigKeyValueAndUnit()
-	orig[2] = NewOrigKeyValueAndUnit()
-	orig[3] = GenTestOrigKeyValueAndUnit()
-	orig[4] = NewOrigKeyValueAndUnit()
+	orig[0] = NewKeyValueAndUnit()
+	orig[1] = GenTestKeyValueAndUnit()
+	orig[2] = NewKeyValueAndUnit()
+	orig[3] = GenTestKeyValueAndUnit()
+	orig[4] = NewKeyValueAndUnit()
 	return orig
 }

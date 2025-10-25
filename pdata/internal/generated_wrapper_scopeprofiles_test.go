@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigScopeProfiles(t *testing.T) {
+func TestCopyScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigScopeProfiles(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigScopeProfiles()
-				CopyOrigScopeProfiles(dest, src)
+				dest := NewScopeProfiles()
+				CopyScopeProfiles(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigScopeProfiles(dest, dest)
+				CopyScopeProfiles(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeProfilesUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigScopeProfiles()
-	UnmarshalJSONOrigScopeProfiles(dest, iter)
+	dest := NewScopeProfiles()
+	UnmarshalJSONScopeProfiles(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigScopeProfiles(), dest)
+	assert.Equal(t, NewScopeProfiles(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigScopeProfiles(src, stream)
+				MarshalJSONScopeProfiles(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigScopeProfiles()
-				UnmarshalJSONOrigScopeProfiles(dest, iter)
+				dest := NewScopeProfiles()
+				UnmarshalJSONScopeProfiles(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeProfiles(dest, true)
+				DeleteScopeProfiles(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeProfilesFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeProfilesFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeProfiles() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigScopeProfiles()
-			require.Error(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+			dest := NewScopeProfiles()
+			require.Error(t, UnmarshalProtoScopeProfiles(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeProfilesUnknown(t *testing.T) {
-	dest := NewOrigScopeProfiles()
+func TestMarshalAndUnmarshalProtoScopeProfilesUnknown(t *testing.T) {
+	dest := NewScopeProfiles()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigScopeProfiles(), dest)
+	require.NoError(t, UnmarshalProtoScopeProfiles(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewScopeProfiles(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigScopeProfiles(src))
-				gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+				buf := make([]byte, SizeProtoScopeProfiles(src))
+				gotSize := MarshalProtoScopeProfiles(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigScopeProfiles()
-				require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+				dest := NewScopeProfiles()
+				require.NoError(t, UnmarshalProtoScopeProfiles(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeProfiles(dest, true)
+				DeleteScopeProfiles(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeProfiles() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
-			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+			buf := make([]byte, SizeProtoScopeProfiles(src))
+			gotSize := MarshalProtoScopeProfiles(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.ScopeProfiles{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigScopeProfiles()
-			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, goBuf))
+			dest := NewScopeProfiles()
+			require.NoError(t, UnmarshalProtoScopeProfiles(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesScopeProfiles() map[string][]byte {
 
 func genTestEncodingValuesScopeProfiles() map[string]*otlpprofiles.ScopeProfiles {
 	return map[string]*otlpprofiles.ScopeProfiles{
-		"empty":                     NewOrigScopeProfiles(),
-		"Scope/test":                {Scope: *GenTestOrigInstrumentationScope()},
-		"Profiles/default_and_test": {Profiles: []*otlpprofiles.Profile{{}, GenTestOrigProfile()}},
+		"empty":                     NewScopeProfiles(),
+		"Scope/test":                {Scope: *GenTestInstrumentationScope()},
+		"Profiles/default_and_test": {Profiles: []*otlpprofiles.Profile{{}, GenTestProfile()}},
 		"SchemaUrl/test":            {SchemaUrl: "test_schemaurl"},
 	}
 }

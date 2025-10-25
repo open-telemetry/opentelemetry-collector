@@ -14,27 +14,27 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestCopyOrigKeyValueAndUnitSlice(t *testing.T) {
+func TestCopyKeyValueAndUnitSlice(t *testing.T) {
 	src := []*otlpprofiles.KeyValueAndUnit{}
 	dest := []*otlpprofiles.KeyValueAndUnit{}
 	// Test CopyTo empty
-	dest = CopyOrigKeyValueAndUnitSlice(dest, src)
+	dest = CopyKeyValueAndUnitSlice(dest, src)
 	assert.Equal(t, []*otlpprofiles.KeyValueAndUnit{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestKeyValueAndUnitSlice()
-	dest = CopyOrigKeyValueAndUnitSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueAndUnitSlice(), dest)
+	src = GenTestKeyValueAndUnitSlice()
+	dest = CopyKeyValueAndUnitSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueAndUnitSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigKeyValueAndUnitSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueAndUnitSlice(), dest)
+	dest = CopyKeyValueAndUnitSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueAndUnitSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigKeyValueAndUnitSlice(dest, []*otlpprofiles.KeyValueAndUnit{})
+	dest = CopyKeyValueAndUnitSlice(dest, []*otlpprofiles.KeyValueAndUnit{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigKeyValueAndUnitSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueAndUnitSlice(), dest)
+	dest = CopyKeyValueAndUnitSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueAndUnitSlice(), dest)
 }

@@ -71,7 +71,7 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Profiles as pdata struct.
-	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.NewProfiles(internal.GenTestOrigExportProfilesServiceRequest(), internal.NewState())))
+	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.NewProfilesWrapper(internal.GenTestExportProfilesServiceRequest(), internal.NewState())))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := pd.MarshalProto()

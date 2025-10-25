@@ -27,7 +27,7 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint_ValueAtQuantile()
+		(*es.orig)[i] = internal.GenTestSummaryDataPoint_ValueAtQuantile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 
 func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	ms := NewSummaryDataPointValueAtQuantileSlice()
-	*ms.orig = internal.GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	*ms.orig = internal.GenTestSummaryDataPoint_ValueAtQuantileSlice()
 	return ms
 }

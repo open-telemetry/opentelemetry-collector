@@ -14,27 +14,27 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-func TestCopyOrigKeyValueSlice(t *testing.T) {
+func TestCopyKeyValueSlice(t *testing.T) {
 	src := []otlpcommon.KeyValue{}
 	dest := []otlpcommon.KeyValue{}
 	// Test CopyTo empty
-	dest = CopyOrigKeyValueSlice(dest, src)
+	dest = CopyKeyValueSlice(dest, src)
 	assert.Equal(t, []otlpcommon.KeyValue{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestKeyValueSlice()
-	dest = CopyOrigKeyValueSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
+	src = GenTestKeyValueSlice()
+	dest = CopyKeyValueSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigKeyValueSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
+	dest = CopyKeyValueSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigKeyValueSlice(dest, []otlpcommon.KeyValue{})
+	dest = CopyKeyValueSlice(dest, []otlpcommon.KeyValue{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigKeyValueSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestKeyValueSlice(), dest)
+	dest = CopyKeyValueSlice(dest, src)
+	assert.Equal(t, GenTestKeyValueSlice(), dest)
 }

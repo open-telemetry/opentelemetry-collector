@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCopyOrigFloat64Slice(t *testing.T) {
+func TestCopyFloat64Slice(t *testing.T) {
 	src := []float64{}
 	dest := []float64{}
 	// Copy empty
-	dest = CopyOrigFloat64Slice(dest, src)
+	dest = CopyFloat64Slice(dest, src)
 	assert.Equal(t, src, dest)
-	src = GenerateOrigTestFloat64Slice()
-	dest = CopyOrigFloat64Slice(dest, src)
+	src = GenTestFloat64Slice()
+	dest = CopyFloat64Slice(dest, src)
 	assert.Equal(t, src, dest)
 }

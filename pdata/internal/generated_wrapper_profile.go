@@ -25,14 +25,14 @@ var (
 	}
 )
 
-func NewOrigProfile() *otlpprofiles.Profile {
+func NewProfile() *otlpprofiles.Profile {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Profile{}
 	}
 	return protoPoolProfile.Get().(*otlpprofiles.Profile)
 }
 
-func DeleteOrigProfile(orig *otlpprofiles.Profile, nullable bool) {
+func DeleteProfile(orig *otlpprofiles.Profile, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -42,12 +42,12 @@ func DeleteOrigProfile(orig *otlpprofiles.Profile, nullable bool) {
 		return
 	}
 
-	DeleteOrigValueType(&orig.SampleType, false)
+	DeleteValueType(&orig.SampleType, false)
 	for i := range orig.Sample {
-		DeleteOrigSample(orig.Sample[i], true)
+		DeleteSample(orig.Sample[i], true)
 	}
-	DeleteOrigValueType(&orig.PeriodType, false)
-	DeleteOrigProfileID(&orig.ProfileId, false)
+	DeleteValueType(&orig.PeriodType, false)
+	DeleteProfileID(&orig.ProfileId, false)
 
 	orig.Reset()
 	if nullable {
@@ -55,54 +55,54 @@ func DeleteOrigProfile(orig *otlpprofiles.Profile, nullable bool) {
 	}
 }
 
-func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
+func CopyProfile(dest, src *otlpprofiles.Profile) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigValueType(&dest.SampleType, &src.SampleType)
-	dest.Sample = CopyOrigSampleSlice(dest.Sample, src.Sample)
+	CopyValueType(&dest.SampleType, &src.SampleType)
+	dest.Sample = CopySampleSlice(dest.Sample, src.Sample)
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.DurationNano = src.DurationNano
-	CopyOrigValueType(&dest.PeriodType, &src.PeriodType)
+	CopyValueType(&dest.PeriodType, &src.PeriodType)
 	dest.Period = src.Period
-	dest.CommentStrindices = CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
+	dest.CommentStrindices = CopyInt32Slice(dest.CommentStrindices, src.CommentStrindices)
 	dest.ProfileId = src.ProfileId
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
-	dest.OriginalPayload = CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
-	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.OriginalPayload = CopyByteSlice(dest.OriginalPayload, src.OriginalPayload)
+	dest.AttributeIndices = CopyInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func GenTestOrigProfile() *otlpprofiles.Profile {
-	orig := NewOrigProfile()
-	orig.SampleType = *GenTestOrigValueType()
-	orig.Sample = GenerateOrigTestSampleSlice()
+func GenTestProfile() *otlpprofiles.Profile {
+	orig := NewProfile()
+	orig.SampleType = *GenTestValueType()
+	orig.Sample = GenTestSampleSlice()
 	orig.TimeUnixNano = 1234567890
 	orig.DurationNano = 1234567890
-	orig.PeriodType = *GenTestOrigValueType()
+	orig.PeriodType = *GenTestValueType()
 	orig.Period = int64(13)
-	orig.CommentStrindices = GenerateOrigTestInt32Slice()
+	orig.CommentStrindices = GenTestInt32Slice()
 	orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	orig.DroppedAttributesCount = uint32(13)
 	orig.OriginalPayloadFormat = "test_originalpayloadformat"
-	orig.OriginalPayload = GenerateOrigTestByteSlice()
-	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.OriginalPayload = GenTestByteSlice()
+	orig.AttributeIndices = GenTestInt32Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("sampleType")
-	MarshalJSONOrigValueType(&orig.SampleType, dest)
+	MarshalJSONValueType(&orig.SampleType, dest)
 	if len(orig.Sample) > 0 {
 		dest.WriteObjectField("sample")
 		dest.WriteArrayStart()
-		MarshalJSONOrigSample(orig.Sample[0], dest)
+		MarshalJSONSample(orig.Sample[0], dest)
 		for i := 1; i < len(orig.Sample); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigSample(orig.Sample[i], dest)
+			MarshalJSONSample(orig.Sample[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -115,7 +115,7 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 		dest.WriteUint64(orig.DurationNano)
 	}
 	dest.WriteObjectField("periodType")
-	MarshalJSONOrigValueType(&orig.PeriodType, dest)
+	MarshalJSONValueType(&orig.PeriodType, dest)
 	if orig.Period != int64(0) {
 		dest.WriteObjectField("period")
 		dest.WriteInt64(orig.Period)
@@ -132,7 +132,7 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	}
 	if orig.ProfileId != data.ProfileID([16]byte{}) {
 		dest.WriteObjectField("profileId")
-		MarshalJSONOrigProfileID(&orig.ProfileId, dest)
+		MarshalJSONProfileID(&orig.ProfileId, dest)
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
@@ -160,16 +160,16 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigProfile unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
+// UnmarshalJSONProfile unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "sampleType", "sample_type":
-			UnmarshalJSONOrigValueType(&orig.SampleType, iter)
+			UnmarshalJSONValueType(&orig.SampleType, iter)
 		case "sample":
 			for iter.ReadArray() {
-				orig.Sample = append(orig.Sample, NewOrigSample())
-				UnmarshalJSONOrigSample(orig.Sample[len(orig.Sample)-1], iter)
+				orig.Sample = append(orig.Sample, NewSample())
+				UnmarshalJSONSample(orig.Sample[len(orig.Sample)-1], iter)
 			}
 
 		case "timeUnixNano", "time_unix_nano":
@@ -177,7 +177,7 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 		case "durationNano", "duration_nano":
 			orig.DurationNano = iter.ReadUint64()
 		case "periodType", "period_type":
-			UnmarshalJSONOrigValueType(&orig.PeriodType, iter)
+			UnmarshalJSONValueType(&orig.PeriodType, iter)
 		case "period":
 			orig.Period = iter.ReadInt64()
 		case "commentStrindices", "comment_strindices":
@@ -186,7 +186,7 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 			}
 
 		case "profileId", "profile_id":
-			UnmarshalJSONOrigProfileID(&orig.ProfileId, iter)
+			UnmarshalJSONProfileID(&orig.ProfileId, iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "originalPayloadFormat", "original_payload_format":
@@ -204,14 +204,14 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
+func SizeProtoProfile(orig *otlpprofiles.Profile) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigValueType(&orig.SampleType)
+	l = SizeProtoValueType(&orig.SampleType)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.Sample {
-		l = SizeProtoOrigSample(orig.Sample[i])
+		l = SizeProtoSample(orig.Sample[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.TimeUnixNano != 0 {
@@ -220,7 +220,7 @@ func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
 	if orig.DurationNano != 0 {
 		n += 1 + proto.Sov(uint64(orig.DurationNano))
 	}
-	l = SizeProtoOrigValueType(&orig.PeriodType)
+	l = SizeProtoValueType(&orig.PeriodType)
 	n += 1 + proto.Sov(uint64(l)) + l
 	if orig.Period != 0 {
 		n += 1 + proto.Sov(uint64(orig.Period))
@@ -232,7 +232,7 @@ func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
 		}
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	l = SizeProtoOrigProfileID(&orig.ProfileId)
+	l = SizeProtoProfileID(&orig.ProfileId)
 	n += 1 + proto.Sov(uint64(l)) + l
 	if orig.DroppedAttributesCount != 0 {
 		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
@@ -255,19 +255,19 @@ func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
 	return n
 }
 
-func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
+func MarshalProtoProfile(orig *otlpprofiles.Profile, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigValueType(&orig.SampleType, buf[:pos])
+	l = MarshalProtoValueType(&orig.SampleType, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.Sample) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigSample(orig.Sample[i], buf[:pos])
+		l = MarshalProtoSample(orig.Sample[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -285,7 +285,7 @@ func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
 		buf[pos] = 0x20
 	}
 
-	l = MarshalProtoOrigValueType(&orig.PeriodType, buf[:pos])
+	l = MarshalProtoValueType(&orig.PeriodType, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -307,7 +307,7 @@ func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
 		buf[pos] = 0x3a
 	}
 
-	l = MarshalProtoOrigProfileID(&orig.ProfileId, buf[:pos])
+	l = MarshalProtoProfileID(&orig.ProfileId, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -347,7 +347,7 @@ func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
+func UnmarshalProtoProfile(orig *otlpprofiles.Profile, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -373,7 +373,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigValueType(&orig.SampleType, buf[startPos:pos])
+			err = UnmarshalProtoValueType(&orig.SampleType, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -388,8 +388,8 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Sample = append(orig.Sample, NewOrigSample())
-			err = UnmarshalProtoOrigSample(orig.Sample[len(orig.Sample)-1], buf[startPos:pos])
+			orig.Sample = append(orig.Sample, NewSample())
+			err = UnmarshalProtoSample(orig.Sample[len(orig.Sample)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -429,7 +429,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigValueType(&orig.PeriodType, buf[startPos:pos])
+			err = UnmarshalProtoValueType(&orig.PeriodType, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -487,7 +487,7 @@ func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigProfileID(&orig.ProfileId, buf[startPos:pos])
+			err = UnmarshalProtoProfileID(&orig.ProfileId, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

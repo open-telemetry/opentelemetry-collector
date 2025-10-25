@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigFunction(t *testing.T) {
+func TestCopyFunction(t *testing.T) {
 	for name, src := range genTestEncodingValuesFunction() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigFunction(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigFunction()
-				CopyOrigFunction(dest, src)
+				dest := NewFunction()
+				CopyFunction(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigFunction(dest, dest)
+				CopyFunction(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigFunctionUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONFunctionUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigFunction()
-	UnmarshalJSONOrigFunction(dest, iter)
+	dest := NewFunction()
+	UnmarshalJSONFunction(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigFunction(), dest)
+	assert.Equal(t, NewFunction(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
+func TestMarshalAndUnmarshalJSONFunction(t *testing.T) {
 	for name, src := range genTestEncodingValuesFunction() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigFunction(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigFunction(src, stream)
+				MarshalJSONFunction(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigFunction()
-				UnmarshalJSONOrigFunction(dest, iter)
+				dest := NewFunction()
+				UnmarshalJSONFunction(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigFunction(dest, true)
+				DeleteFunction(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigFunctionFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoFunctionFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesFunction() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigFunction()
-			require.Error(t, UnmarshalProtoOrigFunction(dest, buf))
+			dest := NewFunction()
+			require.Error(t, UnmarshalProtoFunction(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigFunctionUnknown(t *testing.T) {
-	dest := NewOrigFunction()
+func TestMarshalAndUnmarshalProtoFunctionUnknown(t *testing.T) {
+	dest := NewFunction()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigFunction(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigFunction(), dest)
+	require.NoError(t, UnmarshalProtoFunction(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewFunction(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
+func TestMarshalAndUnmarshalProtoFunction(t *testing.T) {
 	for name, src := range genTestEncodingValuesFunction() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigFunction(src))
-				gotSize := MarshalProtoOrigFunction(src, buf)
+				buf := make([]byte, SizeProtoFunction(src))
+				gotSize := MarshalProtoFunction(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigFunction()
-				require.NoError(t, UnmarshalProtoOrigFunction(dest, buf))
+				dest := NewFunction()
+				require.NoError(t, UnmarshalProtoFunction(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigFunction(dest, true)
+				DeleteFunction(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigFunction(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 	for name, src := range genTestEncodingValuesFunction() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigFunction(src))
-			gotSize := MarshalProtoOrigFunction(src, buf)
+			buf := make([]byte, SizeProtoFunction(src))
+			gotSize := MarshalProtoFunction(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.Function{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigFunction()
-			require.NoError(t, UnmarshalProtoOrigFunction(dest, goBuf))
+			dest := NewFunction()
+			require.NoError(t, UnmarshalProtoFunction(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -153,7 +153,7 @@ func genTestFailingUnmarshalProtoValuesFunction() map[string][]byte {
 
 func genTestEncodingValuesFunction() map[string]*otlpprofiles.Function {
 	return map[string]*otlpprofiles.Function{
-		"empty":                   NewOrigFunction(),
+		"empty":                   NewFunction(),
 		"NameStrindex/test":       {NameStrindex: int32(13)},
 		"SystemNameStrindex/test": {SystemNameStrindex: int32(13)},
 		"FilenameStrindex/test":   {FilenameStrindex: int32(13)},

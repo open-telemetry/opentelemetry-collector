@@ -52,27 +52,27 @@ type codecV2 struct {
 func (c *codecV2) Marshal(v any) (mem.BufferSlice, error) {
 	switch req := v.(type) {
 	case *otlpcollectorlogs.ExportLogsServiceRequest:
-		size := internal.SizeProtoOrigExportLogsServiceRequest(req)
+		size := internal.SizeProtoExportLogsServiceRequest(req)
 		buf := otelBufferPool.Get(size)
-		n := internal.MarshalProtoOrigExportLogsServiceRequest(req, (*buf)[:size])
+		n := internal.MarshalProtoExportLogsServiceRequest(req, (*buf)[:size])
 		*buf = (*buf)[:n]
 		return []mem.Buffer{mem.NewBuffer(buf, otelBufferPool)}, nil
 	case *otlpcollectormetrics.ExportMetricsServiceRequest:
-		size := internal.SizeProtoOrigExportMetricsServiceRequest(req)
+		size := internal.SizeProtoExportMetricsServiceRequest(req)
 		buf := otelBufferPool.Get(size)
-		n := internal.MarshalProtoOrigExportMetricsServiceRequest(req, (*buf)[:size])
+		n := internal.MarshalProtoExportMetricsServiceRequest(req, (*buf)[:size])
 		*buf = (*buf)[:n]
 		return []mem.Buffer{mem.NewBuffer(buf, otelBufferPool)}, nil
 	case *otlpcollectortraces.ExportTraceServiceRequest:
-		size := internal.SizeProtoOrigExportTraceServiceRequest(req)
+		size := internal.SizeProtoExportTraceServiceRequest(req)
 		buf := otelBufferPool.Get(size)
-		n := internal.MarshalProtoOrigExportTraceServiceRequest(req, (*buf)[:size])
+		n := internal.MarshalProtoExportTraceServiceRequest(req, (*buf)[:size])
 		*buf = (*buf)[:n]
 		return []mem.Buffer{mem.NewBuffer(buf, otelBufferPool)}, nil
 	case *otlpcollectorprofile.ExportProfilesServiceRequest:
-		size := internal.SizeProtoOrigExportProfilesServiceRequest(req)
+		size := internal.SizeProtoExportProfilesServiceRequest(req)
 		buf := otelBufferPool.Get(size)
-		n := internal.MarshalProtoOrigExportProfilesServiceRequest(req, (*buf)[:size])
+		n := internal.MarshalProtoExportProfilesServiceRequest(req, (*buf)[:size])
 		*buf = (*buf)[:n]
 		return []mem.Buffer{mem.NewBuffer(buf, otelBufferPool)}, nil
 	}
@@ -86,22 +86,22 @@ func (c *codecV2) Unmarshal(data mem.BufferSlice, v any) (err error) {
 		// TODO: Upgrade custom Unmarshal logic to support reading from mem.BufferSlice.
 		buf := data.MaterializeToBuffer(otelBufferPool)
 		defer buf.Free()
-		return internal.UnmarshalProtoOrigExportLogsServiceRequest(req, buf.ReadOnlyData())
+		return internal.UnmarshalProtoExportLogsServiceRequest(req, buf.ReadOnlyData())
 	case *otlpcollectormetrics.ExportMetricsServiceRequest:
 		// TODO: Upgrade custom Unmarshal logic to support reading from mem.BufferSlice.
 		buf := data.MaterializeToBuffer(otelBufferPool)
 		defer buf.Free()
-		return internal.UnmarshalProtoOrigExportMetricsServiceRequest(req, buf.ReadOnlyData())
+		return internal.UnmarshalProtoExportMetricsServiceRequest(req, buf.ReadOnlyData())
 	case *otlpcollectortraces.ExportTraceServiceRequest:
 		// TODO: Upgrade custom Unmarshal logic to support reading from mem.BufferSlice.
 		buf := data.MaterializeToBuffer(otelBufferPool)
 		defer buf.Free()
-		return internal.UnmarshalProtoOrigExportTraceServiceRequest(req, buf.ReadOnlyData())
+		return internal.UnmarshalProtoExportTraceServiceRequest(req, buf.ReadOnlyData())
 	case *otlpcollectorprofile.ExportProfilesServiceRequest:
 		// TODO: Upgrade custom Unmarshal logic to support reading from mem.BufferSlice.
 		buf := data.MaterializeToBuffer(otelBufferPool)
 		defer buf.Free()
-		return internal.UnmarshalProtoOrigExportProfilesServiceRequest(req, buf.ReadOnlyData())
+		return internal.UnmarshalProtoExportProfilesServiceRequest(req, buf.ReadOnlyData())
 	}
 
 	return c.delegate.Unmarshal(data, v)

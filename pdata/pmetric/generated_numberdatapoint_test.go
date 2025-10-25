@@ -26,8 +26,8 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(internal.NewNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -40,14 +40,14 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewOrigNumberDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(internal.NewNumberDataPoint(), sharedState)) })
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestNumberDataPoint_StartTimestamp(t *testing.T) {
@@ -98,7 +98,7 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 func TestNumberDataPoint_Exemplars(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
+	ms.orig.Exemplars = internal.GenTestExemplarSlice()
 	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
@@ -111,6 +111,6 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := newNumberDataPoint(internal.GenTestOrigNumberDataPoint(), internal.NewState())
+	ms := newNumberDataPoint(internal.GenTestNumberDataPoint(), internal.NewState())
 	return ms
 }

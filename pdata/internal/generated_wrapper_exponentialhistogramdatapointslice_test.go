@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigExponentialHistogramDataPointSlice(t *testing.T) {
+func TestCopyExponentialHistogramDataPointSlice(t *testing.T) {
 	src := []*otlpmetrics.ExponentialHistogramDataPoint{}
 	dest := []*otlpmetrics.ExponentialHistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyOrigExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.ExponentialHistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestExponentialHistogramDataPointSlice()
-	dest = CopyOrigExponentialHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExponentialHistogramDataPointSlice(), dest)
+	src = GenTestExponentialHistogramDataPointSlice()
+	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigExponentialHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExponentialHistogramDataPointSlice(), dest)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigExponentialHistogramDataPointSlice(dest, []*otlpmetrics.ExponentialHistogramDataPoint{})
+	dest = CopyExponentialHistogramDataPointSlice(dest, []*otlpmetrics.ExponentialHistogramDataPoint{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigExponentialHistogramDataPointSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestExponentialHistogramDataPointSlice(), dest)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 }

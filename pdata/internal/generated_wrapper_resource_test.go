@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigResource(t *testing.T) {
+func TestCopyResource(t *testing.T) {
 	for name, src := range genTestEncodingValuesResource() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigResource(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigResource()
-				CopyOrigResource(dest, src)
+				dest := NewResource()
+				CopyResource(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigResource(dest, dest)
+				CopyResource(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResourceUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigResource()
-	UnmarshalJSONOrigResource(dest, iter)
+	dest := NewResource()
+	UnmarshalJSONResource(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigResource(), dest)
+	assert.Equal(t, NewResource(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
+func TestMarshalAndUnmarshalJSONResource(t *testing.T) {
 	for name, src := range genTestEncodingValuesResource() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigResource(src, stream)
+				MarshalJSONResource(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigResource()
-				UnmarshalJSONOrigResource(dest, iter)
+				dest := NewResource()
+				UnmarshalJSONResource(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResource(dest, true)
+				DeleteResource(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResourceFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesResource() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigResource()
-			require.Error(t, UnmarshalProtoOrigResource(dest, buf))
+			dest := NewResource()
+			require.Error(t, UnmarshalProtoResource(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigResourceUnknown(t *testing.T) {
-	dest := NewOrigResource()
+func TestMarshalAndUnmarshalProtoResourceUnknown(t *testing.T) {
+	dest := NewResource()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigResource(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigResource(), dest)
+	require.NoError(t, UnmarshalProtoResource(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewResource(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
+func TestMarshalAndUnmarshalProtoResource(t *testing.T) {
 	for name, src := range genTestEncodingValuesResource() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigResource(src))
-				gotSize := MarshalProtoOrigResource(src, buf)
+				buf := make([]byte, SizeProtoResource(src))
+				gotSize := MarshalProtoResource(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigResource()
-				require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
+				dest := NewResource()
+				require.NoError(t, UnmarshalProtoResource(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigResource(dest, true)
+				DeleteResource(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 	for name, src := range genTestEncodingValuesResource() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigResource(src))
-			gotSize := MarshalProtoOrigResource(src, buf)
+			buf := make([]byte, SizeProtoResource(src))
+			gotSize := MarshalProtoResource(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpresource.Resource{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigResource()
-			require.NoError(t, UnmarshalProtoOrigResource(dest, goBuf))
+			dest := NewResource()
+			require.NoError(t, UnmarshalProtoResource(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -152,9 +152,9 @@ func genTestFailingUnmarshalProtoValuesResource() map[string][]byte {
 
 func genTestEncodingValuesResource() map[string]*otlpresource.Resource {
 	return map[string]*otlpresource.Resource{
-		"empty":                       NewOrigResource(),
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"empty":                       NewResource(),
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
-		"EntityRefs/default_and_test": {EntityRefs: []*otlpcommon.EntityRef{{}, GenTestOrigEntityRef()}},
+		"EntityRefs/default_and_test": {EntityRefs: []*otlpcommon.EntityRef{{}, GenTestEntityRef()}},
 	}
 }

@@ -38,14 +38,14 @@ var (
 	}
 )
 
-func NewOrigNumberDataPoint() *otlpmetrics.NumberDataPoint {
+func NewNumberDataPoint() *otlpmetrics.NumberDataPoint {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.NumberDataPoint{}
 	}
 	return protoPoolNumberDataPoint.Get().(*otlpmetrics.NumberDataPoint)
 }
 
-func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool) {
+func DeleteNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -56,7 +56,7 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 	switch ov := orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
@@ -72,7 +72,7 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 
 	}
 	for i := range orig.Exemplars {
-		DeleteOrigExemplar(&orig.Exemplars[i], false)
+		DeleteExemplar(&orig.Exemplars[i], false)
 	}
 
 	orig.Reset()
@@ -81,12 +81,12 @@ func DeleteOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, nullable bool)
 	}
 }
 
-func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
+func CopyNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
@@ -109,31 +109,31 @@ func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 		ov.AsInt = t.AsInt
 		dest.Value = ov
 	}
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
 }
 
-func GenTestOrigNumberDataPoint() *otlpmetrics.NumberDataPoint {
-	orig := NewOrigNumberDataPoint()
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+func GenTestNumberDataPoint() *otlpmetrics.NumberDataPoint {
+	orig := NewNumberDataPoint()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
-	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Exemplars = GenTestExemplarSlice()
 	orig.Flags = 1
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -156,10 +156,10 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
 		dest.WriteArrayStart()
-		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		MarshalJSONExemplar(&orig.Exemplars[0], dest)
 		for i := 1; i < len(orig.Exemplars); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+			MarshalJSONExemplar(&orig.Exemplars[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -170,14 +170,14 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigNumberDataPoint unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *json.Iterator) {
+// UnmarshalJSONNumberDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
@@ -212,7 +212,7 @@ func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *j
 		case "exemplars":
 			for iter.ReadArray() {
 				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+				UnmarshalJSONExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
 			}
 
 		case "flags":
@@ -223,12 +223,12 @@ func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *j
 	}
 }
 
-func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
+func SizeProtoNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.StartTimeUnixNano != 0 {
@@ -247,7 +247,7 @@ func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 		n += 9
 	}
 	for i := range orig.Exemplars {
-		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		l = SizeProtoExemplar(&orig.Exemplars[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.Flags != 0 {
@@ -256,12 +256,12 @@ func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
 	return n
 }
 
-func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) int {
+func MarshalProtoNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -294,7 +294,7 @@ func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []by
 
 	}
 	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		l = MarshalProtoExemplar(&orig.Exemplars[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -308,7 +308,7 @@ func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []by
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) error {
+func UnmarshalProtoNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -334,7 +334,7 @@ func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -410,7 +410,7 @@ func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []
 			}
 			startPos := pos - length
 			orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
+			err = UnmarshalProtoExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

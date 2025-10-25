@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+func TestCopySummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-				CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src)
+				dest := NewSummaryDataPoint_ValueAtQuantile()
+				CopySummaryDataPoint_ValueAtQuantile(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSummaryDataPoint_ValueAtQuantile(dest, dest)
+				CopySummaryDataPoint_ValueAtQuantile(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-	UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
+	dest := NewSummaryDataPoint_ValueAtQuantile()
+	UnmarshalJSONSummaryDataPoint_ValueAtQuantile(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
+	assert.Equal(t, NewSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(src, stream)
+				MarshalJSONSummaryDataPoint_ValueAtQuantile(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-				UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
+				dest := NewSummaryDataPoint_ValueAtQuantile()
+				UnmarshalJSONSummaryDataPoint_ValueAtQuantile(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummaryDataPoint_ValueAtQuantile(dest, true)
+				DeleteSummaryDataPoint_ValueAtQuantile(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummaryDataPoint_ValueAtQuantileFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-			require.Error(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+			dest := NewSummaryDataPoint_ValueAtQuantile()
+			require.Error(t, UnmarshalProtoSummaryDataPoint_ValueAtQuantile(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
-	dest := NewOrigSummaryDataPoint_ValueAtQuantile()
+func TestMarshalAndUnmarshalProtoSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
+	dest := NewSummaryDataPoint_ValueAtQuantile()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSummaryDataPoint_ValueAtQuantile(), dest)
+	require.NoError(t, UnmarshalProtoSummaryDataPoint_ValueAtQuantile(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSummaryDataPoint_ValueAtQuantile(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
-				gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
+				buf := make([]byte, SizeProtoSummaryDataPoint_ValueAtQuantile(src))
+				gotSize := MarshalProtoSummaryDataPoint_ValueAtQuantile(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-				require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+				dest := NewSummaryDataPoint_ValueAtQuantile()
+				require.NoError(t, UnmarshalProtoSummaryDataPoint_ValueAtQuantile(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSummaryDataPoint_ValueAtQuantile(dest, true)
+				DeleteSummaryDataPoint_ValueAtQuantile(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing
 func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	for name, src := range genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
-			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
+			buf := make([]byte, SizeProtoSummaryDataPoint_ValueAtQuantile(src))
+			gotSize := MarshalProtoSummaryDataPoint_ValueAtQuantile(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.SummaryDataPoint_ValueAtQuantile{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint_ValueAtQuantile(t *
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSummaryDataPoint_ValueAtQuantile()
-			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, goBuf))
+			dest := NewSummaryDataPoint_ValueAtQuantile()
+			require.NoError(t, UnmarshalProtoSummaryDataPoint_ValueAtQuantile(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -149,7 +149,7 @@ func genTestFailingUnmarshalProtoValuesSummaryDataPoint_ValueAtQuantile() map[st
 
 func genTestEncodingValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{
-		"empty":         NewOrigSummaryDataPoint_ValueAtQuantile(),
+		"empty":         NewSummaryDataPoint_ValueAtQuantile(),
 		"Quantile/test": {Quantile: float64(3.1415926)},
 		"Value/test":    {Value: float64(3.1415926)},
 	}

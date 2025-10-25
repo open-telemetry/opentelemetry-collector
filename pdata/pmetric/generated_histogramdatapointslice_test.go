@@ -27,7 +27,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigHistogramDataPoint()
+		(*es.orig)[i] = internal.GenTestHistogramDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestHistogramDataPointSlice_Sort(t *testing.T) {
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 	ms := NewHistogramDataPointSlice()
-	*ms.orig = internal.GenerateOrigTestHistogramDataPointSlice()
+	*ms.orig = internal.GenTestHistogramDataPointSlice()
 	return ms
 }

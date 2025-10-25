@@ -18,31 +18,31 @@ import (
 //
 // Must use NewByteSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ByteSlice internal.ByteSlice
+type ByteSlice internal.ByteSliceWrapper
 
 func (ms ByteSlice) getOrig() *[]byte {
-	return internal.GetOrigByteSlice(internal.ByteSlice(ms))
+	return internal.GetByteSliceOrig(internal.ByteSliceWrapper(ms))
 }
 
 func (ms ByteSlice) getState() *internal.State {
-	return internal.GetByteSliceState(internal.ByteSlice(ms))
+	return internal.GetByteSliceState(internal.ByteSliceWrapper(ms))
 }
 
 // NewByteSlice creates a new empty ByteSlice.
 func NewByteSlice() ByteSlice {
 	orig := []byte(nil)
-	return ByteSlice(internal.NewByteSlice(&orig, internal.NewState()))
+	return ByteSlice(internal.NewByteSliceWrapper(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []byte slice.
 func (ms ByteSlice) AsRaw() []byte {
-	return internal.CopyOrigByteSlice(nil, *ms.getOrig())
+	return internal.CopyByteSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyOrigByteSlice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyByteSlice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []byte slice value.
@@ -155,7 +155,7 @@ func (ms ByteSlice) CopyTo(dest ByteSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrigByteSlice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyByteSlice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another ByteSlice

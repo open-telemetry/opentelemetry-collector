@@ -44,8 +44,8 @@ const unmarshalJSONEnum = `	case {{ .allJSONTags }}:
 const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}NewOrig{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		UnmarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], iter)
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
+		UnmarshalJSON{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], iter)
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
@@ -55,12 +55,12 @@ const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
 		}
-		ov.{{ .fieldName }} = NewOrig{{ .origName }}()
-		UnmarshalJSONOrig{{ .origName }}(ov.{{ .fieldName }}, iter)
+		ov.{{ .fieldName }} = New{{ .origName }}()
+		UnmarshalJSON{{ .origName }}(ov.{{ .fieldName }}, iter)
 		orig.{{ .oneOfGroup }} = ov
 	}
 {{ else -}}
-	UnmarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, iter)
+	UnmarshalJSON{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, iter)
 {{- end }}`
 
 const unmarshalJSONBytes = `	case {{ .allJSONTags }}:

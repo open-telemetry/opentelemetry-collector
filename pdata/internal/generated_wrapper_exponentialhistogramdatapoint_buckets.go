@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+func NewExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 	}
 	return protoPoolExponentialHistogramDataPoint_Buckets.Get().(*otlpmetrics.ExponentialHistogramDataPoint_Buckets)
 }
 
-func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, nullable bool) {
+func DeleteExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,24 +46,24 @@ func DeleteOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Exponenti
 	}
 }
 
-func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+func CopyExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.Offset = src.Offset
-	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.BucketCounts = CopyUint64Slice(dest.BucketCounts, src.BucketCounts)
 }
 
-func GenTestOrigExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	orig := NewOrigExponentialHistogramDataPoint_Buckets()
+func GenTestExponentialHistogramDataPoint_Buckets() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	orig := NewExponentialHistogramDataPoint_Buckets()
 	orig.Offset = int32(13)
-	orig.BucketCounts = GenerateOrigTestUint64Slice()
+	orig.BucketCounts = GenTestUint64Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Offset != int32(0) {
 		dest.WriteObjectField("offset")
@@ -82,8 +82,8 @@ func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expo
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExponentialHistogramDataPointBuckets unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, iter *json.Iterator) {
+// UnmarshalJSONExponentialHistogramDataPointBuckets unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "offset":
@@ -99,7 +99,7 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Ex
 	}
 }
 
-func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) int {
+func SizeProtoExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) int {
 	var n int
 	var l int
 	_ = l
@@ -116,7 +116,7 @@ func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expone
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) int {
+func MarshalProtoExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -138,7 +138,7 @@ func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Exp
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {
+func UnmarshalProtoExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

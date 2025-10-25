@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigKeyValue() *otlpcommon.KeyValue {
+func NewKeyValue() *otlpcommon.KeyValue {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.KeyValue{}
 	}
 	return protoPoolKeyValue.Get().(*otlpcommon.KeyValue)
 }
 
-func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
+func DeleteKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
 		return
 	}
 
-	DeleteOrigAnyValue(&orig.Value, false)
+	DeleteAnyValue(&orig.Value, false)
 
 	orig.Reset()
 	if nullable {
@@ -48,49 +48,49 @@ func DeleteOrigKeyValue(orig *otlpcommon.KeyValue, nullable bool) {
 	}
 }
 
-func CopyOrigKeyValue(dest, src *otlpcommon.KeyValue) {
+func CopyKeyValue(dest, src *otlpcommon.KeyValue) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
 	dest.Key = src.Key
-	CopyOrigAnyValue(&dest.Value, &src.Value)
+	CopyAnyValue(&dest.Value, &src.Value)
 }
 
-func GenTestOrigKeyValue() *otlpcommon.KeyValue {
-	orig := NewOrigKeyValue()
+func GenTestKeyValue() *otlpcommon.KeyValue {
+	orig := NewKeyValue()
 	orig.Key = "test_key"
-	orig.Value = *GenTestOrigAnyValue()
+	orig.Value = *GenTestAnyValue()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONKeyValue(orig *otlpcommon.KeyValue, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.Key != "" {
 		dest.WriteObjectField("key")
 		dest.WriteString(orig.Key)
 	}
 	dest.WriteObjectField("value")
-	MarshalJSONOrigAnyValue(&orig.Value, dest)
+	MarshalJSONAnyValue(&orig.Value, dest)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigAttribute unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
+// UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONKeyValue(orig *otlpcommon.KeyValue, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "key":
 			orig.Key = iter.ReadString()
 		case "value":
-			UnmarshalJSONOrigAnyValue(&orig.Value, iter)
+			UnmarshalJSONAnyValue(&orig.Value, iter)
 		default:
 			iter.Skip()
 		}
 	}
 }
 
-func SizeProtoOrigKeyValue(orig *otlpcommon.KeyValue) int {
+func SizeProtoKeyValue(orig *otlpcommon.KeyValue) int {
 	var n int
 	var l int
 	_ = l
@@ -98,12 +98,12 @@ func SizeProtoOrigKeyValue(orig *otlpcommon.KeyValue) int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	l = SizeProtoOrigAnyValue(&orig.Value)
+	l = SizeProtoAnyValue(&orig.Value)
 	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
-func MarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) int {
+func MarshalProtoKeyValue(orig *otlpcommon.KeyValue, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -116,7 +116,7 @@ func MarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) int {
 		buf[pos] = 0xa
 	}
 
-	l = MarshalProtoOrigAnyValue(&orig.Value, buf[:pos])
+	l = MarshalProtoAnyValue(&orig.Value, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
@@ -125,7 +125,7 @@ func MarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) error {
+func UnmarshalProtoKeyValue(orig *otlpcommon.KeyValue, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -163,7 +163,7 @@ func UnmarshalProtoOrigKeyValue(orig *otlpcommon.KeyValue, buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigAnyValue(&orig.Value, buf[startPos:pos])
+			err = UnmarshalProtoAnyValue(&orig.Value, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

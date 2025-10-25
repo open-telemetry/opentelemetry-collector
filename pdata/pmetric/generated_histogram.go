@@ -32,7 +32,7 @@ func newHistogram(orig *otlpmetrics.Histogram, state *internal.State) Histogram 
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogram() Histogram {
-	return newHistogram(internal.NewOrigHistogram(), internal.NewState())
+	return newHistogram(internal.NewHistogram(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +44,7 @@ func (ms Histogram) MoveTo(dest Histogram) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigHistogram(dest.orig, false)
+	internal.DeleteHistogram(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -67,5 +67,5 @@ func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
 	dest.state.AssertMutable()
-	internal.CopyOrigHistogram(dest.orig, ms.orig)
+	internal.CopyHistogram(dest.orig, ms.orig)
 }

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigValueType(t *testing.T) {
+func TestCopyValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigValueType(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigValueType()
-				CopyOrigValueType(dest, src)
+				dest := NewValueType()
+				CopyValueType(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigValueType(dest, dest)
+				CopyValueType(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigValueTypeUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONValueTypeUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigValueType()
-	UnmarshalJSONOrigValueType(dest, iter)
+	dest := NewValueType()
+	UnmarshalJSONValueType(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigValueType(), dest)
+	assert.Equal(t, NewValueType(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
+func TestMarshalAndUnmarshalJSONValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigValueType(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigValueType(src, stream)
+				MarshalJSONValueType(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigValueType()
-				UnmarshalJSONOrigValueType(dest, iter)
+				dest := NewValueType()
+				UnmarshalJSONValueType(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigValueType(dest, true)
+				DeleteValueType(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigValueTypeFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoValueTypeFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesValueType() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigValueType()
-			require.Error(t, UnmarshalProtoOrigValueType(dest, buf))
+			dest := NewValueType()
+			require.Error(t, UnmarshalProtoValueType(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigValueTypeUnknown(t *testing.T) {
-	dest := NewOrigValueType()
+func TestMarshalAndUnmarshalProtoValueTypeUnknown(t *testing.T) {
+	dest := NewValueType()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigValueType(), dest)
+	require.NoError(t, UnmarshalProtoValueType(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewValueType(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
+func TestMarshalAndUnmarshalProtoValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigValueType(src))
-				gotSize := MarshalProtoOrigValueType(src, buf)
+				buf := make([]byte, SizeProtoValueType(src))
+				gotSize := MarshalProtoValueType(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigValueType()
-				require.NoError(t, UnmarshalProtoOrigValueType(dest, buf))
+				dest := NewValueType()
+				require.NoError(t, UnmarshalProtoValueType(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigValueType(dest, true)
+				DeleteValueType(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigValueType(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 	for name, src := range genTestEncodingValuesValueType() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigValueType(src))
-			gotSize := MarshalProtoOrigValueType(src, buf)
+			buf := make([]byte, SizeProtoValueType(src))
+			gotSize := MarshalProtoValueType(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.ValueType{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigValueType()
-			require.NoError(t, UnmarshalProtoOrigValueType(dest, goBuf))
+			dest := NewValueType()
+			require.NoError(t, UnmarshalProtoValueType(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,7 +151,7 @@ func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
 
 func genTestEncodingValuesValueType() map[string]*otlpprofiles.ValueType {
 	return map[string]*otlpprofiles.ValueType{
-		"empty":                       NewOrigValueType(),
+		"empty":                       NewValueType(),
 		"TypeStrindex/test":           {TypeStrindex: int32(13)},
 		"UnitStrindex/test":           {UnitStrindex: int32(13)},
 		"AggregationTemporality/test": {AggregationTemporality: otlpprofiles.AggregationTemporality(13)},

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigMapping(t *testing.T) {
+func TestCopyMapping(t *testing.T) {
 	for name, src := range genTestEncodingValuesMapping() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigMapping(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigMapping()
-				CopyOrigMapping(dest, src)
+				dest := NewMapping()
+				CopyMapping(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigMapping(dest, dest)
+				CopyMapping(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigMappingUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONMappingUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigMapping()
-	UnmarshalJSONOrigMapping(dest, iter)
+	dest := NewMapping()
+	UnmarshalJSONMapping(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigMapping(), dest)
+	assert.Equal(t, NewMapping(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigMapping(t *testing.T) {
+func TestMarshalAndUnmarshalJSONMapping(t *testing.T) {
 	for name, src := range genTestEncodingValuesMapping() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigMapping(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigMapping(src, stream)
+				MarshalJSONMapping(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigMapping()
-				UnmarshalJSONOrigMapping(dest, iter)
+				dest := NewMapping()
+				UnmarshalJSONMapping(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigMapping(dest, true)
+				DeleteMapping(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigMappingFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoMappingFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesMapping() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigMapping()
-			require.Error(t, UnmarshalProtoOrigMapping(dest, buf))
+			dest := NewMapping()
+			require.Error(t, UnmarshalProtoMapping(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigMappingUnknown(t *testing.T) {
-	dest := NewOrigMapping()
+func TestMarshalAndUnmarshalProtoMappingUnknown(t *testing.T) {
+	dest := NewMapping()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigMapping(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigMapping(), dest)
+	require.NoError(t, UnmarshalProtoMapping(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewMapping(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
+func TestMarshalAndUnmarshalProtoMapping(t *testing.T) {
 	for name, src := range genTestEncodingValuesMapping() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigMapping(src))
-				gotSize := MarshalProtoOrigMapping(src, buf)
+				buf := make([]byte, SizeProtoMapping(src))
+				gotSize := MarshalProtoMapping(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigMapping()
-				require.NoError(t, UnmarshalProtoOrigMapping(dest, buf))
+				dest := NewMapping()
+				require.NoError(t, UnmarshalProtoMapping(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigMapping(dest, true)
+				DeleteMapping(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigMapping(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
 	for name, src := range genTestEncodingValuesMapping() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigMapping(src))
-			gotSize := MarshalProtoOrigMapping(src, buf)
+			buf := make([]byte, SizeProtoMapping(src))
+			gotSize := MarshalProtoMapping(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpprofiles.Mapping{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigMapping()
-			require.NoError(t, UnmarshalProtoOrigMapping(dest, goBuf))
+			dest := NewMapping()
+			require.NoError(t, UnmarshalProtoMapping(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -155,7 +155,7 @@ func genTestFailingUnmarshalProtoValuesMapping() map[string][]byte {
 
 func genTestEncodingValuesMapping() map[string]*otlpprofiles.Mapping {
 	return map[string]*otlpprofiles.Mapping{
-		"empty":                             NewOrigMapping(),
+		"empty":                             NewMapping(),
 		"MemoryStart/test":                  {MemoryStart: uint64(13)},
 		"MemoryLimit/test":                  {MemoryLimit: uint64(13)},
 		"FileOffset/test":                   {FileOffset: uint64(13)},

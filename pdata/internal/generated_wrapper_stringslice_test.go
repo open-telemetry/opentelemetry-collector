@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCopyOrigStringSlice(t *testing.T) {
+func TestCopyStringSlice(t *testing.T) {
 	src := []string{}
 	dest := []string{}
 	// Copy empty
-	dest = CopyOrigStringSlice(dest, src)
+	dest = CopyStringSlice(dest, src)
 	assert.Equal(t, src, dest)
-	src = GenerateOrigTestStringSlice()
-	dest = CopyOrigStringSlice(dest, src)
+	src = GenTestStringSlice()
+	dest = CopyStringSlice(dest, src)
 	assert.Equal(t, src, dest)
 }

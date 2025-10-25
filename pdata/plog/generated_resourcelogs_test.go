@@ -26,8 +26,8 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceLogs(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
-	assert.Panics(t, func() { newResourceLogs(internal.NewOrigResourceLogs(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(internal.NewResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { newResourceLogs(internal.NewResourceLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewOrigResourceLogs(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(internal.NewResourceLogs(), sharedState)) })
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	ms.orig.Resource = *internal.GenTestOrigResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
+	ms.orig.Resource = *internal.GenTestResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
-	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
+	ms.orig.ScopeLogs = internal.GenTestScopeLogsSlice()
 	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
 }
 
@@ -68,6 +68,6 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceLogs() ResourceLogs {
-	ms := newResourceLogs(internal.GenTestOrigResourceLogs(), internal.NewState())
+	ms := newResourceLogs(internal.GenTestResourceLogs(), internal.NewState())
 	return ms
 }

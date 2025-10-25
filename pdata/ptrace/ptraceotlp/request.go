@@ -33,22 +33,22 @@ func NewExportRequest() ExportRequest {
 // any changes to the provided Traces struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
 	return ExportRequest{
-		orig:  internal.GetOrigTraces(internal.Traces(td)),
-		state: internal.GetTracesState(internal.Traces(td)),
+		orig:  internal.GetTracesOrig(internal.TracesWrapper(td)),
+		state: internal.GetTracesState(internal.TracesWrapper(td)),
 	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	size := internal.SizeProtoOrigExportTraceServiceRequest(ms.orig)
+	size := internal.SizeProtoExportTraceServiceRequest(ms.orig)
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportTraceServiceRequest(ms.orig, buf)
+	_ = internal.MarshalProtoExportTraceServiceRequest(ms.orig, buf)
 	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	err := internal.UnmarshalProtoOrigExportTraceServiceRequest(ms.orig, data)
+	err := internal.UnmarshalProtoExportTraceServiceRequest(ms.orig, data)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportTraceServiceRequest(ms.orig, dest)
+	internal.MarshalJSONExportTraceServiceRequest(ms.orig, dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -71,10 +71,10 @@ func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	internal.UnmarshalJSONOrigExportTraceServiceRequest(ms.orig, iter)
+	internal.UnmarshalJSONExportTraceServiceRequest(ms.orig, iter)
 	return iter.Error()
 }
 
 func (ms ExportRequest) Traces() ptrace.Traces {
-	return ptrace.Traces(internal.NewTraces(ms.orig, ms.state))
+	return ptrace.Traces(internal.NewTracesWrapper(ms.orig, ms.state))
 }

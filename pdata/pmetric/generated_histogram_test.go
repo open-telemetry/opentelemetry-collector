@@ -25,8 +25,8 @@ func TestHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogram(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
-	assert.Panics(t, func() { newHistogram(internal.NewOrigHistogram(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewHistogram(), sharedState)) })
+	assert.Panics(t, func() { newHistogram(internal.NewHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -39,13 +39,13 @@ func TestHistogram_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewHistogram(), sharedState)) })
 }
 
 func TestHistogram_DataPoints(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
+	ms.orig.DataPoints = internal.GenTestHistogramDataPointSlice()
 	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
 
@@ -58,6 +58,6 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestHistogram() Histogram {
-	ms := newHistogram(internal.GenTestOrigHistogram(), internal.NewState())
+	ms := newHistogram(internal.GenTestHistogram(), internal.NewState())
 	return ms
 }
