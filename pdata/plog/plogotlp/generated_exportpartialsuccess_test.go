@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -50,7 +49,7 @@ func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState).SetRejectedLogRecords(int64(13))
+		newExportPartialSuccess(internal.NewExportLogsPartialSuccess(), sharedState).SetRejectedLogRecords(int64(13))
 	})
 }
 
@@ -62,11 +61,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(internal.NewExportLogsPartialSuccess(), sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := newExportPartialSuccess(internal.GenTestExportLogsPartialSuccess(), internal.NewState())
-	return ms
+	return newExportPartialSuccess(internal.GenTestExportLogsPartialSuccess(), internal.NewState())
 }

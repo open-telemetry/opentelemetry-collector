@@ -8,7 +8,6 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewScopeSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeSpans struct {
-	orig  *otlptrace.ScopeSpans
+	orig  *internal.ScopeSpans
 	state *internal.State
 }
 
-func newScopeSpans(orig *otlptrace.ScopeSpans, state *internal.State) ScopeSpans {
+func newScopeSpans(orig *internal.ScopeSpans, state *internal.State) ScopeSpans {
 	return ScopeSpans{orig: orig, state: state}
 }
 

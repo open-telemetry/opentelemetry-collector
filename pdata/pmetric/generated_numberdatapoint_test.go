@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -80,7 +79,7 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetDoubleValue(float64(3.1415926))
+		newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetDoubleValue(float64(3.1415926))
 	})
 }
 
@@ -92,7 +91,7 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, sharedState).SetIntValue(int64(13)) })
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetIntValue(int64(13)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -111,6 +110,5 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestNumberDataPoint() NumberDataPoint {
-	ms := newNumberDataPoint(internal.GenTestNumberDataPoint(), internal.NewState())
-	return ms
+	return newNumberDataPoint(internal.GenTestNumberDataPoint(), internal.NewState())
 }

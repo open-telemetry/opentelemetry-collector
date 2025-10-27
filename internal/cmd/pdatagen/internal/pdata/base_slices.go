@@ -4,6 +4,7 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
 )
 
@@ -22,6 +23,10 @@ type messageSlice struct {
 	packageName     string
 	elementNullable bool
 	element         *messageStruct
+}
+
+func (ss *messageSlice) getProtoMessage() *proto.Message {
+	return nil
 }
 
 func (ss *messageSlice) getName() string {
@@ -44,24 +49,19 @@ func (ss *messageSlice) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(template.Execute(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
-func (ss *messageSlice) generateInternalTests(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(sliceInternalTestTemplate, ss.templateFields(packageInfo)))
-}
-
 func (ss *messageSlice) templateFields(packageInfo *PackageInfo) map[string]any {
 	hasWrapper := usedByOtherDataTypes(ss.packageName)
 	return map[string]any{
-		"hasWrapper":            usedByOtherDataTypes(ss.packageName),
-		"structName":            ss.structName,
-		"elementName":           ss.element.getName(),
-		"elementOriginFullName": ss.element.originFullName,
-		"elementOriginName":     ss.getElementOriginName(),
-		"elementNullable":       ss.elementNullable,
-		"origAccessor":          origAccessor(hasWrapper),
-		"stateAccessor":         stateAccessor(hasWrapper),
-		"packageName":           packageInfo.name,
-		"imports":               packageInfo.imports,
-		"testImports":           packageInfo.testImports,
+		"hasWrapper":        usedByOtherDataTypes(ss.packageName),
+		"structName":        ss.structName,
+		"elementName":       ss.element.getName(),
+		"elementOriginName": ss.getElementOriginName(),
+		"elementNullable":   ss.elementNullable,
+		"origAccessor":      origAccessor(hasWrapper),
+		"stateAccessor":     stateAccessor(hasWrapper),
+		"packageName":       packageInfo.name,
+		"imports":           packageInfo.imports,
+		"testImports":       packageInfo.testImports,
 	}
 }
 
@@ -77,7 +77,7 @@ func (ss *messageSlice) getHasWrapper() bool {
 	return usedByOtherDataTypes(ss.packageName)
 }
 
-func (ss *messageSlice) getHasOnlyOrig() bool {
+func (ss *messageSlice) getHasOnlyInternal() bool {
 	return false
 }
 

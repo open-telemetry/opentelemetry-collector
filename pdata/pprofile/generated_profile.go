@@ -8,8 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +19,11 @@ import (
 // Must use NewProfile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Profile struct {
-	orig  *otlpprofiles.Profile
+	orig  *internal.Profile
 	state *internal.State
 }
 
-func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
+func newProfile(orig *internal.Profile, state *internal.State) Profile {
 	return Profile{orig: orig, state: state}
 }
 
@@ -111,7 +109,7 @@ func (ms Profile) ProfileID() ProfileID {
 // SetProfileID replaces the profileid associated with this Profile.
 func (ms Profile) SetProfileID(v ProfileID) {
 	ms.state.AssertMutable()
-	ms.orig.ProfileId = data.ProfileID(v)
+	ms.orig.ProfileId = internal.ProfileID(v)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Profile.

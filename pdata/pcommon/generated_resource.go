@@ -8,7 +8,6 @@ package pcommon
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
 // Resource is a message representing the resource information.
@@ -20,7 +19,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Resource internal.ResourceWrapper
 
-func newResource(orig *otlpresource.Resource, state *internal.State) Resource {
+func newResource(orig *internal.Resource, state *internal.State) Resource {
 	return Resource(internal.NewResourceWrapper(orig, state))
 }
 
@@ -67,7 +66,7 @@ func (ms Resource) CopyTo(dest Resource) {
 	internal.CopyResource(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Resource) getOrig() *otlpresource.Resource {
+func (ms Resource) getOrig() *internal.Resource {
 	return internal.GetResourceOrig(internal.ResourceWrapper(ms))
 }
 

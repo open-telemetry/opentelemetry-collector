@@ -8,7 +8,6 @@ package pcommon
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 // InstrumentationScope is a message representing the instrumentation scope information.
@@ -20,7 +19,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationScope internal.InstrumentationScopeWrapper
 
-func newInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *internal.State) InstrumentationScope {
+func newInstrumentationScope(orig *internal.InstrumentationScope, state *internal.State) InstrumentationScope {
 	return InstrumentationScope(internal.NewInstrumentationScopeWrapper(orig, state))
 }
 
@@ -89,7 +88,7 @@ func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	internal.CopyInstrumentationScope(dest.getOrig(), ms.getOrig())
 }
 
-func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
+func (ms InstrumentationScope) getOrig() *internal.InstrumentationScope {
 	return internal.GetInstrumentationScopeOrig(internal.InstrumentationScopeWrapper(ms))
 }
 
