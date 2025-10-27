@@ -29,7 +29,7 @@ var pprofileotlp = &Package{
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
 			`"google.golang.org/protobuf/proto"`,
-			`gootlpcollectorprofiles "go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development"`,
+			`gootlpcollectorprofiles "go.opentelemetry.io/proto/otlp/collector/profiles/v1development"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 		},

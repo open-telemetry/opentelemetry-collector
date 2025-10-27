@@ -29,7 +29,7 @@ var xpdataEntity = &Package{
 			`"testing"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
-			`gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"`,
+			`gootlpcommon "go.opentelemetry.io/proto/otlp/common/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,

@@ -30,7 +30,7 @@ var ptraceotlp = &Package{
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
 			`"google.golang.org/protobuf/proto"`,
-			`gootlpcollectortrace "go.opentelemetry.io/proto/slim/otlp/collector/trace/v1"`,
+			`gootlpcollectortrace "go.opentelemetry.io/proto/otlp/collector/trace/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 		},
