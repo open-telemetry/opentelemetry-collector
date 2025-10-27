@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -46,16 +44,16 @@ func TestSpan_CopyTo(t *testing.T) {
 
 func TestSpan_TraceID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(internal.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(internal.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestSpan_SpanID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(internal.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(internal.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
@@ -64,13 +62,13 @@ func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
 	ms.orig.TraceState = *internal.GenTestTraceState()
-	assert.Equal(t, pcommon.TraceState(internal.NewTraceStateWrapper(internal.GenTestTraceState(), ms.state)), ms.TraceState())
+	assert.Equal(t, pcommon.TraceState(internal.GenTestTraceStateWrapper()), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.ParentSpanID())
-	testValParentSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(internal.SpanID([8]byte{})), ms.ParentSpanID())
+	testValParentSpanID := pcommon.SpanID(internal.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetParentSpanID(testValParentSpanID)
 	assert.Equal(t, testValParentSpanID, ms.ParentSpanID())
 }
@@ -82,7 +80,7 @@ func TestSpan_Flags(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.Flags())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetFlags(uint32(13)) })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).SetFlags(uint32(13)) })
 }
 
 func TestSpan_Name(t *testing.T) {
@@ -92,13 +90,13 @@ func TestSpan_Name(t *testing.T) {
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetName("test_name") })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).SetName("test_name") })
 }
 
 func TestSpan_Kind(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, SpanKind(otlptrace.Span_SpanKind(0)), ms.Kind())
-	testValKind := SpanKind(otlptrace.Span_SpanKind(3))
+	assert.Equal(t, SpanKind(internal.SpanKind_SPAN_KIND_UNSPECIFIED), ms.Kind())
+	testValKind := SpanKind(internal.SpanKind_SPAN_KIND_CLIENT)
 	ms.SetKind(testValKind)
 	assert.Equal(t, testValKind, ms.Kind())
 }
@@ -133,13 +131,13 @@ func TestSpan_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func TestSpan_Events(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewSpanEventSlice(), ms.Events())
-	ms.orig.Events = internal.GenTestSpan_EventSlice()
+	ms.orig.Events = internal.GenTestSpanEventPtrSlice()
 	assert.Equal(t, generateTestSpanEventSlice(), ms.Events())
 }
 
@@ -150,13 +148,13 @@ func TestSpan_DroppedEventsCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedEventsCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedEventsCount(uint32(13)) })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).SetDroppedEventsCount(uint32(13)) })
 }
 
 func TestSpan_Links(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, NewSpanLinkSlice(), ms.Links())
-	ms.orig.Links = internal.GenTestSpan_LinkSlice()
+	ms.orig.Links = internal.GenTestSpanLinkPtrSlice()
 	assert.Equal(t, generateTestSpanLinkSlice(), ms.Links())
 }
 
@@ -167,7 +165,7 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedLinksCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, sharedState).SetDroppedLinksCount(uint32(13)) })
+	assert.Panics(t, func() { newSpan(internal.NewSpan(), sharedState).SetDroppedLinksCount(uint32(13)) })
 }
 
 func TestSpan_Status(t *testing.T) {
@@ -178,6 +176,5 @@ func TestSpan_Status(t *testing.T) {
 }
 
 func generateTestSpan() Span {
-	ms := newSpan(internal.GenTestSpan(), internal.NewState())
-	return ms
+	return newSpan(internal.GenTestSpan(), internal.NewState())
 }

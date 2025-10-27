@@ -24,12 +24,8 @@ func NewFloat64SliceWrapper(orig *[]float64, state *State) Float64SliceWrapper {
 }
 
 func GenTestFloat64SliceWrapper() Float64SliceWrapper {
-	orig := GenTestFloat64Slice()
+	orig := []float64{1.1, 2.2, 3.3}
 	return NewFloat64SliceWrapper(&orig, NewState())
-}
-
-func CopyFloat64Slice(dst, src []float64) []float64 {
-	return append(dst[:0], src...)
 }
 
 func GenTestFloat64Slice() []float64 {

@@ -8,7 +8,6 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -21,7 +20,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Traces internal.TracesWrapper
 
-func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, state *internal.State) Traces {
+func newTraces(orig *internal.ExportTraceServiceRequest, state *internal.State) Traces {
 	return Traces(internal.NewTracesWrapper(orig, state))
 }
 
@@ -57,7 +56,7 @@ func (ms Traces) CopyTo(dest Traces) {
 	internal.CopyExportTraceServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
+func (ms Traces) getOrig() *internal.ExportTraceServiceRequest {
 	return internal.GetTracesOrig(internal.TracesWrapper(ms))
 }
 

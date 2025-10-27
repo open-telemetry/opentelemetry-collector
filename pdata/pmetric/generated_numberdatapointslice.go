@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // NumberDataPointSlice logically represents a slice of NumberDataPoint.
@@ -22,18 +21,18 @@ import (
 // Must use NewNumberDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type NumberDataPointSlice struct {
-	orig  *[]*otlpmetrics.NumberDataPoint
+	orig  *[]*internal.NumberDataPoint
 	state *internal.State
 }
 
-func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint, state *internal.State) NumberDataPointSlice {
+func newNumberDataPointSlice(orig *[]*internal.NumberDataPoint, state *internal.State) NumberDataPointSlice {
 	return NumberDataPointSlice{orig: orig, state: state}
 }
 
 // NewNumberDataPointSlice creates a NumberDataPointSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewNumberDataPointSlice() NumberDataPointSlice {
-	orig := []*otlpmetrics.NumberDataPoint(nil)
+	orig := []*internal.NumberDataPoint(nil)
 	return newNumberDataPointSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.orig), newCap)
+	newOrig := make([]*internal.NumberDataPoint, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyNumberDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyNumberDataPointPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the

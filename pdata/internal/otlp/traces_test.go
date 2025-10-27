@@ -8,19 +8,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestDeprecatedScopeSpans(t *testing.T) {
-	ss := new(otlptrace.ScopeSpans)
-	rss := []*otlptrace.ResourceSpans{
+	ss := new(internal.ScopeSpans)
+	rss := []*internal.ResourceSpans{
 		{
-			ScopeSpans:           []*otlptrace.ScopeSpans{ss},
-			DeprecatedScopeSpans: []*otlptrace.ScopeSpans{ss},
+			ScopeSpans:           []*internal.ScopeSpans{ss},
+			DeprecatedScopeSpans: []*internal.ScopeSpans{ss},
 		},
 		{
-			ScopeSpans:           []*otlptrace.ScopeSpans{},
-			DeprecatedScopeSpans: []*otlptrace.ScopeSpans{ss},
+			ScopeSpans:           []*internal.ScopeSpans{},
+			DeprecatedScopeSpans: []*internal.ScopeSpans{ss},
 		},
 	}
 

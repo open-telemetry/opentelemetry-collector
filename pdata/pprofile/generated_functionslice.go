@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // FunctionSlice logically represents a slice of Function.
@@ -22,18 +21,18 @@ import (
 // Must use NewFunctionSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type FunctionSlice struct {
-	orig  *[]*otlpprofiles.Function
+	orig  *[]*internal.Function
 	state *internal.State
 }
 
-func newFunctionSlice(orig *[]*otlpprofiles.Function, state *internal.State) FunctionSlice {
+func newFunctionSlice(orig *[]*internal.Function, state *internal.State) FunctionSlice {
 	return FunctionSlice{orig: orig, state: state}
 }
 
 // NewFunctionSlice creates a FunctionSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewFunctionSlice() FunctionSlice {
-	orig := []*otlpprofiles.Function(nil)
+	orig := []*internal.Function(nil)
 	return newFunctionSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Function, len(*es.orig), newCap)
+	newOrig := make([]*internal.Function, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyFunctionSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyFunctionPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Function elements within FunctionSlice given the

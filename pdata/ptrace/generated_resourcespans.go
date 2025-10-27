@@ -8,7 +8,6 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
-	orig  *otlptrace.ResourceSpans
+	orig  *internal.ResourceSpans
 	state *internal.State
 }
 
-func newResourceSpans(orig *otlptrace.ResourceSpans, state *internal.State) ResourceSpans {
+func newResourceSpans(orig *internal.ResourceSpans, state *internal.State) ResourceSpans {
 	return ResourceSpans{orig: orig, state: state}
 }
 

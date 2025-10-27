@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
 func TestScopeLogsSlice(t *testing.T) {
 	es := NewScopeLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, internal.NewState())
+	es = newScopeLogsSlice(&[]*internal.ScopeLogs{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeLogs()
@@ -36,7 +35,7 @@ func TestScopeLogsSlice(t *testing.T) {
 func TestScopeLogsSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newScopeLogsSlice(&[]*otlplogs.ScopeLogs{}, sharedState)
+	es := newScopeLogsSlice(&[]*internal.ScopeLogs{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestScopeLogsSlice_Sort(t *testing.T) {
 
 func generateTestScopeLogsSlice() ScopeLogsSlice {
 	ms := NewScopeLogsSlice()
-	*ms.orig = internal.GenTestScopeLogsSlice()
+	*ms.orig = internal.GenTestScopeLogsPtrSlice()
 	return ms
 }

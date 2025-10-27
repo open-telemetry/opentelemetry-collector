@@ -36,13 +36,13 @@ func NewInt64Slice() Int64Slice {
 
 // AsRaw returns a copy of the []int64 slice.
 func (ms Int64Slice) AsRaw() []int64 {
-	return internal.CopyInt64Slice(nil, *ms.getOrig())
+	return copyInt64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []int64 into the slice Int64Slice.
 func (ms Int64Slice) FromRaw(val []int64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyInt64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = copyInt64Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []int64 slice value.
@@ -155,10 +155,14 @@ func (ms Int64Slice) CopyTo(dest Int64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyInt64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = copyInt64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another Int64Slice
 func (ms Int64Slice) Equal(val Int64Slice) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
+}
+
+func copyInt64Slice(dst, src []int64) []int64 {
+	return append(dst[:0], src...)
 }
