@@ -18,31 +18,31 @@ import (
 //
 // Must use NewStringSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type StringSlice internal.StringSlice
+type StringSlice internal.StringSliceWrapper
 
 func (ms StringSlice) getOrig() *[]string {
-	return internal.GetOrigStringSlice(internal.StringSlice(ms))
+	return internal.GetStringSliceOrig(internal.StringSliceWrapper(ms))
 }
 
 func (ms StringSlice) getState() *internal.State {
-	return internal.GetStringSliceState(internal.StringSlice(ms))
+	return internal.GetStringSliceState(internal.StringSliceWrapper(ms))
 }
 
 // NewStringSlice creates a new empty StringSlice.
 func NewStringSlice() StringSlice {
 	orig := []string(nil)
-	return StringSlice(internal.NewStringSlice(&orig, internal.NewState()))
+	return StringSlice(internal.NewStringSliceWrapper(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []string slice.
 func (ms StringSlice) AsRaw() []string {
-	return internal.CopyOrigStringSlice(nil, *ms.getOrig())
+	return internal.CopyStringSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []string into the slice StringSlice.
 func (ms StringSlice) FromRaw(val []string) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyOrigStringSlice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyStringSlice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []string slice value.
@@ -155,7 +155,7 @@ func (ms StringSlice) CopyTo(dest StringSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrigStringSlice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyStringSlice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another StringSlice

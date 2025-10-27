@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
+func NewExponentialHistogram() *otlpmetrics.ExponentialHistogram {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.ExponentialHistogram{}
 	}
 	return protoPoolExponentialHistogram.Get().(*otlpmetrics.ExponentialHistogram)
 }
 
-func DeleteOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, nullable bool) {
+func DeleteExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func DeleteOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, null
 	}
 
 	for i := range orig.DataPoints {
-		DeleteOrigExponentialHistogramDataPoint(orig.DataPoints[i], true)
+		DeleteExponentialHistogramDataPoint(orig.DataPoints[i], true)
 	}
 
 	orig.Reset()
@@ -50,32 +50,32 @@ func DeleteOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, null
 	}
 }
 
-func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
+func CopyExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.DataPoints = CopyOrigExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopyExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-func GenTestOrigExponentialHistogram() *otlpmetrics.ExponentialHistogram {
-	orig := NewOrigExponentialHistogram()
-	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
+func GenTestExponentialHistogram() *otlpmetrics.ExponentialHistogram {
+	orig := NewExponentialHistogram()
+	orig.DataPoints = GenTestExponentialHistogramDataPointSlice()
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
 		dest.WriteArrayStart()
-		MarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[0], dest)
+		MarshalJSONExponentialHistogramDataPoint(orig.DataPoints[0], dest)
 		for i := 1; i < len(orig.DataPoints); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[i], dest)
+			MarshalJSONExponentialHistogramDataPoint(orig.DataPoints[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -87,14 +87,14 @@ func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram,
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigExponentialHistogram unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
+// UnmarshalJSONExponentialHistogram unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
-				UnmarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
+				orig.DataPoints = append(orig.DataPoints, NewExponentialHistogramDataPoint())
+				UnmarshalJSONExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], iter)
 			}
 
 		case "aggregationTemporality", "aggregation_temporality":
@@ -105,12 +105,12 @@ func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogra
 	}
 }
 
-func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {
+func SizeProtoExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.DataPoints {
-		l = SizeProtoOrigExponentialHistogramDataPoint(orig.DataPoints[i])
+		l = SizeProtoExponentialHistogramDataPoint(orig.DataPoints[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.AggregationTemporality != 0 {
@@ -119,12 +119,12 @@ func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) i
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) int {
+func MarshalProtoExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.DataPoints) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigExponentialHistogramDataPoint(orig.DataPoints[i], buf[:pos])
+		l = MarshalProtoExponentialHistogramDataPoint(orig.DataPoints[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -138,7 +138,7 @@ func MarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) error {
+func UnmarshalProtoExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -163,8 +163,8 @@ func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogr
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewOrigExponentialHistogramDataPoint())
-			err = UnmarshalProtoOrigExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
+			orig.DataPoints = append(orig.DataPoints, NewExponentialHistogramDataPoint())
+			err = UnmarshalProtoExponentialHistogramDataPoint(orig.DataPoints[len(orig.DataPoints)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

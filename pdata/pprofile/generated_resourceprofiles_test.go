@@ -26,8 +26,8 @@ func TestResourceProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResourceProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState)) })
-	assert.Panics(t, func() { newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(internal.NewResourceProfiles(), sharedState)) })
+	assert.Panics(t, func() { newResourceProfiles(internal.NewResourceProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestResourceProfiles_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(internal.NewOrigResourceProfiles(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(internal.NewResourceProfiles(), sharedState)) })
 }
 
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
-	ms.orig.Resource = *internal.GenTestOrigResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResource(internal.GenTestOrigResource(), ms.state)), ms.Resource())
+	ms.orig.Resource = *internal.GenTestResource()
+	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
-	ms.orig.ScopeProfiles = internal.GenerateOrigTestScopeProfilesSlice()
+	ms.orig.ScopeProfiles = internal.GenTestScopeProfilesSlice()
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
@@ -70,6 +70,6 @@ func TestResourceProfiles_SchemaUrl(t *testing.T) {
 }
 
 func generateTestResourceProfiles() ResourceProfiles {
-	ms := newResourceProfiles(internal.GenTestOrigResourceProfiles(), internal.NewState())
+	ms := newResourceProfiles(internal.GenTestResourceProfiles(), internal.NewState())
 	return ms
 }

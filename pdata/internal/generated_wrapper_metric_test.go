@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigMetric(t *testing.T) {
+func TestCopyMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigMetric(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigMetric()
-				CopyOrigMetric(dest, src)
+				dest := NewMetric()
+				CopyMetric(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigMetric(dest, dest)
+				CopyMetric(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigMetricUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONMetricUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigMetric()
-	UnmarshalJSONOrigMetric(dest, iter)
+	dest := NewMetric()
+	UnmarshalJSONMetric(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigMetric(), dest)
+	assert.Equal(t, NewMetric(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
+func TestMarshalAndUnmarshalJSONMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigMetric(src, stream)
+				MarshalJSONMetric(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigMetric()
-				UnmarshalJSONOrigMetric(dest, iter)
+				dest := NewMetric()
+				UnmarshalJSONMetric(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigMetric(dest, true)
+				DeleteMetric(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigMetricFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoMetricFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesMetric() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigMetric()
-			require.Error(t, UnmarshalProtoOrigMetric(dest, buf))
+			dest := NewMetric()
+			require.Error(t, UnmarshalProtoMetric(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigMetricUnknown(t *testing.T) {
-	dest := NewOrigMetric()
+func TestMarshalAndUnmarshalProtoMetricUnknown(t *testing.T) {
+	dest := NewMetric()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigMetric(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigMetric(), dest)
+	require.NoError(t, UnmarshalProtoMetric(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewMetric(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
+func TestMarshalAndUnmarshalProtoMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigMetric(src))
-				gotSize := MarshalProtoOrigMetric(src, buf)
+				buf := make([]byte, SizeProtoMetric(src))
+				gotSize := MarshalProtoMetric(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigMetric()
-				require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
+				dest := NewMetric()
+				require.NoError(t, UnmarshalProtoMetric(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigMetric(dest, true)
+				DeleteMetric(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigMetric(src))
-			gotSize := MarshalProtoOrigMetric(src, buf)
+			buf := make([]byte, SizeProtoMetric(src))
+			gotSize := MarshalProtoMetric(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpmetrics.Metric{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigMetric()
-			require.NoError(t, UnmarshalProtoOrigMetric(dest, goBuf))
+			dest := NewMetric()
+			require.NoError(t, UnmarshalProtoMetric(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -169,20 +169,20 @@ func genTestFailingUnmarshalProtoValuesMetric() map[string][]byte {
 
 func genTestEncodingValuesMetric() map[string]*otlpmetrics.Metric {
 	return map[string]*otlpmetrics.Metric{
-		"empty":                        NewOrigMetric(),
+		"empty":                        NewMetric(),
 		"Name/test":                    {Name: "test_name"},
 		"Description/test":             {Description: "test_description"},
 		"Unit/test":                    {Unit: "test_unit"},
 		"Gauge/default":                {Data: &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}},
-		"Gauge/test":                   {Data: &otlpmetrics.Metric_Gauge{Gauge: GenTestOrigGauge()}},
+		"Gauge/test":                   {Data: &otlpmetrics.Metric_Gauge{Gauge: GenTestGauge()}},
 		"Sum/default":                  {Data: &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}},
-		"Sum/test":                     {Data: &otlpmetrics.Metric_Sum{Sum: GenTestOrigSum()}},
+		"Sum/test":                     {Data: &otlpmetrics.Metric_Sum{Sum: GenTestSum()}},
 		"Histogram/default":            {Data: &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}},
-		"Histogram/test":               {Data: &otlpmetrics.Metric_Histogram{Histogram: GenTestOrigHistogram()}},
+		"Histogram/test":               {Data: &otlpmetrics.Metric_Histogram{Histogram: GenTestHistogram()}},
 		"ExponentialHistogram/default": {Data: &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}},
-		"ExponentialHistogram/test":    {Data: &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: GenTestOrigExponentialHistogram()}},
+		"ExponentialHistogram/test":    {Data: &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: GenTestExponentialHistogram()}},
 		"Summary/default":              {Data: &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}},
-		"Summary/test":                 {Data: &otlpmetrics.Metric_Summary{Summary: GenTestOrigSummary()}},
-		"Metadata/default_and_test":    {Metadata: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"Summary/test":                 {Data: &otlpmetrics.Metric_Summary{Summary: GenTestSummary()}},
+		"Metadata/default_and_test":    {Metadata: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 	}
 }

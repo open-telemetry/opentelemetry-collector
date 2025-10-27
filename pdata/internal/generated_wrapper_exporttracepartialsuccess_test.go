@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigExportTracePartialSuccess(t *testing.T) {
+func TestCopyExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigExportTracePartialSuccess(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigExportTracePartialSuccess()
-				CopyOrigExportTracePartialSuccess(dest, src)
+				dest := NewExportTracePartialSuccess()
+				CopyExportTracePartialSuccess(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigExportTracePartialSuccess(dest, dest)
+				CopyExportTracePartialSuccess(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccessUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExportTracePartialSuccessUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigExportTracePartialSuccess()
-	UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
+	dest := NewExportTracePartialSuccess()
+	UnmarshalJSONExportTracePartialSuccess(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigExportTracePartialSuccess(), dest)
+	assert.Equal(t, NewExportTracePartialSuccess(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccess(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigExportTracePartialSuccess(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigExportTracePartialSuccess(src, stream)
+				MarshalJSONExportTracePartialSuccess(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigExportTracePartialSuccess()
-				UnmarshalJSONOrigExportTracePartialSuccess(dest, iter)
+				dest := NewExportTracePartialSuccess()
+				UnmarshalJSONExportTracePartialSuccess(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExportTracePartialSuccess(dest, true)
+				DeleteExportTracePartialSuccess(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccessFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExportTracePartialSuccessFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportTracePartialSuccess() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigExportTracePartialSuccess()
-			require.Error(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, buf))
+			dest := NewExportTracePartialSuccess()
+			require.Error(t, UnmarshalProtoExportTracePartialSuccess(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccessUnknown(t *testing.T) {
-	dest := NewOrigExportTracePartialSuccess()
+func TestMarshalAndUnmarshalProtoExportTracePartialSuccessUnknown(t *testing.T) {
+	dest := NewExportTracePartialSuccess()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigExportTracePartialSuccess(), dest)
+	require.NoError(t, UnmarshalProtoExportTracePartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewExportTracePartialSuccess(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigExportTracePartialSuccess(src))
-				gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
+				buf := make([]byte, SizeProtoExportTracePartialSuccess(src))
+				gotSize := MarshalProtoExportTracePartialSuccess(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigExportTracePartialSuccess()
-				require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, buf))
+				dest := NewExportTracePartialSuccess()
+				require.NoError(t, UnmarshalProtoExportTracePartialSuccess(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExportTracePartialSuccess(dest, true)
+				DeleteExportTracePartialSuccess(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigExportTracePartialSuccess(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufExportTracePartialSuccess(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportTracePartialSuccess() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExportTracePartialSuccess(src))
-			gotSize := MarshalProtoOrigExportTracePartialSuccess(src, buf)
+			buf := make([]byte, SizeProtoExportTracePartialSuccess(src))
+			gotSize := MarshalProtoExportTracePartialSuccess(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpcollectortrace.ExportTracePartialSuccess{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTracePartialSuccess(t *testing
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigExportTracePartialSuccess()
-			require.NoError(t, UnmarshalProtoOrigExportTracePartialSuccess(dest, goBuf))
+			dest := NewExportTracePartialSuccess()
+			require.NoError(t, UnmarshalProtoExportTracePartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -149,7 +149,7 @@ func genTestFailingUnmarshalProtoValuesExportTracePartialSuccess() map[string][]
 
 func genTestEncodingValuesExportTracePartialSuccess() map[string]*otlpcollectortrace.ExportTracePartialSuccess {
 	return map[string]*otlpcollectortrace.ExportTracePartialSuccess{
-		"empty":              NewOrigExportTracePartialSuccess(),
+		"empty":              NewExportTracePartialSuccess(),
 		"RejectedSpans/test": {RejectedSpans: int64(13)},
 		"ErrorMessage/test":  {ErrorMessage: "test_errormessage"},
 	}

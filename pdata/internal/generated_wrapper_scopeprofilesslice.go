@@ -10,7 +10,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlpprofiles.ScopeProfiles {
+func CopyScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlpprofiles.ScopeProfiles {
 	var newDest []*otlpprofiles.ScopeProfiles
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpprofiles.ScopeProfiles, len(src))
@@ -18,34 +18,34 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigScopeProfiles()
+			newDest[i] = NewScopeProfiles()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigScopeProfiles(dest[i], true)
+			DeleteScopeProfiles(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigScopeProfiles()
+			newDest[i] = NewScopeProfiles()
 		}
 	}
 	for i := range src {
-		CopyOrigScopeProfiles(newDest[i], src[i])
+		CopyScopeProfiles(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
+func GenTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
 	orig := make([]*otlpprofiles.ScopeProfiles, 5)
-	orig[0] = NewOrigScopeProfiles()
-	orig[1] = GenTestOrigScopeProfiles()
-	orig[2] = NewOrigScopeProfiles()
-	orig[3] = GenTestOrigScopeProfiles()
-	orig[4] = NewOrigScopeProfiles()
+	orig[0] = NewScopeProfiles()
+	orig[1] = GenTestScopeProfiles()
+	orig[2] = NewScopeProfiles()
+	orig[3] = GenTestScopeProfiles()
+	orig[4] = NewScopeProfiles()
 	return orig
 }

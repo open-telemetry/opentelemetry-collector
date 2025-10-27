@@ -15,21 +15,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-type Metrics struct {
+type MetricsWrapper struct {
 	orig  *otlpcollectormetrics.ExportMetricsServiceRequest
 	state *State
 }
 
-func GetOrigMetrics(ms Metrics) *otlpcollectormetrics.ExportMetricsServiceRequest {
+func GetMetricsOrig(ms MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
 	return ms.orig
 }
 
-func GetMetricsState(ms Metrics) *State {
+func GetMetricsState(ms MetricsWrapper) *State {
 	return ms.state
 }
 
-func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *State) Metrics {
-	return Metrics{orig: orig, state: state}
+func NewMetricsWrapper(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *State) MetricsWrapper {
+	return MetricsWrapper{orig: orig, state: state}
+}
+
+func GenTestMetricsWrapper() MetricsWrapper {
+	orig := GenTestExportMetricsServiceRequest()
+	return NewMetricsWrapper(orig, NewState())
 }
 
 var (
@@ -40,14 +45,14 @@ var (
 	}
 )
 
-func NewOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+func NewExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	}
 	return protoPoolExportMetricsServiceRequest.Get().(*otlpcollectormetrics.ExportMetricsServiceRequest)
 }
 
-func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, nullable bool) {
+func DeleteExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -58,7 +63,7 @@ func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetr
 	}
 
 	for i := range orig.ResourceMetrics {
-		DeleteOrigResourceMetrics(orig.ResourceMetrics[i], true)
+		DeleteResourceMetrics(orig.ResourceMetrics[i], true)
 	}
 
 	orig.Reset()
@@ -67,44 +72,44 @@ func DeleteOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetr
 	}
 }
 
-func CopyOrigExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
+func CopyExportMetricsServiceRequest(dest, src *otlpcollectormetrics.ExportMetricsServiceRequest) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.ResourceMetrics = CopyOrigResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
+	dest.ResourceMetrics = CopyResourceMetricsSlice(dest.ResourceMetrics, src.ResourceMetrics)
 }
 
-func GenTestOrigExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	orig := NewOrigExportMetricsServiceRequest()
-	orig.ResourceMetrics = GenerateOrigTestResourceMetricsSlice()
+func GenTestExportMetricsServiceRequest() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	orig := NewExportMetricsServiceRequest()
+	orig.ResourceMetrics = GenTestResourceMetricsSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.ResourceMetrics) > 0 {
 		dest.WriteObjectField("resourceMetrics")
 		dest.WriteArrayStart()
-		MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[0], dest)
+		MarshalJSONResourceMetrics(orig.ResourceMetrics[0], dest)
 		for i := 1; i < len(orig.ResourceMetrics); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[i], dest)
+			MarshalJSONResourceMetrics(orig.ResourceMetrics[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigMetrics unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
+// UnmarshalJSONMetrics unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
 			for iter.ReadArray() {
-				orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
-				UnmarshalJSONOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
+				orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
+				UnmarshalJSONResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], iter)
 			}
 
 		default:
@@ -113,23 +118,23 @@ func UnmarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Exp
 	}
 }
 
-func SizeProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
+func SizeProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.ResourceMetrics {
-		l = SizeProtoOrigResourceMetrics(orig.ResourceMetrics[i])
+		l = SizeProtoResourceMetrics(orig.ResourceMetrics[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) int {
+func MarshalProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.ResourceMetrics) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigResourceMetrics(orig.ResourceMetrics[i], buf[:pos])
+		l = MarshalProtoResourceMetrics(orig.ResourceMetrics[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -138,7 +143,7 @@ func MarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expo
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) error {
+func UnmarshalProtoExportMetricsServiceRequest(orig *otlpcollectormetrics.ExportMetricsServiceRequest, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -163,8 +168,8 @@ func UnmarshalProtoOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Ex
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewOrigResourceMetrics())
-			err = UnmarshalProtoOrigResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
+			orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
+			err = UnmarshalProtoResourceMetrics(orig.ResourceMetrics[len(orig.ResourceMetrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

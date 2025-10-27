@@ -33,7 +33,7 @@ func newStatus(orig *otlptrace.Status, state *internal.State) Status {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewStatus() Status {
-	return newStatus(internal.NewOrigStatus(), internal.NewState())
+	return newStatus(internal.NewStatus(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +45,7 @@ func (ms Status) MoveTo(dest Status) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigStatus(dest.orig, false)
+	internal.DeleteStatus(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -74,5 +74,5 @@ func (ms Status) SetCode(v StatusCode) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Status) CopyTo(dest Status) {
 	dest.state.AssertMutable()
-	internal.CopyOrigStatus(dest.orig, ms.orig)
+	internal.CopyStatus(dest.orig, ms.orig)
 }

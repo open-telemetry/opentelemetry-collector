@@ -30,7 +30,7 @@ func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, state *internal.State) Sc
 	return ScopeSpansSlice{orig: orig, state: state}
 }
 
-// NewScopeSpansSlice creates a ScopeSpansSlice with 0 elements.
+// NewScopeSpansSlice creates a ScopeSpansSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
@@ -99,7 +99,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeSpans.
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigScopeSpans())
+	*es.orig = append(*es.orig, internal.NewScopeSpans())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigScopeSpans((*es.orig)[i], true)
+			internal.DeleteScopeSpans((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigScopeSpansSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyScopeSpansSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the

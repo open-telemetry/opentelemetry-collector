@@ -9,7 +9,7 @@ import (
 )
 
 // MetricsToProto internal helper to convert Metrics to protobuf representation.
-func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
+func MetricsToProto(l MetricsWrapper) otlpmetrics.MetricsData {
 	return otlpmetrics.MetricsData{
 		ResourceMetrics: l.orig.ResourceMetrics,
 	}
@@ -17,8 +17,8 @@ func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
 
 // MetricsFromProto internal helper to convert protobuf representation to Metrics.
 // This function set exclusive state assuming that it's called only once per Metrics.
-func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
-	return NewMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
+func MetricsFromProto(orig otlpmetrics.MetricsData) MetricsWrapper {
+	return NewMetricsWrapper(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: orig.ResourceMetrics,
 	}, NewState())
 }

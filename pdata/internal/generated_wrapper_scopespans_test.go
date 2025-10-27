@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigScopeSpans(t *testing.T) {
+func TestCopyScopeSpans(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeSpans() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -30,26 +30,26 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigScopeSpans()
-				CopyOrigScopeSpans(dest, src)
+				dest := NewScopeSpans()
+				CopyScopeSpans(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigScopeSpans(dest, dest)
+				CopyScopeSpans(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeSpansUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigScopeSpans()
-	UnmarshalJSONOrigScopeSpans(dest, iter)
+	dest := NewScopeSpans()
+	UnmarshalJSONScopeSpans(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigScopeSpans(), dest)
+	assert.Equal(t, NewScopeSpans(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
+func TestMarshalAndUnmarshalJSONScopeSpans(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeSpans() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -61,39 +61,39 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigScopeSpans(src, stream)
+				MarshalJSONScopeSpans(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigScopeSpans()
-				UnmarshalJSONOrigScopeSpans(dest, iter)
+				dest := NewScopeSpans()
+				UnmarshalJSONScopeSpans(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeSpans(dest, true)
+				DeleteScopeSpans(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeSpansFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeSpansFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigScopeSpans()
-			require.Error(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+			dest := NewScopeSpans()
+			require.Error(t, UnmarshalProtoScopeSpans(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeSpansUnknown(t *testing.T) {
-	dest := NewOrigScopeSpans()
+func TestMarshalAndUnmarshalProtoScopeSpansUnknown(t *testing.T) {
+	dest := NewScopeSpans()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigScopeSpans(), dest)
+	require.NoError(t, UnmarshalProtoScopeSpans(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewScopeSpans(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
+func TestMarshalAndUnmarshalProtoScopeSpans(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeSpans() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -103,15 +103,15 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigScopeSpans(src))
-				gotSize := MarshalProtoOrigScopeSpans(src, buf)
+				buf := make([]byte, SizeProtoScopeSpans(src))
+				gotSize := MarshalProtoScopeSpans(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigScopeSpans()
-				require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+				dest := NewScopeSpans()
+				require.NoError(t, UnmarshalProtoScopeSpans(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigScopeSpans(dest, true)
+				DeleteScopeSpans(dest, true)
 			})
 		}
 	}
@@ -120,8 +120,8 @@ func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 	for name, src := range genTestEncodingValuesScopeSpans() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigScopeSpans(src))
-			gotSize := MarshalProtoOrigScopeSpans(src, buf)
+			buf := make([]byte, SizeProtoScopeSpans(src))
+			gotSize := MarshalProtoScopeSpans(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlptrace.ScopeSpans{}
@@ -130,8 +130,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigScopeSpans()
-			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, goBuf))
+			dest := NewScopeSpans()
+			require.NoError(t, UnmarshalProtoScopeSpans(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -151,9 +151,9 @@ func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
 
 func genTestEncodingValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
 	return map[string]*otlptrace.ScopeSpans{
-		"empty":                  NewOrigScopeSpans(),
-		"Scope/test":             {Scope: *GenTestOrigInstrumentationScope()},
-		"Spans/default_and_test": {Spans: []*otlptrace.Span{{}, GenTestOrigSpan()}},
+		"empty":                  NewScopeSpans(),
+		"Scope/test":             {Scope: *GenTestInstrumentationScope()},
+		"Spans/default_and_test": {Spans: []*otlptrace.Span{{}, GenTestSpan()}},
 		"SchemaUrl/test":         {SchemaUrl: "test_schemaurl"},
 	}
 }

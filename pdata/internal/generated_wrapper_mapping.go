@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigMapping() *otlpprofiles.Mapping {
+func NewMapping() *otlpprofiles.Mapping {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Mapping{}
 	}
 	return protoPoolMapping.Get().(*otlpprofiles.Mapping)
 }
 
-func DeleteOrigMapping(orig *otlpprofiles.Mapping, nullable bool) {
+func DeleteMapping(orig *otlpprofiles.Mapping, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigMapping(orig *otlpprofiles.Mapping, nullable bool) {
 	}
 }
 
-func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
+func CopyMapping(dest, src *otlpprofiles.Mapping) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -55,21 +55,21 @@ func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.MemoryLimit = src.MemoryLimit
 	dest.FileOffset = src.FileOffset
 	dest.FilenameStrindex = src.FilenameStrindex
-	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.AttributeIndices = CopyInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
-func GenTestOrigMapping() *otlpprofiles.Mapping {
-	orig := NewOrigMapping()
+func GenTestMapping() *otlpprofiles.Mapping {
+	orig := NewMapping()
 	orig.MemoryStart = uint64(13)
 	orig.MemoryLimit = uint64(13)
 	orig.FileOffset = uint64(13)
 	orig.FilenameStrindex = int32(13)
-	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.AttributeIndices = GenTestInt32Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.MemoryStart != uint64(0) {
 		dest.WriteObjectField("memoryStart")
@@ -100,8 +100,8 @@ func MarshalJSONOrigMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigMapping unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
+// UnmarshalJSONMapping unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "memoryStart", "memory_start":
@@ -123,7 +123,7 @@ func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigMapping(orig *otlpprofiles.Mapping) int {
+func SizeProtoMapping(orig *otlpprofiles.Mapping) int {
 	var n int
 	var l int
 	_ = l
@@ -149,7 +149,7 @@ func SizeProtoOrigMapping(orig *otlpprofiles.Mapping) int {
 	return n
 }
 
-func MarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) int {
+func MarshalProtoMapping(orig *otlpprofiles.Mapping, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -186,7 +186,7 @@ func MarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) error {
+func UnmarshalProtoMapping(orig *otlpprofiles.Mapping, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

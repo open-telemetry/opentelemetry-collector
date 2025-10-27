@@ -26,8 +26,8 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
-	assert.Panics(t, func() { newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(internal.NewScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { newScopeProfiles(internal.NewScopeProfiles(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeProfiles_CopyTo(t *testing.T) {
@@ -40,20 +40,20 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewOrigScopeProfiles(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(internal.NewScopeProfiles(), sharedState)) })
 }
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
-	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+	ms.orig.Scope = *internal.GenTestInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScopeWrapper(internal.GenTestInstrumentationScope(), ms.state)), ms.Scope())
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
+	ms.orig.Profiles = internal.GenTestProfileSlice()
 	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
@@ -68,6 +68,6 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	ms := newScopeProfiles(internal.GenTestOrigScopeProfiles(), internal.NewState())
+	ms := newScopeProfiles(internal.GenTestScopeProfiles(), internal.NewState())
 	return ms
 }

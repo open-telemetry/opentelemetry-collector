@@ -27,7 +27,7 @@ func TestScopeLogsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigScopeLogs()
+		(*es.orig)[i] = internal.GenTestScopeLogs()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestScopeLogsSlice_Sort(t *testing.T) {
 
 func generateTestScopeLogsSlice() ScopeLogsSlice {
 	ms := NewScopeLogsSlice()
-	*ms.orig = internal.GenerateOrigTestScopeLogsSlice()
+	*ms.orig = internal.GenTestScopeLogsSlice()
 	return ms
 }

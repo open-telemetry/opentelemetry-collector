@@ -14,27 +14,27 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-func TestCopyOrigEntityRefSlice(t *testing.T) {
+func TestCopyEntityRefSlice(t *testing.T) {
 	src := []*otlpcommon.EntityRef{}
 	dest := []*otlpcommon.EntityRef{}
 	// Test CopyTo empty
-	dest = CopyOrigEntityRefSlice(dest, src)
+	dest = CopyEntityRefSlice(dest, src)
 	assert.Equal(t, []*otlpcommon.EntityRef{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestEntityRefSlice()
-	dest = CopyOrigEntityRefSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestEntityRefSlice(), dest)
+	src = GenTestEntityRefSlice()
+	dest = CopyEntityRefSlice(dest, src)
+	assert.Equal(t, GenTestEntityRefSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigEntityRefSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestEntityRefSlice(), dest)
+	dest = CopyEntityRefSlice(dest, src)
+	assert.Equal(t, GenTestEntityRefSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigEntityRefSlice(dest, []*otlpcommon.EntityRef{})
+	dest = CopyEntityRefSlice(dest, []*otlpcommon.EntityRef{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigEntityRefSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestEntityRefSlice(), dest)
+	dest = CopyEntityRefSlice(dest, src)
+	assert.Equal(t, GenTestEntityRefSlice(), dest)
 }

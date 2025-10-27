@@ -27,7 +27,7 @@ func TestStackSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigStack()
+		(*es.orig)[i] = internal.GenTestStack()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestStackSlice_Sort(t *testing.T) {
 
 func generateTestStackSlice() StackSlice {
 	ms := NewStackSlice()
-	*ms.orig = internal.GenerateOrigTestStackSlice()
+	*ms.orig = internal.GenTestStackSlice()
 	return ms
 }

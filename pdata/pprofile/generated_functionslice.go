@@ -30,7 +30,7 @@ func newFunctionSlice(orig *[]*otlpprofiles.Function, state *internal.State) Fun
 	return FunctionSlice{orig: orig, state: state}
 }
 
-// NewFunctionSlice creates a FunctionSlice with 0 elements.
+// NewFunctionSlice creates a FunctionSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewFunctionSlice() FunctionSlice {
 	orig := []*otlpprofiles.Function(nil)
@@ -99,7 +99,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigFunction())
+	*es.orig = append(*es.orig, internal.NewFunction())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigFunction((*es.orig)[i], true)
+			internal.DeleteFunction((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigFunctionSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyFunctionSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Function elements within FunctionSlice given the

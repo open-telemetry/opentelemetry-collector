@@ -10,7 +10,7 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.ScopeSpans {
+func CopyScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.ScopeSpans {
 	var newDest []*otlptrace.ScopeSpans
 	if cap(dest) < len(src) {
 		newDest = make([]*otlptrace.ScopeSpans, len(src))
@@ -18,34 +18,34 @@ func CopyOrigScopeSpansSlice(dest, src []*otlptrace.ScopeSpans) []*otlptrace.Sco
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigScopeSpans()
+			newDest[i] = NewScopeSpans()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigScopeSpans(dest[i], true)
+			DeleteScopeSpans(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigScopeSpans()
+			newDest[i] = NewScopeSpans()
 		}
 	}
 	for i := range src {
-		CopyOrigScopeSpans(newDest[i], src[i])
+		CopyScopeSpans(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestScopeSpansSlice() []*otlptrace.ScopeSpans {
+func GenTestScopeSpansSlice() []*otlptrace.ScopeSpans {
 	orig := make([]*otlptrace.ScopeSpans, 5)
-	orig[0] = NewOrigScopeSpans()
-	orig[1] = GenTestOrigScopeSpans()
-	orig[2] = NewOrigScopeSpans()
-	orig[3] = GenTestOrigScopeSpans()
-	orig[4] = NewOrigScopeSpans()
+	orig[0] = NewScopeSpans()
+	orig[1] = GenTestScopeSpans()
+	orig[2] = NewScopeSpans()
+	orig[3] = GenTestScopeSpans()
+	orig[4] = NewScopeSpans()
 	return orig
 }

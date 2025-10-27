@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
+func TestCopyExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigExportMetricsServiceRequest(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigExportMetricsServiceRequest()
-				CopyOrigExportMetricsServiceRequest(dest, src)
+				dest := NewExportMetricsServiceRequest()
+				CopyExportMetricsServiceRequest(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigExportMetricsServiceRequest(dest, dest)
+				CopyExportMetricsServiceRequest(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequestUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExportMetricsServiceRequestUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigExportMetricsServiceRequest()
-	UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
+	dest := NewExportMetricsServiceRequest()
+	UnmarshalJSONExportMetricsServiceRequest(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
+	assert.Equal(t, NewExportMetricsServiceRequest(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
+func TestMarshalAndUnmarshalJSONExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceRequest(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigExportMetricsServiceRequest(src, stream)
+				MarshalJSONExportMetricsServiceRequest(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigExportMetricsServiceRequest()
-				UnmarshalJSONOrigExportMetricsServiceRequest(dest, iter)
+				dest := NewExportMetricsServiceRequest()
+				UnmarshalJSONExportMetricsServiceRequest(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExportMetricsServiceRequest(dest, true)
+				DeleteExportMetricsServiceRequest(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExportMetricsServiceRequestFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesExportMetricsServiceRequest() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigExportMetricsServiceRequest()
-			require.Error(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
+			dest := NewExportMetricsServiceRequest()
+			require.Error(t, UnmarshalProtoExportMetricsServiceRequest(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequestUnknown(t *testing.T) {
-	dest := NewOrigExportMetricsServiceRequest()
+func TestMarshalAndUnmarshalProtoExportMetricsServiceRequestUnknown(t *testing.T) {
+	dest := NewExportMetricsServiceRequest()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigExportMetricsServiceRequest(), dest)
+	require.NoError(t, UnmarshalProtoExportMetricsServiceRequest(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewExportMetricsServiceRequest(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
+func TestMarshalAndUnmarshalProtoExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
-				gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
+				buf := make([]byte, SizeProtoExportMetricsServiceRequest(src))
+				gotSize := MarshalProtoExportMetricsServiceRequest(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigExportMetricsServiceRequest()
-				require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, buf))
+				dest := NewExportMetricsServiceRequest()
+				require.NoError(t, UnmarshalProtoExportMetricsServiceRequest(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigExportMetricsServiceRequest(dest, true)
+				DeleteExportMetricsServiceRequest(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceRequest(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testing.T) {
 	for name, src := range genTestEncodingValuesExportMetricsServiceRequest() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigExportMetricsServiceRequest(src))
-			gotSize := MarshalProtoOrigExportMetricsServiceRequest(src, buf)
+			buf := make([]byte, SizeProtoExportMetricsServiceRequest(src))
+			gotSize := MarshalProtoExportMetricsServiceRequest(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlpcollectormetrics.ExportMetricsServiceRequest{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigExportMetricsServiceRequest()
-			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceRequest(dest, goBuf))
+			dest := NewExportMetricsServiceRequest()
+			require.NoError(t, UnmarshalProtoExportMetricsServiceRequest(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -148,7 +148,7 @@ func genTestFailingUnmarshalProtoValuesExportMetricsServiceRequest() map[string]
 
 func genTestEncodingValuesExportMetricsServiceRequest() map[string]*otlpcollectormetrics.ExportMetricsServiceRequest {
 	return map[string]*otlpcollectormetrics.ExportMetricsServiceRequest{
-		"empty":                            NewOrigExportMetricsServiceRequest(),
-		"ResourceMetrics/default_and_test": {ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}, GenTestOrigResourceMetrics()}},
+		"empty":                            NewExportMetricsServiceRequest(),
+		"ResourceMetrics/default_and_test": {ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}, GenTestResourceMetrics()}},
 	}
 }

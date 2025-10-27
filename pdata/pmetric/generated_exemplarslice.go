@@ -29,7 +29,7 @@ func newExemplarSlice(orig *[]otlpmetrics.Exemplar, state *internal.State) Exemp
 	return ExemplarSlice{orig: orig, state: state}
 }
 
-// NewExemplarSlice creates a ExemplarSlice with 0 elements.
+// NewExemplarSlice creates a ExemplarSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
@@ -127,7 +127,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigExemplar(&(*es.orig)[i], false)
+			internal.DeleteExemplar(&(*es.orig)[i], false)
 			continue
 		}
 		if newLen == i {
@@ -148,5 +148,5 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyExemplarSlice(*dest.orig, *es.orig)
 }

@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigArrayValue() *otlpcommon.ArrayValue {
+func NewArrayValue() *otlpcommon.ArrayValue {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.ArrayValue{}
 	}
 	return protoPoolArrayValue.Get().(*otlpcommon.ArrayValue)
 }
 
-func DeleteOrigArrayValue(orig *otlpcommon.ArrayValue, nullable bool) {
+func DeleteArrayValue(orig *otlpcommon.ArrayValue, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func DeleteOrigArrayValue(orig *otlpcommon.ArrayValue, nullable bool) {
 	}
 
 	for i := range orig.Values {
-		DeleteOrigAnyValue(&orig.Values[i], false)
+		DeleteAnyValue(&orig.Values[i], false)
 	}
 
 	orig.Reset()
@@ -50,44 +50,44 @@ func DeleteOrigArrayValue(orig *otlpcommon.ArrayValue, nullable bool) {
 	}
 }
 
-func CopyOrigArrayValue(dest, src *otlpcommon.ArrayValue) {
+func CopyArrayValue(dest, src *otlpcommon.ArrayValue) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.Values = CopyOrigAnyValueSlice(dest.Values, src.Values)
+	dest.Values = CopyAnyValueSlice(dest.Values, src.Values)
 }
 
-func GenTestOrigArrayValue() *otlpcommon.ArrayValue {
-	orig := NewOrigArrayValue()
-	orig.Values = GenerateOrigTestAnyValueSlice()
+func GenTestArrayValue() *otlpcommon.ArrayValue {
+	orig := NewArrayValue()
+	orig.Values = GenTestAnyValueSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigArrayValue(orig *otlpcommon.ArrayValue, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONArrayValue(orig *otlpcommon.ArrayValue, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Values) > 0 {
 		dest.WriteObjectField("values")
 		dest.WriteArrayStart()
-		MarshalJSONOrigAnyValue(&orig.Values[0], dest)
+		MarshalJSONAnyValue(&orig.Values[0], dest)
 		for i := 1; i < len(orig.Values); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigAnyValue(&orig.Values[i], dest)
+			MarshalJSONAnyValue(&orig.Values[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigArrayValue unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigArrayValue(orig *otlpcommon.ArrayValue, iter *json.Iterator) {
+// UnmarshalJSONArrayValue unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONArrayValue(orig *otlpcommon.ArrayValue, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "values":
 			for iter.ReadArray() {
 				orig.Values = append(orig.Values, otlpcommon.AnyValue{})
-				UnmarshalJSONOrigAnyValue(&orig.Values[len(orig.Values)-1], iter)
+				UnmarshalJSONAnyValue(&orig.Values[len(orig.Values)-1], iter)
 			}
 
 		default:
@@ -96,23 +96,23 @@ func UnmarshalJSONOrigArrayValue(orig *otlpcommon.ArrayValue, iter *json.Iterato
 	}
 }
 
-func SizeProtoOrigArrayValue(orig *otlpcommon.ArrayValue) int {
+func SizeProtoArrayValue(orig *otlpcommon.ArrayValue) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.Values {
-		l = SizeProtoOrigAnyValue(&orig.Values[i])
+		l = SizeProtoAnyValue(&orig.Values[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigArrayValue(orig *otlpcommon.ArrayValue, buf []byte) int {
+func MarshalProtoArrayValue(orig *otlpcommon.ArrayValue, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.Values) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigAnyValue(&orig.Values[i], buf[:pos])
+		l = MarshalProtoAnyValue(&orig.Values[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -121,7 +121,7 @@ func MarshalProtoOrigArrayValue(orig *otlpcommon.ArrayValue, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigArrayValue(orig *otlpcommon.ArrayValue, buf []byte) error {
+func UnmarshalProtoArrayValue(orig *otlpcommon.ArrayValue, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -147,7 +147,7 @@ func UnmarshalProtoOrigArrayValue(orig *otlpcommon.ArrayValue, buf []byte) error
 			}
 			startPos := pos - length
 			orig.Values = append(orig.Values, otlpcommon.AnyValue{})
-			err = UnmarshalProtoOrigAnyValue(&orig.Values[len(orig.Values)-1], buf[startPos:pos])
+			err = UnmarshalProtoAnyValue(&orig.Values[len(orig.Values)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

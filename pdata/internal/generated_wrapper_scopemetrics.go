@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigScopeMetrics() *otlpmetrics.ScopeMetrics {
+func NewScopeMetrics() *otlpmetrics.ScopeMetrics {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.ScopeMetrics{}
 	}
 	return protoPoolScopeMetrics.Get().(*otlpmetrics.ScopeMetrics)
 }
 
-func DeleteOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, nullable bool) {
+func DeleteScopeMetrics(orig *otlpmetrics.ScopeMetrics, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -40,9 +40,9 @@ func DeleteOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, nullable bool) {
 		return
 	}
 
-	DeleteOrigInstrumentationScope(&orig.Scope, false)
+	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Metrics {
-		DeleteOrigMetric(orig.Metrics[i], true)
+		DeleteMetric(orig.Metrics[i], true)
 	}
 
 	orig.Reset()
@@ -51,36 +51,36 @@ func DeleteOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, nullable bool) {
 	}
 }
 
-func CopyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
+func CopyScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.Metrics = CopyOrigMetricSlice(dest.Metrics, src.Metrics)
+	CopyInstrumentationScope(&dest.Scope, &src.Scope)
+	dest.Metrics = CopyMetricSlice(dest.Metrics, src.Metrics)
 	dest.SchemaUrl = src.SchemaUrl
 }
 
-func GenTestOrigScopeMetrics() *otlpmetrics.ScopeMetrics {
-	orig := NewOrigScopeMetrics()
-	orig.Scope = *GenTestOrigInstrumentationScope()
-	orig.Metrics = GenerateOrigTestMetricSlice()
+func GenTestScopeMetrics() *otlpmetrics.ScopeMetrics {
+	orig := NewScopeMetrics()
+	orig.Scope = *GenTestInstrumentationScope()
+	orig.Metrics = GenTestMetricSlice()
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("scope")
-	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
+	MarshalJSONInstrumentationScope(&orig.Scope, dest)
 	if len(orig.Metrics) > 0 {
 		dest.WriteObjectField("metrics")
 		dest.WriteArrayStart()
-		MarshalJSONOrigMetric(orig.Metrics[0], dest)
+		MarshalJSONMetric(orig.Metrics[0], dest)
 		for i := 1; i < len(orig.Metrics); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigMetric(orig.Metrics[i], dest)
+			MarshalJSONMetric(orig.Metrics[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -91,16 +91,16 @@ func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stre
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigScopeMetrics unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.Iterator) {
+// UnmarshalJSONScopeMetrics unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
-			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
+			UnmarshalJSONInstrumentationScope(&orig.Scope, iter)
 		case "metrics":
 			for iter.ReadArray() {
-				orig.Metrics = append(orig.Metrics, NewOrigMetric())
-				UnmarshalJSONOrigMetric(orig.Metrics[len(orig.Metrics)-1], iter)
+				orig.Metrics = append(orig.Metrics, NewMetric())
+				UnmarshalJSONMetric(orig.Metrics[len(orig.Metrics)-1], iter)
 			}
 
 		case "schemaUrl", "schema_url":
@@ -111,14 +111,14 @@ func UnmarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.It
 	}
 }
 
-func SizeProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {
+func SizeProtoScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {
 	var n int
 	var l int
 	_ = l
-	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	l = SizeProtoInstrumentationScope(&orig.Scope)
 	n += 1 + proto.Sov(uint64(l)) + l
 	for i := range orig.Metrics {
-		l = SizeProtoOrigMetric(orig.Metrics[i])
+		l = SizeProtoMetric(orig.Metrics[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	l = len(orig.SchemaUrl)
@@ -128,19 +128,19 @@ func SizeProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {
 	return n
 }
 
-func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) int {
+func MarshalProtoScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 
-	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+	l = MarshalProtoInstrumentationScope(&orig.Scope, buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	pos--
 	buf[pos] = 0xa
 
 	for i := len(orig.Metrics) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigMetric(orig.Metrics[i], buf[:pos])
+		l = MarshalProtoMetric(orig.Metrics[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -157,7 +157,7 @@ func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) in
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) error {
+func UnmarshalProtoScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -183,7 +183,7 @@ func UnmarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) 
 			}
 			startPos := pos - length
 
-			err = UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[startPos:pos])
+			err = UnmarshalProtoInstrumentationScope(&orig.Scope, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -198,8 +198,8 @@ func UnmarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) 
 				return err
 			}
 			startPos := pos - length
-			orig.Metrics = append(orig.Metrics, NewOrigMetric())
-			err = UnmarshalProtoOrigMetric(orig.Metrics[len(orig.Metrics)-1], buf[startPos:pos])
+			orig.Metrics = append(orig.Metrics, NewMetric())
+			err = UnmarshalProtoMetric(orig.Metrics[len(orig.Metrics)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

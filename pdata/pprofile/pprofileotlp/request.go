@@ -33,22 +33,22 @@ func NewExportRequest() ExportRequest {
 // any changes to the provided Profiles struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromProfiles(td pprofile.Profiles) ExportRequest {
 	return ExportRequest{
-		orig:  internal.GetOrigProfiles(internal.Profiles(td)),
-		state: internal.GetProfilesState(internal.Profiles(td)),
+		orig:  internal.GetProfilesOrig(internal.ProfilesWrapper(td)),
+		state: internal.GetProfilesState(internal.ProfilesWrapper(td)),
 	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	size := internal.SizeProtoOrigExportProfilesServiceRequest(ms.orig)
+	size := internal.SizeProtoExportProfilesServiceRequest(ms.orig)
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportProfilesServiceRequest(ms.orig, buf)
+	_ = internal.MarshalProtoExportProfilesServiceRequest(ms.orig, buf)
 	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	err := internal.UnmarshalProtoOrigExportProfilesServiceRequest(ms.orig, data)
+	err := internal.UnmarshalProtoExportProfilesServiceRequest(ms.orig, data)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportProfilesServiceRequest(ms.orig, dest)
+	internal.MarshalJSONExportProfilesServiceRequest(ms.orig, dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -71,10 +71,10 @@ func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	internal.UnmarshalJSONOrigExportProfilesServiceRequest(ms.orig, iter)
+	internal.UnmarshalJSONExportProfilesServiceRequest(ms.orig, iter)
 	return iter.Error()
 }
 
 func (ms ExportRequest) Profiles() pprofile.Profiles {
-	return pprofile.Profiles(internal.NewProfiles(ms.orig, ms.state))
+	return pprofile.Profiles(internal.NewProfilesWrapper(ms.orig, ms.state))
 }

@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSpan_Link(t *testing.T) {
+func TestCopySpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigSpan_Link(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSpan_Link()
-				CopyOrigSpan_Link(dest, src)
+				dest := NewSpan_Link()
+				CopySpan_Link(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSpan_Link(dest, dest)
+				CopySpan_Link(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan_LinkUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpan_LinkUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSpan_Link()
-	UnmarshalJSONOrigSpan_Link(dest, iter)
+	dest := NewSpan_Link()
+	UnmarshalJSONSpan_Link(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSpan_Link(), dest)
+	assert.Equal(t, NewSpan_Link(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSpan_Link(src, stream)
+				MarshalJSONSpan_Link(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSpan_Link()
-				UnmarshalJSONOrigSpan_Link(dest, iter)
+				dest := NewSpan_Link()
+				UnmarshalJSONSpan_Link(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan_Link(dest, true)
+				DeleteSpan_Link(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_LinkFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpan_LinkFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSpan_Link()
-			require.Error(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+			dest := NewSpan_Link()
+			require.Error(t, UnmarshalProtoSpan_Link(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_LinkUnknown(t *testing.T) {
-	dest := NewOrigSpan_Link()
+func TestMarshalAndUnmarshalProtoSpan_LinkUnknown(t *testing.T) {
+	dest := NewSpan_Link()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSpan_Link(), dest)
+	require.NoError(t, UnmarshalProtoSpan_Link(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSpan_Link(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSpan_Link(src))
-				gotSize := MarshalProtoOrigSpan_Link(src, buf)
+				buf := make([]byte, SizeProtoSpan_Link(src))
+				gotSize := MarshalProtoSpan_Link(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSpan_Link()
-				require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+				dest := NewSpan_Link()
+				require.NoError(t, UnmarshalProtoSpan_Link(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan_Link(dest, true)
+				DeleteSpan_Link(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Link() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan_Link(src))
-			gotSize := MarshalProtoOrigSpan_Link(src, buf)
+			buf := make([]byte, SizeProtoSpan_Link(src))
+			gotSize := MarshalProtoSpan_Link(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlptrace.Span_Link{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan_Link(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSpan_Link()
-			require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, goBuf))
+			dest := NewSpan_Link()
+			require.NoError(t, UnmarshalProtoSpan_Link(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -158,11 +158,11 @@ func genTestFailingUnmarshalProtoValuesSpan_Link() map[string][]byte {
 
 func genTestEncodingValuesSpan_Link() map[string]*otlptrace.Span_Link {
 	return map[string]*otlptrace.Span_Link{
-		"empty":                       NewOrigSpan_Link(),
-		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
-		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"empty":                       NewSpan_Link(),
+		"TraceId/test":                {TraceId: *GenTestTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 		"Flags/test":                  {Flags: uint32(13)},
 	}

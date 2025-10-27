@@ -14,27 +14,27 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestCopyOrigScopeMetricsSlice(t *testing.T) {
+func TestCopyScopeMetricsSlice(t *testing.T) {
 	src := []*otlpmetrics.ScopeMetrics{}
 	dest := []*otlpmetrics.ScopeMetrics{}
 	// Test CopyTo empty
-	dest = CopyOrigScopeMetricsSlice(dest, src)
+	dest = CopyScopeMetricsSlice(dest, src)
 	assert.Equal(t, []*otlpmetrics.ScopeMetrics{}, dest)
 
 	// Test CopyTo larger slice
-	src = GenerateOrigTestScopeMetricsSlice()
-	dest = CopyOrigScopeMetricsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeMetricsSlice(), dest)
+	src = GenTestScopeMetricsSlice()
+	dest = CopyScopeMetricsSlice(dest, src)
+	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyOrigScopeMetricsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeMetricsSlice(), dest)
+	dest = CopyScopeMetricsSlice(dest, src)
+	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyOrigScopeMetricsSlice(dest, []*otlpmetrics.ScopeMetrics{})
+	dest = CopyScopeMetricsSlice(dest, []*otlpmetrics.ScopeMetrics{})
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyOrigScopeMetricsSlice(dest, src)
-	assert.Equal(t, GenerateOrigTestScopeMetricsSlice(), dest)
+	dest = CopyScopeMetricsSlice(dest, src)
+	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 }

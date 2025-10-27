@@ -10,7 +10,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
+func CopyMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
 	var newDest []*otlpmetrics.Metric
 	if cap(dest) < len(src) {
 		newDest = make([]*otlpmetrics.Metric, len(src))
@@ -18,34 +18,34 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigMetric()
+			newDest[i] = NewMetric()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigMetric(dest[i], true)
+			DeleteMetric(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigMetric()
+			newDest[i] = NewMetric()
 		}
 	}
 	for i := range src {
-		CopyOrigMetric(newDest[i], src[i])
+		CopyMetric(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestMetricSlice() []*otlpmetrics.Metric {
+func GenTestMetricSlice() []*otlpmetrics.Metric {
 	orig := make([]*otlpmetrics.Metric, 5)
-	orig[0] = NewOrigMetric()
-	orig[1] = GenTestOrigMetric()
-	orig[2] = NewOrigMetric()
-	orig[3] = GenTestOrigMetric()
-	orig[4] = NewOrigMetric()
+	orig[0] = NewMetric()
+	orig[1] = GenTestMetric()
+	orig[2] = NewMetric()
+	orig[3] = GenTestMetric()
+	orig[4] = NewMetric()
 	return orig
 }

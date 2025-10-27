@@ -12,22 +12,22 @@ import (
 
 // MarshalProto marshals ExportResponse into proto bytes.
 func (ms ExportResponse) MarshalProto() ([]byte, error) {
-	size := internal.SizeProtoOrigExportProfilesServiceResponse(ms.orig)
+	size := internal.SizeProtoExportProfilesServiceResponse(ms.orig)
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportProfilesServiceResponse(ms.orig, buf)
+	_ = internal.MarshalProtoExportProfilesServiceResponse(ms.orig, buf)
 	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportResponse from proto bytes.
 func (ms ExportResponse) UnmarshalProto(data []byte) error {
-	return internal.UnmarshalProtoOrigExportProfilesServiceResponse(ms.orig, data)
+	return internal.UnmarshalProtoExportProfilesServiceResponse(ms.orig, data)
 }
 
 // MarshalJSON marshals ExportResponse into JSON bytes.
 func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportProfilesServiceResponse(ms.orig, dest)
+	internal.MarshalJSONExportProfilesServiceResponse(ms.orig, dest)
 	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
@@ -35,6 +35,6 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	internal.UnmarshalJSONOrigExportProfilesServiceResponse(ms.orig, iter)
+	internal.UnmarshalJSONExportProfilesServiceResponse(ms.orig, iter)
 	return iter.Error()
 }

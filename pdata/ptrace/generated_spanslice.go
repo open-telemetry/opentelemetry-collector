@@ -30,7 +30,7 @@ func newSpanSlice(orig *[]*otlptrace.Span, state *internal.State) SpanSlice {
 	return SpanSlice{orig: orig, state: state}
 }
 
-// NewSpanSlice creates a SpanSlice with 0 elements.
+// NewSpanSlice creates a SpanSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanSlice() SpanSlice {
 	orig := []*otlptrace.Span(nil)
@@ -99,7 +99,7 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Span.
 func (es SpanSlice) AppendEmpty() Span {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSpan())
+	*es.orig = append(*es.orig, internal.NewSpan())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +128,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSpan((*es.orig)[i], true)
+			internal.DeleteSpan((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +152,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigSpanSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySpanSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Span elements within SpanSlice given the

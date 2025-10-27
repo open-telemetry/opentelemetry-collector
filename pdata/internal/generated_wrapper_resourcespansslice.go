@@ -10,7 +10,7 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptrace.ResourceSpans {
+func CopyResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptrace.ResourceSpans {
 	var newDest []*otlptrace.ResourceSpans
 	if cap(dest) < len(src) {
 		newDest = make([]*otlptrace.ResourceSpans, len(src))
@@ -18,34 +18,34 @@ func CopyOrigResourceSpansSlice(dest, src []*otlptrace.ResourceSpans) []*otlptra
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigResourceSpans()
+			newDest[i] = NewResourceSpans()
 		}
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
 		// This can happen when len(src) < len(dest) < cap(dest).
 		for i := len(src); i < len(dest); i++ {
-			DeleteOrigResourceSpans(dest[i], true)
+			DeleteResourceSpans(dest[i], true)
 			dest[i] = nil
 		}
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewOrigResourceSpans()
+			newDest[i] = NewResourceSpans()
 		}
 	}
 	for i := range src {
-		CopyOrigResourceSpans(newDest[i], src[i])
+		CopyResourceSpans(newDest[i], src[i])
 	}
 	return newDest
 }
 
-func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
+func GenTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 	orig := make([]*otlptrace.ResourceSpans, 5)
-	orig[0] = NewOrigResourceSpans()
-	orig[1] = GenTestOrigResourceSpans()
-	orig[2] = NewOrigResourceSpans()
-	orig[3] = GenTestOrigResourceSpans()
-	orig[4] = NewOrigResourceSpans()
+	orig[0] = NewResourceSpans()
+	orig[1] = GenTestResourceSpans()
+	orig[2] = NewResourceSpans()
+	orig[3] = GenTestResourceSpans()
+	orig[4] = NewResourceSpans()
 	return orig
 }

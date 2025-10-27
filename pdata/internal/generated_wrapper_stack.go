@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigStack() *otlpprofiles.Stack {
+func NewStack() *otlpprofiles.Stack {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Stack{}
 	}
 	return protoPoolStack.Get().(*otlpprofiles.Stack)
 }
 
-func DeleteOrigStack(orig *otlpprofiles.Stack, nullable bool) {
+func DeleteStack(orig *otlpprofiles.Stack, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,22 +46,22 @@ func DeleteOrigStack(orig *otlpprofiles.Stack, nullable bool) {
 	}
 }
 
-func CopyOrigStack(dest, src *otlpprofiles.Stack) {
+func CopyStack(dest, src *otlpprofiles.Stack) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.LocationIndices = CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
+	dest.LocationIndices = CopyInt32Slice(dest.LocationIndices, src.LocationIndices)
 }
 
-func GenTestOrigStack() *otlpprofiles.Stack {
-	orig := NewOrigStack()
-	orig.LocationIndices = GenerateOrigTestInt32Slice()
+func GenTestStack() *otlpprofiles.Stack {
+	orig := NewStack()
+	orig.LocationIndices = GenTestInt32Slice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigStack(orig *otlpprofiles.Stack, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONStack(orig *otlpprofiles.Stack, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.LocationIndices) > 0 {
 		dest.WriteObjectField("locationIndices")
@@ -76,8 +76,8 @@ func MarshalJSONOrigStack(orig *otlpprofiles.Stack, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigStack unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigStack(orig *otlpprofiles.Stack, iter *json.Iterator) {
+// UnmarshalJSONStack unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONStack(orig *otlpprofiles.Stack, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "locationIndices", "location_indices":
@@ -91,7 +91,7 @@ func UnmarshalJSONOrigStack(orig *otlpprofiles.Stack, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigStack(orig *otlpprofiles.Stack) int {
+func SizeProtoStack(orig *otlpprofiles.Stack) int {
 	var n int
 	var l int
 	_ = l
@@ -105,7 +105,7 @@ func SizeProtoOrigStack(orig *otlpprofiles.Stack) int {
 	return n
 }
 
-func MarshalProtoOrigStack(orig *otlpprofiles.Stack, buf []byte) int {
+func MarshalProtoStack(orig *otlpprofiles.Stack, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -122,7 +122,7 @@ func MarshalProtoOrigStack(orig *otlpprofiles.Stack, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigStack(orig *otlpprofiles.Stack, buf []byte) error {
+func UnmarshalProtoStack(orig *otlpprofiles.Stack, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

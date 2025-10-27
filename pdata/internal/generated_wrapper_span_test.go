@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSpan(t *testing.T) {
+func TestCopySpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigSpan(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSpan()
-				CopyOrigSpan(dest, src)
+				dest := NewSpan()
+				CopySpan(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSpan(dest, dest)
+				CopySpan(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpanUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSpan()
-	UnmarshalJSONOrigSpan(dest, iter)
+	dest := NewSpan()
+	UnmarshalJSONSpan(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSpan(), dest)
+	assert.Equal(t, NewSpan(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSpan(src, stream)
+				MarshalJSONSpan(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSpan()
-				UnmarshalJSONOrigSpan(dest, iter)
+				dest := NewSpan()
+				UnmarshalJSONSpan(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan(dest, true)
+				DeleteSpan(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpanFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpanFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSpan()
-			require.Error(t, UnmarshalProtoOrigSpan(dest, buf))
+			dest := NewSpan()
+			require.Error(t, UnmarshalProtoSpan(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpanUnknown(t *testing.T) {
-	dest := NewOrigSpan()
+func TestMarshalAndUnmarshalProtoSpanUnknown(t *testing.T) {
+	dest := NewSpan()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSpan(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSpan(), dest)
+	require.NoError(t, UnmarshalProtoSpan(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSpan(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSpan(src))
-				gotSize := MarshalProtoOrigSpan(src, buf)
+				buf := make([]byte, SizeProtoSpan(src))
+				gotSize := MarshalProtoSpan(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSpan()
-				require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+				dest := NewSpan()
+				require.NoError(t, UnmarshalProtoSpan(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan(dest, true)
+				DeleteSpan(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan(src))
-			gotSize := MarshalProtoOrigSpan(src, buf)
+			buf := make([]byte, SizeProtoSpan(src))
+			gotSize := MarshalProtoSpan(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlptrace.Span{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSpan()
-			require.NoError(t, UnmarshalProtoOrigSpan(dest, goBuf))
+			dest := NewSpan()
+			require.NoError(t, UnmarshalProtoSpan(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -178,22 +178,22 @@ func genTestFailingUnmarshalProtoValuesSpan() map[string][]byte {
 
 func genTestEncodingValuesSpan() map[string]*otlptrace.Span {
 	return map[string]*otlptrace.Span{
-		"empty":                       NewOrigSpan(),
-		"TraceId/test":                {TraceId: *GenTestOrigTraceID()},
-		"SpanId/test":                 {SpanId: *GenTestOrigSpanID()},
+		"empty":                       NewSpan(),
+		"TraceId/test":                {TraceId: *GenTestTraceID()},
+		"SpanId/test":                 {SpanId: *GenTestSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},
-		"ParentSpanId/test":           {ParentSpanId: *GenTestOrigSpanID()},
+		"ParentSpanId/test":           {ParentSpanId: *GenTestSpanID()},
 		"Flags/test":                  {Flags: uint32(13)},
 		"Name/test":                   {Name: "test_name"},
 		"Kind/test":                   {Kind: otlptrace.Span_SpanKind(13)},
 		"StartTimeUnixNano/test":      {StartTimeUnixNano: uint64(13)},
 		"EndTimeUnixNano/test":        {EndTimeUnixNano: uint64(13)},
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
-		"Events/default_and_test":     {Events: []*otlptrace.Span_Event{{}, GenTestOrigSpan_Event()}},
+		"Events/default_and_test":     {Events: []*otlptrace.Span_Event{{}, GenTestSpan_Event()}},
 		"DroppedEventsCount/test":     {DroppedEventsCount: uint32(13)},
-		"Links/default_and_test":      {Links: []*otlptrace.Span_Link{{}, GenTestOrigSpan_Link()}},
+		"Links/default_and_test":      {Links: []*otlptrace.Span_Link{{}, GenTestSpan_Link()}},
 		"DroppedLinksCount/test":      {DroppedLinksCount: uint32(13)},
-		"Status/test":                 {Status: *GenTestOrigStatus()},
+		"Status/test":                 {Status: *GenTestStatus()},
 	}
 }

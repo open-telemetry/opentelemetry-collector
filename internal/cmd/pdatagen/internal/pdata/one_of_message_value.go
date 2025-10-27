@@ -37,7 +37,7 @@ func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	} else {
 		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
 	}
-	ov.{{ .fieldName }} = internal.NewOrig{{ .fieldOriginName }}()
+	ov.{{ .fieldName }} = internal.New{{ .fieldOriginName }}()
 	ms.orig.{{ .originOneOfFieldName }} = ov
 	return new{{ .returnType }}(ov.{{ .fieldName }}, ms.state)
 }`
@@ -46,7 +46,7 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 	ms := New{{ .structName }}()
 	ms.SetEmpty{{ .fieldName }}()
 	assert.Equal(t, New{{ .returnType }}(), ms.{{ .fieldName }}())
-	ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }} = internal.GenTestOrig{{ .returnType }}()
+	ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }} = internal.GenTest{{ .returnType }}()
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	sharedState := internal.NewState()
@@ -56,7 +56,7 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 `
 
 const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{ 
-{{- .fieldName }}: GenTestOrig{{ .fieldOriginName }}() }`
+{{- .fieldName }}: GenTest{{ .fieldOriginName }}() }`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		var ov *{{ .originStructType }}
@@ -65,8 +65,8 @@ const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		} else {
 			ov = ProtoPool{{ .oneOfName }}.Get().(*{{ .originStructType }})
 		}
-		ov.{{ .fieldName }} = NewOrig{{ .fieldOriginName }}()
-		CopyOrig{{ .fieldOriginName }}(ov.{{ .fieldName }}, t.{{ .fieldName }})
+		ov.{{ .fieldName }} = New{{ .fieldOriginName }}()
+		Copy{{ .fieldOriginName }}(ov.{{ .fieldName }}, t.{{ .fieldName }})
 		dest.{{ .originOneOfFieldName }} = ov`
 
 const oneOfMessageTypeTemplate = `case *{{ .originStructType }}:

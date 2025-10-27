@@ -27,8 +27,8 @@ func TestExemplar_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExemplar(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExemplar(internal.NewOrigExemplar(), sharedState)) })
-	assert.Panics(t, func() { newExemplar(internal.NewOrigExemplar(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newExemplar(internal.NewExemplar(), sharedState)) })
+	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).MoveTo(dest) })
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
@@ -41,14 +41,14 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExemplar(internal.NewOrigExemplar(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExemplar(internal.NewExemplar(), sharedState)) })
 }
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
+	ms.orig.FilteredAttributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.FilteredAttributes())
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -103,6 +103,6 @@ func TestExemplar_TraceID(t *testing.T) {
 }
 
 func generateTestExemplar() Exemplar {
-	ms := newExemplar(internal.GenTestOrigExemplar(), internal.NewState())
+	ms := newExemplar(internal.GenTestExemplar(), internal.NewState())
 	return ms
 }

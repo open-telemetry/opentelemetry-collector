@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
+func NewProfilesDictionary() *otlpprofiles.ProfilesDictionary {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.ProfilesDictionary{}
 	}
 	return protoPoolProfilesDictionary.Get().(*otlpprofiles.ProfilesDictionary)
 }
 
-func DeleteOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullable bool) {
+func DeleteProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -41,22 +41,22 @@ func DeleteOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullabl
 	}
 
 	for i := range orig.MappingTable {
-		DeleteOrigMapping(orig.MappingTable[i], true)
+		DeleteMapping(orig.MappingTable[i], true)
 	}
 	for i := range orig.LocationTable {
-		DeleteOrigLocation(orig.LocationTable[i], true)
+		DeleteLocation(orig.LocationTable[i], true)
 	}
 	for i := range orig.FunctionTable {
-		DeleteOrigFunction(orig.FunctionTable[i], true)
+		DeleteFunction(orig.FunctionTable[i], true)
 	}
 	for i := range orig.LinkTable {
-		DeleteOrigLink(orig.LinkTable[i], true)
+		DeleteLink(orig.LinkTable[i], true)
 	}
 	for i := range orig.AttributeTable {
-		DeleteOrigKeyValueAndUnit(orig.AttributeTable[i], true)
+		DeleteKeyValueAndUnit(orig.AttributeTable[i], true)
 	}
 	for i := range orig.StackTable {
-		DeleteOrigStack(orig.StackTable[i], true)
+		DeleteStack(orig.StackTable[i], true)
 	}
 
 	orig.Reset()
@@ -65,72 +65,72 @@ func DeleteOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, nullabl
 	}
 }
 
-func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
+func CopyProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.MappingTable = CopyOrigMappingSlice(dest.MappingTable, src.MappingTable)
-	dest.LocationTable = CopyOrigLocationSlice(dest.LocationTable, src.LocationTable)
-	dest.FunctionTable = CopyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)
-	dest.LinkTable = CopyOrigLinkSlice(dest.LinkTable, src.LinkTable)
-	dest.StringTable = CopyOrigStringSlice(dest.StringTable, src.StringTable)
-	dest.AttributeTable = CopyOrigKeyValueAndUnitSlice(dest.AttributeTable, src.AttributeTable)
-	dest.StackTable = CopyOrigStackSlice(dest.StackTable, src.StackTable)
+	dest.MappingTable = CopyMappingSlice(dest.MappingTable, src.MappingTable)
+	dest.LocationTable = CopyLocationSlice(dest.LocationTable, src.LocationTable)
+	dest.FunctionTable = CopyFunctionSlice(dest.FunctionTable, src.FunctionTable)
+	dest.LinkTable = CopyLinkSlice(dest.LinkTable, src.LinkTable)
+	dest.StringTable = CopyStringSlice(dest.StringTable, src.StringTable)
+	dest.AttributeTable = CopyKeyValueAndUnitSlice(dest.AttributeTable, src.AttributeTable)
+	dest.StackTable = CopyStackSlice(dest.StackTable, src.StackTable)
 }
 
-func GenTestOrigProfilesDictionary() *otlpprofiles.ProfilesDictionary {
-	orig := NewOrigProfilesDictionary()
-	orig.MappingTable = GenerateOrigTestMappingSlice()
-	orig.LocationTable = GenerateOrigTestLocationSlice()
-	orig.FunctionTable = GenerateOrigTestFunctionSlice()
-	orig.LinkTable = GenerateOrigTestLinkSlice()
-	orig.StringTable = GenerateOrigTestStringSlice()
-	orig.AttributeTable = GenerateOrigTestKeyValueAndUnitSlice()
-	orig.StackTable = GenerateOrigTestStackSlice()
+func GenTestProfilesDictionary() *otlpprofiles.ProfilesDictionary {
+	orig := NewProfilesDictionary()
+	orig.MappingTable = GenTestMappingSlice()
+	orig.LocationTable = GenTestLocationSlice()
+	orig.FunctionTable = GenTestFunctionSlice()
+	orig.LinkTable = GenTestLinkSlice()
+	orig.StringTable = GenTestStringSlice()
+	orig.AttributeTable = GenTestKeyValueAndUnitSlice()
+	orig.StackTable = GenTestStackSlice()
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.MappingTable) > 0 {
 		dest.WriteObjectField("mappingTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigMapping(orig.MappingTable[0], dest)
+		MarshalJSONMapping(orig.MappingTable[0], dest)
 		for i := 1; i < len(orig.MappingTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigMapping(orig.MappingTable[i], dest)
+			MarshalJSONMapping(orig.MappingTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	if len(orig.LocationTable) > 0 {
 		dest.WriteObjectField("locationTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigLocation(orig.LocationTable[0], dest)
+		MarshalJSONLocation(orig.LocationTable[0], dest)
 		for i := 1; i < len(orig.LocationTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigLocation(orig.LocationTable[i], dest)
+			MarshalJSONLocation(orig.LocationTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	if len(orig.FunctionTable) > 0 {
 		dest.WriteObjectField("functionTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigFunction(orig.FunctionTable[0], dest)
+		MarshalJSONFunction(orig.FunctionTable[0], dest)
 		for i := 1; i < len(orig.FunctionTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigFunction(orig.FunctionTable[i], dest)
+			MarshalJSONFunction(orig.FunctionTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	if len(orig.LinkTable) > 0 {
 		dest.WriteObjectField("linkTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigLink(orig.LinkTable[0], dest)
+		MarshalJSONLink(orig.LinkTable[0], dest)
 		for i := 1; i < len(orig.LinkTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigLink(orig.LinkTable[i], dest)
+			MarshalJSONLink(orig.LinkTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -147,52 +147,52 @@ func MarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, de
 	if len(orig.AttributeTable) > 0 {
 		dest.WriteObjectField("attributeTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValueAndUnit(orig.AttributeTable[0], dest)
+		MarshalJSONKeyValueAndUnit(orig.AttributeTable[0], dest)
 		for i := 1; i < len(orig.AttributeTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValueAndUnit(orig.AttributeTable[i], dest)
+			MarshalJSONKeyValueAndUnit(orig.AttributeTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	if len(orig.StackTable) > 0 {
 		dest.WriteObjectField("stackTable")
 		dest.WriteArrayStart()
-		MarshalJSONOrigStack(orig.StackTable[0], dest)
+		MarshalJSONStack(orig.StackTable[0], dest)
 		for i := 1; i < len(orig.StackTable); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigStack(orig.StackTable[i], dest)
+			MarshalJSONStack(orig.StackTable[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigProfilesDictionary unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, iter *json.Iterator) {
+// UnmarshalJSONProfilesDictionary unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingTable", "mapping_table":
 			for iter.ReadArray() {
-				orig.MappingTable = append(orig.MappingTable, NewOrigMapping())
-				UnmarshalJSONOrigMapping(orig.MappingTable[len(orig.MappingTable)-1], iter)
+				orig.MappingTable = append(orig.MappingTable, NewMapping())
+				UnmarshalJSONMapping(orig.MappingTable[len(orig.MappingTable)-1], iter)
 			}
 
 		case "locationTable", "location_table":
 			for iter.ReadArray() {
-				orig.LocationTable = append(orig.LocationTable, NewOrigLocation())
-				UnmarshalJSONOrigLocation(orig.LocationTable[len(orig.LocationTable)-1], iter)
+				orig.LocationTable = append(orig.LocationTable, NewLocation())
+				UnmarshalJSONLocation(orig.LocationTable[len(orig.LocationTable)-1], iter)
 			}
 
 		case "functionTable", "function_table":
 			for iter.ReadArray() {
-				orig.FunctionTable = append(orig.FunctionTable, NewOrigFunction())
-				UnmarshalJSONOrigFunction(orig.FunctionTable[len(orig.FunctionTable)-1], iter)
+				orig.FunctionTable = append(orig.FunctionTable, NewFunction())
+				UnmarshalJSONFunction(orig.FunctionTable[len(orig.FunctionTable)-1], iter)
 			}
 
 		case "linkTable", "link_table":
 			for iter.ReadArray() {
-				orig.LinkTable = append(orig.LinkTable, NewOrigLink())
-				UnmarshalJSONOrigLink(orig.LinkTable[len(orig.LinkTable)-1], iter)
+				orig.LinkTable = append(orig.LinkTable, NewLink())
+				UnmarshalJSONLink(orig.LinkTable[len(orig.LinkTable)-1], iter)
 			}
 
 		case "stringTable", "string_table":
@@ -202,14 +202,14 @@ func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, 
 
 		case "attributeTable", "attribute_table":
 			for iter.ReadArray() {
-				orig.AttributeTable = append(orig.AttributeTable, NewOrigKeyValueAndUnit())
-				UnmarshalJSONOrigKeyValueAndUnit(orig.AttributeTable[len(orig.AttributeTable)-1], iter)
+				orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
+				UnmarshalJSONKeyValueAndUnit(orig.AttributeTable[len(orig.AttributeTable)-1], iter)
 			}
 
 		case "stackTable", "stack_table":
 			for iter.ReadArray() {
-				orig.StackTable = append(orig.StackTable, NewOrigStack())
-				UnmarshalJSONOrigStack(orig.StackTable[len(orig.StackTable)-1], iter)
+				orig.StackTable = append(orig.StackTable, NewStack())
+				UnmarshalJSONStack(orig.StackTable[len(orig.StackTable)-1], iter)
 			}
 
 		default:
@@ -218,24 +218,24 @@ func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, 
 	}
 }
 
-func SizeProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int {
+func SizeProtoProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.MappingTable {
-		l = SizeProtoOrigMapping(orig.MappingTable[i])
+		l = SizeProtoMapping(orig.MappingTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.LocationTable {
-		l = SizeProtoOrigLocation(orig.LocationTable[i])
+		l = SizeProtoLocation(orig.LocationTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.FunctionTable {
-		l = SizeProtoOrigFunction(orig.FunctionTable[i])
+		l = SizeProtoFunction(orig.FunctionTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.LinkTable {
-		l = SizeProtoOrigLink(orig.LinkTable[i])
+		l = SizeProtoLink(orig.LinkTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for _, s := range orig.StringTable {
@@ -243,43 +243,43 @@ func SizeProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int 
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.AttributeTable {
-		l = SizeProtoOrigKeyValueAndUnit(orig.AttributeTable[i])
+		l = SizeProtoKeyValueAndUnit(orig.AttributeTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.StackTable {
-		l = SizeProtoOrigStack(orig.StackTable[i])
+		l = SizeProtoStack(orig.StackTable[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) int {
+func MarshalProtoProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.MappingTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigMapping(orig.MappingTable[i], buf[:pos])
+		l = MarshalProtoMapping(orig.MappingTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0xa
 	}
 	for i := len(orig.LocationTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigLocation(orig.LocationTable[i], buf[:pos])
+		l = MarshalProtoLocation(orig.LocationTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x12
 	}
 	for i := len(orig.FunctionTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigFunction(orig.FunctionTable[i], buf[:pos])
+		l = MarshalProtoFunction(orig.FunctionTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x1a
 	}
 	for i := len(orig.LinkTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigLink(orig.LinkTable[i], buf[:pos])
+		l = MarshalProtoLink(orig.LinkTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -294,14 +294,14 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 		buf[pos] = 0x2a
 	}
 	for i := len(orig.AttributeTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValueAndUnit(orig.AttributeTable[i], buf[:pos])
+		l = MarshalProtoKeyValueAndUnit(orig.AttributeTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x32
 	}
 	for i := len(orig.StackTable) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigStack(orig.StackTable[i], buf[:pos])
+		l = MarshalProtoStack(orig.StackTable[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -310,7 +310,7 @@ func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, b
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) error {
+func UnmarshalProtoProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -335,8 +335,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.MappingTable = append(orig.MappingTable, NewOrigMapping())
-			err = UnmarshalProtoOrigMapping(orig.MappingTable[len(orig.MappingTable)-1], buf[startPos:pos])
+			orig.MappingTable = append(orig.MappingTable, NewMapping())
+			err = UnmarshalProtoMapping(orig.MappingTable[len(orig.MappingTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -351,8 +351,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.LocationTable = append(orig.LocationTable, NewOrigLocation())
-			err = UnmarshalProtoOrigLocation(orig.LocationTable[len(orig.LocationTable)-1], buf[startPos:pos])
+			orig.LocationTable = append(orig.LocationTable, NewLocation())
+			err = UnmarshalProtoLocation(orig.LocationTable[len(orig.LocationTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -367,8 +367,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.FunctionTable = append(orig.FunctionTable, NewOrigFunction())
-			err = UnmarshalProtoOrigFunction(orig.FunctionTable[len(orig.FunctionTable)-1], buf[startPos:pos])
+			orig.FunctionTable = append(orig.FunctionTable, NewFunction())
+			err = UnmarshalProtoFunction(orig.FunctionTable[len(orig.FunctionTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -383,8 +383,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.LinkTable = append(orig.LinkTable, NewOrigLink())
-			err = UnmarshalProtoOrigLink(orig.LinkTable[len(orig.LinkTable)-1], buf[startPos:pos])
+			orig.LinkTable = append(orig.LinkTable, NewLink())
+			err = UnmarshalProtoLink(orig.LinkTable[len(orig.LinkTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -411,8 +411,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeTable = append(orig.AttributeTable, NewOrigKeyValueAndUnit())
-			err = UnmarshalProtoOrigKeyValueAndUnit(orig.AttributeTable[len(orig.AttributeTable)-1], buf[startPos:pos])
+			orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
+			err = UnmarshalProtoKeyValueAndUnit(orig.AttributeTable[len(orig.AttributeTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -427,8 +427,8 @@ func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary,
 				return err
 			}
 			startPos := pos - length
-			orig.StackTable = append(orig.StackTable, NewOrigStack())
-			err = UnmarshalProtoOrigStack(orig.StackTable[len(orig.StackTable)-1], buf[startPos:pos])
+			orig.StackTable = append(orig.StackTable, NewStack())
+			err = UnmarshalProtoStack(orig.StackTable[len(orig.StackTable)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

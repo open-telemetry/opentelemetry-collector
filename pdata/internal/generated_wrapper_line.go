@@ -23,14 +23,14 @@ var (
 	}
 )
 
-func NewOrigLine() *otlpprofiles.Line {
+func NewLine() *otlpprofiles.Line {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpprofiles.Line{}
 	}
 	return protoPoolLine.Get().(*otlpprofiles.Line)
 }
 
-func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
+func DeleteLine(orig *otlpprofiles.Line, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteOrigLine(orig *otlpprofiles.Line, nullable bool) {
 	}
 }
 
-func CopyOrigLine(dest, src *otlpprofiles.Line) {
+func CopyLine(dest, src *otlpprofiles.Line) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -56,16 +56,16 @@ func CopyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.Column = src.Column
 }
 
-func GenTestOrigLine() *otlpprofiles.Line {
-	orig := NewOrigLine()
+func GenTestLine() *otlpprofiles.Line {
+	orig := NewLine()
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONLine(orig *otlpprofiles.Line, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.FunctionIndex != int32(0) {
 		dest.WriteObjectField("functionIndex")
@@ -82,8 +82,8 @@ func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigLine unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
+// UnmarshalJSONLine unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "functionIndex", "function_index":
@@ -98,7 +98,7 @@ func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigLine(orig *otlpprofiles.Line) int {
+func SizeProtoLine(orig *otlpprofiles.Line) int {
 	var n int
 	var l int
 	_ = l
@@ -114,7 +114,7 @@ func SizeProtoOrigLine(orig *otlpprofiles.Line) int {
 	return n
 }
 
-func MarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) int {
+func MarshalProtoLine(orig *otlpprofiles.Line, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -136,7 +136,7 @@ func MarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) error {
+func UnmarshalProtoLine(orig *otlpprofiles.Line, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

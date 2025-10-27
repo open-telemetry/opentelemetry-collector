@@ -43,14 +43,14 @@ var (
 	}
 )
 
-func NewOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+func NewHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpmetrics.HistogramDataPoint{}
 	}
 	return protoPoolHistogramDataPoint.Get().(*otlpmetrics.HistogramDataPoint)
 }
 
-func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable bool) {
+func DeleteHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -61,7 +61,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	}
 
 	for i := range orig.Attributes {
-		DeleteOrigKeyValue(&orig.Attributes[i], false)
+		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 	switch ov := orig.Sum_.(type) {
 	case *otlpmetrics.HistogramDataPoint_Sum:
@@ -72,7 +72,7 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 
 	}
 	for i := range orig.Exemplars {
-		DeleteOrigExemplar(&orig.Exemplars[i], false)
+		DeleteExemplar(&orig.Exemplars[i], false)
 	}
 	switch ov := orig.Min_.(type) {
 	case *otlpmetrics.HistogramDataPoint_Min:
@@ -97,12 +97,12 @@ func DeleteOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, nullable
 	}
 }
 
-func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
+func CopyHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
 	}
-	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
@@ -116,9 +116,9 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	} else {
 		dest.Sum_ = nil
 	}
-	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
-	dest.ExplicitBounds = CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.BucketCounts = CopyUint64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.ExplicitBounds = CopyFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
 	if srcMin, ok := src.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		destMin, ok := dest.Min_.(*otlpmetrics.HistogramDataPoint_Min)
@@ -142,32 +142,32 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	}
 }
 
-func GenTestOrigHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
-	orig := NewOrigHistogramDataPoint()
-	orig.Attributes = GenerateOrigTestKeyValueSlice()
+func GenTestHistogramDataPoint() *otlpmetrics.HistogramDataPoint {
+	orig := NewHistogramDataPoint()
+	orig.Attributes = GenTestKeyValueSlice()
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Count = uint64(13)
 	orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
-	orig.BucketCounts = GenerateOrigTestUint64Slice()
-	orig.ExplicitBounds = GenerateOrigTestFloat64Slice()
-	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.BucketCounts = GenTestUint64Slice()
+	orig.ExplicitBounds = GenTestFloat64Slice()
+	orig.Exemplars = GenTestExemplarSlice()
 	orig.Flags = 1
 	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
 		dest.WriteArrayStart()
-		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		MarshalJSONKeyValue(&orig.Attributes[0], dest)
 		for i := 1; i < len(orig.Attributes); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+			MarshalJSONKeyValue(&orig.Attributes[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -210,10 +210,10 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
 		dest.WriteArrayStart()
-		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		MarshalJSONExemplar(&orig.Exemplars[0], dest)
 		for i := 1; i < len(orig.Exemplars); i++ {
 			dest.WriteMore()
-			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+			MarshalJSONExemplar(&orig.Exemplars[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -232,14 +232,14 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, iter *json.Iterator) {
+// UnmarshalJSONHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
 				orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-				UnmarshalJSONOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
+				UnmarshalJSONKeyValue(&orig.Attributes[len(orig.Attributes)-1], iter)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
@@ -273,7 +273,7 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 		case "exemplars":
 			for iter.ReadArray() {
 				orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-				UnmarshalJSONOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
+				UnmarshalJSONExemplar(&orig.Exemplars[len(orig.Exemplars)-1], iter)
 			}
 
 		case "flags":
@@ -308,12 +308,12 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 	}
 }
 
-func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
+func SizeProtoHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	var n int
 	var l int
 	_ = l
 	for i := range orig.Attributes {
-		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		l = SizeProtoKeyValue(&orig.Attributes[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.StartTimeUnixNano != 0 {
@@ -340,7 +340,7 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Exemplars {
-		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		l = SizeProtoExemplar(&orig.Exemplars[i])
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	if orig.Flags != 0 {
@@ -357,12 +357,12 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	return n
 }
 
-func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) int {
+func MarshalProtoHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
 	for i := len(orig.Attributes) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		l = MarshalProtoKeyValue(&orig.Attributes[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -413,7 +413,7 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 		buf[pos] = 0x3a
 	}
 	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
-		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		l = MarshalProtoExemplar(&orig.Exemplars[i], buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -439,7 +439,7 @@ func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, bu
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
+func UnmarshalProtoHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -465,7 +465,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, otlpcommon.KeyValue{})
-			err = UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
+			err = UnmarshalProtoKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -599,7 +599,7 @@ func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, 
 			}
 			startPos := pos - length
 			orig.Exemplars = append(orig.Exemplars, otlpmetrics.Exemplar{})
-			err = UnmarshalProtoOrigExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
+			err = UnmarshalProtoExemplar(&orig.Exemplars[len(orig.Exemplars)-1], buf[startPos:pos])
 			if err != nil {
 				return err
 			}

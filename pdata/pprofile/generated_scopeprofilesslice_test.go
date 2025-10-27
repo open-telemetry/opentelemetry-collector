@@ -27,7 +27,7 @@ func TestScopeProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigScopeProfiles()
+		(*es.orig)[i] = internal.GenTestScopeProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -162,6 +162,6 @@ func TestScopeProfilesSlice_Sort(t *testing.T) {
 
 func generateTestScopeProfilesSlice() ScopeProfilesSlice {
 	ms := NewScopeProfilesSlice()
-	*ms.orig = internal.GenerateOrigTestScopeProfilesSlice()
+	*ms.orig = internal.GenTestScopeProfilesSlice()
 	return ms
 }

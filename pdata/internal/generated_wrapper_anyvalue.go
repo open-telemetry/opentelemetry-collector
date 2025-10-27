@@ -67,14 +67,14 @@ var (
 	}
 )
 
-func NewOrigAnyValue() *otlpcommon.AnyValue {
+func NewAnyValue() *otlpcommon.AnyValue {
 	if !UseProtoPooling.IsEnabled() {
 		return &otlpcommon.AnyValue{}
 	}
 	return protoPoolAnyValue.Get().(*otlpcommon.AnyValue)
 }
 
-func DeleteOrigAnyValue(orig *otlpcommon.AnyValue, nullable bool) {
+func DeleteAnyValue(orig *otlpcommon.AnyValue, nullable bool) {
 	if orig == nil {
 		return
 	}
@@ -106,11 +106,11 @@ func DeleteOrigAnyValue(orig *otlpcommon.AnyValue, nullable bool) {
 			ProtoPoolAnyValue_DoubleValue.Put(ov)
 		}
 	case *otlpcommon.AnyValue_ArrayValue:
-		DeleteOrigArrayValue(ov.ArrayValue, true)
+		DeleteArrayValue(ov.ArrayValue, true)
 		ov.ArrayValue = nil
 		ProtoPoolAnyValue_ArrayValue.Put(ov)
 	case *otlpcommon.AnyValue_KvlistValue:
-		DeleteOrigKeyValueList(ov.KvlistValue, true)
+		DeleteKeyValueList(ov.KvlistValue, true)
 		ov.KvlistValue = nil
 		ProtoPoolAnyValue_KvlistValue.Put(ov)
 	case *otlpcommon.AnyValue_BytesValue:
@@ -127,7 +127,7 @@ func DeleteOrigAnyValue(orig *otlpcommon.AnyValue, nullable bool) {
 	}
 }
 
-func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
+func CopyAnyValue(dest, src *otlpcommon.AnyValue) {
 	// If copying to same object, just return.
 	if src == dest {
 		return
@@ -176,8 +176,8 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 		} else {
 			ov = ProtoPoolAnyValue_ArrayValue.Get().(*otlpcommon.AnyValue_ArrayValue)
 		}
-		ov.ArrayValue = NewOrigArrayValue()
-		CopyOrigArrayValue(ov.ArrayValue, t.ArrayValue)
+		ov.ArrayValue = NewArrayValue()
+		CopyArrayValue(ov.ArrayValue, t.ArrayValue)
 		dest.Value = ov
 	case *otlpcommon.AnyValue_KvlistValue:
 		var ov *otlpcommon.AnyValue_KvlistValue
@@ -186,8 +186,8 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 		} else {
 			ov = ProtoPoolAnyValue_KvlistValue.Get().(*otlpcommon.AnyValue_KvlistValue)
 		}
-		ov.KvlistValue = NewOrigKeyValueList()
-		CopyOrigKeyValueList(ov.KvlistValue, t.KvlistValue)
+		ov.KvlistValue = NewKeyValueList()
+		CopyKeyValueList(ov.KvlistValue, t.KvlistValue)
 		dest.Value = ov
 	case *otlpcommon.AnyValue_BytesValue:
 		var ov *otlpcommon.AnyValue_BytesValue
@@ -201,14 +201,14 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 	}
 }
 
-func GenTestOrigAnyValue() *otlpcommon.AnyValue {
-	orig := NewOrigAnyValue()
+func GenTestAnyValue() *otlpcommon.AnyValue {
+	orig := NewAnyValue()
 	orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: true}
 	return orig
 }
 
-// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
+// MarshalJSON marshals all properties from the current struct to the destination stream.
+func MarshalJSONAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
 	dest.WriteObjectStart()
 	switch orig := orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
@@ -226,12 +226,12 @@ func MarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
 	case *otlpcommon.AnyValue_ArrayValue:
 		if orig.ArrayValue != nil {
 			dest.WriteObjectField("arrayValue")
-			MarshalJSONOrigArrayValue(orig.ArrayValue, dest)
+			MarshalJSONArrayValue(orig.ArrayValue, dest)
 		}
 	case *otlpcommon.AnyValue_KvlistValue:
 		if orig.KvlistValue != nil {
 			dest.WriteObjectField("kvlistValue")
-			MarshalJSONOrigKeyValueList(orig.KvlistValue, dest)
+			MarshalJSONKeyValueList(orig.KvlistValue, dest)
 		}
 	case *otlpcommon.AnyValue_BytesValue:
 
@@ -241,8 +241,8 @@ func MarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONOrigValue unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
+// UnmarshalJSONValue unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 
@@ -302,8 +302,8 @@ func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolAnyValue_ArrayValue.Get().(*otlpcommon.AnyValue_ArrayValue)
 				}
-				ov.ArrayValue = NewOrigArrayValue()
-				UnmarshalJSONOrigArrayValue(ov.ArrayValue, iter)
+				ov.ArrayValue = NewArrayValue()
+				UnmarshalJSONArrayValue(ov.ArrayValue, iter)
 				orig.Value = ov
 			}
 
@@ -315,8 +315,8 @@ func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 				} else {
 					ov = ProtoPoolAnyValue_KvlistValue.Get().(*otlpcommon.AnyValue_KvlistValue)
 				}
-				ov.KvlistValue = NewOrigKeyValueList()
-				UnmarshalJSONOrigKeyValueList(ov.KvlistValue, iter)
+				ov.KvlistValue = NewKeyValueList()
+				UnmarshalJSONKeyValueList(ov.KvlistValue, iter)
 				orig.Value = ov
 			}
 
@@ -338,7 +338,7 @@ func UnmarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, iter *json.Iterator) {
 	}
 }
 
-func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {
+func SizeProtoAnyValue(orig *otlpcommon.AnyValue) int {
 	var n int
 	var l int
 	_ = l
@@ -356,10 +356,10 @@ func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {
 	case *otlpcommon.AnyValue_DoubleValue:
 		n += 9
 	case *otlpcommon.AnyValue_ArrayValue:
-		l = SizeProtoOrigArrayValue(orig.ArrayValue)
+		l = SizeProtoArrayValue(orig.ArrayValue)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpcommon.AnyValue_KvlistValue:
-		l = SizeProtoOrigKeyValueList(orig.KvlistValue)
+		l = SizeProtoKeyValueList(orig.KvlistValue)
 		n += 1 + proto.Sov(uint64(l)) + l
 	case *otlpcommon.AnyValue_BytesValue:
 		l = len(orig.BytesValue)
@@ -368,7 +368,7 @@ func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {
 	return n
 }
 
-func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
+func MarshalProtoAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
@@ -404,7 +404,7 @@ func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 
 	case *otlpcommon.AnyValue_ArrayValue:
 
-		l = MarshalProtoOrigArrayValue(orig.ArrayValue, buf[:pos])
+		l = MarshalProtoArrayValue(orig.ArrayValue, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -412,7 +412,7 @@ func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 
 	case *otlpcommon.AnyValue_KvlistValue:
 
-		l = MarshalProtoOrigKeyValueList(orig.KvlistValue, buf[:pos])
+		l = MarshalProtoKeyValueList(orig.KvlistValue, buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
@@ -430,7 +430,7 @@ func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
 	return len(buf) - pos
 }
 
-func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
+func UnmarshalProtoAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -534,8 +534,8 @@ func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
 			} else {
 				ov = ProtoPoolAnyValue_ArrayValue.Get().(*otlpcommon.AnyValue_ArrayValue)
 			}
-			ov.ArrayValue = NewOrigArrayValue()
-			err = UnmarshalProtoOrigArrayValue(ov.ArrayValue, buf[startPos:pos])
+			ov.ArrayValue = NewArrayValue()
+			err = UnmarshalProtoArrayValue(ov.ArrayValue, buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -557,8 +557,8 @@ func UnmarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) error {
 			} else {
 				ov = ProtoPoolAnyValue_KvlistValue.Get().(*otlpcommon.AnyValue_KvlistValue)
 			}
-			ov.KvlistValue = NewOrigKeyValueList()
-			err = UnmarshalProtoOrigKeyValueList(ov.KvlistValue, buf[startPos:pos])
+			ov.KvlistValue = NewKeyValueList()
+			err = UnmarshalProtoKeyValueList(ov.KvlistValue, buf[startPos:pos])
 			if err != nil {
 				return err
 			}

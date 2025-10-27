@@ -19,10 +19,10 @@ import (
 //
 // Must use NewMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Metrics internal.Metrics
+type Metrics internal.MetricsWrapper
 
 func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *internal.State) Metrics {
-	return Metrics(internal.NewMetrics(orig, state))
+	return Metrics(internal.NewMetricsWrapper(orig, state))
 }
 
 // NewMetrics creates a new empty Metrics.
@@ -30,7 +30,7 @@ func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, state *i
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetrics() Metrics {
-	return newMetrics(internal.NewOrigExportMetricsServiceRequest(), internal.NewState())
+	return newMetrics(internal.NewExportMetricsServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,7 +42,7 @@ func (ms Metrics) MoveTo(dest Metrics) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	internal.DeleteOrigExportMetricsServiceRequest(dest.getOrig(), false)
+	internal.DeleteExportMetricsServiceRequest(dest.getOrig(), false)
 	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
@@ -54,13 +54,13 @@ func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
 	dest.getState().AssertMutable()
-	internal.CopyOrigExportMetricsServiceRequest(dest.getOrig(), ms.getOrig())
+	internal.CopyExportMetricsServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
 func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return internal.GetOrigMetrics(internal.Metrics(ms))
+	return internal.GetMetricsOrig(internal.MetricsWrapper(ms))
 }
 
 func (ms Metrics) getState() *internal.State {
-	return internal.GetMetricsState(internal.Metrics(ms))
+	return internal.GetMetricsState(internal.MetricsWrapper(ms))
 }

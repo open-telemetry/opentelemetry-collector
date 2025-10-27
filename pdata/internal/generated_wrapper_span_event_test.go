@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestCopyOrigSpan_Event(t *testing.T) {
+func TestCopySpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -31,26 +31,26 @@ func TestCopyOrigSpan_Event(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				dest := NewOrigSpan_Event()
-				CopyOrigSpan_Event(dest, src)
+				dest := NewSpan_Event()
+				CopySpan_Event(dest, src)
 				assert.Equal(t, src, dest)
-				CopyOrigSpan_Event(dest, dest)
+				CopySpan_Event(dest, dest)
 				assert.Equal(t, src, dest)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan_EventUnknown(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpan_EventUnknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
-	dest := NewOrigSpan_Event()
-	UnmarshalJSONOrigSpan_Event(dest, iter)
+	dest := NewSpan_Event()
+	UnmarshalJSONSpan_Event(dest, iter)
 	require.NoError(t, iter.Error())
-	assert.Equal(t, NewOrigSpan_Event(), dest)
+	assert.Equal(t, NewSpan_Event(), dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
+func TestMarshalAndUnmarshalJSONSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -62,39 +62,39 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
 
 				stream := json.BorrowStream(nil)
 				defer json.ReturnStream(stream)
-				MarshalJSONOrigSpan_Event(src, stream)
+				MarshalJSONSpan_Event(src, stream)
 				require.NoError(t, stream.Error())
 
 				iter := json.BorrowIterator(stream.Buffer())
 				defer json.ReturnIterator(iter)
-				dest := NewOrigSpan_Event()
-				UnmarshalJSONOrigSpan_Event(dest, iter)
+				dest := NewSpan_Event()
+				UnmarshalJSONSpan_Event(dest, iter)
 				require.NoError(t, iter.Error())
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan_Event(dest, true)
+				DeleteSpan_Event(dest, true)
 			})
 		}
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_EventFailing(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpan_EventFailing(t *testing.T) {
 	for name, buf := range genTestFailingUnmarshalProtoValuesSpan_Event() {
 		t.Run(name, func(t *testing.T) {
-			dest := NewOrigSpan_Event()
-			require.Error(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+			dest := NewSpan_Event()
+			require.Error(t, UnmarshalProtoSpan_Event(dest, buf))
 		})
 	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_EventUnknown(t *testing.T) {
-	dest := NewOrigSpan_Event()
+func TestMarshalAndUnmarshalProtoSpan_EventUnknown(t *testing.T) {
+	dest := NewSpan_Event()
 	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
-	require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
-	assert.Equal(t, NewOrigSpan_Event(), dest)
+	require.NoError(t, UnmarshalProtoSpan_Event(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, NewSpan_Event(), dest)
 }
 
-func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
+func TestMarshalAndUnmarshalProtoSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
@@ -104,15 +104,15 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
 				}()
 
-				buf := make([]byte, SizeProtoOrigSpan_Event(src))
-				gotSize := MarshalProtoOrigSpan_Event(src, buf)
+				buf := make([]byte, SizeProtoSpan_Event(src))
+				gotSize := MarshalProtoSpan_Event(src, buf)
 				assert.Equal(t, len(buf), gotSize)
 
-				dest := NewOrigSpan_Event()
-				require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+				dest := NewSpan_Event()
+				require.NoError(t, UnmarshalProtoSpan_Event(dest, buf))
 
 				assert.Equal(t, src, dest)
-				DeleteOrigSpan_Event(dest, true)
+				DeleteSpan_Event(dest, true)
 			})
 		}
 	}
@@ -121,8 +121,8 @@ func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
 func TestMarshalAndUnmarshalProtoViaProtobufSpan_Event(t *testing.T) {
 	for name, src := range genTestEncodingValuesSpan_Event() {
 		t.Run(name, func(t *testing.T) {
-			buf := make([]byte, SizeProtoOrigSpan_Event(src))
-			gotSize := MarshalProtoOrigSpan_Event(src, buf)
+			buf := make([]byte, SizeProtoSpan_Event(src))
+			gotSize := MarshalProtoSpan_Event(src, buf)
 			assert.Equal(t, len(buf), gotSize)
 
 			goDest := &gootlptrace.Span_Event{}
@@ -131,8 +131,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpan_Event(t *testing.T) {
 			goBuf, err := proto.Marshal(goDest)
 			require.NoError(t, err)
 
-			dest := NewOrigSpan_Event()
-			require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, goBuf))
+			dest := NewSpan_Event()
+			require.NoError(t, UnmarshalProtoSpan_Event(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}
@@ -154,10 +154,10 @@ func genTestFailingUnmarshalProtoValuesSpan_Event() map[string][]byte {
 
 func genTestEncodingValuesSpan_Event() map[string]*otlptrace.Span_Event {
 	return map[string]*otlptrace.Span_Event{
-		"empty":                       NewOrigSpan_Event(),
+		"empty":                       NewSpan_Event(),
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"Name/test":                   {Name: "test_name"},
-		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestOrigKeyValue()}},
+		"Attributes/default_and_test": {Attributes: []otlpcommon.KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 	}
 }

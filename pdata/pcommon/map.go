@@ -16,24 +16,24 @@ import (
 //
 // Must use NewMap function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Map internal.Map
+type Map internal.MapWrapper
 
 // NewMap creates a Map with 0 elements.
 func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	return Map(internal.NewMap(&orig, internal.NewState()))
+	return Map(internal.NewMapWrapper(&orig, internal.NewState()))
 }
 
 func (m Map) getOrig() *[]otlpcommon.KeyValue {
-	return internal.GetOrigMap(internal.Map(m))
+	return internal.GetMapOrig(internal.MapWrapper(m))
 }
 
 func (m Map) getState() *internal.State {
-	return internal.GetMapState(internal.Map(m))
+	return internal.GetMapState(internal.MapWrapper(m))
 }
 
 func newMap(orig *[]otlpcommon.KeyValue, state *internal.State) Map {
-	return Map(internal.NewMap(orig, state))
+	return Map(internal.NewMapWrapper(orig, state))
 }
 
 // Clear erases any existing entries in this Map instance.
@@ -197,7 +197,7 @@ func (m Map) PutEmptyBytes(k string) ByteSlice {
 	}
 	ov := internal.NewOrigAnyValueBytesValue()
 	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
-	return ByteSlice(internal.NewByteSlice(&ov.BytesValue, m.getState()))
+	return ByteSlice(internal.NewByteSliceWrapper(&ov.BytesValue, m.getState()))
 }
 
 // PutEmptyMap inserts or updates an empty map under given key and returns it.
@@ -207,9 +207,9 @@ func (m Map) PutEmptyMap(k string) Map {
 		return av.SetEmptyMap()
 	}
 	ov := internal.NewOrigAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewOrigKeyValueList()
+	ov.KvlistValue = internal.NewKeyValueList()
 	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
-	return Map(internal.NewMap(&ov.KvlistValue.Values, m.getState()))
+	return Map(internal.NewMapWrapper(&ov.KvlistValue.Values, m.getState()))
 }
 
 // PutEmptySlice inserts or updates an empty slice under given key and returns it.
@@ -219,9 +219,9 @@ func (m Map) PutEmptySlice(k string) Slice {
 		return av.SetEmptySlice()
 	}
 	ov := internal.NewOrigAnyValueArrayValue()
-	ov.ArrayValue = internal.NewOrigArrayValue()
+	ov.ArrayValue = internal.NewArrayValue()
 	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: ov}})
-	return Slice(internal.NewSlice(&ov.ArrayValue.Values, m.getState()))
+	return Slice(internal.NewSliceWrapper(&ov.ArrayValue.Values, m.getState()))
 }
 
 // Len returns the length of this map.
@@ -242,7 +242,7 @@ func (m Map) Len() int {
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.getOrig() {
 		kv := &(*m.getOrig())[i]
-		if !f(kv.Key, Value(internal.NewValue(&kv.Value, m.getState()))) {
+		if !f(kv.Key, Value(internal.NewValueWrapper(&kv.Value, m.getState()))) {
 			break
 		}
 	}
@@ -257,7 +257,7 @@ func (m Map) All() iter.Seq2[string, Value] {
 	return func(yield func(string, Value) bool) {
 		for i := range *m.getOrig() {
 			kv := &(*m.getOrig())[i]
-			if !yield(kv.Key, Value(internal.NewValue(&kv.Value, m.getState()))) {
+			if !yield(kv.Key, Value(internal.NewValueWrapper(&kv.Value, m.getState()))) {
 				return
 			}
 		}
@@ -283,7 +283,7 @@ func (m Map) CopyTo(dest Map) {
 	if m.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrigKeyValueSlice(*dest.getOrig(), *m.getOrig())
+	*dest.getOrig() = internal.CopyKeyValueSlice(*dest.getOrig(), *m.getOrig())
 }
 
 // AsRaw returns a standard go map representation of this Map.
