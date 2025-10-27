@@ -130,7 +130,7 @@ func TestCreateLogger(t *testing.T) {
 			},
 		},
 		{
-			name: "log config with resource_as_zap_field disabled",
+			name: "log config with `disable_resource_attributes` enabled",
 			cfg: Config{
 				Logs: LogsConfig{
 					Level:                     zapcore.InfoLevel,
@@ -141,7 +141,7 @@ func TestCreateLogger(t *testing.T) {
 					DisableCaller:             false,
 					DisableStacktrace:         false,
 					InitialFields:             map[string]any(nil),
-					DisableResourceAttributes: false,
+					DisableResourceAttributes: true,
 				},
 			},
 		},
@@ -168,7 +168,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig map[string]*string
 		wantFields     map[string]string
-		cfg            *Config
 	}{
 		{
 			name: "auto-populated fields only",
@@ -181,14 +180,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceNameKey):       "mycommand",
 				string(semconv.ServiceVersionKey):    "1.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
-			},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: true,
-				},
-				Resource: map[string]*string{},
 			},
 		},
 		{
@@ -205,14 +196,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceVersionKey):    "1.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
 			},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: true,
-				},
-				Resource: map[string]*string{},
-			},
 		},
 		{
 			name: "override service.version",
@@ -227,14 +210,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceNameKey):       "mycommand",
 				string(semconv.ServiceVersionKey):    "2.0.0",
 				string(semconv.ServiceInstanceIDKey): "",
-			},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: true,
-				},
-				Resource: map[string]*string{},
 			},
 		},
 		{
@@ -252,14 +227,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceInstanceIDKey): "", // Just check presence
 				"custom.field":                       "custom-value",
 			},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: true,
-				},
-				Resource: map[string]*string{},
-			},
 		},
 		{
 			name:           "resource with no attributes",
@@ -269,31 +236,15 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				// A random UUID is injected for service.instance.id by default
 				string(semconv.ServiceInstanceIDKey): "", // Just check presence
 			},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: true,
-				},
-				Resource: map[string]*string{},
-			},
 		},
 		{
-			name: "validate `ResourceAsZapFields=false` shouldn't add resource fields",
+			name: "validate `DisableResourceAttributes=true` shouldn't add resource fields",
 			buildInfo: component.BuildInfo{
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
 			resourceConfig: map[string]*string{},
 			wantFields:     map[string]string{},
-			cfg: &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: false,
-				},
-				Resource: map[string]*string{},
-			},
 		},
 	}
 
@@ -308,9 +259,18 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				},
 			}
 
-			cfg := tt.cfg
-			if cfg == nil {
+			cfg := &Config{
+				Logs: LogsConfig{
+					Level:                     zapcore.InfoLevel,
+					Encoding:                  "json",
+					DisableResourceAttributes: false,
+				},
+				Resource: tt.resourceConfig,
+			}
+
+			if tt.name == "validate `DisableResourceAttributes=true` shouldn't add resource fields" {
 				cfg = createDefaultConfig().(*Config)
+				cfg.Logs.DisableResourceAttributes = true
 			}
 			if tt.resourceConfig != nil {
 				cfg.Resource = tt.resourceConfig
