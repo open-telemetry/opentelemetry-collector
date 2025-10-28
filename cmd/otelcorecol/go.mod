@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.138.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.138.0
 	go.opentelemetry.io/collector/service v0.138.0
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 )
 
 require (
