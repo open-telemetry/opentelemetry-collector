@@ -127,6 +127,15 @@ type AuthConfig struct {
 	_ struct{}
 }
 
+func (sc *ServerConfig) Validate() error {
+	_, err := sc.getListenConfig()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	cfg, err := sc.getListenConfig() // See listen_config_*.go for platform-specific implementations

@@ -1224,3 +1224,16 @@ func TestServerReusePort(t *testing.T) {
 		})
 	}
 }
+
+func TestServerConfigValidate(t *testing.T) {
+	sc := &ServerConfig{
+		Endpoint:  "localhost:4318",
+		ReusePort: true,
+	}
+
+	if runtime.GOOS == "windows" {
+		require.Error(t, sc.Validate())
+	} else {
+		require.NoError(t, sc.Validate())
+	}
+}
