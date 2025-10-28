@@ -168,6 +168,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig map[string]*string
 		wantFields     map[string]string
+		cfg            *Config
 	}{
 		{
 			name: "auto-populated fields only",
@@ -243,6 +244,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
+			cfg:            createDefaultConfig().(*Config),
 			resourceConfig: map[string]*string{},
 			wantFields:     map[string]string{},
 		},
@@ -259,19 +261,21 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				},
 			}
 
-			cfg := &Config{
-				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Encoding:                  "json",
-					DisableResourceAttributes: false,
-				},
-				Resource: tt.resourceConfig,
-			}
-
-			if tt.name == "validate `DisableResourceAttributes=true` shouldn't add resource fields" {
-				cfg = createDefaultConfig().(*Config)
+			var cfg *Config
+			if tt.cfg == nil {
+				cfg = &Config{
+					Logs: LogsConfig{
+						Level:                     zapcore.InfoLevel,
+						Encoding:                  "json",
+						DisableResourceAttributes: false,
+					},
+					Resource: tt.resourceConfig,
+				}
+			} else {
+				cfg = tt.cfg
 				cfg.Logs.DisableResourceAttributes = true
 			}
+
 			if tt.resourceConfig != nil {
 				cfg.Resource = tt.resourceConfig
 			}
