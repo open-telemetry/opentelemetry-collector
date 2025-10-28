@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -73,7 +72,7 @@ func TestSummaryDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, sharedState).SetCount(uint64(13)) })
+	assert.Panics(t, func() { newSummaryDataPoint(internal.NewSummaryDataPoint(), sharedState).SetCount(uint64(13)) })
 }
 
 func TestSummaryDataPoint_Sum(t *testing.T) {
@@ -83,13 +82,13 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, sharedState).SetSum(float64(3.1415926)) })
+	assert.Panics(t, func() { newSummaryDataPoint(internal.NewSummaryDataPoint(), sharedState).SetSum(float64(3.1415926)) })
 }
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
-	ms.orig.QuantileValues = internal.GenTestSummaryDataPoint_ValueAtQuantileSlice()
+	ms.orig.QuantileValues = internal.GenTestSummaryDataPointValueAtQuantilePtrSlice()
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
 }
 
@@ -102,6 +101,5 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	ms := newSummaryDataPoint(internal.GenTestSummaryDataPoint(), internal.NewState())
-	return ms
+	return newSummaryDataPoint(internal.GenTestSummaryDataPoint(), internal.NewState())
 }

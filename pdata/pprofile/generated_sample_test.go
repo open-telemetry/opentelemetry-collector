@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -50,7 +49,7 @@ func TestSample_StackIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.StackIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetStackIndex(int32(13)) })
+	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetStackIndex(int32(13)) })
 }
 
 func TestSample_Values(t *testing.T) {
@@ -74,7 +73,7 @@ func TestSample_LinkIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.LinkIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLinkIndex(int32(13)) })
+	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetLinkIndex(int32(13)) })
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {
@@ -85,6 +84,5 @@ func TestSample_TimestampsUnixNano(t *testing.T) {
 }
 
 func generateTestSample() Sample {
-	ms := newSample(internal.GenTestSample(), internal.NewState())
-	return ms
+	return newSample(internal.GenTestSample(), internal.NewState())
 }

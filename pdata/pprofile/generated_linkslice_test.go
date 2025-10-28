@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLinkSlice(t *testing.T) {
 	es := NewLinkSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newLinkSlice(&[]*otlpprofiles.Link{}, internal.NewState())
+	es = newLinkSlice(&[]*internal.Link{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLink()
@@ -36,7 +35,7 @@ func TestLinkSlice(t *testing.T) {
 func TestLinkSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newLinkSlice(&[]*otlpprofiles.Link{}, sharedState)
+	es := newLinkSlice(&[]*internal.Link{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestLinkSlice_Sort(t *testing.T) {
 
 func generateTestLinkSlice() LinkSlice {
 	ms := NewLinkSlice()
-	*ms.orig = internal.GenTestLinkSlice()
+	*ms.orig = internal.GenTestLinkPtrSlice()
 	return ms
 }

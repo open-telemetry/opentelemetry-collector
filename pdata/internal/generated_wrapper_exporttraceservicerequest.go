@@ -6,21 +6,12 @@
 
 package internal
 
-import (
-	"fmt"
-	"sync"
-
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
-)
-
 type TracesWrapper struct {
-	orig  *otlpcollectortrace.ExportTraceServiceRequest
+	orig  *ExportTraceServiceRequest
 	state *State
 }
 
-func GetTracesOrig(ms TracesWrapper) *otlpcollectortrace.ExportTraceServiceRequest {
+func GetTracesOrig(ms TracesWrapper) *ExportTraceServiceRequest {
 	return ms.orig
 }
 
@@ -28,157 +19,10 @@ func GetTracesState(ms TracesWrapper) *State {
 	return ms.state
 }
 
-func NewTracesWrapper(orig *otlpcollectortrace.ExportTraceServiceRequest, state *State) TracesWrapper {
+func NewTracesWrapper(orig *ExportTraceServiceRequest, state *State) TracesWrapper {
 	return TracesWrapper{orig: orig, state: state}
 }
 
 func GenTestTracesWrapper() TracesWrapper {
-	orig := GenTestExportTraceServiceRequest()
-	return NewTracesWrapper(orig, NewState())
-}
-
-var (
-	protoPoolExportTraceServiceRequest = sync.Pool{
-		New: func() any {
-			return &otlpcollectortrace.ExportTraceServiceRequest{}
-		},
-	}
-)
-
-func NewExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
-	if !UseProtoPooling.IsEnabled() {
-		return &otlpcollectortrace.ExportTraceServiceRequest{}
-	}
-	return protoPoolExportTraceServiceRequest.Get().(*otlpcollectortrace.ExportTraceServiceRequest)
-}
-
-func DeleteExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, nullable bool) {
-	if orig == nil {
-		return
-	}
-
-	if !UseProtoPooling.IsEnabled() {
-		orig.Reset()
-		return
-	}
-
-	for i := range orig.ResourceSpans {
-		DeleteResourceSpans(orig.ResourceSpans[i], true)
-	}
-
-	orig.Reset()
-	if nullable {
-		protoPoolExportTraceServiceRequest.Put(orig)
-	}
-}
-
-func CopyExportTraceServiceRequest(dest, src *otlpcollectortrace.ExportTraceServiceRequest) {
-	// If copying to same object, just return.
-	if src == dest {
-		return
-	}
-	dest.ResourceSpans = CopyResourceSpansSlice(dest.ResourceSpans, src.ResourceSpans)
-}
-
-func GenTestExportTraceServiceRequest() *otlpcollectortrace.ExportTraceServiceRequest {
-	orig := NewExportTraceServiceRequest()
-	orig.ResourceSpans = GenTestResourceSpansSlice()
-	return orig
-}
-
-// MarshalJSON marshals all properties from the current struct to the destination stream.
-func MarshalJSONExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(orig.ResourceSpans) > 0 {
-		dest.WriteObjectField("resourceSpans")
-		dest.WriteArrayStart()
-		MarshalJSONResourceSpans(orig.ResourceSpans[0], dest)
-		for i := 1; i < len(orig.ResourceSpans); i++ {
-			dest.WriteMore()
-			MarshalJSONResourceSpans(orig.ResourceSpans[i], dest)
-		}
-		dest.WriteArrayEnd()
-	}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONTraces unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, iter *json.Iterator) {
-	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
-		switch f {
-		case "resourceSpans", "resource_spans":
-			for iter.ReadArray() {
-				orig.ResourceSpans = append(orig.ResourceSpans, NewResourceSpans())
-				UnmarshalJSONResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], iter)
-			}
-
-		default:
-			iter.Skip()
-		}
-	}
-}
-
-func SizeProtoExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest) int {
-	var n int
-	var l int
-	_ = l
-	for i := range orig.ResourceSpans {
-		l = SizeProtoResourceSpans(orig.ResourceSpans[i])
-		n += 1 + proto.Sov(uint64(l)) + l
-	}
-	return n
-}
-
-func MarshalProtoExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, buf []byte) int {
-	pos := len(buf)
-	var l int
-	_ = l
-	for i := len(orig.ResourceSpans) - 1; i >= 0; i-- {
-		l = MarshalProtoResourceSpans(orig.ResourceSpans[i], buf[:pos])
-		pos -= l
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
-		pos--
-		buf[pos] = 0xa
-	}
-	return len(buf) - pos
-}
-
-func UnmarshalProtoExportTraceServiceRequest(orig *otlpcollectortrace.ExportTraceServiceRequest, buf []byte) error {
-	var err error
-	var fieldNum int32
-	var wireType proto.WireType
-
-	l := len(buf)
-	pos := 0
-	for pos < l {
-		// If in a group parsing, move to the next tag.
-		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
-		if err != nil {
-			return err
-		}
-		switch fieldNum {
-
-		case 1:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResourceSpans", wireType)
-			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
-			if err != nil {
-				return err
-			}
-			startPos := pos - length
-			orig.ResourceSpans = append(orig.ResourceSpans, NewResourceSpans())
-			err = UnmarshalProtoResourceSpans(orig.ResourceSpans[len(orig.ResourceSpans)-1], buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-		default:
-			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return NewTracesWrapper(GenTestExportTraceServiceRequest(), NewState())
 }

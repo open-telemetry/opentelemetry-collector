@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -22,11 +21,11 @@ import (
 // Must use NewKeyValueAndUnit function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type KeyValueAndUnit struct {
-	orig  *otlpprofiles.KeyValueAndUnit
+	orig  *internal.KeyValueAndUnit
 	state *internal.State
 }
 
-func newKeyValueAndUnit(orig *otlpprofiles.KeyValueAndUnit, state *internal.State) KeyValueAndUnit {
+func newKeyValueAndUnit(orig *internal.KeyValueAndUnit, state *internal.State) KeyValueAndUnit {
 	return KeyValueAndUnit{orig: orig, state: state}
 }
 
