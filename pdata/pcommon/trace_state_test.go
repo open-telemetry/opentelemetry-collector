@@ -12,14 +12,14 @@ import (
 )
 
 func TestTraceState_MoveTo(t *testing.T) {
-	ms := TraceState(internal.GenerateTestTraceState())
+	ms := TraceState(internal.GenTestTraceStateWrapper())
 	dest := NewTraceState()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewTraceState(), ms)
-	assert.Equal(t, TraceState(internal.GenerateTestTraceState()), dest)
+	assert.Equal(t, TraceState(internal.GenTestTraceStateWrapper()), dest)
 
 	dest.MoveTo(dest)
-	assert.Equal(t, TraceState(internal.GenerateTestTraceState()), dest)
+	assert.Equal(t, TraceState(internal.GenTestTraceStateWrapper()), dest)
 }
 
 func TestTraceState_CopyTo(t *testing.T) {
@@ -27,7 +27,7 @@ func TestTraceState_CopyTo(t *testing.T) {
 	orig := NewTraceState()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = TraceState(internal.GenerateTestTraceState())
+	orig = TraceState(internal.GenTestTraceStateWrapper())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

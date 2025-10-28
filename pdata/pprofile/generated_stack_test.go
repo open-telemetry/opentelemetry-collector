@@ -25,8 +25,8 @@ func TestStack_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestStack(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newStack(internal.NewOrigStack(), sharedState)) })
-	assert.Panics(t, func() { newStack(internal.NewOrigStack(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newStack(internal.NewStack(), sharedState)) })
+	assert.Panics(t, func() { newStack(internal.NewStack(), sharedState).MoveTo(dest) })
 }
 
 func TestStack_CopyTo(t *testing.T) {
@@ -39,17 +39,16 @@ func TestStack_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newStack(internal.NewOrigStack(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newStack(internal.NewStack(), sharedState)) })
 }
 
 func TestStack_LocationIndices(t *testing.T) {
 	ms := NewStack()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.LocationIndices())
-	ms.orig.LocationIndices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.LocationIndices())
+	ms.orig.LocationIndices = internal.GenTestInt32Slice()
+	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.LocationIndices())
 }
 
 func generateTestStack() Stack {
-	ms := newStack(internal.GenTestOrigStack(), internal.NewState())
-	return ms
+	return newStack(internal.GenTestStack(), internal.NewState())
 }

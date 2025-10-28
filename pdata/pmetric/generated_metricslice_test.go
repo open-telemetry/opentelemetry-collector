@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestMetricSlice(t *testing.T) {
 	es := NewMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newMetricSlice(&[]*otlpmetrics.Metric{}, internal.NewState())
+	es = newMetricSlice(&[]*internal.Metric{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMetric()
@@ -27,7 +26,7 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigMetric()
+		(*es.orig)[i] = internal.GenTestMetric()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestMetricSlice(t *testing.T) {
 func TestMetricSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newMetricSlice(&[]*otlpmetrics.Metric{}, sharedState)
+	es := newMetricSlice(&[]*internal.Metric{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestMetricSlice_Sort(t *testing.T) {
 
 func generateTestMetricSlice() MetricSlice {
 	ms := NewMetricSlice()
-	*ms.orig = internal.GenerateOrigTestMetricSlice()
+	*ms.orig = internal.GenTestMetricPtrSlice()
 	return ms
 }

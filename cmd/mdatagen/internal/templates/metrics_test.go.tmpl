@@ -121,12 +121,12 @@ func TestMetricsBuilder(t *testing.T) {
 				allMetricsCount++
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
-				{{- if not (attributeInfo .).Optional -}}
+				{{- if not (attributeInfo .).IsConditional -}}
 					, {{- template "getAttributeValue" . -}}
 				{{- end -}}
 				{{- end -}}
 				{{- range $metric.Attributes -}}
-                {{- if (attributeInfo .).Optional -}}
+                {{- if (attributeInfo .).IsConditional -}}
                     , With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
                 {{- end -}}
                 {{- end -}}
