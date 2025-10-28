@@ -520,6 +520,16 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
 		},
 		{
+			name:    "testdata/invalid_metric_stability.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' decoding failed due to the following error(s):\n\n'level' unsupported stability level: \"development42\"",
+		},
+		{
+			name:    "testdata/no_metric_stability.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' missing required field: `stability.level`",
+		},
+		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
