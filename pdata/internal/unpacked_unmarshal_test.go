@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
@@ -40,10 +39,10 @@ func TestUnmarshalUnpackedHistogramDataPoint(t *testing.T) {
 	pb = appendTag(pb, 7, proto.WireTypeI64) // explicit_bounds
 	pb = binary.LittleEndian.AppendUint64(pb, math.Float64bits(42.0))
 
-	var hdp otlpmetrics.HistogramDataPoint
-	err := UnmarshalProtoOrigHistogramDataPoint(&hdp, pb)
+	var hdp HistogramDataPoint
+	err := hdp.UnmarshalProto(pb)
 	require.NoError(t, err)
-	assert.Equal(t, otlpmetrics.HistogramDataPoint{
+	assert.Equal(t, HistogramDataPoint{
 		BucketCounts:   []uint64{42},
 		ExplicitBounds: []float64{42.0},
 	}, hdp)
@@ -54,10 +53,10 @@ func TestUnmarshalUnpackedExponentialHistogramDataPoint_Buckets(t *testing.T) {
 	pb = appendTag(pb, 2, proto.WireTypeVarint) // bucket_counts
 	pb = appendVarint(pb, 42)
 
-	var ehdpb otlpmetrics.ExponentialHistogramDataPoint_Buckets
-	err := UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(&ehdpb, pb)
+	var ehdpb ExponentialHistogramDataPointBuckets
+	err := ehdpb.UnmarshalProto(pb)
 	require.NoError(t, err)
-	assert.Equal(t, otlpmetrics.ExponentialHistogramDataPoint_Buckets{
+	assert.Equal(t, ExponentialHistogramDataPointBuckets{
 		BucketCounts: []uint64{42},
 	}, ehdpb)
 }

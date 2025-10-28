@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
 func TestResource_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestResource_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestResource(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newResource(internal.NewOrigResource(), sharedState)) })
-	assert.Panics(t, func() { newResource(internal.NewOrigResource(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newResource(internal.NewResource(), sharedState)) })
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).MoveTo(dest) })
 }
 
 func TestResource_CopyTo(t *testing.T) {
@@ -39,14 +38,14 @@ func TestResource_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newResource(internal.NewOrigResource(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newResource(internal.NewResource(), sharedState)) })
 }
 
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.getOrig().Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestResource_DroppedAttributesCount(t *testing.T) {
@@ -56,10 +55,9 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestResource() Resource {
-	ms := newResource(internal.GenTestOrigResource(), internal.NewState())
-	return ms
+	return newResource(internal.GenTestResource(), internal.NewState())
 }

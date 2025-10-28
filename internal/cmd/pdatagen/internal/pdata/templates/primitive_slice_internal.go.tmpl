@@ -12,32 +12,28 @@ import (
 	{{ end }}
 )
 
-type {{ .structName }} struct {
+type {{ .structName }}Wrapper struct {
 	orig *[]{{ .itemType }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ .itemType }} {
+func Get{{ .structName }}Orig(ms {{ .structName }}Wrapper) *[]{{ .itemType }} {
 	return ms.orig
 }
 
-func Get{{ .structName }}State(ms {{ .structName }}) *State {
+func Get{{ .structName }}State(ms {{ .structName }}Wrapper) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName }} {
-	return {{ .structName }}{orig: orig, state: state}
+func New{{ .structName }}Wrapper(orig *[]{{ .itemType }}, state *State) {{ .structName }}Wrapper {
+	return {{ .structName }}Wrapper{orig: orig, state: state}
 }
 
-func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
-	return New{{ .structName }}(&orig, NewState())
+func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
+	orig := []{{ .itemType }}{ {{ .testOrigVal }} }
+	return New{{ .structName }}Wrapper(&orig, NewState())
 }
 
-func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
-	return append(dst[:0], src...)
-}
-
-func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
-	return []{{ .itemType }}{ {{ .testOrigVal }} }
+func GenTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
+    return []{{ .itemType }}{ {{ .testOrigVal }} }
 }

@@ -9,19 +9,18 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	reqint "go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
 
 // MarshalMetrics marshals pmetric.Metrics along with the context into a byte slice.
 func MarshalMetrics(ctx context.Context, ld pmetric.Metrics) ([]byte, error) {
-	otlpMetrics := internal.MetricsToProto(internal.Metrics(ld))
-	rc := encodeContext(ctx)
-	mr := reqint.MetricsRequest{
+	mr := internal.MetricsRequest{
 		FormatVersion:  requestFormatVersion,
-		MetricsData:    &otlpMetrics,
-		RequestContext: &rc,
+		MetricsData:    internal.MetricsToProto(internal.MetricsWrapper(ld)),
+		RequestContext: encodeContext(ctx),
 	}
-	return mr.Marshal()
+	buf := make([]byte, mr.SizeProto())
+	mr.MarshalProto(buf)
+	return buf, nil
 }
 
 // UnmarshalMetrics unmarshals a byte slice into pmetric.Metrics and the context.
@@ -30,9 +29,9 @@ func UnmarshalMetrics(buf []byte) (context.Context, pmetric.Metrics, error) {
 	if !isRequestPayloadV1(buf) {
 		return ctx, pmetric.Metrics{}, ErrInvalidFormat
 	}
-	mr := reqint.MetricsRequest{}
-	if err := mr.Unmarshal(buf); err != nil {
+	mr := internal.MetricsRequest{}
+	if err := mr.UnmarshalProto(buf); err != nil {
 		return ctx, pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics request: %w", err)
 	}
-	return decodeContext(ctx, mr.RequestContext), pmetric.Metrics(internal.MetricsFromProto(*mr.MetricsData)), nil
+	return decodeContext(ctx, mr.RequestContext), pmetric.Metrics(internal.MetricsFromProto(mr.MetricsData)), nil
 }

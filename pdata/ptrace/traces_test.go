@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -41,22 +39,22 @@ func TestSpanCount(t *testing.T) {
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{{}},
+	assert.Equal(t, 0, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{{}},
 	}, new(internal.State)).SpanCount())
-	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
+	assert.Equal(t, 0, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{
 			{
-				ScopeSpans: []*otlptrace.ScopeSpans{{}},
+				ScopeSpans: []*internal.ScopeSpans{{}},
 			},
 		},
 	}, new(internal.State)).SpanCount())
-	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
+	assert.Equal(t, 1, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{
 			{
-				ScopeSpans: []*otlptrace.ScopeSpans{
+				ScopeSpans: []*internal.ScopeSpans{
 					{
-						Spans: []*otlptrace.Span{{}},
+						Spans: []*internal.Span{{}},
 					},
 				},
 			},

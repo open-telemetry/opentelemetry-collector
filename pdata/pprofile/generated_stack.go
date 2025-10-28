@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewStack function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Stack struct {
-	orig  *otlpprofiles.Stack
+	orig  *internal.Stack
 	state *internal.State
 }
 
-func newStack(orig *otlpprofiles.Stack, state *internal.State) Stack {
+func newStack(orig *internal.Stack, state *internal.State) Stack {
 	return Stack{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newStack(orig *otlpprofiles.Stack, state *internal.State) Stack {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewStack() Stack {
-	return newStack(internal.NewOrigStack(), internal.NewState())
+	return newStack(internal.NewStack(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,17 +44,17 @@ func (ms Stack) MoveTo(dest Stack) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigStack(dest.orig, false)
+	internal.DeleteStack(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // LocationIndices returns the LocationIndices associated with this Stack.
 func (ms Stack) LocationIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.LocationIndices, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Stack) CopyTo(dest Stack) {
 	dest.state.AssertMutable()
-	internal.CopyOrigStack(dest.orig, ms.orig)
+	internal.CopyStack(dest.orig, ms.orig)
 }

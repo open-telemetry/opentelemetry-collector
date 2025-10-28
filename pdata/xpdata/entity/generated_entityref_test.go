@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestEntityRef_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestEntityRef(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
-	assert.Panics(t, func() { newEntityRef(internal.NewOrigEntityRef(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newEntityRef(internal.NewEntityRef(), sharedState)) })
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).MoveTo(dest) })
 }
 
 func TestEntityRef_CopyTo(t *testing.T) {
@@ -40,7 +39,7 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newEntityRef(internal.NewOrigEntityRef(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newEntityRef(internal.NewEntityRef(), sharedState)) })
 }
 
 func TestEntityRef_SchemaUrl(t *testing.T) {
@@ -50,7 +49,7 @@ func TestEntityRef_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestEntityRef_Type(t *testing.T) {
@@ -60,24 +59,23 @@ func TestEntityRef_Type(t *testing.T) {
 	assert.Equal(t, "test_type", ms.Type())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, sharedState).SetType("test_type") })
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).SetType("test_type") })
 }
 
 func TestEntityRef_IdKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.IdKeys())
-	ms.getOrig().IdKeys = internal.GenerateOrigTestStringSlice()
-	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.IdKeys())
+	ms.getOrig().IdKeys = internal.GenTestStringSlice()
+	assert.Equal(t, pcommon.StringSlice(internal.GenTestStringSliceWrapper()), ms.IdKeys())
 }
 
 func TestEntityRef_DescriptionKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.DescriptionKeys())
-	ms.getOrig().DescriptionKeys = internal.GenerateOrigTestStringSlice()
-	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.DescriptionKeys())
+	ms.getOrig().DescriptionKeys = internal.GenTestStringSlice()
+	assert.Equal(t, pcommon.StringSlice(internal.GenTestStringSliceWrapper()), ms.DescriptionKeys())
 }
 
 func generateTestEntityRef() EntityRef {
-	ms := newEntityRef(internal.GenTestOrigEntityRef(), internal.NewState())
-	return ms
+	return newEntityRef(internal.GenTestEntityRef(), internal.NewState())
 }

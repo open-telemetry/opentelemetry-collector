@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestKeyValueAndUnitSlice(t *testing.T) {
 	es := NewKeyValueAndUnitSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newKeyValueAndUnitSlice(&[]*otlpprofiles.KeyValueAndUnit{}, internal.NewState())
+	es = newKeyValueAndUnitSlice(&[]*internal.KeyValueAndUnit{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewKeyValueAndUnit()
@@ -27,7 +26,7 @@ func TestKeyValueAndUnitSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigKeyValueAndUnit()
+		(*es.orig)[i] = internal.GenTestKeyValueAndUnit()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestKeyValueAndUnitSlice(t *testing.T) {
 func TestKeyValueAndUnitSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newKeyValueAndUnitSlice(&[]*otlpprofiles.KeyValueAndUnit{}, sharedState)
+	es := newKeyValueAndUnitSlice(&[]*internal.KeyValueAndUnit{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestKeyValueAndUnitSlice_Sort(t *testing.T) {
 
 func generateTestKeyValueAndUnitSlice() KeyValueAndUnitSlice {
 	ms := NewKeyValueAndUnitSlice()
-	*ms.orig = internal.GenerateOrigTestKeyValueAndUnitSlice()
+	*ms.orig = internal.GenTestKeyValueAndUnitPtrSlice()
 	return ms
 }

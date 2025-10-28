@@ -11,9 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -64,24 +61,24 @@ func TestSampleCount(t *testing.T) {
 }
 
 func TestSampleCountWithEmpty(t *testing.T) {
-	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{{}},
+	assert.Equal(t, 0, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{{}},
 	}, new(internal.State)).SampleCount())
-	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+	assert.Equal(t, 0, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{
 			{
-				ScopeProfiles: []*otlpprofile.ScopeProfiles{{}},
+				ScopeProfiles: []*internal.ScopeProfiles{{}},
 			},
 		},
 	}, new(internal.State)).SampleCount())
-	assert.Equal(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+	assert.Equal(t, 1, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{
 			{
-				ScopeProfiles: []*otlpprofile.ScopeProfiles{
+				ScopeProfiles: []*internal.ScopeProfiles{
 					{
-						Profiles: []*otlpprofile.Profile{
+						Profiles: []*internal.Profile{
 							{
-								Sample: []*otlpprofile.Sample{
+								Sample: []*internal.Sample{
 									{},
 								},
 							},
@@ -96,8 +93,8 @@ func TestSampleCountWithEmpty(t *testing.T) {
 func BenchmarkProfilesUsage(b *testing.B) {
 	pd := generateTestProfiles()
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	testValProfileID := ProfileID(data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	testSecondValProfileID := ProfileID(data.ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	testValProfileID := ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	testSecondValProfileID := ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 
 	b.ReportAllocs()
 

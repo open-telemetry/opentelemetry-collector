@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestSpanEventSlice(t *testing.T) {
 	es := NewSpanEventSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, internal.NewState())
+	es = newSpanEventSlice(&[]*internal.SpanEvent{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpanEvent()
@@ -27,7 +26,7 @@ func TestSpanEventSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSpan_Event()
+		(*es.orig)[i] = internal.GenTestSpanEvent()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestSpanEventSlice(t *testing.T) {
 func TestSpanEventSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, sharedState)
+	es := newSpanEventSlice(&[]*internal.SpanEvent{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestSpanEventSlice_Sort(t *testing.T) {
 
 func generateTestSpanEventSlice() SpanEventSlice {
 	ms := NewSpanEventSlice()
-	*ms.orig = internal.GenerateOrigTestSpan_EventSlice()
+	*ms.orig = internal.GenTestSpanEventPtrSlice()
 	return ms
 }

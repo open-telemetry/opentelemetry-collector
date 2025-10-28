@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestScopeProfilesSlice(t *testing.T) {
 	es := NewScopeProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, internal.NewState())
+	es = newScopeProfilesSlice(&[]*internal.ScopeProfiles{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeProfiles()
@@ -27,7 +26,7 @@ func TestScopeProfilesSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigScopeProfiles()
+		(*es.orig)[i] = internal.GenTestScopeProfiles()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestScopeProfilesSlice(t *testing.T) {
 func TestScopeProfilesSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, sharedState)
+	es := newScopeProfilesSlice(&[]*internal.ScopeProfiles{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestScopeProfilesSlice_Sort(t *testing.T) {
 
 func generateTestScopeProfilesSlice() ScopeProfilesSlice {
 	ms := NewScopeProfilesSlice()
-	*ms.orig = internal.GenerateOrigTestScopeProfilesSlice()
+	*ms.orig = internal.GenTestScopeProfilesPtrSlice()
 	return ms
 }

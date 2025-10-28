@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -27,8 +25,8 @@ func TestSpanLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSpanLink(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSpanLink(internal.NewOrigSpan_Link(), sharedState)) })
-	assert.Panics(t, func() { newSpanLink(internal.NewOrigSpan_Link(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSpanLink(internal.NewSpanLink(), sharedState)) })
+	assert.Panics(t, func() { newSpanLink(internal.NewSpanLink(), sharedState).MoveTo(dest) })
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
@@ -41,21 +39,21 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSpanLink(internal.NewOrigSpan_Link(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSpanLink(internal.NewSpanLink(), sharedState)) })
 }
 
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(internal.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(internal.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestSpanLink_SpanID(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(internal.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(internal.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
@@ -63,15 +61,15 @@ func TestSpanLink_SpanID(t *testing.T) {
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
-	ms.orig.TraceState = *internal.GenTestOrigTraceState()
-	assert.Equal(t, pcommon.TraceState(internal.NewTraceState(internal.GenTestOrigTraceState(), ms.state)), ms.TraceState())
+	ms.orig.TraceState = *internal.GenTestTraceState()
+	assert.Equal(t, pcommon.TraceState(internal.GenTestTraceStateWrapper()), ms.TraceState())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
@@ -81,7 +79,7 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, sharedState).SetDroppedAttributesCount(uint32(13)) })
+	assert.Panics(t, func() { newSpanLink(internal.NewSpanLink(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func TestSpanLink_Flags(t *testing.T) {
@@ -91,10 +89,9 @@ func TestSpanLink_Flags(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.Flags())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, sharedState).SetFlags(uint32(13)) })
+	assert.Panics(t, func() { newSpanLink(internal.NewSpanLink(), sharedState).SetFlags(uint32(13)) })
 }
 
 func generateTestSpanLink() SpanLink {
-	ms := newSpanLink(internal.GenTestOrigSpan_Link(), internal.NewState())
-	return ms
+	return newSpanLink(internal.GenTestSpanLink(), internal.NewState())
 }

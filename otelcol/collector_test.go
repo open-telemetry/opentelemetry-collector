@@ -7,8 +7,6 @@ package otelcol
 import (
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -26,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/telemetrytest"
 )
 
 func TestStateString(t *testing.T) {
@@ -79,47 +79,33 @@ func TestCollectorCancelContext(t *testing.T) {
 }
 
 func TestCollectorStateAfterConfigChange(t *testing.T) {
-	metricsPushRequests := make(chan chan struct{})
-	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		unblock := make(chan struct{})
-		select {
-		case <-r.Context().Done():
-		case metricsPushRequests <- unblock:
-			select {
-			case <-unblock:
-			case <-r.Context().Done():
-			}
-		}
-	}))
-	defer srv.Close()
-
 	var watcher confmap.WatcherFunc
 	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		watcher = w
 		conf := newConfFromFile(t, uri[5:])
-		conf["service"].(map[string]any)["telemetry"] = map[string]any{
-			"metrics": map[string]any{
-				"level": "basic",
-				"readers": []any{
-					map[string]any{
-						// Use a periodic metric reader with a long period,
-						// so we should only see an export on shutdown.
-						"periodic": map[string]any{
-							"interval": 30000, // 30s
-							"exporter": map[string]any{
-								"otlp": map[string]any{
-									"endpoint": srv.URL,
-									"insecure": true,
-									"protocol": "http/protobuf",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
 		return confmap.NewRetrieved(conf)
 	})
+
+	shutdownRequests := make(chan chan struct{})
+	shutdown := func(ctx context.Context) error {
+		unblock := make(chan struct{})
+		select {
+		case <-ctx.Done():
+		case shutdownRequests <- unblock:
+			select {
+			case <-unblock:
+			case <-ctx.Done():
+			}
+		}
+		return nil
+	}
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.NewNop(), shutdown),
+	)
+
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
@@ -130,7 +116,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	}
 	col, err := NewCollector(CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
+		Factories:              func() (Factories, error) { return factories, nil },
 		ConfigProviderSettings: set,
 	})
 	require.NoError(t, err)
@@ -145,7 +131,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	// push to the OTLP endpoint. We block the request to check
 	// the state of the collector during the config change event.
 	watcher(&confmap.ChangeEvent{})
-	unblock := <-metricsPushRequests
+	unblock := <-shutdownRequests
 	assert.Equal(t, StateClosing, col.GetState())
 	close(unblock)
 	assert.Eventually(t, func() bool {
@@ -156,13 +142,13 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	// config change to make sure the internal service shutdown
 	// does not influence collector shutdown.
 	watcher(&confmap.ChangeEvent{})
-	unblock = <-metricsPushRequests
+	unblock = <-shutdownRequests
 	assert.Equal(t, StateClosing, col.GetState())
 	col.Shutdown()
 	close(unblock)
 
 	// After the config reload, the final shutdown should occur.
-	close(<-metricsPushRequests)
+	close(<-shutdownRequests)
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
 }
@@ -402,55 +388,34 @@ func TestNewCollectorValidatesResolverSettings(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
-	tests := []struct {
-		file        string
-		errExpected bool
-	}{
-		{file: "otelcol-invalidprop.yaml", errExpected: true},
-		{file: "otelcol-nop.yaml", errExpected: false},
-		{file: "otelcol-validprop.yaml", errExpected: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.file, func(t *testing.T) {
-			set := CollectorSettings{
-				BuildInfo:              component.NewDefaultBuildInfo(),
-				Factories:              nopFactories,
-				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", tt.file)}),
-			}
-
-			col, err := NewCollector(set)
-			require.NoError(t, err)
-
-			if tt.errExpected {
-				require.Error(t, col.Run(context.Background()))
-				assert.Equal(t, StateClosed, col.GetState())
-			} else {
-				wg := startCollector(context.Background(), t, col)
-				col.Shutdown()
-				wg.Wait()
-				assert.Equal(t, StateClosed, col.GetState())
-			}
-		})
-	}
-}
-
 func TestCollectorRun(t *testing.T) {
-	tests := []struct {
-		file string
+	tests := map[string]struct {
+		factories  func() (Factories, error)
+		configFile string
 	}{
-		{file: "otelcol-noreaders.yaml"},
-		{file: "otelcol-emptyreaders.yaml"},
-		{file: "otelcol-multipleheaders.yaml"},
+		"nop": {
+			factories:  nopFactories,
+			configFile: "otelcol-nop.yaml",
+		},
+		"defaul_telemetry_factory": {
+			factories: func() (Factories, error) {
+				factories, err := nopFactories()
+				if err != nil {
+					return Factories{}, err
+				}
+				factories.Telemetry = nil
+				return factories, nil
+			},
+			configFile: "otelcol-otelconftelemetry.yaml",
+		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.file, func(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 			set := CollectorSettings{
 				BuildInfo:              component.NewDefaultBuildInfo(),
-				Factories:              nopFactories,
-				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", tt.file)}),
+				Factories:              test.factories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", test.configFile)}),
 			}
 			col, err := NewCollector(set)
 			require.NoError(t, err)
@@ -464,7 +429,7 @@ func TestCollectorRun(t *testing.T) {
 	}
 }
 
-func TestCollectorShutdownBeforeRun(t *testing.T) {
+func TestCollectorRun_AfterShutdown(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
@@ -483,21 +448,50 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
-func TestCollectorClosedStateOnStartUpError(t *testing.T) {
-	// Load a bad config causing startup to fail
-	set := CollectorSettings{
-		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+func TestCollectorRun_Errors(t *testing.T) {
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"factories_error": {
+			settings: CollectorSettings{
+				Factories: func() (Factories, error) {
+					return Factories{}, errors.New("no factories for you")
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+			},
+			expectedErr: "failed to initialize factories: no factories for you",
+		},
+		"invalid_processor": {
+			settings: CollectorSettings{
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: `invalid configuration: service::pipelines::traces: references processor "invalid" which is not configured`,
+		},
+		"invalid_telemetry_config": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
+			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
+		},
 	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
 
-	// Expect run to error
-	require.Error(t, col.Run(context.Background()))
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
 
-	// Expect state to be closed
-	assert.Equal(t, StateClosed, col.GetState())
+			// Expect run to error
+			err = col.Run(context.Background())
+			require.EqualError(t, err, test.expectedErr)
+
+			// Expect state to be closed
+			assert.Equal(t, StateClosed, col.GetState())
+		})
+	}
 }
 
 func TestCollectorDryRun(t *testing.T) {
@@ -505,6 +499,15 @@ func TestCollectorDryRun(t *testing.T) {
 		settings    CollectorSettings
 		expectedErr string
 	}{
+		"factories_error": {
+			settings: CollectorSettings{
+				Factories: func() (Factories, error) {
+					return Factories{}, errors.New("no factories for you")
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+			},
+			expectedErr: "failed to initialize factories: no factories for you",
+		},
 		"invalid_processor": {
 			settings: CollectorSettings{
 				BuildInfo:              component.NewDefaultBuildInfo(),
@@ -536,6 +539,28 @@ func TestCollectorDryRun(t *testing.T) {
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-cyclic-connector.yaml")}),
 			},
 			expectedErr: `failed to build pipelines: cycle detected: connector "nop/forward" (traces to traces) -> connector "nop/forward" (traces to traces)`,
+		},
+		"invalid_telemetry_config": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
+			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
+		},
+		"default_telemetry_factory": {
+			settings: CollectorSettings{
+				BuildInfo: component.NewDefaultBuildInfo(),
+				Factories: func() (Factories, error) {
+					factories, err := nopFactories()
+					if err != nil {
+						return Factories{}, err
+					}
+					factories.Telemetry = nil
+					return factories, nil
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
+			},
 		},
 	}
 

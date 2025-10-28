@@ -21,8 +21,6 @@ var pcommon = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
-			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		},
 		testImports: []string{
 			`"strconv"`,
@@ -35,14 +33,13 @@ var pcommon = &Package{
 			`gootlpresource "go.opentelemetry.io/proto/slim/otlp/resource/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
-			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 		},
 	},
 	structs: []baseStruct{
 		anyValueStruct,
 		arrayValueStruct,
+		keyValueStruct,
 		keyValueListStruct,
 		anyValueSlice,
 		scope,
@@ -57,10 +54,11 @@ var pcommon = &Package{
 }
 
 var scope = &messageStruct{
-	structName:     "InstrumentationScope",
-	packageName:    "pcommon",
-	description:    "// InstrumentationScope is a message representing the instrumentation scope information.",
-	originFullName: "otlpcommon.InstrumentationScope",
+	structName:    "InstrumentationScope",
+	packageName:   "pcommon",
+	description:   "// InstrumentationScope is a message representing the instrumentation scope information.",
+	protoName:     "InstrumentationScope",
+	upstreamProto: "gootlpcommon.InstrumentationScope",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Name",
@@ -92,36 +90,42 @@ var mapStruct = &messageSlice{
 	structName:      "Map",
 	packageName:     "pcommon",
 	elementNullable: false,
-	element: &messageStruct{
-		originFullName: "otlpcommon.KeyValue",
-		fields: []Field{
-			&PrimitiveField{
-				fieldName: "Key",
-				protoID:   1,
-				protoType: proto.TypeString,
-			},
-			&MessageField{
-				fieldName:     "Value",
-				protoID:       2,
-				returnMessage: anyValue,
-			},
-		},
-	},
+	element:         keyValueStruct,
 }
 
-var anyValue = &messageStruct{
-	structName:     "Value",
-	packageName:    "pcommon",
-	originFullName: "otlpcommon.AnyValue",
+var keyValueStruct = &messageStruct{
+	structName:    "KeyValue",
+	protoName:     "KeyValue",
+	upstreamProto: "gootlpcommon.KeyValue",
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "Key",
+			protoID:   1,
+			protoType: proto.TypeString,
+		},
+		&MessageField{
+			fieldName:     "Value",
+			protoID:       2,
+			returnMessage: anyValueClone,
+		},
+	},
+	hasOnlyInternal: true,
+}
+
+var anyValueClone = &messageStruct{
+	structName: "Value",
+	protoName:  "AnyValue",
 }
 
 // anyValueStruct needs to be different from anyValue because otherwise we cause initialization circular deps with mapStruct.
 var anyValueStruct = &messageStruct{
-	structName:     "Value",
-	originFullName: "otlpcommon.AnyValue",
+	structName:    "Value",
+	packageName:   "pcommon",
+	protoName:     "AnyValue",
+	upstreamProto: "gootlpcommon.AnyValue",
 	fields: []Field{
 		&OneOfField{
-			typeName:                   "MetricType",
+			typeName:                   "ValueType",
 			originFieldName:            "Value",
 			testValueIdx:               1, //
 			omitOriginFieldNameInNames: true,
@@ -169,13 +173,14 @@ var anyValueStruct = &messageStruct{
 			},
 		},
 	},
-	hasOnlyOrig: true,
+	hasOnlyInternal: true,
 }
 
 var keyValueListStruct = &messageStruct{
-	structName:     "KeyValueList",
-	description:    "KeyValueList is a list of KeyValue messages. We need KeyValueList as a message since oneof in AnyValue does not allow repeated fields.",
-	originFullName: "otlpcommon.KeyValueList",
+	structName:    "KeyValueList",
+	description:   "// KeyValueList is a list of KeyValue messages. We need KeyValueList as a message since oneof in AnyValue does not allow repeated fields.",
+	protoName:     "KeyValueList",
+	upstreamProto: "gootlpcommon.KeyValueList",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Values",
@@ -184,13 +189,14 @@ var keyValueListStruct = &messageStruct{
 			returnSlice: mapStruct,
 		},
 	},
-	hasOnlyOrig: true,
+	hasOnlyInternal: true,
 }
 
 var arrayValueStruct = &messageStruct{
-	structName:     "ArrayValue",
-	description:    "// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message since oneof in AnyValue does not allow repeated fields.",
-	originFullName: "otlpcommon.ArrayValue",
+	structName:    "ArrayValue",
+	description:   "// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message since oneof in AnyValue does not allow repeated fields.",
+	protoName:     "ArrayValue",
+	upstreamProto: "gootlpcommon.ArrayValue",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Values",
@@ -199,20 +205,20 @@ var arrayValueStruct = &messageStruct{
 			returnSlice: anyValueSlice,
 		},
 	},
-	hasOnlyOrig: true,
+	hasOnlyInternal: true,
 }
 
 var anyValueSlice = &messageSlice{
 	structName:      "Slice",
 	packageName:     "pcommon",
 	elementNullable: false,
-	element:         anyValue,
+	element:         anyValueClone,
 }
 
 var traceState = &messageStruct{
-	structName:     "TraceState",
-	packageName:    "pcommon",
-	originFullName: "otlpcommon.TraceState", // Fake name to generate correct CopyOrig* name.
+	structName:  "TraceState",
+	packageName: "pcommon",
+	protoName:   "TraceState", // Fake name to generate correct CopyOrig* name.
 }
 
 var timestampType = &TypedType{
@@ -227,25 +233,26 @@ var traceIDType = &TypedType{
 	structName:  "TraceID",
 	packageName: "pcommon",
 	protoType:   proto.TypeMessage,
-	messageName: "data.TraceID",
-	defaultVal:  "data.TraceID([16]byte{})",
-	testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+	messageName: "TraceID",
+	defaultVal:  "TraceID([16]byte{})",
+	testVal:     "TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var spanIDType = &TypedType{
 	structName:  "SpanID",
 	packageName: "pcommon",
 	protoType:   proto.TypeMessage,
-	messageName: "data.SpanID",
-	defaultVal:  "data.SpanID([8]byte{})",
-	testVal:     "data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
+	messageName: "SpanID",
+	defaultVal:  "SpanID([8]byte{})",
+	testVal:     "SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var resource = &messageStruct{
-	structName:     "Resource",
-	packageName:    "pcommon",
-	description:    "// Resource is a message representing the resource information.",
-	originFullName: "otlpresource.Resource",
+	structName:    "Resource",
+	packageName:   "pcommon",
+	description:   "// Resource is a message representing the resource information.",
+	protoName:     "Resource",
+	upstreamProto: "gootlpresource.Resource",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",

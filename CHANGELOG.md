@@ -7,6 +7,34 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove deprecated type `TracesConfig` (#14036)
+- `pkg/exporterhelper`: Add default values for `sending_queue::batch` configuration. (#13766)
+  Setting `sending_queue::batch` to an empty value now results in the same setup as the default batch processor configuration.
+  
+- `all`: Add unified print-config command with mode support (redacted, unredacted), json support (unstable), and validation support. (#11775)
+  This replaces the `print-initial-config` command. See the `service` package README for more details. The original command name `print-initial-config` remains an alias, to be retired with the feature flag.
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/otelcol`: Avoid unnecessary mutex in collector logs, replace by atomic pointer (#14008)
+- `cmd/mdatagen`: Add lint/ordering validation for metadata.yaml (#13781)
+- `pdata/xpdata`: Refactor JSON marshaling and unmarshaling to use `pcommon.Value` instead of `AnyValue`. (#13837)
+- `pkg/exporterhelper`: Expose `MergeCtx` in exporterhelper's queue batch settings` (#13742)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Fix zstd decoder data corruption due to decoder pooling for all components that create an HTTP server. (#13954)
+- `pkg/otelcol`: Remove UB when taking internal logs and move them to the final zapcore.Core (#14009)
+  This can happen because of a race on accessing `logsTaken`.
+- `pkg/confmap`: Fix a potential race condition in confmap by closing the providers first. (#14018)
+
+<!-- previous-version -->
+
 ## v1.43.0/v0.137.0
 
 ### 💡 Enhancements 💡

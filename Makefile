@@ -176,95 +176,24 @@ ocb:
 	$(MAKE) -C cmd/builder config
 	$(MAKE) -C cmd/builder ocb
 
-# Definitions for ProtoBuf generation.
-
-# The source directory for OTLP ProtoBufs.
-OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
-
-# The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.8.0
-
-# Find all .proto files.
-OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1development/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1development/*.proto))
-
-# Target directory to write generated files to.
-PROTO_TARGET_GEN_DIR=pdata/internal/data/protogen
-
-# Go package name to use for generated files.
-PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
-
-# Intermediate directory used during generation.
-PROTO_INTERMEDIATE_DIR=pdata/internal/.patched-otlp-proto
-
-DOCKERCMD ?= docker
-DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
-PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
-PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
-
-# Cleanup temporary directory
-genproto-cleanup:
-	rm -Rf ${OPENTELEMETRY_PROTO_SRC_DIR}
-
-# Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
-genproto: genproto-cleanup
-	mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
-	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
-	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
-	$(MAKE) genproto_sub
-	$(MAKE) genproto_internal
-	$(MAKE) fmt
-	$(MAKE) genproto-cleanup
-
-genproto_sub:
-	@echo Generating code for the following files:
-	@$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,echo $(file)))
-
-	@echo Delete intermediate directory.
-	@rm -rf $(PROTO_INTERMEDIATE_DIR)
-
-	@echo Copy .proto file to intermediate directory.
-	mkdir -p $(PROTO_INTERMEDIATE_DIR)/opentelemetry
-	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/* $(PROTO_INTERMEDIATE_DIR)/opentelemetry
-
-	# Patch proto files. See proto_patch.sed for patching rules.
-	@echo Modify them in the intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
-
-	# HACK: Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
-	# reserved 1000 -> repeated ScopeLogs deprecated_scope_logs = 1000;
-	sed 's/reserved 1000;/repeated ScopeLogs deprecated_scope_logs = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
-	# reserved 1000 -> repeated ScopeMetrics deprecated_scope_metrics = 1000;
-	sed 's/reserved 1000;/repeated ScopeMetrics deprecated_scope_metrics = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
-	# reserved 1000 -> repeated ScopeSpans deprecated_scope_spans = 1000;
-	sed 's/reserved 1000;/repeated ScopeSpans deprecated_scope_spans = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/trace/v1/trace.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/trace/v1/trace.proto
-
-
-	@echo Generate Go code from .proto files in intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
-
-	@echo Move generated code to target directory.
-	mkdir -p $(PROTO_TARGET_GEN_DIR)
-	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
-	rm -rf $(PROTO_INTERMEDIATE_DIR)/go.opentelemetry.io
-
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
-
-# Generate structs, functions and tests for pdata package. Must be used after any changes
-# to proto and after running `make genproto`
+# Generate structs, functions and tests for pdata package.
 genpdata:
 	cd internal/cmd/pdatagen && $(GOCMD) run main.go -C $(SRC_ROOT)
 	$(MAKE) -C pdata fmt
 
-INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
-INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
-INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} -I/usr/include/github.com/gogo/protobuf -I${PWD}/$(PROTO_INTERMEDIATE_DIR) --gogofaster_out=plugins=grpc,paths=source_relative:.
+DOCKERCMD ?= docker
+DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
 
-.PHONY: genproto_internal
-genproto_internal:
-	@echo "Generating Go code for internal proto files"
-	@echo "Found proto files: $(INTERNAL_PROTO_FILES)"
-	$(foreach file,$(INTERNAL_PROTO_FILES),$(call exec-command,$(INTERNAL_PROTOC) $(file)))
+PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue
+PROTO_FILES := $(foreach dir,$(PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
+PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=plugins=grpc,paths=source_relative:.
+
+.PHONY: genproto
+genproto:
+	@echo "Generating Go code for proto files"
+	@echo "Found proto files: $(PROTO_FILES)"
+	$(foreach file,$(PROTO_FILES),$(call exec-command,$(PROTOC) $(file)))
+	$(MAKE) fmt
 
 ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 

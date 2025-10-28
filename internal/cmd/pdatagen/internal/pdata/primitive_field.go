@@ -44,12 +44,10 @@ const primitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	{{- end }}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, sharedState).Set{{ .fieldName }}({{ .testValue }}) })
+	assert.Panics(t, func() { new{{ .structName }}(internal.New{{ .originStructName }}(), sharedState).Set{{ .fieldName }}({{ .testValue }}) })
 }`
 
 const primitiveSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
-
-const primitiveCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
 type PrimitiveField struct {
 	fieldName string
@@ -72,48 +70,7 @@ func (pf *PrimitiveField) GenerateTestValue(ms *messageStruct) string {
 	return template.Execute(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
-	return pf.toProtoField().GenTestFailingUnmarshalProtoValues()
-}
-
-func (pf *PrimitiveField) GenerateTestEncodingValues(*messageStruct) string {
-	return pf.toProtoField().GenTestEncodingValues()
-}
-
-func (pf *PrimitiveField) GeneratePoolOrig(*messageStruct) string {
-	return ""
-}
-
-func (pf *PrimitiveField) GenerateDeleteOrig(*messageStruct) string {
-	return pf.toProtoField().GenDeleteOrig()
-}
-
-func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
-	t := template.Parse("primitiveCopyOrigTemplate", []byte(primitiveCopyOrigTemplate))
-	return template.Execute(t, pf.templateFields(ms))
-}
-
-func (pf *PrimitiveField) GenerateMarshalJSON(*messageStruct) string {
-	return pf.toProtoField().GenMarshalJSON()
-}
-
-func (pf *PrimitiveField) GenerateUnmarshalJSON(*messageStruct) string {
-	return pf.toProtoField().GenUnmarshalJSON()
-}
-
-func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {
-	return pf.toProtoField().GenSizeProto()
-}
-
-func (pf *PrimitiveField) GenerateMarshalProto(*messageStruct) string {
-	return pf.toProtoField().GenMarshalProto()
-}
-
-func (pf *PrimitiveField) GenerateUnmarshalProto(*messageStruct) string {
-	return pf.toProtoField().GenUnmarshalProto()
-}
-
-func (pf *PrimitiveField) toProtoField() *proto.Field {
+func (pf *PrimitiveField) toProtoField(*messageStruct) proto.FieldInterface {
 	return &proto.Field{
 		Type: pf.protoType,
 		ID:   pf.protoID,
@@ -122,7 +79,7 @@ func (pf *PrimitiveField) toProtoField() *proto.Field {
 }
 
 func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
-	prf := pf.toProtoField()
+	prf := pf.toProtoField(ms)
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
@@ -133,7 +90,7 @@ func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
 		"returnType":       prf.GoType(),
 		"origAccessor":     origAccessor(ms.getHasWrapper()),
 		"stateAccessor":    stateAccessor(ms.getHasWrapper()),
-		"originStructName": ms.originFullName,
+		"originStructName": ms.protoName,
 		"originFieldName":  pf.fieldName,
 	}
 }

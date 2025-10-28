@@ -13,7 +13,7 @@ import (
 const messageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .messageHasWrapper }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}Wrapper(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }})
 	{{- end }}
@@ -22,21 +22,20 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
-	ms.{{ .origAccessor }}.{{ .fieldOriginFullName }} = *internal.GenTestOrig{{ .fieldOriginName }}()
+	ms.{{ .origAccessor }}.{{ .fieldOriginFullName }} = *internal.GenTest{{ .fieldOriginName }}()
 	{{- if .messageHasWrapper }}
-	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(internal.GenTestOrig{{ .fieldOriginName }}(), ms.{{ .stateAccessor }})), ms.{{ .fieldName }}())
+	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenTest{{ .returnType }}Wrapper()), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTestOrig{{ .fieldOriginName }}()`
-
-const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
+const messageSetTestTemplate = `orig.{{ .fieldOriginFullName }} = *GenTest{{ .fieldOriginName }}()`
 
 type MessageField struct {
 	fieldName     string
 	protoID       uint32
+	nullable      bool
 	returnMessage *messageStruct
 }
 
@@ -55,58 +54,18 @@ func (mf *MessageField) GenerateTestValue(ms *messageStruct) string {
 	return template.Execute(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateTestFailingUnmarshalProtoValues(*messageStruct) string {
-	return mf.toProtoField().GenTestFailingUnmarshalProtoValues()
-}
-
-func (mf *MessageField) GenerateTestEncodingValues(*messageStruct) string {
-	return mf.toProtoField().GenTestEncodingValues()
-}
-
-func (mf *MessageField) GenerateDeleteOrig(*messageStruct) string {
-	return mf.toProtoField().GenDeleteOrig()
-}
-
-func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
-	t := template.Parse("messageCopyOrigTemplate", []byte(messageCopyOrigTemplate))
-	return template.Execute(t, mf.templateFields(ms))
-}
-
-func (mf *MessageField) GeneratePoolOrig(*messageStruct) string {
-	return ""
-}
-
-func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
-	return mf.toProtoField().GenMarshalJSON()
-}
-
-func (mf *MessageField) GenerateUnmarshalJSON(*messageStruct) string {
-	return mf.toProtoField().GenUnmarshalJSON()
-}
-
-func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
-	return mf.toProtoField().GenSizeProto()
-}
-
-func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
-	return mf.toProtoField().GenMarshalProto()
-}
-
-func (mf *MessageField) GenerateUnmarshalProto(*messageStruct) string {
-	return mf.toProtoField().GenUnmarshalProto()
-}
-
-func (mf *MessageField) toProtoField() *proto.Field {
+func (mf *MessageField) toProtoField(ms *messageStruct) proto.FieldInterface {
 	pt := proto.TypeMessage
 	if mf.returnMessage.getName() == "TraceState" {
 		pt = proto.TypeString
 	}
 	return &proto.Field{
-		Type:            pt,
-		ID:              mf.protoID,
-		Name:            mf.fieldName,
-		MessageFullName: mf.returnMessage.getOriginFullName(),
-		Nullable:        false,
+		Type:              pt,
+		ID:                mf.protoID,
+		Name:              mf.fieldName,
+		MessageName:       mf.returnMessage.getOriginName(),
+		ParentMessageName: ms.protoName,
+		Nullable:          mf.nullable,
 	}
 }
 

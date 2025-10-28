@@ -15,7 +15,7 @@ import (
 func Test{{ .structName }}(t *testing.T) {
 	es := New{{ .structName }}()
 	assert.Equal(t, 0, es.Len())
-	es = new{{ .structName }}(&[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{}, internal.NewState())
+	es = new{{ .structName }}(&[]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	{{ if eq .elementName "Value" -}}
@@ -24,14 +24,14 @@ func Test{{ .structName }}(t *testing.T) {
 	emptyVal := New{{ .elementName }}()
 	{{- end }}
 	{{- if .hasWrapper }}
-	testVal := {{ .elementName }}(internal.New{{ .elementName }}(internal.GenTestOrig{{ .elementOriginName }}(), internal.NewState()))
+	testVal := {{ .elementName }}(internal.GenTest{{ .elementName }}Wrapper())
 	{{- else }}
 	testVal := generateTest{{ .elementName }}()
 	{{- end }}
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-        (*es.{{ .origAccessor }})[i] = {{ if not .elementNullable }}*{{ end }}internal.GenTestOrig{{ .elementOriginName }}()
+        (*es.{{ .origAccessor }})[i] = {{ if not .elementNullable }}*{{ end }}internal.GenTest{{ .elementOriginName }}()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -40,7 +40,7 @@ func Test{{ .structName }}(t *testing.T) {
 func Test{{ .structName }}ReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := new{{ .structName }}(&[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}{}, sharedState)
+	es := new{{ .structName }}(&[]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -168,6 +168,6 @@ func Test{{ .structName }}_Sort(t *testing.T) {
 
 func generateTest{{ .structName }}() {{ .structName }} {
 	ms := New{{ .structName }}()
-	*ms.{{ .origAccessor }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
+	*ms.{{ .origAccessor }} = internal.GenTest{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice()
 	return ms
 }

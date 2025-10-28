@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestScopeMetricsSlice(t *testing.T) {
 	es := NewScopeMetricsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeMetricsSlice(&[]*otlpmetrics.ScopeMetrics{}, internal.NewState())
+	es = newScopeMetricsSlice(&[]*internal.ScopeMetrics{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeMetrics()
@@ -27,7 +26,7 @@ func TestScopeMetricsSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigScopeMetrics()
+		(*es.orig)[i] = internal.GenTestScopeMetrics()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestScopeMetricsSlice(t *testing.T) {
 func TestScopeMetricsSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newScopeMetricsSlice(&[]*otlpmetrics.ScopeMetrics{}, sharedState)
+	es := newScopeMetricsSlice(&[]*internal.ScopeMetrics{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestScopeMetricsSlice_Sort(t *testing.T) {
 
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {
 	ms := NewScopeMetricsSlice()
-	*ms.orig = internal.GenerateOrigTestScopeMetricsSlice()
+	*ms.orig = internal.GenTestScopeMetricsPtrSlice()
 	return ms
 }

@@ -86,15 +86,15 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 	maof(dp)
 }
 
-func WithOptionalIntAttrMetricAttribute(optionalIntAttrAttributeValue int64) MetricAttributeOption {
+func WithConditionalIntAttrMetricAttribute(conditionalIntAttrAttributeValue int64) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutInt("optional_int_attr", optionalIntAttrAttributeValue)
+		dp.Attributes().PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
 	})
 }
 
-func WithOptionalStringAttrMetricAttribute(optionalStringAttrAttributeValue string) MetricAttributeOption {
+func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValue string) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutStr("optional_string_attr", optionalStringAttrAttributeValue)
+		dp.Attributes().PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
 	})
 }
 
@@ -115,7 +115,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
+func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -128,6 +128,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -598,8 +599,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
+func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...MetricAttributeOption) {
+	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, optInBoolAttrAttributeValue, options...)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.

@@ -8,19 +8,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestDeprecatedScopeLogs(t *testing.T) {
-	sl := new(otlplogs.ScopeLogs)
-	rls := []*otlplogs.ResourceLogs{
+	sl := new(internal.ScopeLogs)
+	rls := []*internal.ResourceLogs{
 		{
-			ScopeLogs:           []*otlplogs.ScopeLogs{sl},
-			DeprecatedScopeLogs: []*otlplogs.ScopeLogs{sl},
+			ScopeLogs:           []*internal.ScopeLogs{sl},
+			DeprecatedScopeLogs: []*internal.ScopeLogs{sl},
 		},
 		{
-			ScopeLogs:           []*otlplogs.ScopeLogs{},
-			DeprecatedScopeLogs: []*otlplogs.ScopeLogs{sl},
+			ScopeLogs:           []*internal.ScopeLogs{},
+			DeprecatedScopeLogs: []*internal.ScopeLogs{sl},
 		},
 	}
 

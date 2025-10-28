@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestValue(t *testing.T) {
@@ -48,7 +47,7 @@ func TestValue(t *testing.T) {
 func TestValueReadOnly(t *testing.T) {
 	state := internal.NewState()
 	state.MarkReadOnly()
-	v := newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}, state)
+	v := newValue(&internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "v"}}, state)
 
 	assert.Equal(t, ValueTypeStr, v.Type())
 	assert.Equal(t, "v", v.Str())
@@ -157,8 +156,8 @@ func TestValueMap(t *testing.T) {
 	_, exists = m1.Map().Get("child_map")
 	assert.False(t, exists)
 
-	// Test nil KvlistValue case for Map() func.
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
+	// Test nil KvlistValue case for MapWrapper() func.
+	orig := &internal.AnyValue{Value: &internal.AnyValue_KvlistValue{KvlistValue: nil}}
 	m1 = newValue(orig, internal.NewState())
 	assert.Equal(t, Map{}, m1.Map())
 }
@@ -196,7 +195,7 @@ func TestValueSlice(t *testing.T) {
 	assert.Equal(t, "somestr", v.Str())
 
 	// Test nil values case for Slice() func.
-	a1 = newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}, internal.NewState())
+	a1 = newValue(&internal.AnyValue{Value: &internal.AnyValue_ArrayValue{ArrayValue: nil}}, internal.NewState())
 	assert.Equal(t, newSlice(nil, nil), a1.Slice())
 }
 
@@ -250,15 +249,15 @@ func TestValue_MoveTo(t *testing.T) {
 
 func TestValue_CopyTo(t *testing.T) {
 	dest := NewValueEmpty()
-	orig := internal.GenTestOrigAnyValue()
+	orig := internal.GenTestAnyValue()
 	newValue(orig, internal.NewState()).CopyTo(dest)
-	assert.Equal(t, internal.GenTestOrigAnyValue(), dest.getOrig())
+	assert.Equal(t, internal.GenTestAnyValue(), dest.getOrig())
 }
 
 func TestSliceWithNilValues(t *testing.T) {
-	origWithNil := []otlpcommon.AnyValue{
+	origWithNil := []internal.AnyValue{
 		{},
-		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+		{Value: &internal.AnyValue_StringValue{StringValue: "test_value"}},
 	}
 	sm := newSlice(&origWithNil, internal.NewState())
 
@@ -572,7 +571,9 @@ func TestInvalidValue(t *testing.T) {
 	assert.Panics(t, func() { v.SetEmptyBytes() })
 	assert.Panics(t, func() { v.SetEmptyMap() })
 	assert.Panics(t, func() { v.SetEmptySlice() })
-	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
+	nv := NewValueEmpty()
+	v.CopyTo(nv)
+	assert.Nil(t, nv.getOrig().Value)
 }
 
 func TestValueEqual(t *testing.T) {

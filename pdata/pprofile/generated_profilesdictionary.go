@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewProfilesDictionary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ProfilesDictionary struct {
-	orig  *otlpprofiles.ProfilesDictionary
+	orig  *internal.ProfilesDictionary
 	state *internal.State
 }
 
-func newProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, state *internal.State) ProfilesDictionary {
+func newProfilesDictionary(orig *internal.ProfilesDictionary, state *internal.State) ProfilesDictionary {
 	return ProfilesDictionary{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfilesDictionary() ProfilesDictionary {
-	return newProfilesDictionary(internal.NewOrigProfilesDictionary(), internal.NewState())
+	return newProfilesDictionary(internal.NewProfilesDictionary(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +44,7 @@ func (ms ProfilesDictionary) MoveTo(dest ProfilesDictionary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigProfilesDictionary(dest.orig, false)
+	internal.DeleteProfilesDictionary(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -71,7 +70,7 @@ func (ms ProfilesDictionary) LinkTable() LinkSlice {
 
 // StringTable returns the StringTable associated with this ProfilesDictionary.
 func (ms ProfilesDictionary) StringTable() pcommon.StringSlice {
-	return pcommon.StringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state))
+	return pcommon.StringSlice(internal.NewStringSliceWrapper(&ms.orig.StringTable, ms.state))
 }
 
 // AttributeTable returns the AttributeTable associated with this ProfilesDictionary.
@@ -87,5 +86,5 @@ func (ms ProfilesDictionary) StackTable() StackSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	internal.CopyOrigProfilesDictionary(dest.orig, ms.orig)
+	internal.CopyProfilesDictionary(dest.orig, ms.orig)
 }

@@ -8,16 +8,55 @@ import (
 	"strings"
 )
 
-type Field struct {
-	Type                 Type
-	Name                 string
-	OneOfGroup           string
-	OneOfMessageFullName string
-	MessageFullName      string
-	ID                   uint32
-	Repeated             bool
-	Nullable             bool
+// FieldInterface temporary interface until we generate the proto fields with pdatagen.
+// TODO: Remove when no more wrappers needed.
+type FieldInterface interface {
+	GenTestFailingUnmarshalProtoValues() string
+
+	GenTestEncodingValues() string
+
+	GenPool() string
+
+	GenDelete() string
+
+	GenCopy() string
+
+	GenMarshalJSON() string
+
+	GenUnmarshalJSON() string
+
+	GenSizeProto() string
+
+	GenMarshalProto() string
+
+	GenUnmarshalProto() string
+
+	GenMessageField() string
+
+	GenOneOfMessages() string
+
+	GoType() string
+
+	DefaultValue() string
+
+	TestValue() string
+
+	GetName() string
 }
+
+type Field struct {
+	Type              Type
+	Name              string
+	OneOfGroup        string
+	OneOfMessageName  string
+	MessageName       string
+	ParentMessageName string
+	ID                uint32
+	Repeated          bool
+	Nullable          bool
+}
+
+func (pf *Field) GetName() string { return pf.Name }
 
 func (pf *Field) wireType() WireType {
 	switch pf.Type {
@@ -57,13 +96,23 @@ func (pf *Field) DefaultValue() string {
 	case TypeString:
 		return `""`
 	case TypeMessage:
-		return pf.MessageFullName + `{}`
+		if pf.Nullable {
+			return `&` + pf.MessageName + `{}`
+		}
+		return pf.MessageName + `{}`
 	default:
 		panic("unsupported field type")
 	}
 }
 
 func (pf *Field) TestValue() string {
+	if pf.Repeated {
+		return pf.MemberGoType() + "{" + pf.DefaultValue() + ", " + pf.rawTestValue() + "}"
+	}
+	return pf.rawTestValue()
+}
+
+func (pf *Field) rawTestValue() string {
 	switch pf.Type {
 	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeSInt32, TypeSInt64, TypeEnum, TypeFixed32, TypeSFixed32, TypeFixed64, TypeSFixed64:
 		return pf.GoType() + "(13)"
@@ -76,7 +125,10 @@ func (pf *Field) TestValue() string {
 	case TypeString:
 		return `"test_` + strings.ToLower(pf.Name) + `"`
 	case TypeMessage:
-		return `GenTestOrig` + pf.messageName() + `()`
+		if pf.Nullable {
+			return `GenTest` + pf.MessageName + `()`
+		}
+		return `*GenTest` + pf.MessageName + `()`
 	default:
 		panic("unsupported field type")
 	}
@@ -103,10 +155,27 @@ func (pf *Field) GoType() string {
 	case TypeBytes:
 		return "[]byte"
 	case TypeMessage, TypeEnum:
-		return pf.MessageFullName
+		return pf.MessageName
 	default:
 		panic("unsupported field type")
 	}
+}
+
+func (pf *Field) MemberGoType() string {
+	ptrGoType := func() string {
+		if pf.Nullable {
+			return "*" + pf.GoType()
+		}
+		return pf.GoType()
+	}
+	if pf.Repeated {
+		return "[]" + ptrGoType()
+	}
+	return ptrGoType()
+}
+
+func (pf *Field) GenMessageField() string {
+	return pf.Name + " " + pf.MemberGoType()
 }
 
 func (pf *Field) getTemplateFields() map[string]any {
@@ -120,27 +189,22 @@ func (pf *Field) getTemplateFields() map[string]any {
 
 	protoTag := genProtoTag(pf.ID, pf.wireType())
 	return map[string]any{
-		"protoTagSize":         len(protoTag),
-		"protoTag":             protoTag,
-		"protoFieldID":         pf.ID,
-		"jsonTag":              genJSONTag(pf.Name),
-		"fieldName":            pf.Name,
-		"origName":             pf.messageName(),
-		"origFullName":         pf.MessageFullName,
-		"oneOfGroup":           pf.OneOfGroup,
-		"oneOfMessageName":     ExtractNameFromFull(pf.OneOfMessageFullName),
-		"oneOfMessageFullName": pf.OneOfMessageFullName,
-		"repeated":             pf.Repeated,
-		"nullable":             pf.Nullable,
-		"bitSize":              bitSize,
-		"goType":               pf.GoType(),
-		"defaultValue":         pf.DefaultValue(),
-		"testValue":            pf.TestValue(),
+		"protoTagSize":      len(protoTag),
+		"protoTag":          protoTag,
+		"protoFieldID":      pf.ID,
+		"jsonTag":           genJSONTag(pf.Name),
+		"fieldName":         pf.Name,
+		"messageName":       pf.MessageName,
+		"parentMessageName": pf.ParentMessageName,
+		"oneOfGroup":        pf.OneOfGroup,
+		"oneOfMessageName":  pf.OneOfMessageName,
+		"repeated":          pf.Repeated,
+		"nullable":          pf.Nullable,
+		"bitSize":           bitSize,
+		"goType":            pf.GoType(),
+		"defaultValue":      pf.DefaultValue(),
+		"testValue":         pf.TestValue(),
 	}
-}
-
-func (pf *Field) messageName() string {
-	return ExtractNameFromFull(pf.MessageFullName)
 }
 
 func genJSONTag(fieldName string) string {

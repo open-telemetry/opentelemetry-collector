@@ -10,12 +10,12 @@ import (
 const poolVarOrigTemplate = `
 	ProtoPool{{ .oneOfMessageName }} = sync.Pool{
 		New: func() any {
-			return &{{ .oneOfMessageFullName }}{}
+			return &{{ .oneOfMessageName }}{}
 		},
 	}
 `
 
-func (pf *Field) GenPoolVarOrig() string {
+func (pf *Field) GenPool() string {
 	tf := pf.getTemplateFields()
 	if pf.OneOfGroup != "" {
 		return template.Execute(template.Parse("poolVarOrigTemplate", []byte(poolVarOrigTemplate)), tf)

@@ -524,3 +524,47 @@ func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 
 	return NewFromStringMap(data).ToStringMap()
 }
+
+type provider struct {
+	wg sync.WaitGroup
+}
+
+func newRaceDetectorProvider() ProviderFactory {
+	return NewProviderFactory(func(_ ProviderSettings) Provider {
+		return &provider{}
+	})
+}
+
+func (p *provider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (*Retrieved, error) {
+	p.wg.Add(1)
+	go func() {
+		// mock a config change event and wait for goroutine to return.
+		defer p.wg.Done()
+		watcher(&ChangeEvent{})
+	}()
+	return NewRetrieved(map[string]any{})
+}
+
+func (p *provider) Scheme() string {
+	return "race"
+}
+
+func (p *provider) Shutdown(context.Context) error {
+	p.wg.Wait()
+	return nil
+}
+
+func TestProviderRaceCondition(t *testing.T) {
+	resolver, err := NewResolver(ResolverSettings{
+		URIs: []string{"race:"},
+		ProviderFactories: []ProviderFactory{
+			newRaceDetectorProvider(),
+		},
+		ConverterFactories: nil,
+	})
+	require.NoError(t, err)
+	c, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	require.NoError(t, resolver.Shutdown(context.Background()))
+}

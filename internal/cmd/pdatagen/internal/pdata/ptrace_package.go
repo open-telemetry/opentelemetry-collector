@@ -19,11 +19,8 @@ var ptrace = &Package{
 			`"sync"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
-			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
@@ -38,15 +35,13 @@ var ptrace = &Package{
 			`gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
-			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
-			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
 		traces,
+		tracesData,
 		resourceSpansSlice,
 		resourceSpans,
 		scopeSpansSlice,
@@ -59,12 +54,17 @@ var ptrace = &Package{
 		spanLink,
 		spanStatus,
 	},
+	enums: []*proto.Enum{
+		spanKindEnum,
+		statusCodeEnum,
+	},
 }
 
 var traces = &messageStruct{
-	structName:     "Traces",
-	description:    "// Traces is the top-level struct that is propagated through the traces pipeline.\n// Use NewTraces to create new instance, zero-initialized instance is not valid for use.",
-	originFullName: "otlpcollectortrace.ExportTraceServiceRequest",
+	structName:    "Traces",
+	description:   "// Traces is the top-level struct that is propagated through the traces pipeline.\n// Use NewTraces to create new instance, zero-initialized instance is not valid for use.",
+	protoName:     "ExportTraceServiceRequest",
+	upstreamProto: "gootlpcollectortrace.ExportTraceServiceRequest",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "ResourceSpans",
@@ -76,6 +76,22 @@ var traces = &messageStruct{
 	hasWrapper: true,
 }
 
+var tracesData = &messageStruct{
+	structName:    "TracesData",
+	description:   "// TracesData represents the traces data that can be stored in a persistent storage,\n// OR can be embedded by other protocols that transfer OTLP traces data but do not\n// implement the OTLP protocol.",
+	protoName:     "TracesData",
+	upstreamProto: "gootlptrace.TracesData",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceSpans",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: resourceSpansSlice,
+		},
+	},
+	hasOnlyInternal: true,
+}
+
 var resourceSpansSlice = &messageSlice{
 	structName:      "ResourceSpansSlice",
 	elementNullable: true,
@@ -83,9 +99,10 @@ var resourceSpansSlice = &messageSlice{
 }
 
 var resourceSpans = &messageStruct{
-	structName:     "ResourceSpans",
-	description:    "// ResourceSpans is a collection of spans from a Resource.",
-	originFullName: "otlptrace.ResourceSpans",
+	structName:    "ResourceSpans",
+	description:   "// ResourceSpans is a collection of spans from a Resource.",
+	protoName:     "ResourceSpans",
+	upstreamProto: "gootlptrace.ResourceSpans",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Resource",
@@ -103,6 +120,15 @@ var resourceSpans = &messageStruct{
 			protoID:   3,
 			protoType: proto.TypeString,
 		},
+		&SliceField{
+			fieldName:   "DeprecatedScopeSpans",
+			protoType:   proto.TypeMessage,
+			protoID:     1000,
+			returnSlice: scopeSpansSlice,
+			// Hide accessors for this field because it is a HACK:
+			// Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
+			hideAccessors: true,
+		},
 	},
 }
 
@@ -113,9 +139,10 @@ var scopeSpansSlice = &messageSlice{
 }
 
 var scopeSpans = &messageStruct{
-	structName:     "ScopeSpans",
-	description:    "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
-	originFullName: "otlptrace.ScopeSpans",
+	structName:    "ScopeSpans",
+	description:   "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
+	protoName:     "ScopeSpans",
+	upstreamProto: "gootlptrace.ScopeSpans",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Scope",
@@ -146,7 +173,8 @@ var span = &messageStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
-	originFullName: "otlptrace.Span",
+	protoName:     "Span",
+	upstreamProto: "gootlptrace.Span",
 	fields: []Field{
 		&TypedField{
 			fieldName:       "TraceID",
@@ -187,9 +215,9 @@ var span = &messageStruct{
 			returnType: &TypedType{
 				structName:  "SpanKind",
 				protoType:   proto.TypeEnum,
-				messageName: "otlptrace.Span_SpanKind",
-				defaultVal:  "otlptrace.Span_SpanKind(0)",
-				testVal:     "otlptrace.Span_SpanKind(3)",
+				messageName: "SpanKind",
+				defaultVal:  "SpanKind_SPAN_KIND_UNSPECIFIED",
+				testVal:     "SpanKind_SPAN_KIND_CLIENT",
 			},
 		},
 		&TypedField{
@@ -255,7 +283,8 @@ var spanEvent = &messageStruct{
 	structName: "SpanEvent",
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
-	originFullName: "otlptrace.Span_Event",
+	protoName:     "SpanEvent",
+	upstreamProto: "gootlptrace.Span_Event",
 	fields: []Field{
 		&TypedField{
 			fieldName:       "Timestamp",
@@ -293,7 +322,8 @@ var spanLink = &messageStruct{
 	description: "// SpanLink is a pointer from the current span to another span in the same trace or in a\n" +
 		"// different trace.\n" +
 		"// See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
-	originFullName: "otlptrace.Span_Link",
+	protoName:     "SpanLink",
+	upstreamProto: "gootlptrace.Span_Link",
 	fields: []Field{
 		&TypedField{
 			fieldName:       "TraceID",
@@ -335,7 +365,8 @@ var spanStatus = &messageStruct{
 	structName: "Status",
 	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
-	originFullName: "otlptrace.Status",
+	protoName:     "Status",
+	upstreamProto: "gootlptrace.Status",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Message",
@@ -348,10 +379,33 @@ var spanStatus = &messageStruct{
 			returnType: &TypedType{
 				structName:  "StatusCode",
 				protoType:   proto.TypeEnum,
-				messageName: "otlptrace.Status_StatusCode",
-				defaultVal:  "otlptrace.Status_StatusCode(0)",
-				testVal:     "otlptrace.Status_StatusCode(1)",
+				messageName: "StatusCode",
+				defaultVal:  "StatusCode_STATUS_CODE_UNSET",
+				testVal:     "StatusCode_STATUS_CODE_OK",
 			},
 		},
+	},
+}
+
+var spanKindEnum = &proto.Enum{
+	Name:        "SpanKind",
+	Description: "// SpanKind is the type of span.\n// Can be used to specify additional relationships between spans in addition to a parent/child relationship.",
+	Fields: []*proto.EnumField{
+		{Name: "SPAN_KIND_UNSPECIFIED", Value: 0},
+		{Name: "SPAN_KIND_INTERNAL", Value: 1},
+		{Name: "SPAN_KIND_SERVER", Value: 2},
+		{Name: "SPAN_KIND_CLIENT", Value: 3},
+		{Name: "SPAN_KIND_PRODUCER", Value: 4},
+		{Name: "SPAN_KIND_CONSUMER", Value: 5},
+	},
+}
+
+var statusCodeEnum = &proto.Enum{
+	Name:        "StatusCode",
+	Description: "// StatusCode is the status of the span, for the semantics of codes see\n// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status",
+	Fields: []*proto.EnumField{
+		{Name: "STATUS_CODE_UNSET", Value: 0},
+		{Name: "STATUS_CODE_OK", Value: 1},
+		{Name: "STATUS_CODE_ERROR", Value: 2},
 	},
 }

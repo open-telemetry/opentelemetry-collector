@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLine_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestLine_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLine(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLine(internal.NewOrigLine(), sharedState)) })
-	assert.Panics(t, func() { newLine(internal.NewOrigLine(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLine(internal.NewLine(), sharedState)) })
+	assert.Panics(t, func() { newLine(internal.NewLine(), sharedState).MoveTo(dest) })
 }
 
 func TestLine_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestLine_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLine(internal.NewOrigLine(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLine(internal.NewLine(), sharedState)) })
 }
 
 func TestLine_FunctionIndex(t *testing.T) {
@@ -49,7 +48,7 @@ func TestLine_FunctionIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.FunctionIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetFunctionIndex(int32(13)) })
+	assert.Panics(t, func() { newLine(internal.NewLine(), sharedState).SetFunctionIndex(int32(13)) })
 }
 
 func TestLine_Line(t *testing.T) {
@@ -59,7 +58,7 @@ func TestLine_Line(t *testing.T) {
 	assert.Equal(t, int64(13), ms.Line())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetLine(int64(13)) })
+	assert.Panics(t, func() { newLine(internal.NewLine(), sharedState).SetLine(int64(13)) })
 }
 
 func TestLine_Column(t *testing.T) {
@@ -69,10 +68,9 @@ func TestLine_Column(t *testing.T) {
 	assert.Equal(t, int64(13), ms.Column())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, sharedState).SetColumn(int64(13)) })
+	assert.Panics(t, func() { newLine(internal.NewLine(), sharedState).SetColumn(int64(13)) })
 }
 
 func generateTestLine() Line {
-	ms := newLine(internal.GenTestOrigLine(), internal.NewState())
-	return ms
+	return newLine(internal.GenTestLine(), internal.NewState())
 }

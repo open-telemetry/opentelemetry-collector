@@ -7,6 +7,32 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xexporterhelper`: Remove definition of Sizer from public API and ability to configure. (#14001)
+  Now that Request has both Items/Bytes sizes no need to allow custom sizers.
+  
+- `pkg/service`: The `service.Settings` type now requires a `telemetry.Factory` to be provided (#4970)
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecated `PutAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Deprecated `PutLocation` helper method (#14019)
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/pdata`: Add pcommon.Map helper to add a key to the map if does not exists (#14023)
+- `pdata/pprofile`: Introduce `Equal` method on the `KeyValueAndUnit` type (#14041)
+- `pkg/pdata`: Add `RemoveIf` method to primitive slice types (StringSlice, Int64Slice, UInt64Slice, Float64Slice, Int32Slice, ByteSlice) (#14027)
+- `pdata/pprofile`: Introduce `SetAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Introduce `SetLocation` helper method (#14019)
+- `pdata/pprofile`: Introduce `Equal` method on the `Stack` type (#13952)
+
+<!-- previous-version -->
+
 ## v1.43.0/v0.137.0
 
 ### 🛑 Breaking changes 🛑

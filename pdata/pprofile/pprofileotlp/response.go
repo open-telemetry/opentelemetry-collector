@@ -6,28 +6,27 @@ package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/ppr
 import (
 	"slices"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // MarshalProto marshals ExportResponse into proto bytes.
 func (ms ExportResponse) MarshalProto() ([]byte, error) {
-	size := internal.SizeProtoOrigExportProfilesServiceResponse(ms.orig)
+	size := ms.orig.SizeProto()
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportProfilesServiceResponse(ms.orig, buf)
+	_ = ms.orig.MarshalProto(buf)
 	return buf, nil
 }
 
 // UnmarshalProto unmarshalls ExportResponse from proto bytes.
 func (ms ExportResponse) UnmarshalProto(data []byte) error {
-	return internal.UnmarshalProtoOrigExportProfilesServiceResponse(ms.orig, data)
+	return ms.orig.UnmarshalProto(data)
 }
 
 // MarshalJSON marshals ExportResponse into JSON bytes.
 func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportProfilesServiceResponse(ms.orig, dest)
+	ms.orig.MarshalJSON(dest)
 	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
@@ -35,6 +34,6 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	internal.UnmarshalJSONOrigExportProfilesServiceResponse(ms.orig, iter)
+	ms.orig.UnmarshalJSON(iter)
 	return iter.Error()
 }

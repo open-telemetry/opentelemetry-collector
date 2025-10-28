@@ -619,6 +619,10 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
+			if s, ok := status.FromError(err); ok {
+				return nil, s.Err()
+			}
+
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 
@@ -636,6 +640,10 @@ func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerI
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
+			if s, ok := status.FromError(err); ok {
+				return s.Err()
+			}
+
 			return status.Error(codes.Unauthenticated, err.Error())
 		}
 

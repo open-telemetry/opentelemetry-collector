@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestMappingSlice(t *testing.T) {
 	es := NewMappingSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newMappingSlice(&[]*otlpprofiles.Mapping{}, internal.NewState())
+	es = newMappingSlice(&[]*internal.Mapping{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMapping()
@@ -27,7 +26,7 @@ func TestMappingSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigMapping()
+		(*es.orig)[i] = internal.GenTestMapping()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestMappingSlice(t *testing.T) {
 func TestMappingSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newMappingSlice(&[]*otlpprofiles.Mapping{}, sharedState)
+	es := newMappingSlice(&[]*internal.Mapping{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestMappingSlice_Sort(t *testing.T) {
 
 func generateTestMappingSlice() MappingSlice {
 	ms := NewMappingSlice()
-	*ms.orig = internal.GenerateOrigTestMappingSlice()
+	*ms.orig = internal.GenTestMappingPtrSlice()
 	return ms
 }
