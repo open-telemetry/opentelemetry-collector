@@ -265,7 +265,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelDevelopment},
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -280,7 +280,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelDevelopment},
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -297,7 +297,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
 							ExtendedDocumentation: "The metric will be removed soon.",
-							Stability:             Stability{Level: component.StabilityLevelDevelopment},
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
 							},

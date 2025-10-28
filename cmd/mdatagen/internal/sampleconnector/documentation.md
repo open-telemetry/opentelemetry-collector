@@ -40,7 +40,7 @@ The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Development |
+| s | Sum | Double | Delta | false | Deprecated |
 
 ### metric.input_type
 
@@ -76,7 +76,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 #### Attributes
 
@@ -92,7 +92,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Development |
+|  | Gauge | Double | Deprecated |
 
 #### Attributes
 
