@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // Profiles is the top-level struct that is propagated through the profiles pipeline.
@@ -19,10 +18,10 @@ import (
 //
 // Must use NewProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Profiles internal.Profiles
+type Profiles internal.ProfilesWrapper
 
-func newProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state *internal.State) Profiles {
-	return Profiles(internal.NewProfiles(orig, state))
+func newProfiles(orig *internal.ExportProfilesServiceRequest, state *internal.State) Profiles {
+	return Profiles(internal.NewProfilesWrapper(orig, state))
 }
 
 // NewProfiles creates a new empty Profiles.
@@ -30,7 +29,7 @@ func newProfiles(orig *otlpcollectorprofiles.ExportProfilesServiceRequest, state
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfiles() Profiles {
-	return newProfiles(internal.NewOrigExportProfilesServiceRequest(), internal.NewState())
+	return newProfiles(internal.NewExportProfilesServiceRequest(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,7 +41,7 @@ func (ms Profiles) MoveTo(dest Profiles) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	internal.DeleteOrigExportProfilesServiceRequest(dest.getOrig(), false)
+	internal.DeleteExportProfilesServiceRequest(dest.getOrig(), false)
 	*dest.getOrig(), *ms.getOrig() = *ms.getOrig(), *dest.getOrig()
 }
 
@@ -59,13 +58,13 @@ func (ms Profiles) Dictionary() ProfilesDictionary {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profiles) CopyTo(dest Profiles) {
 	dest.getState().AssertMutable()
-	internal.CopyOrigExportProfilesServiceRequest(dest.getOrig(), ms.getOrig())
+	internal.CopyExportProfilesServiceRequest(dest.getOrig(), ms.getOrig())
 }
 
-func (ms Profiles) getOrig() *otlpcollectorprofiles.ExportProfilesServiceRequest {
-	return internal.GetOrigProfiles(internal.Profiles(ms))
+func (ms Profiles) getOrig() *internal.ExportProfilesServiceRequest {
+	return internal.GetProfilesOrig(internal.ProfilesWrapper(ms))
 }
 
 func (ms Profiles) getState() *internal.State {
-	return internal.GetProfilesState(internal.Profiles(ms))
+	return internal.GetProfilesState(internal.ProfilesWrapper(ms))
 }

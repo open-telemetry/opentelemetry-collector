@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestStatus_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestStatus_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestStatus(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewOrigStatus(), sharedState)) })
-	assert.Panics(t, func() { newStatus(internal.NewOrigStatus(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newStatus(internal.NewStatus(), sharedState)) })
+	assert.Panics(t, func() { newStatus(internal.NewStatus(), sharedState).MoveTo(dest) })
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewOrigStatus(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newStatus(internal.NewStatus(), sharedState)) })
 }
 
 func TestStatus_Message(t *testing.T) {
@@ -49,18 +48,17 @@ func TestStatus_Message(t *testing.T) {
 	assert.Equal(t, "test_message", ms.Message())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, sharedState).SetMessage("test_message") })
+	assert.Panics(t, func() { newStatus(internal.NewStatus(), sharedState).SetMessage("test_message") })
 }
 
 func TestStatus_Code(t *testing.T) {
 	ms := NewStatus()
-	assert.Equal(t, StatusCode(otlptrace.Status_StatusCode(0)), ms.Code())
-	testValCode := StatusCode(otlptrace.Status_StatusCode(1))
+	assert.Equal(t, StatusCode(internal.StatusCode_STATUS_CODE_UNSET), ms.Code())
+	testValCode := StatusCode(internal.StatusCode_STATUS_CODE_OK)
 	ms.SetCode(testValCode)
 	assert.Equal(t, testValCode, ms.Code())
 }
 
 func generateTestStatus() Status {
-	ms := newStatus(internal.GenTestOrigStatus(), internal.NewState())
-	return ms
+	return newStatus(internal.GenTestStatus(), internal.NewState())
 }

@@ -29,6 +29,8 @@ func main() {
 		checkErr(fp.GenerateFiles())
 		checkErr(fp.GenerateTestFiles())
 		checkErr(fp.GenerateInternalFiles())
-		checkErr(fp.GenerateInternalTestsFiles())
+		checkErr(fp.GenerateProtoMessageFiles())
+		checkErr(fp.GenerateProtoMessageTestsFiles())
+		checkErr(fp.GenerateProtoEnumFiles())
 	}
 }

@@ -20,26 +20,26 @@ import (
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 {{- if .hasWrapper }}
-type {{ .structName }} internal.{{ .structName }}
+type {{ .structName }} internal.{{ .structName }}Wrapper
 {{- else }}
 type {{ .structName }} struct {
-	orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}
+	orig *[]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}
 	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, state *internal.State) {{ .structName }} {
+func new{{ .structName }}(orig *[]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}, state *internal.State) {{ .structName }} {
 	{{- if .hasWrapper }}
-	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
+	return {{ .structName }}(internal.New{{ .structName }}Wrapper(orig, state))
 	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
 	{{- end }}
 }
 
-// New{{ .structName }} creates a {{ .structName }} with 0 elements.
+// New{{ .structName }} creates a {{ .structName }}Wrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func New{{ .structName }}() {{ .structName }} {
-	orig := []{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}(nil)
+	orig := []{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}(nil)
 	return new{{ .structName }}(&orig, internal.NewState())
 }
 
@@ -94,7 +94,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }}, len(*es.{{ .origAccessor }}), newCap)
+	newOrig := make([]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}, len(*es.{{ .origAccessor }}), newCap)
 	copy(newOrig, *es.{{ .origAccessor }})
 	*es.{{ .origAccessor }} = newOrig
 }
@@ -103,7 +103,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 	es.{{ .stateAccessor }}.AssertMutable()
-	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.NewOrig{{ .elementOriginName }}(){{ else }}{{ .elementOriginFullName }}{}{{ end }})
+	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.New{{ .elementOriginName }}(){{ else }}internal.{{ .elementOriginName }}{}{{ end }})
 	return es.At(es.Len() - 1)
 }
 
@@ -133,10 +133,10 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 	for i := 0; i < len(*es.{{ .origAccessor }}); i++ {
 		if f(es.At(i)) {
 			{{ if .elementNullable -}}
-			internal.DeleteOrig{{ .elementOriginName }}((*es.{{ .origAccessor }})[i], true)
+			internal.Delete{{ .elementOriginName }}((*es.{{ .origAccessor }})[i], true)
 			(*es.{{ .origAccessor }})[i] = nil
 			{{ else -}}
-			internal.DeleteOrig{{ .elementOriginName }}(&(*es.{{ .origAccessor }})[i], false)
+			internal.Delete{{ .elementOriginName }}(&(*es.{{ .origAccessor }})[i], false)
 			{{- end }}
 			continue
 		}
@@ -163,7 +163,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
+	*dest.{{ .origAccessor }} = internal.Copy{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 }
 
 {{ if .elementNullable -}}
@@ -177,11 +177,11 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 {{- end }}
 
 {{ if .hasWrapper -}}
-func (ms {{ .structName }}) getOrig() *[]{{ if .elementNullable }}*{{ end }}{{ .elementOriginFullName }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+func (ms {{ .structName }}) getOrig() *[]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }} {
+	return internal.Get{{ .structName }}Orig(internal.{{ .structName }}Wrapper(ms))
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
-	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}Wrapper(ms))
 }
 {{- end }}

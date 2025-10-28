@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
-	assert.Panics(t, func() { newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(internal.NewHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewHistogramDataPoint(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -40,14 +39,14 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewOrigHistogramDataPoint(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(internal.NewHistogramDataPoint(), sharedState)) })
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.orig.Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
@@ -73,7 +72,7 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, sharedState).SetCount(uint64(13)) })
+	assert.Panics(t, func() { newHistogramDataPoint(internal.NewHistogramDataPoint(), sharedState).SetCount(uint64(13)) })
 }
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
@@ -93,21 +92,21 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
-	ms.orig.BucketCounts = internal.GenerateOrigTestUint64Slice()
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
+	ms.orig.BucketCounts = internal.GenTestUint64Slice()
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenTestUInt64SliceWrapper()), ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewFloat64Slice(), ms.ExplicitBounds())
-	ms.orig.ExplicitBounds = internal.GenerateOrigTestFloat64Slice()
-	assert.Equal(t, pcommon.Float64Slice(internal.GenerateTestFloat64Slice()), ms.ExplicitBounds())
+	ms.orig.ExplicitBounds = internal.GenTestFloat64Slice()
+	assert.Equal(t, pcommon.Float64Slice(internal.GenTestFloat64SliceWrapper()), ms.ExplicitBounds())
 }
 
 func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
+	ms.orig.Exemplars = internal.GenTestExemplarSlice()
 	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
@@ -148,6 +147,5 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	ms := newHistogramDataPoint(internal.GenTestOrigHistogramDataPoint(), internal.NewState())
-	return ms
+	return newHistogramDataPoint(internal.GenTestHistogramDataPoint(), internal.NewState())
 }

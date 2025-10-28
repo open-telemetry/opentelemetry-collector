@@ -53,11 +53,11 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = math.Float{{ .bitSize }}frombits(num)
 		orig.{{ .oneOfGroup }} = ov
@@ -109,11 +109,11 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = {{ .goType }}(num)
 		orig.{{ .oneOfGroup }} = ov
@@ -165,11 +165,11 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = num != 0
 		orig.{{ .oneOfGroup }} = ov
@@ -219,11 +219,11 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = {{ .goType }}(num)
 		orig.{{ .oneOfGroup }} = ov
@@ -243,11 +243,11 @@ const unmarshalProtoString = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = string(buf[startPos:pos])
 		orig.{{ .oneOfGroup }} = ov
@@ -269,11 +269,11 @@ const unmarshalProtoBytes = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		if length != 0 {
 			ov.{{ .fieldName }} = make([]byte, length)
@@ -306,27 +306,27 @@ const unmarshalProtoMessage = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
-		ov.{{ .fieldName }} = NewOrig{{ .origName }}()
-		err = UnmarshalProtoOrig{{ .origName }}(ov.{{ .fieldName }}, buf[startPos:pos])
+		ov.{{ .fieldName }} = New{{ .messageName }}()
+		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}NewOrig{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1], buf[startPos:pos])
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
+		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProto(buf[startPos:pos])
 		if err != nil {
 			return err
 		}
 {{- else }}
-		{{ if .nullable }}orig.{{ .fieldName }} = NewOrig{{ .origName }}(){{ end }}
-		err = UnmarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[startPos:pos]) 
+		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
+		err = orig.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos]) 
 		if err != nil {
 			return err
 		}
@@ -377,11 +377,11 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }}))
 		orig.{{ .oneOfGroup }} = ov

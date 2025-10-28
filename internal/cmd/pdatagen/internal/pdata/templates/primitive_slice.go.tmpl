@@ -17,31 +17,31 @@ import (
 //
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type {{ .structName }} internal.{{ .structName }}
+type {{ .structName }} internal.{{ .structName }}Wrapper
 
 func (ms {{ .structName }}) getOrig() *[]{{ .itemType }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+	return internal.Get{{ .structName }}Orig(internal.{{ .structName }}Wrapper(ms))
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
-	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}Wrapper(ms))
 }
 
 // New{{ .structName }} creates a new empty {{ .structName }}.
 func New{{ .structName }}() {{ .structName }} {
 	orig := []{{ .itemType }}(nil)
-	return {{ .structName }}(internal.New{{ .structName }}(&orig, internal.NewState()))
+	return {{ .structName }}(internal.New{{ .structName }}Wrapper(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
 func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
-	return internal.CopyOrig{{ .elementOriginName }}Slice(nil, *ms.getOrig())
+	return copy{{ .elementOriginName }}Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
 func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyOrig{{ .elementOriginName }}Slice(*ms.getOrig(), val)
+	*ms.getOrig() = copy{{ .elementOriginName }}Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []{{ .itemType }} slice value.
@@ -154,10 +154,14 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = copy{{ .elementOriginName }}Slice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another {{ .structName }}
 func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
+}
+
+func copy{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
+	return append(dst[:0], src...)
 }

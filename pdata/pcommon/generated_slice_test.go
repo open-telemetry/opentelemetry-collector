@@ -12,21 +12,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSlice(&[]otlpcommon.AnyValue{}, internal.NewState())
+	es = newSlice(&[]internal.AnyValue{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueEmpty()
-	testVal := Value(internal.NewValue(internal.GenTestOrigAnyValue(), internal.NewState()))
+	testVal := Value(internal.GenTestValueWrapper())
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.getOrig())[i] = *internal.GenTestOrigAnyValue()
+		(*es.getOrig())[i] = *internal.GenTestAnyValue()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -35,7 +34,7 @@ func TestSlice(t *testing.T) {
 func TestSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSlice(&[]otlpcommon.AnyValue{}, sharedState)
+	es := newSlice(&[]internal.AnyValue{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -145,6 +144,6 @@ func TestSliceAll(t *testing.T) {
 
 func generateTestSlice() Slice {
 	ms := NewSlice()
-	*ms.getOrig() = internal.GenerateOrigTestAnyValueSlice()
+	*ms.getOrig() = internal.GenTestAnyValueSlice()
 	return ms
 }

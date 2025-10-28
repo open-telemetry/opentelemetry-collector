@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestScopeLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeLogs(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(internal.NewOrigScopeLogs(), sharedState)) })
-	assert.Panics(t, func() { newScopeLogs(internal.NewOrigScopeLogs(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeLogs(internal.NewScopeLogs(), sharedState)) })
+	assert.Panics(t, func() { newScopeLogs(internal.NewScopeLogs(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeLogs_CopyTo(t *testing.T) {
@@ -40,20 +39,20 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(internal.NewOrigScopeLogs(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(internal.NewScopeLogs(), sharedState)) })
 }
 
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
-	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+	ms.orig.Scope = *internal.GenTestInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.GenTestInstrumentationScopeWrapper()), ms.Scope())
 }
 
 func TestScopeLogs_LogRecords(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
+	ms.orig.LogRecords = internal.GenTestLogRecordPtrSlice()
 	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
@@ -64,10 +63,9 @@ func TestScopeLogs_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newScopeLogs(internal.NewScopeLogs(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeLogs() ScopeLogs {
-	ms := newScopeLogs(internal.GenTestOrigScopeLogs(), internal.NewState())
-	return ms
+	return newScopeLogs(internal.GenTestScopeLogs(), internal.NewState())
 }

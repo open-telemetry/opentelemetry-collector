@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -140,7 +139,6 @@ func TestUnmarshalConfig(t *testing.T) {
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						}),
-						ResponseHeaders:   map[string]configopaque.String{},
 						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  "/traces",
@@ -171,7 +169,6 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint:          "/tmp/http_otlp.sock",
-						ResponseHeaders:   map[string]configopaque.String{},
 						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  defaultTracesURLPath,

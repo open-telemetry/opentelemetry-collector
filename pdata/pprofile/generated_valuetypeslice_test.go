@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestValueTypeSlice(t *testing.T) {
 	es := NewValueTypeSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, internal.NewState())
+	es = newValueTypeSlice(&[]*internal.ValueType{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueType()
@@ -27,7 +26,7 @@ func TestValueTypeSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigValueType()
+		(*es.orig)[i] = internal.GenTestValueType()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestValueTypeSlice(t *testing.T) {
 func TestValueTypeSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, sharedState)
+	es := newValueTypeSlice(&[]*internal.ValueType{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestValueTypeSlice_Sort(t *testing.T) {
 
 func generateTestValueTypeSlice() ValueTypeSlice {
 	ms := NewValueTypeSlice()
-	*ms.orig = internal.GenerateOrigTestValueTypeSlice()
+	*ms.orig = internal.GenTestValueTypePtrSlice()
 	return ms
 }

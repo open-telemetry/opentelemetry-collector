@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, internal.NewState())
+	es = newSummaryDataPointSlice(&[]*internal.SummaryDataPoint{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPoint()
@@ -27,7 +26,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint()
+		(*es.orig)[i] = internal.GenTestSummaryDataPoint()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 func TestSummaryDataPointSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, sharedState)
+	es := newSummaryDataPointSlice(&[]*internal.SummaryDataPoint{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestSummaryDataPointSlice_Sort(t *testing.T) {
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 	ms := NewSummaryDataPointSlice()
-	*ms.orig = internal.GenerateOrigTestSummaryDataPointSlice()
+	*ms.orig = internal.GenTestSummaryDataPointPtrSlice()
 	return ms
 }

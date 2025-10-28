@@ -24,8 +24,8 @@ func TestProfiles_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfiles(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState)) })
-	assert.Panics(t, func() { newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newProfiles(internal.NewExportProfilesServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newProfiles(internal.NewExportProfilesServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestProfiles_CopyTo(t *testing.T) {
@@ -38,24 +38,23 @@ func TestProfiles_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newProfiles(internal.NewOrigExportProfilesServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newProfiles(internal.NewExportProfilesServiceRequest(), sharedState)) })
 }
 
 func TestProfiles_ResourceProfiles(t *testing.T) {
 	ms := NewProfiles()
 	assert.Equal(t, NewResourceProfilesSlice(), ms.ResourceProfiles())
-	ms.getOrig().ResourceProfiles = internal.GenerateOrigTestResourceProfilesSlice()
+	ms.getOrig().ResourceProfiles = internal.GenTestResourceProfilesPtrSlice()
 	assert.Equal(t, generateTestResourceProfilesSlice(), ms.ResourceProfiles())
 }
 
 func TestProfiles_Dictionary(t *testing.T) {
 	ms := NewProfiles()
 	assert.Equal(t, NewProfilesDictionary(), ms.Dictionary())
-	ms.getOrig().Dictionary = *internal.GenTestOrigProfilesDictionary()
+	ms.getOrig().Dictionary = *internal.GenTestProfilesDictionary()
 	assert.Equal(t, generateTestProfilesDictionary(), ms.Dictionary())
 }
 
 func generateTestProfiles() Profiles {
-	ms := newProfiles(internal.GenTestOrigExportProfilesServiceRequest(), internal.NewState())
-	return ms
+	return newProfiles(internal.GenTestExportProfilesServiceRequest(), internal.NewState())
 }

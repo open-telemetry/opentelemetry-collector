@@ -9,10 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -23,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -43,14 +39,10 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
-		attribute.String(componentattribute.ComponentIDKey, "otlp"),
-	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
+	var droppedAttrs []string
+	creationSet.Logger = telemetrytest.MockInjectorLogger(creationSet.Logger, &droppedAttrs)
+
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -71,16 +63,8 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, lReceiver)
 	assert.Same(t, tReceiver, pReceiver)
 
-	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created signal-agnostic logger" {
-			createLoggerCount++
-			require.Len(t, log.Context, 1)
-			assert.Equal(t, componentattribute.ComponentIDKey, log.Context[0].Key)
-			assert.Equal(t, "otlp", log.Context[0].String)
-		}
-	}
-	assert.Equal(t, 1, createLoggerCount)
+	// Test that we've dropped the relevant injected attributes exactly once
+	assert.ElementsMatch(t, droppedAttrs, []string{telemetry.SignalKey})
 }
 
 func TestCreateTraces(t *testing.T) {

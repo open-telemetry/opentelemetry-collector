@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -42,22 +40,22 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{{}},
+	assert.Zero(t, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{{}},
 	}, new(internal.State)).LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
+	assert.Zero(t, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{
 			{
-				ScopeLogs: []*otlplogs.ScopeLogs{{}},
+				ScopeLogs: []*internal.ScopeLogs{{}},
 			},
 		},
 	}, new(internal.State)).LogRecordCount())
-	assert.Equal(t, 1, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
+	assert.Equal(t, 1, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{
 			{
-				ScopeLogs: []*otlplogs.ScopeLogs{
+				ScopeLogs: []*internal.ScopeLogs{
 					{
-						LogRecords: []*otlplogs.LogRecord{{}},
+						LogRecords: []*internal.LogRecord{{}},
 					},
 				},
 			},

@@ -64,10 +64,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
+				Headers: configopaque.MapList{
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",

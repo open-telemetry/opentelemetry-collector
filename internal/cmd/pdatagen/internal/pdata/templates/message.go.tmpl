@@ -20,17 +20,17 @@ import (
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 {{- if .hasWrapper }}
-type {{ .structName }} internal.{{ .structName }}
+type {{ .structName }} internal.{{ .structName }}Wrapper
 {{- else }}
 type {{ .structName }} struct {
-	orig *{{ .originFullName }}
+	orig *internal.{{ .originName }}
 	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{ .structName }} {
+func new{{ .structName }}(orig *internal.{{ .originName }}, state *internal.State) {{ .structName }} {
 	{{- if .hasWrapper }}
-	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
+	return {{ .structName }}(internal.New{{ .structName }}Wrapper(orig, state))
 	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
 	{{- end }}
@@ -41,7 +41,7 @@ func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	return new{{ .structName }}(internal.NewOrig{{ .originName }}(), internal.NewState())
+	return new{{ .structName }}(internal.New{{ .originName }}(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -53,7 +53,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	internal.DeleteOrig{{ .originName }}(dest.{{ .origAccessor }}, false)
+	internal.Delete{{ .originName }}(dest.{{ .origAccessor }}, false)
 	*dest.{{ .origAccessor }}, *ms.{{ .origAccessor }} = *ms.{{ .origAccessor }}, *dest.{{ .origAccessor }}
 }
 
@@ -64,15 +64,15 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-    internal.CopyOrig{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
+    internal.Copy{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
 }
 
 {{ if .hasWrapper -}}
-func (ms {{ .structName }}) getOrig() *{{ .originFullName }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+func (ms {{ .structName }}) getOrig() *internal.{{ .originName }} {
+	return internal.Get{{ .structName }}Orig(internal.{{ .structName }}Wrapper(ms))
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
-	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}Wrapper(ms))
 }
 {{- end }}

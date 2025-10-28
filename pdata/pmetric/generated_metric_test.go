@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestMetric_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestMetric(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newMetric(internal.NewOrigMetric(), sharedState)) })
-	assert.Panics(t, func() { newMetric(internal.NewOrigMetric(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newMetric(internal.NewMetric(), sharedState)) })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).MoveTo(dest) })
 }
 
 func TestMetric_CopyTo(t *testing.T) {
@@ -40,7 +39,7 @@ func TestMetric_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newMetric(internal.NewOrigMetric(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newMetric(internal.NewMetric(), sharedState)) })
 }
 
 func TestMetric_Name(t *testing.T) {
@@ -50,7 +49,7 @@ func TestMetric_Name(t *testing.T) {
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetName("test_name") })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetName("test_name") })
 }
 
 func TestMetric_Description(t *testing.T) {
@@ -60,7 +59,7 @@ func TestMetric_Description(t *testing.T) {
 	assert.Equal(t, "test_description", ms.Description())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetDescription("test_description") })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetDescription("test_description") })
 }
 
 func TestMetric_Unit(t *testing.T) {
@@ -70,7 +69,7 @@ func TestMetric_Unit(t *testing.T) {
 	assert.Equal(t, "test_unit", ms.Unit())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetUnit("test_unit") })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetUnit("test_unit") })
 }
 
 func TestMetric_Type(t *testing.T) {
@@ -82,70 +81,69 @@ func TestMetric_Gauge(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyGauge()
 	assert.Equal(t, NewGauge(), ms.Gauge())
-	ms.orig.GetData().(*otlpmetrics.Metric_Gauge).Gauge = internal.GenTestOrigGauge()
+	ms.orig.GetData().(*internal.Metric_Gauge).Gauge = internal.GenTestGauge()
 	assert.Equal(t, MetricTypeGauge, ms.Type())
 	assert.Equal(t, generateTestGauge(), ms.Gauge())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyGauge() })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyGauge() })
 }
 
 func TestMetric_Sum(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySum()
 	assert.Equal(t, NewSum(), ms.Sum())
-	ms.orig.GetData().(*otlpmetrics.Metric_Sum).Sum = internal.GenTestOrigSum()
+	ms.orig.GetData().(*internal.Metric_Sum).Sum = internal.GenTestSum()
 	assert.Equal(t, MetricTypeSum, ms.Type())
 	assert.Equal(t, generateTestSum(), ms.Sum())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptySum() })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptySum() })
 }
 
 func TestMetric_Histogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyHistogram()
 	assert.Equal(t, NewHistogram(), ms.Histogram())
-	ms.orig.GetData().(*otlpmetrics.Metric_Histogram).Histogram = internal.GenTestOrigHistogram()
+	ms.orig.GetData().(*internal.Metric_Histogram).Histogram = internal.GenTestHistogram()
 	assert.Equal(t, MetricTypeHistogram, ms.Type())
 	assert.Equal(t, generateTestHistogram(), ms.Histogram())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyHistogram() })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyHistogram() })
 }
 
 func TestMetric_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyExponentialHistogram()
 	assert.Equal(t, NewExponentialHistogram(), ms.ExponentialHistogram())
-	ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram = internal.GenTestOrigExponentialHistogram()
+	ms.orig.GetData().(*internal.Metric_ExponentialHistogram).ExponentialHistogram = internal.GenTestExponentialHistogram()
 	assert.Equal(t, MetricTypeExponentialHistogram, ms.Type())
 	assert.Equal(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptyExponentialHistogram() })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyExponentialHistogram() })
 }
 
 func TestMetric_Summary(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySummary()
 	assert.Equal(t, NewSummary(), ms.Summary())
-	ms.orig.GetData().(*otlpmetrics.Metric_Summary).Summary = internal.GenTestOrigSummary()
+	ms.orig.GetData().(*internal.Metric_Summary).Summary = internal.GenTestSummary()
 	assert.Equal(t, MetricTypeSummary, ms.Type())
 	assert.Equal(t, generateTestSummary(), ms.Summary())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, sharedState).SetEmptySummary() })
+	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptySummary() })
 }
 
 func TestMetric_Metadata(t *testing.T) {
 	ms := NewMetric()
 	assert.Equal(t, pcommon.NewMap(), ms.Metadata())
-	ms.orig.Metadata = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Metadata())
+	ms.orig.Metadata = internal.GenTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenTestMapWrapper()), ms.Metadata())
 }
 
 func generateTestMetric() Metric {
-	ms := newMetric(internal.GenTestOrigMetric(), internal.NewState())
-	return ms
+	return newMetric(internal.GenTestMetric(), internal.NewState())
 }

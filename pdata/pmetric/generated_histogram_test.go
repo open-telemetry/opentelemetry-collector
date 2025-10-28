@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestHistogram_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestHistogram_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestHistogram(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
-	assert.Panics(t, func() { newHistogram(internal.NewOrigHistogram(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newHistogram(internal.NewHistogram(), sharedState)) })
+	assert.Panics(t, func() { newHistogram(internal.NewHistogram(), sharedState).MoveTo(dest) })
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -39,25 +38,24 @@ func TestHistogram_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewOrigHistogram(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newHistogram(internal.NewHistogram(), sharedState)) })
 }
 
 func TestHistogram_DataPoints(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
+	ms.orig.DataPoints = internal.GenTestHistogramDataPointPtrSlice()
 	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
-	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(internal.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(internal.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
 func generateTestHistogram() Histogram {
-	ms := newHistogram(internal.GenTestOrigHistogram(), internal.NewState())
-	return ms
+	return newHistogram(internal.GenTestHistogram(), internal.NewState())
 }

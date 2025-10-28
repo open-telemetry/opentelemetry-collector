@@ -11,21 +11,17 @@ import (
 )
 
 const encodingTestValuesScalar = `{{ if ne .oneOfGroup "" -}}
-"{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageFullName }}{{ "{" }}{{ .fieldName }}: {{ .defaultValue }}} },
-"{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageFullName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
-{{- else if .repeated }}
-"{{ .fieldName }}/default_and_test": { {{ .fieldName }}: []{{ if .nullable }}*{{ end }}{{ .goType }}{ {{ .defaultValue }}, {{ .testValue }} } },
+"{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .defaultValue }}} },
+"{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
 {{- else }}
 "{{ .fieldName }}/test": { {{ .fieldName }}: {{ .testValue }} },
 {{- end }}`
 
 const encodingTestValuesMessage = `{{ if ne .oneOfGroup "" -}}
-"{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageFullName }}{{ "{" }}{{ .fieldName }}: {{ if .nullable }}&{{ end }}{{ .defaultValue }}} },
-"{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageFullName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
-{{- else if .repeated }}
-"{{ .fieldName }}/default_and_test": { {{ .fieldName }}: []{{ if .nullable }}*{{ end }}{{ .goType }}{ {{ if .nullable }}&{{ end }}{{ .defaultValue }}, {{ if not .nullable }}*{{ end }}{{ .testValue }} } },
+"{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .defaultValue }}} },
+"{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
 {{- else }}
-"{{ .fieldName }}/test": { {{ .fieldName }}: {{ if not .nullable }}*{{ end }}{{ .testValue }} },
+"{{ .fieldName }}/test": { {{ .fieldName }}: {{ .testValue }} },
 {{- end }}`
 
 func (pf *Field) GenTestEncodingValues() string {

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestInstrumentationScope_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestInstrumentationScope(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState)) })
-	assert.Panics(t, func() { newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(internal.NewInstrumentationScope(), sharedState)) })
+	assert.Panics(t, func() { newInstrumentationScope(internal.NewInstrumentationScope(), sharedState).MoveTo(dest) })
 }
 
 func TestInstrumentationScope_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(internal.NewOrigInstrumentationScope(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(internal.NewInstrumentationScope(), sharedState)) })
 }
 
 func TestInstrumentationScope_Name(t *testing.T) {
@@ -49,7 +48,7 @@ func TestInstrumentationScope_Name(t *testing.T) {
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetName("test_name") })
+	assert.Panics(t, func() { newInstrumentationScope(internal.NewInstrumentationScope(), sharedState).SetName("test_name") })
 }
 
 func TestInstrumentationScope_Version(t *testing.T) {
@@ -60,15 +59,15 @@ func TestInstrumentationScope_Version(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetVersion("test_version")
+		newInstrumentationScope(internal.NewInstrumentationScope(), sharedState).SetVersion("test_version")
 	})
 }
 
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
+	ms.getOrig().Attributes = internal.GenTestKeyValueSlice()
+	assert.Equal(t, Map(internal.GenTestMapWrapper()), ms.Attributes())
 }
 
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
@@ -79,11 +78,10 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, sharedState).SetDroppedAttributesCount(uint32(13))
+		newInstrumentationScope(internal.NewInstrumentationScope(), sharedState).SetDroppedAttributesCount(uint32(13))
 	})
 }
 
 func generateTestInstrumentationScope() InstrumentationScope {
-	ms := newInstrumentationScope(internal.GenTestOrigInstrumentationScope(), internal.NewState())
-	return ms
+	return newInstrumentationScope(internal.GenTestInstrumentationScope(), internal.NewState())
 }

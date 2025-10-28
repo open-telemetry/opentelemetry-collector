@@ -12,13 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{}, internal.NewState())
+	es = newExemplarSlice(&[]internal.Exemplar{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExemplar()
@@ -26,7 +25,7 @@ func TestExemplarSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = *internal.GenTestOrigExemplar()
+		(*es.orig)[i] = *internal.GenTestExemplar()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -35,7 +34,7 @@ func TestExemplarSlice(t *testing.T) {
 func TestExemplarSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newExemplarSlice(&[]otlpmetrics.Exemplar{}, sharedState)
+	es := newExemplarSlice(&[]internal.Exemplar{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -145,6 +144,6 @@ func TestExemplarSliceAll(t *testing.T) {
 
 func generateTestExemplarSlice() ExemplarSlice {
 	ms := NewExemplarSlice()
-	*ms.orig = internal.GenerateOrigTestExemplarSlice()
+	*ms.orig = internal.GenTestExemplarSlice()
 	return ms
 }

@@ -24,8 +24,8 @@ func TestTraces_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestTraces(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState)) })
-	assert.Panics(t, func() { newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newTraces(internal.NewExportTraceServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newTraces(internal.NewExportTraceServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestTraces_CopyTo(t *testing.T) {
@@ -38,17 +38,16 @@ func TestTraces_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newTraces(internal.NewOrigExportTraceServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newTraces(internal.NewExportTraceServiceRequest(), sharedState)) })
 }
 
 func TestTraces_ResourceSpans(t *testing.T) {
 	ms := NewTraces()
 	assert.Equal(t, NewResourceSpansSlice(), ms.ResourceSpans())
-	ms.getOrig().ResourceSpans = internal.GenerateOrigTestResourceSpansSlice()
+	ms.getOrig().ResourceSpans = internal.GenTestResourceSpansPtrSlice()
 	assert.Equal(t, generateTestResourceSpansSlice(), ms.ResourceSpans())
 }
 
 func generateTestTraces() Traces {
-	ms := newTraces(internal.GenTestOrigExportTraceServiceRequest(), internal.NewState())
-	return ms
+	return newTraces(internal.GenTestExportTraceServiceRequest(), internal.NewState())
 }

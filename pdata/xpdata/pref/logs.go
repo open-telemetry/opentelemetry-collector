@@ -13,23 +13,23 @@ import (
 // MarkPipelineOwnedLogs marks the plog.Logs data as owned by the pipeline, returns true if the data were
 // previously not owned by the pipeline, otherwise false.
 func MarkPipelineOwnedLogs(ld plog.Logs) bool {
-	return internal.GetLogsState(internal.Logs(ld)).MarkPipelineOwned()
+	return internal.GetLogsState(internal.LogsWrapper(ld)).MarkPipelineOwned()
 }
 
 func RefLogs(ld plog.Logs) {
 	if EnableRefCounting.IsEnabled() {
-		internal.GetLogsState(internal.Logs(ld)).Ref()
+		internal.GetLogsState(internal.LogsWrapper(ld)).Ref()
 	}
 }
 
 func UnrefLogs(ld plog.Logs) {
 	if EnableRefCounting.IsEnabled() {
-		if !internal.GetLogsState(internal.Logs(ld)).Unref() {
+		if !internal.GetLogsState(internal.LogsWrapper(ld)).Unref() {
 			return
 		}
-		// Don't call DeleteOrigExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 		if internal.UseProtoPooling.IsEnabled() {
-			internal.DeleteOrigExportLogsServiceRequest(internal.GetOrigLogs(internal.Logs(ld)), true)
+			internal.DeleteExportLogsServiceRequest(internal.GetLogsOrig(internal.LogsWrapper(ld)), true)
 		}
 	}
 }
@@ -37,5 +37,5 @@ func UnrefLogs(ld plog.Logs) {
 // TODO: Generate this in pdata.
 
 func EqualLogs(ld1, ld2 plog.Logs) bool {
-	return reflect.DeepEqual(internal.GetOrigLogs(internal.Logs(ld1)), internal.GetOrigLogs(internal.Logs(ld2)))
+	return reflect.DeepEqual(internal.GetLogsOrig(internal.LogsWrapper(ld1)), internal.GetLogsOrig(internal.LogsWrapper(ld2)))
 }

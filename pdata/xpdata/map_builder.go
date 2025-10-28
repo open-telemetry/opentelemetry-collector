@@ -5,7 +5,6 @@ package xpdata // import "go.opentelemetry.io/collector/pdata/xpdata"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -15,7 +14,7 @@ import (
 // A zero-initialized MapBuilder is ready for use.
 type MapBuilder struct {
 	state internal.State
-	pairs []otlpcommon.KeyValue
+	pairs []internal.KeyValue
 }
 
 // EnsureCapacity increases the capacity of this MapBuilder instance, if necessary,
@@ -25,27 +24,27 @@ func (mb *MapBuilder) EnsureCapacity(capacity int) {
 	if capacity <= cap(oldValues) {
 		return
 	}
-	mb.pairs = make([]otlpcommon.KeyValue, len(oldValues), capacity)
+	mb.pairs = make([]internal.KeyValue, len(oldValues), capacity)
 	copy(mb.pairs, oldValues)
 }
 
 func (mb *MapBuilder) getValue(i int) pcommon.Value {
-	return pcommon.Value(internal.NewValue(&mb.pairs[i].Value, &mb.state))
+	return pcommon.Value(internal.NewValueWrapper(&mb.pairs[i].Value, &mb.state))
 }
 
 // AppendEmpty appends a key/value pair to the MapBuilder and return the inserted value.
 // This method does not check for duplicate keys and has an amortized constant time complexity.
 func (mb *MapBuilder) AppendEmpty(k string) pcommon.Value {
-	mb.pairs = append(mb.pairs, otlpcommon.KeyValue{Key: k})
+	mb.pairs = append(mb.pairs, internal.KeyValue{Key: k})
 	return mb.getValue(len(mb.pairs) - 1)
 }
 
-// UnsafeIntoMap transfers the contents of a MapBuilder into a Map, without checking for duplicate keys.
-// If the MapBuilder contains duplicate keys, the behavior of the resulting Map is unspecified.
+// UnsafeIntoMap transfers the contents of a MapBuilder into a MapWrapper, without checking for duplicate keys.
+// If the MapBuilder contains duplicate keys, the behavior of the resulting MapWrapper is unspecified.
 // This operation has constant time complexity and makes no allocations.
 // After this operation, the MapBuilder is reset to an empty state.
 func (mb *MapBuilder) UnsafeIntoMap(m pcommon.Map) {
-	internal.GetMapState(internal.Map(m)).AssertMutable()
-	*internal.GetOrigMap(internal.Map(m)) = mb.pairs
+	internal.GetMapState(internal.MapWrapper(m)).AssertMutable()
+	*internal.GetMapOrig(internal.MapWrapper(m)) = mb.pairs
 	mb.pairs = nil
 }

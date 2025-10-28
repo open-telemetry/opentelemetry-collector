@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type Config[T any] struct {
@@ -375,6 +376,174 @@ func TestUnmarshalOptional(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddFieldEnabledFeatureGate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		defaultCfg  Config[Sub]
+		expectedSub bool
+		expectedFoo string
+	}{
+		{
+			name: "none_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "none_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "none_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "default_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "baz",
+		},
+		{
+			name: "some_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
+	}
+
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := test.defaultCfg
+			conf := confmap.NewFromStringMap(test.config)
+			require.NoError(t, conf.Unmarshal(&cfg))
+			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
+			if test.expectedSub {
+				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
+			}
+		})
+	}
+}
+
+func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"sub": map[string]any{
+			"enabled": "something",
+			"foo":     "bar",
+		},
+	})
+	cfg := Config[Sub]{
+		Sub1: None[Sub](),
+	}
+	err := cm.Unmarshal(&cfg)
+	require.ErrorContains(t, err, "unexpected type string for 'enabled': got 'something' value expected 'true' or 'false'")
 }
 
 func TestUnmarshalErrorEnabledField(t *testing.T) {

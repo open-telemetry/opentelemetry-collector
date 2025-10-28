@@ -153,7 +153,7 @@ const marshalProtoBytesString = `{{ if .repeated -}}
 
 const marshalProtoMessage = `{{ if .repeated -}}
 	for i := len(orig.{{ .fieldName }}) - 1; i >= 0; i-- {
-		l = MarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], buf[:pos])
+		l = orig.{{ .fieldName }}[i].MarshalProto(buf[:pos])
 		pos -= l
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		{{ range .protoTag -}}
@@ -161,8 +161,18 @@ const marshalProtoMessage = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-	l = MarshalProtoOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, buf[:pos])
+{{- else if .nullable -}}
+	if orig.{{ .fieldName }} != nil {
+		l = orig.{{ .fieldName }}.MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
+	}
+{{- else -}}
+	l = orig.{{ .fieldName }}.MarshalProto(buf[:pos])
 	pos -= l
 	pos = proto.EncodeVarint(buf, pos, uint64(l))
 	{{ range .protoTag -}}

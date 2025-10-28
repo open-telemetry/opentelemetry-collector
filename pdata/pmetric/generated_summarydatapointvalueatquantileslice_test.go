@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, internal.NewState())
+	es = newSummaryDataPointValueAtQuantileSlice(&[]*internal.SummaryDataPointValueAtQuantile{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPointValueAtQuantile()
@@ -27,7 +26,7 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigSummaryDataPoint_ValueAtQuantile()
+		(*es.orig)[i] = internal.GenTestSummaryDataPointValueAtQuantile()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, sharedState)
+	es := newSummaryDataPointValueAtQuantileSlice(&[]*internal.SummaryDataPointValueAtQuantile{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 
 func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	ms := NewSummaryDataPointValueAtQuantileSlice()
-	*ms.orig = internal.GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	*ms.orig = internal.GenTestSummaryDataPointValueAtQuantilePtrSlice()
 	return ms
 }

@@ -14,6 +14,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -71,7 +72,7 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Profiles as pdata struct.
-	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.NewProfiles(internal.GenTestOrigExportProfilesServiceRequest(), internal.NewState())))
+	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.GenTestProfilesWrapper()))
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := pd.MarshalProto()
@@ -89,11 +90,13 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	assert.NotNil(t, wire2)
 
 	// Unmarshal from the wire into gogoproto's representation.
-	td2 := NewExportRequest()
-	err = td2.UnmarshalProto(wire2)
+	pd2 := NewExportRequest()
+	err = pd2.UnmarshalProto(wire2)
 	require.NoError(t, err)
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, pd, td2)
+	// Migration logic will run, so run it on the original message as well.
+	otlp.MigrateProfiles(pd.orig.ResourceProfiles)
+	assert.Equal(t, pd, pd2)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestScopeSpans(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
-	assert.Panics(t, func() { newScopeSpans(internal.NewOrigScopeSpans(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(internal.NewScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { newScopeSpans(internal.NewScopeSpans(), sharedState).MoveTo(dest) })
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -40,20 +39,20 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewOrigScopeSpans(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(internal.NewScopeSpans(), sharedState)) })
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
-	ms.orig.Scope = *internal.GenTestOrigInstrumentationScope()
-	assert.Equal(t, pcommon.InstrumentationScope(internal.NewInstrumentationScope(internal.GenTestOrigInstrumentationScope(), ms.state)), ms.Scope())
+	ms.orig.Scope = *internal.GenTestInstrumentationScope()
+	assert.Equal(t, pcommon.InstrumentationScope(internal.GenTestInstrumentationScopeWrapper()), ms.Scope())
 }
 
 func TestScopeSpans_Spans(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Equal(t, NewSpanSlice(), ms.Spans())
-	ms.orig.Spans = internal.GenerateOrigTestSpanSlice()
+	ms.orig.Spans = internal.GenTestSpanPtrSlice()
 	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
 }
 
@@ -64,10 +63,9 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newScopeSpans(internal.NewScopeSpans(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestScopeSpans() ScopeSpans {
-	ms := newScopeSpans(internal.GenTestOrigScopeSpans(), internal.NewState())
-	return ms
+	return newScopeSpans(internal.GenTestScopeSpans(), internal.NewState())
 }

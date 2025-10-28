@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestSample_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestSample(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewOrigSample(), sharedState)) })
-	assert.Panics(t, func() { newSample(internal.NewOrigSample(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newSample(internal.NewSample(), sharedState)) })
+	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).MoveTo(dest) })
 }
 
 func TestSample_CopyTo(t *testing.T) {
@@ -40,7 +39,7 @@ func TestSample_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewOrigSample(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newSample(internal.NewSample(), sharedState)) })
 }
 
 func TestSample_StackIndex(t *testing.T) {
@@ -50,21 +49,21 @@ func TestSample_StackIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.StackIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetStackIndex(int32(13)) })
+	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetStackIndex(int32(13)) })
 }
 
 func TestSample_Values(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewInt64Slice(), ms.Values())
-	ms.orig.Values = internal.GenerateOrigTestInt64Slice()
-	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Values())
+	ms.orig.Values = internal.GenTestInt64Slice()
+	assert.Equal(t, pcommon.Int64Slice(internal.GenTestInt64SliceWrapper()), ms.Values())
 }
 
 func TestSample_AttributeIndices(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
+	ms.orig.AttributeIndices = internal.GenTestInt32Slice()
+	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.AttributeIndices())
 }
 
 func TestSample_LinkIndex(t *testing.T) {
@@ -74,17 +73,16 @@ func TestSample_LinkIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.LinkIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, sharedState).SetLinkIndex(int32(13)) })
+	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetLinkIndex(int32(13)) })
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.TimestampsUnixNano())
-	ms.orig.TimestampsUnixNano = internal.GenerateOrigTestUint64Slice()
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.TimestampsUnixNano())
+	ms.orig.TimestampsUnixNano = internal.GenTestUint64Slice()
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenTestUInt64SliceWrapper()), ms.TimestampsUnixNano())
 }
 
 func generateTestSample() Sample {
-	ms := newSample(internal.GenTestOrigSample(), internal.NewState())
-	return ms
+	return newSample(internal.GenTestSample(), internal.NewState())
 }

@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewResourceProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfiles struct {
-	orig  *otlpprofiles.ResourceProfiles
+	orig  *internal.ResourceProfiles
 	state *internal.State
 }
 
-func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfiles {
+func newResourceProfiles(orig *internal.ResourceProfiles, state *internal.State) ResourceProfiles {
 	return ResourceProfiles{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceProfiles() ResourceProfiles {
-	return newResourceProfiles(internal.NewOrigResourceProfiles(), internal.NewState())
+	return newResourceProfiles(internal.NewResourceProfiles(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,13 +44,13 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigResourceProfiles(dest.orig, false)
+	internal.DeleteResourceProfiles(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Resource returns the resource associated with this ResourceProfiles.
 func (ms ResourceProfiles) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
+	return pcommon.Resource(internal.NewResourceWrapper(&ms.orig.Resource, ms.state))
 }
 
 // ScopeProfiles returns the ScopeProfiles associated with this ResourceProfiles.
@@ -73,5 +72,5 @@ func (ms ResourceProfiles) SetSchemaUrl(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceProfiles) CopyTo(dest ResourceProfiles) {
 	dest.state.AssertMutable()
-	internal.CopyOrigResourceProfiles(dest.orig, ms.orig)
+	internal.CopyResourceProfiles(dest.orig, ms.orig)
 }

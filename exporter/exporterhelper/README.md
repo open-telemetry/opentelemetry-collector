@@ -36,7 +36,7 @@ Batch settings are available in the sending queue. Batching is disabled, by defa
 batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 
 - `flush_timeout` (default = 200 ms): time after which a batch will be sent regardless of its size. Must be a non-zero value;
-- `min_size` (default = 8192): the minimum size of a batch;
+- `min_size` (default = 8192): the minimum size of a batch; should be less than or equal to the `sending_queue::queue_size` if `sending_queue::batch::sizer` matches `sending_queue::sizer`.
 - `max_size` (default = 0): the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch. If set to zero, there is no maximum size;
 - `sizer`: see below.
 
