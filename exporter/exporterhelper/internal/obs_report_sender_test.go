@@ -317,8 +317,8 @@ func TestDroppedItemsError(t *testing.T) {
 	assert.Equal(t, "items dropped: test reason", err.Error())
 
 	// Test Count() method directly on the error
-	droppedErr, ok := err.(*DroppedItems)
-	require.True(t, ok)
+	var droppedErr *DroppedItems
+	require.True(t, errors.As(err, &droppedErr))
 	assert.Equal(t, 42, droppedErr.Count())
 
 	// Test IsDroppedItems
@@ -333,38 +333,67 @@ func TestDroppedItemsError(t *testing.T) {
 
 	// Test GetDroppedReason
 	assert.Equal(t, "test reason", GetDroppedReason(err))
-	assert.Equal(t, "", GetDroppedReason(errFake))
-	assert.Equal(t, "", GetDroppedReason(nil))
+	assert.Empty(t, GetDroppedReason(errFake))
+	assert.Empty(t, GetDroppedReason(nil))
 }
 
 func TestToNumItems(t *testing.T) {
-	// Test successful export (no error)
-	sent, failed, dropped := toNumItems(100, nil)
-	assert.Equal(t, int64(100), sent)
-	assert.Equal(t, int64(0), failed)
-	assert.Equal(t, int64(0), dropped)
+	tests := []struct {
+		name          string
+		numItems      int
+		err           error
+		wantSent      int64
+		wantFailed    int64
+		wantDropped   int64
+	}{
+		{
+			name:        "successful export",
+			numItems:    100,
+			err:         nil,
+			wantSent:    100,
+			wantFailed:  0,
+			wantDropped: 0,
+		},
+		{
+			name:        "failed export with regular error",
+			numItems:    50,
+			err:         errFake,
+			wantSent:    0,
+			wantFailed:  50,
+			wantDropped: 0,
+		},
+		{
+			name:        "partial drop",
+			numItems:    80,
+			err:         NewDroppedItems("incompatible", 30),
+			wantSent:    50,
+			wantFailed:  0,
+			wantDropped: 30,
+		},
+		{
+			name:        "full drop",
+			numItems:    60,
+			err:         NewDroppedItems("unsupported", 60),
+			wantSent:    0,
+			wantFailed:  0,
+			wantDropped: 60,
+		},
+		{
+			name:        "zero count drop",
+			numItems:    10,
+			err:         NewDroppedItems("reason", 0),
+			wantSent:    0,
+			wantFailed:  0,
+			wantDropped: 10,
+		},
+	}
 
-	// Test failed export (regular error)
-	sent, failed, dropped = toNumItems(50, errFake)
-	assert.Equal(t, int64(0), sent)
-	assert.Equal(t, int64(50), failed)
-	assert.Equal(t, int64(0), dropped)
-
-	// Test partial drop (some items dropped)
-	sent, failed, dropped = toNumItems(80, NewDroppedItems("incompatible", 30))
-	assert.Equal(t, int64(50), sent)
-	assert.Equal(t, int64(0), failed)
-	assert.Equal(t, int64(30), dropped)
-
-	// Test full drop (all items dropped)
-	sent, failed, dropped = toNumItems(60, NewDroppedItems("unsupported", 60))
-	assert.Equal(t, int64(0), sent)
-	assert.Equal(t, int64(0), failed)
-	assert.Equal(t, int64(60), dropped)
-
-	// Test zero count drop (edge case)
-	sent, failed, dropped = toNumItems(10, NewDroppedItems("reason", 0))
-	assert.Equal(t, int64(0), sent)
-	assert.Equal(t, int64(0), failed)
-	assert.Equal(t, int64(10), dropped)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sent, failed, dropped := toNumItems(tt.numItems, tt.err)
+			assert.Equal(t, tt.wantSent, sent)
+			assert.Equal(t, tt.wantFailed, failed)
+			assert.Equal(t, tt.wantDropped, dropped)
+		})
+	}
 }
