@@ -8,83 +8,83 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_accepted_log_records
 
-Number of log records successfully pushed into the pipeline. [alpha]
+Number of log records successfully pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | alpha |
+| {records} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_metric_points
 
-Number of metric points successfully pushed into the pipeline. [alpha]
+Number of metric points successfully pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_spans
 
-Number of spans successfully pushed into the pipeline. [alpha]
+Number of spans successfully pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | alpha |
+| {spans} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_log_records
 
-The number of log records that failed to be processed by the receiver due to internal errors. [alpha]
+The number of log records that failed to be processed by the receiver due to internal errors. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | alpha |
+| {records} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_metric_points
 
-The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]
+The number of metric points that failed to be processed by the receiver due to internal errors. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_spans
 
-The number of spans that failed to be processed by the receiver due to internal errors. [alpha]
+The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | alpha |
+| {spans} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_log_records
 
-Number of log records that could not be pushed into the pipeline. [alpha]
+Number of log records that could not be pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | alpha |
+| {records} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline. [alpha]
+Number of metric points that could not be pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline. [alpha]
+Number of spans that could not be pushed into the pipeline. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | alpha |
+| {spans} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_requests
 
-The number of requests performed. [alpha]
+The number of requests performed. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {requests} | Sum | Int | true | alpha |
+| {requests} | Sum | Int | true | Alpha |
 
 #### Attributes
 

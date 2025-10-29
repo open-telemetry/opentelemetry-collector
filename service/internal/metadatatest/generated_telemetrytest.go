@@ -15,7 +15,7 @@ import (
 func AssertEqualConnectorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.connector.consumed.items",
-		Description: "Number of items passed to the connector.",
+		Description: "Number of items passed to the connector. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualConnectorConsumedItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.connector.consumed.size",
-		Description: "Size of items passed to the connector, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items passed to the connector, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -47,7 +47,7 @@ func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualConnectorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.connector.produced.items",
-		Description: "Number of items emitted from the connector.",
+		Description: "Number of items emitted from the connector. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -63,7 +63,7 @@ func AssertEqualConnectorProducedItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.connector.produced.size",
-		Description: "Size of items emitted from the connector, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items emitted from the connector, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -79,7 +79,7 @@ func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualExporterConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.exporter.consumed.items",
-		Description: "Number of items passed to the exporter.",
+		Description: "Number of items passed to the exporter. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -95,7 +95,7 @@ func AssertEqualExporterConsumedItems(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualExporterConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.exporter.consumed.size",
-		Description: "Size of items passed to the exporter, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items passed to the exporter, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -111,7 +111,7 @@ func AssertEqualExporterConsumedSize(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_cpu_seconds",
-		Description: "Total CPU user and system time in seconds [alpha]",
+		Description: "Total CPU user and system time in seconds [Alpha]",
 		Unit:        "s",
 		Data: metricdata.Sum[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -127,7 +127,7 @@ func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualProcessMemoryRss(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_memory_rss",
-		Description: "Total physical memory (resident set size) [alpha]",
+		Description: "Total physical memory (resident set size) [Alpha]",
 		Unit:        "By",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -141,7 +141,7 @@ func AssertEqualProcessMemoryRss(t *testing.T, tt *componenttest.Telemetry, dps 
 func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_heap_alloc_bytes",
-		Description: "Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]",
+		Description: "Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [Alpha]",
 		Unit:        "By",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -155,7 +155,7 @@ func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt *componenttest.Tel
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
-		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]",
+		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Alpha]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -171,7 +171,7 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Te
 func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_sys_memory_bytes",
-		Description: "Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]",
+		Description: "Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [Alpha]",
 		Unit:        "By",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -185,7 +185,7 @@ func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt *componenttes
 func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_uptime",
-		Description: "Uptime of the process [alpha]",
+		Description: "Uptime of the process [Alpha]",
 		Unit:        "s",
 		Data: metricdata.Sum[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -201,7 +201,7 @@ func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []m
 func AssertEqualProcessorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.processor.consumed.items",
-		Description: "Number of items passed to the processor.",
+		Description: "Number of items passed to the processor. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -217,7 +217,7 @@ func AssertEqualProcessorConsumedItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.processor.consumed.size",
-		Description: "Size of items passed to the processor, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items passed to the processor, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -233,7 +233,7 @@ func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualProcessorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.processor.produced.items",
-		Description: "Number of items emitted from the processor.",
+		Description: "Number of items emitted from the processor. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -249,7 +249,7 @@ func AssertEqualProcessorProducedItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.processor.produced.size",
-		Description: "Size of items emitted from the processor, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items emitted from the processor, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -265,7 +265,7 @@ func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualReceiverProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.receiver.produced.items",
-		Description: "Number of items emitted from the receiver.",
+		Description: "Number of items emitted from the receiver. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -281,7 +281,7 @@ func AssertEqualReceiverProducedItems(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualReceiverProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.receiver.produced.size",
-		Description: "Size of items emitted from the receiver, based on ProtoMarshaler.Sizer.",
+		Description: "Size of items emitted from the receiver, based on ProtoMarshaler.Sizer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
