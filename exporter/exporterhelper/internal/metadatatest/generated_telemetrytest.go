@@ -15,7 +15,7 @@ import (
 func AssertEqualExporterDroppedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_dropped_log_records",
-		Description: "Number of log records dropped due to incompatibility or specification requirements. [alpha]",
+		Description: "Number of log records dropped due to incompatibility or specification requirements. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualExporterDroppedLogRecords(t *testing.T, tt *componenttest.Teleme
 func AssertEqualExporterDroppedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_dropped_metric_points",
-		Description: "Number of metric points dropped due to incompatibility or specification requirements. [alpha]",
+		Description: "Number of metric points dropped due to incompatibility or specification requirements. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -47,7 +47,7 @@ func AssertEqualExporterDroppedMetricPoints(t *testing.T, tt *componenttest.Tele
 func AssertEqualExporterDroppedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_dropped_spans",
-		Description: "Number of spans dropped due to incompatibility or specification requirements. [alpha]",
+		Description: "Number of spans dropped due to incompatibility or specification requirements. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

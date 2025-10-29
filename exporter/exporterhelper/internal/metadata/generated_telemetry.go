@@ -117,19 +117,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ExporterDroppedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_dropped_log_records",
-		metric.WithDescription("Number of log records dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithDescription("Number of log records dropped due to incompatibility or specification requirements. [Alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterDroppedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_dropped_metric_points",
-		metric.WithDescription("Number of metric points dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithDescription("Number of metric points dropped due to incompatibility or specification requirements. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterDroppedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_dropped_spans",
-		metric.WithDescription("Number of spans dropped due to incompatibility or specification requirements. [alpha]"),
+		metric.WithDescription("Number of spans dropped due to incompatibility or specification requirements. [Alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

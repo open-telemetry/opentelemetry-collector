@@ -8,27 +8,27 @@ The following telemetry is emitted by this component.
 
 ### otelcol_exporter_dropped_log_records
 
-Number of log records dropped due to incompatibility or specification requirements. [alpha]
+Number of log records dropped due to incompatibility or specification requirements. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | alpha |
+| {records} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_dropped_metric_points
 
-Number of metric points dropped due to incompatibility or specification requirements. [alpha]
+Number of metric points dropped due to incompatibility or specification requirements. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | alpha |
+| {datapoints} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_dropped_spans
 
-Number of spans dropped due to incompatibility or specification requirements. [alpha]
+Number of spans dropped due to incompatibility or specification requirements. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | alpha |
+| {spans} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_enqueue_failed_log_records
 
