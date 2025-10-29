@@ -34,21 +34,9 @@ func (e *DroppedItems) Error() string {
 	return "items dropped: " + e.reason
 }
 
-func (e *DroppedItems) Count() int {
-	return e.count
-}
-
 func IsDroppedItems(err error) bool {
 	var droppedItems *DroppedItems
 	return errors.As(err, &droppedItems)
-}
-
-func GetDroppedReason(err error) string {
-	var droppedItems *DroppedItems
-	if errors.As(err, &droppedItems) {
-		return droppedItems.reason
-	}
-	return ""
 }
 
 func GetDroppedCount(err error) int {

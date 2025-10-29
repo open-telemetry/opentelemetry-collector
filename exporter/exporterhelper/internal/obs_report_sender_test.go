@@ -316,11 +316,6 @@ func TestDroppedItemsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "items dropped: test reason", err.Error())
 
-	// Test Count() method directly on the error
-	var droppedErr *DroppedItems
-	require.ErrorAs(t, err, &droppedErr)
-	assert.Equal(t, 42, droppedErr.Count())
-
 	// Test IsDroppedItems
 	assert.True(t, IsDroppedItems(err))
 	assert.False(t, IsDroppedItems(errFake))
@@ -330,11 +325,6 @@ func TestDroppedItemsError(t *testing.T) {
 	assert.Equal(t, 42, GetDroppedCount(err))
 	assert.Equal(t, 0, GetDroppedCount(errFake))
 	assert.Equal(t, 0, GetDroppedCount(nil))
-
-	// Test GetDroppedReason
-	assert.Equal(t, "test reason", GetDroppedReason(err))
-	assert.Empty(t, GetDroppedReason(errFake))
-	assert.Empty(t, GetDroppedReason(nil))
 }
 
 func TestToNumItems(t *testing.T) {
