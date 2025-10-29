@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Set CGO_ENABLED=0 by default, add configuration to enable it."
+note: "Set CGO_ENABLED=0 by default, add the `cgo_enabled` configuration to enable it."
 
 # One or more tracking issues or pull requests related to the change
 issues: [10028]
