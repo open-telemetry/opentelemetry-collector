@@ -318,7 +318,7 @@ func TestDroppedItemsError(t *testing.T) {
 
 	// Test Count() method directly on the error
 	var droppedErr *DroppedItems
-	require.True(t, errors.As(err, &droppedErr))
+	require.ErrorAs(t, err, &droppedErr)
 	assert.Equal(t, 42, droppedErr.Count())
 
 	// Test IsDroppedItems
