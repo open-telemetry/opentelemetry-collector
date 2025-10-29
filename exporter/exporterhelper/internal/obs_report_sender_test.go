@@ -339,12 +339,12 @@ func TestDroppedItemsError(t *testing.T) {
 
 func TestToNumItems(t *testing.T) {
 	tests := []struct {
-		name          string
-		numItems      int
-		err           error
-		wantSent      int64
-		wantFailed    int64
-		wantDropped   int64
+		name        string
+		numItems    int
+		err         error
+		wantSent    int64
+		wantFailed  int64
+		wantDropped int64
 	}{
 		{
 			name:        "successful export",
