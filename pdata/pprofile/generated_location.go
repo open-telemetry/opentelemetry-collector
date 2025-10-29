@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewLocation function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Location struct {
-	orig  *otlpprofiles.Location
+	orig  *internal.Location
 	state *internal.State
 }
 
-func newLocation(orig *otlpprofiles.Location, state *internal.State) Location {
+func newLocation(orig *internal.Location, state *internal.State) Location {
 	return Location{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newLocation(orig *otlpprofiles.Location, state *internal.State) Location {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLocation() Location {
-	return newLocation(internal.NewOrigLocation(), internal.NewState())
+	return newLocation(internal.NewLocation(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,31 +44,19 @@ func (ms Location) MoveTo(dest Location) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigLocation(dest.orig, false)
+	internal.DeleteLocation(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // MappingIndex returns the mappingindex associated with this Location.
 func (ms Location) MappingIndex() int32 {
-	return ms.orig.GetMappingIndex()
-}
-
-// HasMappingIndex returns true if the Location contains a
-// MappingIndex value otherwise.
-func (ms Location) HasMappingIndex() bool {
-	return ms.orig.MappingIndex_ != nil
+	return ms.orig.MappingIndex
 }
 
 // SetMappingIndex replaces the mappingindex associated with this Location.
 func (ms Location) SetMappingIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: v}
-}
-
-// RemoveMappingIndex removes the mappingindex associated with this Location.
-func (ms Location) RemoveMappingIndex() {
-	ms.state.AssertMutable()
-	ms.orig.MappingIndex_ = nil
+	ms.orig.MappingIndex = v
 }
 
 // Address returns the address associated with this Location.
@@ -88,24 +75,13 @@ func (ms Location) Line() LineSlice {
 	return newLineSlice(&ms.orig.Line, ms.state)
 }
 
-// IsFolded returns the isfolded associated with this Location.
-func (ms Location) IsFolded() bool {
-	return ms.orig.IsFolded
-}
-
-// SetIsFolded replaces the isfolded associated with this Location.
-func (ms Location) SetIsFolded(v bool) {
-	ms.state.AssertMutable()
-	ms.orig.IsFolded = v
-}
-
 // AttributeIndices returns the AttributeIndices associated with this Location.
 func (ms Location) AttributeIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	internal.CopyOrigLocation(dest.orig, ms.orig)
+	internal.CopyLocation(dest.orig, ms.orig)
 }

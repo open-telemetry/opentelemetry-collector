@@ -13,21 +13,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestEntityRefSlice(t *testing.T) {
 	es := NewEntityRefSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newEntityRefSlice(&[]*otlpcommon.EntityRef{}, internal.NewState())
+	es = newEntityRefSlice(&[]*internal.EntityRef{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewEntityRef()
-	testVal := EntityRef(internal.NewEntityRef(internal.GenTestOrigEntityRef(), internal.NewState()))
+	testVal := EntityRef(internal.GenTestEntityRefWrapper())
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.getOrig())[i] = internal.GenTestOrigEntityRef()
+		(*es.getOrig())[i] = internal.GenTestEntityRef()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestEntityRefSlice(t *testing.T) {
 func TestEntityRefSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newEntityRefSlice(&[]*otlpcommon.EntityRef{}, sharedState)
+	es := newEntityRefSlice(&[]*internal.EntityRef{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestEntityRefSlice_Sort(t *testing.T) {
 
 func generateTestEntityRefSlice() EntityRefSlice {
 	ms := NewEntityRefSlice()
-	*ms.getOrig() = internal.GenerateOrigTestEntityRefSlice()
+	*ms.getOrig() = internal.GenTestEntityRefPtrSlice()
 	return ms
 }

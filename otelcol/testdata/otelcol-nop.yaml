@@ -14,14 +14,6 @@ connectors:
   nop/con:
 
 service:
-  telemetry:
-    metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: "localhost"
-                port: 9999
   extensions: [nop]
   pipelines:
     traces:

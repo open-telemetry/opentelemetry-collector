@@ -9,19 +9,18 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
-	reqint "go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
 
 // MarshalLogs marshals plog.Logs along with the context into a byte slice.
 func MarshalLogs(ctx context.Context, ld plog.Logs) ([]byte, error) {
-	otlpLogs := internal.LogsToProto(internal.Logs(ld))
-	rc := encodeContext(ctx)
-	lr := reqint.LogsRequest{
+	lr := internal.LogsRequest{
 		FormatVersion:  requestFormatVersion,
-		LogsData:       &otlpLogs,
-		RequestContext: &rc,
+		LogsData:       internal.LogsToProto(internal.LogsWrapper(ld)),
+		RequestContext: encodeContext(ctx),
 	}
-	return lr.Marshal()
+	buf := make([]byte, lr.SizeProto())
+	lr.MarshalProto(buf)
+	return buf, nil
 }
 
 // UnmarshalLogs unmarshals a byte slice into plog.Logs and the context.
@@ -30,9 +29,9 @@ func UnmarshalLogs(buf []byte) (context.Context, plog.Logs, error) {
 	if !isRequestPayloadV1(buf) {
 		return ctx, plog.Logs{}, ErrInvalidFormat
 	}
-	lr := reqint.LogsRequest{}
-	if err := lr.Unmarshal(buf); err != nil {
+	lr := internal.LogsRequest{}
+	if err := lr.UnmarshalProto(buf); err != nil {
 		return ctx, plog.Logs{}, fmt.Errorf("failed to unmarshal logs request: %w", err)
 	}
-	return decodeContext(ctx, lr.RequestContext), plog.Logs(internal.LogsFromProto(*lr.LogsData)), nil
+	return decodeContext(ctx, lr.RequestContext), plog.Logs(internal.LogsFromProto(lr.LogsData)), nil
 }

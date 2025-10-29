@@ -12,22 +12,23 @@
 
 {{- end }}
 
-| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
-| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability.Level }} Stability |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability.Level }} --------- |{{ end }}
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
 
 {{- if $metric.Attributes }}
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Optional }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.RequirementLevel }} |
 {{- end }}
 
 {{- end }}
@@ -78,10 +79,11 @@
 
 {{- end }}
 
-| Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
-| ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability.Level }} Stability |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability.Level }} --------- |{{ end }}
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
 
 {{- if $metric.Attributes }}
 

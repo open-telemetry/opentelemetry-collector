@@ -30,7 +30,7 @@ processor documentation for more information.
 1. [memory_limiter](memorylimiterprocessor/README.md)
 2. Any sampling or initial filtering processors
 3. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
-3. [batch](batchprocessor/README.md)
+3. [batch](batchprocessor/README.md), although prefer using the exporter's batching capabilities
 4. Any other processors
 
 ## Data Ownership

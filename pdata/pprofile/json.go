@@ -6,7 +6,6 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 import (
 	"slices"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -18,7 +17,7 @@ type JSONMarshaler struct{}
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	internal.MarshalJSONOrigExportProfilesServiceRequest(pd.getOrig(), dest)
+	pd.getOrig().MarshalJSON(dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -33,7 +32,7 @@ func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	pd := NewProfiles()
-	internal.UnmarshalJSONOrigExportProfilesServiceRequest(pd.getOrig(), iter)
+	pd.getOrig().UnmarshalJSON(iter)
 	if iter.Error() != nil {
 		return Profiles{}, iter.Error()
 	}

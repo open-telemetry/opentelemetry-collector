@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ResourceProfilesSlice logically represents a slice of ResourceProfiles.
@@ -22,18 +21,18 @@ import (
 // Must use NewResourceProfilesSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfilesSlice struct {
-	orig  *[]*otlpprofiles.ResourceProfiles
+	orig  *[]*internal.ResourceProfiles
 	state *internal.State
 }
 
-func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfilesSlice {
+func newResourceProfilesSlice(orig *[]*internal.ResourceProfiles, state *internal.State) ResourceProfilesSlice {
 	return ResourceProfilesSlice{orig: orig, state: state}
 }
 
-// NewResourceProfilesSlice creates a ResourceProfilesSlice with 0 elements.
+// NewResourceProfilesSlice creates a ResourceProfilesSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceProfilesSlice() ResourceProfilesSlice {
-	orig := []*otlpprofiles.ResourceProfiles(nil)
+	orig := []*internal.ResourceProfiles(nil)
 	return newResourceProfilesSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.ResourceProfiles, len(*es.orig), newCap)
+	newOrig := make([]*internal.ResourceProfiles, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -99,7 +98,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ResourceProfiles.
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigResourceProfiles())
+	*es.orig = append(*es.orig, internal.NewResourceProfiles())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +127,7 @@ func (es ResourceProfilesSlice) RemoveIf(f func(ResourceProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigResourceProfiles((*es.orig)[i], true)
+			internal.DeleteResourceProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +151,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigResourceProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyResourceProfilesPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceProfiles elements within ResourceProfilesSlice given the

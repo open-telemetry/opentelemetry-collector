@@ -181,17 +181,17 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2025-08-25 | v0.133.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
-| 2025-09-08 | v0.134.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
-| 2025-09-22 | v0.135.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
-| 2025-10-06 | v0.136.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
-| 2025-10-20 | v0.137.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
-| 2025-11-03 | v0.138.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
-| 2025-11-17 | v0.139.0 | [@jade-guiton-dd][10] | [@andrzej-stencel][4]   | [@dehaansa][16]            |
-| 2025-12-01 | v0.140.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
-| 2025-12-15 | v0.141.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
-| 2026-01-05 | v0.142.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
-| 2026-01-19 | v0.142.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2025-11-03 | v0.139.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
+| 2025-11-17 | v0.140.0 | [@jade-guiton-dd][10] | [@andrzej-stencel][4]   | [@dehaansa][16]            |
+| 2025-12-01 | v0.141.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
+| 2025-12-15 | v0.142.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
+| 2026-01-05 | v0.143.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
+| 2026-01-19 | v0.144.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2026-02-02 | v0.145.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
+| 2026-02-16 | v0.146.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
+| 2026-03-02 | v0.147.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
+| 2026-03-16 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2026-03-30 | v0.149.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
 
 
 [1]: https://github.com/jmacd

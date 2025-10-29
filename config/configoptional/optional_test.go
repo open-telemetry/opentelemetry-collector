@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type Config[T any] struct {
@@ -73,6 +74,16 @@ func TestDefaultPanics(t *testing.T) {
 		_ = None[WithEnabled]()
 	})
 
+	assert.Panics(t, func() {
+		opt := None[int]()
+		_ = opt.GetOrInsertDefault()
+	})
+
+	assert.Panics(t, func() {
+		var opt Optional[WithEnabled]
+		_ = opt.GetOrInsertDefault()
+	})
+
 	assert.NotPanics(t, func() {
 		_ = Default(NoMapstructure{})
 	})
@@ -100,12 +111,47 @@ func TestNoneZeroVal(t *testing.T) {
 	var none Optional[Sub]
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
 }
 
 func TestNone(t *testing.T) {
 	none := None[Sub]()
 	require.False(t, none.HasValue())
 	require.Nil(t, none.Get())
+
+	var zeroVal Sub
+	ret := none.GetOrInsertDefault()
+	require.True(t, none.HasValue())
+	assert.Equal(t, &zeroVal, ret)
+}
+
+func ExampleNone() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := None[Person]()
+
+	// A None has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the zero value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Name = "John Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 0}
 }
 
 func TestSome(t *testing.T) {
@@ -113,13 +159,78 @@ func TestSome(t *testing.T) {
 		Foo: "foobar",
 	})
 	require.True(t, some.HasValue())
-	assert.Equal(t, "foobar", some.Get().Foo)
+	retGet := some.Get()
+	assert.Equal(t, "foobar", retGet.Foo)
+
+	retGetOrInsertDefault := some.GetOrInsertDefault()
+	require.True(t, some.HasValue())
+	assert.Equal(t, retGet, retGetOrInsertDefault)
+}
+
+func ExampleSome() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := Some(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Some has a value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault only returns a reference
+	// to the inner value without modifying it.
+	opt.GetOrInsertDefault().Name = "Jane Doe"
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// true
+	// &{John Doe 42}
+	// true
+	// &{Jane Doe 42}
 }
 
 func TestDefault(t *testing.T) {
-	defaultSub := Default(&subDefault)
+	defaultSub := Default(subDefault)
 	require.False(t, defaultSub.HasValue())
 	require.Nil(t, defaultSub.Get())
+
+	ret := defaultSub.GetOrInsertDefault()
+	require.True(t, defaultSub.HasValue())
+	assert.Equal(t, &subDefault, ret)
+}
+
+func ExampleDefault() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	opt := Default(Person{
+		Name: "John Doe",
+		Age:  42,
+	})
+
+	// A Default has no value.
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// GetOrInsertDefault places the default value
+	// and returns it, allowing you to modify it.
+	opt.GetOrInsertDefault().Age = 38
+	fmt.Println(opt.HasValue())
+	fmt.Println(opt.Get())
+
+	// Output:
+	// false
+	// <nil>
+	// true
+	// &{John Doe 38}
 }
 
 func TestUnmarshalOptional(t *testing.T) {
@@ -265,6 +376,174 @@ func TestUnmarshalOptional(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddFieldEnabledFeatureGate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		defaultCfg  Config[Sub]
+		expectedSub bool
+		expectedFoo string
+	}{
+		{
+			name: "none_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "none_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "none_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "default_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_true",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": true,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "baz",
+		},
+		{
+			name: "some_with_enabled_false",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+					"foo":     "baz",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "some_with_enabled_false_no_other_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"enabled": false,
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: false,
+		},
+	}
+
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := test.defaultCfg
+			conf := confmap.NewFromStringMap(test.config)
+			require.NoError(t, conf.Unmarshal(&cfg))
+			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
+			if test.expectedSub {
+				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
+			}
+		})
+	}
+}
+
+func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"sub": map[string]any{
+			"enabled": "something",
+			"foo":     "bar",
+		},
+	})
+	cfg := Config[Sub]{
+		Sub1: None[Sub](),
+	}
+	err := cm.Unmarshal(&cfg)
+	require.ErrorContains(t, err, "unexpected type string for 'enabled': got 'something' value expected 'true' or 'false'")
 }
 
 func TestUnmarshalErrorEnabledField(t *testing.T) {

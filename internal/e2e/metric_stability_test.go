@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -35,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]bool) bool {
@@ -51,7 +53,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]
 	defer resp.Body.Close()
 
 	reader := bufio.NewReader(resp.Body)
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(reader)
 	if err != nil {
 		return false
@@ -203,6 +205,7 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
 				Exporters:  map[component.Type]exporter.Factory{debugexporter.NewFactory().Type(): debugexporter.NewFactory()},
+				Telemetry:  otelconftelemetry.NewFactory(),
 			}, nil
 		},
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
@@ -237,7 +240,7 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 		return resp.StatusCode == http.StatusOK
 	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		sendTestData(t, otelPort)
 	}
 

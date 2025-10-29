@@ -44,6 +44,10 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
+func (r *FakeRequest) BytesSize() int {
+	return r.Bytes
+}
+
 func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return r.MergeErrResult, r.MergeErr
@@ -109,13 +113,5 @@ func RequestFromTracesFunc(err error) func(context.Context, ptrace.Traces) (requ
 func RequestFromLogsFunc(err error) func(context.Context, plog.Logs) (request.Request, error) {
 	return func(_ context.Context, ld plog.Logs) (request.Request, error) {
 		return &FakeRequest{Items: ld.LogRecordCount()}, err
-	}
-}
-
-func NewBytesSizer() request.Sizer[request.Request] {
-	return request.BaseSizer{
-		SizeofFunc: func(req request.Request) int64 {
-			return int64(req.(*FakeRequest).Bytes)
-		},
 	}
 }

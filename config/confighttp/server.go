@@ -52,7 +52,7 @@ type ServerConfig struct {
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
-	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
@@ -92,16 +92,20 @@ type ServerConfig struct {
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
-		ResponseHeaders:   map[string]configopaque.String{},
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
+		KeepAlivesEnabled: true,
 	}
 }
 
@@ -276,14 +280,17 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 		ErrorLog:          errorLog,
 	}
 
+	// Set keep-alives enabled/disabled
+	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
+
 	return server, err
 }
 
-func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
+func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 
-		for k, v := range headers {
+		for k, v := range headers.Iter {
 			h.Set(k, string(v))
 		}
 

@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 type windowsService struct {
@@ -214,7 +215,10 @@ func (w windowsEventLogCore) Sync() error {
 func withWindowsCore(elog *eventlog.Log, serviceConfig **service.Config) func(zapcore.Core) zapcore.Core {
 	return func(core zapcore.Core) zapcore.Core {
 		if serviceConfig != nil && *serviceConfig != nil {
-			for _, output := range (*serviceConfig).Telemetry.Logs.OutputPaths {
+			// TODO remove the dependency on otelconftelemetry
+			//
+			// https://github.com/open-telemetry/opentelemetry-collector/issues/14002
+			for _, output := range (*serviceConfig).Telemetry.(*otelconftelemetry.Config).Logs.OutputPaths {
 				if output != "stdout" && output != "stderr" {
 					// A log file was specified in the configuration, so we should not use the Windows Event Log
 					return core

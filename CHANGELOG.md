@@ -7,6 +7,135 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove deprecated type `TracesConfig` (#14036)
+- `pkg/exporterhelper`: Add default values for `sending_queue::batch` configuration. (#13766)
+  Setting `sending_queue::batch` to an empty value now results in the same setup as the default batch processor configuration.
+  
+- `all`: Add unified print-config command with mode support (redacted, unredacted), json support (unstable), and validation support. (#11775)
+  This replaces the `print-initial-config` command. See the `service` package README for more details. The original command name `print-initial-config` remains an alias, to be retired with the feature flag.
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/otelcol`: Avoid unnecessary mutex in collector logs, replace by atomic pointer (#14008)
+- `cmd/mdatagen`: Add lint/ordering validation for metadata.yaml (#13781)
+- `pdata/xpdata`: Refactor JSON marshaling and unmarshaling to use `pcommon.Value` instead of `AnyValue`. (#13837)
+- `pkg/exporterhelper`: Expose `MergeCtx` in exporterhelper's queue batch settings` (#13742)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Fix zstd decoder data corruption due to decoder pooling for all components that create an HTTP server. (#13954)
+- `pkg/otelcol`: Remove UB when taking internal logs and move them to the final zapcore.Core (#14009)
+  This can happen because of a race on accessing `logsTaken`.
+- `pkg/confmap`: Fix a potential race condition in confmap by closing the providers first. (#14018)
+
+<!-- previous-version -->
+
+## v1.43.0/v0.137.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Improve validation for resource attribute `enabled` field in metadata files (#12722)
+  Resource attributes now require an explicit `enabled` field in metadata.yaml files, while regular attributes
+  are prohibited from having this field. This improves validation and prevents configuration errors.
+  
+- `all`: Changelog entries will now have their component field checked against a list of valid components. (#13924)
+  This will ensure a more standardized changelog format which makes it easier to parse.
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
+## v1.42.0/v0.136.0
+
+### 💡 Enhancements 💡
+
+- `xpdata`: Add Serialization and Deserialization of AnyValue (#12826)
+- `debugexporter`: add support for batching (#13791)
+  The default queue size is 1
+- `configtls`: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime. (#13130, #13245)
+- `mdatagen`: Expose stability level in generated metric documentation (#13748)
+- `internal/tools`: Add support for modernize in Makefile (#13796)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Fix a potential deadlock during collector shutdown. (#13740)
+- `otlpexporter`: fix the validation of unix socket endpoints (#13826)
+
+<!-- previous-version -->
+
+## v1.41.0/v0.135.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add new `exporter_queue_batch_send_size` and `exporter_queue_batch_send_size_bytes` metrics, showing the size of telemetry batches from the exporter. (#12894)
+
+<!-- previous-version -->
+
+## v1.40.0/v0.134.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add custom grpc/encoding that replaces proto and calls into the custom marshal/unmarshal logic in pdata. (#13631)
+  This change should not affect other gRPC calls since it fallbacks to the default grpc/proto encoding if requests are not pdata/otlp requests.
+- `pdata`: Avoid copying the pcommon.Map when same origin (#13731)
+  This is a very large improvement if using OTTL with map functions since it will avoid a map copy.
+- `exporterhelper`: Respect `num_consumers` when batching and partitioning are enabled. (#13607)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Correctly parse OTLP payloads containing non-packed repeated primitive fields (#13727, #13730)
+  This bug prevented the Collector from ingesting most Histogram, ExponentialHistogram,
+  and Profile payloads.
+  
+
+<!-- previous-version -->
+
+## v1.39.0/v0.133.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Increase minimum Go version to 1.24 (#13627)
+
+### 💡 Enhancements 💡
+
+- `otlphttpexporter`: Add `profiles_endpoint` configuration option to allow custom endpoint for profiles data export (#13504)
+  The `profiles_endpoint` configuration follows the same pattern as `traces_endpoint`, `metrics_endpoint`, and `logs_endpoint`.
+  When specified, profiles data will be sent to the custom URL instead of the default `{endpoint}/v1development/profiles`.
+  
+- `pdata`: Add support for local memory pooling for data objects. (#13678)
+  This is still an early experimental (alpha) feature. Do not recommended to be used production. To enable use "--featuregate=+pdata.useProtoPooling"
+- `pdata`: Optimize CopyTo messages to avoid any copy when same source and destination (#13680)
+- `receiverhelper`: New feature flag to make receiverhelper distinguish internal vs. downstream errors using new `otelcol_receiver_failed_x` and `otelcol_receiver_requests` metrics (#12207, #12802)
+  This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans metrics.
+  These new metrics and semantics are enabled through the `receiverhelper.newReceiverMetrics` feature gate.
+  
+- `debugexporter`: Add support for entity references in debug exporter output (#13324)
+- `pdata`: Fix unnecessary allocation of a new state when adding new values to pcommon.Map (#13634)
+- `service`: Implement refcounting for pipeline data owned memory. (#13631)
+  This feature is protected by `--featuregate=+pdata.useProtoPooling`.
+- `service`: Add a debug-level log message when a consumer returns an error. (#13357)
+- `xpdata`: Optimize xpdata/context for persistent queue when only one value for key (#13636)
+- `otlpreceiver`: Log the listening addresses of the receiver, rather than the configured endpoints. (#13654)
+- `pdata`: Use the newly added proto marshaler/unmarshaler for the official proto Marshaler/Unmarshaler (#13637)
+  If any problems observed with this consider to disable the featuregate `--feature-gates=-pdata.useCustomProtoEncoding`
+<!-- cspell:ignore MLKEM mlkem -->
+- `configtls`: Enable X25519MLKEM768 as per draft-ietf-tls-ecdhe-mlkem (#13670)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Prevent uncontrolled goroutines in batcher due to a incorrect worker pool behaviour. (#13689)
+- `service`: Ensure the insecure configuration is accounted for when normalizing the endpoint. (#13691)
+- `configoptional`: Allow validating nested types (#13579)
+  `configoptional.Optional` now implements `xconfmap.Validator`
+- `batchprocessor`: Fix UB in batch processor when trying to read bytes size after adding request to pipeline (#13698)
+  This bug only happens id detailed metrics are enabled and also an async (sending queue enabled) exporter that mutates data is configure.
+
+<!-- previous-version -->
+
 ## v1.38.0/v0.132.0
 
 ### 🛑 Breaking changes 🛑

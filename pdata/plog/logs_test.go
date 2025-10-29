@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +31,7 @@ func TestLogRecordCount(t *testing.T) {
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeLogs().AppendEmpty()
 	illl := rms.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -42,22 +40,22 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{{}},
+	assert.Zero(t, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{{}},
 	}, new(internal.State)).LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
+	assert.Zero(t, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{
 			{
-				ScopeLogs: []*otlplogs.ScopeLogs{{}},
+				ScopeLogs: []*internal.ScopeLogs{{}},
 			},
 		},
 	}, new(internal.State)).LogRecordCount())
-	assert.Equal(t, 1, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
+	assert.Equal(t, 1, newLogs(&internal.ExportLogsServiceRequest{
+		ResourceLogs: []*internal.ResourceLogs{
 			{
-				ScopeLogs: []*otlplogs.ScopeLogs{
+				ScopeLogs: []*internal.ScopeLogs{
 					{
-						LogRecords: []*otlplogs.LogRecord{{}},
+						LogRecords: []*internal.LogRecord{{}},
 					},
 				},
 			},
@@ -81,9 +79,8 @@ func BenchmarkLogsUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			rl := ld.ResourceLogs().At(i)
 			res := rl.Resource()
@@ -126,8 +123,8 @@ func BenchmarkLogsMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalLogs(ld)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)

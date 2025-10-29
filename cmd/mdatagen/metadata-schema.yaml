@@ -78,8 +78,12 @@ attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
-    # Optional: indicates whether the attribute is optional or not.
-    optional:
+    # Optional: indicates requirement level of the attribute.
+    # - required: the attribute is always included and cannot be excluded.
+    # - conditionally_required: the attribute is included by default when certain conditions are met.
+    # - recommended (default behavior): the attribute is included by default but can be disabled via configuration.
+    # - opt_in: the attribute is not included unless explicitly enabled in user config.
+    requirement_level: <required|conditionally_required|recommended|opt_in>
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
@@ -118,6 +122,12 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+    # Optional: the metric stability
+    stability:
+      # Optional: the level of stability
+      level: <development|alpha|beta|stable|deprecated>
+      # Optional: the version current stability was introduced
+      from:
 
 # Optional: map of event names with the key being the event name and value
 # being described below.

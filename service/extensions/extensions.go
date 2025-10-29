@@ -17,10 +17,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
-	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -40,8 +39,8 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
-		extLogger := componentattribute.ZapLoggerWithAttributes(bes.telemetry.Logger,
-			*attribute.Extension(extID).Set())
+		extLogger := componentattribute.LoggerWithAttributes(bes.telemetry.Logger,
+			attribute.Extension(extID).Set().ToSlice())
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
@@ -203,7 +202,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 		extMap:       make(map[component.ID]extension.Extension),
 		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
-		reporter:     &nopReporter{},
+		reporter:     status.NewNopStatusReporter(),
 	}
 
 	for _, opt := range options {
@@ -214,7 +213,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
-			TelemetrySettings: telemetry.WithAttributeSet(set.Telemetry, *attribute.Extension(extID).Set()),
+			TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(set.Telemetry, *attribute.Extension(extID).Set()),
 			BuildInfo:         set.BuildInfo,
 		}
 
@@ -238,11 +237,3 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts.extensionIDs = order
 	return exts, nil
 }
-
-type nopReporter struct{}
-
-func (r *nopReporter) Ready() {}
-
-func (r *nopReporter) ReportStatus(*componentstatus.InstanceID, *componentstatus.Event) {}
-
-func (r *nopReporter) ReportOKIfStarting(*componentstatus.InstanceID) {}

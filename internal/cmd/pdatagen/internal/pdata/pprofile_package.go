@@ -19,12 +19,8 @@ var pprofile = &Package{
 			`"sync"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
-			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
-			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
@@ -41,13 +37,12 @@ var pprofile = &Package{
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
-			`otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
-			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
 		profiles,
+		profilesData,
 		resourceProfilesSlice,
 		resourceProfiles,
 		profilesDictionary,
@@ -67,19 +62,41 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
-		keyValueSlice,
-		keyValue,
-		attributeUnitSlice,
-		attributeUnit,
+		keyValueAndUnitSlice,
+		keyValueAndUnit,
 		linkSlice,
 		link,
+		stackSlice,
+		stack,
 	},
 }
 
 var profiles = &messageStruct{
-	structName:     "Profiles",
-	description:    "// Profiles is the top-level struct that is propagated through the profiles pipeline.\n// Use NewProfiles to create new instance, zero-initialized instance is not valid for use.",
-	originFullName: "otlpcollectorprofiles.ExportProfilesServiceRequest",
+	structName:    "Profiles",
+	description:   "// Profiles is the top-level struct that is propagated through the profiles pipeline.\n// Use NewProfiles to create new instance, zero-initialized instance is not valid for use.",
+	protoName:     "ExportProfilesServiceRequest",
+	upstreamProto: "gootlpcollectorprofiles.ExportProfilesServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceProfiles",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: resourceProfilesSlice,
+		},
+		&MessageField{
+			fieldName:     "Dictionary",
+			protoID:       2,
+			returnMessage: profilesDictionary,
+		},
+	},
+	hasWrapper: true,
+}
+
+var profilesData = &messageStruct{
+	structName:    "ProfilesData",
+	description:   "// ProfilesData represents the profiles data that can be stored in persistent storage,\n// OR can be embedded by other protocols that transfer OTLP profiles data but do not\n// implement the OTLP protocol.",
+	protoName:     "ProfilesData",
+	upstreamProto: "gootlpprofiles.ProfilesData",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "ResourceProfiles",
@@ -103,9 +120,10 @@ var resourceProfilesSlice = &messageSlice{
 }
 
 var resourceProfiles = &messageStruct{
-	structName:     "ResourceProfiles",
-	description:    "// ResourceProfiles is a collection of profiles from a Resource.",
-	originFullName: "otlpprofiles.ResourceProfiles",
+	structName:    "ResourceProfiles",
+	description:   "// ResourceProfiles is a collection of profiles from a Resource.",
+	protoName:     "ResourceProfiles",
+	upstreamProto: "gootlpprofiles.ResourceProfiles",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Resource",
@@ -127,9 +145,10 @@ var resourceProfiles = &messageStruct{
 }
 
 var profilesDictionary = &messageStruct{
-	structName:     "ProfilesDictionary",
-	description:    "// ProfilesDictionary is the reference table containing all data shared by profiles across the message being sent.",
-	originFullName: "otlpprofiles.ProfilesDictionary",
+	structName:    "ProfilesDictionary",
+	description:   "// ProfilesDictionary is the reference table containing all data shared by profiles across the message being sent.",
+	protoName:     "ProfilesDictionary",
+	upstreamProto: "gootlpprofiles.ProfilesDictionary",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "MappingTable",
@@ -165,13 +184,13 @@ var profilesDictionary = &messageStruct{
 			fieldName:   "AttributeTable",
 			protoID:     6,
 			protoType:   proto.TypeMessage,
-			returnSlice: keyValueSlice,
+			returnSlice: keyValueAndUnitSlice,
 		},
 		&SliceField{
-			fieldName:   "AttributeUnits",
+			fieldName:   "StackTable",
 			protoID:     7,
 			protoType:   proto.TypeMessage,
-			returnSlice: attributeUnitSlice,
+			returnSlice: stackSlice,
 		},
 	},
 }
@@ -183,9 +202,10 @@ var scopeProfilesSlice = &messageSlice{
 }
 
 var scopeProfiles = &messageStruct{
-	structName:     "ScopeProfiles",
-	description:    "// ScopeProfiles is a collection of profiles from a LibraryInstrumentation.",
-	originFullName: "otlpprofiles.ScopeProfiles",
+	structName:    "ScopeProfiles",
+	description:   "// ScopeProfiles is a collection of profiles from a LibraryInstrumentation.",
+	protoName:     "ScopeProfiles",
+	upstreamProto: "gootlpprofiles.ScopeProfiles",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Scope",
@@ -213,15 +233,15 @@ var profilesSlice = &messageSlice{
 }
 
 var profile = &messageStruct{
-	structName:     "Profile",
-	description:    "// Profile are an implementation of the pprofextended data model.\n",
-	originFullName: "otlpprofiles.Profile",
+	structName:    "Profile",
+	description:   "// Profile are an implementation of the pprofextended data model.\n",
+	protoName:     "Profile",
+	upstreamProto: "gootlpprofiles.Profile",
 	fields: []Field{
-		&SliceField{
-			fieldName:   "SampleType",
-			protoID:     1,
-			protoType:   proto.TypeMessage,
-			returnSlice: valueTypeSlice,
+		&MessageField{
+			fieldName:     "SampleType",
+			protoID:       1,
+			returnMessage: valueType,
 		},
 		&SliceField{
 			fieldName:   "Sample",
@@ -229,113 +249,104 @@ var profile = &messageStruct{
 			protoType:   proto.TypeMessage,
 			returnSlice: sampleSlice,
 		},
-		&SliceField{
-			fieldName:   "LocationIndices",
-			protoID:     3,
-			protoType:   proto.TypeInt32,
-			returnSlice: int32Slice,
-		},
 		&TypedField{
 			fieldName:       "Time",
-			originFieldName: "TimeNanos",
+			originFieldName: "TimeUnixNano",
+			protoID:         3,
+			returnType:      timestampType,
+		},
+		&TypedField{
+			fieldName:       "Duration",
+			originFieldName: "DurationNano",
 			protoID:         4,
 			returnType: &TypedType{
 				structName:  "Timestamp",
 				packageName: "pcommon",
-				protoType:   proto.TypeInt64,
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
-		},
-		&TypedField{
-			fieldName:       "Duration",
-			originFieldName: "DurationNanos",
-			protoID:         5,
-			returnType: &TypedType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				protoType:   proto.TypeInt64,
+				protoType:   proto.TypeUint64,
 				defaultVal:  "0",
 				testVal:     "1234567890",
 			},
 		},
 		&MessageField{
 			fieldName:     "PeriodType",
-			protoID:       6,
+			protoID:       5,
 			returnMessage: valueType,
 		},
 		&PrimitiveField{
 			fieldName: "Period",
-			protoID:   7,
+			protoID:   6,
 			protoType: proto.TypeInt64,
 		},
 		&SliceField{
 			fieldName:   "CommentStrindices",
-			protoID:     8,
+			protoID:     7,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
-		},
-		&PrimitiveField{
-			fieldName: "DefaultSampleTypeIndex",
-			protoID:   9,
-			protoType: proto.TypeInt32,
 		},
 		&TypedField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			protoID:         10,
+			protoID:         8,
 			returnType: &TypedType{
 				structName:  "ProfileID",
 				protoType:   proto.TypeMessage,
-				messageName: "data.ProfileID",
-				defaultVal:  "data.ProfileID([16]byte{})",
-				testVal:     "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+				messageName: "ProfileID",
+				defaultVal:  "ProfileID([16]byte{})",
+				testVal:     "ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 			},
 		},
 		&PrimitiveField{
 			fieldName: "DroppedAttributesCount",
-			protoID:   11,
+			protoID:   9,
 			protoType: proto.TypeUint32,
 		},
 		&PrimitiveField{
 			fieldName: "OriginalPayloadFormat",
-			protoID:   12,
+			protoID:   10,
 			protoType: proto.TypeString,
 		},
 		&SliceField{
 			fieldName:   "OriginalPayload",
-			protoID:     13,
+			protoID:     11,
 			protoType:   proto.TypeBytes,
 			returnSlice: byteSlice,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     14,
+			protoID:     12,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
 	},
 }
 
-var attributeUnitSlice = &messageSlice{
-	structName:      "AttributeUnitSlice",
+var keyValueAndUnitSlice = &messageSlice{
+	structName:      "KeyValueAndUnitSlice",
 	elementNullable: true,
-	element:         attributeUnit,
+	element:         keyValueAndUnit,
 }
 
-var attributeUnit = &messageStruct{
-	structName:     "AttributeUnit",
-	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
-	originFullName: "otlpprofiles.AttributeUnit",
+var keyValueAndUnit = &messageStruct{
+	structName: "KeyValueAndUnit",
+	description: `// KeyValueAndUnit represents a custom 'dictionary native'
+	// style of encoding attributes which is more convenient
+	// for profiles than opentelemetry.proto.common.v1.KeyValue.`,
+	protoName:     "KeyValueAndUnit",
+	upstreamProto: "gootlpprofiles.KeyValueAndUnit",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName: "AttributeKeyStrindex",
+			fieldName: "KeyStrindex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
 		},
+		&MessageField{
+			fieldName:     "Value",
+			protoID:       2,
+			returnMessage: anyValueStruct,
+		},
 		&PrimitiveField{
 			fieldName: "UnitStrindex",
-			protoID:   2,
+			protoID:   3,
 			protoType: proto.TypeInt32,
 		},
 	},
@@ -348,9 +359,10 @@ var linkSlice = &messageSlice{
 }
 
 var link = &messageStruct{
-	structName:     "Link",
-	description:    "// Link represents a pointer from a profile Sample to a trace Span.",
-	originFullName: "otlpprofiles.Link",
+	structName:    "Link",
+	description:   "// Link represents a pointer from a profile Sample to a trace Span.",
+	protoName:     "Link",
+	upstreamProto: "gootlpprofiles.Link",
 	fields: []Field{
 		&TypedField{
 			fieldName:       "TraceID",
@@ -374,9 +386,10 @@ var valueTypeSlice = &messageSlice{
 }
 
 var valueType = &messageStruct{
-	structName:     "ValueType",
-	description:    "// ValueType describes the type and units of a value, with an optional aggregation temporality.",
-	originFullName: "otlpprofiles.ValueType",
+	structName:    "ValueType",
+	description:   "// ValueType describes the type and units of a value, with an optional aggregation temporality.",
+	protoName:     "ValueType",
+	upstreamProto: "gootlpprofiles.ValueType",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "TypeStrindex",
@@ -394,9 +407,9 @@ var valueType = &messageStruct{
 			returnType: &TypedType{
 				structName:  "AggregationTemporality",
 				protoType:   proto.TypeEnum,
-				messageName: "otlpprofiles.AggregationTemporality",
-				defaultVal:  "otlpprofiles.AggregationTemporality(0)",
-				testVal:     "otlpprofiles.AggregationTemporality(1)",
+				messageName: "AggregationTemporality",
+				defaultVal:  "AggregationTemporality(0)",
+				testVal:     "AggregationTemporality(1)",
 			},
 		},
 	},
@@ -409,41 +422,37 @@ var sampleSlice = &messageSlice{
 }
 
 var sample = &messageStruct{
-	structName:     "Sample",
-	description:    "// Sample represents each record value encountered within a profiled program.",
-	originFullName: "otlpprofiles.Sample",
+	structName:    "Sample",
+	description:   "// Sample represents each record value encountered within a profiled program.",
+	protoName:     "Sample",
+	upstreamProto: "gootlpprofiles.Sample",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName: "LocationsStartIndex",
+			fieldName: "StackIndex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
 		},
-		&PrimitiveField{
-			fieldName: "LocationsLength",
-			protoID:   2,
-			protoType: proto.TypeInt32,
-		},
 		&SliceField{
-			fieldName:   "Value",
-			protoID:     3,
+			fieldName:   "Values",
+			protoID:     2,
 			protoType:   proto.TypeInt64,
 			returnSlice: int64Slice,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     4,
+			protoID:     3,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
-		&OptionalPrimitiveField{
+		&PrimitiveField{
 			fieldName: "LinkIndex",
-			protoID:   5,
+			protoID:   4,
 			protoType: proto.TypeInt32,
 		},
 		&SliceField{
 			fieldName:   "TimestampsUnixNano",
-			protoID:     6,
-			protoType:   proto.TypeUint64,
+			protoID:     5,
+			protoType:   proto.TypeFixed64,
 			returnSlice: uInt64Slice,
 		},
 	},
@@ -456,9 +465,10 @@ var mappingSlice = &messageSlice{
 }
 
 var mapping = &messageStruct{
-	structName:     "Mapping",
-	description:    "// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID",
-	originFullName: "otlpprofiles.Mapping",
+	structName:    "Mapping",
+	description:   "// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID",
+	protoName:     "Mapping",
+	upstreamProto: "gootlpprofiles.Mapping",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "MemoryStart",
@@ -486,26 +496,6 @@ var mapping = &messageStruct{
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
-		&PrimitiveField{
-			fieldName: "HasFunctions",
-			protoID:   6,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasFilenames",
-			protoID:   7,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasLineNumbers",
-			protoID:   8,
-			protoType: proto.TypeBool,
-		},
-		&PrimitiveField{
-			fieldName: "HasInlineFrames",
-			protoID:   9,
-			protoType: proto.TypeBool,
-		},
 	},
 }
 
@@ -516,11 +506,12 @@ var locationSlice = &messageSlice{
 }
 
 var location = &messageStruct{
-	structName:     "Location",
-	description:    "// Location describes function and line table debug information.",
-	originFullName: "otlpprofiles.Location",
+	structName:    "Location",
+	description:   "// Location describes function and line table debug information.",
+	protoName:     "Location",
+	upstreamProto: "gootlpprofiles.Location",
 	fields: []Field{
-		&OptionalPrimitiveField{
+		&PrimitiveField{
 			fieldName: "MappingIndex",
 			protoID:   1,
 			protoType: proto.TypeInt32,
@@ -536,14 +527,9 @@ var location = &messageStruct{
 			protoType:   proto.TypeMessage,
 			returnSlice: lineSlice,
 		},
-		&PrimitiveField{
-			fieldName: "IsFolded",
-			protoID:   4,
-			protoType: proto.TypeBool,
-		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     5,
+			protoID:     4,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
@@ -557,9 +543,10 @@ var lineSlice = &messageSlice{
 }
 
 var line = &messageStruct{
-	structName:     "Line",
-	description:    "// Line details a specific line in a source code, linked to a function.",
-	originFullName: "otlpprofiles.Line",
+	structName:    "Line",
+	description:   "// Line details a specific line in a source code, linked to a function.",
+	protoName:     "Line",
+	upstreamProto: "gootlpprofiles.Line",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "FunctionIndex",
@@ -586,9 +573,10 @@ var functionSlice = &messageSlice{
 }
 
 var function = &messageStruct{
-	structName:     "Function",
-	description:    "// Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.",
-	originFullName: "otlpprofiles.Function",
+	structName:    "Function",
+	description:   "// Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.",
+	protoName:     "Function",
+	upstreamProto: "gootlpprofiles.Function",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "NameStrindex",
@@ -613,26 +601,23 @@ var function = &messageStruct{
 	},
 }
 
-var keyValueSlice = &messageSlice{
-	structName:      "AttributeTableSlice",
-	elementNullable: false,
-	element:         keyValue,
+var stackSlice = &messageSlice{
+	structName:      "StackSlice",
+	elementNullable: true,
+	element:         stack,
 }
 
-var keyValue = &messageStruct{
-	structName:     "Attribute",
-	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
-	originFullName: "otlpcommon.KeyValue",
+var stack = &messageStruct{
+	structName:    "Stack",
+	description:   "// Stack represents a stack trace as a list of locations.\n",
+	protoName:     "Stack",
+	upstreamProto: "gootlpprofiles.Stack",
 	fields: []Field{
-		&PrimitiveField{
-			fieldName: "Key",
-			protoID:   1,
-			protoType: proto.TypeString,
-		},
-		&MessageField{
-			fieldName:     "Value",
-			protoID:       2,
-			returnMessage: anyValue,
+		&SliceField{
+			fieldName:   "LocationIndices",
+			protoID:     1,
+			protoType:   proto.TypeInt32,
+			returnSlice: int32Slice,
 		},
 	},
 }
