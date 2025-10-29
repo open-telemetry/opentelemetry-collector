@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/provider/testutils"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 func newConfigurableHTTPProvider(scheme SchemeType, set confmap.ProviderSettings) *provider {
