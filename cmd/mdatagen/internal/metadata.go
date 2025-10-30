@@ -313,7 +313,7 @@ func (mvt ValueType) Primitive() string {
 }
 
 type SemanticConvention struct {
-	SemanticConventionRef string `mapstructure:"semconv_ref"`
+	SemanticConventionRef string `mapstructure:"ref"`
 }
 
 type Warnings struct {
