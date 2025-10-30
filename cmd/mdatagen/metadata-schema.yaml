@@ -52,6 +52,8 @@ resource_attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: use attribute key value as part of template
+    is_template_key: true
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.
