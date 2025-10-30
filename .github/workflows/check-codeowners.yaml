@@ -1,63 +1,46 @@
-name: codeowners
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# This workflow is used to check that the CODEOWNERS file is valid.
+#
+# The workflow is triggered on pull requests that are opened, synchronized,
+# reopened, or ready for review. It runs on the `pull_request` event
+# to safely validate code from external contributors without exposing secrets.
+#
+# The workflow uses the `mszostok/codeowners-validator` action to check the
+# CODEOWNERS file. The action is configured to check for changes since the
+# base branch of the PR.
+#
+# See https://github.com/mszostok/codeowners-validator for more information.
+
+name: Check CODEOWNERS
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/CODEOWNERS"
-      - "**/metadata.yaml"
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
-  pull_request_target:
-    paths:
-      - ".github/CODEOWNERS"
-      - "**/metadata.yaml"
+  pull_request:
     types:
       - opened
       - synchronize
-      - edited
       - reopened
-env:
-  # Make sure to exit early if cache segment download times out after 2 minutes.
-  # We limit cache download as a whole to 5 minutes.
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+      - ready_for_review
 
-# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   check-codeowners:
-    timeout-minutes: 30
-    runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+      - uses: actions/checkout@v4
         with:
-          go-version: oldstable
-          cache-dependency-path: "**/*.sum"
+          # Fetch all history so we can compare with the base branch.
+          fetch-depth: 0
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Check for CODEOWNERS changes
+        uses: mszostok/codeowners-validator@v0.8.0
         with:
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          path: pr
-
-      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
-        id: otelbot-token
-        with:
-          app-id: ${{ vars.OTELBOT_APP_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-
-      # NOTE: the make command below intentionally uses the Makefile from the
-      # target branch, and not the PR checkout, since it runs with the
-      # pull_request_target event and has elevated permissions.
-      - name: Gen CODEOWNERS
-        run: |
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=./pr" make generate-codeowners
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make generate-codeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)
+          # We need to check against the base branch for changes.
+          # See https://github.com/mszostok/codeowners-validator#validating-codeowners-in-a-pull-request.
+          changes_since: ${{ github.event.pull_request.base.ref }}
+          # The GITHUB_TOKEN is passed to the validator.
+          # With a pull_request trigger, this token is read-only and cannot be used
+          # to comment on the PR.
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
