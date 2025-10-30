@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
+	gootlptrace "go.opentelemetry.io/proto/otlp/trace/v1"
 	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
