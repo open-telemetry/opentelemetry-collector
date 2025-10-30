@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewSample function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Sample struct {
-	orig  *otlpprofiles.Sample
+	orig  *internal.Sample
 	state *internal.State
 }
 
-func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
+func newSample(orig *internal.Sample, state *internal.State) Sample {
 	return Sample{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	return newSample(internal.NewOrigSample(), internal.NewState())
+	return newSample(internal.NewSample(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,7 +44,7 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSample(dest.orig, false)
+	internal.DeleteSample(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -62,12 +61,12 @@ func (ms Sample) SetStackIndex(v int32) {
 
 // Values returns the Values associated with this Sample.
 func (ms Sample) Values() pcommon.Int64Slice {
-	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.Values, ms.state))
+	return pcommon.Int64Slice(internal.NewInt64SliceWrapper(&ms.orig.Values, ms.state))
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Sample.
 func (ms Sample) AttributeIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
 }
 
 // LinkIndex returns the linkindex associated with this Sample.
@@ -83,11 +82,11 @@ func (ms Sample) SetLinkIndex(v int32) {
 
 // TimestampsUnixNano returns the TimestampsUnixNano associated with this Sample.
 func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state))
+	return pcommon.UInt64Slice(internal.NewUInt64SliceWrapper(&ms.orig.TimestampsUnixNano, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSample(dest.orig, ms.orig)
+	internal.CopySample(dest.orig, ms.orig)
 }

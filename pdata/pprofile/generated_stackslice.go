@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // StackSlice logically represents a slice of Stack.
@@ -22,18 +21,18 @@ import (
 // Must use NewStackSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type StackSlice struct {
-	orig  *[]*otlpprofiles.Stack
+	orig  *[]*internal.Stack
 	state *internal.State
 }
 
-func newStackSlice(orig *[]*otlpprofiles.Stack, state *internal.State) StackSlice {
+func newStackSlice(orig *[]*internal.Stack, state *internal.State) StackSlice {
 	return StackSlice{orig: orig, state: state}
 }
 
-// NewStackSlice creates a StackSlice with 0 elements.
+// NewStackSlice creates a StackSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewStackSlice() StackSlice {
-	orig := []*otlpprofiles.Stack(nil)
+	orig := []*internal.Stack(nil)
 	return newStackSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Stack, len(*es.orig), newCap)
+	newOrig := make([]*internal.Stack, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -99,7 +98,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Stack.
 func (es StackSlice) AppendEmpty() Stack {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigStack())
+	*es.orig = append(*es.orig, internal.NewStack())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +127,7 @@ func (es StackSlice) RemoveIf(f func(Stack) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigStack((*es.orig)[i], true)
+			internal.DeleteStack((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +151,7 @@ func (es StackSlice) CopyTo(dest StackSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigStackSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyStackPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Stack elements within StackSlice given the

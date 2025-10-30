@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ScopeProfilesSlice logically represents a slice of ScopeProfiles.
@@ -22,18 +21,18 @@ import (
 // Must use NewScopeProfilesSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeProfilesSlice struct {
-	orig  *[]*otlpprofiles.ScopeProfiles
+	orig  *[]*internal.ScopeProfiles
 	state *internal.State
 }
 
-func newScopeProfilesSlice(orig *[]*otlpprofiles.ScopeProfiles, state *internal.State) ScopeProfilesSlice {
+func newScopeProfilesSlice(orig *[]*internal.ScopeProfiles, state *internal.State) ScopeProfilesSlice {
 	return ScopeProfilesSlice{orig: orig, state: state}
 }
 
-// NewScopeProfilesSlice creates a ScopeProfilesSlice with 0 elements.
+// NewScopeProfilesSlice creates a ScopeProfilesSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeProfilesSlice() ScopeProfilesSlice {
-	orig := []*otlpprofiles.ScopeProfiles(nil)
+	orig := []*internal.ScopeProfiles(nil)
 	return newScopeProfilesSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ScopeProfilesSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.ScopeProfiles, len(*es.orig), newCap)
+	newOrig := make([]*internal.ScopeProfiles, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -99,7 +98,7 @@ func (es ScopeProfilesSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ScopeProfiles.
 func (es ScopeProfilesSlice) AppendEmpty() ScopeProfiles {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigScopeProfiles())
+	*es.orig = append(*es.orig, internal.NewScopeProfiles())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +127,7 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigScopeProfiles((*es.orig)[i], true)
+			internal.DeleteScopeProfiles((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +151,7 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigScopeProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyScopeProfilesPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeProfiles elements within ScopeProfilesSlice given the

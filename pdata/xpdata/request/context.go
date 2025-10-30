@@ -10,17 +10,16 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/client"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/xpdata/request/internal"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 // encodeContext encodes the context into a map of strings.
-func encodeContext(ctx context.Context) internal.RequestContext {
+func encodeContext(ctx context.Context) *internal.RequestContext {
 	rc := internal.RequestContext{}
 	encodeSpanContext(ctx, &rc)
 	encodeClientMetadata(ctx, &rc)
 	encodeClientAddress(ctx, &rc)
-	return rc
+	return &rc
 }
 
 func encodeSpanContext(ctx context.Context, rc *internal.RequestContext) {
@@ -28,11 +27,9 @@ func encodeSpanContext(ctx context.Context, rc *internal.RequestContext) {
 	if !spanCtx.IsValid() {
 		return
 	}
-	traceID := spanCtx.TraceID()
-	spanID := spanCtx.SpanID()
 	rc.SpanContext = &internal.SpanContext{
-		TraceId:    traceID[:],
-		SpanId:     spanID[:],
+		TraceID:    internal.TraceID(spanCtx.TraceID()),
+		SpanID:     internal.SpanID(spanCtx.SpanID()),
 		TraceFlags: uint32(spanCtx.TraceFlags()),
 		TraceState: spanCtx.TraceState().String(),
 		Remote:     spanCtx.IsRemote(),
@@ -45,18 +42,18 @@ func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 		vals := clientMetadata.Get(k)
 		switch len(vals) {
 		case 1:
-			rc.ClientMetadata = append(rc.ClientMetadata, otlpcommon.KeyValue{
+			rc.ClientMetadata = append(rc.ClientMetadata, internal.KeyValue{
 				Key:   k,
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: vals[0]}},
+				Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: vals[0]}},
 			})
 		default:
-			metadataArray := make([]otlpcommon.AnyValue, 0, len(vals))
+			metadataArray := make([]internal.AnyValue, 0, len(vals))
 			for i := range vals {
-				metadataArray = append(metadataArray, otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: vals[i]}})
+				metadataArray = append(metadataArray, internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: vals[i]}})
 			}
-			rc.ClientMetadata = append(rc.ClientMetadata, otlpcommon.KeyValue{
+			rc.ClientMetadata = append(rc.ClientMetadata, internal.KeyValue{
 				Key:   k,
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: metadataArray}}},
+				Value: internal.AnyValue{Value: &internal.AnyValue_ArrayValue{ArrayValue: &internal.ArrayValue{Values: metadataArray}}},
 			})
 		}
 	}
@@ -65,19 +62,19 @@ func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 func encodeClientAddress(ctx context.Context, rc *internal.RequestContext) {
 	switch a := client.FromContext(ctx).Addr.(type) {
 	case *net.IPAddr:
-		rc.ClientAddress = &internal.RequestContext_Ip{Ip: &internal.IPAddr{
-			Ip:   a.IP,
+		rc.ClientAddress = &internal.RequestContext_IP{IP: &internal.IPAddr{
+			IP:   a.IP,
 			Zone: a.Zone,
 		}}
 	case *net.TCPAddr:
-		rc.ClientAddress = &internal.RequestContext_Tcp{Tcp: &internal.TCPAddr{
-			Ip:   a.IP,
+		rc.ClientAddress = &internal.RequestContext_TCP{TCP: &internal.TCPAddr{
+			IP:   a.IP,
 			Port: int64(a.Port),
 			Zone: a.Zone,
 		}}
 	case *net.UDPAddr:
-		rc.ClientAddress = &internal.RequestContext_Udp{Udp: &internal.UDPAddr{
-			Ip:   a.IP,
+		rc.ClientAddress = &internal.RequestContext_UDP{UDP: &internal.UDPAddr{
+			IP:   a.IP,
 			Port: int64(a.Port),
 			Zone: a.Zone,
 		}}
@@ -110,10 +107,8 @@ func decodeSpanContext(ctx context.Context, sc *internal.SpanContext) context.Co
 	if sc == nil {
 		return ctx
 	}
-	traceID := trace.TraceID{}
-	copy(traceID[:], sc.TraceId)
-	spanID := trace.SpanID{}
-	copy(spanID[:], sc.SpanId)
+	traceID := trace.TraceID(sc.TraceID)
+	spanID := trace.SpanID(sc.SpanID)
 	traceState, _ := trace.ParseTraceState(sc.TraceState)
 	return trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    traceID,
@@ -124,17 +119,17 @@ func decodeSpanContext(ctx context.Context, sc *internal.SpanContext) context.Co
 	}))
 }
 
-func decodeClientMetadata(clientMetadata []otlpcommon.KeyValue) map[string][]string {
+func decodeClientMetadata(clientMetadata []internal.KeyValue) map[string][]string {
 	if len(clientMetadata) == 0 {
 		return nil
 	}
 	metadataMap := make(map[string][]string, len(clientMetadata))
 	for _, kv := range clientMetadata {
 		switch val := kv.Value.Value.(type) {
-		case *otlpcommon.AnyValue_StringValue:
+		case *internal.AnyValue_StringValue:
 			metadataMap[kv.Key] = make([]string, 1)
 			metadataMap[kv.Key][0] = val.StringValue
-		case *otlpcommon.AnyValue_ArrayValue:
+		case *internal.AnyValue_ArrayValue:
 			metadataMap[kv.Key] = make([]string, len(val.ArrayValue.Values))
 			for i, v := range val.ArrayValue.Values {
 				metadataMap[kv.Key][i] = v.GetStringValue()
@@ -146,22 +141,22 @@ func decodeClientMetadata(clientMetadata []otlpcommon.KeyValue) map[string][]str
 
 func decodeClientAddress(rc *internal.RequestContext) net.Addr {
 	switch a := rc.ClientAddress.(type) {
-	case *internal.RequestContext_Ip:
+	case *internal.RequestContext_IP:
 		return &net.IPAddr{
-			IP:   a.Ip.Ip,
-			Zone: a.Ip.Zone,
+			IP:   a.IP.IP,
+			Zone: a.IP.Zone,
 		}
-	case *internal.RequestContext_Tcp:
+	case *internal.RequestContext_TCP:
 		return &net.TCPAddr{
-			IP:   a.Tcp.Ip,
-			Port: int(a.Tcp.Port),
-			Zone: a.Tcp.Zone,
+			IP:   a.TCP.IP,
+			Port: int(a.TCP.Port),
+			Zone: a.TCP.Zone,
 		}
-	case *internal.RequestContext_Udp:
+	case *internal.RequestContext_UDP:
 		return &net.UDPAddr{
-			IP:   a.Udp.Ip,
-			Port: int(a.Udp.Port),
-			Zone: a.Udp.Zone,
+			IP:   a.UDP.IP,
+			Port: int(a.UDP.Port),
+			Zone: a.UDP.Zone,
 		}
 	case *internal.RequestContext_Unix:
 		return &net.UnixAddr{

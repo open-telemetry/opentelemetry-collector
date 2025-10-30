@@ -13,7 +13,6 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.138.0
 	go.opentelemetry.io/collector/config/confighttp v0.138.0
 	go.opentelemetry.io/collector/config/confignet v1.44.0
-	go.opentelemetry.io/collector/config/configopaque v1.44.0
 	go.opentelemetry.io/collector/config/configoptional v1.44.0
 	go.opentelemetry.io/collector/config/configtls v1.44.0
 	go.opentelemetry.io/collector/confmap v1.44.0
@@ -49,7 +48,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -70,6 +68,7 @@ require (
 	go.opentelemetry.io/collector/client v1.44.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.44.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.44.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.44.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.44.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.138.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.44.0 // indirect

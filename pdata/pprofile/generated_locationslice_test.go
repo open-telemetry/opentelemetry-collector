@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLocationSlice(t *testing.T) {
 	es := NewLocationSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newLocationSlice(&[]*otlpprofiles.Location{}, internal.NewState())
+	es = newLocationSlice(&[]*internal.Location{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLocation()
@@ -27,7 +26,7 @@ func TestLocationSlice(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		(*es.orig)[i] = internal.GenTestOrigLocation()
+		(*es.orig)[i] = internal.GenTestLocation()
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -36,7 +35,7 @@ func TestLocationSlice(t *testing.T) {
 func TestLocationSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newLocationSlice(&[]*otlpprofiles.Location{}, sharedState)
+	es := newLocationSlice(&[]*internal.Location{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestLocationSlice_Sort(t *testing.T) {
 
 func generateTestLocationSlice() LocationSlice {
 	ms := NewLocationSlice()
-	*ms.orig = internal.GenerateOrigTestLocationSlice()
+	*ms.orig = internal.GenTestLocationPtrSlice()
 	return ms
 }

@@ -52,7 +52,7 @@ func TestInt64SliceReadOnly(t *testing.T) {
 	raw := []int64{1, 2, 3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := Int64Slice(internal.NewInt64Slice(&raw, sharedState))
+	ms := Int64Slice(internal.NewInt64SliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, int64(1), ms.At(0))

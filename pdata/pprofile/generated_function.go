@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.
@@ -19,11 +18,11 @@ import (
 // Must use NewFunction function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Function struct {
-	orig  *otlpprofiles.Function
+	orig  *internal.Function
 	state *internal.State
 }
 
-func newFunction(orig *otlpprofiles.Function, state *internal.State) Function {
+func newFunction(orig *internal.Function, state *internal.State) Function {
 	return Function{orig: orig, state: state}
 }
 
@@ -32,7 +31,7 @@ func newFunction(orig *otlpprofiles.Function, state *internal.State) Function {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewFunction() Function {
-	return newFunction(internal.NewOrigFunction(), internal.NewState())
+	return newFunction(internal.NewFunction(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +43,7 @@ func (ms Function) MoveTo(dest Function) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigFunction(dest.orig, false)
+	internal.DeleteFunction(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -95,5 +94,5 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	internal.CopyOrigFunction(dest.orig, ms.orig)
+	internal.CopyFunction(dest.orig, ms.orig)
 }
