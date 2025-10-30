@@ -1,0 +1,11 @@
+type: xscraper
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: pkg
+  codeowners:
+    active:
+      - dmathieu
+      - florianl
+  stability:
+    development: [profiles]
