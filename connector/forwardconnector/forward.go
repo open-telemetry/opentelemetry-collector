@@ -22,7 +22,7 @@ func NewFactory() xconnector.Factory {
 		xconnector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
 		xconnector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
 		xconnector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
-		xconnector.WithProfilesToProfiles(createProfilesToProfiles, metadata.TracesToTracesStability),
+		xconnector.WithProfilesToProfiles(createProfilesToProfiles, metadata.ProfilesToProfilesStability),
 	)
 }
 
