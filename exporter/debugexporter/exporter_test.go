@@ -58,7 +58,7 @@ func TestMetricsNoErrors(t *testing.T) {
 func TestLogsNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lle, err := createLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), createDefaultConfig())
+			lle, err := createLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), tc.config)
 			require.NotNil(t, lle)
 			assert.NoError(t, err)
 
@@ -73,7 +73,7 @@ func TestLogsNoErrors(t *testing.T) {
 func TestProfilesNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lle, err := createProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), createDefaultConfig())
+			lle, err := createProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), tc.config)
 			require.NotNil(t, lle)
 			assert.NoError(t, err)
 
@@ -110,13 +110,16 @@ func createTestCases() []testCase {
 		{
 			name: "default config",
 			config: func() *Config {
-				return createDefaultConfig().(*Config)
+				c := createDefaultConfig().(*Config)
+				c.QueueConfig.QueueSize = 10
+				return c
 			}(),
 		},
 		{
 			name: "don't use internal logger",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
+				cfg.QueueConfig.QueueSize = 10
 				cfg.UseInternalLogger = false
 				return cfg
 			}(),

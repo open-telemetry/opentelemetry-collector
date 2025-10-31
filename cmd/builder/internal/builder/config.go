@@ -73,6 +73,7 @@ type Distribution struct {
 	Version          string `mapstructure:"version"`
 	BuildTags        string `mapstructure:"build_tags"`
 	DebugCompilation bool   `mapstructure:"debug_compilation"`
+	CGoEnabled       bool   `mapstructure:"cgo_enabled"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution

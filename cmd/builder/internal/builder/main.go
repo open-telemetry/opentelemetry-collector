@@ -40,6 +40,13 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 
+	cmd.Env = os.Environ()
+	if cfg.Distribution.CGoEnabled {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=1")
+	} else {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
+	}
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -126,6 +133,9 @@ func Compile(cfg *Config) error {
 			cfg.Logger.Info("Using custom gcflags", zap.String("gcflags", cfg.GCFlags))
 			gcflags = cfg.GCFlags
 		}
+	}
+	if cfg.Distribution.CGoEnabled {
+		cfg.Logger.Info("Building with cgo enabled")
 	}
 
 	args = append(args, "-ldflags="+ldflags, "-gcflags="+gcflags)

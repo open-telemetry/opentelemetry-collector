@@ -104,6 +104,8 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -118,6 +120,8 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
+    stability:
+      level: deprecated
     unit: s
     sum:
       value_type: double
@@ -129,7 +133,7 @@ metrics:
   metric.input_type:
     enabled: true
     stability:
-      level: beta
+      level: development
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:
@@ -143,6 +147,8 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability:
+      level: deprecated
     unit: "1"
     gauge:
       value_type: double
@@ -153,6 +159,8 @@ metrics:
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability:
+      level: deprecated
     unit: ""
     gauge:
       value_type: double
