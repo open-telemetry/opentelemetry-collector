@@ -4,6 +4,9 @@ package {{ .Package }}
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+{{- if .HasEntities }}
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
+{{- end }}
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
@@ -42,6 +45,29 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}(val {{ $attr.Type.Primitive }})
 }
 {{- end }}
 {{ end }}
+
+{{- if .HasEntities }}
+
+{{ range $entityType, $entity := .Entities }}
+// AssociateWith{{ $entityType | publicVar }} associates the resource with entity type "{{ $entityType }}".
+func (rb *ResourceBuilder) AssociateWith{{ $entityType | publicVar }}() {
+	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
+	entityRef.SetType("{{ $entityType }}")
+	{{- if $entity.IDAttributes }}
+	idKeys := entityRef.IdKeys()
+	{{- range $entity.IDAttributes }}
+	idKeys.Append("{{ . }}")
+	{{- end }}
+	{{- end }}
+	{{- if $entity.DescriptionAttributes }}
+	descKeys := entityRef.DescriptionKeys()
+	{{- range $entity.DescriptionAttributes }}
+	descKeys.Append("{{ . }}")
+	{{- end }}
+	{{- end }}
+}
+{{ end }}
+{{- end }}
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {

@@ -1,0 +1,17 @@
+default:
+all_set:
+  resource_attributes:
+    host.id:
+      enabled: true
+    host.name:
+      enabled: true
+    process.pid:
+      enabled: true
+none_set:
+  resource_attributes:
+    host.id:
+      enabled: false
+    host.name:
+      enabled: false
+    process.pid:
+      enabled: false
