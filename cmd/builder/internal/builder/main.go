@@ -4,20 +4,6 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"text/template"
-	"time"
-
-	"go.uber.org/zap"
-	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/semver"
-)
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
