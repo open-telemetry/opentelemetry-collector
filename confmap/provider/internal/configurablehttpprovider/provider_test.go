@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func newConfigurableHTTPProvider(scheme SchemeType, set confmap.ProviderSettings) *provider {
@@ -51,6 +52,7 @@ func answerGet(w http.ResponseWriter, _ *http.Request) {
 // Generate a self signed certificate specific for the tests. Based on
 // https://go.dev/src/crypto/tls/generate_cert.go
 func generateCertificate(t *testing.T, hostname string) (cert, key string, err error) {
+	testutil.SkipIfFIPSOnly(t, "x509.CreateCertificate uses SHA-1")
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to generate private key: %w", err)
