@@ -327,6 +327,16 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			name: "CGoEnabled set to true",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.CGoEnabled = true
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {

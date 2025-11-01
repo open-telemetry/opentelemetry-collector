@@ -1,4 +1,4 @@
-type: file
+type: metricreceiver
 
 status:
   class: receiver
@@ -10,13 +10,13 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
-
 metrics:
   default.metric:
     enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     stability:
-      level: development
+      level: development42
     unit: s
     sum:
       value_type: int
