@@ -5,7 +5,6 @@ package confmap
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -67,9 +66,15 @@ type fakeProvider struct {
 	logger *zap.Logger
 }
 
+func newConfFromYAMLBytes(tb testing.TB, fileName string) []byte {
+	content, err := os.ReadFile(filepath.Clean(fileName))
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
+	return content
+}
+
 func newFileProvider(tb testing.TB) ProviderFactory {
 	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(newConfFromFile(tb, uri[5:]))
+		return NewRetrievedFromYAML(newConfFromYAMLBytes(tb, uri[5:]))
 	})
 }
 
@@ -441,10 +446,10 @@ func TestResolverDefaultProviderSet(t *testing.T) {
 }
 
 type mergeTest struct {
-	Name        string           `yaml:"name"`
-	AppendPaths []string         `yaml:"append_paths"`
-	Configs     []map[string]any `yaml:"configs"`
-	Expected    map[string]any   `yaml:"expected"`
+	Name        string         `yaml:"name"`
+	AppendPaths []string       `yaml:"append_paths"`
+	Configs     []string       `yaml:"configs"`
+	Expected    map[string]any `yaml:"expected"`
 }
 
 func TestMergeFunctionality(t *testing.T) {
@@ -492,9 +497,7 @@ func runScenario(t *testing.T, path string) {
 				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 				defer func() { require.NoError(t, file.Close()) }()
 				require.NoError(t, err)
-				b, err := json.Marshal(c)
-				require.NoError(t, err)
-				n, err := file.Write(b)
+				n, err := file.WriteString(c)
 				require.NoError(t, err)
 				require.Positive(t, n)
 				configFiles = append(configFiles, file.Name())

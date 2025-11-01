@@ -96,11 +96,36 @@ The `Resolve` method proceeds in the following steps:
 #### (Experimental) Append merging strategy for lists
 
 You can opt-in to experimentally combine slices instead of discarding the existing ones by enabling the `confmap.enableMergeAppendOption` feature flag. Lists are appended in the order in which they appear in their configuration sources.
-This will **not** become the default in the future, we are still deciding how this should be configured and want your feedback on [this issue](https://github.com/open-telemetry/opentelemetry-collector/issues/8754).
+This lets you combine slices from multiple configuration sources, with control over ordering, duplicates, and targeted merge paths using YAML tags or URI query parameters.
+
+#### How It Works
+
+Annotate any list in your YAML config with a custom tag (URI-style parameters) to specify how it should be merged.
+
+**Tag format:**  
+`!mode=append`
+- This tag should be placed immediately before a list. It signals how the list should be treated during a merge operation.
+
+**Options:**
+- `mode`: `append`
+  - As of now, we only support `append` mode for annotated lists. 
+  - This mode adds annotated list’s items to the end of the existing list instead of replacing it.
+
+> [!WARNING]
+> Specifying incorrect values in YAML tags will result in a runtime failure.
+
+> [!NOTE]
+> If duplicate values are encountered during the merging process, only the first occurrence is kept.
+
+#### Default Behavior (Override)
+
+If you do **NOT** specify any merge options or tags, lists are merged using the default override behavior (the last config wins).
 
 ##### Example
-Consider the following configs,
 
+Suppose you have the following configurations:
+
+**main.yaml**
 ```yaml
 # main.yaml
 receivers:
@@ -126,24 +151,20 @@ service:
   extensions: [ file_storage ]
 ```
 
-
+**extra_extension.yaml**
 ```yaml
-# extra_extension.yaml
 extensions:
   healthcheckv2:
-
 service:
-  extensions: [ healthcheckv2 ]
-  pipelines:
-    traces:
+  extensions: !mode=append [healthcheckv2]
 ```
 
-If you run the Collector with following command,
-```
+If you run the Collector with:
+```bash
 otelcol --config=main.yaml --config=extra_extension.yaml --feature-gates=confmap.enableMergeAppendOption
 ```
-then the final configuration after config resolution will look like following:
 
+The result after merging will be:
 ```yaml
 # main.yaml
 receivers:
@@ -169,10 +190,10 @@ service:
   extensions: [ file_storage, healthcheckv2 ]
 ```
 
-Notice that the `service::extensions` list is a combination of both configurations. By default, the value of the last configuration source passed, `extra_extension`, would be used, so the extensions list would be: `service::extensions: [healthcheckv2]`.
+Notice how the `service::extensions` list is a combination of both configurations, preserving both values.
 
 > [!NOTE]
-> By enabling this feature gate, all the lists in the given configuration will be merged. 
+> By enabling this feature gate, only the lists annotated with YAML merge tags will be merged according to your specified strategy. Unannotated lists will continue to use the default override behavior (last list wins).
 
 ### Watching for Updates
 After the configuration was processed, the `Resolver` can be used as a single point to watch for updates in the
