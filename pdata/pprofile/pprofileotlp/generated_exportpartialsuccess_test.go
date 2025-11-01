@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -25,12 +24,8 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState))
-	})
-	assert.Panics(t, func() {
-		newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState).MoveTo(dest)
-	})
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState)) })
+	assert.Panics(t, func() { newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState).MoveTo(dest) })
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -43,9 +38,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), sharedState))
-	})
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
@@ -56,7 +49,7 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetRejectedProfiles(int64(13))
+		newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState).SetRejectedProfiles(int64(13))
 	})
 }
 
@@ -68,11 +61,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := newExportPartialSuccess(internal.GenTestOrigExportProfilesPartialSuccess(), internal.NewState())
-	return ms
+	return newExportPartialSuccess(internal.GenTestExportProfilesPartialSuccess(), internal.NewState())
 }

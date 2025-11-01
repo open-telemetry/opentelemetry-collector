@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // LocationSlice logically represents a slice of Location.
@@ -22,18 +21,18 @@ import (
 // Must use NewLocationSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LocationSlice struct {
-	orig  *[]*otlpprofiles.Location
+	orig  *[]*internal.Location
 	state *internal.State
 }
 
-func newLocationSlice(orig *[]*otlpprofiles.Location, state *internal.State) LocationSlice {
+func newLocationSlice(orig *[]*internal.Location, state *internal.State) LocationSlice {
 	return LocationSlice{orig: orig, state: state}
 }
 
-// NewLocationSlice creates a LocationSlice with 0 elements.
+// NewLocationSlice creates a LocationSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
-	orig := []*otlpprofiles.Location(nil)
+	orig := []*internal.Location(nil)
 	return newLocationSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Location, len(*es.orig), newCap)
+	newOrig := make([]*internal.Location, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -99,7 +98,7 @@ func (es LocationSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigLocation())
+	*es.orig = append(*es.orig, internal.NewLocation())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +127,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigLocation((*es.orig)[i], true)
+			internal.DeleteLocation((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +151,7 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLocationPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the

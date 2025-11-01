@@ -95,7 +95,7 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -289,7 +289,7 @@ func (cc *ClientConfig) ToClientConn(
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
 	kv := make([]string, 0, 2*len(cc.Headers))
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
-	for k, v := range cc.Headers {
+	for k, v := range cc.Headers.Iter {
 		if len(existingMd.Get(k)) == 0 {
 			kv = append(kv, k, string(v))
 		}
@@ -611,6 +611,10 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
+			if s, ok := status.FromError(err); ok {
+				return nil, s.Err()
+			}
+
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 
@@ -628,6 +632,10 @@ func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerI
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
+			if s, ok := status.FromError(err); ok {
+				return s.Err()
+			}
+
 			return status.Error(codes.Unauthenticated, err.Error())
 		}
 

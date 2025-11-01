@@ -13,21 +13,21 @@ import (
 // MarkPipelineOwnedTraces marks the ptrace.Traces data as owned by the pipeline, returns true if the data were
 // previously not owned by the pipeline, otherwise false.
 func MarkPipelineOwnedTraces(td ptrace.Traces) bool {
-	return internal.GetTracesState(internal.Traces(td)).MarkPipelineOwned()
+	return internal.GetTracesState(internal.TracesWrapper(td)).MarkPipelineOwned()
 }
 
 func RefTraces(td ptrace.Traces) {
-	internal.GetTracesState(internal.Traces(td)).Ref()
+	internal.GetTracesState(internal.TracesWrapper(td)).Ref()
 }
 
 func UnrefTraces(td ptrace.Traces) {
 	if EnableRefCounting.IsEnabled() {
-		if !internal.GetTracesState(internal.Traces(td)).Unref() {
+		if !internal.GetTracesState(internal.TracesWrapper(td)).Unref() {
 			return
 		}
-		// Don't call DeleteOrigExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 		if internal.UseProtoPooling.IsEnabled() {
-			internal.DeleteOrigExportTraceServiceRequest(internal.GetOrigTraces(internal.Traces(td)), true)
+			internal.DeleteExportTraceServiceRequest(internal.GetTracesOrig(internal.TracesWrapper(td)), true)
 		}
 	}
 }
@@ -35,5 +35,5 @@ func UnrefTraces(td ptrace.Traces) {
 // TODO: Generate this in pdata.
 
 func EqualTraces(td1, td2 ptrace.Traces) bool {
-	return reflect.DeepEqual(internal.GetOrigTraces(internal.Traces(td1)), internal.GetOrigTraces(internal.Traces(td2)))
+	return reflect.DeepEqual(internal.GetTracesOrig(internal.TracesWrapper(td1)), internal.GetTracesOrig(internal.TracesWrapper(td2)))
 }

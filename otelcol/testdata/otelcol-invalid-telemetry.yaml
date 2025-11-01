@@ -1,0 +1,13 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    unknown: key
+  pipelines:
+    metrics:
+      receivers: [nop]
+      exporters: [nop]

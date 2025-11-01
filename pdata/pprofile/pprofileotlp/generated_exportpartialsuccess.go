@@ -8,7 +8,6 @@ package pprofileotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectorprofiles.ExportProfilesPartialSuccess
+	orig  *internal.ExportProfilesPartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *internal.ExportProfilesPartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 
@@ -32,7 +31,7 @@ func newExportPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSu
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), internal.NewState())
+	return newExportPartialSuccess(internal.NewExportProfilesPartialSuccess(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +43,7 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportProfilesPartialSuccess(dest.orig, false)
+	internal.DeleteExportProfilesPartialSuccess(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -73,5 +72,5 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportProfilesPartialSuccess(dest.orig, ms.orig)
+	internal.CopyExportProfilesPartialSuccess(dest.orig, ms.orig)
 }

@@ -19,11 +19,8 @@ var plog = &Package{
 			`"sync"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
-			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
@@ -38,15 +35,13 @@ var plog = &Package{
 			`gootlplogs "go.opentelemetry.io/proto/slim/otlp/logs/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
-			`otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
-			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
 		logs,
+		logsData,
 		resourceLogsSlice,
 		resourceLogs,
 		scopeLogsSlice,
@@ -54,12 +49,16 @@ var plog = &Package{
 		logSlice,
 		logRecord,
 	},
+	enums: []*proto.Enum{
+		severityNumberEnum,
+	},
 }
 
 var logs = &messageStruct{
-	structName:     "Logs",
-	description:    "// Logs is the top-level struct that is propagated through the logs pipeline.\n// Use NewLogs to create new instance, zero-initialized instance is not valid for use.",
-	originFullName: "otlpcollectorlogs.ExportLogsServiceRequest",
+	structName:    "Logs",
+	description:   "// Logs is the top-level struct that is propagated through the logs pipeline.\n// Use NewLogs to create new instance, zero-initialized instance is not valid for use.",
+	protoName:     "ExportLogsServiceRequest",
+	upstreamProto: "gootlpcollectorlogs.ExportLogsServiceRequest",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "ResourceLogs",
@@ -71,6 +70,22 @@ var logs = &messageStruct{
 	hasWrapper: true,
 }
 
+var logsData = &messageStruct{
+	structName:    "LogsData",
+	description:   "// LogsData represents the logs data that can be stored in a persistent storage,\n// OR can be embedded by other protocols that transfer OTLP logs data but do not\n// implement the OTLP protocol.",
+	protoName:     "LogsData",
+	upstreamProto: "gootlplogs.LogsData",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceLogs",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: resourceLogsSlice,
+		},
+	},
+	hasOnlyInternal: true,
+}
+
 var resourceLogsSlice = &messageSlice{
 	structName:      "ResourceLogsSlice",
 	elementNullable: true,
@@ -78,9 +93,10 @@ var resourceLogsSlice = &messageSlice{
 }
 
 var resourceLogs = &messageStruct{
-	structName:     "ResourceLogs",
-	description:    "// ResourceLogs is a collection of logs from a Resource.",
-	originFullName: "otlplogs.ResourceLogs",
+	structName:    "ResourceLogs",
+	description:   "// ResourceLogs is a collection of logs from a Resource.",
+	protoName:     "ResourceLogs",
+	upstreamProto: "gootlplogs.ResourceLogs",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Resource",
@@ -98,6 +114,15 @@ var resourceLogs = &messageStruct{
 			protoID:   3,
 			protoType: proto.TypeString,
 		},
+		&SliceField{
+			fieldName:   "DeprecatedScopeLogs",
+			protoType:   proto.TypeMessage,
+			protoID:     1000,
+			returnSlice: scopeLogsSlice,
+			// Hide accessors for this field because it is a HACK:
+			// Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
+			hideAccessors: true,
+		},
 	},
 }
 
@@ -108,9 +133,10 @@ var scopeLogsSlice = &messageSlice{
 }
 
 var scopeLogs = &messageStruct{
-	structName:     "ScopeLogs",
-	description:    "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
-	originFullName: "otlplogs.ScopeLogs",
+	structName:    "ScopeLogs",
+	description:   "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
+	protoName:     "ScopeLogs",
+	upstreamProto: "gootlplogs.ScopeLogs",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Scope",
@@ -138,9 +164,10 @@ var logSlice = &messageSlice{
 }
 
 var logRecord = &messageStruct{
-	structName:     "LogRecord",
-	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
-	originFullName: "otlplogs.LogRecord",
+	structName:    "LogRecord",
+	description:   "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
+	protoName:     "LogRecord",
+	upstreamProto: "gootlplogs.LogRecord",
 	fields: []Field{
 		&TypedField{
 			fieldName:       "Timestamp",
@@ -160,9 +187,9 @@ var logRecord = &messageStruct{
 			returnType: &TypedType{
 				structName:  "SeverityNumber",
 				protoType:   proto.TypeEnum,
-				messageName: "otlplogs.SeverityNumber",
-				defaultVal:  `otlplogs.SeverityNumber(0)`,
-				testVal:     `otlplogs.SeverityNumber(5)`,
+				messageName: "SeverityNumber",
+				defaultVal:  `SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED`,
+				testVal:     `SeverityNumber_SEVERITY_NUMBER_DEBUG`,
 			},
 		},
 		&PrimitiveField{
@@ -173,7 +200,7 @@ var logRecord = &messageStruct{
 		&MessageField{
 			fieldName:     "Body",
 			protoID:       5,
-			returnMessage: anyValue,
+			returnMessage: anyValueStruct,
 		},
 		&SliceField{
 			fieldName:   "Attributes",
@@ -213,5 +240,37 @@ var logRecord = &messageStruct{
 			protoID:   12,
 			protoType: proto.TypeString,
 		},
+	},
+}
+
+var severityNumberEnum = &proto.Enum{
+	Name:        "SeverityNumber",
+	Description: "// SeverityNumber represent possible values for LogRecord.SeverityNumber",
+	Fields: []*proto.EnumField{
+		{Name: "SEVERITY_NUMBER_UNSPECIFIED", Value: 0},
+		{Name: "SEVERITY_NUMBER_TRACE ", Value: 1},
+		{Name: "SEVERITY_NUMBER_TRACE2", Value: 2},
+		{Name: "SEVERITY_NUMBER_TRACE3", Value: 3},
+		{Name: "SEVERITY_NUMBER_TRACE4", Value: 4},
+		{Name: "SEVERITY_NUMBER_DEBUG", Value: 5},
+		{Name: "SEVERITY_NUMBER_DEBUG2", Value: 6},
+		{Name: "SEVERITY_NUMBER_DEBUG3", Value: 7},
+		{Name: "SEVERITY_NUMBER_DEBUG4", Value: 8},
+		{Name: "SEVERITY_NUMBER_INFO", Value: 9},
+		{Name: "SEVERITY_NUMBER_INFO2", Value: 10},
+		{Name: "SEVERITY_NUMBER_INFO3", Value: 11},
+		{Name: "SEVERITY_NUMBER_INFO4", Value: 12},
+		{Name: "SEVERITY_NUMBER_WARN", Value: 13},
+		{Name: "SEVERITY_NUMBER_WARN2", Value: 14},
+		{Name: "SEVERITY_NUMBER_WARN3", Value: 15},
+		{Name: "SEVERITY_NUMBER_WARN4", Value: 16},
+		{Name: "SEVERITY_NUMBER_ERROR", Value: 17},
+		{Name: "SEVERITY_NUMBER_ERROR2", Value: 18},
+		{Name: "SEVERITY_NUMBER_ERROR3", Value: 19},
+		{Name: "SEVERITY_NUMBER_ERROR4", Value: 20},
+		{Name: "SEVERITY_NUMBER_FATAL", Value: 21},
+		{Name: "SEVERITY_NUMBER_FATAL2", Value: 22},
+		{Name: "SEVERITY_NUMBER_FATAL3", Value: 23},
+		{Name: "SEVERITY_NUMBER_FATAL4", Value: 24},
 	},
 }

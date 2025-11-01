@@ -18,21 +18,22 @@ Monotonic cumulative sum int metric enabled by default.
 
 The metric will be become optional soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
-| optional_int_attr | An optional attribute with an integer value | Any Int | true |
-| optional_string_attr | An optional attribute with any string value | Any Str | true |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
+| conditional_int_attr | A conditional attribute with an integer value | Any Int | Conditionally Required |
+| conditional_string_attr | A conditional attribute with any string value | Any Str | Conditionally Required |
+| opt_in_bool_attr | An opt-in attribute with a boolean value | Any Bool | Opt-In |
 
 ### default.metric.to_be_removed
 
@@ -40,27 +41,27 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Delta | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Delta | false | Deprecated |
 
 ### metric.input_type
 
 Monotonic cumulative sum int metric with string input_type enabled by default.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ## Optional Metrics
 
@@ -76,33 +77,33 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
-| optional_string_attr | An optional attribute with any string value | Any Str | true |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
+| conditional_string_attr | A conditional attribute with any string value | Any Str | Conditionally Required |
 
 ### optional.metric.empty_unit
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Double | Deprecated |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
 ## Default Events
 
@@ -127,8 +128,9 @@ Example event enabled by default.
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
-| optional_int_attr | An optional attribute with an integer value | Any Int |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| conditional_int_attr | A conditional attribute with an integer value | Any Int |
+| conditional_string_attr | A conditional attribute with any string value | Any Str |
+| opt_in_bool_attr | An opt-in attribute with a boolean value | Any Bool |
 
 ### default.event.to_be_removed
 
@@ -169,7 +171,7 @@ The event will be renamed soon.
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
 | boolean_attr2 | Another attribute with a boolean value. | Any Bool |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| conditional_string_attr | A conditional attribute with any string value | Any Str |
 
 ## Resource Attributes
 
@@ -190,11 +192,11 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]
+Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | deprecated |
+| {times} | Sum | Int | true | Deprecated |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
@@ -202,30 +204,30 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| By | Sum | Int | true | stable |
+| By | Sum | Int | true | Stable |
 
 ### otelcol_queue_capacity
 
-Queue capacity - sync gauge example.
+Queue capacity - sync gauge example. [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {items} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {items} | Gauge | Int | Development |
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
+This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]
 
 For example this metric only exists if feature A is enabled.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {items} | Gauge | Int | alpha |
+| {items} | Gauge | Int | Alpha |
 
 ### otelcol_request_duration
 
-Duration of request [alpha]
+Duration of request [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Histogram | Double | alpha |
+| s | Histogram | Double | Alpha |

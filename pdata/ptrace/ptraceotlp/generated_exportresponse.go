@@ -8,7 +8,6 @@ package ptraceotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportResponse function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportResponse struct {
-	orig  *otlpcollectortrace.ExportTraceServiceResponse
+	orig  *internal.ExportTraceServiceResponse
 	state *internal.State
 }
 
-func newExportResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, state *internal.State) ExportResponse {
+func newExportResponse(orig *internal.ExportTraceServiceResponse, state *internal.State) ExportResponse {
 	return ExportResponse{orig: orig, state: state}
 }
 
@@ -32,7 +31,7 @@ func newExportResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, stat
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	return newExportResponse(internal.NewOrigExportTraceServiceResponse(), internal.NewState())
+	return newExportResponse(internal.NewExportTraceServiceResponse(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +43,7 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportTraceServiceResponse(dest.orig, false)
+	internal.DeleteExportTraceServiceResponse(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -56,5 +55,5 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportResponse) CopyTo(dest ExportResponse) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportTraceServiceResponse(dest.orig, ms.orig)
+	internal.CopyExportTraceServiceResponse(dest.orig, ms.orig)
 }

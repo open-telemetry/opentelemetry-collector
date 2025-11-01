@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,8 +25,8 @@ func TestLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLink(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewOrigLink(), sharedState)) })
-	assert.Panics(t, func() { newLink(internal.NewOrigLink(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLink(internal.NewLink(), sharedState)) })
+	assert.Panics(t, func() { newLink(internal.NewLink(), sharedState).MoveTo(dest) })
 }
 
 func TestLink_CopyTo(t *testing.T) {
@@ -40,26 +39,25 @@ func TestLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewOrigLink(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLink(internal.NewLink(), sharedState)) })
 }
 
 func TestLink_TraceID(t *testing.T) {
 	ms := NewLink()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(internal.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(internal.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestLink_SpanID(t *testing.T) {
 	ms := NewLink()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(internal.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(internal.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
 func generateTestLink() Link {
-	ms := newLink(internal.GenTestOrigLink(), internal.NewState())
-	return ms
+	return newLink(internal.GenTestLink(), internal.NewState())
 }
