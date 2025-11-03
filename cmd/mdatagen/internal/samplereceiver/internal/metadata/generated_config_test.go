@@ -152,6 +152,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
