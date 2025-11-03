@@ -29,7 +29,7 @@ var plogotlp = &Package{
 			`"github.com/stretchr/testify/assert"`,
 			`"github.com/stretchr/testify/require"`,
 			`"google.golang.org/protobuf/proto"`,
-			`gootlpcollectorlogs "go.opentelemetry.io/proto/slim/otlp/collector/logs/v1"`,
+			`gootlpcollectorlogs "go.opentelemetry.io/proto/otlp/collector/logs/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 		},

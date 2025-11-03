@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
+	gootlpprofiles "go.opentelemetry.io/proto/otlp/profiles/v1development"
 	goproto "google.golang.org/protobuf/proto"
 )
 

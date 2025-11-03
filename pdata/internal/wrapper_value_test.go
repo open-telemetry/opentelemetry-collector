@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	gootlpcommon "go.opentelemetry.io/proto/otlp/common/v1"
 	goproto "google.golang.org/protobuf/proto"
 )
 
