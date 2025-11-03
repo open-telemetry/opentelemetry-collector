@@ -56,12 +56,20 @@ func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.Dec
 
 		resultVal := reflect.New(reflect.TypeOf(unmarshaler.ScalarType()))
 
-		if err := internal.Decode(from.Interface(), resultVal.Interface(), *opts, false); err != nil {
-			return nil, err
-		}
+		// If the inner condition matches, the user specified `null` for this
+		// value, which was translated to a nil map by mapstructure.
+		if !(from.Kind() == reflect.Map && from.IsNil()) {
+			if err := internal.Decode(from.Interface(), resultVal.Interface(), *opts, false); err != nil {
+				return nil, err
+			}
 
-		if err := unmarshaler.UnmarshalScalar(resultVal.Elem().Interface()); err != nil {
-			return nil, err
+			if err := unmarshaler.UnmarshalScalar(resultVal.Elem().Interface()); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := unmarshaler.UnmarshalScalar(nil); err != nil {
+				return nil, err
+			}
 		}
 
 		return unmarshaler, nil
