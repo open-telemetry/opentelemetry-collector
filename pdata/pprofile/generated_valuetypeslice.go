@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ValueTypeSlice logically represents a slice of ValueType.
@@ -22,18 +21,18 @@ import (
 // Must use NewValueTypeSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ValueTypeSlice struct {
-	orig  *[]*otlpprofiles.ValueType
+	orig  *[]*internal.ValueType
 	state *internal.State
 }
 
-func newValueTypeSlice(orig *[]*otlpprofiles.ValueType, state *internal.State) ValueTypeSlice {
+func newValueTypeSlice(orig *[]*internal.ValueType, state *internal.State) ValueTypeSlice {
 	return ValueTypeSlice{orig: orig, state: state}
 }
 
-// NewValueTypeSlice creates a ValueTypeSlice with 0 elements.
+// NewValueTypeSlice creates a ValueTypeSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewValueTypeSlice() ValueTypeSlice {
-	orig := []*otlpprofiles.ValueType(nil)
+	orig := []*internal.ValueType(nil)
 	return newValueTypeSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.ValueType, len(*es.orig), newCap)
+	newOrig := make([]*internal.ValueType, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -99,7 +98,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ValueType.
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigValueType())
+	*es.orig = append(*es.orig, internal.NewValueType())
 	return es.At(es.Len() - 1)
 }
 
@@ -128,7 +127,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigValueType((*es.orig)[i], true)
+			internal.DeleteValueType((*es.orig)[i], true)
 			(*es.orig)[i] = nil
 
 			continue
@@ -152,7 +151,7 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyOrigValueTypeSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyValueTypePtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ValueType elements within ValueTypeSlice given the

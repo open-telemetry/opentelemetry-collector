@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewScopeProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeProfiles struct {
-	orig  *otlpprofiles.ScopeProfiles
+	orig  *internal.ScopeProfiles
 	state *internal.State
 }
 
-func newScopeProfiles(orig *otlpprofiles.ScopeProfiles, state *internal.State) ScopeProfiles {
+func newScopeProfiles(orig *internal.ScopeProfiles, state *internal.State) ScopeProfiles {
 	return ScopeProfiles{orig: orig, state: state}
 }
 
@@ -33,7 +32,7 @@ func newScopeProfiles(orig *otlpprofiles.ScopeProfiles, state *internal.State) S
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeProfiles() ScopeProfiles {
-	return newScopeProfiles(internal.NewOrigScopeProfiles(), internal.NewState())
+	return newScopeProfiles(internal.NewScopeProfiles(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,13 +44,13 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigScopeProfiles(dest.orig, false)
+	internal.DeleteScopeProfiles(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
 // Scope returns the scope associated with this ScopeProfiles.
 func (ms ScopeProfiles) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
+	return pcommon.InstrumentationScope(internal.NewInstrumentationScopeWrapper(&ms.orig.Scope, ms.state))
 }
 
 // Profiles returns the Profiles associated with this ScopeProfiles.
@@ -73,5 +72,5 @@ func (ms ScopeProfiles) SetSchemaUrl(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
-	internal.CopyOrigScopeProfiles(dest.orig, ms.orig)
+	internal.CopyScopeProfiles(dest.orig, ms.orig)
 }

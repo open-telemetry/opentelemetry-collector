@@ -7,6 +7,78 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.45.0/v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Change type of `configgrpc.ClientConfig.Headers`, `confighttp.ClientConfig.Headers`, and `confighttp.ServerConfig.ResponseHeaders` (#13930)
+  `configopaque.MapList` is a new alternative to `map[string]configopaque.String` which can unmarshal
+  both maps and lists of name/value pairs.
+  
+  For example, if `headers` is a field of type `configopaque.MapList`,
+  then the following YAML configs will unmarshal to the same thing:
+  ```yaml
+  headers:
+    "foo": "bar"
+  
+  headers:
+  - name: "foo"
+    value: "bar"
+  ```
+  
+- `pdata/pprofile`: Update `SetFunction` to return the function's ID rather than update the Line (#14016, #14032)
+- `pdata/pprofile`: Update `SetLink` to return the link's ID rather than update the Sample (#14016, #14031)
+- `pdata/pprofile`: Update `SetMapping` to return the mapping's ID rather than update the Location (#14016, #14030)
+- `pkg/otelcol`: Require a telemetry factory to be injected through otelcol.Factories (#4970)
+  otelcol.Factories now has a required Telemetry field,
+  which contains the telemetry factory to be used by the service.
+  Set it to otelconftelemetry.NewFactory() for the existing behavior.
+  
+- `pkg/pdata`: Remove unused generated code from pprofile (#14073)
+  Experimental package, ok to break since not used.
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `SetStack` method (#14007)
+- `pdata/xpdata`: Add high-level Entity API for managing entities attached to resources (#14042)
+  Introduces `Entity`, `EntitySlice`, and `EntityAttributeMap` types that provide a user-friendly interface
+  for working with resource entities. The new API ensures consistency between entity and resource attributes
+  by sharing the underlying attribute map, and prevents attribute conflicts between entities. This API may
+  eventually replace the generated protobuf-based API for better usability.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix mdatagen generated_metrics for connectors (#12402)
+
+<!-- previous-version -->
+
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xexporterhelper`: Remove definition of Sizer from public API and ability to configure. (#14001)
+  Now that Request has both Items/Bytes sizes no need to allow custom sizers.
+  
+- `pkg/service`: The `service.Settings` type now requires a `telemetry.Factory` to be provided (#4970)
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Deprecated `PutAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Deprecated `PutLocation` helper method (#14019)
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/pdata`: Add pcommon.Map helper to add a key to the map if does not exists (#14023)
+- `pdata/pprofile`: Introduce `Equal` method on the `KeyValueAndUnit` type (#14041)
+- `pkg/pdata`: Add `RemoveIf` method to primitive slice types (StringSlice, Int64Slice, UInt64Slice, Float64Slice, Int32Slice, ByteSlice) (#14027)
+- `pdata/pprofile`: Introduce `SetAttribute` helper method (#14016, #14041)
+- `pdata/pprofile`: Introduce `SetLocation` helper method (#14019)
+- `pdata/pprofile`: Introduce `Equal` method on the `Stack` type (#13952)
+
+<!-- previous-version -->
+
 ## v1.43.0/v0.137.0
 
 ### 🛑 Breaking changes 🛑

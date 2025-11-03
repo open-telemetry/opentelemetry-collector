@@ -25,15 +25,15 @@ func (eaof eventAttributeOptionFunc) apply(lr plog.LogRecord) {
 	eaof(lr)
 }
 
-func WithOptionalIntAttrEventAttribute(optionalIntAttrAttributeValue int64) EventAttributeOption {
+func WithConditionalIntAttrEventAttribute(conditionalIntAttrAttributeValue int64) EventAttributeOption {
 	return eventAttributeOptionFunc(func(dp plog.LogRecord) {
-		dp.Attributes().PutInt("optional_int_attr", optionalIntAttrAttributeValue)
+		dp.Attributes().PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
 	})
 }
 
-func WithOptionalStringAttrEventAttribute(optionalStringAttrAttributeValue string) EventAttributeOption {
+func WithConditionalStringAttrEventAttribute(conditionalStringAttrAttributeValue string) EventAttributeOption {
 	return eventAttributeOptionFunc(func(dp plog.LogRecord) {
-		dp.Attributes().PutStr("optional_string_attr", optionalStringAttrAttributeValue)
+		dp.Attributes().PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
 	})
 }
 
@@ -42,7 +42,7 @@ type eventDefaultEvent struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEvent) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventAttributeOption) {
+func (e *eventDefaultEvent) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...EventAttributeOption) {
 	if !e.config.Enabled {
 		return
 	}
@@ -59,6 +59,7 @@ func (e *eventDefaultEvent) recordEvent(ctx context.Context, timestamp pcommon.T
 	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 
 	for _, op := range options {
 		op.apply(dp)
@@ -342,8 +343,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDefaultEventEvent adds a log record of default.event event.
-func (lb *LogsBuilder) RecordDefaultEventEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventAttributeOption) {
-	lb.eventDefaultEvent.recordEvent(ctx, timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
+func (lb *LogsBuilder) RecordDefaultEventEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...EventAttributeOption) {
+	lb.eventDefaultEvent.recordEvent(ctx, timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, optInBoolAttrAttributeValue, options...)
 }
 
 // RecordDefaultEventToBeRemovedEvent adds a log record of default.event.to_be_removed event.

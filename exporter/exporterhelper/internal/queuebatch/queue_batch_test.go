@@ -35,9 +35,7 @@ func newFakeRequestSettings() AllSettings[request.Request] {
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Settings: Settings[request.Request]{
-			Encoding:   newFakeEncoding(&requesttest.FakeRequest{}),
-			ItemsSizer: request.NewItemsSizer(),
-			BytesSizer: requesttest.NewBytesSizer(),
+			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
 		},
 	}
 }

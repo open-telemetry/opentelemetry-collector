@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
@@ -68,15 +69,15 @@ var indexDonePool = sync.Pool{
 //	 write          read    x     └── currently dispatched item
 //	 index          index   x
 //	                        xxxx deleted
-type persistentQueue[T any] struct {
+type persistentQueue[T request.Request] struct {
 	logger      *zap.Logger
 	client      storage.Client
 	encoding    Encoding[T]
 	capacity    int64
 	sizerType   request.SizerType
-	activeSizer request.Sizer[T]
-	itemsSizer  request.Sizer[T]
-	bytesSizer  request.Sizer[T]
+	activeSizer request.Sizer
+	itemsSizer  request.Sizer
+	bytesSizer  request.Sizer
 	storageID   component.ID
 	id          component.ID
 	signal      pipeline.Signal
@@ -93,15 +94,15 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
+func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
 		encoding:        set.Encoding,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
-		activeSizer:     set.activeSizer(),
-		itemsSizer:      set.ItemsSizer,
-		bytesSizer:      set.BytesSizer,
+		activeSizer:     request.NewSizer(set.SizerType),
+		itemsSizer:      request.NewItemsSizer(),
+		bytesSizer:      request.NewBytesSizer(),
 		storageID:       *set.StorageID.Get(),
 		id:              set.ID,
 		signal:          set.Signal,
@@ -179,8 +180,7 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 		return errValueNotSet
 	}
 
-	metadata := &pq.metadata
-	if err := metadata.Unmarshal(buf); err != nil {
+	if err := proto.Unmarshal(buf, &pq.metadata); err != nil {
 		return err
 	}
 
@@ -222,7 +222,7 @@ func (pq *persistentQueue[T]) loadLegacyMetadata(ctx context.Context) {
 	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
 
 	// Save to a new format and clean up legacy keys
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		pq.logger.Error("Failed to marshal metadata", zap.Error(err))
 		return
@@ -294,7 +294,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	pq.metadata.WriteIndex++
 
-	metadataBuf, err := pq.metadata.Marshal()
+	metadataBuf, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return err
 	}
@@ -363,7 +363,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 
 	var req T
 	restoredCtx := context.Background()
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return 0, req, restoredCtx, false
 	}
@@ -516,7 +516,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		pq.metadata.ItemsSize = 0
 	}
 
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return err
 	}

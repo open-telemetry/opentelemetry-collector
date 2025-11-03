@@ -3,10 +3,9 @@ module go.opentelemetry.io/collector/pdata
 go 1.24.0
 
 require (
-	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.43.0
+	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/proto/slim/otlp v1.8.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.1.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.1.0

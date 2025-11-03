@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestValueType_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestValueType_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestValueType(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewOrigValueType(), sharedState)) })
-	assert.Panics(t, func() { newValueType(internal.NewOrigValueType(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newValueType(internal.NewValueType(), sharedState)) })
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).MoveTo(dest) })
 }
 
 func TestValueType_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestValueType_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewOrigValueType(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newValueType(internal.NewValueType(), sharedState)) })
 }
 
 func TestValueType_TypeStrindex(t *testing.T) {
@@ -49,7 +48,7 @@ func TestValueType_TypeStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.TypeStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetTypeStrindex(int32(13)) })
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).SetTypeStrindex(int32(13)) })
 }
 
 func TestValueType_UnitStrindex(t *testing.T) {
@@ -59,18 +58,17 @@ func TestValueType_UnitStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetUnitStrindex(int32(13)) })
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func TestValueType_AggregationTemporality(t *testing.T) {
 	ms := NewValueType()
-	assert.Equal(t, AggregationTemporality(otlpprofiles.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporality(otlpprofiles.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(internal.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(internal.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
 func generateTestValueType() ValueType {
-	ms := newValueType(internal.GenTestOrigValueType(), internal.NewState())
-	return ms
+	return newValueType(internal.GenTestValueType(), internal.NewState())
 }

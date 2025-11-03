@@ -10,6 +10,8 @@ status:
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
+    stability:
+      level: development
     unit: s
     sum:
       value_type: double

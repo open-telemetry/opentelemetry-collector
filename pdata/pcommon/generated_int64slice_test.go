@@ -52,7 +52,7 @@ func TestInt64SliceReadOnly(t *testing.T) {
 	raw := []int64{1, 2, 3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := Int64Slice(internal.NewInt64Slice(&raw, sharedState))
+	ms := Int64Slice(internal.NewInt64SliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, int64(1), ms.At(0))
@@ -116,6 +116,32 @@ func TestInt64SliceMoveAndAppendTo(t *testing.T) {
 	ms.FromRaw([]int64{1, 2, 3})
 	ms.MoveAndAppendTo(ms2)
 	assert.Equal(t, ms2.Len(), 6)
+}
+
+func TestInt64SliceRemoveIf(t *testing.T) {
+	emptySlice := NewInt64Slice()
+	emptySlice.RemoveIf(func(el int64) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 2, 3})
+	pos := 0
+	ms.RemoveIf(func(el int64) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestInt64SliceRemoveIfAll(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 2, 3})
+	ms.RemoveIf(func(el int64) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
 }
 
 func TestInt64SliceEqual(t *testing.T) {

@@ -24,8 +24,8 @@ func TestLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLogs(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newLogs(internal.NewOrigExportLogsServiceRequest(), sharedState)) })
-	assert.Panics(t, func() { newLogs(internal.NewOrigExportLogsServiceRequest(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newLogs(internal.NewExportLogsServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { newLogs(internal.NewExportLogsServiceRequest(), sharedState).MoveTo(dest) })
 }
 
 func TestLogs_CopyTo(t *testing.T) {
@@ -38,17 +38,16 @@ func TestLogs_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newLogs(internal.NewOrigExportLogsServiceRequest(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newLogs(internal.NewExportLogsServiceRequest(), sharedState)) })
 }
 
 func TestLogs_ResourceLogs(t *testing.T) {
 	ms := NewLogs()
 	assert.Equal(t, NewResourceLogsSlice(), ms.ResourceLogs())
-	ms.getOrig().ResourceLogs = internal.GenerateOrigTestResourceLogsSlice()
+	ms.getOrig().ResourceLogs = internal.GenTestResourceLogsPtrSlice()
 	assert.Equal(t, generateTestResourceLogsSlice(), ms.ResourceLogs())
 }
 
 func generateTestLogs() Logs {
-	ms := newLogs(internal.GenTestOrigExportLogsServiceRequest(), internal.NewState())
-	return ms
+	return newLogs(internal.GenTestExportLogsServiceRequest(), internal.NewState())
 }

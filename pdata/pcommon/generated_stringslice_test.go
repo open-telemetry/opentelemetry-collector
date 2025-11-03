@@ -52,7 +52,7 @@ func TestStringSliceReadOnly(t *testing.T) {
 	raw := []string{"a", "b", "c"}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := StringSlice(internal.NewStringSlice(&raw, sharedState))
+	ms := StringSlice(internal.NewStringSliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, string("a"), ms.At(0))
@@ -116,6 +116,32 @@ func TestStringSliceMoveAndAppendTo(t *testing.T) {
 	ms.FromRaw([]string{"a", "b", "c"})
 	ms.MoveAndAppendTo(ms2)
 	assert.Equal(t, ms2.Len(), 6)
+}
+
+func TestStringSliceRemoveIf(t *testing.T) {
+	emptySlice := NewStringSlice()
+	emptySlice.RemoveIf(func(el string) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewStringSlice()
+	ms.FromRaw([]string{"a", "b", "c"})
+	pos := 0
+	ms.RemoveIf(func(el string) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestStringSliceRemoveIfAll(t *testing.T) {
+	ms := NewStringSlice()
+	ms.FromRaw([]string{"a", "b", "c"})
+	ms.RemoveIf(func(el string) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
 }
 
 func TestStringSliceEqual(t *testing.T) {
