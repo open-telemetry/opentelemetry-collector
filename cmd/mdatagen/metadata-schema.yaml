@@ -1,6 +1,9 @@
 # Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
+# Optional: Human-readable display name for the component. If not set, the type field will be used.
+display_name: string
+
 # Required for subcomponents: The type of the parent component.
 parent: string
 

@@ -59,6 +59,9 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	if md.GeneratedPackageName == "" {
 		md.GeneratedPackageName = "metadata"
 	}
+	if md.DisplayName == "" {
+		md.DisplayName = generateDefaultDisplayName(md.Type)
+	}
 
 	if err := md.Validate(); err != nil {
 		return md, err
@@ -68,6 +71,13 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	setAttributeDefaultFields(md.ResourceAttributes)
 
 	return md, nil
+}
+
+func generateDefaultDisplayName(componentType string) string {
+	if componentType == "" {
+		return ""
+	}
+	return strings.ToUpper(componentType[:1]) + componentType[1:]
 }
 
 var componentTypes = []string{

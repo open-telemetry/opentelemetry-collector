@@ -1,0 +1,7 @@
+type: test
+display_name: Test Receiver
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
