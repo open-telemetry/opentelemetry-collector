@@ -21,7 +21,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.138.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
