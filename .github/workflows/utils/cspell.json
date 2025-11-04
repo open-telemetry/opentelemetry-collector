@@ -322,6 +322,7 @@
       "nonclobbering",
       "nopexporter",
       "nopreceiver",
+      "nodisplayname",
       "nosuchprocessor",
       "notls",
       "obsreceiver",

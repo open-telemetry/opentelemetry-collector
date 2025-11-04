@@ -579,7 +579,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/no_display_name.yaml",
 			want: Metadata{
 				Type:                 "nodisplayname",
-				DisplayName:          "Nodisplayname",
+				DisplayName:          "",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
