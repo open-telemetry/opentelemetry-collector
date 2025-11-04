@@ -36,6 +36,9 @@ type Optional[T any] struct {
 	// flavor indicates the flavor of the Optional.
 	// The zero value of flavor is noneFlavor.
 	flavor flavor
+
+	// Whether `enabled` was used
+	manuallySet bool
 }
 
 // deref a reflect.Type to its underlying type.
@@ -157,7 +160,7 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 	}
 
 	empty := confmap.NewFromStringMap(map[string]any{})
-	if err := empty.Unmarshal(o); err != nil {
+	if err := empty.Unmarshal(o, xconfmap.WithScalarUnmarshaler()); err != nil {
 		// This should never happen, if it happens it is a bug, so this panic is not documented.
 		panic(fmt.Errorf("failed to unmarshal empty map into %T type: %w. Please report this bug", o.value, err))
 	}
@@ -166,7 +169,7 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 }
 
 var (
-	_ confmap.Unmarshaler        = (*Optional[any])(nil)
+	// _ confmap.Unmarshaler        = (*Optional[any])(nil)
 	_ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
 )
 
@@ -196,53 +199,75 @@ var (
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
-func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
-	if err := assertNoEnabledField[T](); err != nil {
-		return err
+// func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
+// 	if err := assertNoEnabledField[T](); err != nil {
+// 		return err
+// 	}
+
+// 	if o.flavor == noneFlavor && conf.ToStringMap() == nil {
+// 		// If the Optional is None and the configuration is nil, we do nothing.
+// 		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+// 		return nil
+// 	}
+
+// 	isEnabled := true
+// 	if addEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
+// 		enabled := conf.Get("enabled")
+// 		conf.Delete("enabled")
+// 		var ok bool
+// 		if isEnabled, ok = enabled.(bool); !ok {
+// 			return fmt.Errorf("unexpected type %T for 'enabled': got '%v' value expected 'true' or 'false'", enabled, enabled)
+// 		}
+// 	}
+
+// 	if err := conf.Unmarshal(&o.value, xconfmap.WithScalarUnmarshaler()); err != nil {
+// 		return err
+// 	}
+
+// 	if isEnabled {
+// 		o.flavor = someFlavor
+// 	} else {
+// 		o.flavor = noneFlavor
+// 	}
+
+// 	return nil
+// }
+
+var _ xconfmap.ConfigMigrator = (*EnabledField[any])(nil)
+
+type EnabledField[T any] struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func (ef EnabledField[T]) Migrate(val any) (bool, error) {
+	o, ok := val.(*Optional[T])
+	if !ok {
+		return false, fmt.Errorf("expected Optional type but got %T", val)
 	}
 
-	if o.flavor == noneFlavor && conf.ToStringMap() == nil {
-		// If the Optional is None and the configuration is nil, we do nothing.
-		// This replicates the behavior of unmarshaling into a field with a nil pointer.
-		return nil
-	}
-
-	isEnabled := true
-	if addEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
-		enabled := conf.Get("enabled")
-		conf.Delete("enabled")
-		var ok bool
-		if isEnabled, ok = enabled.(bool); !ok {
-			return fmt.Errorf("unexpected type %T for 'enabled': got '%v' value expected 'true' or 'false'", enabled, enabled)
-		}
-	}
-
-	if err := conf.Unmarshal(&o.value, xconfmap.WithScalarUnmarshaler()); err != nil {
-		return err
-	}
-
-	if isEnabled {
+	if ef.Enabled {
 		o.flavor = someFlavor
 	} else {
 		o.flavor = noneFlavor
 	}
 
-	return nil
+	o.manuallySet = true
+
+	return true, nil
 }
 
 func (o *Optional[T]) UnmarshalScalar(val any) error {
-	if o.flavor == noneFlavor && val == nil {
-		// If the Optional is None and the configuration is nil, we do nothing.
-		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+	if val == nil {
 		return nil
 	}
 
-	if val != nil {
-		v, ok := val.(T)
-		if !ok {
-			return fmt.Errorf("val is %T, not %T", val, v)
-		}
-		o.value = v
+	v, ok := val.(T)
+	if !ok {
+		return fmt.Errorf("val is %T, not %T", val, v)
+	}
+	o.value = v
+
+	if !o.manuallySet {
 		o.flavor = someFlavor
 	}
 
@@ -251,6 +276,14 @@ func (o *Optional[T]) UnmarshalScalar(val any) error {
 
 func (o *Optional[T]) ScalarType() any {
 	return o.value
+}
+
+var _ xconfmap.MigrateableConfig = (*Optional[any])(nil)
+
+func (o *Optional[T]) Migrations() []xconfmap.ConfigMigrator {
+	return []xconfmap.ConfigMigrator{
+		EnabledField[T]{},
+	}
 }
 
 var (

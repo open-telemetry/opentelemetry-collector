@@ -519,7 +519,7 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
 			conf := confmap.NewFromStringMap(test.config)
-			require.NoError(t, conf.Unmarshal(&cfg))
+			require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
 				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
@@ -542,7 +542,7 @@ func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
 	cfg := Config[Sub]{
 		Sub1: None[Sub](),
 	}
-	err := cm.Unmarshal(&cfg)
+	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
 	require.ErrorContains(t, err, "unexpected type string for 'enabled': got 'something' value expected 'true' or 'false'")
 }
 

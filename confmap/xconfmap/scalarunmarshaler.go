@@ -4,7 +4,9 @@
 package xconfmap // import "go.opentelemetry.io/collector/confmap/xconfmap"
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 
@@ -29,6 +31,14 @@ type ScalarUnmarshaler interface {
 	ScalarType() any
 }
 
+type MigrateableConfig interface {
+	Migrations() []ConfigMigrator
+}
+
+type ConfigMigrator interface {
+	Migrate(cfg any) (bool, error)
+}
+
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
@@ -44,6 +54,56 @@ func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.Dec
 		// }
 
 		toPtr := to.Addr().Interface()
+
+		fm, fmOk := from.Interface().(map[string]interface{})
+
+		m, ok := toPtr.(MigrateableConfig)
+		if ok && !(from.Kind() == reflect.Map && from.IsNil()) && (!fmOk || len(fm) > 0) {
+			for _, migrator := range m.Migrations() {
+				mOpts := *opts
+				mOpts.IgnoreUnused = true
+				if err := internal.Decode(from.Interface(), &migrator, mOpts, false); err != nil {
+					// An error decoding likely means this migrator's schema
+					// doesn't match the input.
+					continue
+				}
+
+				migrated, err := migrator.Migrate(toPtr)
+
+				if err != nil {
+					return nil, fmt.Errorf("failed to migrate config using %T: %w", migrator, err)
+				}
+
+				if migrated {
+					switch reflect.TypeOf(migrator).Kind() {
+					case reflect.Map:
+						// Empty out the map.
+						return toPtr, nil
+					case reflect.Struct:
+						mVal := reflect.TypeOf(migrator)
+						numFields := mVal.NumField()
+
+						fm, ok := from.Interface().(map[string]interface{})
+						if !ok {
+							return toPtr, nil
+						}
+
+						for i := range numFields {
+							field := mVal.Field(i)
+							tag, ok := field.Tag.Lookup("mapstructure")
+
+							if !ok {
+								continue
+							}
+
+							name := strings.Split(tag, ",")[0]
+							delete(fm, name)
+						}
+					}
+
+				}
+			}
+		}
 
 		unmarshaler, ok := toPtr.(ScalarUnmarshaler)
 		if !ok {
