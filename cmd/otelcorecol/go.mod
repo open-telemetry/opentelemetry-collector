@@ -287,6 +287,8 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telem
 
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
 
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
@@ -332,5 +334,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
