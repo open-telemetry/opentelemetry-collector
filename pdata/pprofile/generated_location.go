@@ -70,9 +70,9 @@ func (ms Location) SetAddress(v uint64) {
 	ms.orig.Address = v
 }
 
-// Line returns the Line associated with this Location.
-func (ms Location) Line() LineSlice {
-	return newLineSlice(&ms.orig.Line, ms.state)
+// Lines returns the Lines associated with this Location.
+func (ms Location) Lines() LineSlice {
+	return newLineSlice(&ms.orig.Lines, ms.state)
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Location.

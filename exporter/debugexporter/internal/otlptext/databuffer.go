@@ -384,10 +384,10 @@ func (b *dataBuffer) logProfileLocations(ls pprofile.LocationSlice) {
 
 		b.logEntry("    Mapping index: %d", location.MappingIndex())
 		b.logEntry("    Address: %d", location.Address())
-		if ll := location.Line().Len(); ll > 0 {
+		if ll := location.Lines().Len(); ll > 0 {
 			for j := range ll {
 				b.logEntry("    Line #%d", j)
-				line := location.Line().At(j)
+				line := location.Lines().At(j)
 				b.logEntry("        Function index: %d", line.FunctionIndex())
 				b.logEntry("        Line: %d", line.Line())
 				b.logEntry("        Column: %d", line.Column())
@@ -421,17 +421,6 @@ func (b *dataBuffer) logStringTable(ss pcommon.StringSlice) {
 	b.logEntry("String table:")
 	for i := 0; i < ss.Len(); i++ {
 		b.logEntry("    %s", ss.At(i))
-	}
-}
-
-func (b *dataBuffer) logComment(c pcommon.Int32Slice) {
-	if c.Len() == 0 {
-		return
-	}
-
-	b.logEntry("    Comment:")
-	for i := 0; i < c.Len(); i++ {
-		b.logEntry("        %d", c.At(i))
 	}
 }
 
