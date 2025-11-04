@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.139.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.139.0
 	go.opentelemetry.io/collector/service v0.139.0
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 )
 
 require (
@@ -77,7 +77,7 @@ require (
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.9 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.10 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect

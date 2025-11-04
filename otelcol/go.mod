@@ -33,7 +33,7 @@ require (
 	go.uber.org/zap v1.27.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/common v0.67.1 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.9 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.10 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
