@@ -188,21 +188,18 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 
 func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
 	return map[string][]byte{
-		"invalid_field":                          {0x02},
-		"TypeStrindex/wrong_wire_type":           {0xc},
-		"TypeStrindex/missing_value":             {0x8},
-		"UnitStrindex/wrong_wire_type":           {0x14},
-		"UnitStrindex/missing_value":             {0x10},
-		"AggregationTemporality/wrong_wire_type": {0x1c},
-		"AggregationTemporality/missing_value":   {0x18},
+		"invalid_field":                {0x02},
+		"TypeStrindex/wrong_wire_type": {0xc},
+		"TypeStrindex/missing_value":   {0x8},
+		"UnitStrindex/wrong_wire_type": {0x14},
+		"UnitStrindex/missing_value":   {0x10},
 	}
 }
 
 func genTestEncodingValuesValueType() map[string]*ValueType {
 	return map[string]*ValueType{
-		"empty":                       NewValueType(),
-		"TypeStrindex/test":           {TypeStrindex: int32(13)},
-		"UnitStrindex/test":           {UnitStrindex: int32(13)},
-		"AggregationTemporality/test": {AggregationTemporality: AggregationTemporality(13)},
+		"empty":             NewValueType(),
+		"TypeStrindex/test": {TypeStrindex: int32(13)},
+		"UnitStrindex/test": {UnitStrindex: int32(13)},
 	}
 }

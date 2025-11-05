@@ -8,21 +8,21 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.44.0
-	go.opentelemetry.io/collector/component v1.44.0
-	go.opentelemetry.io/collector/component/componenttest v0.138.0
-	go.opentelemetry.io/collector/config/configauth v1.44.0
-	go.opentelemetry.io/collector/config/configcompression v1.44.0
-	go.opentelemetry.io/collector/config/configmiddleware v1.44.0
-	go.opentelemetry.io/collector/config/configopaque v1.44.0
-	go.opentelemetry.io/collector/config/configoptional v1.44.0
-	go.opentelemetry.io/collector/config/configtls v1.44.0
-	go.opentelemetry.io/collector/extension v1.44.0
-	go.opentelemetry.io/collector/extension/extensionauth v1.44.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.138.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.138.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.138.0
-	go.opentelemetry.io/collector/featuregate v1.44.0
+	go.opentelemetry.io/collector/client v1.45.0
+	go.opentelemetry.io/collector/component v1.45.0
+	go.opentelemetry.io/collector/component/componenttest v0.139.0
+	go.opentelemetry.io/collector/config/configauth v1.45.0
+	go.opentelemetry.io/collector/config/configcompression v1.45.0
+	go.opentelemetry.io/collector/config/configmiddleware v1.45.0
+	go.opentelemetry.io/collector/config/configopaque v1.45.0
+	go.opentelemetry.io/collector/config/configoptional v1.45.0
+	go.opentelemetry.io/collector/config/configtls v1.45.0
+	go.opentelemetry.io/collector/extension v1.45.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.45.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.139.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.139.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.139.0
+	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
@@ -52,9 +52,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.44.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.138.0
-	go.opentelemetry.io/collector/pdata v1.44.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.45.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.0
+	go.opentelemetry.io/collector/pdata v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
