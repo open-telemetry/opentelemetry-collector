@@ -23,7 +23,6 @@ require (
 )
 
 replace (
-
 	go.opentelemetry.io/collector/client => ../../client
 	go.opentelemetry.io/collector/component => ../../component
 	go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
