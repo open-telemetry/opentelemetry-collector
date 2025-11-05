@@ -323,3 +323,124 @@ func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateFeatureGates(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureGate FeatureGate
+		gateID      FeatureGateID
+		wantErr     string
+	}{
+		{
+			name:   "valid alpha gate",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description:  "Test feature gate",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+		},
+		{
+			name:   "valid stable gate with to_version",
+			gateID: "component.stable",
+			featureGate: FeatureGate{
+				Description: "Stable feature gate",
+				Stage:       FeatureGateStageStable,
+				FromVersion: "v0.90.0",
+				ToVersion:   "v0.95.0",
+			},
+		},
+		{
+			name:   "empty description",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `description is required`,
+		},
+		{
+			name:   "invalid stage",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description: "Test feature",
+				Stage:       "invalid",
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `invalid stage "invalid"`,
+		},
+		{
+			name:   "from_version without v prefix",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "0.100.0",
+			},
+			wantErr: `from_version "0.100.0" must start with 'v'`,
+		},
+		{
+			name:   "to_version without v prefix",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description: "Test feature",
+				Stage:       FeatureGateStageStable,
+				FromVersion: "v0.90.0",
+				ToVersion:   "0.95.0",
+			},
+			wantErr: `to_version "0.95.0" must start with 'v'`,
+		},
+		{
+			name:   "stable gate missing to_version",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description: "Test feature",
+				Stage:       FeatureGateStageStable,
+				FromVersion: "v0.90.0",
+			},
+			wantErr: `to_version is required for stable stage gates`,
+		},
+		{
+			name:   "deprecated gate missing to_version",
+			gateID: "component.feature",
+			featureGate: FeatureGate{
+				Description: "Test feature",
+				Stage:       FeatureGateStageDeprecated,
+				FromVersion: "v0.90.0",
+			},
+			wantErr: `to_version is required for deprecated stage gates`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				FeatureGates: map[FeatureGateID]FeatureGate{
+					tt.gateID: tt.featureGate,
+				},
+			}
+			err := md.validateFeatureGates()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateFeatureGatesEmptyID(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: map[FeatureGateID]FeatureGate{
+			"": {
+				Description: "Test",
+				Stage:       FeatureGateStageAlpha,
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "feature gate ID cannot be empty")
+}
