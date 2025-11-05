@@ -7,6 +7,37 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.45.0/v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Make stability.level a required field for metrics (#14070)
+- `cmd/mdatagen`: Replace `optional` field with `requirement_level` field for attributes in metadata schema (#13913)
+  The `optional` boolean field for attributes has been replaced with a `requirement_level` field that accepts enum values: `required`, `conditionally_required`, `recommended`, or `opt_in`.
+  - `required`: attribute is always included and cannot be excluded
+  - `conditionally_required`: attribute is included by default when certain conditions are met (replaces `optional: true`)
+  - `recommended`: attribute is included by default but can be disabled via configuration (replaces `optional: false`)
+  - `opt_in`: attribute is not included unless explicitly enabled in user config
+  When `requirement_level` is not specified, it defaults to `recommended`.
+  
+- `pdata/pprofile`: Remove deprecated `PutAttribute` helper method (#14082)
+- `pdata/pprofile`: Remove deprecated `PutLocation` helper method (#14082)
+
+### 💡 Enhancements 💡
+
+- `all`: Add FIPS and non-FIPS implementations for allowed TLS curves (#13990)
+- `cmd/builder`: Set CGO_ENABLED=0 by default, add the `cgo_enabled` configuration to enable it. (#10028)
+- `pkg/config/configgrpc`: Errors of type status.Status returned from an Authenticator extension are being propagated as is to the upstream client. (#14005)
+- `pkg/config/configoptional`: Adds new `configoptional.AddEnabledField` feature gate that allows users to explicitly disable a `configoptional.Optional` through a new `enabled` field. (#14021)
+- `pkg/exporterhelper`: Replace usage of gogo proto for persistent queue metadata (#14079)
+- `pkg/pdata`: Remove usage of gogo proto and generate the structs with pdatagen (#14078)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: add queue configuration (#14101)
+
+<!-- previous-version -->
+
 ## v1.44.0/v0.138.0
 
 ### 🛑 Breaking changes 🛑
