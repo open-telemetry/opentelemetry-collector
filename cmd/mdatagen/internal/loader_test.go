@@ -47,7 +47,7 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
-				DisplayName:          "Sample",
+				DisplayName:          "Sample Receiver",
 				SemConvVersion:       "1.37.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
