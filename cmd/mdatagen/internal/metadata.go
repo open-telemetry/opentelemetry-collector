@@ -54,6 +54,8 @@ type Metadata struct {
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
+	// FeatureGates that are managed by the component.
+	FeatureGates map[FeatureGateID]FeatureGate `mapstructure:"feature_gates"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -92,6 +94,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateMetricsAndEvents(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateFeatureGates(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -271,6 +277,47 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 		}
 		if len(unknownAttrs) > 0 {
 			errs = errors.Join(errs, fmt.Errorf(`event "%v" refers to undefined attributes: %v`, en, unknownAttrs))
+		}
+	}
+	return errs
+}
+
+func (md *Metadata) validateFeatureGates() error {
+	var errs error
+	for gateID, gate := range md.FeatureGates {
+		// Validate gate ID is not empty
+		if string(gateID) == "" {
+			errs = errors.Join(errs, errors.New("feature gate ID cannot be empty"))
+			continue
+		}
+
+		// Validate gate has required fields
+		if gate.Description == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": description is required`, gateID))
+		}
+
+		// Validate stage is one of the allowed values
+		validStages := map[FeatureGateStage]bool{
+			FeatureGateStageAlpha:      true,
+			FeatureGateStageBeta:       true,
+			FeatureGateStageStable:     true,
+			FeatureGateStageDeprecated: true,
+		}
+		if !validStages[gate.Stage] {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": invalid stage "%v", must be one of: alpha, beta, stable, deprecated`, gateID, gate.Stage))
+		}
+
+		// Validate version formats if provided
+		if gate.FromVersion != "" && !strings.HasPrefix(gate.FromVersion, "v") {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version "%v" must start with 'v'`, gateID, gate.FromVersion))
+		}
+		if gate.ToVersion != "" && !strings.HasPrefix(gate.ToVersion, "v") {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version "%v" must start with 'v'`, gateID, gate.ToVersion))
+		}
+
+		// Validate that stable/deprecated gates should have to_version
+		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gateID, gate.Stage))
 		}
 	}
 	return errs
@@ -562,4 +609,31 @@ type Entity struct {
 type EntityAttributeRef struct {
 	// Ref is the reference to a resource attribute.
 	Ref AttributeName `mapstructure:"ref"`
+}
+
+// FeatureGateID represents the identifier for a feature gate.
+type FeatureGateID string
+
+// FeatureGateStage represents the lifecycle stage of a feature gate.
+type FeatureGateStage string
+
+const (
+	FeatureGateStageAlpha      FeatureGateStage = "alpha"
+	FeatureGateStageBeta       FeatureGateStage = "beta"
+	FeatureGateStageStable     FeatureGateStage = "stable"
+	FeatureGateStageDeprecated FeatureGateStage = "deprecated"
+)
+
+// FeatureGate represents a feature gate definition in metadata.
+type FeatureGate struct {
+	// Description of the feature gate.
+	Description string `mapstructure:"description"`
+	// Stage is the lifecycle stage of the feature gate.
+	Stage FeatureGateStage `mapstructure:"stage"`
+	// FromVersion is the version when the feature gate was introduced.
+	FromVersion string `mapstructure:"from_version"`
+	// ToVersion is the version when the feature gate reached stable stage.
+	ToVersion string `mapstructure:"to_version"`
+	// ReferenceURL is the URL with contextual information about the feature gate.
+	ReferenceURL string `mapstructure:"reference_url"`
 }

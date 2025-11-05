@@ -22,12 +22,42 @@ status:
   class: <receiver|processor|exporter|connector|extension|cmd|pkg|scraper|converter|provider>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stability-levels
   stability:
-    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
-    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
-    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
-    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
-    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
-    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    development:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
+    alpha:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
+    beta:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
+    stable:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
+    deprecated:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
+    unmaintained:
+      [
+        <metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,
+        converter,
+        provider>,
+      ]
   # Required for deprecated components: The deprecation information for the deprecated components - See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
   deprecation:
     <component>:
@@ -139,9 +169,10 @@ metrics:
       monotonic: bool
       # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
-      aggregation_temporality: <delta|cumulative>
-       # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
-       # functions will parse the value from string to value_type.
+      aggregation_temporality:
+        <delta|cumulative>
+        # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
+        # functions will parse the value from string to value_type.
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
@@ -194,7 +225,6 @@ tests:
       top: [string] # Optional: array of strings representing functions that should be ignore via IgnoreTopFunction
       any: [string] # Optional: array of strings representing functions that should be ignore via IgnoreAnyFunction
 
-
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
 telemetry:
@@ -238,3 +268,17 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+# Optional: map of feature gate definitions with the key being the gate ID.
+feature_gates:
+  <gate.id>:
+    # Required: description of the feature gate.
+    description: string
+    # Required: lifecycle stage of the feature gate.
+    stage: <alpha|beta|stable|deprecated>
+    # Optional: version when the feature gate was introduced.
+    from_version: string
+    # Optional: version when the feature gate reached stable stage (for stable/deprecated gates).
+    to_version: string
+    # Optional: URL with contextual information about the feature gate.
+    reference_url: string
