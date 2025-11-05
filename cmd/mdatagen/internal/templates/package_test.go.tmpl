@@ -4,12 +4,12 @@ package {{ if isCommand -}}main{{ else }}{{ .Package }}{{- end }}
 
 import (
     {{- if .Tests.GoLeak.Skip }}
-    "os"
+	"os"
     {{- end }}
 	"testing"
-
     {{- if not .Tests.GoLeak.Skip }}
-    "go.uber.org/goleak"
+
+	"go.uber.org/goleak"
     {{- end }}
 )
 
