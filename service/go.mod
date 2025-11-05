@@ -145,8 +145,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
-
 replace go.opentelemetry.io/collector/connector => ../connector
 
 replace go.opentelemetry.io/collector/connector/connectortest => ../connector/connectortest
