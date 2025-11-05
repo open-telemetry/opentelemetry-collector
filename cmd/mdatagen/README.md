@@ -72,13 +72,13 @@ status:
     beta: [metrics, traces]
 
 feature_gates:
-  mycomponent.newFeature:
+  - id: mycomponent.newFeature
     description: 'Enables new feature functionality that improves performance'
     stage: alpha
     from_version: 'v0.100.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
 
-  mycomponent.stableFeature:
+  - id: mycomponent.stableFeature
     description: 'A feature that has reached stability'
     stage: stable
     from_version: 'v0.90.0'

@@ -328,13 +328,12 @@ func TestValidateFeatureGates(t *testing.T) {
 	tests := []struct {
 		name        string
 		featureGate FeatureGate
-		gateID      FeatureGateID
 		wantErr     string
 	}{
 		{
-			name:   "valid alpha gate",
-			gateID: "component.feature",
+			name: "valid alpha gate",
 			featureGate: FeatureGate{
+				ID:           "component.feature",
 				Description:  "Test feature gate",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
@@ -342,9 +341,9 @@ func TestValidateFeatureGates(t *testing.T) {
 			},
 		},
 		{
-			name:   "valid stable gate with to_version",
-			gateID: "component.stable",
+			name: "valid stable gate with to_version",
 			featureGate: FeatureGate{
+				ID:          "component.stable",
 				Description: "Stable feature gate",
 				Stage:       FeatureGateStageStable,
 				FromVersion: "v0.90.0",
@@ -352,18 +351,18 @@ func TestValidateFeatureGates(t *testing.T) {
 			},
 		},
 		{
-			name:   "empty description",
-			gateID: "component.feature",
+			name: "empty description",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Stage:       FeatureGateStageAlpha,
 				FromVersion: "v0.100.0",
 			},
 			wantErr: `description is required`,
 		},
 		{
-			name:   "invalid stage",
-			gateID: "component.feature",
+			name: "invalid stage",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Description: "Test feature",
 				Stage:       "invalid",
 				FromVersion: "v0.100.0",
@@ -371,9 +370,9 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `invalid stage "invalid"`,
 		},
 		{
-			name:   "from_version without v prefix",
-			gateID: "component.feature",
+			name: "from_version without v prefix",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Description: "Test feature",
 				Stage:       FeatureGateStageAlpha,
 				FromVersion: "0.100.0",
@@ -381,9 +380,9 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `from_version "0.100.0" must start with 'v'`,
 		},
 		{
-			name:   "to_version without v prefix",
-			gateID: "component.feature",
+			name: "to_version without v prefix",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Description: "Test feature",
 				Stage:       FeatureGateStageStable,
 				FromVersion: "v0.90.0",
@@ -392,9 +391,9 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `to_version "0.95.0" must start with 'v'`,
 		},
 		{
-			name:   "stable gate missing to_version",
-			gateID: "component.feature",
+			name: "stable gate missing to_version",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Description: "Test feature",
 				Stage:       FeatureGateStageStable,
 				FromVersion: "v0.90.0",
@@ -402,9 +401,9 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `to_version is required for stable stage gates`,
 		},
 		{
-			name:   "deprecated gate missing to_version",
-			gateID: "component.feature",
+			name: "deprecated gate missing to_version",
 			featureGate: FeatureGate{
+				ID:          "component.feature",
 				Description: "Test feature",
 				Stage:       FeatureGateStageDeprecated,
 				FromVersion: "v0.90.0",
@@ -416,9 +415,7 @@ func TestValidateFeatureGates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
-				FeatureGates: map[FeatureGateID]FeatureGate{
-					tt.gateID: tt.featureGate,
-				},
+				FeatureGates: []FeatureGate{tt.featureGate},
 			}
 			err := md.validateFeatureGates()
 			if tt.wantErr != "" {
@@ -433,8 +430,8 @@ func TestValidateFeatureGates(t *testing.T) {
 
 func TestValidateFeatureGatesEmptyID(t *testing.T) {
 	md := &Metadata{
-		FeatureGates: map[FeatureGateID]FeatureGate{
-			"": {
+		FeatureGates: []FeatureGate{
+			{
 				Description: "Test",
 				Stage:       FeatureGateStageAlpha,
 			},
@@ -442,5 +439,25 @@ func TestValidateFeatureGatesEmptyID(t *testing.T) {
 	}
 	err := md.validateFeatureGates()
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "feature gate ID cannot be empty")
+	assert.ErrorContains(t, err, "ID cannot be empty")
+}
+
+func TestValidateFeatureGatesDuplicateID(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: []FeatureGate{
+			{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+			{
+				ID:          "component.feature",
+				Description: "Duplicate feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "duplicate ID")
 }

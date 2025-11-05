@@ -5,13 +5,13 @@ status:
     beta: [metrics]
 
 feature_gates:
-  sample.feature.gate:
+  - id: sample.feature.gate
     description: 'This is a sample feature gate for testing purposes'
     stage: alpha
     from_version: 'v0.100.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
 
-  stable.feature.gate:
+  - id: stable.feature.gate
     description: 'This is a stable feature gate'
     stage: stable
     from_version: 'v0.90.0'

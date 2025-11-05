@@ -55,7 +55,8 @@ type Metadata struct {
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
-	FeatureGates map[FeatureGateID]FeatureGate `mapstructure:"feature_gates"`
+	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// FeatureGates that are managed by the component.
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -284,16 +285,25 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 
 func (md *Metadata) validateFeatureGates() error {
 	var errs error
-	for gateID, gate := range md.FeatureGates {
+	seen := make(map[FeatureGateID]bool)
+
+	for i, gate := range md.FeatureGates {
 		// Validate gate ID is not empty
-		if string(gateID) == "" {
-			errs = errors.Join(errs, errors.New("feature gate ID cannot be empty"))
+		if string(gate.ID) == "" {
+			errs = errors.Join(errs, fmt.Errorf("feature gate at index %d: ID cannot be empty", i))
 			continue
 		}
 
+		// Check for duplicate IDs
+		if seen[gate.ID] {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": duplicate ID`, gate.ID))
+			continue
+		}
+		seen[gate.ID] = true
+
 		// Validate gate has required fields
 		if gate.Description == "" {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": description is required`, gateID))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": description is required`, gate.ID))
 		}
 
 		// Validate stage is one of the allowed values
@@ -304,20 +314,20 @@ func (md *Metadata) validateFeatureGates() error {
 			FeatureGateStageDeprecated: true,
 		}
 		if !validStages[gate.Stage] {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": invalid stage "%v", must be one of: alpha, beta, stable, deprecated`, gateID, gate.Stage))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": invalid stage "%v", must be one of: alpha, beta, stable, deprecated`, gate.ID, gate.Stage))
 		}
 
 		// Validate version formats if provided
 		if gate.FromVersion != "" && !strings.HasPrefix(gate.FromVersion, "v") {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version "%v" must start with 'v'`, gateID, gate.FromVersion))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version "%v" must start with 'v'`, gate.ID, gate.FromVersion))
 		}
 		if gate.ToVersion != "" && !strings.HasPrefix(gate.ToVersion, "v") {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version "%v" must start with 'v'`, gateID, gate.ToVersion))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version "%v" must start with 'v'`, gate.ID, gate.ToVersion))
 		}
 
 		// Validate that stable/deprecated gates should have to_version
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gateID, gate.Stage))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
 		}
 	}
 	return errs
@@ -626,6 +636,8 @@ const (
 
 // FeatureGate represents a feature gate definition in metadata.
 type FeatureGate struct {
+	// ID is the unique identifier for the feature gate.
+	ID FeatureGateID `mapstructure:"id"`
 	// Description of the feature gate.
 	Description string `mapstructure:"description"`
 	// Stage is the lifecycle stage of the feature gate.

@@ -2,13 +2,10 @@
 
 # sample
 
-## Feature Gates
+## Resource Attributes
 
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `sample.feature.gate` | alpha | This is a sample feature gate for testing purposes | v0.100.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/12345) |
-| `stable.feature.gate` | stable | This is a stable feature gate | v0.90.0 | v0.95.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/11111) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| host.id | The unique host identifier | Any Str | true |
+| host.name | The hostname | Any Str | true |
+| process.pid | The process identifier | Any Int | true |

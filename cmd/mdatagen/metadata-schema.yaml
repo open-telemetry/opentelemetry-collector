@@ -269,9 +269,10 @@ telemetry:
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
 
-# Optional: map of feature gate definitions with the key being the gate ID.
+# Optional: list of feature gate definitions.
 feature_gates:
-  <gate.id>:
+  - # Required: unique identifier for the feature gate.
+    id: <gate.id>
     # Required: description of the feature gate.
     description: string
     # Required: lifecycle stage of the feature gate.
