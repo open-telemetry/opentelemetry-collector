@@ -110,6 +110,24 @@
 **Parent Component:** {{ .Parent }}
 {{- end }}
 
+{{- if .ExampleConfigs }}
+
+## Example Configurations
+
+{{- range $example := .ExampleConfigs }}
+
+### {{ $example.Name }}
+
+{{ $example.Description }}
+
+```yaml
+{{ $example.Config }}
+```
+
+{{- end }}
+
+{{- end }}
+
 {{- if .Metrics }}
 
 ## Default Metrics

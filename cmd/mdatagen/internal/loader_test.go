@@ -433,6 +433,42 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
+				ExampleConfigs: []ExampleConfig{
+					{
+						Name:        "Basic Configuration",
+						Description: "This example demonstrates the most basic configuration for the sample receiver with default settings.",
+						Config: `sample:
+  metrics:
+    default.metric:
+      enabled: true
+`,
+					},
+					{
+						Name:        "Advanced Configuration",
+						Description: "This example shows an advanced configuration with custom metrics enabled and resource attributes configured.",
+						Config: `sample:
+  metrics:
+    default.metric:
+      enabled: true
+    optional.metric:
+      enabled: true
+  resource_attributes:
+    string.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+`,
+					},
+					{
+						Name:        "Minimal Configuration",
+						Description: "A minimal configuration suitable for testing environments with only essential metrics.",
+						Config: `sample:
+  metrics:
+    metric.input_type:
+      enabled: true
+`,
+					},
+				},
 				Tests:           Tests{Host: "newMdatagenNopHost()"},
 			},
 		},

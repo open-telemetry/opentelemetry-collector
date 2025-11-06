@@ -44,6 +44,8 @@ type Metadata struct {
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// ExampleConfigs are example configuration snippets for the component.
+	ExampleConfigs []ExampleConfig `mapstructure:"example_configs"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
@@ -513,4 +515,13 @@ type Entity struct {
 type EntityAttributeRef struct {
 	// Ref is the reference to a resource attribute.
 	Ref AttributeName `mapstructure:"ref"`
+}
+
+type ExampleConfig struct {
+	// Name is a descriptive name for the example configuration.
+	Name string `mapstructure:"name"`
+	// Description provides context about when this configuration should be used.
+	Description string `mapstructure:"description"`
+	// Config is the example configuration snippet in YAML format.
+	Config string `mapstructure:"config"`
 }

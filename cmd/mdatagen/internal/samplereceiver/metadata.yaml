@@ -6,6 +6,36 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
 
+example_configs:
+  - name: Basic Configuration
+    description: This example demonstrates the most basic configuration for the sample receiver with default settings.
+    config: |
+      sample:
+        metrics:
+          default.metric:
+            enabled: true
+  - name: Advanced Configuration
+    description: This example shows an advanced configuration with custom metrics enabled and resource attributes configured.
+    config: |
+      sample:
+        metrics:
+          default.metric:
+            enabled: true
+          optional.metric:
+            enabled: true
+        resource_attributes:
+          string.resource.attr:
+            enabled: true
+          optional.resource.attr:
+            enabled: true
+  - name: Minimal Configuration
+    description: A minimal configuration suitable for testing environments with only essential metrics.
+    config: |
+      sample:
+        metrics:
+          metric.input_type:
+            enabled: true
+
 status:
   disable_codecov_badge: true
   class: receiver
@@ -16,8 +46,8 @@ status:
     deprecated: [profiles]
   deprecation:
     profiles:
-      migration: "no migration needed"
-      date: "2025-02-05"
+      migration: 'no migration needed'
+      date: '2025-02-05'
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -141,7 +171,7 @@ events:
 
   default.event.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Example to-be-removed event enabled by default."
+    description: '[DEPRECATED] Example to-be-removed event enabled by default.'
     extended_documentation: The event will be removed soon.
     warnings:
       if_enabled: This event is deprecated and will be removed soon.
@@ -150,9 +180,10 @@ events:
 
   default.event.to_be_renamed:
     enabled: false
-    description: "[DEPRECATED] Example event disabled by default."
+    description: '[DEPRECATED] Example event disabled by default.'
     extended_documentation: The event will be renamed soon.
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
 
@@ -184,7 +215,7 @@ metrics:
 
   default.metric.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    description: '[DEPRECATED] Non-monotonic delta sum double metric enabled by default.'
     extended_documentation: The metric will be removed soon.
     stability:
       level: deprecated
@@ -212,22 +243,23 @@ metrics:
 
   optional.metric:
     enabled: false
-    description: "[DEPRECATED] Gauge double metric disabled by default."
+    description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: "1"
+    unit: '1'
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
   optional.metric.empty_unit:
     enabled: false
-    description: "[DEPRECATED] Gauge double metric disabled by default."
+    description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: ""
+    unit: ''
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
@@ -242,7 +274,7 @@ telemetry:
         level: deprecated
         from: v0.110.0
       description: Number of times the batch was sent due to a size trigger
-      unit: "{times}"
+      unit: '{times}'
       sum:
         value_type: int
         monotonic: true
@@ -261,7 +293,7 @@ telemetry:
       description: Queue capacity - sync gauge example.
       stability:
         level: development
-      unit: "{items}"
+      unit: '{items}'
       gauge:
         value_type: int
     queue_length:
@@ -270,7 +302,7 @@ telemetry:
         level: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
-      unit: "{items}"
+      unit: '{items}'
       optional: true
       gauge:
         async: true
