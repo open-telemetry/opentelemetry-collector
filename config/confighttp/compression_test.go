@@ -386,6 +386,96 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 }
 
+// TestEmptyCompressionAlgorithmsAllowsUncompressed verifies that when CompressionAlgorithms
+// is set to an empty array, requests without Content-Encoding header (or with "identity") are accepted.
+func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
+	testBody := []byte(`{"message": "test data"}`)
+
+	tests := []struct {
+		name            string
+		contentEncoding string // empty string means no header
+		expectedStatus  int
+		expectedError   string
+	}{
+		{
+			name:            "NoContentEncodingHeader",
+			contentEncoding: "",
+			expectedStatus:  http.StatusOK,
+		},
+		{
+			name:            "IdentityEncoding",
+			contentEncoding: "identity",
+			expectedStatus:  http.StatusOK,
+		},
+		{
+			name:            "GzipEncodingRejected",
+			contentEncoding: "gzip",
+			expectedStatus:  http.StatusBadRequest,
+			expectedError:   "unsupported Content-Encoding: gzip",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create handler that echoes back the request body
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				require.NoError(t, err)
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(body)
+			})
+
+			// Create ServerConfig with empty CompressionAlgorithms
+			// This simulates the configuration used when users want to disable automatic decompression
+			serverConfig := &ServerConfig{
+				Endpoint:              "localhost:0",
+				CompressionAlgorithms: []string{}, // Empty array - should still allow uncompressed
+			}
+
+			srv, err := serverConfig.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				handler,
+			)
+			require.NoError(t, err)
+
+			// Create test server
+			testSrv := httptest.NewServer(srv.Handler)
+			defer testSrv.Close()
+
+			// Create request
+			req, err := http.NewRequest(http.MethodPost, testSrv.URL, bytes.NewReader(testBody))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			// Set Content-Encoding header if specified
+			if tt.contentEncoding != "" {
+				req.Header.Set("Content-Encoding", tt.contentEncoding)
+			}
+
+			// Send request
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			// Verify response
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code")
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			if tt.expectedError != "" {
+				assert.Contains(t, string(body), tt.expectedError, "Expected error message not found")
+			} else {
+				// For successful requests, body should be echoed back
+				assert.Equal(t, testBody, body, "Response body should match request body")
+			}
+		})
+	}
+}
+
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody := compressGzip(t, []byte{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
