@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -27,10 +26,10 @@ func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState))
+		ms.MoveTo(newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(), sharedState))
 	})
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState).MoveTo(dest)
+		newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(), sharedState).MoveTo(dest)
 	})
 }
 
@@ -45,7 +44,7 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), sharedState))
+		ms.CopyTo(newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(), sharedState))
 	})
 }
 
@@ -57,18 +56,17 @@ func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, sharedState).SetOffset(int32(13))
+		newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(), sharedState).SetOffset(int32(13))
 	})
 }
 
 func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
-	ms.orig.BucketCounts = internal.GenerateOrigTestUint64Slice()
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
+	ms.orig.BucketCounts = internal.GenTestUint64Slice()
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenTestUInt64SliceWrapper()), ms.BucketCounts())
 }
 
 func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	ms := newExponentialHistogramDataPointBuckets(internal.GenTestOrigExponentialHistogramDataPoint_Buckets(), internal.NewState())
-	return ms
+	return newExponentialHistogramDataPointBuckets(internal.GenTestExponentialHistogramDataPointBuckets(), internal.NewState())
 }

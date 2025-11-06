@@ -56,7 +56,7 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	location := dic.LocationTable().AppendEmpty()
 	location.SetMappingIndex(3)
 	location.SetAddress(4)
-	line := location.Line().AppendEmpty()
+	line := location.Lines().AppendEmpty()
 	line.SetFunctionIndex(1)
 	line.SetLine(2)
 	line.SetColumn(3)
@@ -89,13 +89,9 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	sc := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0)
 	profilesCount := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len()
 	for i := range profilesCount {
-		switch i % 2 {
-		case 0:
+		if i%2 == 0 {
 			profile := sc.Profiles().At(i)
 			profile.AttributeIndices().FromRaw([]int32{1})
-		case 1:
-			profile := sc.Profiles().At(i)
-			profile.CommentStrindices().FromRaw([]int32{1, 2})
 		}
 	}
 	return profiles
@@ -111,7 +107,7 @@ func generateProfilesWithEntityRefs() pprofile.Profiles {
 	sp.Scope().SetName("test-scope")
 	profile := sp.Profiles().AppendEmpty()
 
-	sample := profile.Sample().AppendEmpty()
+	sample := profile.Samples().AppendEmpty()
 	sample.Values().Append(100)
 
 	dic := pd.Dictionary()

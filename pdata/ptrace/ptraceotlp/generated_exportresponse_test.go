@@ -24,8 +24,8 @@ func TestExportResponse_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportResponse(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExportResponse(internal.NewOrigExportTraceServiceResponse(), sharedState)) })
-	assert.Panics(t, func() { newExportResponse(internal.NewOrigExportTraceServiceResponse(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newExportResponse(internal.NewExportTraceServiceResponse(), sharedState)) })
+	assert.Panics(t, func() { newExportResponse(internal.NewExportTraceServiceResponse(), sharedState).MoveTo(dest) })
 }
 
 func TestExportResponse_CopyTo(t *testing.T) {
@@ -38,17 +38,16 @@ func TestExportResponse_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExportResponse(internal.NewOrigExportTraceServiceResponse(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExportResponse(internal.NewExportTraceServiceResponse(), sharedState)) })
 }
 
 func TestExportResponse_PartialSuccess(t *testing.T) {
 	ms := NewExportResponse()
 	assert.Equal(t, NewExportPartialSuccess(), ms.PartialSuccess())
-	ms.orig.PartialSuccess = *internal.GenTestOrigExportTracePartialSuccess()
+	ms.orig.PartialSuccess = *internal.GenTestExportTracePartialSuccess()
 	assert.Equal(t, generateTestExportPartialSuccess(), ms.PartialSuccess())
 }
 
 func generateTestExportResponse() ExportResponse {
-	ms := newExportResponse(internal.GenTestOrigExportTraceServiceResponse(), internal.NewState())
-	return ms
+	return newExportResponse(internal.GenTestExportTraceServiceResponse(), internal.NewState())
 }

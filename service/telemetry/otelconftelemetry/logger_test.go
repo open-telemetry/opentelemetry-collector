@@ -5,23 +5,29 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	internalTelemetry "go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -271,16 +277,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 func TestLogger_OTLP(t *testing.T) {
 	// Create a backend to receive the logs and assert the content
 	receivedLogs := 0
-	logger := newOTLPLogger(t, zapcore.InfoLevel, func(_ http.ResponseWriter, request *http.Request) {
-		body, err := io.ReadAll(request.Body)
-		assert.NoError(t, err)
-		defer request.Body.Close()
-
-		// Unmarshal the protobuf body into logs
-		req := plogotlp.NewExportRequest()
-		err = req.UnmarshalProto(body)
-		assert.NoError(t, err)
-
+	logger := newOTLPLogger(t, zapcore.InfoLevel, func(req plogotlp.ExportRequest) {
 		logs := req.Logs()
 		rl := logs.ResourceLogs().At(0)
 
@@ -309,8 +306,8 @@ func TestLogger_OTLP(t *testing.T) {
 	require.Equal(t, totalLogs, receivedLogs)
 }
 
-func newOTLPLogger(t *testing.T, level zapcore.Level, handler http.HandlerFunc) *zap.Logger {
-	srv := createBackend("/v1/logs", handler)
+func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.ExportRequest)) *zap.Logger {
+	srv := createLogsBackend(t, "/v1/logs", handler)
 	t.Cleanup(srv.Close)
 
 	processors := []config.LogRecordProcessor{{
@@ -348,8 +345,107 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler http.HandlerFunc) 
 	return logger
 }
 
-func createBackend(endpoint string, handler func(http.ResponseWriter, *http.Request)) *httptest.Server {
+func createLogsBackend(t *testing.T, endpoint string, handler func(plogotlp.ExportRequest)) *httptest.Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc(endpoint, handler)
+	mux.HandleFunc(endpoint, func(_ http.ResponseWriter, request *http.Request) {
+		body, err := io.ReadAll(request.Body)
+		assert.NoError(t, err)
+		defer request.Body.Close()
+
+		// Unmarshal the protobuf body into logs
+		req := plogotlp.NewExportRequest()
+		err = req.UnmarshalProto(body)
+		assert.NoError(t, err)
+
+		handler(req)
+	})
 	return httptest.NewServer(mux)
+}
+
+func TestLogAttributeInjection(t *testing.T) {
+	core, consoleLogs := observer.New(zapcore.DebugLevel)
+
+	var otlpLogs []plogotlp.ExportRequest
+	srv := createLogsBackend(t, "/v1/logs", func(req plogotlp.ExportRequest) {
+		otlpLogs = append(otlpLogs, req)
+	})
+	t.Cleanup(srv.Close)
+
+	set := telemetry.LoggerSettings{
+		ZapOptions: []zap.Option{
+			// Redirect console logs to the observer core
+			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+		},
+	}
+	cfg := &Config{
+		Resource: map[string]*string{
+			"service.instance.id": nil,
+			"service.name":        nil,
+			"service.version":     nil,
+		},
+		Logs: LogsConfig{
+			Encoding: "json",
+			Processors: []config.LogRecordProcessor{{
+				Simple: &config.SimpleLogRecordProcessor{
+					Exporter: config.LogRecordExporter{
+						OTLP: &config.OTLP{
+							// Send OTLP logs to the mock backend
+							Endpoint: ptr(srv.URL),
+							Protocol: ptr("http/protobuf"),
+							Insecure: ptr(true),
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	sourceLogger, loggerProvider, err := createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, loggerProvider.Shutdown(t.Context()))
+	}()
+
+	ts := componenttest.NewNopTelemetrySettings()
+	ts.Logger = sourceLogger
+	ts = componentattribute.TelemetrySettingsWithAttributes(ts, attribute.NewSet(
+		attribute.String("injected1", "val"),
+		attribute.String("injected2", "val"),
+	))
+	ts.Logger = ts.Logger.With(zap.String("after", "val"))
+
+	fields, scope := checkScopes(t, ts.Logger, consoleLogs, &otlpLogs)
+	assert.JSONEq(t, `{"injected1":"val","injected2":"val","after":"val","manual":"val"}`, fields)
+	assert.JSONEq(t, `{"injected1":"val","injected2":"val"}`, scope)
+
+	ts = internalTelemetry.DropInjectedAttributes(ts, "injected1")
+
+	fields, scope = checkScopes(t, ts.Logger, consoleLogs, &otlpLogs)
+	assert.JSONEq(t, `{"injected2":"val","after":"val","manual":"val"}`, fields)
+	assert.JSONEq(t, `{"injected2":"val"}`, scope)
+}
+
+func checkScopes(t *testing.T, logger *zap.Logger, consoleLogs *observer.ObservedLogs, otlpLogs *[]plogotlp.ExportRequest) (string, string) {
+	logger.Info("Test log message", zap.String("manual", "val"))
+
+	require.Len(t, consoleLogs.All(), 1)
+	log := consoleLogs.TakeAll()[0]
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
+	fieldsBuf, err := enc.EncodeEntry(log.Entry, log.Context)
+	require.NoError(t, err)
+	fieldsStr := strings.TrimSuffix(fieldsBuf.String(), "\n")
+
+	require.Len(t, *otlpLogs, 1)
+	req := (*otlpLogs)[0]
+	*otlpLogs = nil
+	rls := req.Logs().ResourceLogs()
+	require.Equal(t, 1, rls.Len())
+	sls := rls.At(0).ScopeLogs()
+	require.Equal(t, 1, sls.Len())
+	attrs := sls.At(0).Scope().Attributes()
+	scopeBuf, err := json.Marshal(attrs.AsRaw())
+	require.NoError(t, err)
+	scopeStr := string(scopeBuf)
+
+	return fieldsStr, scopeStr
 }

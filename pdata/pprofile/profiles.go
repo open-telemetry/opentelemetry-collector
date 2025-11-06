@@ -23,7 +23,7 @@ func (ms Profiles) SampleCount() int {
 		for j := 0; j < sps.Len(); j++ {
 			pcs := sps.At(j).Profiles()
 			for k := 0; k < pcs.Len(); k++ {
-				sampleCount += pcs.At(k).Sample().Len()
+				sampleCount += pcs.At(k).Samples().Len()
 			}
 		}
 	}

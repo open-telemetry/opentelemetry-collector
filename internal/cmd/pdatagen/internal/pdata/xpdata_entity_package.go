@@ -21,7 +21,6 @@ var xpdataEntity = &Package{
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
@@ -33,7 +32,6 @@ var xpdataEntity = &Package{
 			`gootlpcommon "go.opentelemetry.io/proto/slim/otlp/common/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -52,9 +50,10 @@ var entityRefSlice = &messageSlice{
 }
 
 var entityRef = &messageStruct{
-	structName:     "EntityRef",
-	packageName:    "entity",
-	originFullName: "otlpcommon.EntityRef",
+	structName:    "EntityRef",
+	packageName:   "entity",
+	protoName:     "EntityRef",
+	upstreamProto: "gootlpcommon.EntityRef",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "SchemaUrl",

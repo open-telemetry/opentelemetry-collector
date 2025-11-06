@@ -19,11 +19,8 @@ var pmetric = &Package{
 			`"sync"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
-			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
-			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
@@ -38,15 +35,13 @@ var pmetric = &Package{
 			`gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
-			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
-			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
-			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
 		metrics,
+		metricsData,
 		resourceMetricsSlice,
 		resourceMetrics,
 		scopeMetricsSlice,
@@ -72,12 +67,16 @@ var pmetric = &Package{
 		exemplarSlice,
 		exemplar,
 	},
+	enums: []*proto.Enum{
+		aggregationTemporalityEnum,
+	},
 }
 
 var metrics = &messageStruct{
-	structName:     "Metrics",
-	description:    "// Metrics is the top-level struct that is propagated through the metrics pipeline.\n// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.",
-	originFullName: "otlpcollectormetrics.ExportMetricsServiceRequest",
+	structName:    "Metrics",
+	description:   "// Metrics is the top-level struct that is propagated through the metrics pipeline.\n// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.",
+	protoName:     "ExportMetricsServiceRequest",
+	upstreamProto: "gootlpcollectormetrics.ExportMetricsServiceRequest",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "ResourceMetrics",
@@ -89,6 +88,22 @@ var metrics = &messageStruct{
 	hasWrapper: true,
 }
 
+var metricsData = &messageStruct{
+	structName:    "MetricsData",
+	description:   "// MetricsData represents the metrics data that can be stored in a persistent storage,\n// OR can be embedded by other protocols that transfer OTLP metrics data but do not\n// implement the OTLP protocol..",
+	protoName:     "MetricsData",
+	upstreamProto: "gootlpmetrics.MetricsData",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceMetrics",
+			protoID:     1,
+			protoType:   proto.TypeMessage,
+			returnSlice: resourceMetricsSlice,
+		},
+	},
+	hasOnlyInternal: true,
+}
+
 var resourceMetricsSlice = &messageSlice{
 	structName:      "ResourceMetricsSlice",
 	elementNullable: true,
@@ -96,9 +111,10 @@ var resourceMetricsSlice = &messageSlice{
 }
 
 var resourceMetrics = &messageStruct{
-	structName:     "ResourceMetrics",
-	description:    "// ResourceMetrics is a collection of metrics from a Resource.",
-	originFullName: "otlpmetrics.ResourceMetrics",
+	structName:    "ResourceMetrics",
+	description:   "// ResourceMetrics is a collection of metrics from a Resource.",
+	protoName:     "ResourceMetrics",
+	upstreamProto: "gootlpmetrics.ResourceMetrics",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Resource",
@@ -116,6 +132,15 @@ var resourceMetrics = &messageStruct{
 			protoID:   3,
 			protoType: proto.TypeString,
 		},
+		&SliceField{
+			fieldName:   "DeprecatedScopeMetrics",
+			protoType:   proto.TypeMessage,
+			protoID:     1000,
+			returnSlice: scopeMetricsSlice,
+			// Hide accessors for this field because it is a HACK:
+			// Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
+			hideAccessors: true,
+		},
 	},
 }
 
@@ -126,9 +151,10 @@ var scopeMetricsSlice = &messageSlice{
 }
 
 var scopeMetrics = &messageStruct{
-	structName:     "ScopeMetrics",
-	description:    "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
-	originFullName: "otlpmetrics.ScopeMetrics",
+	structName:    "ScopeMetrics",
+	description:   "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
+	protoName:     "ScopeMetrics",
+	upstreamProto: "gootlpmetrics.ScopeMetrics",
 	fields: []Field{
 		&MessageField{
 			fieldName:     "Scope",
@@ -159,7 +185,8 @@ var metric = &messageStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto",
-	originFullName: "otlpmetrics.Metric",
+	protoName:     "Metric",
+	upstreamProto: "gootlpmetrics.Metric",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Name",
@@ -219,9 +246,10 @@ var metric = &messageStruct{
 }
 
 var gauge = &messageStruct{
-	structName:     "Gauge",
-	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
-	originFullName: "otlpmetrics.Gauge",
+	structName:    "Gauge",
+	description:   "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
+	protoName:     "Gauge",
+	upstreamProto: "gootlpmetrics.Gauge",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "DataPoints",
@@ -233,9 +261,10 @@ var gauge = &messageStruct{
 }
 
 var sum = &messageStruct{
-	structName:     "Sum",
-	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.Sum",
+	structName:    "Sum",
+	description:   "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
+	protoName:     "Sum",
+	upstreamProto: "gootlpmetrics.Sum",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "DataPoints",
@@ -257,9 +286,10 @@ var sum = &messageStruct{
 }
 
 var histogram = &messageStruct{
-	structName:     "Histogram",
-	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.Histogram",
+	structName:    "Histogram",
+	description:   "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
+	protoName:     "Histogram",
+	upstreamProto: "gootlpmetrics.Histogram",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "DataPoints",
@@ -279,7 +309,8 @@ var exponentialHistogram = &messageStruct{
 	structName: "ExponentialHistogram",
 	description: `// ExponentialHistogram represents the type of a metric that is calculated by aggregating
 	// as a ExponentialHistogram of all reported double measurements over a time interval.`,
-	originFullName: "otlpmetrics.ExponentialHistogram",
+	protoName:     "ExponentialHistogram",
+	upstreamProto: "gootlpmetrics.ExponentialHistogram",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "DataPoints",
@@ -296,9 +327,10 @@ var exponentialHistogram = &messageStruct{
 }
 
 var summary = &messageStruct{
-	structName:     "Summary",
-	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
-	originFullName: "otlpmetrics.Summary",
+	structName:    "Summary",
+	description:   "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
+	protoName:     "Summary",
+	upstreamProto: "gootlpmetrics.Summary",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "DataPoints",
@@ -316,9 +348,10 @@ var numberDataPointSlice = &messageSlice{
 }
 
 var numberDataPoint = &messageStruct{
-	structName:     "NumberDataPoint",
-	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
-	originFullName: "otlpmetrics.NumberDataPoint",
+	structName:    "NumberDataPoint",
+	description:   "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
+	protoName:     "NumberDataPoint",
+	upstreamProto: "gootlpmetrics.NumberDataPoint",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",
@@ -383,9 +416,10 @@ var histogramDataPointSlice = &messageSlice{
 }
 
 var histogramDataPoint = &messageStruct{
-	structName:     "HistogramDataPoint",
-	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
-	originFullName: "otlpmetrics.HistogramDataPoint",
+	structName:    "HistogramDataPoint",
+	description:   "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
+	protoName:     "HistogramDataPoint",
+	upstreamProto: "gootlpmetrics.HistogramDataPoint",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",
@@ -468,7 +502,8 @@ var exponentialHistogramDataPoint = &messageStruct{
 	// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
 	// summary statistics for a population of values, it may optionally contain the
 	// distribution of those values across a set of buckets.`,
-	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
+	protoName:     "ExponentialHistogramDataPoint",
+	upstreamProto: "gootlpmetrics.ExponentialHistogramDataPoint",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",
@@ -553,9 +588,10 @@ var exponentialHistogramDataPoint = &messageStruct{
 }
 
 var bucketsValues = &messageStruct{
-	structName:     "ExponentialHistogramDataPointBuckets",
-	description:    "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
-	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
+	structName:    "ExponentialHistogramDataPointBuckets",
+	description:   "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
+	protoName:     "ExponentialHistogramDataPointBuckets",
+	upstreamProto: "gootlpmetrics.ExponentialHistogramDataPoint_Buckets",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Offset",
@@ -578,9 +614,10 @@ var summaryDataPointSlice = &messageSlice{
 }
 
 var summaryDataPoint = &messageStruct{
-	structName:     "SummaryDataPoint",
-	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
-	originFullName: "otlpmetrics.SummaryDataPoint",
+	structName:    "SummaryDataPoint",
+	description:   "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
+	protoName:     "SummaryDataPoint",
+	upstreamProto: "gootlpmetrics.SummaryDataPoint",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",
@@ -636,9 +673,10 @@ var quantileValuesSlice = &messageSlice{
 }
 
 var quantileValues = &messageStruct{
-	structName:     "SummaryDataPointValueAtQuantile",
-	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
-	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
+	structName:    "SummaryDataPointValueAtQuantile",
+	description:   "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
+	protoName:     "SummaryDataPointValueAtQuantile",
+	upstreamProto: "gootlpmetrics.SummaryDataPoint_ValueAtQuantile",
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "Quantile",
@@ -664,8 +702,8 @@ var exemplar = &messageStruct{
 	description: "// Exemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
 		"// for example the span and trace ID of the active span when the exemplar was recorded.",
-
-	originFullName: "otlpmetrics.Exemplar",
+	protoName:     "Exemplar",
+	upstreamProto: "gootlpmetrics.Exemplar",
 	fields: []Field{
 		&SliceField{
 			fieldName:   "FilteredAttributes",
@@ -699,16 +737,16 @@ var exemplar = &messageStruct{
 			},
 		},
 		&TypedField{
-			fieldName:       "SpanID",
-			originFieldName: "SpanId",
-			protoID:         4,
-			returnType:      spanIDType,
-		},
-		&TypedField{
 			fieldName:       "TraceID",
 			originFieldName: "TraceId",
 			protoID:         5,
 			returnType:      traceIDType,
+		},
+		&TypedField{
+			fieldName:       "SpanID",
+			originFieldName: "SpanId",
+			protoID:         4,
+			returnType:      spanIDType,
 		},
 	},
 }
@@ -716,7 +754,17 @@ var exemplar = &messageStruct{
 var aggregationTemporalityType = &TypedType{
 	structName:  "AggregationTemporality",
 	protoType:   proto.TypeEnum,
-	messageName: "otlpmetrics.AggregationTemporality",
-	defaultVal:  "otlpmetrics.AggregationTemporality(0)",
-	testVal:     "otlpmetrics.AggregationTemporality(1)",
+	messageName: "AggregationTemporality",
+	defaultVal:  "AggregationTemporality(0)",
+	testVal:     "AggregationTemporality(1)",
+}
+
+var aggregationTemporalityEnum = &proto.Enum{
+	Name:        "AggregationTemporality",
+	Description: "// AggregationTemporality defines how a metric aggregator reports aggregated values.\n// It describes how those values relate to the time interval over which they are aggregated.",
+	Fields: []*proto.EnumField{
+		{Name: "AGGREGATION_TEMPORALITY_UNSPECIFIED", Value: 0},
+		{Name: "AGGREGATION_TEMPORALITY_DELTA", Value: 1},
+		{Name: "AGGREGATION_TEMPORALITY_CUMULATIVE", Value: 2},
+	},
 }
