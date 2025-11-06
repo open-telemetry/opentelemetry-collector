@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 )
@@ -54,9 +53,13 @@ type PackageInfo struct {
 	testImports []string
 }
 
-var internalDirDeleted sync.Once
+// Path returns the package path for file generation.
+func (p *Package) Path() string {
+	return p.info.path
+}
 
-func deleteGeneratedFiles(dir string) error {
+// DeleteGeneratedFiles removes all generated files matching the pattern in the given directory.
+func DeleteGeneratedFiles(dir string) error {
 	matches, err := filepath.Glob(filepath.Join(dir, "generated_*.go"))
 	if err != nil {
 		return err
@@ -73,11 +76,6 @@ func deleteGeneratedFiles(dir string) error {
 
 // GenerateFiles generates files with the configured data structures for this Package.
 func (p *Package) GenerateFiles() error {
-	packageDir := filepath.Join("pdata", p.info.path)
-	if err := deleteGeneratedFiles(packageDir); err != nil {
-		return err
-	}
-
 	for _, s := range p.structs {
 		if s.getHasOnlyInternal() {
 			continue
@@ -106,14 +104,6 @@ func (p *Package) GenerateTestFiles() error {
 
 // GenerateInternalFiles generates files with internal structs for this Package.
 func (p *Package) GenerateInternalFiles() error {
-	var deleteErr error
-	internalDirDeleted.Do(func() {
-		deleteErr = deleteGeneratedFiles(filepath.Join("pdata", "internal"))
-	})
-	if deleteErr != nil {
-		return deleteErr
-	}
-
 	for _, s := range p.structs {
 		if !s.getHasWrapper() {
 			continue
