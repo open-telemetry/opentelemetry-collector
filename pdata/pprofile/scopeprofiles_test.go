@@ -39,7 +39,7 @@ func TestScopeProfilesSwitchDictionary(t *testing.T) {
 			scopeProfiles: func() ScopeProfiles {
 				s := NewScopeProfiles()
 				profile := s.Profiles().AppendEmpty()
-				profile.Sample().AppendEmpty().SetLinkIndex(1)
+				profile.Samples().AppendEmpty().SetLinkIndex(1)
 				return s
 			}(),
 
@@ -60,7 +60,7 @@ func TestScopeProfilesSwitchDictionary(t *testing.T) {
 			wantScopeProfiles: func() ScopeProfiles {
 				s := NewScopeProfiles()
 				profile := s.Profiles().AppendEmpty()
-				profile.Sample().AppendEmpty().SetLinkIndex(2)
+				profile.Samples().AppendEmpty().SetLinkIndex(2)
 				return s
 			}(),
 			wantDictionary: func() ProfilesDictionary {

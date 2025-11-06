@@ -98,60 +98,10 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid attribute index 1"),
 		},
 		{
-			name: "with an existing comment",
-			profile: func() Profile {
-				p := NewProfile()
-				p.CommentStrindices().Append(1)
-				return p
-			}(),
-
-			src: func() ProfilesDictionary {
-				d := NewProfilesDictionary()
-				d.StringTable().Append("", "test")
-				return d
-			}(),
-			dst: func() ProfilesDictionary {
-				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
-				return d
-			}(),
-
-			wantProfile: func() Profile {
-				p := NewProfile()
-				p.CommentStrindices().Append(2)
-				return p
-			}(),
-			wantDictionary: func() ProfilesDictionary {
-				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
-
-				return d
-			}(),
-		},
-		{
-			name: "with a comment index that does not match anything",
-			profile: func() Profile {
-				p := NewProfile()
-				p.CommentStrindices().Append(1)
-				return p
-			}(),
-
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
-
-			wantProfile: func() Profile {
-				p := NewProfile()
-				p.CommentStrindices().Append(1)
-				return p
-			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid comment index 1"),
-		},
-		{
 			name: "with a profile that has a sample",
 			profile: func() Profile {
 				p := NewProfile()
-				p.Sample().AppendEmpty().SetLinkIndex(1)
+				p.Samples().AppendEmpty().SetLinkIndex(1)
 				return p
 			}(),
 
@@ -171,7 +121,7 @@ func TestProfileSwitchDictionary(t *testing.T) {
 
 			wantProfile: func() Profile {
 				p := NewProfile()
-				p.Sample().AppendEmpty().SetLinkIndex(2)
+				p.Samples().AppendEmpty().SetLinkIndex(2)
 				return p
 			}(),
 			wantDictionary: func() ProfilesDictionary {

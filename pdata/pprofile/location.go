@@ -50,7 +50,7 @@ func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
 		ms.AttributeIndices().SetAt(i, idx)
 	}
 
-	for i, v := range ms.Line().All() {
+	for i, v := range ms.Lines().All() {
 		err := v.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch dictionary for line %d: %w", i, err)

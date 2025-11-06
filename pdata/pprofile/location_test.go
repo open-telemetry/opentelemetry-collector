@@ -214,7 +214,7 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			name: "with an existing line",
 			location: func() Location {
 				l := NewLocation()
-				l.Line().AppendEmpty().SetFunctionIndex(1)
+				l.Lines().AppendEmpty().SetFunctionIndex(1)
 				return l
 			}(),
 
@@ -239,7 +239,7 @@ func TestLocationSwitchDictionary(t *testing.T) {
 
 			wantLocation: func() Location {
 				l := NewLocation()
-				l.Line().AppendEmpty().SetFunctionIndex(2)
+				l.Lines().AppendEmpty().SetFunctionIndex(2)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {

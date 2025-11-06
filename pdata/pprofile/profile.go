@@ -25,19 +25,7 @@ func (ms Profile) switchDictionary(src, dst ProfilesDictionary) error {
 		ms.AttributeIndices().SetAt(i, idx)
 	}
 
-	for i, v := range ms.CommentStrindices().All() {
-		if src.StringTable().Len() < int(v) {
-			return fmt.Errorf("invalid comment index %d", v)
-		}
-
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(v)))
-		if err != nil {
-			return fmt.Errorf("couldn't set key: %w", err)
-		}
-		ms.CommentStrindices().SetAt(i, idx)
-	}
-
-	for i, v := range ms.Sample().All() {
+	for i, v := range ms.Samples().All() {
 		err := v.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("error switching dictionary for sample %d: %w", i, err)

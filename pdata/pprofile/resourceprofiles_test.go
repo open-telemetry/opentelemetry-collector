@@ -39,7 +39,7 @@ func TestResourceProfilesSwitchDictionary(t *testing.T) {
 			resourceProfiles: func() ResourceProfiles {
 				r := NewResourceProfiles()
 				profile := r.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-				profile.Sample().AppendEmpty().SetLinkIndex(1)
+				profile.Samples().AppendEmpty().SetLinkIndex(1)
 				return r
 			}(),
 
@@ -60,7 +60,7 @@ func TestResourceProfilesSwitchDictionary(t *testing.T) {
 			wantResourceProfiles: func() ResourceProfiles {
 				r := NewResourceProfiles()
 				profile := r.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-				profile.Sample().AppendEmpty().SetLinkIndex(2)
+				profile.Samples().AppendEmpty().SetLinkIndex(2)
 				return r
 			}(),
 			wantDictionary: func() ProfilesDictionary {
