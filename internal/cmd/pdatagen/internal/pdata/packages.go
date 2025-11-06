@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 )
@@ -53,37 +54,10 @@ type PackageInfo struct {
 	testImports []string
 }
 
-// CleanInternalGeneratedFiles removes all generated files from the shared pdata/internal directory.
-// This should be called once before any package generation begins.
-func CleanInternalGeneratedFiles() error {
-	internalDir := filepath.Join("pdata", "internal")
-	patterns := []string{
-		"generated_wrapper_*.go",
-		"generated_proto_*.go",
-		"generated_enum_*.go",
-	}
-	for _, pattern := range patterns {
-		if err := cleanGeneratedFilesInDir(internalDir, pattern); err != nil {
-			return fmt.Errorf("failed to clean %s in %s: %w", pattern, internalDir, err)
-		}
-	}
-	return nil
-}
+var internalDirDeleted sync.Once
 
-// CleanGeneratedFiles removes all previously generated files for this Package.
-// This ensures that stale generated files are removed before regeneration.
-func (p *Package) CleanGeneratedFiles() error {
-	// Clean generated files in package directory (pdata/<package_path>/)
-	packageDir := filepath.Join("pdata", p.info.path)
-	if err := cleanGeneratedFilesInDir(packageDir, "generated_*.go"); err != nil {
-		return fmt.Errorf("failed to clean generated files in %s: %w", packageDir, err)
-	}
-	return nil
-}
-
-// cleanGeneratedFilesInDir removes files matching the given pattern in the specified directory.
-func cleanGeneratedFilesInDir(dir, pattern string) error {
-	matches, err := filepath.Glob(filepath.Join(dir, pattern))
+func deleteGeneratedFiles(dir string) error {
+	matches, err := filepath.Glob(filepath.Join(dir, "generated_*.go"))
 	if err != nil {
 		return err
 	}
@@ -99,6 +73,11 @@ func cleanGeneratedFilesInDir(dir, pattern string) error {
 
 // GenerateFiles generates files with the configured data structures for this Package.
 func (p *Package) GenerateFiles() error {
+	packageDir := filepath.Join("pdata", p.info.path)
+	if err := deleteGeneratedFiles(packageDir); err != nil {
+		return err
+	}
+
 	for _, s := range p.structs {
 		if s.getHasOnlyInternal() {
 			continue
@@ -127,6 +106,14 @@ func (p *Package) GenerateTestFiles() error {
 
 // GenerateInternalFiles generates files with internal structs for this Package.
 func (p *Package) GenerateInternalFiles() error {
+	var deleteErr error
+	internalDirDeleted.Do(func() {
+		deleteErr = deleteGeneratedFiles(filepath.Join("pdata", "internal"))
+	})
+	if deleteErr != nil {
+		return deleteErr
+	}
+
 	for _, s := range p.structs {
 		if !s.getHasWrapper() {
 			continue

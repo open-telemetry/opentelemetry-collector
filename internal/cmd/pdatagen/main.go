@@ -25,17 +25,6 @@ func main() {
 	flag.Parse()
 
 	checkErr(os.Chdir(workdir))
-
-	// First, clean up all previously generated files to avoid stale code
-	// Clean the shared internal directory once
-	checkErr(pdata.CleanInternalGeneratedFiles())
-	
-	// Clean each package's directory
-	for _, fp := range pdata.AllPackages {
-		checkErr(fp.CleanGeneratedFiles())
-	}
-
-	// Then, generate all new files
 	for _, fp := range pdata.AllPackages {
 		checkErr(fp.GenerateFiles())
 		checkErr(fp.GenerateTestFiles())
