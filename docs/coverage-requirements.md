@@ -102,8 +102,8 @@ You can check your component's coverage requirements and actual coverage:
 make gotest-with-cover
 
 # Run the coverage validator
-cd cmd/checkcover
-go run . -c ../../coverage.txt -r ../.. -v
+cd internal/cmd/checkcover
+go run . -c ../../../coverage.txt -r ../../.. -v
 ```
 
 ### In CI
@@ -159,7 +159,7 @@ status:
 If you encounter issues with coverage validation:
 
 1. Check the [Component Stability](../../docs/component-stability.md) document
-2. Review the [checkcover README](../../cmd/checkcover/README.md)
+2. Review the [checkcover README](../../internal/cmd/checkcover/README.md)
 3. Ask in the #otel-collector Slack channel
 4. Open an issue on GitHub with the label `coverage`
 

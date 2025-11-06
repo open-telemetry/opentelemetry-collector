@@ -32,12 +32,12 @@ Created a new CLI tool that:
 
 Files:
 
-- `cmd/checkcover/main.go` - CLI entry point
-- `cmd/checkcover/validator.go` - Core logic
-- `cmd/checkcover/validator_test.go` - Tests
-- `cmd/checkcover/README.md` - Documentation
-- `cmd/checkcover/go.mod` - Dependencies
-- `cmd/checkcover/Makefile` - Build config
+- `internal/cmd/checkcover/main.go` - CLI entry point
+- `internal/cmd/checkcover/validator.go` - Core logic
+- `internal/cmd/checkcover/validator_test.go` - Tests
+- `internal/cmd/checkcover/README.md` - Documentation
+- `internal/cmd/checkcover/go.mod` - Dependencies
+- `internal/cmd/checkcover/Makefile` - Build config
 
 ### 4. CI Integration
 
@@ -83,8 +83,8 @@ status:
 ```bash
 # Locally
 make gotest-with-cover
-cd cmd/checkcover
-go run . -c ../../coverage.txt -r ../.. -v
+cd internal/cmd/checkcover
+go run . -c ../../../coverage.txt -r ../../.. -v
 
 # In CI (automatic)
 # Runs as part of test-coverage job
@@ -163,7 +163,7 @@ None. This is purely additive:
 
 ## Notes for Reviewers
 
-1. **checkcover tool**: Main implementation in `cmd/checkcover/`
+1. **checkcover tool**: Main implementation in `internal/cmd/checkcover/`
 2. **Metadata changes**: Simple addition of one field with validation
 3. **CI changes**: Single step added to existing workflow
 4. **Documentation**: Comprehensive guide for component authors

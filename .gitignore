@@ -2,6 +2,10 @@ bin/
 dist/
 /local
 
+# Compiled binaries
+cmd/checkcover/checkcover
+internal/cmd/checkcover/checkcover
+
 # GoLand IDEA
 /.idea/
 *.iml
