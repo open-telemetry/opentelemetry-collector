@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -30,6 +31,43 @@ var (
 
 	errFake = errors.New("errFake")
 )
+
+func TestExportTraceRetryDroppedMetric(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return experr.NewRetriesExhaustedErr(errFake)
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 7}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+	require.True(t, experr.IsRetriesExhaustedErr(sendErr))
+
+	wantAttrs := attribute.NewSet(attribute.String("exporter", exporterID.String()))
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterRetryDroppedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
 
 func TestExportTraceDataOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()

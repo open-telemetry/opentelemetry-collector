@@ -3,9 +3,7 @@
 
 package experr // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 
-import (
-	"errors"
-)
+import "errors"
 
 type shutdownErr struct {
 	err error
@@ -26,4 +24,25 @@ func (s shutdownErr) Unwrap() error {
 func IsShutdownErr(err error) bool {
 	var sdErr shutdownErr
 	return errors.As(err, &sdErr)
+}
+
+type retriesExhaustedErr struct {
+	err error
+}
+
+func NewRetriesExhaustedErr(err error) error {
+	return retriesExhaustedErr{err: err}
+}
+
+func (r retriesExhaustedErr) Error() string {
+	return "retries exhausted: " + r.err.Error()
+}
+
+func (r retriesExhaustedErr) Unwrap() error {
+	return r.err
+}
+
+func IsRetriesExhaustedErr(err error) bool {
+	var reErr retriesExhaustedErr
+	return errors.As(err, &reErr)
 }

@@ -22,3 +22,15 @@ func TestIsShutdownErr(t *testing.T) {
 	err = NewShutdownErr(err)
 	require.True(t, IsShutdownErr(err))
 }
+
+func TestNewRetriesExhaustedErr(t *testing.T) {
+	err := NewRetriesExhaustedErr(errors.New("another error"))
+	assert.Equal(t, "retries exhausted: another error", err.Error())
+}
+
+func TestIsRetriesExhaustedErr(t *testing.T) {
+	err := errors.New("testError")
+	require.False(t, IsRetriesExhaustedErr(err))
+	err = NewRetriesExhaustedErr(err)
+	require.True(t, IsRetriesExhaustedErr(err))
+}
