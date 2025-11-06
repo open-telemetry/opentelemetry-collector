@@ -64,9 +64,7 @@ type Config struct {
 	// The encoding to export telemetry (default: "proto")
 	Encoding EncodingType `mapstructure:"encoding"`
 
-	// MetadataKeys is a list of metadata keys that will be used to partition the data
-	// into batches if sending_queue is enabled with batching support. With batching enabled
-	// only these metadata keys are guaranteed to be propagated.
+	// MetadataKeys is a list of metadata keys that will be used to partition the datainto batches if sending_queue is enabled
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
