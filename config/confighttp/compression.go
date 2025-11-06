@@ -281,9 +281,9 @@ func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
 	encoding := r.Header.Get(headerContentEncoding)
 	// If no encoding or "identity", return original body unchanged
 	if encoding == "" || encoding == "identity" {
-		return nil, nil  // Signal: don't replace r.Body
+		return nil, nil // Signal: don't replace r.Body
 	}
-	
+
 	decoder, ok := d.decoders[encoding]
 	if !ok {
 		return nil, fmt.Errorf("unsupported %s: %s", headerContentEncoding, encoding)
