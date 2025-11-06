@@ -4,6 +4,7 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -50,6 +51,50 @@ type PackageInfo struct {
 	path        string
 	imports     []string
 	testImports []string
+}
+
+// CleanInternalGeneratedFiles removes all generated files from the shared pdata/internal directory.
+// This should be called once before any package generation begins.
+func CleanInternalGeneratedFiles() error {
+	internalDir := filepath.Join("pdata", "internal")
+	patterns := []string{
+		"generated_wrapper_*.go",
+		"generated_proto_*.go",
+		"generated_enum_*.go",
+	}
+	for _, pattern := range patterns {
+		if err := cleanGeneratedFilesInDir(internalDir, pattern); err != nil {
+			return fmt.Errorf("failed to clean %s in %s: %w", pattern, internalDir, err)
+		}
+	}
+	return nil
+}
+
+// CleanGeneratedFiles removes all previously generated files for this Package.
+// This ensures that stale generated files are removed before regeneration.
+func (p *Package) CleanGeneratedFiles() error {
+	// Clean generated files in package directory (pdata/<package_path>/)
+	packageDir := filepath.Join("pdata", p.info.path)
+	if err := cleanGeneratedFilesInDir(packageDir, "generated_*.go"); err != nil {
+		return fmt.Errorf("failed to clean generated files in %s: %w", packageDir, err)
+	}
+	return nil
+}
+
+// cleanGeneratedFilesInDir removes files matching the given pattern in the specified directory.
+func cleanGeneratedFilesInDir(dir, pattern string) error {
+	matches, err := filepath.Glob(filepath.Join(dir, pattern))
+	if err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		if err := os.Remove(match); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove %s: %w", match, err)
+		}
+	}
+
+	return nil
 }
 
 // GenerateFiles generates files with the configured data structures for this Package.
