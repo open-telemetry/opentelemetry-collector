@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otlphttpexporter
+package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 import (
 	"bytes"
