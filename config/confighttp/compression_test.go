@@ -418,9 +418,13 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create handler that echoes back the request body
+			// If there's an error reading, it returns 500 which the test will catch
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				if err != nil {
+					http.Error(w, "failed to read body", http.StatusInternalServerError)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write(body)
 			})

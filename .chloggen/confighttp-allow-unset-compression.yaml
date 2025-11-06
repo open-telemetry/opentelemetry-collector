@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: config/confighttp
+component: pkg/config/confighttp
 note: Allow unset Content-Encoding through when middleware is disabled
 
 # One or more tracking issues or pull requests related to the change
