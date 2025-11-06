@@ -113,3 +113,19 @@ metrics:
 | string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
 | string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
 | string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+
+## Entities
+
+The following entities are defined for this component:
+
+### test.entity
+
+A test entity.
+
+**Stability:** stable
+
+**Identity Attributes:**
+- `string.resource.attr`
+
+**Description Attributes:**
+- `map.resource.attr`

@@ -34,7 +34,7 @@ var profilesRequestJSON = []byte(`
 						"profiles": [
 							{
 								"sampleType": {},
-								"sample": [
+								"samples": [
 									{
 										"stackIndex": 42
 									}
@@ -52,14 +52,14 @@ var profilesRequestJSON = []byte(`
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
 	assert.Equal(t, 0, tr.Profiles().SampleCount())
-	tr.Profiles().ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample().AppendEmpty()
+	tr.Profiles().ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
 	assert.Equal(t, 1, tr.Profiles().SampleCount())
 }
 
 func TestRequestJSON(t *testing.T) {
 	tr := NewExportRequest()
 	require.NoError(t, tr.UnmarshalJSON(profilesRequestJSON))
-	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Sample().At(0).StackIndex())
+	assert.Equal(t, int32(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Samples().At(0).StackIndex())
 
 	got, err := tr.MarshalJSON()
 	require.NoError(t, err)
