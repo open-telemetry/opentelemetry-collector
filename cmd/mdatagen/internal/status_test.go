@@ -90,3 +90,72 @@ func TestSortedDistributions(t *testing.T) {
 		})
 	}
 }
+
+func TestStatus_ValidateCoverageMinimum(t *testing.T) {
+	tests := []struct {
+		name        string
+		coverage    int
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "valid 0",
+			coverage:    0,
+			expectError: false,
+		},
+		{
+			name:        "valid 50",
+			coverage:    50,
+			expectError: false,
+		},
+		{
+			name:        "valid 80",
+			coverage:    80,
+			expectError: false,
+		},
+		{
+			name:        "valid 100",
+			coverage:    100,
+			expectError: false,
+		},
+		{
+			name:        "invalid -1",
+			coverage:    -1,
+			expectError: true,
+			errorMsg:    "coverage_minimum must be between 0 and 100",
+		},
+		{
+			name:        "invalid -10",
+			coverage:    -10,
+			expectError: true,
+			errorMsg:    "coverage_minimum must be between 0 and 100",
+		},
+		{
+			name:        "invalid 101",
+			coverage:    101,
+			expectError: true,
+			errorMsg:    "coverage_minimum must be between 0 and 100",
+		},
+		{
+			name:        "invalid 150",
+			coverage:    150,
+			expectError: true,
+			errorMsg:    "coverage_minimum must be between 0 and 100",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Status{
+				CoverageMinimum: tt.coverage,
+			}
+			err := s.validateCoverageMinimum()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
