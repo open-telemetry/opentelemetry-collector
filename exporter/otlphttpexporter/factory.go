@@ -89,6 +89,13 @@ func createTraces(
 		return nil, err
 	}
 
+	qbs := xexporterhelper.NewTracesQueueBatchSettings()
+	if len(oCfg.MetadataKeys) > 0 {
+		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
+	}
+
 	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
@@ -96,7 +103,7 @@ func createTraces(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		xexporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
 }
 
 func createMetrics(
@@ -115,6 +122,13 @@ func createMetrics(
 		return nil, err
 	}
 
+	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
+	if len(oCfg.MetadataKeys) > 0 {
+		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
+	}
+
 	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
@@ -122,7 +136,7 @@ func createMetrics(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		xexporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
 }
 
 func createLogs(
@@ -140,6 +154,13 @@ func createLogs(
 		return nil, err
 	}
 
+	qbs := xexporterhelper.NewLogsQueueBatchSettings()
+	if len(oCfg.MetadataKeys) > 0 {
+		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
+	}
+
 	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
@@ -147,7 +168,7 @@ func createLogs(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		xexporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
 }
 
 func createProfiles(
