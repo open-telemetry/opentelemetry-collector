@@ -128,7 +128,7 @@ func TestProfile_OriginalPayloadFormat(t *testing.T) {
 
 func TestProfile_OriginalPayload(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, nil, ms.OriginalPayload())
+	assert.Equal(t, 0, len(ms.OriginalPayload()))
 	ms.SetOriginalPayload([]byte{1, 2, 3})
 	assert.Equal(t, []byte{1, 2, 3}, ms.OriginalPayload())
 	sharedState := internal.NewState()
