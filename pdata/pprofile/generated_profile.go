@@ -134,9 +134,15 @@ func (ms Profile) SetOriginalPayloadFormat(v string) {
 	ms.orig.OriginalPayloadFormat = v
 }
 
-// OriginalPayload returns the OriginalPayload associated with this Profile.
-func (ms Profile) OriginalPayload() pcommon.ByteSlice {
-	return pcommon.ByteSlice(internal.NewByteSliceWrapper(&ms.orig.OriginalPayload, ms.state))
+// OriginalPayload returns the originalpayload associated with this Profile.
+func (ms Profile) OriginalPayload() []byte {
+	return ms.orig.OriginalPayload
+}
+
+// SetOriginalPayload replaces the originalpayload associated with this Profile.
+func (ms Profile) SetOriginalPayload(v []byte) {
+	ms.state.AssertMutable()
+	ms.orig.OriginalPayload = v
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Profile.

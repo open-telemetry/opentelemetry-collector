@@ -128,9 +128,12 @@ func TestProfile_OriginalPayloadFormat(t *testing.T) {
 
 func TestProfile_OriginalPayload(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, pcommon.NewByteSlice(), ms.OriginalPayload())
-	ms.orig.OriginalPayload = internal.GenTestByteSlice()
-	assert.Equal(t, pcommon.ByteSlice(internal.GenTestByteSliceWrapper()), ms.OriginalPayload())
+	assert.Equal(t, nil, ms.OriginalPayload())
+	ms.SetOriginalPayload([]byte{1, 2, 3})
+	assert.Equal(t, []byte{1, 2, 3}, ms.OriginalPayload())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newProfile(internal.NewProfile(), sharedState).SetOriginalPayload([]byte{1, 2, 3}) })
 }
 
 func TestProfile_AttributeIndices(t *testing.T) {
