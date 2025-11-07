@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -49,6 +50,16 @@ func TestCreateMetrics(t *testing.T) {
 	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
+
+	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
+	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
+	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfgWithKeys.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.Enabled = true
+
+	oexpWithKeys, err := factory.CreateMetrics(context.Background(), set, cfgWithKeys)
+	require.NoError(t, err)
+	require.NotNil(t, oexpWithKeys)
 }
 
 func clientConfig(endpoint string, headers configopaque.MapList, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
@@ -159,6 +170,14 @@ func TestCreateTraces(t *testing.T) {
 				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
 			},
 		},
+		{
+			name: "WithMetadataKeys",
+			config: &Config{
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
+				MetadataKeys: []string{"key1", "key2"},
+				QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,6 +216,16 @@ func TestCreateLogs(t *testing.T) {
 	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
+
+	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
+	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
+	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfgWithKeys.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.Enabled = true
+
+	oexpWithKeys, err := factory.CreateLogs(context.Background(), set, cfgWithKeys)
+	require.NoError(t, err)
+	require.NotNil(t, oexpWithKeys)
 }
 
 func TestCreateProfiles(t *testing.T) {
