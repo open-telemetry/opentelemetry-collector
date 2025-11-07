@@ -286,12 +286,25 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 func (md *Metadata) validateFeatureGates() error {
 	var errs error
 	seen := make(map[FeatureGateID]bool)
+	idRegexp := regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+
+	// Validate that feature gates are sorted by ID
+	if !slices.IsSortedFunc(md.FeatureGates, func(a, b FeatureGate) int {
+		return strings.Compare(string(a.ID), string(b.ID))
+	}) {
+		errs = errors.Join(errs, errors.New("feature gates must be sorted by ID"))
+	}
 
 	for i, gate := range md.FeatureGates {
 		// Validate gate ID is not empty
 		if string(gate.ID) == "" {
 			errs = errors.Join(errs, fmt.Errorf("feature gate at index %d: ID cannot be empty", i))
 			continue
+		}
+
+		// Validate ID follows the allowed character pattern
+		if !idRegexp.MatchString(string(gate.ID)) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
 		}
 
 		// Check for duplicate IDs
@@ -304,6 +317,11 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate gate has required fields
 		if gate.Description == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": description is required`, gate.ID))
+		}
+
+		// Validate that each feature gate has a reference link
+		if gate.ReferenceURL == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
 		}
 
 		// Validate stage is one of the allowed values

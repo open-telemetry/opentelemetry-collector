@@ -343,11 +343,12 @@ func TestValidateFeatureGates(t *testing.T) {
 		{
 			name: "valid stable gate with to_version",
 			featureGate: FeatureGate{
-				ID:          "component.stable",
-				Description: "Stable feature gate",
-				Stage:       FeatureGateStageStable,
-				FromVersion: "v0.90.0",
-				ToVersion:   "v0.95.0",
+				ID:           "component.stable",
+				Description:  "Stable feature gate",
+				Stage:        FeatureGateStageStable,
+				FromVersion:  "v0.90.0",
+				ToVersion:    "v0.95.0",
+				ReferenceURL: "https://example.com",
 			},
 		},
 		{
@@ -410,6 +411,27 @@ func TestValidateFeatureGates(t *testing.T) {
 			},
 			wantErr: `to_version is required for deprecated stage gates`,
 		},
+		{
+			name: "missing reference_url",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `reference_url is required`,
+		},
+		{
+			name: "invalid characters in ID",
+			featureGate: FeatureGate{
+				ID:           "component.feature@invalid",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+			wantErr: `ID contains invalid characters`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -460,4 +482,26 @@ func TestValidateFeatureGatesDuplicateID(t *testing.T) {
 	err := md.validateFeatureGates()
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "duplicate ID")
+}
+
+func TestValidateFeatureGatesNotSorted(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: []FeatureGate{
+			{
+				ID:           "component.zebra",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				ReferenceURL: "https://example.com",
+			},
+			{
+				ID:           "component.alpha",
+				Description:  "Another feature",
+				Stage:        FeatureGateStageAlpha,
+				ReferenceURL: "https://example.com",
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "feature gates must be sorted by ID")
 }
