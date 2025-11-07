@@ -47,7 +47,7 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
-				SemConvVersion:       "1.9.0",
+				SemConvVersion:       "1.37.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
@@ -253,6 +253,21 @@ func TestLoadMetadata(t *testing.T) {
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.cpu.time": {
+						Signal: Signal{
+							Enabled:               true,
+							Stability:             Stability{Level: component.StabilityLevelBeta},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -523,6 +538,11 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/invalid_metric_stability.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' decoding failed due to the following error(s):\n\n'level' unsupported stability level: \"development42\"",
+		},
+		{
+			name:    "testdata/invalid_metric_semconvref.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
 			name:    "testdata/no_metric_stability.yaml",
