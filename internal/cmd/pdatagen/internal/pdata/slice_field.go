@@ -66,7 +66,7 @@ func (sf *SliceField) toProtoField(ms *messageStruct) proto.FieldInterface {
 		Name:              sf.fieldName,
 		MessageName:       sf.returnSlice.getElementOriginName(),
 		ParentMessageName: ms.protoName,
-		Repeated:          sf.protoType != proto.TypeBytes,
+		Repeated:          true,
 		Nullable:          sf.returnSlice.getElementNullable(),
 	}
 }
