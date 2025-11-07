@@ -244,6 +244,9 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		if dec == "deflate" {
 			enabled["deflate"] = availableDecoders["zlib"]
 		}
+		if dec == "" {
+			enabled["identity"] = availableDecoders[""]
+		}
 	}
 
 	d := &decompressor{
@@ -278,11 +281,10 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
-	encoding := r.Header.Get(headerContentEncoding)
-	// If no encoding or "identity", return original body unchanged
-	if encoding == "" || encoding == "identity" {
+	if len(d.decoders) == 0 {
 		return nil, nil // Signal: don't replace r.Body
 	}
+	encoding := r.Header.Get(headerContentEncoding)
 
 	decoder, ok := d.decoders[encoding]
 	if !ok {

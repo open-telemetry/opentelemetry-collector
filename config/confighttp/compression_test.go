@@ -392,26 +392,79 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 	testBody := []byte(`{"message": "test data"}`)
 
 	tests := []struct {
-		name            string
-		contentEncoding string // empty string means no header
-		expectedStatus  int
-		expectedError   string
+		name                  string
+		compressionAlgorithms []string
+		contentEncoding       string // empty string means no header
+		expectedStatus        int
+		expectedError         string
+		compressionBypassed   bool // If true, don't compress the body (simulates bypass behavior)
 	}{
+		// Case 1: Empty array should bypass decompression
 		{
-			name:            "NoContentEncodingHeader",
-			contentEncoding: "",
-			expectedStatus:  http.StatusOK,
+			name:                  "EmptyArray_NoContentEncoding_Accepted",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "",
+			expectedStatus:        http.StatusOK,
 		},
 		{
-			name:            "IdentityEncoding",
-			contentEncoding: "identity",
-			expectedStatus:  http.StatusOK,
+			name:                  "EmptyArray_Identity_Accepted",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusOK,
 		},
 		{
-			name:            "GzipEncodingRejected",
-			contentEncoding: "gzip",
-			expectedStatus:  http.StatusBadRequest,
-			expectedError:   "unsupported Content-Encoding: gzip",
+			name:                  "EmptyArray_Gzip_PassedThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "gzip",
+			expectedStatus:        http.StatusOK,
+			compressionBypassed:   true, // Empty array bypasses decompression
+		},
+
+		{
+			name:                  "EmptyArray_RandomEncoding_Accepted",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "randomstuff",
+			expectedStatus:        http.StatusOK,
+		},
+		// Case 2: Explicit list with only compressed formats should reject uncompressed
+		{
+			name:                  "OnlyZstd_NoContentEncoding_Rejected",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		{
+			name:                  "OnlyZstd_Zstd_Accepted",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "zstd",
+			expectedStatus:        http.StatusOK,
+		},
+		{
+			name:                  "OnlyZstd_GzipContentEncoding_Rejected",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "gzip",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		// Case 3: Explicit list including empty string should accept uncompressed
+		{
+			name:                  "WithEmptyString_NoContentEncoding_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "",
+			expectedStatus:        http.StatusOK,
+		},
+		{
+			name:                  "WithEmptyString_Identity_Accepted",
+			compressionAlgorithms: []string{"", "gzip"},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusOK,
+		},
+		{
+			name:                  "WithEmptyString_Gzip_Accepted",
+			compressionAlgorithms: []string{"", "gzip"},
+			contentEncoding:       "gzip",
+			expectedStatus:        http.StatusOK,
 		},
 	}
 
@@ -429,11 +482,10 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 				_, _ = w.Write(body)
 			})
 
-			// Create ServerConfig with empty CompressionAlgorithms
-			// This simulates the configuration used when users want to disable automatic decompression
+			// Create ServerConfig with the specified CompressionAlgorithms
 			serverConfig := &ServerConfig{
 				Endpoint:              "localhost:0",
-				CompressionAlgorithms: []string{}, // Empty array - should still allow uncompressed
+				CompressionAlgorithms: tt.compressionAlgorithms,
 			}
 
 			srv, err := serverConfig.ToServer(
@@ -448,8 +500,19 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			testSrv := httptest.NewServer(srv.Handler)
 			defer testSrv.Close()
 
+			// Compress the body if needed for the test
+			requestBody := testBody
+			if !tt.compressionBypassed && tt.expectedStatus == http.StatusOK {
+				switch tt.contentEncoding {
+				case "gzip":
+					requestBody = compressGzip(t, testBody).Bytes()
+				case "zstd":
+					requestBody = compressZstd(t, testBody).Bytes()
+				}
+			}
+
 			// Create request
-			req, err := http.NewRequest(http.MethodPost, testSrv.URL, bytes.NewReader(testBody))
+			req, err := http.NewRequest(http.MethodPost, testSrv.URL, bytes.NewReader(requestBody))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
