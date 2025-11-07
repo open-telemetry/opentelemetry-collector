@@ -44,11 +44,10 @@ func TestMetrics_CopyTo(t *testing.T) {
 func TestMetrics_ResourceMetrics(t *testing.T) {
 	ms := NewMetrics()
 	assert.Equal(t, NewResourceMetricsSlice(), ms.ResourceMetrics())
-	ms.getOrig().ResourceMetrics = internal.GenTestResourceMetricsSlice()
+	ms.getOrig().ResourceMetrics = internal.GenTestResourceMetricsPtrSlice()
 	assert.Equal(t, generateTestResourceMetricsSlice(), ms.ResourceMetrics())
 }
 
 func generateTestMetrics() Metrics {
-	ms := newMetrics(internal.GenTestExportMetricsServiceRequest(), internal.NewState())
-	return ms
+	return newMetrics(internal.GenTestExportMetricsServiceRequest(), internal.NewState())
 }

@@ -8,7 +8,6 @@ package plog
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +19,11 @@ import (
 // Must use NewScopeLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeLogs struct {
-	orig  *otlplogs.ScopeLogs
+	orig  *internal.ScopeLogs
 	state *internal.State
 }
 
-func newScopeLogs(orig *otlplogs.ScopeLogs, state *internal.State) ScopeLogs {
+func newScopeLogs(orig *internal.ScopeLogs, state *internal.State) ScopeLogs {
 	return ScopeLogs{orig: orig, state: state}
 }
 

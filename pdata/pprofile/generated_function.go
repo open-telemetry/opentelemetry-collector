@@ -8,7 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.
@@ -19,11 +18,11 @@ import (
 // Must use NewFunction function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Function struct {
-	orig  *otlpprofiles.Function
+	orig  *internal.Function
 	state *internal.State
 }
 
-func newFunction(orig *otlpprofiles.Function, state *internal.State) Function {
+func newFunction(orig *internal.Function, state *internal.State) Function {
 	return Function{orig: orig, state: state}
 }
 

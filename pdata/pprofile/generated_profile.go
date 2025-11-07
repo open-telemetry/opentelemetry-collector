@@ -8,8 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +19,11 @@ import (
 // Must use NewProfile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Profile struct {
-	orig  *otlpprofiles.Profile
+	orig  *internal.Profile
 	state *internal.State
 }
 
-func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
+func newProfile(orig *internal.Profile, state *internal.State) Profile {
 	return Profile{orig: orig, state: state}
 }
 
@@ -55,9 +53,9 @@ func (ms Profile) SampleType() ValueType {
 	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
-// Sample returns the Sample associated with this Profile.
-func (ms Profile) Sample() SampleSlice {
-	return newSampleSlice(&ms.orig.Sample, ms.state)
+// Samples returns the Samples associated with this Profile.
+func (ms Profile) Samples() SampleSlice {
+	return newSampleSlice(&ms.orig.Samples, ms.state)
 }
 
 // Time returns the time associated with this Profile.
@@ -98,11 +96,6 @@ func (ms Profile) SetPeriod(v int64) {
 	ms.orig.Period = v
 }
 
-// CommentStrindices returns the CommentStrindices associated with this Profile.
-func (ms Profile) CommentStrindices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.CommentStrindices, ms.state))
-}
-
 // ProfileID returns the profileid associated with this Profile.
 func (ms Profile) ProfileID() ProfileID {
 	return ProfileID(ms.orig.ProfileId)
@@ -111,7 +104,7 @@ func (ms Profile) ProfileID() ProfileID {
 // SetProfileID replaces the profileid associated with this Profile.
 func (ms Profile) SetProfileID(v ProfileID) {
 	ms.state.AssertMutable()
-	ms.orig.ProfileId = data.ProfileID(v)
+	ms.orig.ProfileId = internal.ProfileID(v)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Profile.

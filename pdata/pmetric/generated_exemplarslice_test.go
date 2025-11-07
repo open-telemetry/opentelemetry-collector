@@ -12,13 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{}, internal.NewState())
+	es = newExemplarSlice(&[]internal.Exemplar{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExemplar()
@@ -35,7 +34,7 @@ func TestExemplarSlice(t *testing.T) {
 func TestExemplarSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newExemplarSlice(&[]otlpmetrics.Exemplar{}, sharedState)
+	es := newExemplarSlice(&[]internal.Exemplar{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

@@ -127,7 +127,7 @@ func TestConsumeRefused(t *testing.T) {
 				consumer1 := obsconsumer.NewProfiles(mockConsumer, receivedSettings)
 				consumer2 := obsconsumer.NewProfiles(consumer1, producedSettings)
 				pd := pprofile.NewProfiles()
-				pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample().AppendEmpty()
+				pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
 				return consumer2.ConsumeProfiles(ctx, pd)
 			},
 		},

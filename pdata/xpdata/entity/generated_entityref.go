@@ -8,7 +8,6 @@ package entity
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -19,7 +18,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type EntityRef internal.EntityRefWrapper
 
-func newEntityRef(orig *otlpcommon.EntityRef, state *internal.State) EntityRef {
+func newEntityRef(orig *internal.EntityRef, state *internal.State) EntityRef {
 	return EntityRef(internal.NewEntityRefWrapper(orig, state))
 }
 
@@ -82,7 +81,7 @@ func (ms EntityRef) CopyTo(dest EntityRef) {
 	internal.CopyEntityRef(dest.getOrig(), ms.getOrig())
 }
 
-func (ms EntityRef) getOrig() *otlpcommon.EntityRef {
+func (ms EntityRef) getOrig() *internal.EntityRef {
 	return internal.GetEntityRefOrig(internal.EntityRefWrapper(ms))
 }
 

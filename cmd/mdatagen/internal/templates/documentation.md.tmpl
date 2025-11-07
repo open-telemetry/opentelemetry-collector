@@ -212,6 +212,43 @@ events:
 
 {{- end }}
 
+{{- if .Entities }}
+
+## Entities
+
+The following entities are defined for this component:
+
+{{- range $entity := .Entities }}
+
+### {{ $entity.Type }}
+
+{{ $entity.Brief }}
+
+{{- if $entity.Stability }}
+
+**Stability:** {{ $entity.Stability }}
+{{- end }}
+
+{{- if $entity.Identity }}
+
+**Identity Attributes:**
+{{- range $entity.Identity }}
+- `{{ .Ref }}`
+{{- end }}
+{{- end }}
+
+{{- if $entity.Description }}
+
+**Description Attributes:**
+{{- range $entity.Description }}
+- `{{ .Ref }}`
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- end }}
+
 {{- if .Telemetry.Metrics }}
 
 ## Internal Telemetry

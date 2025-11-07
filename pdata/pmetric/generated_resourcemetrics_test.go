@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,13 +46,13 @@ func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, pcommon.NewResource(), ms.Resource())
 	ms.orig.Resource = *internal.GenTestResource()
-	assert.Equal(t, pcommon.Resource(internal.NewResourceWrapper(internal.GenTestResource(), ms.state)), ms.Resource())
+	assert.Equal(t, pcommon.Resource(internal.GenTestResourceWrapper()), ms.Resource())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
-	ms.orig.ScopeMetrics = internal.GenTestScopeMetricsSlice()
+	ms.orig.ScopeMetrics = internal.GenTestScopeMetricsPtrSlice()
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
@@ -64,10 +63,9 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, sharedState).SetSchemaUrl("test_schemaurl") })
+	assert.Panics(t, func() { newResourceMetrics(internal.NewResourceMetrics(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	ms := newResourceMetrics(internal.GenTestResourceMetrics(), internal.NewState())
-	return ms
+	return newResourceMetrics(internal.GenTestResourceMetrics(), internal.NewState())
 }

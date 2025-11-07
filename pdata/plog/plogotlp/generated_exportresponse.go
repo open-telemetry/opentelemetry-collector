@@ -8,7 +8,6 @@ package plogotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportResponse function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportResponse struct {
-	orig  *otlpcollectorlogs.ExportLogsServiceResponse
+	orig  *internal.ExportLogsServiceResponse
 	state *internal.State
 }
 
-func newExportResponse(orig *otlpcollectorlogs.ExportLogsServiceResponse, state *internal.State) ExportResponse {
+func newExportResponse(orig *internal.ExportLogsServiceResponse, state *internal.State) ExportResponse {
 	return ExportResponse{orig: orig, state: state}
 }
 

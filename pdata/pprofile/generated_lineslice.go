@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // LineSlice logically represents a slice of Line.
@@ -22,18 +21,18 @@ import (
 // Must use NewLineSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LineSlice struct {
-	orig  *[]*otlpprofiles.Line
+	orig  *[]*internal.Line
 	state *internal.State
 }
 
-func newLineSlice(orig *[]*otlpprofiles.Line, state *internal.State) LineSlice {
+func newLineSlice(orig *[]*internal.Line, state *internal.State) LineSlice {
 	return LineSlice{orig: orig, state: state}
 }
 
 // NewLineSlice creates a LineSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLineSlice() LineSlice {
-	orig := []*otlpprofiles.Line(nil)
+	orig := []*internal.Line(nil)
 	return newLineSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es LineSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Line, len(*es.orig), newCap)
+	newOrig := make([]*internal.Line, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es LineSlice) CopyTo(dest LineSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyLineSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLinePtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Line elements within LineSlice given the

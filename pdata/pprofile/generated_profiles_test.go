@@ -44,7 +44,7 @@ func TestProfiles_CopyTo(t *testing.T) {
 func TestProfiles_ResourceProfiles(t *testing.T) {
 	ms := NewProfiles()
 	assert.Equal(t, NewResourceProfilesSlice(), ms.ResourceProfiles())
-	ms.getOrig().ResourceProfiles = internal.GenTestResourceProfilesSlice()
+	ms.getOrig().ResourceProfiles = internal.GenTestResourceProfilesPtrSlice()
 	assert.Equal(t, generateTestResourceProfilesSlice(), ms.ResourceProfiles())
 }
 
@@ -56,6 +56,5 @@ func TestProfiles_Dictionary(t *testing.T) {
 }
 
 func generateTestProfiles() Profiles {
-	ms := newProfiles(internal.GenTestExportProfilesServiceRequest(), internal.NewState())
-	return ms
+	return newProfiles(internal.GenTestExportProfilesServiceRequest(), internal.NewState())
 }

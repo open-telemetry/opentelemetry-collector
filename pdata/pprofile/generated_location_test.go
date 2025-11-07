@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -50,7 +49,7 @@ func TestLocation_MappingIndex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.MappingIndex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, sharedState).SetMappingIndex(int32(13)) })
+	assert.Panics(t, func() { newLocation(internal.NewLocation(), sharedState).SetMappingIndex(int32(13)) })
 }
 
 func TestLocation_Address(t *testing.T) {
@@ -60,14 +59,14 @@ func TestLocation_Address(t *testing.T) {
 	assert.Equal(t, uint64(13), ms.Address())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, sharedState).SetAddress(uint64(13)) })
+	assert.Panics(t, func() { newLocation(internal.NewLocation(), sharedState).SetAddress(uint64(13)) })
 }
 
-func TestLocation_Line(t *testing.T) {
+func TestLocation_Lines(t *testing.T) {
 	ms := NewLocation()
-	assert.Equal(t, NewLineSlice(), ms.Line())
-	ms.orig.Line = internal.GenTestLineSlice()
-	assert.Equal(t, generateTestLineSlice(), ms.Line())
+	assert.Equal(t, NewLineSlice(), ms.Lines())
+	ms.orig.Lines = internal.GenTestLinePtrSlice()
+	assert.Equal(t, generateTestLineSlice(), ms.Lines())
 }
 
 func TestLocation_AttributeIndices(t *testing.T) {
@@ -78,6 +77,5 @@ func TestLocation_AttributeIndices(t *testing.T) {
 }
 
 func generateTestLocation() Location {
-	ms := newLocation(internal.GenTestLocation(), internal.NewState())
-	return ms
+	return newLocation(internal.GenTestLocation(), internal.NewState())
 }
