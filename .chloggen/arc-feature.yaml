@@ -1,0 +1,32 @@
+change_type: enhancement
+component: pkg/exporterhelper
+note: >
+  Add Adaptive Request Concurrency (ARC) to exporterhelper: a controller that
+  dynamically adjusts exporter concurrency based on observed RTT and
+  backpressure signals. Integrates with the queue/batch send path and exposes
+  new telemetry. Disabled by default; no behavior change unless enabled.
+issues: [14080]
+subtext: |
+  Configuration (exporterhelper / queue-batch settings):
+    - enabled: turn ARC on/off (default: false)
+    - initial_concurrency: starting permits (default: 1)
+    - max_concurrency: upper bound (default: 200)
+    - decrease_ratio: multiplicative decrease factor on pressure (default: 0.9)
+    - ewma_alpha: smoothing for RTT EWMA (default: 0.4)
+    - rtt_deviation_scale: N·σ spike threshold for decrease (default: 2.5)
+
+  Telemetry (new metrics):
+    - otelcol_exporter_arc_acquire_wait_ms (histogram; attrs: exporter, data_type)
+    - otelcol_exporter_arc_rtt_ms (histogram; attrs: exporter, data_type)
+    - otelcol_exporter_arc_failures (sum, monotonic; attrs: exporter, data_type)
+    - otelcol_exporter_arc_backoff_events (sum, monotonic; attrs: exporter, data_type)
+    - otelcol_exporter_arc_limit_changes (sum, monotonic; attrs: exporter, data_type, direction=up|down)
+    - otelcol_exporter_arc_limit (async gauge; attrs: exporter, data_type)
+    - otelcol_exporter_arc_permits_in_use (async gauge; attrs: exporter, data_type)
+
+  Notes:
+    - ARC increases concurrency additively and decreases multiplicatively on
+      backpressure or RTT spikes (mean + rtt_deviation_scale·σ).
+    - Direction attribute values: "up", "down".
+change_logs: [user]
+

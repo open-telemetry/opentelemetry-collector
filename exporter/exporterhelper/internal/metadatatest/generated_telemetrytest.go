@@ -6,11 +6,116 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 )
+
+func AssertEqualExporterArcAcquireWaitMs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_acquire_wait_ms",
+		Description: "Time a worker waited to acquire an ARC permit. [Alpha]",
+		Unit:        "ms",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_acquire_wait_ms")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcBackoffEvents(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_backoff_events",
+		Description: "Number of ARC backoff (shrink) events triggered by error or RTT signal. [Alpha]",
+		Unit:        "{events}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_backoff_events")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcFailures(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_failures",
+		Description: "Number of requests considered failures by ARC (feeds adaptive shrink). [Alpha]",
+		Unit:        "{requests}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_failures")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcLimit(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_limit",
+		Description: "Current ARC dynamic concurrency limit. [Alpha]",
+		Unit:        "{permits}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_limit")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcLimitChanges(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_limit_changes",
+		Description: "Number of times ARC changed its concurrency limit. [Alpha]",
+		Unit:        "{events}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_limit_changes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcPermitsInUse(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_permits_in_use",
+		Description: "Number of permits currently acquired. [Alpha]",
+		Unit:        "{permits}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_permits_in_use")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterArcRttMs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_arc_rtt_ms",
+		Description: "Request round-trip-time measured by ARC (from permit acquire to release). [Alpha]",
+		Unit:        "ms",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_arc_rtt_ms")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
 
 func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{

@@ -6,6 +6,68 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_arc_acquire_wait_ms
+
+Time a worker waited to acquire an ARC permit. [Alpha]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Alpha |
+
+### otelcol_exporter_arc_backoff_events
+
+Number of ARC backoff (shrink) events triggered by error or RTT signal. [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {events} | Sum | Int | true | Alpha |
+
+### otelcol_exporter_arc_failures
+
+Number of requests considered failures by ARC (feeds adaptive shrink). [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {requests} | Sum | Int | true | Alpha |
+
+### otelcol_exporter_arc_limit
+
+Current ARC dynamic concurrency limit. [Alpha]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {permits} | Gauge | Int | Alpha |
+
+### otelcol_exporter_arc_limit_changes
+
+Number of times ARC changed its concurrency limit. [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {events} | Sum | Int | true | Alpha |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | up or down | Str: ``up``, ``down`` |
+
+### otelcol_exporter_arc_permits_in_use
+
+Number of permits currently acquired. [Alpha]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {permits} | Gauge | Int | Alpha |
+
+### otelcol_exporter_arc_rtt_ms
+
+Request round-trip-time measured by ARC (from permit acquire to release). [Alpha]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Alpha |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [Alpha]

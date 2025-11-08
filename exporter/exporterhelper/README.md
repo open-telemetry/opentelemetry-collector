@@ -29,6 +29,7 @@ The following configuration options can be modified:
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
   - `batch`: see below.
+  - `arc`: see below.
 
 #### Sending queue batch settings
 
@@ -50,6 +51,19 @@ Available `batch::sizer` options:
 
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
+
+#### Sending queue Adaptive Concurrency Limiter (ARC) Settings
+
+The Adaptive Concurrency Limiter (ARC) dynamically adjusts the number of concurrent requests (`num_consumers`) based on observed RTTs and backpressure signals. It aims to maximize throughput while minimizing errors and latency. It is disabled by default.
+
+- `arc`
+  - `enabled` (default = false): Set to `true` to enable ARC.
+  - `initial_limit` (default = 1): The starting concurrency limit.
+  - `max_concurrency` (default = 200): The maximum number of concurrent requests ARC will allow.
+  - `decrease_ratio` (default = 0.9): The multiplicative factor to apply when decreasing the limit (e.g., 0.9 = 10% decrease).
+  - `ewma_alpha` (default = 0.4): The smoothing factor for the EWMA (Exponentially Weighted Moving Average) of RTTs.
+  - `deviation_scale` (default = 2.5): The number of standard deviations from the mean RTT to tolerate before triggering a backoff.
+
 ### Timeout
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend

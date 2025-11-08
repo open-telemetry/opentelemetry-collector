@@ -28,6 +28,13 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ExporterArcAcquireWaitMs          metric.Int64Histogram
+	ExporterArcBackoffEvents          metric.Int64Counter
+	ExporterArcFailures               metric.Int64Counter
+	ExporterArcLimit                  metric.Int64ObservableGauge
+	ExporterArcLimitChanges           metric.Int64Counter
+	ExporterArcPermitsInUse           metric.Int64ObservableGauge
+	ExporterArcRttMs                  metric.Int64Histogram
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -52,6 +59,36 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// RegisterExporterArcLimitCallback sets callback for observable ExporterArcLimit metric.
+func (builder *TelemetryBuilder) RegisterExporterArcLimitCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterArcLimit, obs: o})
+		return nil
+	}, builder.ExporterArcLimit)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterExporterArcPermitsInUseCallback sets callback for observable ExporterArcPermitsInUse metric.
+func (builder *TelemetryBuilder) RegisterExporterArcPermitsInUseCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterArcPermitsInUse, obs: o})
+		return nil
+	}, builder.ExporterArcPermitsInUse)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
 }
 
 // RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
@@ -112,6 +149,48 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterArcAcquireWaitMs, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_arc_acquire_wait_ms",
+		metric.WithDescription("Time a worker waited to acquire an ARC permit. [Alpha]"),
+		metric.WithUnit("ms"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcBackoffEvents, err = builder.meter.Int64Counter(
+		"otelcol_exporter_arc_backoff_events",
+		metric.WithDescription("Number of ARC backoff (shrink) events triggered by error or RTT signal. [Alpha]"),
+		metric.WithUnit("{events}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcFailures, err = builder.meter.Int64Counter(
+		"otelcol_exporter_arc_failures",
+		metric.WithDescription("Number of requests considered failures by ARC (feeds adaptive shrink). [Alpha]"),
+		metric.WithUnit("{requests}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcLimit, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_arc_limit",
+		metric.WithDescription("Current ARC dynamic concurrency limit. [Alpha]"),
+		metric.WithUnit("{permits}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcLimitChanges, err = builder.meter.Int64Counter(
+		"otelcol_exporter_arc_limit_changes",
+		metric.WithDescription("Number of times ARC changed its concurrency limit. [Alpha]"),
+		metric.WithUnit("{events}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcPermitsInUse, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_arc_permits_in_use",
+		metric.WithDescription("Number of permits currently acquired. [Alpha]"),
+		metric.WithUnit("{permits}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterArcRttMs, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_arc_rtt_ms",
+		metric.WithDescription("Request round-trip-time measured by ARC (from permit acquire to release). [Alpha]"),
+		metric.WithUnit("ms"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),

@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -46,6 +47,9 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+
+	// Arc enables the Adaptive Concurrency Limiter.
+	Arc arc.Config `mapstructure:"arc"`
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {

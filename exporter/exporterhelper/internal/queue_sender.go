@@ -5,11 +5,20 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -32,6 +41,7 @@ func NewDefaultQueueConfig() queuebatch.Config {
 			Sizer:        request.SizerTypeItems,
 			MinSize:      8192,
 		}),
+		Arc: arc.DefaultConfig(),
 	}
 }
 
@@ -41,6 +51,7 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
+	var arcCtl *arc.Controller
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
@@ -53,5 +64,76 @@ func NewQueueSender(
 		return nil
 	}
 
-	return queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
+	// If ARC is enabled, wrap the export function with ARC logic.
+	if qCfg.Arc.Enabled {
+		tel, err := metadata.NewTelemetryBuilder(qSet.Telemetry)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create telemetry builder for ARC: %w", err)
+		}
+		arcCtl = arc.NewController(qCfg.Arc, tel, qSet.ID, qSet.Signal)
+
+		// Create the attributes for sync ARC metrics
+		exporterAttr := attribute.String("exporter", qSet.ID.String())
+		dataTypeAttr := attribute.String("data_type", qSet.Signal.String())
+		arcAttrs := metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr))
+
+		origExportFunc := exportFunc
+		exportFunc = func(ctx context.Context, req request.Request) error {
+			startWait := time.Now()
+			if !arcCtl.Acquire(ctx) {
+				// This context is from the queue, so it's a background context.
+				// If Acquire fails, it means context was cancelled, which shouldn't happen
+				// unless shutdown is happening.
+				return experr.NewShutdownErr(errors.New("arc semaphore closed"))
+			}
+			waitMs := time.Since(startWait).Milliseconds()
+			tel.ExporterArcAcquireWaitMs.Record(ctx, waitMs, arcAttrs)
+
+			arcCtl.StartRequest()
+			startTime := time.Now()
+			err := origExportFunc(ctx, req)
+			rtt := time.Since(startTime)
+
+			isBackpressure := experr.IsBackpressure(err)
+			// Apply De Morgan's law: !(A || B) == !A && !B
+			isSuccess := err == nil || (!consumererror.IsPermanent(err) && !isBackpressure)
+
+			arcCtl.ReleaseWithSample(ctx, rtt, isSuccess, isBackpressure)
+			return err
+		}
+	}
+
+	qbs, err := queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	// If ARC is enabled, we need to chain its shutdown.
+	if arcCtl != nil {
+		return &queueSenderWithArc{
+			QueueBatch: qbs,
+			arcCtl:     arcCtl,
+		}, nil
+	}
+
+	return qbs, nil
+}
+
+// queueSenderWithArc combines the QueueBatch sender with an arc.Controller
+// to ensure both are started and shut down correctly.
+type queueSenderWithArc struct {
+	*queuebatch.QueueBatch
+	arcCtl *arc.Controller
+}
+
+// Shutdown shuts down both the queue/batcher and the ARC controller.
+func (qs *queueSenderWithArc) Shutdown(ctx context.Context) error {
+	qs.arcCtl.Shutdown()
+	return qs.QueueBatch.Shutdown(ctx)
+}
+
+// Start starts both the queue/batcher and the ARC controller.
+// Note: ARC controller doesn't have a Start, so this just passes through.
+func (qs *queueSenderWithArc) Start(ctx context.Context, host component.Host) error {
+	return qs.QueueBatch.Start(ctx, host)
 }

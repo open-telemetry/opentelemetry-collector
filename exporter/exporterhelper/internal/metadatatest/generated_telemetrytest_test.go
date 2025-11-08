@@ -20,6 +20,14 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	require.NoError(t, tb.RegisterExporterArcLimitCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
+	require.NoError(t, tb.RegisterExporterArcPermitsInUseCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
 	require.NoError(t, tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
@@ -28,6 +36,11 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
+	tb.ExporterArcAcquireWaitMs.Record(context.Background(), 1)
+	tb.ExporterArcBackoffEvents.Add(context.Background(), 1)
+	tb.ExporterArcFailures.Add(context.Background(), 1)
+	tb.ExporterArcLimitChanges.Add(context.Background(), 1)
+	tb.ExporterArcRttMs.Record(context.Background(), 1)
 	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedSpans.Add(context.Background(), 1)
@@ -39,6 +52,27 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterSentLogRecords.Add(context.Background(), 1)
 	tb.ExporterSentMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSentSpans.Add(context.Background(), 1)
+	AssertEqualExporterArcAcquireWaitMs(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcBackoffEvents(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcFailures(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcLimit(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcLimitChanges(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcPermitsInUse(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterArcRttMs(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
