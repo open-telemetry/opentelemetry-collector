@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.139.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.139.0
 	go.opentelemetry.io/collector/exporter v1.45.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.138.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.138.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.139.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.139.0
 	go.opentelemetry.io/collector/extension/xextension v0.139.0
 	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/pdata v1.45.0

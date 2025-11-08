@@ -82,7 +82,10 @@ func TestController_BackpressureEmitsMetricsAndShrinks(t *testing.T) {
 	require.True(t, found, "backoff_events not found")
 	require.GreaterOrEqual(t, backoffs, int64(1))
 
-	down := append(common, attribute.String("direction", "down"))
+	down := make([]attribute.KeyValue, len(common)+1)
+	copy(down, common)
+	down[len(common)] = attribute.String("direction", "down")
+
 	found, downs := findSum(rm, "otelcol_exporter_arc_limit_changes", down)
 	require.True(t, found, "limit_changes{down} not found")
 	require.GreaterOrEqual(t, downs, int64(1))
