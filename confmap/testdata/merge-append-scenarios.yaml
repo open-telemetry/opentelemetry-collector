@@ -426,7 +426,7 @@
     - |
         receivers:
             nop:
-                key: !mode=append 1.2
+                key: 1.2
   expected: 
     receivers:
         nop:
