@@ -1,80 +1,117 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package experr // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+package experr
 
 import (
 	"context"
 	"errors"
 	"net"
+	"net/http"
 	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type backpressureError struct{ error }
+// Reason is emitted to logs/metrics when desired.
+// You don't have to use it in telemetry if your metadata builder
+// doesn't have a "reason" attribute yet.
+type Reason string
 
-func NewBackpressureError(err error) error {
+const (
+	ReasonGRPCResourceExhausted Reason = "grpc_resource_exhausted"
+	ReasonGRPCUnavailable       Reason = "grpc_unavailable"
+	ReasonGRPCDeadline          Reason = "grpc_deadline_exceeded"
+	ReasonDeadline              Reason = "deadline_exceeded"
+	ReasonHTTP429               Reason = "http_429"
+	ReasonHTTP503               Reason = "http_503"
+	ReasonHTTP504               Reason = "http_504"
+	ReasonHTTPRetryAfter        Reason = "http_retry_after"
+	ReasonNetTimeout            Reason = "net_timeout"
+	ReasonTextBackpressure      Reason = "text_backpressure"
+)
+
+// ClassifyBackpressure returns (isBackpressure, reason).
+// The logic is strictly:
+//  1. Typed signals first (fast, no allocs)
+//  2. Fallback to a single lowercase + a few contains checks
+//
+// NOTE: This function runs only on error paths. Even then,
+// typed checks return early. Fallback string scanning is a
+// micro-cost compared to network I/O and retry backoff.
+func ClassifyBackpressure(err error) (bool, Reason) {
 	if err == nil {
-		return nil
-	}
-	return backpressureError{err}
-}
-
-// IsBackpressure returns true if the error is an explicit backpressure error
-// OR it matches well-known HTTP/gRPC backpressure signals.
-func IsBackpressure(err error) bool {
-	if err == nil {
-		return false
-	}
-	// Our explicit wrapper.
-	var x backpressureError
-	if errors.As(err, &x) {
-		return true
+		return false, ""
 	}
 
-	// Check for net.Error timeout
-	var ne net.Error
-	if errors.As(err, &ne) && ne.Timeout() {
-		return true
-	}
-
-	// Context timed out (treat as transient/backpressure for ARC)
+	// 1) Context deadline/timeout
 	if errors.Is(err, context.DeadlineExceeded) {
-		return true
+		return true, ReasonDeadline
 	}
 
-	// gRPC: RESOURCE_EXHAUSTED (8), UNAVAILABLE (14), DEADLINE_EXCEEDED (4)
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.ResourceExhausted, codes.Unavailable, codes.DeadlineExceeded:
-			return true
+	// 2) net.Error timeouts
+	var nerr net.Error
+	if errors.As(err, &nerr) && nerr.Timeout() {
+		return true, ReasonNetTimeout
+	}
+
+	// 3) gRPC statuses (common in OTLP/gRPC)
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.ResourceExhausted:
+			return true, ReasonGRPCResourceExhausted
+		case codes.Unavailable:
+			return true, ReasonGRPCUnavailable
+		case codes.DeadlineExceeded:
+			return true, ReasonGRPCDeadline
 		}
 	}
 
-	// HTTP-ish strings (safe fallback; exporters often wrap as text)
-	// NOTE: intentionally case-insensitive and substring-based.
-	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "429") ||
-		strings.Contains(msg, "too many requests") ||
-		strings.Contains(msg, "503") ||
-		strings.Contains(msg, "service unavailable") ||
-		strings.Contains(msg, "502") ||
-		strings.Contains(msg, "bad gateway") ||
-		strings.Contains(msg, "504") ||
-		strings.Contains(msg, "gateway timeout") ||
-		strings.Contains(msg, "408") ||
-		strings.Contains(msg, "request timeout") ||
-		strings.Contains(msg, "599") ||
-		strings.Contains(msg, "proxy timeout") ||
-		strings.Contains(msg, "resource_exhausted") ||
-		strings.Contains(msg, "unavailable") ||
-		strings.Contains(msg, "deadline_exceeded") || // Added for string-based gRPC errors
-		strings.Contains(msg, "internal server error") ||
-		strings.Contains(msg, "circuit breaker") {
-		return true
+	// 4) Wrapped HTTP response providers (if your error wraps response)
+	// Define a minimal interface to avoid importing your transport layer.
+	type respCarrier interface{ Response() *http.Response }
+	var rc respCarrier
+	if errors.As(err, &rc) {
+		if r := rc.Response(); r != nil {
+			switch r.StatusCode {
+			case http.StatusTooManyRequests:
+				return true, ReasonHTTP429
+			case http.StatusServiceUnavailable:
+				return true, ReasonHTTP503
+			case http.StatusGatewayTimeout:
+				return true, ReasonHTTP504
+			}
+			if r.Header.Get("Retry-After") != "" {
+				return true, ReasonHTTPRetryAfter
+			}
+		}
 	}
 
-	return false
+	// 5) Fallback: cheap lowercase + tight substring checks.
+	// Keep this list intentionally small to minimize false positives.
+	s := strings.ToLower(err.Error())
+	if strings.Contains(s, "429") || strings.Contains(s, "too many requests") {
+		return true, ReasonHTTP429
+	}
+	if strings.Contains(s, "503") || strings.Contains(s, "service unavailable") {
+		return true, ReasonHTTP503
+	}
+	if strings.Contains(s, "504") || strings.Contains(s, "gateway timeout") || strings.Contains(s, "upstream timeout") {
+		return true, ReasonHTTP504
+	}
+	if strings.Contains(s, "retry-after") {
+		return true, ReasonHTTPRetryAfter
+	}
+	if strings.Contains(s, "circuit breaker") || strings.Contains(s, "overload") || strings.Contains(s, "backpressure") {
+		return true, ReasonTextBackpressure
+	}
+
+	return false, ""
+}
+
+// IsBackpressure is a convenience wrapper.
+func IsBackpressure(err error) bool {
+	ok, _ := ClassifyBackpressure(err)
+	return ok
 }

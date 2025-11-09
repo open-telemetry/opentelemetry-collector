@@ -1,81 +1,87 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package arc // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
+package arc
 
 import (
 	"math"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMean(t *testing.T) {
-	m := mean{}
-	if got := m.average(); got != 0 {
-		t.Fatalf("average of empty mean should be 0, got %f", got)
-	}
+const (
+	testAlpha   = 0.4
+	testEpsilon = 1e-9
+)
 
-	m.add(10)
-	if got := m.average(); got != 10 {
-		t.Fatalf("average after adding 10 should be 10, got %f", got)
-	}
-
-	m.add(20)
-	if got := m.average(); got != 15 {
-		t.Fatalf("average after adding 20 should be 15, got %f", got)
-	}
-
-	m.add(30)
-	if got := m.average(); got != 20 {
-		t.Fatalf("average after adding 30 should be 20, got %f", got)
-	}
-}
-
-func TestEwmaVar(t *testing.T) {
-	const alpha = 0.4
-	const tolerance = 1e-9
-
-	e := newEwmaVar(alpha)
-	if e.initialized() {
-		t.Fatal("newEwmaVar should not be initialized")
-	}
-	if e.alpha != alpha {
-		t.Fatalf("alpha not set correctly, got %f, want %f", e.alpha, alpha)
-	}
+func TestRobustEWMA_Initial(t *testing.T) {
+	e := newRobustEWMA(testAlpha)
+	assert.False(t, e.initialized())
+	assert.InDelta(t, testAlpha, e.alpha, testEpsilon)
 
 	// First update initializes
+	mean, absDev := e.update(10)
+	assert.True(t, e.initialized())
+	assert.InDelta(t, 10.0, mean, testEpsilon)
+	assert.InDelta(t, 0.0, absDev, testEpsilon)
+	assert.InDelta(t, 10.0, e.mean, testEpsilon)
+	assert.InDelta(t, 0.0, e.absDev, testEpsilon)
+}
+
+func TestRobustEWMA_Updates(t *testing.T) {
+	e := newRobustEWMA(testAlpha)
+
+	// Init
 	e.update(10)
-	if !e.initialized() {
-		t.Fatal("ewmaVar should be initialized after first update")
-	}
-	if e.mean != 10 {
-		t.Fatalf("initial mean should be first value, got %f, want 10", e.mean)
-	}
-	if e.variance != 0 {
-		t.Fatalf("initial variance should be 0, got %f, want 0", e.variance)
-	}
 
 	// Second update
 	// mean = 0.4 * 20 + 0.6 * 10 = 8 + 6 = 14
-	// d = 20 - 10 = 10
-	// variance = 0.4 * (10*10) + 0.6 * 0 = 40
-	e.update(20)
-	if math.Abs(e.mean-14.0) > tolerance {
-		t.Fatalf("second mean incorrect, got %f, want 14.0", e.mean)
-	}
-	if math.Abs(e.variance-40.0) > tolerance {
-		t.Fatalf("second variance incorrect, got %f, want 40.0", e.variance)
-	}
+	// resid = 20 - 10 = 10
+	// absDev = 0.4 * 10 + 0.6 * 0 = 4
+	mean, absDev := e.update(20)
+	assert.InDelta(t, 14.0, mean, testEpsilon)
+	assert.InDelta(t, 4.0, absDev, testEpsilon)
+	assert.InDelta(t, 14.0, e.mean, testEpsilon)
+	assert.InDelta(t, 4.0, e.absDev, testEpsilon)
 
 	// Third update
-	// mPrev = 14
-	// mean = 0.4 * 15 + 0.6 * 14 = 6 + 8.4 = 14.4
-	// d = 15 - 14 = 1
-	// variance = 0.4 * (1*1) + 0.6 * 40 = 0.4 + 24 = 24.4
-	e.update(15)
-	if math.Abs(e.mean-14.4) > tolerance {
-		t.Fatalf("third mean incorrect, got %f, want 14.4", e.mean)
-	}
-	if math.Abs(e.variance-24.4) > tolerance {
-		t.Fatalf("third variance incorrect, got %f, want 24.4", e.variance)
-	}
+	// prev = 14
+	// mean = 0.4 * 12 + 0.6 * 14 = 4.8 + 8.4 = 13.2
+	// resid = 12 - 14 = -2 -> 2 (abs)
+	// absDev = 0.4 * 2 + 0.6 * 4 = 0.8 + 2.4 = 3.2
+	mean, absDev = e.update(12)
+	assert.InDelta(t, 13.2, mean, testEpsilon)
+	assert.InDelta(t, 3.2, absDev, testEpsilon)
+	assert.InDelta(t, 13.2, e.mean, testEpsilon)
+	assert.InDelta(t, 3.2, e.absDev, testEpsilon)
+
+	// Fourth update (check negative residual logic)
+	// prev = 13.2
+	// mean = 0.4 * 30 + 0.6 * 13.2 = 12 + 7.92 = 19.92
+	// resid = 30 - 13.2 = 16.8
+	// absDev = 0.4 * 16.8 + 0.6 * 3.2 = 6.72 + 1.92 = 8.64
+	mean, absDev = e.update(30)
+	assert.InDelta(t, 19.92, mean, testEpsilon)
+	assert.InDelta(t, 8.64, absDev, testEpsilon)
+	assert.InDelta(t, 19.92, e.mean, testEpsilon)
+	assert.InDelta(t, 8.64, e.absDev, testEpsilon)
+}
+
+func TestRobustEWMA_NaN(t *testing.T) {
+	e := newRobustEWMA(testAlpha)
+	e.update(10)
+	e.update(20)
+
+	// Update with NaN
+	e.update(math.NaN())
+
+	// Should not propagate NaN
+	assert.False(t, math.IsNaN(e.mean))
+	assert.False(t, math.IsNaN(e.absDev))
+
+	// Should not propagate Inf
+	e.update(math.Inf(1))
+	assert.False(t, math.IsInf(e.mean, 1))
+	assert.False(t, math.IsInf(e.absDev, 1))
 }

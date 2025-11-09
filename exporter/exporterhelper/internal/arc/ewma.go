@@ -3,35 +3,42 @@
 
 package arc // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
 
-type mean struct {
-	n   int
-	sum float64
+import "math" // robustEWMA tracks an exponentially-weighted moving *mean* and a robust
+// dispersion proxy: the EWMA of absolute residuals, i.e., E[ |x - mean_prev| ].
+// This behaves similarly to a mean + K*sigma threshold but is cheaper and avoids
+// squaring; it is less sensitive to outliers than naive variance updates.
+
+type robustEWMA struct {
+	alpha  float64
+	init   bool
+	mean   float64
+	absDev float64 // EWMA of absolute residuals relative to previous mean
 }
 
-func (m *mean) add(x float64) { m.n++; m.sum += x }
-func (m *mean) average() float64 {
-	if m.n == 0 {
-		return 0
+func newRobustEWMA(alpha float64) robustEWMA {
+	return robustEWMA{alpha: alpha}
+}
+
+func (e *robustEWMA) initialized() bool { return e.init }
+
+// update returns the new mean and absDev after ingesting x.
+func (e *robustEWMA) update(x float64) (float64, float64) {
+	if math.IsNaN(x) || math.IsInf(x, 0) {
+		return e.mean, e.absDev
 	}
-	return m.sum / float64(m.n)
-}
 
-type ewmaVar struct {
-	alpha    float64
-	mean     float64
-	variance float64
-	init     bool
-}
-
-func newEwmaVar(alpha float64) ewmaVar { return ewmaVar{alpha: alpha} }
-func (e *ewmaVar) initialized() bool   { return e.init }
-func (e *ewmaVar) update(x float64) {
 	if !e.init {
-		e.mean, e.variance, e.init = x, 0, true
-		return
+		e.mean = x
+		e.absDev = 0
+		e.init = true
+		return e.mean, e.absDev
 	}
-	mPrev := e.mean
+	prev := e.mean
 	e.mean = e.alpha*x + (1-e.alpha)*e.mean
-	d := x - mPrev
-	e.variance = e.alpha*(d*d) + (1-e.alpha)*e.variance
+	resid := x - prev
+	if resid < 0 {
+		resid = -resid
+	}
+	e.absDev = e.alpha*resid + (1-e.alpha)*e.absDev
+	return e.mean, e.absDev
 }

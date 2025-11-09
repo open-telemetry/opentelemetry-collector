@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -15,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
@@ -74,8 +74,8 @@ func NewQueueSender(
 
 		// Create the attributes for sync ARC metrics
 		exporterAttr := attribute.String("exporter", qSet.ID.String())
-		dataTypeAttr := attribute.String("data_type", qSet.Signal.String())
-		arcAttrs := metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr))
+		dataTypeAttr := attribute.String("data_type", strings.ToLower(qSet.Signal.String()))
+		arcAttrs := metric.WithAttributes(exporterAttr, dataTypeAttr)
 
 		origExportFunc := exportFunc
 		exportFunc = func(ctx context.Context, req request.Request) error {
@@ -84,6 +84,18 @@ func NewQueueSender(
 				// This context is from the queue, so it's a background context.
 				// If Acquire fails, it means context was cancelled, which shouldn't happen
 				// unless shutdown is happening.
+
+				// Record wait time even on failure
+				waitMs := time.Since(startWait).Milliseconds()
+				tel.ExporterArcAcquireWaitMs.Record(ctx, waitMs, arcAttrs)
+
+				// Record failure
+				tel.ExporterArcFailures.Add(ctx, 1, arcAttrs)
+
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+
 				return experr.NewShutdownErr(errors.New("arc semaphore closed"))
 			}
 			waitMs := time.Since(startWait).Milliseconds()
@@ -95,8 +107,8 @@ func NewQueueSender(
 			rtt := time.Since(startTime)
 
 			isBackpressure := experr.IsBackpressure(err)
-			// Apply De Morgan's law: !(A || B) == !A && !B
-			isSuccess := err == nil || (!consumererror.IsPermanent(err) && !isBackpressure)
+
+			isSuccess := err == nil
 
 			arcCtl.ReleaseWithSample(ctx, rtt, isSuccess, isBackpressure)
 			return err

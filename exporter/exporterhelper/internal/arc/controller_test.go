@@ -1,11 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package arc // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/arc"
+package arc
 
 import (
 	"context"
-	"sync"
+	"math"
 	"testing"
 	"time"
 
@@ -14,323 +14,365 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-func TestNewControllerDefaults(t *testing.T) {
-	cfg := Config{
-		InitialLimit:   0,
-		MaxConcurrency: 0,
-		DecreaseRatio:  0,
-		EwmaAlpha:      0,
-		DeviationScale: -1,
-	}
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	if got, want := ctrl.CurrentLimit(), DefaultConfig().InitialLimit; got != want {
-		t.Fatalf("unexpected InitialLimit: got %d want %d", got, want)
-	}
-	if ctrl.cfg.MaxConcurrency != DefaultConfig().MaxConcurrency {
-		t.Fatalf("MaxConcurrency default not applied")
-	}
-	if ctrl.cfg.DecreaseRatio != DefaultConfig().DecreaseRatio {
-		t.Fatalf("DecreaseRatio default not applied")
-	}
-	if ctrl.cfg.EwmaAlpha != DefaultConfig().EwmaAlpha {
-		t.Fatalf("EwmaAlpha default not applied")
-	}
-	if ctrl.cfg.DeviationScale != DefaultConfig().DeviationScale {
-		t.Fatalf("DeviationScale default not applied")
-	}
-}
-
-func TestAcquireReleaseSemaphore(t *testing.T) {
-	cfg := Config{InitialLimit: 2}
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	ctx := context.Background()
-	if !ctrl.Acquire(ctx) {
-		t.Fatal("expected first Acquire to succeed")
-	}
-	if !ctrl.Acquire(ctx) {
-		t.Fatal("expected second Acquire to succeed")
-	}
-
-	// third attempt should block and then fail with context timeout
-	toCtx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-	defer cancel()
-	if ctrl.Acquire(toCtx) {
-		t.Fatal("expected Acquire with short timeout to fail")
-	}
-
-	// release one and acquire should succeed
-	ctrl.Release()
-	if !ctrl.Acquire(ctx) {
-		t.Fatal("expected Acquire to succeed after release")
-	}
-	// cleanup releases
-	ctrl.Release()
-	ctrl.Release()
-}
-
-func TestStartRequestAndPermits(t *testing.T) {
-	cfg := Config{InitialLimit: 3}
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	ctrl.StartRequest()
-	ctrl.StartRequest()
-
-	if got := ctrl.PermitsInUse(); got != 2 {
-		t.Fatalf("unexpected in-flight: got %d want %d", got, 2)
-	}
-
-	// Simulate hitting ceiling
-	ctrl.mu.Lock()
-	ctrl.st.inFlight = ctrl.st.limit
-	ctrl.st.hitCeiling = false
-	ctrl.mu.Unlock()
-
-	ctrl.StartRequest()
-	ctrl.mu.Lock()
-	hit := ctrl.st.hitCeiling
-	ctrl.mu.Unlock()
-	if !hit {
-		t.Fatalf("expected hitCeiling to be true when inFlight >= limit")
-	}
-}
-
-func TestEarlyBackoffOnColdStart(t *testing.T) {
-	cfg := Config{InitialLimit: 10, DecreaseRatio: 0.5}
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	if got := ctrl.CurrentLimit(); got != 10 {
-		t.Fatalf("expected initial limit 10, got %d", got)
-	}
-
-	// Provide an explicit backpressure while EWMA not initialized.
-	ctrl.Feedback(context.Background(), 0, true, true)
-
-	if got := ctrl.CurrentLimit(); got != 5 {
-		t.Fatalf("expected early backoff to reduce limit to 5, got %d", got)
-	}
-}
-
-func TestAdjustIncreaseAndDecrease(t *testing.T) {
-	// Additive increase case
-	cfg := DefaultConfig()
-	cfg.InitialLimit = 1
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	ctrl.mu.Lock()
-	// initialize past EWMA so past.initialized() is true
-	ctrl.st.past.update(1.0)
-	ctrl.st.hitCeiling = true
-	ctrl.st.hadPressure = false
-	ctrl.st.limit = 1
-	ctrl.mu.Unlock()
-
-	ctrl.mu.Lock()
-	ctrl.adjust(context.Background(), 1.0)
-	ctrl.mu.Unlock()
-
-	if got := ctrl.CurrentLimit(); got != 2 {
-		t.Fatalf("expected additive increase to raise limit to 2, got %d", got)
-	}
-
-	// Multiplicative decrease case
-	cfg2 := DefaultConfig()
-	cfg2.InitialLimit = 10
-	cfg2.DecreaseRatio = 0.5
-	ctrl2 := NewController(cfg2, nil, component.ID{}, pipeline.SignalTraces)
-
-	ctrl2.mu.Lock()
-	ctrl2.st.past.update(1.0)
-	ctrl2.st.hadPressure = true
-	ctrl2.st.limit = 10
-	ctrl2.mu.Unlock()
-
-	ctrl2.mu.Lock()
-	ctrl2.adjust(context.Background(), 0.0)
-	ctrl2.mu.Unlock()
-
-	if got := ctrl2.CurrentLimit(); got != 5 {
-		t.Fatalf("expected multiplicative decrease to reduce limit to 5, got %d", got)
-	}
-}
-
-func TestShrinkSem_ForgetAndRelease(t *testing.T) {
-	s := newShrinkSem(2)
-
-	// Use capacity
-	require.NoError(t, s.acquire(context.Background()))
-	require.NoError(t, s.acquire(context.Background()))
-	require.Equal(t, 0, s.avail)
-
-	// Forget 1, adds pending Forget
-	s.forget(1)
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 1, s.pendingF)
-
-	// Release 1, pays pending Forget
-	s.release()
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 0, s.pendingF)
-
-	// Next acquire should block
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	require.Error(t, s.acquire(ctx)) // Fails on timeout
-	cancel()
-
-	// Release second acquire
-	s.release()
-	require.Equal(t, 1, s.avail)
-	require.Equal(t, 0, s.pendingF)
-
-	// Acquire should now succeed
-	require.NoError(t, s.acquire(context.Background()))
-	require.Equal(t, 0, s.avail)
-
-	// Forget 2. No avail, one permit outstanding.
-	// Both forgets should go to pendingF.
-	s.forget(2)
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 2, s.pendingF)
-
-	// Release (pays one pending forget)
-	s.release()
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 1, s.pendingF)
-}
-
-func TestShrinkSem_AddAndAcquire(t *testing.T) {
-	s := newShrinkSem(1)
-	require.NoError(t, s.acquire(context.Background()))
-	require.Equal(t, 0, s.avail)
-
-	// Start a waiting acquire in a goroutine
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// Must use assert in goroutines
-		assert.NoError(t, s.acquire(context.Background()))
-		s.release() // release it right away
-	}()
-
-	// Allow goroutine to block on acquire
-	time.Sleep(10 * time.Millisecond)
-
-	// Add one permit; should wake the waiter
-	s.addOne()
-	wg.Wait() // ensure goroutine finished
-
-	s.mu.Lock()
-	require.Equal(t, 1, s.avail) // the goroutine acquired then released once
-	require.Empty(t, s.waiting)
-	s.mu.Unlock()
-
-	// Test Add paying pending Forgets
-	s.forget(2) // avail=1 -> 0, pendingF=1
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 1, s.pendingF)
-
-	s.addOne() // pays pendingF
-	require.Equal(t, 0, s.avail)
-	require.Equal(t, 0, s.pendingF)
-
-	s.addOne() // increases avail
-	require.Equal(t, 1, s.avail)
-	require.Equal(t, 0, s.pendingF)
-}
-
-func TestController_Shutdown(t *testing.T) {
-	// Test that shutdown doesn't panic
-	ctrl := NewController(DefaultConfig(), nil, component.ID{}, pipeline.SignalTraces)
-	ctrl.Shutdown()
-
-	// Test that shutdown with telemetry doesn't panic
-	tel, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+// newTestController creates a controller with NOP telemetry.
+func newTestController(t *testing.T, cfg Config) *Controller {
+	set := componenttest.NewNopTelemetrySettings()
+	tel, err := metadata.NewTelemetryBuilder(set)
 	require.NoError(t, err)
-	ctrlWithTel := NewController(DefaultConfig(), tel, component.ID{}, pipeline.SignalTraces)
-	ctrlWithTel.Shutdown()
+	return NewController(cfg, tel, component.MustNewID("test"), pipeline.SignalTraces)
 }
 
-func TestController_Shutdown_UnblocksWaiters(t *testing.T) {
-	ctrl := NewController(Config{InitialLimit: 1}, nil, component.ID{}, pipeline.SignalTraces)
-
-	// Acquire the only permit
-	require.True(t, ctrl.Acquire(context.Background()))
-
-	errCh := make(chan error, 1)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// This should block
-		errCh <- ctrl.sem.acquire(context.Background())
-	}()
-
-	// Give the goroutine time to block
-	time.Sleep(50 * time.Millisecond)
-
-	// Shutdown the controller, which closes the semaphore
-	ctrl.Shutdown()
-
-	// Wait for the goroutine to finish
-	wg.Wait()
-
-	// Check that the blocked goroutine received a shutdown error
-	err := <-errCh
-	require.Error(t, err)
-	assert.True(t, experr.IsShutdownErr(err), "error should be a shutdown error")
-
-	// Test that new acquires also fail
-	err = ctrl.sem.acquire(context.Background())
-	require.Error(t, err)
-	assert.True(t, experr.IsShutdownErr(err), "error should be a shutdown error")
+// forceControlStep triggers a feedback loop that is guaranteed to be after the period duration.
+func forceControlStep(c *Controller) {
+	// Wait past the period and poke again to trigger controlStep
+	time.Sleep(c.st.periodDur + 1*time.Millisecond)
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), time.Duration(c.st.lastRTTMean*float64(time.Millisecond)), true, false)
 }
 
-func TestController_ReleaseWithSample(t *testing.T) {
-	cfg := Config{InitialLimit: 1}
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
+func TestController_NewShutdown(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	c := newTestController(t, cfg)
+	require.NotNil(t, c)
+	assert.Equal(t, cfg.InitialLimit, c.CurrentLimit())
+	c.Shutdown()
+}
+
+func TestController_ConfigClamping(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	// Intentionally bad values that should be clamped to defaults
+	cfg.InitialLimit = -5
+	cfg.MaxConcurrency = 0
+	cfg.DecreaseRatio = 1.5
+	cfg.EwmaAlpha = -1.0
+	cfg.DeviationScale = -2.0
+
+	c := newTestController(t, cfg)
+	require.NotNil(t, c)
+
+	// NewController should have clamped these per DefaultConfig()+rules
+	def := DefaultConfig()
+	assert.GreaterOrEqual(t, c.cfg.InitialLimit, 1)
+	assert.Equal(t, def.MaxConcurrency, c.cfg.MaxConcurrency)
+	assert.InDelta(t, def.DecreaseRatio, c.cfg.DecreaseRatio, 1e-9)
+	assert.InDelta(t, def.EwmaAlpha, c.cfg.EwmaAlpha, 1e-9)
+	assert.InDelta(t, def.DeviationScale, c.cfg.DeviationScale, 1e-9)
+
+	// Also ensure InitialLimit <= MaxConcurrency
+	assert.LessOrEqual(t, c.cfg.InitialLimit, c.cfg.MaxConcurrency)
+	c.Shutdown()
+}
+
+func TestController_AcquireRelease(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 2
+	c := newTestController(t, cfg)
+	require.NotNil(t, c)
+
+	// Acquire two permits
+	assert.True(t, c.Acquire(context.Background()))
+	assert.Equal(t, 1, c.PermitsInUse())
+	assert.True(t, c.Acquire(context.Background()))
+	assert.Equal(t, 2, c.PermitsInUse())
+
+	// Third acquire should block and fail with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	assert.False(t, c.Acquire(ctx))
+	assert.Equal(t, 2, c.PermitsInUse())
+
+	// Release one and acquire again
+	c.Release()
+	assert.Equal(t, 1, c.PermitsInUse())
+	assert.True(t, c.Acquire(context.Background()))
+	assert.Equal(t, 2, c.PermitsInUse())
+
+	c.Shutdown()
+}
+
+func TestController_AcquireRespectsContextCancel(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 1
+
+	c := newTestController(t, cfg)
+	require.NotNil(t, c)
+
+	// Take the only permit
+	assert.True(t, c.Acquire(context.Background()))
+
+	// Second acquire should obey context cancellation
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	ok := c.Acquire(ctx)
+	assert.False(t, ok)
+
+	// Cleanup
+	c.Release()
+	c.Shutdown()
+}
+
+func TestController_StartRequestCreditsOnlyOnSaturation(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 2
+
+	c := newTestController(t, cfg)
+
+	// Force a short period so control steps run frequently in other tests,
+	// but here we're just testing credit accrual behavior.
+	c.mu.Lock()
+	c.st.periodDur = 10 * time.Millisecond
+	c.mu.Unlock()
+
+	// At start, no in-flight and no credits.
+	assert.Equal(t, 0, c.st.inFlight)
+	assert.Equal(t, 0, c.st.credits)
+
+	// First request (inFlight=1 < limit=2) -> no credit.
+	c.StartRequest()
+	assert.Equal(t, 1, c.st.inFlight)
+	assert.Equal(t, 0, c.st.credits)
+
+	// Second request (inFlight=2 == limit=2) -> credit++.
+	c.StartRequest()
+	assert.Equal(t, 2, c.st.inFlight)
+	assert.Equal(t, 1, c.st.credits)
+
+	// Third request (inFlight=3 > limit=2) -> credit++.
+	c.StartRequest()
+	assert.Equal(t, 3, c.st.inFlight)
+	assert.Equal(t, 2, c.st.credits)
+
+	// Release all three via ReleaseWithSample which also calls Release().
+	c.ReleaseWithSample(context.Background(), 10*time.Millisecond, true, false)
+	c.ReleaseWithSample(context.Background(), 10*time.Millisecond, true, false)
+	c.ReleaseWithSample(context.Background(), 10*time.Millisecond, true, false)
+	assert.Equal(t, 0, c.st.inFlight)
+
+	c.Shutdown()
+}
+
+func TestController_Feedback_UpdatesEWMAOnlyOnSuccess(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 1
+	cfg.EwmaAlpha = 0.5
+
+	c := newTestController(t, cfg)
+
+	// First successful sample initializes the robust EWMA
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 100*time.Millisecond, true, false)
+	require.True(t, c.st.reMean.initialized())
+	mean1 := c.st.lastRTTMean
+	dev1 := c.st.lastRTTDev
+
+	// Failed/backpressure=false sample should NOT update EWMA
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 400*time.Millisecond, false, false)
+	assert.InDelta(t, mean1, c.st.lastRTTMean, 1e-9)
+	assert.InDelta(t, dev1, c.st.lastRTTDev, 1e-9)
+	// Successful sample should update EWMA
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 200*time.Millisecond, true, false)
+	assert.Greater(t, math.Abs(mean1-c.st.lastRTTMean), 1e-9)
+
+	c.Shutdown()
+}
+
+func TestController_AdditiveIncreaseAndCreditReset(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 1
+	cfg.MaxConcurrency = 5
+	cfg.EwmaAlpha = 0.5
+	cfg.DeviationScale = 2.0
+
+	c := newTestController(t, cfg)
+	// Short test period
+	c.mu.Lock()
+	c.st.periodDur = 10 * time.Millisecond
+	c.mu.Unlock()
+
+	// Prime EWMA with a stable RTT (so no spike)
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 100*time.Millisecond, true, false)
+
+	// Force a control step to set prevRTTMean
+	forceControlStep(c)
+	assert.Equal(t, 1, c.CurrentLimit()) // Should not have increased
+	assert.Positive(t, c.st.prevRTTMean)
+
+	// Build up enough credits to trigger an increase.
+	reqCredits := requiredCredits(c.CurrentLimit())
+	for i := 0; i < reqCredits; i++ {
+		c.StartRequest()
+	}
+	// Release these; we want the control step to see saturation and no pressure.
+	for i := 0; i < reqCredits; i++ {
+		c.ReleaseWithSample(context.Background(), 100*time.Millisecond, true, false)
+	}
+
+	// Wait past the period and poke again to trigger controlStep
+	forceControlStep(c)
+
+	assert.Equal(t, 2, c.CurrentLimit(), "limit should increase additively by 1")
+	assert.Equal(t, 0, c.st.credits, "credits reset after increase")
+
+	c.Shutdown()
+}
+
+func TestController_MultiplicativeDecreaseOnBackpressure(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 4
+	cfg.MaxConcurrency = 10
+	cfg.DecreaseRatio = 0.5 // make the effect obvious
+
+	c := newTestController(t, cfg)
+	require.Equal(t, 4, c.CurrentLimit())
+
+	// Short control period
+	c.mu.Lock()
+	c.st.periodDur = 10 * time.Millisecond
+	c.mu.Unlock()
+
+	// Cause an explicit backpressure signal
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 50*time.Millisecond, true, true)
+
+	// Wait and trigger the control step
+	forceControlStep(c)
+
+	// newLimit = floor(4 * 0.5) = 2
+	assert.Equal(t, 2, c.CurrentLimit())
+	assert.Equal(t, 0, c.st.credits)
+
+	c.Shutdown()
+}
+
+func TestController_DecreaseOnRTTSpike(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 4
+	cfg.DeviationScale = 1.0
+	cfg.EwmaAlpha = 0.5
+
+	c := newTestController(t, cfg)
+
+	// Short control period
+	c.mu.Lock()
+	c.st.periodDur = 10 * time.Millisecond
+	c.mu.Unlock()
+
+	// Establish baseline RTT ~100ms
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 100*time.Millisecond, true, false)
+
+	// Force a control step to set prevRTTMean
+	forceControlStep(c)
+	assert.Equal(t, 4, c.CurrentLimit())
+	assert.Positive(t, c.st.prevRTTMean)
+
+	// Trigger a spike sample
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 600*time.Millisecond, true, false)
+
+	// After control step, limit should drop by DecreaseRatio (default 0.9)
+	forceControlStep(c)
+
+	// Expect a decrease by floor(4*0.9) = 3 (one step down)
+	assert.Equal(t, 3, c.CurrentLimit())
+	c.Shutdown()
+}
+
+func TestController_MinFloorAndMaxCap(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 1
+	cfg.MaxConcurrency = 2
+	cfg.DecreaseRatio = 0.1
+
+	c := newTestController(t, cfg)
+
+	// Try to decrease at the floor; should stay at 1
+	c.mu.Lock()
+	c.st.periodDur = 10 * time.Millisecond
+	c.mu.Unlock()
+
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 50*time.Millisecond, true, true) // pressure
+	forceControlStep(c)
+	assert.Equal(t, 1, c.CurrentLimit(), "should not go below 1")
+
+	// Build credits to increase to the cap = 2
+	reqCredits := requiredCredits(c.CurrentLimit())
+	for i := 0; i < reqCredits; i++ {
+		c.StartRequest()
+	}
+	for i := 0; i < reqCredits; i++ {
+		c.ReleaseWithSample(context.Background(), 50*time.Millisecond, true, false)
+	}
+	forceControlStep(c)
+	assert.Equal(t, 2, c.CurrentLimit(), "should increase to cap")
+
+	// Further credit should not exceed MaxConcurrency
+	reqCredits = requiredCredits(c.CurrentLimit())
+	for i := 0; i < reqCredits; i++ {
+		c.StartRequest()
+	}
+	for i := 0; i < reqCredits; i++ {
+		c.ReleaseWithSample(context.Background(), 50*time.Millisecond, true, false)
+	}
+	forceControlStep(c)
+	assert.Equal(t, 2, c.CurrentLimit(), "should not exceed cap")
+
+	c.Shutdown()
+}
+
+func TestController_ReleaseWithSampleReleases(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.InitialLimit = 1
+
+	c := newTestController(t, cfg)
+
+	// Acquire via the pool to bump inUse
+	assert.True(t, c.Acquire(context.Background()))
+	assert.Equal(t, 1, c.PermitsInUse())
+
+	// StartRequest increments inFlight; ReleaseWithSample must also release the pool permit
+	c.StartRequest()
+	c.ReleaseWithSample(context.Background(), 10*time.Millisecond, true, false)
+
+	assert.Equal(t, 0, c.PermitsInUse())
+	c.Shutdown()
+}
+
+func Test_requiredCredits(t *testing.T) {
+	assert.Equal(t, 1, requiredCredits(0))
+	assert.Equal(t, 1, requiredCredits(1))
+	assert.Equal(t, 2, requiredCredits(2))
+	assert.Equal(t, 2, requiredCredits(7))
+	assert.Equal(t, 3, requiredCredits(8))
+	assert.Equal(t, 3, requiredCredits(31))
+	assert.Equal(t, 4, requiredCredits(32))
+	assert.Equal(t, 4, requiredCredits(100))
+}
+
+func Test_contextOrBG(t *testing.T) {
+	var nilCtx context.Context // avoid SA1012 by not passing a literal nil
+	bg := contextOrBG(nilCtx)
+	require.NotNil(t, bg)
 
 	ctx := context.Background()
-	require.True(t, ctrl.Acquire(ctx))
-	ctrl.StartRequest()
-
-	// Initialize EWMA
-	ctrl.ReleaseWithSample(ctx, 10*time.Millisecond, true, false)
-	ctrl.mu.Lock()
-	require.True(t, ctrl.st.past.initialized())
-	require.Equal(t, 0, ctrl.st.inFlight)
-	ctrl.mu.Unlock()
-}
-
-func TestController_FeedbackWindowTick(t *testing.T) {
-	cfg := DefaultConfig()
-	cfg.InitialLimit = 1
-	ctrl := NewController(cfg, nil, component.ID{}, pipeline.SignalTraces)
-
-	// Initialize past EWMA
-	ctrl.mu.Lock()
-	ctrl.st.past.update(1.0)
-	ctrl.st.limit = 1
-	ctrl.st.nextTick = time.Now() // Force tick on next feedback
-	ctrl.st.hitCeiling = true     // Enable additive increase
-	ctrl.mu.Unlock()
-
-	// This feedback should trigger a window tick
-	ctrl.Feedback(context.Background(), 10*time.Millisecond, true, false)
-
-	ctrl.mu.Lock()
-	// Check if adjust ran (limit increased)
-	require.Equal(t, 2, ctrl.st.limit)
-	// Check if state was reset
-	require.Equal(t, 0, ctrl.st.curr.n)
-	require.False(t, ctrl.st.hadPressure)
-	require.False(t, ctrl.st.hitCeiling)
-	require.True(t, ctrl.st.nextTick.After(time.Now())) // Next tick is in the future
-	ctrl.mu.Unlock()
+	require.Equal(t, ctx, contextOrBG(ctx))
 }
