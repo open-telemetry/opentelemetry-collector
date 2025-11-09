@@ -87,6 +87,14 @@ foo:
 `,
 			expectErr: "failed to validate tag",
 		},
+		{
+			name: "invalid tag uri",
+			yaml: `
+foo:
+  bar: !tag;cyz [cyz]
+`,
+			expectErr: "failed to parse tag",
+		},
 	}
 
 	for _, tt := range tests {
