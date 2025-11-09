@@ -7,6 +7,52 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.45.0/v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Change type of `configgrpc.ClientConfig.Headers`, `confighttp.ClientConfig.Headers`, and `confighttp.ServerConfig.ResponseHeaders` (#13930)
+  `configopaque.MapList` is a new alternative to `map[string]configopaque.String` which can unmarshal
+  both maps and lists of name/value pairs.
+  
+  For example, if `headers` is a field of type `configopaque.MapList`,
+  then the following YAML configs will unmarshal to the same thing:
+  ```yaml
+  headers:
+    "foo": "bar"
+  
+  headers:
+  - name: "foo"
+    value: "bar"
+  ```
+  
+- `pdata/pprofile`: Update `SetFunction` to return the function's ID rather than update the Line (#14016, #14032)
+- `pdata/pprofile`: Update `SetLink` to return the link's ID rather than update the Sample (#14016, #14031)
+- `pdata/pprofile`: Update `SetMapping` to return the mapping's ID rather than update the Location (#14016, #14030)
+- `pkg/otelcol`: Require a telemetry factory to be injected through otelcol.Factories (#4970)
+  otelcol.Factories now has a required Telemetry field,
+  which contains the telemetry factory to be used by the service.
+  Set it to otelconftelemetry.NewFactory() for the existing behavior.
+  
+- `pkg/pdata`: Remove unused generated code from pprofile (#14073)
+  Experimental package, ok to break since not used.
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `SetStack` method (#14007)
+- `pdata/xpdata`: Add high-level Entity API for managing entities attached to resources (#14042)
+  Introduces `Entity`, `EntitySlice`, and `EntityAttributeMap` types that provide a user-friendly interface
+  for working with resource entities. The new API ensures consistency between entity and resource attributes
+  by sharing the underlying attribute map, and prevents attribute conflicts between entities. This API may
+  eventually replace the generated protobuf-based API for better usability.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix mdatagen generated_metrics for connectors (#12402)
+
+<!-- previous-version -->
+
 ## v1.44.0/v0.138.0
 
 ### 🛑 Breaking changes 🛑

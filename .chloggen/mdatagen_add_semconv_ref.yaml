@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: all
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add FIPS and non-FIPS implementations for allowed TLS curves
+note: Add semconv reference for metrics
 
 # One or more tracking issues or pull requests related to the change
-issues: [13990]
+issues: [13920]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
