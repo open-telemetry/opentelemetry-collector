@@ -172,6 +172,7 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace

@@ -460,7 +460,7 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	// that each component has a chance to drain to its consumer
 	// before the consumer is stopped.
 	var errs error
-	for i := 0; i < len(nodes); i++ {
+	for i := range nodes {
 		node := nodes[i]
 		comp, ok := node.(component.Component)
 
@@ -619,7 +619,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 var (
 	_ component.Host                   = (*HostWrapper)(nil)
 	_ componentstatus.Reporter         = (*HostWrapper)(nil)
-	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil) //nolint:staticcheck // SA1019
 )
 
 type HostWrapper struct {

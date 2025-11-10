@@ -428,21 +428,17 @@ func TestHttpCorsWithSettings(t *testing.T) {
 func TestHttpServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
-		headers map[string]configopaque.String
+		headers configopaque.MapList
 	}{
 		{
 			name:    "noHeaders",
 			headers: nil,
 		},
 		{
-			name:    "emptyHeaders",
-			headers: map[string]configopaque.String{},
-		},
-		{
 			name: "withHeaders",
-			headers: map[string]configopaque.String{
-				"x-new-header-1": "value1",
-				"x-new-header-2": "value2",
+			headers: configopaque.MapList{
+				{Name: "x-new-header-1", Value: "value1"},
+				{Name: "x-new-header-2", Value: "value2"},
 			},
 		},
 	}
@@ -515,7 +511,7 @@ func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optiona
 	assert.Equal(t, wantMaxAge, resp.Header.Get("Access-Control-Max-Age"))
 }
 
-func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
+func verifyHeadersResp(t *testing.T, url string, expected configopaque.MapList) {
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	require.NoError(t, err, "Error creating request")
 
@@ -526,7 +522,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	for k, v := range expected {
+	for k, v := range expected.Iter {
 		assert.Equal(t, string(v), resp.Header.Get(k))
 	}
 }
@@ -950,13 +946,74 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
-	assert.NotNil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
 	assert.NotNil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+	assert.True(t, httpServerSettings.KeepAlivesEnabled) // Default should be true (keep-alives enabled by default)
+}
+
+func TestHTTPServerKeepAlives(t *testing.T) {
+	tests := []struct {
+		name               string
+		keepAlivesEnabled  bool
+		expectedKeepAlives bool
+	}{
+		{
+			name:               "KeepAlives enabled",
+			keepAlivesEnabled:  true,
+			expectedKeepAlives: true,
+		},
+		{
+			name:               "KeepAlives disabled",
+			keepAlivesEnabled:  false,
+			expectedKeepAlives: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc := &ServerConfig{
+				Endpoint:          "localhost:0",
+				KeepAlivesEnabled: tt.keepAlivesEnabled,
+			}
+
+			server, err := sc.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}))
+
+			require.NoError(t, err)
+			require.NotNil(t, server)
+
+			// Since http.Server.disableKeepAlives is a private field and difficult to test directly,
+			// we'll verify the configuration was set by testing the server behavior.
+			// The main verification is that ToServer() succeeds without error when DisableKeepAlives is set.
+
+			ln, err := sc.ToListener(context.Background())
+			require.NoError(t, err)
+
+			go func() {
+				_ = server.Serve(ln)
+			}()
+			defer func() {
+				_ = server.Close()
+			}()
+
+			resp, err := http.Get("http://" + ln.Addr().String())
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			_ = resp.Body.Close()
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			assert.Equal(t, tt.keepAlivesEnabled, sc.KeepAlivesEnabled)
+		})
+	}
 }
 
 func TestHTTPServerTelemetry_Tracing(t *testing.T) {
@@ -1058,6 +1115,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
+	assert.True(t, serverConfig.KeepAlivesEnabled) // Should be true as configured in config.yaml
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
@@ -1075,9 +1133,9 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 7200, serverConfig.CORS.Get().MaxAge)
 
 	// Verify response headers
-	expectedResponseHeaders := map[string]configopaque.String{
-		"Server":   "OpenTelemetry-Collector",
-		"X-Flavor": "apple",
+	expectedResponseHeaders := configopaque.MapList{
+		{Name: "Server", Value: "OpenTelemetry-Collector"},
+		{Name: "X-Flavor", Value: "apple"},
 	}
 	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
 

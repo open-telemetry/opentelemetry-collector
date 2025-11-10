@@ -71,7 +71,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.ClientConfig.Headers {
+	for k, v := range e.config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
 	}
 	e.metadata = metadata.New(headers)

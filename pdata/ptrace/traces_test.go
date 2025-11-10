@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +31,7 @@ func TestSpanCount(t *testing.T) {
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeSpans().AppendEmpty()
 	ilss := rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ilss.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
@@ -41,22 +39,22 @@ func TestSpanCount(t *testing.T) {
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{{}},
+	assert.Equal(t, 0, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{{}},
 	}, new(internal.State)).SpanCount())
-	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
+	assert.Equal(t, 0, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{
 			{
-				ScopeSpans: []*otlptrace.ScopeSpans{{}},
+				ScopeSpans: []*internal.ScopeSpans{{}},
 			},
 		},
 	}, new(internal.State)).SpanCount())
-	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
+	assert.Equal(t, 1, newTraces(&internal.ExportTraceServiceRequest{
+		ResourceSpans: []*internal.ResourceSpans{
 			{
-				ScopeSpans: []*otlptrace.ScopeSpans{
+				ScopeSpans: []*internal.ScopeSpans{
 					{
-						Spans: []*otlptrace.Span{{}},
+						Spans: []*internal.Span{{}},
 					},
 				},
 			},
@@ -86,9 +84,8 @@ func BenchmarkTracesUsage(b *testing.B) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			rs := td.ResourceSpans().At(i)
 			res := rs.Resource()
@@ -138,8 +135,8 @@ func BenchmarkTracesMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalTraces(td)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)

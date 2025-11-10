@@ -8,7 +8,6 @@ package pprofileotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportResponse function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportResponse struct {
-	orig  *otlpcollectorprofiles.ExportProfilesServiceResponse
+	orig  *internal.ExportProfilesServiceResponse
 	state *internal.State
 }
 
-func newExportResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse, state *internal.State) ExportResponse {
+func newExportResponse(orig *internal.ExportProfilesServiceResponse, state *internal.State) ExportResponse {
 	return ExportResponse{orig: orig, state: state}
 }
 
@@ -32,7 +31,7 @@ func newExportResponse(orig *otlpcollectorprofiles.ExportProfilesServiceResponse
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	return newExportResponse(internal.NewOrigExportProfilesServiceResponse(), internal.NewState())
+	return newExportResponse(internal.NewExportProfilesServiceResponse(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +43,7 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportProfilesServiceResponse(dest.orig, false)
+	internal.DeleteExportProfilesServiceResponse(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -56,5 +55,5 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportResponse) CopyTo(dest ExportResponse) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportProfilesServiceResponse(dest.orig, ms.orig)
+	internal.CopyExportProfilesServiceResponse(dest.orig, ms.orig)
 }

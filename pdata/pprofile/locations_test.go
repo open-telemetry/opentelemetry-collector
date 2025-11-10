@@ -34,57 +34,43 @@ func TestFromLocationIndices(t *testing.T) {
 	assert.Equal(t, table, locs)
 }
 
-func TestPutLocation(t *testing.T) {
+func TestSetLocation(t *testing.T) {
 	table := NewLocationSlice()
 	l := NewLocation()
 	l.SetAddress(1)
 	l2 := NewLocation()
 	l2.SetAddress(2)
-	l3 := NewLocation()
-	l3.SetAddress(3)
-	l4 := NewLocation()
-	l4.SetAddress(4)
-	stack := NewStack()
 
-	// Put a first location
-	require.NoError(t, PutLocation(table, stack, l))
+	// Put a first value
+	idx, err := SetLocation(table, l)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, []int32{0}, stack.LocationIndices().AsRaw())
+	assert.Equal(t, int32(0), idx)
 
-	// Put the same location
+	// Put the same string
 	// This should be a no-op.
-	require.NoError(t, PutLocation(table, stack, l))
+	idx, err = SetLocation(table, l)
+	require.NoError(t, err)
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, []int32{0}, stack.LocationIndices().AsRaw())
+	assert.Equal(t, int32(0), idx)
 
-	// Special case: removing and adding again should not change the table as
-	// this can lead to multiple identical locations in the table.
-	stack.LocationIndices().FromRaw([]int32{})
-	require.NoError(t, PutLocation(table, stack, l))
-	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, []int32{0}, stack.LocationIndices().AsRaw())
-
-	// Put a new location
-	// This adds an index and adds to the table.
-	require.NoError(t, PutLocation(table, stack, l2))
+	// Set a new value
+	// This sets the index and adds to the table.
+	idx, err = SetLocation(table, l2)
+	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0, 1}, stack.LocationIndices().AsRaw())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 
-	// Add a negative index to the stack.
-	stack.LocationIndices().Append(-1)
-	tableLen := table.Len()
-	indicesLen := stack.LocationIndices().Len()
-	// Try putting a new location, make sure it fails, and that table/indices didn't change.
-	require.Error(t, PutLocation(table, stack, l3))
-	require.Equal(t, tableLen, table.Len())
-	require.Equal(t, indicesLen, stack.LocationIndices().Len())
-
-	// Set the last index to the table length, which is out of range.
-	stack.LocationIndices().SetAt(indicesLen-1, int32(tableLen)) //nolint:gosec
-	// Try putting a new location, make sure it fails, and that table/indices didn't change.
-	require.Error(t, PutLocation(table, stack, l4))
-	require.Equal(t, tableLen, table.Len())
-	require.Equal(t, indicesLen, stack.LocationIndices().Len())
+	// Set an existing value
+	idx, err = SetLocation(table, l)
+	require.NoError(t, err)
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(0), idx)
+	// Set another existing value
+	idx, err = SetLocation(table, l2)
+	require.NoError(t, err)
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
 }
 
 func BenchmarkFromLocationIndices(b *testing.B) {
@@ -97,20 +83,19 @@ func BenchmarkFromLocationIndices(b *testing.B) {
 	obj := NewStack()
 	obj.LocationIndices().Append(1, 3, 7)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for range b.N {
+	for b.Loop() {
 		_ = FromLocationIndices(table, obj)
 	}
 }
 
-func BenchmarkPutLocation(b *testing.B) {
+func BenchmarkSetLocation(b *testing.B) {
 	for _, bb := range []struct {
 		name     string
 		location Location
 
-		runBefore func(*testing.B, LocationSlice, Stack)
+		runBefore func(*testing.B, LocationSlice)
 	}{
 		{
 			name:     "with a new location",
@@ -124,7 +109,7 @@ func BenchmarkPutLocation(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, _ Stack) {
+			runBefore: func(_ *testing.B, table LocationSlice) {
 				l := table.AppendEmpty()
 				l.SetAddress(1)
 			},
@@ -133,8 +118,9 @@ func BenchmarkPutLocation(b *testing.B) {
 			name:     "with a duplicate location",
 			location: NewLocation(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, obj Stack) {
-				require.NoError(b, PutLocation(table, obj, NewLocation()))
+			runBefore: func(_ *testing.B, table LocationSlice) {
+				_, err := SetLocation(table, NewLocation())
+				require.NoError(b, err)
 			},
 		},
 		{
@@ -145,7 +131,7 @@ func BenchmarkPutLocation(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, _ Stack) {
+			runBefore: func(_ *testing.B, table LocationSlice) {
 				for i := range 100 {
 					l := table.AppendEmpty()
 					l.SetAddress(uint64(i)) //nolint:gosec // overflow checked
@@ -158,17 +144,16 @@ func BenchmarkPutLocation(b *testing.B) {
 	} {
 		b.Run(bb.name, func(b *testing.B) {
 			table := NewLocationSlice()
-			obj := NewStack()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table, obj)
+				bb.runBefore(b, table)
 			}
 
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for range b.N {
-				_ = PutLocation(table, obj, bb.location)
+			for b.Loop() {
+				_, _ = SetLocation(table, bb.location)
 			}
 		})
 	}

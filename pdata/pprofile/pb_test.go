@@ -74,8 +74,8 @@ func TestProtoSizerEmptyProfiles(t *testing.T) {
 func BenchmarkProfilesToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	profiles := generateBenchmarkProfiles(128)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		buf, err := marshaler.MarshalProfiles(profiles)
 		require.NoError(b, err)
 		assert.NotEmpty(b, buf)
@@ -89,9 +89,9 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 	buf, err := marshaler.MarshalProfiles(baseProfiles)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		profiles, err := unmarshaler.UnmarshalProfiles(buf)
 		require.NoError(b, err)
 		assert.Equal(b, baseProfiles.ResourceProfiles().Len(), profiles.ResourceProfiles().Len())
@@ -101,9 +101,9 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 func generateBenchmarkProfiles(samplesCount int) Profiles {
 	md := NewProfiles()
 	ilm := md.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	ilm.Sample().EnsureCapacity(samplesCount)
-	for i := 0; i < samplesCount; i++ {
-		im := ilm.Sample().AppendEmpty()
+	ilm.Samples().EnsureCapacity(samplesCount)
+	for range samplesCount {
+		im := ilm.Samples().AppendEmpty()
 		im.SetStackIndex(0)
 	}
 	return md

@@ -7,6 +7,79 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.45.0/v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Make stability.level a required field for metrics (#14070)
+- `cmd/mdatagen`: Replace `optional` field with `requirement_level` field for attributes in metadata schema (#13913)
+  The `optional` boolean field for attributes has been replaced with a `requirement_level` field that accepts enum values: `required`, `conditionally_required`, `recommended`, or `opt_in`.
+  - `required`: attribute is always included and cannot be excluded
+  - `conditionally_required`: attribute is included by default when certain conditions are met (replaces `optional: true`)
+  - `recommended`: attribute is included by default but can be disabled via configuration (replaces `optional: false`)
+  - `opt_in`: attribute is not included unless explicitly enabled in user config
+  When `requirement_level` is not specified, it defaults to `recommended`.
+  
+- `pdata/pprofile`: Remove deprecated `PutAttribute` helper method (#14082)
+- `pdata/pprofile`: Remove deprecated `PutLocation` helper method (#14082)
+
+### 💡 Enhancements 💡
+
+- `all`: Add FIPS and non-FIPS implementations for allowed TLS curves (#13990)
+- `cmd/builder`: Set CGO_ENABLED=0 by default, add the `cgo_enabled` configuration to enable it. (#10028)
+- `pkg/config/configgrpc`: Errors of type status.Status returned from an Authenticator extension are being propagated as is to the upstream client. (#14005)
+- `pkg/config/configoptional`: Adds new `configoptional.AddEnabledField` feature gate that allows users to explicitly disable a `configoptional.Optional` through a new `enabled` field. (#14021)
+- `pkg/exporterhelper`: Replace usage of gogo proto for persistent queue metadata (#14079)
+- `pkg/pdata`: Remove usage of gogo proto and generate the structs with pdatagen (#14078)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: add queue configuration (#14101)
+
+<!-- previous-version -->
+
+## v1.44.0/v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove deprecated type `TracesConfig` (#14036)
+- `pkg/exporterhelper`: Add default values for `sending_queue::batch` configuration. (#13766)
+  Setting `sending_queue::batch` to an empty value now results in the same setup as the default batch processor configuration.
+  
+- `all`: Add unified print-config command with mode support (redacted, unredacted), json support (unstable), and validation support. (#11775)
+  This replaces the `print-initial-config` command. See the `service` package README for more details. The original command name `print-initial-config` remains an alias, to be retired with the feature flag.
+
+### 💡 Enhancements 💡
+
+- `all`: Add `keep_alives_enabled` option to ServerConfig to control HTTP keep-alives for all components that create an HTTP server. (#13783)
+- `pkg/otelcol`: Avoid unnecessary mutex in collector logs, replace by atomic pointer (#14008)
+- `cmd/mdatagen`: Add lint/ordering validation for metadata.yaml (#13781)
+- `pdata/xpdata`: Refactor JSON marshaling and unmarshaling to use `pcommon.Value` instead of `AnyValue`. (#13837)
+- `pkg/exporterhelper`: Expose `MergeCtx` in exporterhelper's queue batch settings` (#13742)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Fix zstd decoder data corruption due to decoder pooling for all components that create an HTTP server. (#13954)
+- `pkg/otelcol`: Remove UB when taking internal logs and move them to the final zapcore.Core (#14009)
+  This can happen because of a race on accessing `logsTaken`.
+- `pkg/confmap`: Fix a potential race condition in confmap by closing the providers first. (#14018)
+
+<!-- previous-version -->
+
+## v1.43.0/v0.137.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Improve validation for resource attribute `enabled` field in metadata files (#12722)
+  Resource attributes now require an explicit `enabled` field in metadata.yaml files, while regular attributes
+  are prohibited from having this field. This improves validation and prevents configuration errors.
+  
+- `all`: Changelog entries will now have their component field checked against a list of valid components. (#13924)
+  This will ensure a more standardized changelog format which makes it easier to parse.
+- `pkg/pdata`: Mark featuregate pdata.useCustomProtoEncoding as stable (#13883)
+
+<!-- previous-version -->
+
 ## v1.42.0/v0.136.0
 
 ### 💡 Enhancements 💡

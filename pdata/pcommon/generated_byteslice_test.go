@@ -52,7 +52,7 @@ func TestByteSliceReadOnly(t *testing.T) {
 	raw := []byte{1, 2, 3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := ByteSlice(internal.NewByteSlice(&raw, sharedState))
+	ms := ByteSlice(internal.NewByteSliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, byte(1), ms.At(0))
@@ -116,6 +116,32 @@ func TestByteSliceMoveAndAppendTo(t *testing.T) {
 	ms.FromRaw([]byte{1, 2, 3})
 	ms.MoveAndAppendTo(ms2)
 	assert.Equal(t, ms2.Len(), 6)
+}
+
+func TestByteSliceRemoveIf(t *testing.T) {
+	emptySlice := NewByteSlice()
+	emptySlice.RemoveIf(func(el byte) bool {
+		t.Fail()
+		return false
+	})
+
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 2, 3})
+	pos := 0
+	ms.RemoveIf(func(el byte) bool {
+		pos++
+		return pos%2 == 1
+	})
+	assert.Equal(t, pos/2, ms.Len())
+}
+
+func TestByteSliceRemoveIfAll(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 2, 3})
+	ms.RemoveIf(func(el byte) bool {
+		return true
+	})
+	assert.Equal(t, 0, ms.Len())
 }
 
 func TestByteSliceEqual(t *testing.T) {

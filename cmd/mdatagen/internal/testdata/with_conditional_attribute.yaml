@@ -1,0 +1,36 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+attributes:
+  conditional_int_attr:
+    description: Conditional int attr.
+    type: string
+    requirement_level: conditionally_required
+  
+  opt_in_string_attr:
+    description: Opt-in string attr.
+    type: string
+    requirement_level: opt_in
+
+metrics:
+  metric:
+    enabled: true
+    description: Metric.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [conditional_int_attr, opt_in_string_attr]
+
+events:
+  event:
+    enabled: true
+    description: Event.
+    attributes: [conditional_int_attr, opt_in_string_attr]

@@ -18,19 +18,19 @@ Monotonic cumulative sum int metric enabled by default.
 
 The metric will be become optional soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ### default.metric.to_be_removed
 
@@ -38,27 +38,27 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Delta | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Delta | false | Deprecated |
 
 ### metric.input_type
 
 Monotonic cumulative sum int metric with string input_type enabled by default.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| state | Integer attribute with overridden name. | Any Int | false |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
-| slice_attr | Attribute with a slice value. | Any Slice | false |
-| map_attr | Attribute with a map value. | Any Map | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| state | Integer attribute with overridden name. | Any Int | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
+| map_attr | Attribute with a map value. | Any Map | Recommended |
 
 ## Optional Metrics
 
@@ -74,32 +74,32 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
 
 ### optional.metric.empty_unit
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Double | Deprecated |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | false |
-| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
 ## Resource Attributes
 
@@ -113,3 +113,19 @@ metrics:
 | string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
 | string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
 | string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+
+## Entities
+
+The following entities are defined for this component:
+
+### test.entity
+
+A test entity.
+
+**Stability:** stable
+
+**Identity Attributes:**
+- `string.resource.attr`
+
+**Description Attributes:**
+- `map.resource.attr`

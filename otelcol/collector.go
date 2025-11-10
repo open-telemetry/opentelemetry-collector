@@ -53,7 +53,10 @@ func (s State) String() string {
 
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
-	// Factories service factories.
+	// Factories returns component factories for the collector.
+	//
+	// TODO(13263) This is a dangerous "bare" function value, should define an interface
+	// following style guidelines.
 	Factories func() (Factories, error)
 
 	// BuildInfo provides collector start information.
@@ -119,7 +122,7 @@ type Collector struct {
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	bc := newBufferedCore(zapcore.DebugLevel)
-	cc := &collectorCore{core: bc}
+	cc := newCollectorCore(bc)
 	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
 	logger := zap.New(cc, options...)
 	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
@@ -175,6 +178,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
+
 	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
@@ -216,6 +220,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+		TelemetryFactory:  factories.Telemetry,
 	}, cfg.Service)
 	if err != nil {
 		return err
@@ -265,6 +270,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
+
 	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
@@ -284,6 +290,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		ExportersFactories:  factories.Exporters,
 		ConnectorsConfigs:   cfg.Connectors,
 		ConnectorsFactories: factories.Connectors,
+		TelemetryFactory:    factories.Telemetry,
 	}, service.Config{
 		Pipelines: cfg.Service.Pipelines,
 	})

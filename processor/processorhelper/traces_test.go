@@ -92,11 +92,11 @@ func TestTracesConcurrency(t *testing.T) {
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 10000; j++ {
+			for range 10000 {
 				assert.NoError(t, mp.ConsumeTraces(context.Background(), incomingTraces))
 			}
 		}()

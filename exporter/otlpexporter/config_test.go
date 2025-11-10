@@ -64,10 +64,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
+				Headers: configopaque.MapList{
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
@@ -85,6 +85,38 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
 				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("nop")}),
+			},
+		}, cfg)
+}
+
+func TestUnmarshalDefaultBatchConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default-batch.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, xconfmap.Validate(&cfg))
+	assert.Equal(t,
+		&Config{
+			TimeoutConfig: exporterhelper.TimeoutConfig{
+				Timeout: 10 * time.Second,
+			},
+			RetryConfig: configretry.NewDefaultBackOffConfig(),
+			QueueConfig: exporterhelper.QueueBatchConfig{
+				Enabled:      true,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
+				QueueSize:    1000,
+				NumConsumers: 10,
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      8192,
+				}),
+			},
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint:        "1.2.3.4:1234",
+				Compression:     "gzip",
+				WriteBufferSize: 512 * 1024,
 			},
 		}, cfg)
 }

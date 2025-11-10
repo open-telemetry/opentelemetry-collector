@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -25,8 +24,8 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState)) })
-	assert.Panics(t, func() { newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(internal.NewExportTracePartialSuccess(), sharedState)) })
+	assert.Panics(t, func() { newExportPartialSuccess(internal.NewExportTracePartialSuccess(), sharedState).MoveTo(dest) })
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -39,7 +38,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(internal.NewExportTracePartialSuccess(), sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
@@ -50,7 +49,7 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetRejectedSpans(int64(13))
+		newExportPartialSuccess(internal.NewExportTracePartialSuccess(), sharedState).SetRejectedSpans(int64(13))
 	})
 }
 
@@ -62,11 +61,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(internal.NewExportTracePartialSuccess(), sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	ms := newExportPartialSuccess(internal.GenTestOrigExportTracePartialSuccess(), internal.NewState())
-	return ms
+	return newExportPartialSuccess(internal.GenTestExportTracePartialSuccess(), internal.NewState())
 }

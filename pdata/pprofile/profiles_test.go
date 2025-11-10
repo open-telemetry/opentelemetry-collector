@@ -11,9 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -40,7 +37,7 @@ func TestSampleCount(t *testing.T) {
 	ps := ils.Profiles().AppendEmpty()
 	assert.Equal(t, 0, pd.SampleCount())
 
-	ps.Sample().AppendEmpty()
+	ps.Samples().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
 	ils2 := rs.ScopeProfiles().AppendEmpty()
@@ -49,14 +46,14 @@ func TestSampleCount(t *testing.T) {
 	ps2 := ils2.Profiles().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
-	ps2.Sample().AppendEmpty()
+	ps2.Samples().AppendEmpty()
 	assert.Equal(t, 2, pd.SampleCount())
 
 	rms := pd.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
-	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
-	for i := 0; i < 5; i++ {
+	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples()
+	for range 5 {
 		ilss.AppendEmpty()
 	}
 	// 5 + 2 (from rms.At(0) and rms.At(1) initialized first)
@@ -64,24 +61,24 @@ func TestSampleCount(t *testing.T) {
 }
 
 func TestSampleCountWithEmpty(t *testing.T) {
-	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{{}},
+	assert.Equal(t, 0, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{{}},
 	}, new(internal.State)).SampleCount())
-	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+	assert.Equal(t, 0, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{
 			{
-				ScopeProfiles: []*otlpprofile.ScopeProfiles{{}},
+				ScopeProfiles: []*internal.ScopeProfiles{{}},
 			},
 		},
 	}, new(internal.State)).SampleCount())
-	assert.Equal(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
-		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+	assert.Equal(t, 1, newProfiles(&internal.ExportProfilesServiceRequest{
+		ResourceProfiles: []*internal.ResourceProfiles{
 			{
-				ScopeProfiles: []*otlpprofile.ScopeProfiles{
+				ScopeProfiles: []*internal.ScopeProfiles{
 					{
-						Profiles: []*otlpprofile.Profile{
+						Profiles: []*internal.Profile{
 							{
-								Sample: []*otlpprofile.Sample{
+								Samples: []*internal.Sample{
 									{},
 								},
 							},
@@ -96,13 +93,12 @@ func TestSampleCountWithEmpty(t *testing.T) {
 func BenchmarkProfilesUsage(b *testing.B) {
 	pd := generateTestProfiles()
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	testValProfileID := ProfileID(data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	testSecondValProfileID := ProfileID(data.ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	testValProfileID := ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	testSecondValProfileID := ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for bb := 0; bb < b.N; bb++ {
+	for b.Loop() {
 		for i := 0; i < pd.ResourceProfiles().Len(); i++ {
 			rs := pd.ResourceProfiles().At(i)
 			res := rs.Resource()
@@ -144,8 +140,8 @@ func BenchmarkProfilesMarshalJSON(b *testing.B) {
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		jsonBuf, err := encoder.MarshalProfiles(pd)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
