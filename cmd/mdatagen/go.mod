@@ -190,8 +190,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
@@ -199,3 +197,5 @@ replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
