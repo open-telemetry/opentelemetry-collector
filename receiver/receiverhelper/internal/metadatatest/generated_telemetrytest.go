@@ -15,7 +15,7 @@ import (
 func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_log_records",
-		Description: "Number of log records successfully pushed into the pipeline. [alpha]",
+		Description: "Number of log records successfully pushed into the pipeline. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telem
 func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_metric_points",
-		Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+		Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -47,7 +47,7 @@ func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Tel
 func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_spans",
-		Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+		Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -63,7 +63,7 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualReceiverFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_log_records",
-		Description: "The number of log records that failed to be processed by the receiver due to internal errors. [alpha]",
+		Description: "The number of log records that failed to be processed by the receiver due to internal errors. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -79,7 +79,7 @@ func AssertEqualReceiverFailedLogRecords(t *testing.T, tt *componenttest.Telemet
 func AssertEqualReceiverFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_metric_points",
-		Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [alpha]",
+		Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -95,7 +95,7 @@ func AssertEqualReceiverFailedMetricPoints(t *testing.T, tt *componenttest.Telem
 func AssertEqualReceiverFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_spans",
-		Description: "The number of spans that failed to be processed by the receiver due to internal errors. [alpha]",
+		Description: "The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -111,7 +111,7 @@ func AssertEqualReceiverFailedSpans(t *testing.T, tt *componenttest.Telemetry, d
 func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_log_records",
-		Description: "Number of log records that could not be pushed into the pipeline. [alpha]",
+		Description: "Number of log records that could not be pushed into the pipeline. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -127,7 +127,7 @@ func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Teleme
 func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_metric_points",
-		Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+		Description: "Number of metric points that could not be pushed into the pipeline. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -143,7 +143,7 @@ func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Tele
 func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_spans",
-		Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+		Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -159,7 +159,7 @@ func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualReceiverRequests(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_requests",
-		Description: "The number of requests performed. [alpha]",
+		Description: "The number of requests performed. [Alpha]",
 		Unit:        "{requests}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

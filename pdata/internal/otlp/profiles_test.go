@@ -6,11 +6,11 @@ package otlp
 import (
 	"testing"
 
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestMigrateProfiles(_ *testing.T) {
-	rps := []*otlpprofiles.ResourceProfiles{
+	rps := []*internal.ResourceProfiles{
 		{},
 	}
 

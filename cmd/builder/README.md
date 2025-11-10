@@ -222,3 +222,14 @@ file for the following things after `go get`ing all components and calling
 The `--skip-strict-versioning` flag disables these versioning checks.
 This flag is available temporarily and
 **will be removed in a future minor version**.
+
+### Cgo disabled by default
+
+By default, the OpenTelemetry Collector binary is built with `CGO_ENABLED=0` in accordance with
+how the official OpenTelemetry Collector releases are built. This can be overridden by adding
+the following configuration option to the `dist` section of the builder configuration file:
+
+```yaml
+dist:
+  cgo_enabled: true
+```

@@ -3,42 +3,38 @@
 
 package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
-import (
-	"go.opentelemetry.io/collector/pdata/internal"
-)
-
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalTraces(td Traces) ([]byte, error) {
-	size := internal.SizeProtoExportTraceServiceRequest(td.getOrig())
+	size := td.getOrig().SizeProto()
 	buf := make([]byte, size)
-	_ = internal.MarshalProtoExportTraceServiceRequest(td.getOrig(), buf)
+	_ = td.getOrig().MarshalProto(buf)
 	return buf, nil
 }
 
 func (e *ProtoMarshaler) TracesSize(td Traces) int {
-	return internal.SizeProtoExportTraceServiceRequest(td.getOrig())
+	return td.getOrig().SizeProto()
 }
 
 func (e *ProtoMarshaler) ResourceSpansSize(td ResourceSpans) int {
-	return internal.SizeProtoResourceSpans(td.orig)
+	return td.orig.SizeProto()
 }
 
 func (e *ProtoMarshaler) ScopeSpansSize(td ScopeSpans) int {
-	return internal.SizeProtoScopeSpans(td.orig)
+	return td.orig.SizeProto()
 }
 
 func (e *ProtoMarshaler) SpanSize(td Span) int {
-	return internal.SizeProtoSpan(td.orig)
+	return td.orig.SizeProto()
 }
 
 type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	td := NewTraces()
-	err := internal.UnmarshalProtoExportTraceServiceRequest(td.getOrig(), buf)
+	err := td.getOrig().UnmarshalProto(buf)
 	if err != nil {
 		return Traces{}, err
 	}

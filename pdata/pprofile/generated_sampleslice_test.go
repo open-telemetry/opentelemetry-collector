@@ -13,13 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestSampleSlice(t *testing.T) {
 	es := NewSampleSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSampleSlice(&[]*otlpprofiles.Sample{}, internal.NewState())
+	es = newSampleSlice(&[]*internal.Sample{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSample()
@@ -36,7 +35,7 @@ func TestSampleSlice(t *testing.T) {
 func TestSampleSliceReadOnly(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	es := newSampleSlice(&[]*otlpprofiles.Sample{}, sharedState)
+	es := newSampleSlice(&[]*internal.Sample{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -162,6 +161,6 @@ func TestSampleSlice_Sort(t *testing.T) {
 
 func generateTestSampleSlice() SampleSlice {
 	ms := NewSampleSlice()
-	*ms.orig = internal.GenTestSampleSlice()
+	*ms.orig = internal.GenTestSamplePtrSlice()
 	return ms
 }

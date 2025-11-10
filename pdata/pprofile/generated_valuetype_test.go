@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestValueType_MoveTo(t *testing.T) {
@@ -49,7 +48,7 @@ func TestValueType_TypeStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.TypeStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetTypeStrindex(int32(13)) })
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).SetTypeStrindex(int32(13)) })
 }
 
 func TestValueType_UnitStrindex(t *testing.T) {
@@ -59,18 +58,9 @@ func TestValueType_UnitStrindex(t *testing.T) {
 	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, sharedState).SetUnitStrindex(int32(13)) })
-}
-
-func TestValueType_AggregationTemporality(t *testing.T) {
-	ms := NewValueType()
-	assert.Equal(t, AggregationTemporality(otlpprofiles.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporality(otlpprofiles.AggregationTemporality(1))
-	ms.SetAggregationTemporality(testValAggregationTemporality)
-	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
+	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func generateTestValueType() ValueType {
-	ms := newValueType(internal.GenTestValueType(), internal.NewState())
-	return ms
+	return newValueType(internal.GenTestValueType(), internal.NewState())
 }

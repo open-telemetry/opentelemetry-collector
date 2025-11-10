@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // MappingSlice logically represents a slice of Mapping.
@@ -22,18 +21,18 @@ import (
 // Must use NewMappingSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MappingSlice struct {
-	orig  *[]*otlpprofiles.Mapping
+	orig  *[]*internal.Mapping
 	state *internal.State
 }
 
-func newMappingSlice(orig *[]*otlpprofiles.Mapping, state *internal.State) MappingSlice {
+func newMappingSlice(orig *[]*internal.Mapping, state *internal.State) MappingSlice {
 	return MappingSlice{orig: orig, state: state}
 }
 
 // NewMappingSlice creates a MappingSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMappingSlice() MappingSlice {
-	orig := []*otlpprofiles.Mapping(nil)
+	orig := []*internal.Mapping(nil)
 	return newMappingSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Mapping, len(*es.orig), newCap)
+	newOrig := make([]*internal.Mapping, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyMappingSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyMappingPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Mapping elements within MappingSlice given the

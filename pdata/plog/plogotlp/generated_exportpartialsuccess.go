@@ -8,7 +8,6 @@ package plogotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -19,11 +18,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectorlogs.ExportLogsPartialSuccess
+	orig  *internal.ExportLogsPartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *internal.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 

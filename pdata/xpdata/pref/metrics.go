@@ -27,7 +27,7 @@ func UnrefMetrics(md pmetric.Metrics) {
 		if !internal.GetMetricsState(internal.MetricsWrapper(md)).Unref() {
 			return
 		}
-		// Don't call DeleteOrigExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 		if internal.UseProtoPooling.IsEnabled() {
 			internal.DeleteExportMetricsServiceRequest(internal.GetMetricsOrig(internal.MetricsWrapper(md)), true)
 		}

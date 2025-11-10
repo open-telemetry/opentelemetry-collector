@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // StackSlice logically represents a slice of Stack.
@@ -22,18 +21,18 @@ import (
 // Must use NewStackSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type StackSlice struct {
-	orig  *[]*otlpprofiles.Stack
+	orig  *[]*internal.Stack
 	state *internal.State
 }
 
-func newStackSlice(orig *[]*otlpprofiles.Stack, state *internal.State) StackSlice {
+func newStackSlice(orig *[]*internal.Stack, state *internal.State) StackSlice {
 	return StackSlice{orig: orig, state: state}
 }
 
 // NewStackSlice creates a StackSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewStackSlice() StackSlice {
-	orig := []*otlpprofiles.Stack(nil)
+	orig := []*internal.Stack(nil)
 	return newStackSlice(&orig, internal.NewState())
 }
 
@@ -90,7 +89,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Stack, len(*es.orig), newCap)
+	newOrig := make([]*internal.Stack, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -152,7 +151,7 @@ func (es StackSlice) CopyTo(dest StackSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyStackSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyStackPtrSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Stack elements within StackSlice given the

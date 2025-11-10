@@ -30,6 +30,8 @@ type Metadata struct {
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	// Entities organizes resource attributes into logical entities.
+	Entities []Entity `mapstructure:"entities"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
@@ -56,6 +58,10 @@ func (md Metadata) GetCodeCovComponentID() string {
 	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
 }
 
+func (md Metadata) HasEntities() bool {
+	return len(md.Entities) > 0
+}
+
 func (md *Metadata) Validate() error {
 	var errs error
 	if err := md.validateType(); err != nil {
@@ -72,6 +78,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateResourceAttributes(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateEntities(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -122,12 +132,57 @@ func (md *Metadata) validateResourceAttributes() error {
 	return errs
 }
 
+func (md *Metadata) validateEntities() error {
+	var errs error
+	usedAttrs := make(map[AttributeName]string)
+	seenTypes := make(map[string]bool)
+
+	for _, entity := range md.Entities {
+		if entity.Type == "" {
+			errs = errors.Join(errs, errors.New("entity type cannot be empty"))
+			continue
+		}
+		if seenTypes[entity.Type] {
+			errs = errors.Join(errs, fmt.Errorf(`duplicate entity type: %v`, entity.Type))
+		}
+		seenTypes[entity.Type] = true
+
+		if entity.Brief == "" {
+			errs = errors.Join(errs, fmt.Errorf(`entity "%v": brief is required`, entity.Type))
+		}
+		if len(entity.Identity) == 0 {
+			errs = errors.Join(errs, fmt.Errorf(`entity "%v": identity is required`, entity.Type))
+		}
+		for _, ref := range entity.Identity {
+			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": identity refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
+			}
+			if otherEntity, used := usedAttrs[ref.Ref]; used {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entity.Type, ref.Ref, otherEntity))
+			} else {
+				usedAttrs[ref.Ref] = entity.Type
+			}
+		}
+		for _, ref := range entity.Description {
+			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": description refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
+			}
+			if otherEntity, used := usedAttrs[ref.Ref]; used {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entity.Type, ref.Ref, otherEntity))
+			} else {
+				usedAttrs[ref.Ref] = entity.Type
+			}
+		}
+	}
+	return errs
+}
+
 func (md *Metadata) validateMetricsAndEvents() error {
 	var errs error
 	usedAttrs := map[AttributeName]bool{}
 	errs = errors.Join(errs,
-		validateMetrics(md.Metrics, md.Attributes, usedAttrs),
-		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
+		validateMetrics(md.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
+		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateEvents(md.Events, md.Attributes, usedAttrs),
 		md.validateAttributes(usedAttrs))
 	return errs
@@ -171,10 +226,10 @@ func (md *Metadata) supportsSignal(signal string) bool {
 	return false
 }
 
-func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
+func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool, semConvVersion string) error {
 	var errs error
 	for mn, m := range metrics {
-		if err := m.validate(); err != nil {
+		if err := m.validate(mn, semConvVersion); err != nil {
 			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
 			continue
 		}
@@ -312,6 +367,10 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
+type SemanticConvention struct {
+	SemanticConventionRef string `mapstructure:"ref"`
+}
+
 type Warnings struct {
 	// A warning that will be displayed if the field is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
@@ -423,6 +482,9 @@ type Signal struct {
 	// Description of the signal.
 	Description string `mapstructure:"description"`
 
+	// The semantic convention reference of the signal.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+
 	// The stability level of the signal.
 	Stability Stability `mapstructure:"stability"`
 
@@ -440,4 +502,22 @@ func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool
 		}
 	}
 	return false
+}
+
+type Entity struct {
+	// Type is the type of the entity.
+	Type string `mapstructure:"type"`
+	// Brief is a brief description of the entity.
+	Brief string `mapstructure:"brief"`
+	// Stability is the stability level of the entity.
+	Stability string `mapstructure:"stability"`
+	// Identity contains references to resource attributes that uniquely identify the entity.
+	Identity []EntityAttributeRef `mapstructure:"identity"`
+	// Description contains references to resource attributes that describe the entity.
+	Description []EntityAttributeRef `mapstructure:"description"`
+}
+
+type EntityAttributeRef struct {
+	// Ref is the reference to a resource attribute.
+	Ref AttributeName `mapstructure:"ref"`
 }
