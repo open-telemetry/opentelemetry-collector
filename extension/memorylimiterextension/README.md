@@ -16,8 +16,10 @@ It provides better guarantees from running out of memory as it will be used by t
 receivers to reject requests before converting them into OTLP. All the configurations 
 are the same as Memory Limiter Processor. 
 
-## How to use extension as a middleware/interceptor 
-This extension can be used as an extension to otlp receiver.
+
+This extension can be used as an extension for all HTTP and gRPC receivers that
+are configured through the standard `confighttp` and `configgrpc` libraries. For
+example, to configure this extension in the OTLP receiver:
 
 ```
 receivers:
