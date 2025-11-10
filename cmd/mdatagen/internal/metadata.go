@@ -181,8 +181,8 @@ func (md *Metadata) validateMetricsAndEvents() error {
 	var errs error
 	usedAttrs := map[AttributeName]bool{}
 	errs = errors.Join(errs,
-		validateMetrics(md.Metrics, md.Attributes, usedAttrs),
-		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
+		validateMetrics(md.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
+		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateEvents(md.Events, md.Attributes, usedAttrs),
 		md.validateAttributes(usedAttrs))
 	return errs
@@ -226,10 +226,10 @@ func (md *Metadata) supportsSignal(signal string) bool {
 	return false
 }
 
-func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
+func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool, semConvVersion string) error {
 	var errs error
 	for mn, m := range metrics {
-		if err := m.validate(); err != nil {
+		if err := m.validate(mn, semConvVersion); err != nil {
 			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
 			continue
 		}
@@ -367,6 +367,10 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
+type SemanticConvention struct {
+	SemanticConventionRef string `mapstructure:"ref"`
+}
+
 type Warnings struct {
 	// A warning that will be displayed if the field is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
@@ -477,6 +481,9 @@ type Signal struct {
 
 	// Description of the signal.
 	Description string `mapstructure:"description"`
+
+	// The semantic convention reference of the signal.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
 	Stability Stability `mapstructure:"stability"`
