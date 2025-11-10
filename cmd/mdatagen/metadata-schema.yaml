@@ -145,6 +145,9 @@ metrics:
       level: <development|alpha|beta|stable|deprecated>
       # Optional: the version current stability was introduced
       from:
+    # Optional: the reference to a semantic convention
+    semantic_convention:
+      ref:
 
 # Optional: map of event names with the key being the event name and value
 # being described below.

@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.139.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.139.0
 	go.opentelemetry.io/collector/internal/telemetry v0.139.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.0
 	go.opentelemetry.io/collector/pdata/testdata v0.139.0
@@ -163,3 +164,5 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

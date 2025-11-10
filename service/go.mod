@@ -8,7 +8,6 @@ require (
 	github.com/prometheus/common v0.67.1
 	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.139.0
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componentstatus v0.139.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
@@ -33,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.0
 	go.opentelemetry.io/collector/internal/telemetry v0.139.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.0
@@ -145,8 +145,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
-
 replace go.opentelemetry.io/collector/connector => ../connector
 
 replace go.opentelemetry.io/collector/connector/connectortest => ../connector/connectortest
@@ -254,3 +252,5 @@ replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
+
+replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
