@@ -139,8 +139,6 @@ replace go.opentelemetry.io/collector/connector => ../../../connector
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../../confmap/xconfmap
 
-replace go.opentelemetry.io/collector => ../../..
-
 replace go.opentelemetry.io/collector/config/configtls => ../../../config/configtls
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../hostcapabilities
@@ -176,3 +174,5 @@ replace go.opentelemetry.io/collector/connector/connectortest => ../../../connec
 replace go.opentelemetry.io/collector/component/componenttest => ../../../component/componenttest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../../component/componentstatus
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil

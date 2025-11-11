@@ -4,6 +4,8 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
@@ -13,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 )
+
+var errNilTelemetryFactory = errors.New("otelcol.Factories.Telemetry must not be nil. For example, you can use otelconftelemetry.NewFactory to build a telemetry factory")
 
 type configSettings struct {
 	Receivers  *configunmarshaler.Configs[receiver.Factory]  `mapstructure:"receivers"`
@@ -26,6 +30,10 @@ type configSettings struct {
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
+	if factories.Telemetry == nil {
+		return nil, errNilTelemetryFactory
+	}
+
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
 		Receivers:  configunmarshaler.NewConfigs(factories.Receivers),

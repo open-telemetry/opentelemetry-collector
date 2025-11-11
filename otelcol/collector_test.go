@@ -397,17 +397,6 @@ func TestCollectorRun(t *testing.T) {
 			factories:  nopFactories,
 			configFile: "otelcol-nop.yaml",
 		},
-		"defaul_telemetry_factory": {
-			factories: func() (Factories, error) {
-				factories, err := nopFactories()
-				if err != nil {
-					return Factories{}, err
-				}
-				factories.Telemetry = nil
-				return factories, nil
-			},
-			configFile: "otelcol-otelconftelemetry.yaml",
-		},
 	}
 
 	for name, test := range tests {
@@ -476,6 +465,18 @@ func TestCollectorRun_Errors(t *testing.T) {
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
+		},
+		"missing_telemetry_factory": {
+			settings: CollectorSettings{
+				BuildInfo: component.NewDefaultBuildInfo(),
+				Factories: func() (Factories, error) {
+					factories, _ := nopFactories()
+					factories.Telemetry = nil
+					return factories, nil
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
+			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: otelcol.Factories.Telemetry must not be nil. For example, you can use otelconftelemetry.NewFactory to build a telemetry factory",
 		},
 	}
 
@@ -548,19 +549,17 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
 		},
-		"default_telemetry_factory": {
+		"missing_telemetry_factory": {
 			settings: CollectorSettings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Factories: func() (Factories, error) {
-					factories, err := nopFactories()
-					if err != nil {
-						return Factories{}, err
-					}
+					factories, _ := nopFactories()
 					factories.Telemetry = nil
 					return factories, nil
 				},
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
 			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: otelcol.Factories.Telemetry must not be nil. For example, you can use otelconftelemetry.NewFactory to build a telemetry factory",
 		},
 	}
 

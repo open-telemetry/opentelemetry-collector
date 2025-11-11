@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -62,6 +62,9 @@ var MetricsInfo = metricsInfo{
 	OptionalMetricEmptyUnit: metricInfo{
 		Name: "optional.metric.empty_unit",
 	},
+	SystemCPUTime: metricInfo{
+		Name: "system.cpu.time",
+	},
 }
 
 type metricsInfo struct {
@@ -70,6 +73,7 @@ type metricsInfo struct {
 	MetricInputType          metricInfo
 	OptionalMetric           metricInfo
 	OptionalMetricEmptyUnit  metricInfo
+	SystemCPUTime            metricInfo
 }
 
 type metricInfo struct {
@@ -375,6 +379,57 @@ func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmpt
 	return m
 }
 
+type metricSystemCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.time metric with initial data.
+func (m *metricSystemCPUTime) init() {
+	m.data.SetName("system.cpu.time")
+	m.data.SetDescription("Monotonic cumulative sum int metric enabled by default.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
+	m := metricSystemCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -390,6 +445,7 @@ type MetricsBuilder struct {
 	metricMetricInputType          metricMetricInputType
 	metricOptionalMetric           metricOptionalMetric
 	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
+	metricSystemCPUTime            metricSystemCPUTime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -441,6 +497,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
+		metricSystemCPUTime:            newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -567,6 +624,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMetricInputType.emit(ils.Metrics())
 	mb.metricOptionalMetric.emit(ils.Metrics())
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
+	mb.metricSystemCPUTime.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -626,6 +684,11 @@ func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, va
 // RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
 func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
+}
+
+// RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 )
@@ -25,7 +26,9 @@ func main() {
 	flag.Parse()
 
 	checkErr(os.Chdir(workdir))
+	checkErr(pdata.DeleteGeneratedFiles(filepath.Join("pdata", "internal")))
 	for _, fp := range pdata.AllPackages {
+		checkErr(pdata.DeleteGeneratedFiles(filepath.Join("pdata", fp.Path())))
 		checkErr(fp.GenerateFiles())
 		checkErr(fp.GenerateTestFiles())
 		checkErr(fp.GenerateInternalFiles())

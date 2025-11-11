@@ -10,6 +10,7 @@ require (
 	github.com/knadh/koanf/v2 v2.3.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.45.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -30,4 +31,7 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
+replace (
+	go.opentelemetry.io/collector/featuregate => ../featuregate
+	go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
+)

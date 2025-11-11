@@ -4,7 +4,6 @@ go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.139.0
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componentstatus v0.139.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
@@ -14,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.45.0
 	go.opentelemetry.io/collector/extension v1.45.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.139.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/zpages v0.63.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
@@ -74,8 +74,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../../
-
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
@@ -126,3 +124,5 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

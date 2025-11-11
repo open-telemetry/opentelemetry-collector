@@ -24,9 +24,13 @@ func NopFactories() (otelcol.Factories, error) {
 	factories.Exporters, _ = otelcol.MakeFactoryMap(exportertest.NewNopFactory())
 	factories.Processors, _ = otelcol.MakeFactoryMap(processortest.NewNopFactory())
 	factories.Connectors, _ = otelcol.MakeFactoryMap(connectortest.NewNopFactory())
-	factories.Telemetry = telemetry.NewFactory(
-		func() component.Config { return struct{}{} },
-	)
+	factories.Telemetry = nopTelemetryFactory()
 
 	return factories, nil
+}
+
+func nopTelemetryFactory() telemetry.Factory {
+	return telemetry.NewFactory(
+		func() component.Config { return struct{}{} },
+	)
 }

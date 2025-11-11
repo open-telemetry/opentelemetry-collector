@@ -4,6 +4,7 @@
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -50,6 +51,27 @@ type PackageInfo struct {
 	path        string
 	imports     []string
 	testImports []string
+}
+
+// Path returns the package path for file generation.
+func (p *Package) Path() string {
+	return p.info.path
+}
+
+// DeleteGeneratedFiles removes all generated files matching the pattern in the given directory.
+func DeleteGeneratedFiles(dir string) error {
+	matches, err := filepath.Glob(filepath.Join(dir, "generated_*.go"))
+	if err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		if err := os.Remove(match); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove %s: %w", match, err)
+		}
+	}
+
+	return nil
 }
 
 // GenerateFiles generates files with the configured data structures for this Package.

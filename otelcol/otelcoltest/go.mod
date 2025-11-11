@@ -134,8 +134,6 @@ replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../../con
 
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
@@ -243,3 +241,5 @@ replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

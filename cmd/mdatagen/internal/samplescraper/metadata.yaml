@@ -3,7 +3,7 @@
 type: sample
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.9.0
+sem_conv_version: 1.37.0
 
 status:
   disable_codecov_badge: true
@@ -167,3 +167,17 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  system.cpu.time:
+    enabled: true
+    stability:
+      level: beta
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime
