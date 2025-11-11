@@ -4,6 +4,9 @@ type:
 # Optional: Human-readable display name for the component. If not set, the type field will be used.
 display_name: string
 
+# Optional: Brief description of the component that will be included in the generated README.
+description: string
+
 # Required for subcomponents: The type of the parent component.
 parent: string
 
