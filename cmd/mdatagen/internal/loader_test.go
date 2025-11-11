@@ -48,6 +48,7 @@ func TestLoadMetadata(t *testing.T) {
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
 				DisplayName:          "Sample Receiver",
+				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.37.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
@@ -590,6 +591,26 @@ func TestLoadMetadata(t *testing.T) {
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"logs"},
 					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_description.yaml",
+			want: Metadata{
+				Type:                 "test",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component used to validate the description field functionality in mdatagen.",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
+					Distributions: []string{},
 				},
 			},
 		},

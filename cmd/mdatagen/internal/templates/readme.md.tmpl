@@ -3,6 +3,10 @@
 # {{ .DisplayName }}
 
 {{- end }}
+{{- if .Description }}
+{{ .Description }}
+
+{{ end -}}
 {{- if len .Status.Stability }}
 | Status        |           |
 | ------------- |-----------|
