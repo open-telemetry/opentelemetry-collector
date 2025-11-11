@@ -27,3 +27,5 @@ require (
 replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
