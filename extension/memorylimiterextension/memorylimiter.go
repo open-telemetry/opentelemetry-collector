@@ -55,7 +55,7 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handle
 
 func (ml *memoryLimiterExtension) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
 	return []grpc.ServerOption{grpc.UnaryInterceptor(
-		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 			if ml.MustRefuse() {
 				return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 			}
