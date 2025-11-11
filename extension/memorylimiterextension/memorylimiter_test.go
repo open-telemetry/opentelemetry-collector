@@ -98,6 +98,6 @@ func TestMemoryPressureResponse(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	var _ extensionmiddleware.HTTPServer = memoryLimiterExtension{}
-	var _ extensionmiddleware.GRPCServer = memoryLimiterExtension{}
+	var _ extensionmiddleware.HTTPServer = &memoryLimiterExtension{}
+	var _ extensionmiddleware.GRPCServer = &memoryLimiterExtension{}
 }
