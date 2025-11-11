@@ -40,3 +40,5 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../../config/con
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../xconfmap
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil
