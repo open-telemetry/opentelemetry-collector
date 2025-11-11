@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.139.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.139.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.139.0
-	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/testutil v0.139.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.0
 	go.uber.org/goleak v1.3.0
