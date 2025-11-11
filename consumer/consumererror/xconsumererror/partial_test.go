@@ -1,19 +1,20 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumererror
+package xconsumererror
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func TestPartial(t *testing.T) {
 	internalErr := errors.New("some points failed")
 	err := NewPartial(internalErr, 5)
-	assert.True(t, IsPermanent(err))
+	assert.True(t, consumererror.IsPermanent(err))
 	partialErr, ok := AsPartial(err)
 	assert.True(t, ok)
 	assert.Equal(t, 5, partialErr.Failed())

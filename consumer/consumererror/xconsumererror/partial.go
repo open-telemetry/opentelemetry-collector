@@ -1,9 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
+package xconsumererror // import "go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 
-import "errors"
+import (
+	"errors"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
+)
 
 type partialError struct {
 	inner  error
@@ -29,7 +33,7 @@ func (pe partialError) Failed() int {
 // to be written, but it is not possible to tell which particular items
 // failed.
 func NewPartial(err error, failed int) error {
-	return NewPermanent(partialError{
+	return consumererror.NewPermanent(partialError{
 		inner:  err,
 		failed: failed,
 	})
