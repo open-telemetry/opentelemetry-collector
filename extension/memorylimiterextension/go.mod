@@ -68,3 +68,5 @@ replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/m
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

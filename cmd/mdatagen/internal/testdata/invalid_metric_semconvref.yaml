@@ -1,0 +1,28 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+sem_conv_version: 1.37.2
+
+metrics:
+  default.metric:
+    enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    stability:
+      level: development
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
