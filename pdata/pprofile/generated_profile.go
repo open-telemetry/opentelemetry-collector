@@ -53,9 +53,9 @@ func (ms Profile) SampleType() ValueType {
 	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
-// Sample returns the Sample associated with this Profile.
-func (ms Profile) Sample() SampleSlice {
-	return newSampleSlice(&ms.orig.Sample, ms.state)
+// Samples returns the Samples associated with this Profile.
+func (ms Profile) Samples() SampleSlice {
+	return newSampleSlice(&ms.orig.Samples, ms.state)
 }
 
 // Time returns the time associated with this Profile.
@@ -94,11 +94,6 @@ func (ms Profile) Period() int64 {
 func (ms Profile) SetPeriod(v int64) {
 	ms.state.AssertMutable()
 	ms.orig.Period = v
-}
-
-// CommentStrindices returns the CommentStrindices associated with this Profile.
-func (ms Profile) CommentStrindices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.CommentStrindices, ms.state))
 }
 
 // ProfileID returns the profileid associated with this Profile.

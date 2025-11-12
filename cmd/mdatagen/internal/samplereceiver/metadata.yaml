@@ -4,7 +4,7 @@ type: sample
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.9.0
+sem_conv_version: 1.37.0
 
 status:
   disable_codecov_badge: true
@@ -161,6 +161,8 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -184,6 +186,8 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
+    stability:
+      level: deprecated
     unit: s
     sum:
       value_type: double
@@ -195,6 +199,8 @@ metrics:
   metric.input_type:
     enabled: true
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -207,6 +213,8 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability:
+      level: deprecated
     unit: "1"
     gauge:
       value_type: double
@@ -217,12 +225,28 @@ metrics:
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability:
+      level: deprecated
     unit: ""
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  system.cpu.time:
+    enabled: true
+    stability:
+      level: beta
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime
 
 telemetry:
   metrics:
@@ -249,6 +273,8 @@ telemetry:
     queue_capacity:
       enabled: true
       description: Queue capacity - sync gauge example.
+      stability:
+        level: development
       unit: "{items}"
       gauge:
         value_type: int

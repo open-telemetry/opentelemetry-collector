@@ -15,7 +15,7 @@ import (
 func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_incoming_items",
-		Description: "Number of items passed to the processor. [alpha]",
+		Description: "Number of items passed to the processor. [Alpha]",
 		Unit:        "{items}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorInternalDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_internal_duration",
-		Description: "Duration of time taken to process a batch of telemetry data through the processor. [alpha]",
+		Description: "Duration of time taken to process a batch of telemetry data through the processor. [Alpha]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -46,7 +46,7 @@ func AssertEqualProcessorInternalDuration(t *testing.T, tt *componenttest.Teleme
 func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_outgoing_items",
-		Description: "Number of items emitted from the processor. [alpha]",
+		Description: "Number of items emitted from the processor. [Alpha]",
 		Unit:        "{items}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

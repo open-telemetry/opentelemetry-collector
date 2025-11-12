@@ -62,11 +62,11 @@ func TestLocation_Address(t *testing.T) {
 	assert.Panics(t, func() { newLocation(internal.NewLocation(), sharedState).SetAddress(uint64(13)) })
 }
 
-func TestLocation_Line(t *testing.T) {
+func TestLocation_Lines(t *testing.T) {
 	ms := NewLocation()
-	assert.Equal(t, NewLineSlice(), ms.Line())
-	ms.orig.Line = internal.GenTestLinePtrSlice()
-	assert.Equal(t, generateTestLineSlice(), ms.Line())
+	assert.Equal(t, NewLineSlice(), ms.Lines())
+	ms.orig.Lines = internal.GenTestLinePtrSlice()
+	assert.Equal(t, generateTestLineSlice(), ms.Lines())
 }
 
 func TestLocation_AttributeIndices(t *testing.T) {

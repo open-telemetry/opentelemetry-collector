@@ -37,7 +37,7 @@ func TestSampleCount(t *testing.T) {
 	ps := ils.Profiles().AppendEmpty()
 	assert.Equal(t, 0, pd.SampleCount())
 
-	ps.Sample().AppendEmpty()
+	ps.Samples().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
 	ils2 := rs.ScopeProfiles().AppendEmpty()
@@ -46,13 +46,13 @@ func TestSampleCount(t *testing.T) {
 	ps2 := ils2.Profiles().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
-	ps2.Sample().AppendEmpty()
+	ps2.Samples().AppendEmpty()
 	assert.Equal(t, 2, pd.SampleCount())
 
 	rms := pd.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
-	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
+	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples()
 	for range 5 {
 		ilss.AppendEmpty()
 	}
@@ -78,7 +78,7 @@ func TestSampleCountWithEmpty(t *testing.T) {
 					{
 						Profiles: []*internal.Profile{
 							{
-								Sample: []*internal.Sample{
+								Samples: []*internal.Sample{
 									{},
 								},
 							},

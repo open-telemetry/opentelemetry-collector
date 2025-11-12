@@ -101,9 +101,9 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 func generateBenchmarkProfiles(samplesCount int) Profiles {
 	md := NewProfiles()
 	ilm := md.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	ilm.Sample().EnsureCapacity(samplesCount)
+	ilm.Samples().EnsureCapacity(samplesCount)
 	for range samplesCount {
-		im := ilm.Sample().AppendEmpty()
+		im := ilm.Samples().AppendEmpty()
 		im.SetStackIndex(0)
 	}
 	return md

@@ -24,7 +24,7 @@ import (
 var (
 	_ component.Host                    = (*Host)(nil)
 	_ hostcapabilities.ModuleInfo       = (*Host)(nil)
-	_ hostcapabilities.ExposeExporters  = (*Host)(nil)
+	_ hostcapabilities.ExposeExporters  = (*Host)(nil) //nolint:staticcheck // SA1019
 	_ hostcapabilities.ComponentFactory = (*Host)(nil)
 )
 

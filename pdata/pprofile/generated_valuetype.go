@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-// ValueType describes the type and units of a value, with an optional aggregation temporality.
+// ValueType describes the type and units of a value.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -67,17 +67,6 @@ func (ms ValueType) UnitStrindex() int32 {
 func (ms ValueType) SetUnitStrindex(v int32) {
 	ms.state.AssertMutable()
 	ms.orig.UnitStrindex = v
-}
-
-// AggregationTemporality returns the aggregationtemporality associated with this ValueType.
-func (ms ValueType) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.orig.AggregationTemporality)
-}
-
-// SetAggregationTemporality replaces the aggregationtemporality associated with this ValueType.
-func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
-	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = internal.AggregationTemporality(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

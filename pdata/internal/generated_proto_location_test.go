@@ -193,8 +193,8 @@ func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 		"MappingIndex/missing_value":       {0x8},
 		"Address/wrong_wire_type":          {0x14},
 		"Address/missing_value":            {0x10},
-		"Line/wrong_wire_type":             {0x1c},
-		"Line/missing_value":               {0x1a},
+		"Lines/wrong_wire_type":            {0x1c},
+		"Lines/missing_value":              {0x1a},
 		"AttributeIndices/wrong_wire_type": {0x24},
 		"AttributeIndices/missing_value":   {0x22},
 	}
@@ -205,7 +205,7 @@ func genTestEncodingValuesLocation() map[string]*Location {
 		"empty":                 NewLocation(),
 		"MappingIndex/test":     {MappingIndex: int32(13)},
 		"Address/test":          {Address: uint64(13)},
-		"Line/test":             {Line: []*Line{{}, GenTestLine()}},
+		"Lines/test":            {Lines: []*Line{{}, GenTestLine()}},
 		"AttributeIndices/test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

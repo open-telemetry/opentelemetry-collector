@@ -300,11 +300,11 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
-					result := ""
+					var result strings.Builder
 					for _, part := range parts {
-						result += caser(part)
+						fmt.Fprintf(&result, "%s", caser(part))
 					}
-					return result
+					return result.String()
 				},
 				"inc":       func(i int) int { return i + 1 },
 				"distroURL": distroURL,
@@ -462,6 +462,7 @@ func validateYAMLKeyOrder(raw []byte) error {
 	}
 	for _, p := range [][]string{
 		{"resource_attributes"},
+		{"entities"},
 		{"attributes"},
 		{"metrics"},
 		{"events"},

@@ -68,6 +68,6 @@ func buildLocation(mapIdx int32, addr uint64, attrIdxs []int32, line Line) Locat
 	l.SetMappingIndex(mapIdx)
 	l.SetAddress(addr)
 	l.AttributeIndices().FromRaw(attrIdxs)
-	line.MoveTo(l.Line().AppendEmpty())
+	line.MoveTo(l.Lines().AppendEmpty())
 	return l
 }

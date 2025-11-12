@@ -73,7 +73,7 @@ func TestProfilesItemsOnly(t *testing.T) {
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
 	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 
 	err = consumer.ConsumeProfiles(ctx, pd)
 	require.NoError(t, err)
@@ -123,7 +123,7 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
 	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 
 	err = consumer.ConsumeProfiles(ctx, pd)
 	require.NoError(t, err)
@@ -194,7 +194,7 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
 	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 
 	err = consumer.ConsumeProfiles(ctx, pd)
 	assert.Equal(t, downstreamErr, err)
@@ -266,7 +266,7 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
 	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 
 	err = consumer.ConsumeProfiles(ctx, pd)
 	require.NoError(t, err)
@@ -345,7 +345,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	for range 2 {
 		r := pd1.ResourceProfiles().AppendEmpty()
 		sp := r.ScopeProfiles().AppendEmpty()
-		sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+		sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 	}
 	err = consumer.ConsumeProfiles(ctx, pd1)
 	require.NoError(t, err)
@@ -355,7 +355,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	pd2 := pprofile.NewProfiles()
 	r := pd2.ResourceProfiles().AppendEmpty()
 	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 	err = consumer.ConsumeProfiles(ctx, pd2)
 	assert.Equal(t, downstreamErr, err)
 
@@ -365,7 +365,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	for range 2 {
 		r = pd3.ResourceProfiles().AppendEmpty()
 		sp = r.ScopeProfiles().AppendEmpty()
-		sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+		sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 	}
 	err = consumer.ConsumeProfiles(ctx, pd3)
 	require.NoError(t, err)
@@ -375,7 +375,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	pd4 := pprofile.NewProfiles()
 	r = pd4.ResourceProfiles().AppendEmpty()
 	sp = r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
 	err = consumer.ConsumeProfiles(ctx, pd4)
 	assert.Equal(t, downstreamErr, err)
 

@@ -61,14 +61,6 @@ func TestValueType_UnitStrindex(t *testing.T) {
 	assert.Panics(t, func() { newValueType(internal.NewValueType(), sharedState).SetUnitStrindex(int32(13)) })
 }
 
-func TestValueType_AggregationTemporality(t *testing.T) {
-	ms := NewValueType()
-	assert.Equal(t, AggregationTemporality(internal.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporality(internal.AggregationTemporality(1))
-	ms.SetAggregationTemporality(testValAggregationTemporality)
-	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
-}
-
 func generateTestValueType() ValueType {
 	return newValueType(internal.GenTestValueType(), internal.NewState())
 }

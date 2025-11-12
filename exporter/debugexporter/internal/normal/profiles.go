@@ -42,7 +42,7 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 				buffer.WriteString(profile.ProfileID().String())
 
 				buffer.WriteString(" samples=")
-				buffer.WriteString(strconv.Itoa(profile.Sample().Len()))
+				buffer.WriteString(strconv.Itoa(profile.Samples().Len()))
 
 				if profile.AttributeIndices().Len() > 0 {
 					attrs := []string{}
