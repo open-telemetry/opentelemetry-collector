@@ -13,6 +13,7 @@ components:
     - connector/forward
     - connector/sample
     - consumer/xconsumer
+    - consumer/consumererror/xconsumererror
     - docs/rfcs
     - exporter/debug
     - exporter/nop
