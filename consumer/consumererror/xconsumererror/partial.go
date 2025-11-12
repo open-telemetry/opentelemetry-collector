@@ -24,10 +24,6 @@ func (pe partialError) Unwrap() error {
 	return pe.inner
 }
 
-func (pe partialError) Failed() int {
-	return pe.failed
-}
-
 // NewPartial creates a new partial error. This is used to report errors
 // where only a subset of the total items failed to be written, but it
 // is not possible to tell which particular items failed. An example of this
@@ -49,12 +45,12 @@ func NewPartial(err error, failed int) error {
 	})
 }
 
-// AsPartial checks if an error was wrapped with the NewPartial function,
-// or if it contains one such error in its Unwrap() tree. The resulting
-// error has a method Failed() that can be used to retrieve the count of
-// failed items from the error.
-func AsPartial(err error) (partialError, bool) {
+// IsPartial checks if an error was wrapped with the NewPartial function,
+// or if it contains one such error in its Unwrap() tree. The results are
+// the count of failed items if the error is a partial error, and a boolean
+// result of whether the error was a partial or not.
+func IsPartial(err error) (int, bool) {
 	var pe partialError
 	ok := errors.As(err, &pe)
-	return pe, ok
+	return pe.failed, ok
 }

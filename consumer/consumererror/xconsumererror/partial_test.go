@@ -18,11 +18,9 @@ func TestPartial(t *testing.T) {
 	internalErr := errors.New("some points failed")
 	err := xconsumererror.NewPartial(internalErr, 5)
 	assert.True(t, consumererror.IsPermanent(err))
-	partialErr, ok := xconsumererror.AsPartial(err)
+	failed, ok := xconsumererror.IsPartial(err)
 	assert.True(t, ok)
-	assert.Equal(t, 5, partialErr.Failed())
-	assert.Equal(t, internalErr, partialErr.Unwrap())
-	assert.Equal(t, internalErr.Error(), partialErr.Error())
+	assert.Equal(t, 5, failed)
 }
 
 func ExampleNewPartial() {
@@ -35,24 +33,25 @@ func ExampleNewPartial() {
 	// Output: "Permanent error: some points failed to be written"
 }
 
-func ExampleAsPartial() {
+func ExampleIsPartial() {
 	// Produce a partial error.
 	partialErr := xconsumererror.NewPartial(errors.New("some points failed to be written"), 10)
 
-	// The result of `xconsumererror.AsPartial` has a method `Failed`
-	// which can be used to retrieve the failed item count.
-	if err, ok := xconsumererror.AsPartial(partialErr); ok {
-		fmt.Println(err.Failed())
+	// IsPartial will return the failed item count, and a boolean
+	// to indicate whether it is a partial error or not.
+	if count, ok := xconsumererror.IsPartial(partialErr); ok {
+		fmt.Println(count)
 	}
 
 	// Output: 10
 }
 
-func ExampleAsPartial_second() {
+func ExampleIsPartial_second() {
 	// Produce a partial error.
 	partialErr := xconsumererror.NewPartial(errors.New("some points failed to be written"), 10)
 
-	// Partial errors wrap a Permanent error.
+	// Partial errors wrap a Permanent error, so it can simply be treated
+	// as one if the number of failed items isn't important.
 	fmt.Println(consumererror.IsPermanent(partialErr))
 
 	// Output: true
