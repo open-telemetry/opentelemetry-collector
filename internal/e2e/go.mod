@@ -6,7 +6,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/prometheus/common v0.67.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.139.0
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componentstatus v0.139.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
@@ -35,6 +34,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.139.0
 	go.opentelemetry.io/collector/extension v1.45.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.139.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/testdata v0.139.0
@@ -67,7 +67,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/go-tpm v0.9.6 // indirect
+	github.com/google/go-tpm v0.9.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
@@ -100,6 +100,7 @@ require (
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector v0.139.0 // indirect
 	go.opentelemetry.io/collector/client v1.45.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.45.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.45.0 // indirect
@@ -300,3 +301,5 @@ replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processo
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

@@ -8,7 +8,6 @@ require (
 	github.com/prometheus/common v0.67.1
 	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.139.0
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componentstatus v0.139.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
@@ -33,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.0
 	go.opentelemetry.io/collector/internal/telemetry v0.139.0
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.0
@@ -78,7 +78,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/go-tpm v0.9.6 // indirect
+	github.com/google/go-tpm v0.9.7 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -144,8 +144,6 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../
 
 replace go.opentelemetry.io/collector/connector => ../connector
 
@@ -254,3 +252,5 @@ replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
+
+replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
