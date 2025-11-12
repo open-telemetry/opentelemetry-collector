@@ -23,7 +23,6 @@ require (
 )
 
 replace (
-	go.opentelemetry.io/collector => ../..
 	go.opentelemetry.io/collector/client => ../../client
 	go.opentelemetry.io/collector/component => ../../component
 	go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
@@ -89,3 +88,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../telemetry/telemetrytest
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
