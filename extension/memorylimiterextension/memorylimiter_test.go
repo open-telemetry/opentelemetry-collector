@@ -98,6 +98,6 @@ func TestMemoryPressureResponse(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	var _ extensionmiddleware.HTTPServer = &memoryLimiterExtension{}
-	var _ extensionmiddleware.GRPCServer = &memoryLimiterExtension{}
+	assert.Implements(t, (*extensionmiddleware.HTTPServer)(nil), &memoryLimiterExtension{}, "memoryLimiterExtension does not impplement extensionmiddleware.HTTPServer interface")
+	assert.Implements(t, (*extensionmiddleware.GRPCServer)(nil), &memoryLimiterExtension{}, "memoryLimiterExtension does not impplement extensionmiddleware.GRPCServer interface")
 }
