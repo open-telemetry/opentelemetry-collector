@@ -387,7 +387,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 }
 
 // TestEmptyCompressionAlgorithmsAllowsUncompressed verifies that when CompressionAlgorithms
-// is set to an empty array, requests without Content-Encoding header (or with "identity") are accepted.
+// is set to an empty array, requests without Content-Encoding header are accepted.
 func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 	testBody := []byte(`{"message": "test data"}`)
 
@@ -404,12 +404,6 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			name:                  "EmptyArray_NoContentEncoding_Accepted",
 			compressionAlgorithms: []string{},
 			contentEncoding:       "",
-			expectedStatus:        http.StatusOK,
-		},
-		{
-			name:                  "EmptyArray_Identity_Accepted",
-			compressionAlgorithms: []string{},
-			contentEncoding:       "identity",
 			expectedStatus:        http.StatusOK,
 		},
 		{
@@ -452,12 +446,6 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			name:                  "WithEmptyString_NoContentEncoding_Accepted",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "",
-			expectedStatus:        http.StatusOK,
-		},
-		{
-			name:                  "WithEmptyString_Identity_Accepted",
-			compressionAlgorithms: []string{"", "gzip"},
-			contentEncoding:       "identity",
 			expectedStatus:        http.StatusOK,
 		},
 		{

@@ -244,9 +244,6 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		if dec == "deflate" {
 			enabled["deflate"] = availableDecoders["zlib"]
 		}
-		if dec == "" {
-			enabled["identity"] = availableDecoders[""]
-		}
 	}
 
 	d := &decompressor{
