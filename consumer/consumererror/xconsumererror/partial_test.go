@@ -30,7 +30,7 @@ func ExampleNewPartial() {
 	err := xconsumererror.NewPartial(consumptionErr, failedItems)
 	fmt.Println(err)
 
-	// Output: "Permanent error: some points failed to be written"
+	// Output: Permanent error: some points failed to be written
 }
 
 func ExampleIsPartial() {
