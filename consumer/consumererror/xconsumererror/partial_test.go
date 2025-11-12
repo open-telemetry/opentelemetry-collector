@@ -17,7 +17,14 @@ import (
 func TestPartial(t *testing.T) {
 	internalErr := errors.New("some points failed")
 	err := xconsumererror.NewPartial(internalErr, 5)
+	// The partial error must be wrapped and be able to be
+	// treated as a plain permanent error.
 	assert.True(t, consumererror.IsPermanent(err))
+	// The error should be unwrappable to verify the internal
+	// error if necessary.
+	assert.ErrorIs(t, err, internalErr)
+	// It must be possible to retrieve the failed items from
+	// the partial error.
 	failed, ok := xconsumererror.IsPartial(err)
 	assert.True(t, ok)
 	assert.Equal(t, 5, failed)
