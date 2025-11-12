@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
@@ -19,15 +19,15 @@ func TestPartial(t *testing.T) {
 	err := xconsumererror.NewPartial(internalErr, 5)
 	// The partial error must be wrapped and be able to be
 	// treated as a plain permanent error.
-	assert.True(t, consumererror.IsPermanent(err))
+	require.True(t, consumererror.IsPermanent(err))
 	// The error should be unwrappable to verify the internal
 	// error if necessary.
-	assert.ErrorIs(t, err, internalErr)
+	require.ErrorIs(t, err, internalErr)
 	// It must be possible to retrieve the failed items from
 	// the partial error.
 	failed, ok := xconsumererror.IsPartial(err)
-	assert.True(t, ok)
-	assert.Equal(t, 5, failed)
+	require.True(t, ok)
+	require.Equal(t, 5, failed)
 }
 
 func ExampleNewPartial() {
