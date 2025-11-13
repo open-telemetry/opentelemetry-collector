@@ -43,7 +43,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.QueueSize = 1
+	queueCfg.Enabled = false
 
 	return &Config{
 		Verbosity:          configtelemetry.LevelBasic,

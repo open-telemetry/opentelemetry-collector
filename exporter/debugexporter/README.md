@@ -38,7 +38,7 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
-- `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
+- `sending_queue` (disabled by default): see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example configuration:
 

@@ -124,15 +124,22 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		collectorConf: set.CollectorConf,
 	}
 
-	// Create the logger & LoggerProvider first. These may be used
-	// when creating the other telemetry providers.
+	if set.TelemetryFactory == nil {
+		return nil, errors.New("telemetry factory not provided")
+	}
+
+	// Create the resource first. This ensures all telemetry providers
+	// (logger, meter, tracer) use the same resource with a consistent service.instance.id.
 	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
+	resource, err := set.TelemetryFactory.CreateResource(ctx, telemetrySettings, cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+	telemetrySettings.Resource = &resource
+
 	loggerSettings := telemetry.LoggerSettings{
 		Settings:   telemetrySettings,
 		ZapOptions: set.LoggingOptions,
-	}
-	if set.TelemetryFactory == nil {
-		return nil, errors.New("telemetry factory not provided")
 	}
 	logger, loggerShutdownFunc, err := set.TelemetryFactory.CreateLogger(ctx, loggerSettings, cfg.Telemetry)
 	if err != nil {
@@ -176,11 +183,6 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		}
 	}()
 	srv.tracerProvider = tracerProvider
-
-	resource, err := set.TelemetryFactory.CreateResource(ctx, telemetrySettings, cfg.Telemetry)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource: %w", err)
-	}
 
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         logger,
