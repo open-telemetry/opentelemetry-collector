@@ -102,5 +102,5 @@ moddownload:
 
 codspeed-benchmark:
 	if go test ./... -list=Benchmark | grep -q Benchmark; then \
-		codspeed run --mode walltime --setup-cache-dir=~/.cache/codspeed-action -- 'go test -bench=./...'; \
+		codspeed run --mode walltime --setup-cache-dir=~/.cache/codspeed-action -- 'go test -bench=. ./...'; \
 	fi
