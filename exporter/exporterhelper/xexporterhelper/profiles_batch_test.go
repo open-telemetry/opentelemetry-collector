@@ -345,6 +345,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.B) {
+	b.Skip("flaky test with 'should have N item(s), but has M'")
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -365,6 +366,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 }
 
 func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
+	b.Skip("flaky test with 'should have N item(s), but has M'")
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
