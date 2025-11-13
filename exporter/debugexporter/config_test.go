@@ -25,7 +25,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 
 func TestUnmarshalConfig(t *testing.T) {
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.QueueSize = 1
+	queueCfg.Enabled = false
 	tests := []struct {
 		filename    string
 		cfg         *Config
