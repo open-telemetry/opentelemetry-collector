@@ -147,13 +147,32 @@ func (cc *ClientConfig) Validate() error {
 
 // ToClientOption is an option to change the behavior of the HTTP client
 // returned by ClientConfig.ToClient().
-// There are currently no available options.
 type ToClientOption interface {
 	sealed()
 }
 
+type clientExtensionsOption struct {
+	extensions map[component.ID]component.Component
+}
+
+// WithClientExtensions is a [ToClientOption] which supplies the map of extensions to search for middlewares.
+func WithClientExtensions(extensions map[component.ID]component.Component) ToClientOption {
+	return clientExtensionsOption{extensions: extensions}
+}
+func (clientExtensionsOption) sealed() {}
+
 // ToClient creates an HTTP client.
-func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+//
+// To allow the configuration to reference middleware extensions,
+// use the [WithClientExtensions] option with the output of host.GetExtensions().
+func (cc *ClientConfig) ToClient(ctx context.Context, settings component.TelemetrySettings, opts ...ToClientOption) (*http.Client, error) {
+	var extensions map[component.ID]component.Component
+	for _, opt := range opts {
+		if opt, ok := opt.(clientExtensionsOption); ok {
+			extensions = opt.extensions
+		}
+	}
+
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -201,7 +220,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 	// forward order. The first middleware runs after authentication.
 	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -217,7 +236,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 	// request signing-based auth mechanisms operate after compression
 	// and header middleware modifies the request
 	if cc.Auth.HasValue() {
-		ext := host.GetExtensions()
+		ext := extensions
 		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}

@@ -16,7 +16,6 @@ func ExampleServerConfig() {
 
 	s, err := settings.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	if err != nil {

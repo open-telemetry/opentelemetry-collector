@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // ToServerOptions has options that change the behavior of the HTTP server
@@ -16,6 +18,7 @@ type ToServerOptions struct {
 	ErrHandler   func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 	Decoders     map[string]func(body io.ReadCloser) (io.ReadCloser, error)
 	OtelhttpOpts []otelhttp.Option
+	Extensions   map[component.ID]component.Component
 }
 
 func (tso *ToServerOptions) Apply(opts ...ToServerOption) {

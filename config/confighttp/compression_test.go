@@ -179,7 +179,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {

@@ -167,8 +167,18 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	})
 }
 
+// WithServerExtensions is a [ToServerOption] which supplies the map of extensions to search for middlewares.
+func WithServerExtensions(extensions map[component.ID]component.Component) ToServerOption {
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
+		opts.Extensions = extensions
+	})
+}
+
 // ToServer creates an http.Server from settings object.
-func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+//
+// To allow the configuration to reference middleware extensions,
+// use the [WithServerExtensions] option with the output of host.GetExtensions().
+func (sc *ServerConfig) ToServer(ctx context.Context, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -184,7 +194,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
 	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, serverOpts.Extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -210,7 +220,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 
 	if sc.Auth.HasValue() {
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
+		server, err := auth.GetServerAuthenticator(ctx, serverOpts.Extensions)
 		if err != nil {
 			return nil, err
 		}

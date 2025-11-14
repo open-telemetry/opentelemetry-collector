@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -93,7 +94,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 
 	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, r.settings.TelemetrySettings, configgrpc.WithServerExtensions(host.GetExtensions())); err != nil {
 		return err
 	}
 
@@ -167,7 +168,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler), confighttp.WithServerExtensions(host.GetExtensions())); err != nil {
 		return err
 	}
 

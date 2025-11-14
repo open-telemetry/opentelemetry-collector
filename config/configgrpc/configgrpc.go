@@ -268,17 +268,29 @@ func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
 }
 func (grpcDialOptionWrapper) isToClientConnOption() {}
 
+type clientExtensionsOption struct {
+	extensions map[component.ID]component.Component
+}
+
+// WithClientExtensions is a [ToClientConnOption] which supplies the map of extensions to search for middlewares.
+func WithClientExtensions(extensions map[component.ID]component.Component) ToClientConnOption {
+	return clientExtensionsOption{extensions: extensions}
+}
+func (clientExtensionsOption) isToClientConnOption() {}
+
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use the WithGrpcDialOption(grpc.WithBlock()) option.
+//
+// To allow the configuration to reference middleware extensions,
+// use the [WithClientExtensions] option with the output of host.GetExtensions().
 func (cc *ClientConfig) ToClientConn(
 	ctx context.Context,
-	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := cc.getGrpcDialOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := cc.getGrpcDialOptions(ctx, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -299,10 +311,20 @@ func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context 
 
 func (cc *ClientConfig) getGrpcDialOptions(
 	ctx context.Context,
-	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
+	var extraGrpcOpts []grpc.DialOption
+	var extensions map[component.ID]component.Component
+	for _, opt := range extraOpts {
+		switch opt := opt.(type) {
+		case grpcDialOptionWrapper:
+			extraGrpcOpts = append(extraGrpcOpts, opt.opt)
+		case clientExtensionsOption:
+			extensions = opt.extensions
+		}
+	}
+
 	var opts []grpc.DialOption
 	if cc.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(cc.Compression)
@@ -343,11 +365,11 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 
 	if cc.Auth.HasValue() {
-		if host.GetExtensions() == nil {
+		if extensions == nil {
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, extensions)
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -389,18 +411,14 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range cc.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, extensions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC client options from middleware: %w", err)
 		}
 		opts = append(opts, middlewareOptions...)
 	}
 
-	for _, opt := range extraOpts {
-		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
-			opts = append(opts, wrapper.opt)
-		}
-	}
+	opts = append(opts, extraGrpcOpts...)
 
 	return opts, nil
 }
@@ -436,14 +454,26 @@ func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
 
+type serverExtensionsOption struct {
+	extensions map[component.ID]component.Component
+}
+
+// WithServerExtensions is a [ToServerOption] which supplies the map of extensions to search for middlewares.
+func WithServerExtensions(extensions map[component.ID]component.Component) ToServerOption {
+	return serverExtensionsOption{extensions: extensions}
+}
+func (serverExtensionsOption) isToServerOption() {}
+
 // ToServer returns a [grpc.Server] for the configuration.
+//
+// To allow the configuration to reference middleware extensions,
+// use the [WithServerExtensions] option with the output of host.GetExtensions().
 func (sc *ServerConfig) ToServer(
 	ctx context.Context,
-	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := sc.getGrpcServerOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := sc.getGrpcServerOptions(ctx, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -452,10 +482,20 @@ func (sc *ServerConfig) ToServer(
 
 func (sc *ServerConfig) getGrpcServerOptions(
 	ctx context.Context,
-	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
 ) ([]grpc.ServerOption, error) {
+	var extraGrpcOpts []grpc.ServerOption
+	var extensions map[component.ID]component.Component
+	for _, opt := range extraOpts {
+		switch opt := opt.(type) {
+		case grpcServerOptionWrapper:
+			extraGrpcOpts = append(extraGrpcOpts, opt.opt)
+		case serverExtensionsOption:
+			extensions = opt.extensions
+		}
+	}
+
 	var opts []grpc.ServerOption
 
 	if sc.TLS.HasValue() {
@@ -515,7 +555,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if sc.Auth.HasValue() {
-		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
+		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -539,18 +579,14 @@ func (sc *ServerConfig) getGrpcServerOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range sc.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, extensions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}
 		opts = append(opts, middlewareOptions...)
 	}
 
-	for _, opt := range extraOpts {
-		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
-			opts = append(opts, wrapper.opt)
-		}
-	}
+	opts = append(opts, extraGrpcOpts...)
 
 	return opts, nil
 }

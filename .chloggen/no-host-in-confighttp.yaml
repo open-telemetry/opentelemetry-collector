@@ -1,0 +1,38 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: pkg/config/confighttp
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Remove `component.Host` parameter of ToServer/ToClient
+
+# One or more tracking issues or pull requests related to the change
+issues: [13640]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The `host` parameter was only used to find the middleware extensions specified
+  under the `middlewares` configuration key.
+  
+  The map of available extensions must now be passed explicitly with the
+  `With[Server/Client]Extensions` option.
+  If the option is not provided, no middlewares will be available for use.
+  
+  For typical use cases (user-controlled configuration inside a Collector component)
+  where a real `host` was passed, it should be replaced by
+  `With[Server/Client]Extensions(host.GetExtensions())`.
+  
+  For test or non-Collector use cases where a no-op host was passed,
+  the `host` parameter can simply be dropped.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [api]
