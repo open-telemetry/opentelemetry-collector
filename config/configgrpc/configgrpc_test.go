@@ -448,8 +448,9 @@ func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 
 func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
-		settings ClientConfig
-		err      string
+		settings   ClientConfig
+		err        string
+		extensions map[component.ID]component.Component
 	}{
 		{
 			err: "failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
@@ -487,6 +488,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: doesntExistID}),
 			},
+			extensions: map[component.ID]component.Component{},
 		},
 		{
 			err: "no extensions configuration available",
@@ -529,7 +531,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
 			require.NoError(t, test.settings.Validate())
-			_, err := test.settings.ToClientConn(context.Background(), componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToClientConn(context.Background(), componenttest.NewNopTelemetrySettings(), WithClientExtensions(test.extensions))
 			require.Error(t, err)
 			assert.ErrorContains(t, err, test.err)
 		})

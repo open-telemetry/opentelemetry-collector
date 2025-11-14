@@ -293,6 +293,7 @@ func TestProxyURL(t *testing.T) {
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
+	extensions := map[component.ID]component.Component{}
 	tests := []struct {
 		settings ClientConfig
 		err      string
@@ -333,7 +334,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.err, func(t *testing.T) {
-			_, err := tt.settings.ToClient(context.Background(), componenttest.NewNopTelemetrySettings())
+			_, err := tt.settings.ToClient(context.Background(), componenttest.NewNopTelemetrySettings(), WithClientExtensions(extensions))
 			assert.Regexp(t, tt.err, err)
 		})
 	}
