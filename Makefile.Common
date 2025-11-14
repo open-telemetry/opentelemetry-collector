@@ -100,8 +100,5 @@ impi:
 moddownload:
 	$(GOCMD) mod download
 
-codspeed-benchmark:
-	if go test ./... -list=Benchmark | grep -q Benchmark; then \
-		codspeed run --mode walltime --setup-cache-dir=~/.cache/codspeed-action -- 'go test -bench=. ./...'; \
-		rm -rf /tmp/* || true; \
-	fi
+benchmark:
+	go test -bench=. ./...

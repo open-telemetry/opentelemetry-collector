@@ -7,10 +7,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  # renovate: datasource=github-releases depName=codspeed packageName=CodSpeedHQ/runner
-  CODSPEED_RUNNER_VERSION: v4.3.4
-
 jobs:
   benchmarks:
     name: Run benchmarks
@@ -31,30 +27,9 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
-
-      # The following comes from https://github.com/CodSpeedHQ/action/blob/6a8e2b/action.yml with significant modifications.
-      # Copyright (c) 2022 CodSpeed and contributors
-      # TODO: Switch to a setup-codspeed action when available, see https://github.com/CodSpeedHQ/action/issues/146
-      - name: Determine kernel version
-        id: versions
-        shell: bash
-        run: |
-          # Get kernel version for cache key
-          KERNEL_VERSION=$(uname -r)
-          echo "kernel-version=$KERNEL_VERSION" >> $GITHUB_OUTPUT
-      - name: Cache CodSpeed instruments
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@6a8e2b874c338bf81cc5e8be715ada75908d3871 # v4.3.4
         with:
-          path: ~/.cache/codspeed-action
-          key: codspeed-instruments-instrumentation-${{ runner.os }}-${{ runner.arch }}-${{steps.versions.outputs.kernel-version }}-${{ env.CODSPEED_RUNNER_VERSION }}
-          restore-keys: |
-            codspeed-instruments-instrumentation-${{ runner.os }}-${{ runner.arch }}-${{steps.versions.outputs.kernel-version }}-${{ env.CODSPEED_RUNNER_VERSION }}
-      # TODO: Remove 'cargo install' once https://github.com/CodSpeedHQ/codspeed-go/issues/31 fix is released
-      - name: Setup codspeed
-        run: |
-          curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/${{ env.CODSPEED_RUNNER_VERSION }}/codspeed-runner-installer.sh | bash -s -- --quiet
-          cargo install --git https://github.com/CodSpeedHQ/codspeed-go/ --branch cod-1666-codspeed-go-is-unable-to-run-benchmarks-on-go-modules-with
-      - name: Run benchmarks
-        run: |
-          make for-all-target TARGET="codspeed-benchmark"
-
+          mode: walltime
+          run: make for-all-target TARGET="benchmark"
+          cache-instruments: false
