@@ -23,7 +23,7 @@ const featureGateName = "otelcol.printInitialConfig"
 
 var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 	featureGateName,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.120.0"),
 	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
 )

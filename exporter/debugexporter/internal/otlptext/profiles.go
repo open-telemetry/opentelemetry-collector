@@ -58,8 +58,7 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logAttr("Duration", profile.Duration().String())
 				buf.logAttr("Dropped attributes count", strconv.FormatUint(uint64(profile.DroppedAttributesCount()), 10))
 
-				buf.logProfileSamples(profile.Sample(), dic)
-				buf.logComment(profile.CommentStrindices())
+				buf.logProfileSamples(profile.Samples(), dic)
 			}
 		}
 	}

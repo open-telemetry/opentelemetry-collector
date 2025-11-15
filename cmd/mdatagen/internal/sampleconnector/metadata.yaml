@@ -65,6 +65,15 @@ resource_attributes:
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
+entities:
+  - type: test.entity
+    brief: A test entity.
+    stability: stable
+    identity:
+      - ref: string.resource.attr
+    description:
+      - ref: map.resource.attr
+
 attributes:
   boolean_attr:
     description: Attribute with a boolean value.

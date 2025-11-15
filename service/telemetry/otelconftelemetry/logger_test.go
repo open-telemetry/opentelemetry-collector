@@ -149,8 +149,12 @@ func TestCreateLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buildInfo := component.BuildInfo{}
-			_, provider, err := NewFactory().CreateLogger(context.Background(), telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: buildInfo},
+			factory := NewFactory()
+			resource, err := factory.CreateResource(context.Background(), telemetry.Settings{BuildInfo: buildInfo}, &tt.cfg)
+			require.NoError(t, err)
+
+			_, provider, err := factory.CreateLogger(context.Background(), telemetry.LoggerSettings{
+				Settings: telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
 			}, &tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
@@ -278,6 +282,17 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				cfg.Resource = tt.resourceConfig
 			}
 
+			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
+			require.NoError(t, err)
+
+			set := telemetry.LoggerSettings{
+				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource},
+				ZapOptions: []zap.Option{
+					// Redirect logs to the observer core
+					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+				},
+			}
+
 			logger, loggerProvider, err := createLogger(t.Context(), set, cfg)
 			require.NoError(t, err)
 			defer func() {
@@ -375,7 +390,12 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 		},
 	}
 
-	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+	}, cfg)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, shutdown.Shutdown(context.WithoutCancel(t.Context())))
@@ -409,12 +429,6 @@ func TestLogAttributeInjection(t *testing.T) {
 	})
 	t.Cleanup(srv.Close)
 
-	set := telemetry.LoggerSettings{
-		ZapOptions: []zap.Option{
-			// Redirect console logs to the observer core
-			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
-		},
-	}
 	cfg := &Config{
 		Resource: map[string]*string{
 			"service.instance.id": nil,
@@ -435,6 +449,17 @@ func TestLogAttributeInjection(t *testing.T) {
 					},
 				},
 			}},
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		ZapOptions: []zap.Option{
+			// Redirect console logs to the observer core
+			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
 		},
 	}
 
