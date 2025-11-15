@@ -50,22 +50,18 @@ func NewFactoryWithAlias() exporter.Factory {
 		aliasType,
 		createDefaultConfig,
 		xexporter.WithTraces(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
-			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
-			set.ID = adjustID(set.ID)
+			set.ID = adjustID(set.ID) //transform otlp_grpc to otlp
 			return originalFactory.CreateTraces(ctx, set, cfg)
 		}, metadata.TracesStability),
 		xexporter.WithMetrics(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
-			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
 			set.ID = adjustID(set.ID)
 			return originalFactory.CreateMetrics(ctx, set, cfg)
 		}, metadata.MetricsStability),
 		xexporter.WithLogs(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
-			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
 			set.ID = adjustID(set.ID)
 			return originalFactory.CreateLogs(ctx, set, cfg)
 		}, metadata.LogsStability),
 		xexporter.WithProfiles(func(ctx context.Context, set exporter.Settings, cfg component.Config) (xexporter.Profiles, error) {
-			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
 			set.ID = adjustID(set.ID)
 			if xFactory, ok := originalFactory.(xexporter.Factory); ok {
 				return xFactory.CreateProfiles(ctx, set, cfg)
