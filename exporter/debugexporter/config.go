@@ -33,6 +33,15 @@ type Config struct {
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
+	// OutputPaths is a list of URLs or file paths to write logging output to.
+	// This option is only used when use_internal_logger is false.
+	// The URLs could only be with "file" schema or without schema.
+	// The URLs with "file" schema must be an absolute path.
+	// The URLs without schema are treated as local file paths.
+	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
+	// (default = ["stdout"])
+	OutputPaths []string `mapstructure:"output_paths"`
+
 	QueueConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// prevent unkeyed literal initialization
