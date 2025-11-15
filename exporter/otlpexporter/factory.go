@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -28,6 +29,49 @@ func NewFactory() exporter.Factory {
 		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
 		xexporter.WithLogs(createLogs, metadata.LogsStability),
 		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+	)
+}
+
+// NewFactoryWithAlias creates a factory for OTLP exporter with the otlp_grpc alias type.
+// This factory wraps the original factory and adjusts the component ID to use "otlp" internally.
+func NewFactoryWithAlias() exporter.Factory {
+	originalFactory := NewFactory()
+	aliasType := component.MustNewType("otlp_grpc")
+
+	// Helper function to adjust the ID from otlp_grpc to otlp while preserving the name
+	adjustID := func(id component.ID) component.ID {
+		if id.Name() == "" {
+			return component.NewID(metadata.Type)
+		}
+		return component.NewIDWithName(metadata.Type, id.Name())
+	}
+
+	return xexporter.NewFactory(
+		aliasType,
+		createDefaultConfig,
+		xexporter.WithTraces(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateTraces(ctx, set, cfg)
+		}, metadata.TracesStability),
+		xexporter.WithMetrics(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateMetrics(ctx, set, cfg)
+		}, metadata.MetricsStability),
+		xexporter.WithLogs(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
+			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateLogs(ctx, set, cfg)
+		}, metadata.LogsStability),
+		xexporter.WithProfiles(func(ctx context.Context, set exporter.Settings, cfg component.Config) (xexporter.Profiles, error) {
+			// Adjust the ID to use "otlp" instead of "otlp_grpc" for the underlying factory
+			set.ID = adjustID(set.ID)
+			if xFactory, ok := originalFactory.(xexporter.Factory); ok {
+				return xFactory.CreateProfiles(ctx, set, cfg)
+			}
+			return nil, pipeline.ErrSignalNotSupported
+		}, metadata.ProfilesStability),
 	)
 }
 

@@ -61,11 +61,15 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
+	// Register the otlp_grpc alias for the otlp exporter
+	aliasFactory := otlpexporter.NewFactoryWithAlias()
+	factories.Exporters[aliasFactory.Type()] = aliasFactory
 	factories.ExporterModules = make(map[component.Type]string, len(factories.Exporters))
 	factories.ExporterModules[debugexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/debugexporter v0.139.0"
 	factories.ExporterModules[nopexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/nopexporter v0.139.0"
 	factories.ExporterModules[otlpexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/otlpexporter v0.139.0"
 	factories.ExporterModules[otlphttpexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/otlphttpexporter v0.139.0"
+	factories.ExporterModules[aliasFactory.Type()] = "go.opentelemetry.io/collector/exporter/otlpexporter v0.139.0"
 
 	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),

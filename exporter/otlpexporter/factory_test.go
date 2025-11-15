@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -338,4 +339,89 @@ func TestCreateProfiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewFactoryWithAlias(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	assert.NotNil(t, factory)
+
+	// Verify the factory type is otlp_grpc
+	assert.Equal(t, component.MustNewType("otlp_grpc"), factory.Type())
+
+	// Verify it can create default config
+	cfg := factory.CreateDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	// Verify stability levels match the original factory
+	originalFactory := NewFactory()
+	assert.Equal(t, originalFactory.TracesStability(), factory.TracesStability())
+	assert.Equal(t, originalFactory.MetricsStability(), factory.MetricsStability())
+	assert.Equal(t, originalFactory.LogsStability(), factory.LogsStability())
+}
+
+func TestAliasFactoryCreateMetrics(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	// Use the alias type for settings
+	set := exportertest.NewNopSettings(factory.Type())
+	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestAliasFactoryCreateTraces(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	// Use the alias type for settings
+	set := exportertest.NewNopSettings(factory.Type())
+	oexp, err := factory.CreateTraces(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestAliasFactoryCreateLogs(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	// Use the alias type for settings
+	set := exportertest.NewNopSettings(factory.Type())
+	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestAliasFactoryCreateProfiles(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	// Use the alias type for settings
+	set := exportertest.NewNopSettings(factory.Type())
+	xFactory, ok := factory.(xexporter.Factory)
+	require.True(t, ok)
+	oexp, err := xFactory.CreateProfiles(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestAliasFactoryWithNamedComponent(t *testing.T) {
+	factory := NewFactoryWithAlias()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	// Test with a named component (e.g., otlp_grpc/myname)
+	aliasType := component.MustNewType("otlp_grpc")
+	componentID := component.NewIDWithName(aliasType, "myname")
+	set := exportertest.NewNopSettings(componentID.Type())
+	set.ID = componentID
+
+	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
 }
