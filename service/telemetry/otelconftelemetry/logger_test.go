@@ -259,13 +259,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zapcore.DebugLevel)
-			set := telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: tt.buildInfo},
-				ZapOptions: []zap.Option{
-					// Redirect logs to the observer core
-					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
-				},
-			}
 
 			cfg := &Config{
 				Logs: LogsConfig{
@@ -276,10 +269,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			}
 			if tt.setConfig != nil {
 				tt.setConfig(cfg)
-			}
-
-			if tt.resourceConfig != nil {
-				cfg.Resource = tt.resourceConfig
 			}
 
 			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
