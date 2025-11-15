@@ -32,8 +32,7 @@ func NewFactory() exporter.Factory {
 	)
 }
 
-// NewFactoryWithAlias creates a factory for OTLP exporter with the otlp_grpc alias type.
-// This factory wraps the original factory and adjusts the component ID to use "otlp" internally.
+// NewFactoryWithAlias creates a factory for OTLP exporter with the otlp_grpc alias type and wraps the original factory.
 func NewFactoryWithAlias() exporter.Factory {
 	originalFactory := NewFactory()
 	aliasType := component.MustNewType("otlp_grpc")
