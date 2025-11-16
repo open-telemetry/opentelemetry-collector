@@ -106,7 +106,7 @@ func NewQueueSender(
 			err := origExportFunc(ctx, req)
 			rtt := time.Since(startTime)
 
-			isBackpressure := experr.IsBackpressure(err)
+			isBackpressure := experr.IsRetryableError(err)
 
 			isSuccess := err == nil
 

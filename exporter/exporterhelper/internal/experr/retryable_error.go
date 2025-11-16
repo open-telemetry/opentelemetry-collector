@@ -8,7 +8,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"strings"
+	"regexp"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,18 +29,30 @@ const (
 	ReasonHTTP504               Reason = "http_504"
 	ReasonHTTPRetryAfter        Reason = "http_retry_after"
 	ReasonNetTimeout            Reason = "net_timeout"
-	ReasonTextBackpressure      Reason = "text_backpressure"
+	ReasonTextCircuitBreaker    Reason = "text:circuit_breaker"
+	ReasonTextOverload          Reason = "text:overload"
+	ReasonTextBackpressure      Reason = "text:backpressure"
 )
 
-// ClassifyBackpressure returns (isBackpressure, reason).
+var fallbackRegex = regexp.MustCompile(
+	`(?i)(429|too many requests)|` + // ReasonHTTP429
+		`(503|service unavailable)|` + // ReasonHTTP503
+		`(504|gateway timeout|upstream timeout)|` + // ReasonHTTP504
+		`(retry-after)|` + // ReasonHTTPRetryAfter
+		`(circuit breaker)|` + // ReasonTextCircuitBreaker
+		`(overload)|` + // ReasonTextOverload
+		`(backpressure)`, // ReasonTextBackpressure
+)
+
+// ClassifyErrorReason returns (isRetryable, reason).
 // The logic is strictly:
 //  1. Typed signals first (fast, no allocs)
-//  2. Fallback to a single lowercase + a few contains checks
+//  2. Fallback to a single regex match on the error string
 //
 // NOTE: This function runs only on error paths. Even then,
 // typed checks return early. Fallback string scanning is a
 // micro-cost compared to network I/O and retry backoff.
-func ClassifyBackpressure(err error) (bool, Reason) {
+func ClassifyErrorReason(err error) (bool, Reason) {
 	if err == nil {
 		return false, ""
 	}
@@ -88,30 +100,37 @@ func ClassifyBackpressure(err error) (bool, Reason) {
 		}
 	}
 
-	// 5) Fallback: cheap lowercase + tight substring checks.
-	// Keep this list intentionally small to minimize false positives.
-	s := strings.ToLower(err.Error())
-	if strings.Contains(s, "429") || strings.Contains(s, "too many requests") {
+	// 5) Fallback: cheap regex match on error string.
+	matches := fallbackRegex.FindStringSubmatch(err.Error())
+	if matches == nil {
+		return false, ""
+	}
+
+	// The regex has 7 capture groups, one for each reason.
+	// FindStringSubmatch returns the full match at [0], then groups at [1]...[n].
+	// We check which group captured.
+	switch {
+	case matches[1] != "":
 		return true, ReasonHTTP429
-	}
-	if strings.Contains(s, "503") || strings.Contains(s, "service unavailable") {
+	case matches[2] != "":
 		return true, ReasonHTTP503
-	}
-	if strings.Contains(s, "504") || strings.Contains(s, "gateway timeout") || strings.Contains(s, "upstream timeout") {
+	case matches[3] != "":
 		return true, ReasonHTTP504
-	}
-	if strings.Contains(s, "retry-after") {
+	case matches[4] != "":
 		return true, ReasonHTTPRetryAfter
-	}
-	if strings.Contains(s, "circuit breaker") || strings.Contains(s, "overload") || strings.Contains(s, "backpressure") {
+	case matches[5] != "":
+		return true, ReasonTextCircuitBreaker
+	case matches[6] != "":
+		return true, ReasonTextOverload
+	case matches[7] != "":
 		return true, ReasonTextBackpressure
 	}
 
 	return false, ""
 }
 
-// IsBackpressure is a convenience wrapper.
-func IsBackpressure(err error) bool {
-	ok, _ := ClassifyBackpressure(err)
+// IsRetryableError is a convenience wrapper.
+func IsRetryableError(err error) bool {
+	ok, _ := ClassifyErrorReason(err)
 	return ok
 }

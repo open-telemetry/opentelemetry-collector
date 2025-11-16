@@ -39,19 +39,19 @@ func lower(msg string) error { return errors.New(strings.ToLower(msg)) }
 
 // ----- tests -----
 
-func TestClassifyBackpressure_TypedContextDeadline(t *testing.T) {
-	ok, reason := ClassifyBackpressure(context.DeadlineExceeded)
+func TestClassifyErrorReason_TypedContextDeadline(t *testing.T) {
+	ok, reason := ClassifyErrorReason(context.DeadlineExceeded)
 	assert.True(t, ok)
 	assert.Equal(t, ReasonDeadline, reason)
 }
 
-func TestClassifyBackpressure_TypedNetTimeout(t *testing.T) {
-	ok, reason := ClassifyBackpressure(netTimeoutErr{})
+func TestClassifyErrorReason_TypedNetTimeout(t *testing.T) {
+	ok, reason := ClassifyErrorReason(netTimeoutErr{})
 	assert.True(t, ok)
 	assert.Equal(t, ReasonNetTimeout, reason)
 }
 
-func TestClassifyBackpressure_TypedGRPC_StatusCodes(t *testing.T) {
+func TestClassifyErrorReason_TypedGRPC_StatusCodes(t *testing.T) {
 	cases := []struct {
 		err    error
 		reason Reason
@@ -62,13 +62,13 @@ func TestClassifyBackpressure_TypedGRPC_StatusCodes(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		ok, reason := ClassifyBackpressure(tc.err)
+		ok, reason := ClassifyErrorReason(tc.err)
 		assert.True(t, ok, tc.err)
 		assert.Equal(t, tc.reason, reason)
 	}
 }
 
-func TestClassifyBackpressure_TypedHTTP_StatusCodes(t *testing.T) {
+func TestClassifyErrorReason_TypedHTTP_StatusCodes(t *testing.T) {
 	cases := []struct {
 		code   int
 		header http.Header
@@ -83,64 +83,74 @@ func TestClassifyBackpressure_TypedHTTP_StatusCodes(t *testing.T) {
 	for _, tc := range cases {
 		resp := &http.Response{StatusCode: tc.code, Header: tc.header}
 		err := httpRespErr{resp: resp, msg: "transport error"}
-		ok, reason := ClassifyBackpressure(err)
+		ok, reason := ClassifyErrorReason(err)
 		assert.True(t, ok, tc)
 		assert.Equal(t, tc.reason, reason, tc)
 	}
 }
 
-func TestClassifyBackpressure_FallbackStrings_Positive(t *testing.T) {
-	// These exercise the lowercase + contains path.
+func TestClassifyErrorReason_FallbackRegex_Positive(t *testing.T) {
+	// These exercise the regex fallback path.
 	cases := []struct {
 		err    error
 		reason Reason
 	}{
 		{errors.New("HTTP 429 Too Many Requests"), ReasonHTTP429},
 		{lower("too many requests"), ReasonHTTP429},
+		{errors.New("some 429 error"), ReasonHTTP429},
 
 		{errors.New("received HTTP 503 Service Unavailable"), ReasonHTTP503},
 		{lower("service unavailable"), ReasonHTTP503},
+		{errors.New("503 blah"), ReasonHTTP503},
 
 		{errors.New("HTTP 504 Gateway Timeout"), ReasonHTTP504},
 		{lower("gateway timeout"), ReasonHTTP504},
 		{lower("upstream timeout"), ReasonHTTP504},
+		{errors.New("got a 504"), ReasonHTTP504},
 
 		{lower("retry-after header present"), ReasonHTTPRetryAfter},
+		{errors.New("Retry-After: 30"), ReasonHTTPRetryAfter},
 
-		{lower("circuit breaker open"), ReasonTextBackpressure},
-		{lower("system overload"), ReasonTextBackpressure},
+		{lower("circuit breaker open"), ReasonTextCircuitBreaker},
+		{errors.New("Circuit Breaker"), ReasonTextCircuitBreaker},
+
+		{lower("system overload"), ReasonTextOverload},
+		{errors.New("OVERLOAD"), ReasonTextOverload},
+
 		{lower("backpressure detected"), ReasonTextBackpressure},
+		{errors.New("BACKPRESSURE"), ReasonTextBackpressure},
 	}
 
 	for _, tc := range cases {
-		ok, reason := ClassifyBackpressure(tc.err)
+		ok, reason := ClassifyErrorReason(tc.err)
 		assert.True(t, ok, tc.err)
 		assert.Equal(t, tc.reason, reason, tc.err)
 	}
 }
 
-func TestIsBackpressure_Positive_Smoke(t *testing.T) {
+func TestIsRetryableError_Positive_Smoke(t *testing.T) {
 	// A quick smoke test through the convenience wrapper.
-	assert.True(t, IsBackpressure(status.Error(codes.ResourceExhausted, "x")))
-	assert.True(t, IsBackpressure(netTimeoutErr{}))
-	assert.True(t, IsBackpressure(context.DeadlineExceeded))
-	assert.True(t, IsBackpressure(errors.New("429")))
-	assert.True(t, IsBackpressure(errors.New("service unavailable")))
-	assert.True(t, IsBackpressure(errors.New("gateway timeout")))
+	assert.True(t, IsRetryableError(status.Error(codes.ResourceExhausted, "x")))
+	assert.True(t, IsRetryableError(netTimeoutErr{}))
+	assert.True(t, IsRetryableError(context.DeadlineExceeded))
+	assert.True(t, IsRetryableError(errors.New("429")))
+	assert.True(t, IsRetryableError(errors.New("service unavailable")))
+	assert.True(t, IsRetryableError(errors.New("gateway timeout")))
+	assert.True(t, IsRetryableError(errors.New("OVERLOAD")))
 }
 
-func TestIsBackpressure_NegativeCases(t *testing.T) {
+func TestIsRetryableError_NegativeCases(t *testing.T) {
 	cases := []error{
 		nil,
 		errors.New("some transient error"),
-		errors.New("internal server error"), // intentionally not treated as backpressure
-		errors.New("permission denied"),     // not backpressure
+		errors.New("internal server error"), // intentionally not treated as retryable
+		errors.New("permission denied"),     // not retryable
 		errors.New("bad gateway (502)"),     // not in our fallback allowlist
 		errors.New("request timeout (408)"), // not in our fallback allowlist
 		errors.New("proxy timeout (599)"),   // not in our fallback allowlist
 	}
 
 	for _, err := range cases {
-		assert.False(t, IsBackpressure(err), "expected not backpressure: %v", err)
+		assert.False(t, IsRetryableError(err), "expected not retryable: %v", err)
 	}
 }
