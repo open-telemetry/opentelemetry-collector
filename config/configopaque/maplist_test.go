@@ -55,7 +55,7 @@ func TestMapListDuality(t *testing.T) {
 	conf1, err := retrieved1.AsConf()
 	require.NoError(t, err)
 	var tc1 testConfig
-	require.NoError(t, conf1.Unmarshal(&tc1))
+	require.NoError(t, conf1.Unmarshal(&tc1, xconfmap.WithScalarUnmarshaler()))
 	assert.NoError(t, xconfmap.Validate(&tc1))
 
 	retrieved2, err := confmap.NewRetrievedFromYAML([]byte(headersMap))
@@ -63,7 +63,7 @@ func TestMapListDuality(t *testing.T) {
 	conf2, err := retrieved2.AsConf()
 	require.NoError(t, err)
 	var tc2 testConfig
-	require.NoError(t, conf2.Unmarshal(&tc2))
+	require.NoError(t, conf2.Unmarshal(&tc2, xconfmap.WithScalarUnmarshaler()))
 	assert.NoError(t, xconfmap.Validate(&tc2))
 
 	assert.Equal(t, tc1, tc2)

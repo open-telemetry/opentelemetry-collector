@@ -4,12 +4,10 @@
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
 
 import (
-	"cmp"
 	"fmt"
 	"iter"
 	"slices"
 
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
@@ -28,27 +26,32 @@ type Pair struct {
 // Pairs are assumed to have distinct names. This is checked during config validation.
 type MapList []Pair
 
-var _ confmap.Unmarshaler = (*MapList)(nil)
+type MapFormat map[string]String
 
-// Unmarshal is called by the Collector when unmarshalling from a map.
-// When the input config is a slice, this will be skipped,
-// and mapstructure's default unmarshalling logic will be used.
-func (ml *MapList) Unmarshal(conf *confmap.Conf) error {
-	var m2 map[string]String
-	if err := conf.Unmarshal(&m2); err != nil {
-		return err
+var _ xconfmap.ConfigMigrator = MapFormat{}
+
+func (mm MapFormat) Migrate(cfg any) (bool, error) {
+	ml, ok := cfg.(*MapList)
+	if !ok {
+		return false, nil
 	}
-	*ml = make(MapList, 0, len(m2))
-	for name, value := range m2 {
-		*ml = append(*ml, Pair{
-			Name:  name,
-			Value: value,
-		})
+	if ml == nil {
+		return false, nil
 	}
-	slices.SortFunc(*ml, func(p1, p2 Pair) int {
-		return cmp.Compare(p1.Name, p2.Name)
-	})
-	return nil
+
+	for key, val := range mm {
+		ml.Set(key, val)
+	}
+
+	return true, nil
+}
+
+var _ xconfmap.MigrateableConfig = (*MapList)(nil)
+
+func (ml MapList) Migrations() []xconfmap.ConfigMigrator {
+	return []xconfmap.ConfigMigrator{
+		MapFormat{},
+	}
 }
 
 var _ xconfmap.Validator = MapList(nil)

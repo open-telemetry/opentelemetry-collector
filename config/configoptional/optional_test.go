@@ -369,7 +369,7 @@ func TestUnmarshalOptional(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
 			conf := confmap.NewFromStringMap(test.config)
-			require.NoError(t, conf.Unmarshal(&cfg))
+			require.NoError(t, conf.Unmarshal(&cfg), xconfmap.WithScalarUnmarshaler())
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
 				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
@@ -519,7 +519,7 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
 			conf := confmap.NewFromStringMap(test.config)
-			require.NoError(t, conf.Unmarshal(&cfg))
+			require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
 				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
@@ -542,7 +542,7 @@ func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
 	cfg := Config[Sub]{
 		Sub1: None[Sub](),
 	}
-	err := cm.Unmarshal(&cfg)
+	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
 	require.ErrorContains(t, err, "unexpected type string for 'enabled': got 'something' value expected 'true' or 'false'")
 }
 
@@ -552,7 +552,7 @@ func TestUnmarshalErrorEnabledField(t *testing.T) {
 	})
 	// Use zero value to avoid panic on constructor.
 	var none Optional[WithEnabled]
-	require.Error(t, cm.Unmarshal(&none))
+	require.Error(t, cm.Unmarshal(&none), xconfmap.WithScalarUnmarshaler())
 }
 
 func TestUnmarshalConfigPointer(t *testing.T) {
@@ -563,7 +563,7 @@ func TestUnmarshalConfigPointer(t *testing.T) {
 	})
 
 	var cfg Config[*Sub]
-	err := cm.Unmarshal(&cfg)
+	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
 	require.NoError(t, err)
 	assert.True(t, cfg.Sub1.HasValue())
 	assert.Equal(t, "bar", (*cfg.Sub1.Get()).Foo)
@@ -580,7 +580,7 @@ func TestUnmarshalErr(t *testing.T) {
 
 	assert.False(t, cfg.Sub1.HasValue())
 
-	err := cm.Unmarshal(&cfg)
+	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "has invalid keys: field")
 	assert.False(t, cfg.Sub1.HasValue())
@@ -606,7 +606,7 @@ func TestSquashedOptional(t *testing.T) {
 		Default(myIntDefault),
 	}
 
-	err := cm.Unmarshal(&cfg)
+	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
 	require.NoError(t, err)
 
 	assert.True(t, cfg.HasValue())
@@ -687,7 +687,7 @@ func TestOptionalMarshal(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			conf := confmap.New()
-			require.NoError(t, conf.Marshal(test.value))
+			require.NoError(t, conf.Marshal(test.value, xconfmap.WithScalarMarshaler()))
 			assert.Equal(t, test.expected, conf.ToStringMap())
 		})
 	}
@@ -717,11 +717,11 @@ func TestComparePointerMarshal(t *testing.T) {
 		t.Run(fmt.Sprintf("%v vs %v", test.pointer, test.optional), func(t *testing.T) {
 			wrapPointer := Wrap[*Sub]{Sub1: test.pointer}
 			confPointer := confmap.NewFromStringMap(nil)
-			require.NoError(t, confPointer.Marshal(wrapPointer))
+			require.NoError(t, confPointer.Marshal(wrapPointer, xconfmap.WithScalarMarshaler()))
 
 			wrapOptional := Wrap[Optional[Sub]]{Sub1: test.optional}
 			confOptional := confmap.NewFromStringMap(nil)
-			require.NoError(t, confOptional.Marshal(wrapOptional))
+			require.NoError(t, confOptional.Marshal(wrapOptional, xconfmap.WithScalarMarshaler()))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
@@ -732,11 +732,11 @@ func TestComparePointerMarshal(t *testing.T) {
 		t.Run(fmt.Sprintf("%v vs %v (omitempty)", test.pointer, test.optional), func(t *testing.T) {
 			wrapPointer := WrapOmitEmpty[*Sub]{Sub1: test.pointer}
 			confPointer := confmap.NewFromStringMap(nil)
-			require.NoError(t, confPointer.Marshal(wrapPointer))
+			require.NoError(t, confPointer.Marshal(wrapPointer, xconfmap.WithScalarMarshaler()))
 
 			wrapOptional := WrapOmitEmpty[Optional[Sub]]{Sub1: test.optional}
 			confOptional := confmap.NewFromStringMap(nil)
-			require.NoError(t, confOptional.Marshal(wrapOptional))
+			require.NoError(t, confOptional.Marshal(wrapOptional, xconfmap.WithScalarMarshaler()))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
