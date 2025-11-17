@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.46.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.140.0
 	go.opentelemetry.io/collector/internal/telemetry v0.140.0
-	go.opentelemetry.io/collector/internal/testutil v0.0.0-20251114225300-6341969f2e6a
+	go.opentelemetry.io/collector/internal/testutil v0.140.0
 	go.opentelemetry.io/collector/otelcol v0.140.0
 	go.opentelemetry.io/collector/pdata v1.46.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.140.0
