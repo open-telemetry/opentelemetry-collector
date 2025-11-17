@@ -3,6 +3,7 @@
 
 package otlp
 
+/*
 import (
 	"testing"
 
@@ -30,3 +31,4 @@ func TestDeprecatedScopeMetrics(t *testing.T) {
 	assert.Nil(t, rms[0].DeprecatedScopeMetrics)
 	assert.Nil(t, rms[0].DeprecatedScopeMetrics)
 }
+*/

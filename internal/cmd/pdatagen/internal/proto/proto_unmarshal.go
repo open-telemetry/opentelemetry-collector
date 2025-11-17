@@ -319,20 +319,20 @@ const unmarshalProtoMessage = `
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = New{{ .messageName }}()
-		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
+		err = ov.{{ .fieldName }}.UnmarshalProtoOpts(buf[startPos:pos], opts)
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProto(buf[startPos:pos])
+		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProtoOpts(buf[startPos:pos], opts)
 		if err != nil {
 			return err
 		}
 {{- else }}
 		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
-		err = orig.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos]) 
+		err = orig.{{ .fieldName }}.UnmarshalProtoOpts(buf[startPos:pos], opts)
 		if err != nil {
 			return err
 		}

@@ -14,6 +14,10 @@ var (
 	messageTemplateBytes []byte
 	messageTemplate      = template.Parse("message_internal_test.go", messageTemplateBytes)
 
+	//go:embed templates/lazy_message.go.tmpl
+	lazyMessageTemplateBytes []byte
+	lazyMessageTemplate      = template.Parse("message_internal_test.go", lazyMessageTemplateBytes)
+
 	//go:embed templates/message_test.go.tmpl
 	messageTestTemplateBytes []byte
 	messageTestTemplate      = template.Parse("message_internal_test.go", messageTestTemplateBytes)
@@ -31,6 +35,10 @@ type Message struct {
 func (ms *Message) GenerateMessage(imports, testImports []string) []byte {
 	ms.metadata = newMetadata(ms)
 	return []byte(template.Execute(messageTemplate, ms.templateFields(imports, testImports)))
+}
+
+func (ms *Message) GenerateLazyMessage(imports, testImports []string) []byte {
+	return []byte(template.Execute(lazyMessageTemplate, ms.templateFields(imports, testImports)))
 }
 
 func (ms *Message) GenerateMessageTests(imports, testImports []string) []byte {

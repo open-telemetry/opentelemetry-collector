@@ -36,6 +36,7 @@ type SliceField struct {
 	protoID       uint32
 	returnSlice   baseSlice
 	hideAccessors bool
+	lazy          bool
 }
 
 func (sf *SliceField) GenerateAccessors(ms *messageStruct) string {
@@ -68,6 +69,7 @@ func (sf *SliceField) toProtoField(ms *messageStruct) proto.FieldInterface {
 		ParentMessageName: ms.protoName,
 		Repeated:          sf.protoType != proto.TypeBytes,
 		Nullable:          sf.returnSlice.getElementNullable(),
+		Lazy:              sf.lazy,
 	}
 }
 
@@ -88,6 +90,7 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 		"stateAccessor":     stateAccessor(ms.getHasWrapper()),
 		"elementHasWrapper": sf.returnSlice.getHasWrapper(),
 		"elementNullable":   sf.returnSlice.getElementNullable(),
+		"lazy":              sf.lazy,
 	}
 }
 
