@@ -59,7 +59,7 @@ fmt: common/gofmt common/goimports common/gofumpt
 modernize:
 	$(GOCMD) run \
 		golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest \
-		-any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
+		-fix -test -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
 		-rangeint -reflecttypefor -slicescontains -sliessort -stditerators -stringscut \
 		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
