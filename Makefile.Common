@@ -58,8 +58,10 @@ fmt: common/gofmt common/goimports common/gofumpt
 .PHONY: modernize
 modernize:
 	$(GOCMD) run \
-		golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest \
-		-fix -test -v ./...
+		golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest \
+		-any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
+		-rangeint -reflecttypefor -slicescontains -sliessort -stditerators -stringscut \
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
 tidy:
