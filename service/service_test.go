@@ -495,15 +495,15 @@ func TestServiceTelemetryCreateProvidersError(t *testing.T) {
 	}
 	for name, tc := range map[string]testcase{
 		"CreateLogger": {
-			opts:        []telemetry.FactoryOption{loggerOpt, meterOpt, tracerOpt, resourceOpt},
+			opts:        []telemetry.FactoryOption{loggerOpt, meterOpt, tracerOpt},
 			expectedErr: "failed to create logger: something went wrong",
 		},
 		"CreateMeterProvider": {
-			opts:        []telemetry.FactoryOption{meterOpt, tracerOpt, resourceOpt},
+			opts:        []telemetry.FactoryOption{meterOpt, tracerOpt},
 			expectedErr: "failed to create meter provider: something went wrong",
 		},
 		"CreateTracerProvider": {
-			opts:        []telemetry.FactoryOption{tracerOpt, resourceOpt},
+			opts:        []telemetry.FactoryOption{tracerOpt},
 			expectedErr: "failed to create tracer provider: something went wrong",
 		},
 		"CreateResource": {
@@ -525,6 +525,81 @@ func TestNew_NilTelemetryProvider(t *testing.T) {
 	set.TelemetryFactory = nil
 	_, err := New(context.Background(), set, newNopConfig())
 	require.EqualError(t, err, "telemetry factory not provided")
+}
+
+func TestServiceTelemetryConsistentInstanceID(t *testing.T) {
+	var loggerResource, meterResource, tracerResource *pcommon.Resource
+
+	createLoggerCalled := false
+	createMeterCalled := false
+	createTracerCalled := false
+
+	baseFactory := otelconftelemetry.NewFactory()
+
+	set := newNopSettings()
+	set.TelemetryFactory = telemetry.NewFactory(
+		baseFactory.CreateDefaultConfig,
+		telemetry.WithCreateResource(baseFactory.CreateResource),
+		telemetry.WithCreateLogger(func(ctx context.Context, settings telemetry.LoggerSettings, cfg component.Config) (*zap.Logger, component.ShutdownFunc, error) {
+			createLoggerCalled = true
+			loggerResource = settings.Resource
+			return baseFactory.CreateLogger(ctx, settings, cfg)
+		}),
+		telemetry.WithCreateMeterProvider(func(ctx context.Context, settings telemetry.MeterSettings, cfg component.Config) (telemetry.MeterProvider, error) {
+			createMeterCalled = true
+			meterResource = settings.Resource
+			return baseFactory.CreateMeterProvider(ctx, settings, cfg)
+		}),
+		telemetry.WithCreateTracerProvider(func(ctx context.Context, settings telemetry.TracerSettings, cfg component.Config) (telemetry.TracerProvider, error) {
+			createTracerCalled = true
+			tracerResource = settings.Resource
+			return baseFactory.CreateTracerProvider(ctx, settings, cfg)
+		}),
+	)
+
+	cfg := newNopConfig()
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	require.True(t, createLoggerCalled, "logger should have been created")
+	require.True(t, createMeterCalled, "meter provider should have been created")
+	require.True(t, createTracerCalled, "tracer provider should have been created")
+
+	var serviceInstanceID string
+	if sid, ok := srv.telemetrySettings.Resource.Attributes().Get("service.instance.id"); ok {
+		serviceInstanceID = sid.AsString()
+	}
+	require.NotEmpty(t, serviceInstanceID, "service.instance.id not found in service resource")
+
+	require.NotNil(t, loggerResource, "logger should have received a resource")
+	require.NotNil(t, meterResource, "meter provider should have received a resource")
+	require.NotNil(t, tracerResource, "tracer provider should have received a resource")
+
+	var loggerInstanceID, meterInstanceID, tracerInstanceID string
+	if sid, ok := loggerResource.Attributes().Get("service.instance.id"); ok {
+		loggerInstanceID = sid.AsString()
+	}
+	if sid, ok := meterResource.Attributes().Get("service.instance.id"); ok {
+		meterInstanceID = sid.AsString()
+	}
+	if sid, ok := tracerResource.Attributes().Get("service.instance.id"); ok {
+		tracerInstanceID = sid.AsString()
+	}
+
+	require.NotEmpty(t, loggerInstanceID, "logger resource should have service.instance.id")
+	require.NotEmpty(t, meterInstanceID, "meter resource should have service.instance.id")
+	require.NotEmpty(t, tracerInstanceID, "tracer resource should have service.instance.id")
+
+	assert.Equal(t, serviceInstanceID, loggerInstanceID,
+		"logger should use the same service.instance.id as the service resource")
+	assert.Equal(t, serviceInstanceID, meterInstanceID,
+		"meter provider should use the same service.instance.id as the service resource")
+	assert.Equal(t, serviceInstanceID, tracerInstanceID,
+		"tracer provider should use the same service.instance.id as the service resource")
+
+	t.Logf("service.instance.id = %s (shared by logger, meter, and tracer)", serviceInstanceID)
+
+	require.NoError(t, srv.Shutdown(context.Background()))
 }
 
 func newNopSettings() Settings {
@@ -582,7 +657,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 	return Config{
 		Extensions: extensions.Config{component.NewID(nopType)},
 		Pipelines:  pipelineCfgs,
-		Telemetry: otelconftelemetry.Config{
+		Telemetry: &otelconftelemetry.Config{
 			Logs: otelconftelemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
 				Development: false,
