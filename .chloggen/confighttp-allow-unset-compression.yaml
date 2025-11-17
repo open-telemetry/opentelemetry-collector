@@ -1,6 +1,6 @@
 change_type: enhancement
 component: pkg/config/confighttp
-note: Allow unset Content-Encoding through when middleware is disabled
+note: Setting `compression_algorithms` to an empty list now disables automatic decompression, ignoring Content-Encoding
 
 # One or more tracking issues or pull requests related to the change
 issues: [14131]
