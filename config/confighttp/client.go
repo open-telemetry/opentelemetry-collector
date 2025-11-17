@@ -156,6 +156,8 @@ type clientExtensionsOption struct {
 }
 
 // WithClientExtensions is a [ToClientOption] which supplies the map of extensions to search for middlewares.
+//
+// Typically called with the output of host.GetExtensions().
 func WithClientExtensions(extensions map[component.ID]component.Component) ToClientOption {
 	return clientExtensionsOption{extensions: extensions}
 }

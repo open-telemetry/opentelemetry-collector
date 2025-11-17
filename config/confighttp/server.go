@@ -168,6 +168,8 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // WithServerExtensions is a [ToServerOption] which supplies the map of extensions to search for middlewares.
+//
+// Typically called with the output of host.GetExtensions().
 func WithServerExtensions(extensions map[component.ID]component.Component) ToServerOption {
 	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
 		opts.Extensions = extensions

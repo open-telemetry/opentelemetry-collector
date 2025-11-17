@@ -273,6 +273,8 @@ type clientExtensionsOption struct {
 }
 
 // WithClientExtensions is a [ToClientConnOption] which supplies the map of extensions to search for middlewares.
+//
+// Typically called with the output of host.GetExtensions().
 func WithClientExtensions(extensions map[component.ID]component.Component) ToClientConnOption {
 	return clientExtensionsOption{extensions: extensions}
 }
@@ -459,6 +461,8 @@ type serverExtensionsOption struct {
 }
 
 // WithServerExtensions is a [ToServerOption] which supplies the map of extensions to search for middlewares.
+//
+// Typically called with the output of host.GetExtensions().
 func WithServerExtensions(extensions map[component.ID]component.Component) ToServerOption {
 	return serverExtensionsOption{extensions: extensions}
 }
