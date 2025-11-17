@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
@@ -94,4 +95,9 @@ func TestMemoryPressureResponse(t *testing.T) {
 			assert.NoError(t, ml.Shutdown(ctx))
 		})
 	}
+}
+
+func TestMiddleware(t *testing.T) {
+	assert.Implements(t, (*extensionmiddleware.HTTPServer)(nil), &memoryLimiterExtension{}, "memoryLimiterExtension does not impplement extensionmiddleware.HTTPServer interface")
+	assert.Implements(t, (*extensionmiddleware.GRPCServer)(nil), &memoryLimiterExtension{}, "memoryLimiterExtension does not impplement extensionmiddleware.GRPCServer interface")
 }
