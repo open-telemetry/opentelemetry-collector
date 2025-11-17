@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.46.0
 	go.opentelemetry.io/collector/extension v1.46.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.140.0
-	go.opentelemetry.io/collector/internal/testutil v0.0.0-20251114225300-6341969f2e6a
+	go.opentelemetry.io/collector/internal/testutil v0.140.0
 	go.opentelemetry.io/contrib/zpages v0.63.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
