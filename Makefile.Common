@@ -60,7 +60,7 @@ modernize:
 	$(GOCMD) run \
 		golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest \
 		-fix -test -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
-		-rangeint -reflecttypefor -slicescontains -sliessort -stditerators -stringscut \
+		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
 		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
