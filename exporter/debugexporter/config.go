@@ -33,12 +33,10 @@ type Config struct {
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
-	// OutputPaths is a list of URLs or file paths to write logging output to.
+	// OutputPaths is a list of file paths to write logging output to.
 	// This option is only used when use_internal_logger is false.
-	// The URLs could only be with "file" schema or without schema.
-	// The URLs with "file" schema must be an absolute path.
-	// The URLs without schema are treated as local file paths.
-	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
+	// Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively.
+	// All other values are treated as file paths.
 	// (default = ["stdout"])
 	OutputPaths []string `mapstructure:"output_paths"`
 
@@ -54,6 +52,11 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if _, ok := supportedLevels[cfg.Verbosity]; !ok {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
+	}
+
+	// If use_internal_logger is false, output_paths must be specified and non-empty
+	if !cfg.UseInternalLogger && len(cfg.OutputPaths) == 0 {
+		return fmt.Errorf("output_paths must be specified and non-empty when use_internal_logger is false")
 	}
 
 	return nil
