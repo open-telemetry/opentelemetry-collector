@@ -1,4 +1,4 @@
-change_type: bug_fix
+change_type: enhancement
 component: pkg/config/confighttp
 note: Allow unset Content-Encoding through when middleware is disabled
 
