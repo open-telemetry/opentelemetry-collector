@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.139.0
 	go.opentelemetry.io/collector/extension v1.45.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.139.0
-	go.opentelemetry.io/collector/internal/testutil v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/testutil v0.0.0-20251114225300-6341969f2e6a
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/testdata v0.139.0
