@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.45.0
+    version: v1.46.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -31,13 +31,14 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.139.0
+    version: v0.140.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
       - go.opentelemetry.io/collector/internal/fanoutconsumer
       - go.opentelemetry.io/collector/internal/sharedcomponent
       - go.opentelemetry.io/collector/internal/telemetry
+      - go.opentelemetry.io/collector/internal/testutil
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component/componentstatus
@@ -100,6 +101,5 @@ excluded-modules:
   - go.opentelemetry.io/collector/cmd/otelcorecol
   - go.opentelemetry.io/collector/internal/cmd/pdatagen
   - go.opentelemetry.io/collector/internal/e2e
-  - go.opentelemetry.io/collector/internal/testutil
   - go.opentelemetry.io/collector/internal/tools
   - go.opentelemetry.io/collector/confmap/internal/e2e
