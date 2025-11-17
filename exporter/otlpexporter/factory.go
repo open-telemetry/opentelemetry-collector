@@ -49,7 +49,7 @@ func NewFactoryWithAlias() exporter.Factory {
 		aliasType,
 		createDefaultConfig,
 		xexporter.WithTraces(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
-			set.ID = adjustID(set.ID) //transform otlp_grpc to otlp
+			set.ID = adjustID(set.ID) // transform otlp_grpc to otlp
 			return originalFactory.CreateTraces(ctx, set, cfg)
 		}, metadata.TracesStability),
 		xexporter.WithMetrics(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
