@@ -7,6 +7,7 @@ import (
 	"context"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -21,7 +22,8 @@ func createLogger(
 	componentConfig component.Config,
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
-	res := newResource(set.Settings, cfg)
+	attrs := pcommonAttrsToOTelAttrs(set.Resource)
+	res := sdkresource.NewWithAttributes("", attrs...)
 
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
