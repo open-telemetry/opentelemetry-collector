@@ -34,7 +34,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/sys v0.37.0
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.77.0
 )
 
 require (
@@ -75,7 +75,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.140.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.140.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.140.0 // indirect
@@ -115,11 +115,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/net v0.45.0 // indirect
+	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
