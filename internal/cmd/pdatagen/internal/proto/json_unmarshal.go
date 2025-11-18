@@ -19,11 +19,11 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 	}
 {{ else if .nullable -}}
 	{
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 		orig.{{ .oneOfGroup }} = ov
@@ -35,32 +35,33 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 const unmarshalJSONEnum = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .origFullName }}(iter.ReadEnumValue({{ .origFullName }}_value)))
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .messageName }}(iter.ReadEnumValue({{ .messageName }}_value)))
 	}
 {{ else -}}
-	orig.{{ .fieldName }} = {{ .origFullName }}(iter.ReadEnumValue({{ .origFullName }}_value))
+	orig.{{ .fieldName }} = {{ .messageName }}(iter.ReadEnumValue({{ .messageName }}_value))
 {{- end }}`
 
 const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}NewOrig{{ .origName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		UnmarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], iter)
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
+		orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1].UnmarshalJSON(iter)
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
-		ov.{{ .fieldName }} = NewOrig{{ .origName }}()
-		UnmarshalJSONOrig{{ .origName }}(ov.{{ .fieldName }}, iter)
+		ov.{{ .fieldName }} = New{{ .messageName }}()
+		ov.{{ .fieldName }}.UnmarshalJSON(iter)
 		orig.{{ .oneOfGroup }} = ov
 	}
 {{ else -}}
-	UnmarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, iter)
+	{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
+	orig.{{ .fieldName }}.UnmarshalJSON(iter)
 {{- end }}`
 
 const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
@@ -70,11 +71,11 @@ const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageFullName }}
+		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
-			ov = &{{ .oneOfMessageFullName }}{}
+			ov = &{{ .oneOfMessageName }}{}
 		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageFullName }})
+			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = iter.ReadBytes()
 		orig.{{ .oneOfGroup }} = ov

@@ -18,9 +18,9 @@ Monotonic cumulative sum int metric enabled by default.
 
 The metric will be become optional soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -41,17 +41,17 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Delta | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Delta | false | Deprecated |
 
 ### metric.input_type
 
 Monotonic cumulative sum int metric with string input_type enabled by default.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -62,6 +62,16 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
+
+### system.cpu.time
+
+Monotonic cumulative sum int metric enabled by default.
+
+The metric will be become optional soon.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime) |
 
 ## Optional Metrics
 
@@ -77,9 +87,9 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated |
 
 #### Attributes
 
@@ -94,9 +104,9 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Double | Deprecated |
 
 #### Attributes
 
@@ -192,11 +202,11 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]
+Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | deprecated |
+| {times} | Sum | Int | true | Deprecated |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
@@ -204,30 +214,30 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| By | Sum | Int | true | stable |
+| By | Sum | Int | true | Stable |
 
 ### otelcol_queue_capacity
 
-Queue capacity - sync gauge example.
+Queue capacity - sync gauge example. [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {items} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {items} | Gauge | Int | Development |
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
+This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]
 
 For example this metric only exists if feature A is enabled.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {items} | Gauge | Int | alpha |
+| {items} | Gauge | Int | Alpha |
 
 ### otelcol_request_duration
 
-Duration of request [alpha]
+Duration of request [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Histogram | Double | alpha |
+| s | Histogram | Double | Alpha |

@@ -121,9 +121,9 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					Headers: configopaque.MapList{
+						{Name: "hdr1", Value: "val1"},
+						{Name: "hdr2", Value: "val2"},
 					},
 				},
 			},
@@ -272,9 +272,9 @@ func TestCreateProfiles(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					Headers: configopaque.MapList{
+						{Name: "hdr1", Value: "val1"},
+						{Name: "hdr2", Value: "val2"},
 					},
 				},
 			},

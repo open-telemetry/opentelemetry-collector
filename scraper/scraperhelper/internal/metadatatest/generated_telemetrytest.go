@@ -15,7 +15,7 @@ import (
 func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_log_records",
-		Description: "Number of log records that were unable to be scraped. [alpha]",
+		Description: "Number of log records that were unable to be scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemet
 func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_metric_points",
-		Description: "Number of metric points that were unable to be scraped. [alpha]",
+		Description: "Number of metric points that were unable to be scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -47,7 +47,7 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telem
 func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_log_records",
-		Description: "Number of log records successfully scraped. [alpha]",
+		Description: "Number of log records successfully scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -63,7 +63,7 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemet
 func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_metric_points",
-		Description: "Number of metric points successfully scraped. [alpha]",
+		Description: "Number of metric points successfully scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

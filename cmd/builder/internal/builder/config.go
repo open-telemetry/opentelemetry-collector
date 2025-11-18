@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	defaultBetaOtelColVersion   = "v0.138.0"
-	defaultStableOtelColVersion = "v1.44.0"
+	defaultBetaOtelColVersion   = "v0.140.0"
+	defaultStableOtelColVersion = "v1.46.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
@@ -73,6 +73,7 @@ type Distribution struct {
 	Version          string `mapstructure:"version"`
 	BuildTags        string `mapstructure:"build_tags"`
 	DebugCompilation bool   `mapstructure:"debug_compilation"`
+	CGoEnabled       bool   `mapstructure:"cgo_enabled"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution

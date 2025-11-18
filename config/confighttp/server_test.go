@@ -429,21 +429,17 @@ func TestHttpCorsWithSettings(t *testing.T) {
 func TestHttpServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
-		headers map[string]configopaque.String
+		headers configopaque.MapList
 	}{
 		{
 			name:    "noHeaders",
 			headers: nil,
 		},
 		{
-			name:    "emptyHeaders",
-			headers: map[string]configopaque.String{},
-		},
-		{
 			name: "withHeaders",
-			headers: map[string]configopaque.String{
-				"x-new-header-1": "value1",
-				"x-new-header-2": "value2",
+			headers: configopaque.MapList{
+				{Name: "x-new-header-1", Value: "value1"},
+				{Name: "x-new-header-2", Value: "value2"},
 			},
 		},
 	}
@@ -516,7 +512,7 @@ func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optiona
 	assert.Equal(t, wantMaxAge, resp.Header.Get("Access-Control-Max-Age"))
 }
 
-func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
+func verifyHeadersResp(t *testing.T, url string, expected configopaque.MapList) {
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	require.NoError(t, err, "Error creating request")
 
@@ -527,7 +523,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	for k, v := range expected {
+	for k, v := range expected.Iter {
 		assert.Equal(t, string(v), resp.Header.Get(k))
 	}
 }
@@ -951,7 +947,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
-	assert.NotNil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
 	assert.NotNil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
@@ -1139,9 +1134,9 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 7200, serverConfig.CORS.Get().MaxAge)
 
 	// Verify response headers
-	expectedResponseHeaders := map[string]configopaque.String{
-		"Server":   "OpenTelemetry-Collector",
-		"X-Flavor": "apple",
+	expectedResponseHeaders := configopaque.MapList{
+		{Name: "Server", Value: "OpenTelemetry-Collector"},
+		{Name: "X-Flavor", Value: "apple"},
 	}
 	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
 
