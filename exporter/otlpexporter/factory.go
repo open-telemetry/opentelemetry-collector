@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -34,7 +33,7 @@ func NewFactory() exporter.Factory {
 
 // NewFactoryWithAlias creates a factory for OTLP exporter with the otlp_grpc alias type and wraps the original factory.
 func NewFactoryWithAlias() exporter.Factory {
-	originalFactory := NewFactory()
+	originalFactory := NewFactory().(xexporter.Factory)
 	aliasType := component.MustNewType("otlp_grpc")
 
 	// Helper function to adjust the ID from otlp_grpc to otlp while preserving the name
@@ -62,10 +61,7 @@ func NewFactoryWithAlias() exporter.Factory {
 		}, metadata.LogsStability),
 		xexporter.WithProfiles(func(ctx context.Context, set exporter.Settings, cfg component.Config) (xexporter.Profiles, error) {
 			set.ID = adjustID(set.ID)
-			if xFactory, ok := originalFactory.(xexporter.Factory); ok {
-				return xFactory.CreateProfiles(ctx, set, cfg)
-			}
-			return nil, pipeline.ErrSignalNotSupported
+			return originalFactory.CreateProfiles(ctx, set, cfg)
 		}, metadata.ProfilesStability),
 	)
 }

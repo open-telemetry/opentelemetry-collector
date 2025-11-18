@@ -20,13 +20,10 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -446,45 +443,4 @@ func TestAliasFactoryUnnamedID(t *testing.T) {
 	oexp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
-}
-
-// TestAliasFactoryProfilesErrorPath tests the error path when factory doesn't implement xexporter.Factory
-// This covers: return nil, pipeline.ErrSignalNotSupported
-func TestAliasFactoryProfilesErrorPath(t *testing.T) {
-	// Create a factory that doesn't implement xexporter.Factory
-	// We use exporter.NewFactory instead of xexporter.NewFactory
-	nonXFactory := exporter.NewFactory(
-		component.MustNewType("test"),
-		func() component.Config { return &Config{} },
-	)
-
-	// Create an alias factory wrapper that uses the non-xexporter factory
-	aliasType := component.MustNewType("otlp_grpc")
-	adjustID := func(id component.ID) component.ID {
-		if id.Name() == "" {
-			return component.NewID(metadata.Type)
-		}
-		return component.NewIDWithName(metadata.Type, id.Name())
-	}
-
-	aliasFactory := xexporter.NewFactory(
-		aliasType,
-		createDefaultConfig,
-		xexporter.WithProfiles(func(ctx context.Context, set exporter.Settings, cfg component.Config) (xexporter.Profiles, error) {
-			set.ID = adjustID(set.ID)
-			if xFactory, ok := nonXFactory.(xexporter.Factory); ok {
-				return xFactory.CreateProfiles(ctx, set, cfg)
-			}
-			return nil, pipeline.ErrSignalNotSupported
-		}, metadata.ProfilesStability),
-	)
-
-	cfg := aliasFactory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
-
-	set := exportertest.NewNopSettings(aliasType)
-
-	// This should trigger the error path since nonXFactory doesn't implement xexporter.Factory
-	_, err := aliasFactory.CreateProfiles(context.Background(), set, cfg)
-	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
