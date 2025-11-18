@@ -101,7 +101,7 @@ type ClientConfig struct {
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
-	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
+	Cookies configoptional.Optional[CookiesConfig] `mapstructure:"cookies,omitempty"`
 
 	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
 	// By default, this is set to true.
@@ -116,9 +116,7 @@ type ClientConfig struct {
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
-	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
-	Enabled bool `mapstructure:"enabled,omitempty"`
-	_       struct{}
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -265,7 +263,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 	}
 
 	var jar http.CookieJar
-	if cc.Cookies.Enabled {
+	if cc.Cookies.HasValue() {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
