@@ -41,3 +41,16 @@ func mustAttributeValueString(k string, v attribute.Value) string {
 	}
 	return v.AsString()
 }
+
+// pcommonAttrsToOTelAttrs gets the Resource attributes to OpenTelemetry attribute.KeyValue slice.
+func pcommonAttrsToOTelAttrs(resource *pcommon.Resource) []attribute.KeyValue {
+	var result []attribute.KeyValue
+	if resource != nil {
+		attrs := resource.Attributes()
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			result = append(result, attribute.String(k, v.AsString()))
+			return true
+		})
+	}
+	return result
+}
