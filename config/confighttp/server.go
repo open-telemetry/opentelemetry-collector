@@ -83,7 +83,7 @@ type ServerConfig struct {
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
 	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
+	// next request when keep-alive are enabled. If IdleTimeout
 	// is zero, the value of ReadTimeout is used. If both are
 	// zero, there is no timeout.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
@@ -93,8 +93,8 @@ type ServerConfig struct {
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
-	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+	// KeepAlivesEnabled controls whether HTTP keep-alive are enabled.
+	// By default, keep-alive are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
@@ -280,7 +280,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 		ErrorLog:          errorLog,
 	}
 
-	// Set keep-alives enabled/disabled
+	// Set keep-alive enabled/disabled
 	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
 
 	return server, err
