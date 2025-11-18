@@ -44,7 +44,6 @@ confmap/provider/httpsprovider/              @open-telemetry/collector-approvers
 confmap/provider/yamlprovider/               @open-telemetry/collector-approvers
 connector/forwardconnector/                  @open-telemetry/collector-approvers
 connector/xconnector/                        @open-telemetry/collector-approvers @mx-psi @dmathieu
-consumer/consumererror/xconsumererror/       @open-telemetry/collector-approvers
 consumer/xconsumer/                          @open-telemetry/collector-approvers @mx-psi @dmathieu
 docs/rfcs/                                   @open-telemetry/collector-approvers @codeboten @bogdandrutu @dmitryax @mx-psi
 exporter/debugexporter/                      @open-telemetry/collector-approvers @andrzej-stencel

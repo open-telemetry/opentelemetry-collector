@@ -44,7 +44,6 @@ body:
       - confmap/provider/yamlprovider
       - connector/forward
       - connector/x
-      - consumer/consumererror/xconsumererror
       - consumer/xconsumer
       - docs/rfcs
       - exporter/debug
