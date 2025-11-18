@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -54,8 +54,8 @@ func createTracerProvider(
 
 	attrs := pcommonAttrsToOTelAttrs(set.Resource)
 	res := sdkresource.NewWithAttributes("", attrs...)
-	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
-		TracerProvider: &cfg.Traces.TracerProvider,
+	sdk, err := newSDK(ctx, res, otelconf.OpenTelemetryConfiguration{
+		TracerProvider: &cfg.Traces.TracerProviderJson,
 	})
 	if err != nil {
 		return nil, err

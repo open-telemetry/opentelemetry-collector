@@ -16,7 +16,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
@@ -60,18 +60,16 @@ func TestCreateLogger(t *testing.T) {
 					DisableCaller:     true,
 					DisableStacktrace: true,
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
-					Processors: []config.LogRecordProcessor{
+					Processors: []otelconf.LogRecordProcessor{
 						{
-							Batch: &config.BatchLogRecordProcessor{
-								Exporter: config.LogRecordExporter{
-									OTLP: &config.OTLP{}, // missing required fields
-								},
+							Batch: &otelconf.BatchLogRecordProcessor{
+								Exporter: otelconf.LogRecordExporter{},
 							},
 						},
 					},
 				},
 			},
-			wantErr: errors.New("no valid log exporter"),
+			wantErr: errors.New("invalid config: no valid log exporter"),
 		},
 		{
 			name: "log config with no processors",
@@ -96,11 +94,11 @@ func TestCreateLogger(t *testing.T) {
 					DisableCaller:     true,
 					DisableStacktrace: true,
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
-					Processors: []config.LogRecordProcessor{
+					Processors: []otelconf.LogRecordProcessor{
 						{
-							Batch: &config.BatchLogRecordProcessor{
-								Exporter: config.LogRecordExporter{
-									Console: config.Console{},
+							Batch: &otelconf.BatchLogRecordProcessor{
+								Exporter: otelconf.LogRecordExporter{
+									Console: otelconf.ConsoleExporter{},
 								},
 							},
 						},
@@ -362,13 +360,11 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 	srv := createLogsBackend(t, "/v1/logs", handler)
 	t.Cleanup(srv.Close)
 
-	processors := []config.LogRecordProcessor{{
-		Simple: &config.SimpleLogRecordProcessor{
-			Exporter: config.LogRecordExporter{
-				OTLP: &config.OTLP{
+	processors := []otelconf.LogRecordProcessor{{
+		Simple: &otelconf.SimpleLogRecordProcessor{
+			Exporter: otelconf.LogRecordExporter{
+				OTLPHttp: &otelconf.OTLPHttpExporter{
 					Endpoint: ptr(srv.URL),
-					Protocol: ptr("http/protobuf"),
-					Insecure: ptr(true),
 				},
 			},
 		},
@@ -437,14 +433,12 @@ func TestLogAttributeInjection(t *testing.T) {
 		},
 		Logs: LogsConfig{
 			Encoding: "json",
-			Processors: []config.LogRecordProcessor{{
-				Simple: &config.SimpleLogRecordProcessor{
-					Exporter: config.LogRecordExporter{
-						OTLP: &config.OTLP{
+			Processors: []otelconf.LogRecordProcessor{{
+				Simple: &otelconf.SimpleLogRecordProcessor{
+					Exporter: otelconf.LogRecordExporter{
+						OTLPHttp: &otelconf.OTLPHttpExporter{
 							// Send OTLP logs to the mock backend
 							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
 						},
 					},
 				},

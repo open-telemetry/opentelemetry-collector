@@ -6,7 +6,7 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"time"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -59,16 +59,15 @@ func createDefaultConfig() component.Config {
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{
+			MeterProviderJson: otelconf.MeterProviderJson{
+				Readers: []otelconf.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
-							Host:              &metricsHost,
-							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
+						Pull: &otelconf.PullMetricReader{Exporter: otelconf.PullMetricExporter{PrometheusDevelopment: &otelconf.ExperimentalPrometheusMetricExporter{
+							WithoutScopeInfo:    ptr(true),
+							TranslationStrategy: ptr(otelconf.ExperimentalPrometheusMetricExporterTranslationStrategyUnderscoreEscapingWithoutSuffixes),
+							Host:                &metricsHost,
+							Port:                ptr(8888),
+							WithResourceConstantLabels: &otelconf.IncludeExclude{
 								Included: []string{},
 							},
 						}}},
