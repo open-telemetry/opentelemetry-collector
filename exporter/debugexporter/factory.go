@@ -43,12 +43,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	return &Config{
 		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
+		QueueConfig:        configoptional.Default(*queueCfg.Get()),
 	}
 }
 

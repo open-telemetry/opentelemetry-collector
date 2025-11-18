@@ -25,6 +25,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	tests := []struct {
 		filename    string
 		cfg         *Config
@@ -36,7 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
-				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
+				QueueConfig:        configoptional.Default(*queueCfg.Get()),
 			},
 		},
 		{
