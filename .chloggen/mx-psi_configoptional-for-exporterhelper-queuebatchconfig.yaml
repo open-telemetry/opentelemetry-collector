@@ -16,7 +16,7 @@ issues: [14155]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  You may need to change the field type of your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]`
+   It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
