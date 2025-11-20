@@ -348,7 +348,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 	if cc.Auth.HasValue() {
 		if extensions == nil {
-			return nil, errors.New("no extensions configuration available")
+			return nil, errors.New("authentication is configured but no extension map was provided; this may be a bug")
 		}
 
 		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, extensions)
@@ -392,6 +392,9 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
+	if len(cc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares are configured but no extension map was provided; this may be a bug")
+	}
 	for _, middleware := range cc.Middlewares {
 		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, extensions)
 		if err != nil {

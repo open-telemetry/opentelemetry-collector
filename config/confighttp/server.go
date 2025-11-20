@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -187,6 +188,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	// Apply middlewares in reverse order so they execute in
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
+	if len(sc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares are configured but no extension map was provided; this may be a bug")
+	}
 	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
 		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
@@ -213,6 +217,10 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	}
 
 	if sc.Auth.HasValue() {
+		if extensions == nil {
+			return nil, errors.New("authentication is configured but no extension map was provided; this may be a bug")
+		}
+
 		auth := sc.Auth.Get()
 		server, err := auth.GetServerAuthenticator(ctx, extensions)
 		if err != nil {
