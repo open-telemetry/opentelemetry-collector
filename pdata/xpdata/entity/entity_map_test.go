@@ -48,7 +48,7 @@ func TestEntityMap_PutEmpty_Override(t *testing.T) {
 func TestEntityMap_EnsureCapacity(t *testing.T) {
 	em := NewEntityMap()
 	em.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		em.PutEmpty(fmt.Sprintf("type%d", i))
 	}
 	assert.Equal(t, 5, em.Len())

@@ -37,7 +37,7 @@ func TestSampleCount(t *testing.T) {
 	ps := ils.Profiles().AppendEmpty()
 	assert.Equal(t, 0, pd.SampleCount())
 
-	ps.Sample().AppendEmpty()
+	ps.Samples().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
 	ils2 := rs.ScopeProfiles().AppendEmpty()
@@ -46,13 +46,13 @@ func TestSampleCount(t *testing.T) {
 	ps2 := ils2.Profiles().AppendEmpty()
 	assert.Equal(t, 1, pd.SampleCount())
 
-	ps2.Sample().AppendEmpty()
+	ps2.Samples().AppendEmpty()
 	assert.Equal(t, 2, pd.SampleCount())
 
 	rms := pd.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
-	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
+	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples()
 	for range 5 {
 		ilss.AppendEmpty()
 	}
@@ -78,7 +78,7 @@ func TestSampleCountWithEmpty(t *testing.T) {
 					{
 						Profiles: []*internal.Profile{
 							{
-								Sample: []*internal.Sample{
+								Samples: []*internal.Sample{
 									{},
 								},
 							},
@@ -88,6 +88,84 @@ func TestSampleCountWithEmpty(t *testing.T) {
 			},
 		},
 	}, new(internal.State)).SampleCount())
+}
+
+func TestProfilesSwitchDictionary(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		profiles Profiles
+
+		src ProfilesDictionary
+		dst ProfilesDictionary
+
+		wantProfiles   Profiles
+		wantDictionary ProfilesDictionary
+		wantErr        error
+	}{
+		{
+			name:     "with an empty profiles",
+			profiles: NewProfiles(),
+
+			src: NewProfilesDictionary(),
+			dst: NewProfilesDictionary(),
+
+			wantProfiles:   NewProfiles(),
+			wantDictionary: NewProfilesDictionary(),
+		},
+		{
+			name: "with a profiles that has a profile",
+			profiles: func() Profiles {
+				p := NewProfiles()
+				profile := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				profile.Samples().AppendEmpty().SetLinkIndex(1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				l := d.LinkTable().AppendEmpty()
+				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
+
+			wantProfiles: func() Profiles {
+				p := NewProfiles()
+				profile := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				profile.Samples().AppendEmpty().SetLinkIndex(2)
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				l := d.LinkTable().AppendEmpty()
+				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				return d
+			}(),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			p := tt.profiles
+			dst := tt.dst
+			err := p.switchDictionary(tt.src, dst)
+
+			if tt.wantErr == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tt.wantErr, err)
+			}
+
+			assert.Equal(t, tt.wantProfiles, p)
+			assert.Equal(t, tt.wantDictionary, dst)
+		})
+	}
 }
 
 func BenchmarkProfilesUsage(b *testing.B) {
