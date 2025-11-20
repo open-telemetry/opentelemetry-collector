@@ -99,3 +99,6 @@ impi:
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+benchmark:
+	go test -bench=. -benchtime=1s ./...
