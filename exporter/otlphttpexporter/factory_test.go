@@ -54,7 +54,7 @@ func TestCreateMetrics(t *testing.T) {
 	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
 	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
 	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
-	cfgWithKeys.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.MetadataKeys = []string{"key1", "key2"}
 	cfgWithKeys.QueueConfig.Enabled = true
 
 	oexpWithKeys, err := factory.CreateMetrics(context.Background(), set, cfgWithKeys)
@@ -174,8 +174,11 @@ func TestCreateTraces(t *testing.T) {
 			name: "WithMetadataKeys",
 			config: &Config{
 				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
-				MetadataKeys: []string{"key1", "key2"},
-				QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+				QueueConfig: func() exporterhelper.QueueBatchConfig {
+					cfg := exporterhelper.NewDefaultQueueConfig()
+					cfg.MetadataKeys = []string{"key1", "key2"}
+					return cfg
+				}(),
 			},
 		},
 	}
@@ -220,7 +223,7 @@ func TestCreateLogs(t *testing.T) {
 	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
 	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
 	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
-	cfgWithKeys.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.MetadataKeys = []string{"key1", "key2"}
 	cfgWithKeys.QueueConfig.Enabled = true
 
 	oexpWithKeys, err := factory.CreateLogs(context.Background(), set, cfgWithKeys)

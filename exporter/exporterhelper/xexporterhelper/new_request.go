@@ -81,8 +81,15 @@ func NewTracesQueueBatchSettings() QueueBatchSettings {
 
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// If cfg.MetadataKeys is set, it will automatically configure the partitioner and merge function
+// to partition batches based on the specified metadata keys.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set QueueBatchSettings) exporterhelper.Option {
+	// Automatically configure partitioner if MetadataKeys is set
+	if len(cfg.MetadataKeys) > 0 {
+		set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.MetadataKeys)
+		set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.MetadataKeys)
+	}
 	return internal.WithQueueBatch(cfg, set)
 }

@@ -90,11 +90,6 @@ func createTraces(
 	}
 
 	qbs := xexporterhelper.NewTracesQueueBatchSettings()
-	if len(oCfg.MetadataKeys) > 0 {
-		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
-		qbs.Partitioner = partitioner
-		qbs.MergeCtx = partitioner.MergeCtx
-	}
 
 	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
@@ -123,11 +118,6 @@ func createMetrics(
 	}
 
 	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
-	if len(oCfg.MetadataKeys) > 0 {
-		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
-		qbs.Partitioner = partitioner
-		qbs.MergeCtx = partitioner.MergeCtx
-	}
 
 	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
@@ -155,11 +145,6 @@ func createLogs(
 	}
 
 	qbs := xexporterhelper.NewLogsQueueBatchSettings()
-	if len(oCfg.MetadataKeys) > 0 {
-		partitioner := metadataKeysPartitioner{keys: oCfg.MetadataKeys}
-		qbs.Partitioner = partitioner
-		qbs.MergeCtx = partitioner.MergeCtx
-	}
 
 	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
