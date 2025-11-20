@@ -50,16 +50,12 @@ benchmark:
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
-# `modernize' cannot be installed as a Go tool via `go get -tool'.
-#
-# See [1] for more details.
-#
-# [1]: https://github.com/golang/go/issues/73279
 .PHONY: modernize
 modernize:
-	$(GOCMD) run \
-		golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest \
-		-fix -test -v ./...
+	$(GO_TOOL) modernize \
+		-fix -test -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
+		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
 tidy:
