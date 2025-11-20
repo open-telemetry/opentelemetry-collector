@@ -58,5 +58,5 @@ func (ms Profile) Duration() pcommon.Timestamp {
 // SetDuration replaces the duration associated with this Profile.
 //
 // Deprecated: Use Profile.SetDurationNano instead.
-func (ms Profile) SetDuration(v pcommon.Timestamp) {
+func (ms Profile) SetDuration(_ pcommon.Timestamp) {
 }
