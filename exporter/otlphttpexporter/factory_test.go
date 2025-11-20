@@ -62,6 +62,28 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotNil(t, oexpWithKeys)
 }
 
+func TestCreateMetrics_ErrorCases(t *testing.T) {
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(factory.Type())
+
+	t.Run("invalid metrics_endpoint URL", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.MetricsEndpoint = "not a valid url://invalid"
+		_, err := factory.CreateMetrics(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metrics_endpoint must be a valid URL")
+	})
+
+	t.Run("empty endpoint and empty metrics_endpoint", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = ""
+		cfg.MetricsEndpoint = ""
+		_, err := factory.CreateMetrics(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "either endpoint or metrics_endpoint must be specified")
+	})
+}
+
 func clientConfig(endpoint string, headers configopaque.MapList, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.TLS = tlsSetting
@@ -229,6 +251,28 @@ func TestCreateLogs(t *testing.T) {
 	oexpWithKeys, err := factory.CreateLogs(context.Background(), set, cfgWithKeys)
 	require.NoError(t, err)
 	require.NotNil(t, oexpWithKeys)
+}
+
+func TestCreateLogs_ErrorCases(t *testing.T) {
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(factory.Type())
+
+	t.Run("invalid logs_endpoint URL", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.LogsEndpoint = "not a valid url://invalid"
+		_, err := factory.CreateLogs(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "logs_endpoint must be a valid URL")
+	})
+
+	t.Run("empty endpoint and empty logs_endpoint", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = ""
+		cfg.LogsEndpoint = ""
+		_, err := factory.CreateLogs(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "either endpoint or logs_endpoint must be specified")
+	})
 }
 
 func TestCreateProfiles(t *testing.T) {
