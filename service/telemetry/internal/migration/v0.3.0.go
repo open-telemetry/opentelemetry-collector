@@ -162,6 +162,9 @@ type LogsConfigV030 struct {
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+
+	// DisableResourceAttributes disables adding resource attributes to logs.
+	DisableResourceAttributes bool `mapstructure:"disable_resource_attributes,omitempty"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
