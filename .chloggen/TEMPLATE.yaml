@@ -3,7 +3,7 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type:
 
-# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
 component:
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
