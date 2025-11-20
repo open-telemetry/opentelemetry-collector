@@ -29,6 +29,11 @@ require (
 	go.opentelemetry.io/collector/otelcol {{.OtelColVersion}}
 )
 
+require (
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
+)
+
 {{- range .ConfmapConverters}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
