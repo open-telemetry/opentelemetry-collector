@@ -17,5 +17,7 @@ type Host interface {
 	//
 	// GetExtensions can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
+	//
+	// The returned map should not be nil.
 	GetExtensions() map[ID]Component
 }

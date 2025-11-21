@@ -15,5 +15,7 @@ func TestNewNopHost(t *testing.T) {
 	require.NotNil(t, nh)
 	require.IsType(t, &nopHost{}, nh)
 
-	assert.Nil(t, nh.GetExtensions())
+	extensions := nh.GetExtensions()
+	assert.NotNil(t, extensions)
+	assert.Len(t, extensions, 0)
 }
