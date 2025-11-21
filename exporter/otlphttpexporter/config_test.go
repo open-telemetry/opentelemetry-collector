@@ -53,8 +53,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
+			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -63,7 +62,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					FlushTimeout: 200 * time.Millisecond,
 					MinSize:      8192,
 				}),
-			},
+			}),
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
 				Headers: configopaque.MapList{

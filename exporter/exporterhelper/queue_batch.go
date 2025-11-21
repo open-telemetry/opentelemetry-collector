@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
@@ -14,7 +15,7 @@ import (
 // WithQueue overrides the default QueueBatchConfig for an exporter.
 // The default QueueBatchConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueBatchConfig) Option {
+func WithQueue(config configoptional.Optional[QueueBatchConfig]) Option {
 	return internal.WithQueue(config)
 }
 

@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -54,7 +55,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewID(component.MustNewType("test"))
-	qCfg.StorageID = &storageID
+	qCfg.Get().StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
@@ -69,7 +70,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	qCfg := NewDefaultQueueConfig()
-	qCfg.WaitForResult = true
+	qCfg.Get().WaitForResult = true
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(qCfg),
@@ -98,9 +99,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			queueOptions: []Option{
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				func() Option {
-					qs := NewDefaultQueueConfig()
-					qs.Enabled = false
-					return WithQueue(qs)
+					return WithQueue(configoptional.None[queuebatch.Config]())
 				}(),
 			},
 		},
@@ -108,9 +107,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			name: "WithRequestQueue",
 			queueOptions: []Option{
 				func() Option {
-					qs := NewDefaultQueueConfig()
-					qs.Enabled = false
-					return WithQueueBatch(qs, newFakeQueueBatch())
+					return WithQueueBatch(configoptional.None[queuebatch.Config](), newFakeQueueBatch())
 				}(),
 			},
 		},

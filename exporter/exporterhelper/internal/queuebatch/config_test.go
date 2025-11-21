@@ -50,10 +50,6 @@ func TestConfig_Validate(t *testing.T) {
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
 	require.NoError(t, xconfmap.Validate(cfg))
-
-	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	cfg.Enabled = false
-	assert.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestBatchConfig_Validate(t *testing.T) {
@@ -96,9 +92,8 @@ func newTestBatchConfig() BatchConfig {
 }
 
 func TestUnmarshal(t *testing.T) {
-	newBaseCfg := func() Config {
-		return Config{
-			Enabled:      true,
+	newBaseCfg := func() configoptional.Optional[Config] {
+		return configoptional.Some(Config{
 			Sizer:        request.SizerTypeRequests,
 			NumConsumers: 10,
 			QueueSize:    1_000,
@@ -107,38 +102,38 @@ func TestUnmarshal(t *testing.T) {
 				Sizer:        request.SizerTypeItems,
 				MinSize:      8192,
 			}),
-		}
+		})
 	}
 	tests := []struct {
 		path        string
 		expectedErr string
-		expectedCfg func() Config
+		expectedCfg func() configoptional.Optional[Config]
 	}{
 		{
 			path: "batch_set_empty_explicit_sizer.yaml",
-			expectedCfg: func() Config {
+			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
-				cfg.Sizer = request.SizerTypeBytes
+				cfg.Get().Sizer = request.SizerTypeBytes
 				// Batch is set, sizer is not overridden
-				cfg.Batch.GetOrInsertDefault()
+				cfg.Get().Batch.GetOrInsertDefault()
 				return cfg
 			},
 		},
 		{
 			path: "batch_set_empty_no_explicit_sizer.yaml",
-			expectedCfg: func() Config {
+			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
-				cfg.Batch.GetOrInsertDefault()
+				cfg.Get().Batch.GetOrInsertDefault()
 				return cfg
 			},
 		},
 		{
 			path: "batch_set_nonempty_explicit_sizer.yaml",
-			expectedCfg: func() Config {
+			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
-				cfg.Sizer = request.SizerTypeBytes
-				cfg.QueueSize = 2000
-				cfg.Batch = configoptional.Some(BatchConfig{
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has been overridden by parent sizer
 					Sizer:   request.SizerTypeBytes,
@@ -149,10 +144,10 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			path: "batch_set_nonempty_no_explicit_sizer.yaml",
-			expectedCfg: func() Config {
+			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
-				cfg.QueueSize = 2000
-				cfg.Batch = configoptional.Some(BatchConfig{
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has NOT been overridden by parent sizer
 					Sizer:   request.SizerTypeItems,

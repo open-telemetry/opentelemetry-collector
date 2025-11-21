@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -111,7 +112,8 @@ func createTestCases() []testCase {
 			name: "default config",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
-				c.QueueConfig.QueueSize = 10
+				c.QueueConfig = exporterhelper.NewDefaultQueueConfig()
+				c.QueueConfig.Get().QueueSize = 10
 				return c
 			}(),
 		},
@@ -119,7 +121,8 @@ func createTestCases() []testCase {
 			name: "don't use internal logger",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.QueueConfig.QueueSize = 10
+				cfg.QueueConfig = exporterhelper.NewDefaultQueueConfig()
+				cfg.QueueConfig.Get().QueueSize = 10
 				cfg.UseInternalLogger = false
 				return cfg
 			}(),
