@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -49,6 +50,38 @@ func TestCreateMetrics(t *testing.T) {
 	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
+
+	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
+	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
+	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfgWithKeys.QueueConfig.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.Enabled = true
+
+	oexpWithKeys, err := factory.CreateMetrics(context.Background(), set, cfgWithKeys)
+	require.NoError(t, err)
+	require.NotNil(t, oexpWithKeys)
+}
+
+func TestCreateMetrics_ErrorCases(t *testing.T) {
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(factory.Type())
+
+	t.Run("invalid metrics_endpoint URL", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.MetricsEndpoint = "not a valid url://invalid"
+		_, err := factory.CreateMetrics(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metrics_endpoint must be a valid URL")
+	})
+
+	t.Run("empty endpoint and empty metrics_endpoint", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = ""
+		cfg.MetricsEndpoint = ""
+		_, err := factory.CreateMetrics(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "either endpoint or metrics_endpoint must be specified")
+	})
 }
 
 func clientConfig(endpoint string, headers configopaque.MapList, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
@@ -159,6 +192,17 @@ func TestCreateTraces(t *testing.T) {
 				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
 			},
 		},
+		{
+			name: "WithMetadataKeys",
+			config: &Config{
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
+				QueueConfig: func() exporterhelper.QueueBatchConfig {
+					cfg := exporterhelper.NewDefaultQueueConfig()
+					cfg.MetadataKeys = []string{"key1", "key2"}
+					return cfg
+				}(),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,6 +241,38 @@ func TestCreateLogs(t *testing.T) {
 	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
+
+	// Test with MetadataKeys and sending_queue enabled to cover partitioner creation
+	cfgWithKeys := factory.CreateDefaultConfig().(*Config)
+	cfgWithKeys.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfgWithKeys.QueueConfig.MetadataKeys = []string{"key1", "key2"}
+	cfgWithKeys.QueueConfig.Enabled = true
+
+	oexpWithKeys, err := factory.CreateLogs(context.Background(), set, cfgWithKeys)
+	require.NoError(t, err)
+	require.NotNil(t, oexpWithKeys)
+}
+
+func TestCreateLogs_ErrorCases(t *testing.T) {
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(factory.Type())
+
+	t.Run("invalid logs_endpoint URL", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.LogsEndpoint = "not a valid url://invalid"
+		_, err := factory.CreateLogs(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "logs_endpoint must be a valid URL")
+	})
+
+	t.Run("empty endpoint and empty logs_endpoint", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = ""
+		cfg.LogsEndpoint = ""
+		_, err := factory.CreateLogs(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "either endpoint or logs_endpoint must be specified")
+	})
 }
 
 func TestCreateProfiles(t *testing.T) {
