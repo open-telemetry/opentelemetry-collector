@@ -1,0 +1,65 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package xconsumererror_test
+
+import (
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
+)
+
+func TestPartial(t *testing.T) {
+	internalErr := errors.New("some points failed")
+	err := xconsumererror.NewPartial(internalErr, 5)
+	// The partial error must be wrapped and be able to be
+	// treated as a plain permanent error.
+	require.True(t, consumererror.IsPermanent(err))
+	// The error should be unwrappable to verify the internal
+	// error if necessary.
+	require.ErrorIs(t, err, internalErr)
+	// It must be possible to retrieve the failed items from
+	// the partial error.
+	failed, ok := xconsumererror.IsPartial(err)
+	require.True(t, ok)
+	require.Equal(t, 5, failed)
+}
+
+func ExampleNewPartial() {
+	// Produce a partial error.
+	failedItems := 5
+	consumptionErr := errors.New("some points failed to be written")
+	err := xconsumererror.NewPartial(consumptionErr, failedItems)
+	fmt.Println(err)
+
+	// Output: Permanent error: some points failed to be written
+}
+
+func ExampleIsPartial() {
+	// Produce a partial error.
+	partialErr := xconsumererror.NewPartial(errors.New("some points failed to be written"), 10)
+
+	// IsPartial will return the failed item count, and a boolean
+	// to indicate whether it is a partial error or not.
+	if count, ok := xconsumererror.IsPartial(partialErr); ok {
+		fmt.Println(count)
+	}
+
+	// Output: 10
+}
+
+func ExampleIsPartial_second() {
+	// Produce a partial error.
+	partialErr := xconsumererror.NewPartial(errors.New("some points failed to be written"), 10)
+
+	// Partial errors wrap a Permanent error, so it can simply be treated
+	// as one if the number of failed items isn't important.
+	fmt.Println(consumererror.IsPermanent(partialErr))
+
+	// Output: true
+}
