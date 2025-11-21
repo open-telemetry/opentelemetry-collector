@@ -199,6 +199,22 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
+	kvu := NewKeyValueAndUnit()
+	kvu.SetKeyStrindex(1)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test")
+
+	dst := NewProfilesDictionary()
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = kvu.switchDictionary(src, dst)
+	}
+}
+
 func buildKeyValueAndUnit(keyIdx, unitIdx int32, val pcommon.Value) KeyValueAndUnit {
 	kvu := NewKeyValueAndUnit()
 	kvu.SetKeyStrindex(keyIdx)

@@ -229,3 +229,27 @@ func TestSampleSwitchDictionary(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkSampleSwitchDictionary(b *testing.B) {
+	s := NewSample()
+	s.SetLinkIndex(1)
+	s.SetStackIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LocationTable().AppendEmpty()
+	src.LocationTable().AppendEmpty().SetAddress(2)
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	src.StackTable().AppendEmpty()
+	src.StackTable().AppendEmpty().LocationIndices().Append(1)
+
+	dst := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = s.switchDictionary(src, dst)
+	}
+}

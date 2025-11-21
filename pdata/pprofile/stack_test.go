@@ -195,3 +195,23 @@ func TestStackSwitchDictionary(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkStackSwitchDictionary(b *testing.B) {
+	s := NewStack()
+	s.LocationIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.LocationTable().AppendEmpty()
+	src.LocationTable().AppendEmpty().SetAddress(42)
+	src.LocationTable().AppendEmpty().SetAddress(43)
+
+	dst := NewProfilesDictionary()
+	dst.LocationTable().AppendEmpty()
+	dst.LocationTable().AppendEmpty().SetAddress(43)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = s.switchDictionary(src, dst)
+	}
+}

@@ -222,6 +222,25 @@ func TestLineSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkLineSwitchDictionary(b *testing.B) {
+	l := NewLine()
+	l.SetFunctionIndex(1)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test")
+
+	src.FunctionTable().AppendEmpty()
+	src.FunctionTable().AppendEmpty().SetNameStrindex(1)
+
+	dst := NewProfilesDictionary()
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = l.switchDictionary(src, dst)
+	}
+}
+
 func buildLine(col int64, funcIdx int32, line int64) Line {
 	l := NewLine()
 	l.SetColumn(col)

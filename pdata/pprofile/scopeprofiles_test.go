@@ -89,3 +89,21 @@ func TestScopeProfilesSwitchDictionary(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkScopeProfilesSwitchDictionary(b *testing.B) {
+	s := NewScopeProfiles()
+	profile := s.Profiles().AppendEmpty()
+	profile.Samples().AppendEmpty().SetLinkIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	dst := NewProfilesDictionary()
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = s.switchDictionary(src, dst)
+	}
+}

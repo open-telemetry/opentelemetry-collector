@@ -271,6 +271,28 @@ func TestLocationSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkLocationSwitchDictionary(b *testing.B) {
+	l := NewLocation()
+	l.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	dst := NewProfilesDictionary()
+	src.StringTable().Append("", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = l.switchDictionary(src, dst)
+	}
+}
+
 func buildLocation(mapIdx int32, addr uint64, attrIdxs []int32, line Line) Location {
 	l := NewLocation()
 	l.SetMappingIndex(mapIdx)

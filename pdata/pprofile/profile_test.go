@@ -211,6 +211,28 @@ func TestProfileSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkProfileSwitchDictionary(b *testing.B) {
+	p := NewProfile()
+	p.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	dst := NewProfilesDictionary()
+	dst.StringTable().Append("", "foo")
+	dst.AttributeTable().AppendEmpty()
+	dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = p.switchDictionary(src, dst)
+	}
+}
+
 func TestProfile_Duration(_ *testing.T) {
 	ms := NewProfile()
 	ms.SetDuration(0)
