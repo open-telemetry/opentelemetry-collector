@@ -7,8 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -100,4 +101,57 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func TestExampleConfigs(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		description string
+	}{
+		{
+			name:        "Basic Configuration",
+			description: "This example demonstrates the most basic configuration for the sample receiver with default settings.",
+			config: `sample:
+  metrics:
+    default.metric:
+      enabled: true
+`,
+		},
+		{
+			name:        "Advanced Configuration",
+			description: "This example shows an advanced configuration with custom metrics enabled and resource attributes configured.",
+			config: `sample:
+  metrics:
+    default.metric:
+      enabled: true
+    optional.metric:
+      enabled: true
+  resource_attributes:
+    string.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+`,
+		},
+		{
+			name:        "Minimal Configuration",
+			description: "A minimal configuration suitable for testing environments with only essential metrics.",
+			config: `sample:
+  metrics:
+    metric.input_type:
+      enabled: true
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test that the example config is valid YAML
+			var config map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &config)
+			require.NoError(t, err, "Example config '%s' should be valid YAML: %s", tt.name, tt.description)
+			require.NotNil(t, config, "Example config '%s' should produce a non-nil config", tt.name)
+		})
+	}
 }
