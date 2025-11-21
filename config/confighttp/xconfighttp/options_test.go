@@ -32,7 +32,6 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
 		telemetry,
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithOtelHTTPOptions(
