@@ -252,6 +252,24 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkFunctionSwitchDictionary(b *testing.B) {
+	fn := NewFunction()
+	fn.SetNameStrindex(1)
+	fn.SetSystemNameStrindex(2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+
+	dst := NewProfilesDictionary()
+	dst.StringTable().Append("", "foo")
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = fn.switchDictionary(src, dst)
+	}
+}
+
 func buildFunction(name, sName, fileName int32, startLine int64) Function {
 	f := NewFunction()
 	f.SetNameStrindex(name)

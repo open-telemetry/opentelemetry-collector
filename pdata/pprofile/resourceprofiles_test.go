@@ -89,3 +89,21 @@ func TestResourceProfilesSwitchDictionary(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkResourceProfilesSwitchDictionary(b *testing.B) {
+	r := NewResourceProfiles()
+	profile := r.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	profile.Samples().AppendEmpty().SetLinkIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	dst := NewProfilesDictionary()
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = r.switchDictionary(src, dst)
+	}
+}

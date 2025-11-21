@@ -222,6 +222,28 @@ func TestMappingSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkMappingSwitchDictionary(b *testing.B) {
+	m := NewMapping()
+	m.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	dst := NewProfilesDictionary()
+	dst.StringTable().Append("", "foo")
+	dst.AttributeTable().AppendEmpty()
+	dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = m.switchDictionary(src, dst)
+	}
+}
+
 func buildMapping(memStart, memLimit, fileOffset uint64, filenameIdx int32, attrIdxs []int32) Mapping {
 	m := NewMapping()
 	m.SetMemoryStart(memStart)
