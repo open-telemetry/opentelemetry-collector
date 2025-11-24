@@ -82,20 +82,23 @@ type ServerConfig struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+}
+type KeepaliveServerConfig struct {
+	_ struct{}
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -104,8 +107,9 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
-		IdleTimeout:       1 * time.Minute,
-		KeepAlivesEnabled: true,
+		Keepalive: configoptional.Some(KeepaliveServerConfig{
+			IdleTimeout: 1 * time.Minute,
+		}),
 	}
 }
 
@@ -271,17 +275,22 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
 
+	var idleTimeout time.Duration
+	if kaCfg := sc.Keepalive.Get(); sc.Keepalive.HasValue() {
+		idleTimeout = kaCfg.IdleTimeout
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       sc.ReadTimeout,
 		ReadHeaderTimeout: sc.ReadHeaderTimeout,
 		WriteTimeout:      sc.WriteTimeout,
-		IdleTimeout:       sc.IdleTimeout,
+		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
 	}
 
 	// Set keep-alives enabled/disabled
-	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
+	server.SetKeepAlivesEnabled(sc.Keepalive.HasValue())
 
 	return server, err
 }
