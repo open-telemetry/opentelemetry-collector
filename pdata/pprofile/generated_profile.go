@@ -69,15 +69,15 @@ func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
-// Duration returns the duration associated with this Profile.
-func (ms Profile) Duration() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.DurationNano)
+// DurationNano returns the durationnano associated with this Profile.
+func (ms Profile) DurationNano() uint64 {
+	return ms.orig.DurationNano
 }
 
-// SetDuration replaces the duration associated with this Profile.
-func (ms Profile) SetDuration(v pcommon.Timestamp) {
+// SetDurationNano replaces the durationnano associated with this Profile.
+func (ms Profile) SetDurationNano(v uint64) {
 	ms.state.AssertMutable()
-	ms.orig.DurationNano = uint64(v)
+	ms.orig.DurationNano = v
 }
 
 // PeriodType returns the periodtype associated with this Profile.

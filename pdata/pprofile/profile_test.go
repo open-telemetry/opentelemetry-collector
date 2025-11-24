@@ -210,3 +210,11 @@ func TestProfileSwitchDictionary(t *testing.T) {
 		})
 	}
 }
+
+func TestProfile_Duration(_ *testing.T) {
+	ms := NewProfile()
+	ms.SetDuration(0)
+
+	ts := ms.Duration()
+	_ = ts
+}
