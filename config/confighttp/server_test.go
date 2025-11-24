@@ -1118,7 +1118,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
-	assert.Equal(t, serverConfig.Keepalive, configoptional.Some(KeepaliveServerConfig{IdleTimeout: 120 * time.Second})) // Should be true as configured in config.yaml
+	assert.Equal(t, configoptional.Some(KeepaliveServerConfig{IdleTimeout: 120 * time.Second}), serverConfig.Keepalive)
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 

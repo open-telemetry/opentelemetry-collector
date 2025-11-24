@@ -1,0 +1,4 @@
+endpoint: "0.0.0.0:4318"
+idle_timeout: 120s
+keepalive:
+  idle_timeout: 90s

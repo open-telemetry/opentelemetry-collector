@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -95,6 +96,79 @@ type ClientConfig struct {
 
 	// Keepalive configuration.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
+
+	warnings []string
+}
+
+func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
+	type OldFields struct {
+		IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+		MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+		MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host,omitempty"`
+		DisableKeepAlives   bool          `mapstructure:"disable_keep_alives,omitempty"`
+	}
+
+	type clientConfigFields ClientConfig
+
+	type legacyConfig struct {
+		clientConfigFields `mapstructure:",squash"`
+		OldFields          `mapstructure:",squash"`
+	}
+
+	var cfg legacyConfig
+	cfg.clientConfigFields = clientConfigFields(*cc)
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+	cfg.OldFields = OldFields{
+		MaxIdleConns:      defaultTransport.MaxIdleConns,
+		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		DisableKeepAlives: false,
+	}
+	if err := conf.Unmarshal(&cfg); err != nil {
+		return err
+	}
+
+	deprecatedFields := []struct {
+		old, new string
+	}{
+		{"idle_conn_timeout", "keepalive::idle_conn_timeout"},
+		{"max_idle_conns", "keepalive::max_idle_conns"},
+		{"disable_keep_alives", "keepalive::enabled"},
+		{"max_idle_conns_per_host", "keepalive::max_idle_conns_per_host"},
+	}
+
+	var warnings []string
+	for _, field := range deprecatedFields {
+		if conf.IsSet(field.old) {
+			warnings = append(warnings, fmt.Sprintf(deprecatedField, field.old, field.new))
+		}
+	}
+
+	if len(warnings) > 0 && conf.IsSet("keepalive") {
+		return fmt.Errorf("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+	}
+
+	if cfg.DisableKeepAlives {
+		cfg.Keepalive = configoptional.None[KeepaliveClientConfig]()
+	} else {
+		// should never happen with default values
+		if !cfg.Keepalive.HasValue() {
+			cfg.Keepalive = configoptional.Some(KeepaliveClientConfig{})
+		}
+
+		if conf.IsSet("idle_conn_timeout") {
+			cfg.Keepalive.Get().IdleConnTimeout = cfg.IdleConnTimeout
+		}
+		if conf.IsSet("max_idle_conns") {
+			cfg.Keepalive.Get().MaxIdleConns = cfg.MaxIdleConns
+		}
+		if conf.IsSet("max_idle_conns_per_host") {
+			cfg.Keepalive.Get().MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
+		}
+	}
+
+	*cc = ClientConfig(cfg.clientConfigFields)
+	cc.warnings = warnings
+	return nil
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -154,6 +228,10 @@ type ToClientOption interface {
 
 // ToClient creates an HTTP client.
 func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+	for _, warning := range cc.warnings {
+		settings.Logger.Warn(warning)
+	}
+
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err

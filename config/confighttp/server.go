@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -90,7 +92,69 @@ type ServerConfig struct {
 	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+
+	warnings []string
 }
+
+const deprecatedField = "Field %q is deprecated, use '%q' instead."
+
+func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
+	type OldFields struct {
+		IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
+		KeepAlivesEnabled bool          `mapstructure:"keep_alives_enabled,omitempty"`
+	}
+
+	type serverConfigFields ServerConfig
+
+	type legacyConfig struct {
+		serverConfigFields `mapstructure:",squash"`
+		OldFields          `mapstructure:",squash"`
+	}
+
+	var cfg legacyConfig
+	cfg.serverConfigFields = serverConfigFields(*sc)
+	cfg.OldFields = OldFields{
+		IdleTimeout:       1 * time.Minute,
+		KeepAlivesEnabled: true,
+	}
+	if err := conf.Unmarshal(&cfg); err != nil {
+		return err
+	}
+
+	deprecatedFields := []struct {
+		old, new string
+	}{
+		{"idle_timeout", "keepalive::idle_timeout"},
+		{"keep_alives_enabled", "keepalive::enabled"},
+	}
+
+	var warnings []string
+	for _, field := range deprecatedFields {
+		if conf.IsSet(field.old) {
+			warnings = append(warnings, fmt.Sprintf(deprecatedField, field.old, field.new))
+		}
+	}
+
+	if len(warnings) > 0 && conf.IsSet("keepalive") {
+		return fmt.Errorf("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+	}
+
+	if !cfg.KeepAlivesEnabled {
+		cfg.Keepalive = configoptional.None[KeepaliveServerConfig]()
+	} else {
+		if !cfg.Keepalive.HasValue() {
+			cfg.Keepalive = configoptional.Some(KeepaliveServerConfig{})
+		}
+		if conf.IsSet("idle_timeout") {
+			cfg.Keepalive.Get().IdleTimeout = cfg.IdleTimeout
+		}
+	}
+
+	*sc = ServerConfig(cfg.serverConfigFields)
+	sc.warnings = warnings
+	return nil
+}
+
 type KeepaliveServerConfig struct {
 	_ struct{}
 
@@ -173,6 +237,10 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // ToServer creates an http.Server from settings object.
 func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	for _, warning := range sc.warnings {
+		settings.Logger.Warn(warning)
+	}
+
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
