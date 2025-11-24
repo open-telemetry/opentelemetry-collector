@@ -76,7 +76,7 @@ func TestClientConfigUnmarshal(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", tt.configFile))
 			require.NoError(t, err)
 
-			var cfg ClientConfig = NewDefaultClientConfig()
+			cfg := NewDefaultClientConfig()
 			err = cm.Unmarshal(&cfg)
 
 			if tt.expectError {
@@ -149,7 +149,7 @@ func TestServerConfigUnmarshal(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", tt.configFile))
 			require.NoError(t, err)
 
-			var cfg ServerConfig = NewDefaultServerConfig()
+			cfg := NewDefaultServerConfig()
 			err = cm.Unmarshal(&cfg)
 
 			if tt.expectError {

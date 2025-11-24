@@ -136,7 +136,7 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
 		DisableKeepAlives: false,
 	}
-	if err := conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
@@ -155,7 +155,7 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if len(warnings) > 0 && conf.IsSet("keepalive") {
-		return fmt.Errorf("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+		return errors.New("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
 	}
 
 	if cfg.DisableKeepAlives {

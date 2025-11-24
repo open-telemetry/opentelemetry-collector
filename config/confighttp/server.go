@@ -6,7 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -115,7 +115,7 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 		IdleTimeout:       1 * time.Minute,
 		KeepAlivesEnabled: true,
 	}
-	if err := conf.Unmarshal(&cfg); err != nil {
+	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if len(warnings) > 0 && conf.IsSet("keepalive") {
-		return fmt.Errorf("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+		return errors.New("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
 	}
 
 	if !cfg.KeepAlivesEnabled {
