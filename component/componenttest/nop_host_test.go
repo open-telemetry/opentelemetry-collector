@@ -17,5 +17,5 @@ func TestNewNopHost(t *testing.T) {
 
 	extensions := nh.GetExtensions()
 	assert.NotNil(t, extensions)
-	assert.Len(t, extensions, 0)
+	assert.Empty(t, extensions)
 }
