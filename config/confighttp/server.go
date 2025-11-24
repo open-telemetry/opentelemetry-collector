@@ -93,13 +93,11 @@ type ServerConfig struct {
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
-	warnings []string
+	renamedFields []renamedField
 }
 
-const deprecatedField = "Field %q is deprecated, use '%q' instead."
-
 func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	type OldFields struct {
+	type oldFields struct {
 		IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
 		KeepAlivesEnabled bool          `mapstructure:"keep_alives_enabled,omitempty"`
 	}
@@ -108,12 +106,12 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 
 	type legacyConfig struct {
 		serverConfigFields `mapstructure:",squash"`
-		OldFields          `mapstructure:",squash"`
+		oldFields          `mapstructure:",squash"`
 	}
 
 	var cfg legacyConfig
 	cfg.serverConfigFields = serverConfigFields(*sc)
-	cfg.OldFields = OldFields{
+	cfg.oldFields = oldFields{
 		IdleTimeout:       1 * time.Minute,
 		KeepAlivesEnabled: true,
 	}
@@ -128,10 +126,10 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 		{"keep_alives_enabled", "keepalive::enabled"},
 	}
 
-	var warnings []string
+	var warnings []renamedField
 	for _, field := range deprecatedFields {
 		if conf.IsSet(field.old) {
-			warnings = append(warnings, fmt.Sprintf(deprecatedField, field.old, field.new))
+			warnings = append(warnings, field)
 		}
 	}
 
@@ -140,6 +138,7 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if !cfg.KeepAlivesEnabled {
+		// should never happen with default values
 		cfg.Keepalive = configoptional.None[KeepaliveServerConfig]()
 	} else {
 		if !cfg.Keepalive.HasValue() {
@@ -151,7 +150,7 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	*sc = ServerConfig(cfg.serverConfigFields)
-	sc.warnings = warnings
+	sc.renamedFields = warnings
 	return nil
 }
 
@@ -237,8 +236,8 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // ToServer creates an http.Server from settings object.
 func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	for _, warning := range sc.warnings {
-		settings.Logger.Warn(warning)
+	for _, field := range sc.renamedFields {
+		field.Log(settings.Logger)
 	}
 
 	serverOpts := &toServerOptions{}

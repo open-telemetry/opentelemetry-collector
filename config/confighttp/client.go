@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -97,11 +98,23 @@ type ClientConfig struct {
 	// Keepalive configuration.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
-	warnings []string
+	warnings []renamedField
+}
+
+type renamedField struct {
+	old string
+	new string
+}
+
+func (f *renamedField) Log(logger *zap.Logger) {
+	logger.Warn("Use of deprecated configuration option",
+		zap.String("old name", f.old),
+		zap.String("new name", f.new),
+	)
 }
 
 func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
-	type OldFields struct {
+	type oldFields struct {
 		IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 		MaxIdleConns        int           `mapstructure:"max_idle_conns"`
 		MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host,omitempty"`
@@ -112,13 +125,13 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 
 	type legacyConfig struct {
 		clientConfigFields `mapstructure:",squash"`
-		OldFields          `mapstructure:",squash"`
+		oldFields          `mapstructure:",squash"`
 	}
 
 	var cfg legacyConfig
 	cfg.clientConfigFields = clientConfigFields(*cc)
 	defaultTransport := http.DefaultTransport.(*http.Transport)
-	cfg.OldFields = OldFields{
+	cfg.oldFields = oldFields{
 		MaxIdleConns:      defaultTransport.MaxIdleConns,
 		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
 		DisableKeepAlives: false,
@@ -127,19 +140,17 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	deprecatedFields := []struct {
-		old, new string
-	}{
+	deprecatedFields := []renamedField{
 		{"idle_conn_timeout", "keepalive::idle_conn_timeout"},
 		{"max_idle_conns", "keepalive::max_idle_conns"},
 		{"disable_keep_alives", "keepalive::enabled"},
 		{"max_idle_conns_per_host", "keepalive::max_idle_conns_per_host"},
 	}
 
-	var warnings []string
+	var warnings []renamedField
 	for _, field := range deprecatedFields {
 		if conf.IsSet(field.old) {
-			warnings = append(warnings, fmt.Sprintf(deprecatedField, field.old, field.new))
+			warnings = append(warnings, field)
 		}
 	}
 
@@ -228,8 +239,8 @@ type ToClientOption interface {
 
 // ToClient creates an HTTP client.
 func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	for _, warning := range cc.warnings {
-		settings.Logger.Warn(warning)
+	for _, field := range cc.warnings {
+		field.Log(settings.Logger)
 	}
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)

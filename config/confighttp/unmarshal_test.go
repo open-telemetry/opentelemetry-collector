@@ -160,7 +160,7 @@ func TestServerConfigUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.expectWarnings {
-				require.NotEmpty(t, cfg.warnings)
+				require.NotEmpty(t, cfg.renamedFields)
 			}
 
 			assert.Equal(t, tt.want, cfg.Keepalive)
