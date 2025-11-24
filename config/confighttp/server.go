@@ -189,7 +189,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
 	if len(sc.Middlewares) > 0 && extensions == nil {
-		return nil, errors.New("middlewares are configured but no extension map was provided; this may be a bug")
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
 	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
 		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
@@ -218,7 +218,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 
 	if sc.Auth.HasValue() {
 		if extensions == nil {
-			return nil, errors.New("authentication is configured but no extension map was provided; this may be a bug")
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
 		}
 
 		auth := sc.Auth.Get()

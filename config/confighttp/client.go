@@ -202,7 +202,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	// Apply middlewares in reverse order so they execute in
 	// forward order. The first middleware runs after authentication.
 	if len(cc.Middlewares) > 0 && extensions == nil {
-		return nil, errors.New("middlewares are configured but no extension map was provided; this may be a bug")
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
 	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
@@ -223,7 +223,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	// and header middleware modifies the request
 	if cc.Auth.HasValue() {
 		if extensions == nil {
-			return nil, errors.New("authentication is configured but no extension map was provided; this may be a bug")
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
 		}
 
 		auth := cc.Auth.Get()

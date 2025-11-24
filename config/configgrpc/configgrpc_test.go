@@ -492,7 +492,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			extensions: map[component.ID]component.Component{},
 		},
 		{
-			err: "authentication is configured but no extension map was provided; this may be a bug",
+			err: "authentication was configured but this component or its host does not support extensions",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: doesntExistID}),
