@@ -324,3 +324,65 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	}
 	assert.Len(t, merged, 2)
 }
+
+func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
+	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
+
+	// All requests merge into a single batch.
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(10))}
+		for range 1000 {
+			pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
+			res, _ := merged[len(merged)-1].MergeSplit(
+				context.Background(),
+				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000)),
+				exporterhelper.RequestSizerTypeBytes,
+				pr2,
+			)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.B) {
+	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
+
+	// Every incoming request results in a split.
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(0))}
+		for range 10 {
+			pr2 := newProfilesRequest(testdata.GenerateProfiles(10001))
+			res, _ := merged[len(merged)-1].MergeSplit(
+				context.Background(),
+				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000)),
+				exporterhelper.RequestSizerTypeBytes,
+				pr2,
+			)
+			assert.Len(b, res, 2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
+	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
+
+	// One request splits into many batches.
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []Request{newProfilesRequest(testdata.GenerateProfiles(0))}
+		pr2 := newProfilesRequest(testdata.GenerateProfiles(100000))
+		res, _ := merged[len(merged)-1].MergeSplit(
+			context.Background(),
+			profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010)),
+			exporterhelper.RequestSizerTypeBytes,
+			pr2,
+		)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
+	}
+}
