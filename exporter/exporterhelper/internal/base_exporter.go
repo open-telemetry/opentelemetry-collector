@@ -196,6 +196,17 @@ func WithQueue(cfg queuebatch.Config) Option {
 		if o.queueBatchSettings.Encoding == nil {
 			return errors.New("WithQueue option is not available for the new request exporters, use WithQueueBatch instead")
 		}
+		// Automatically configure partitioner if MetadataKeys is set
+		if len(cfg.MetadataKeys) > 0 {
+			if o.queueBatchSettings.Partitioner != nil {
+				return errors.New("cannot use metadata_keys when a custom partitioner is already configured")
+			}
+			if o.queueBatchSettings.MergeCtx != nil {
+				return errors.New("cannot use metadata_keys when a custom merge function is already configured")
+			}
+			o.queueBatchSettings.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.MetadataKeys)
+			o.queueBatchSettings.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.MetadataKeys)
+		}
 		return WithQueueBatch(cfg, o.queueBatchSettings)(o)
 	}
 }

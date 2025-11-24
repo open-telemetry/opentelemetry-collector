@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -124,5 +125,51 @@ func TestWithQueueBatch(t *testing.T) {
 		)
 		require.NoError(t, err)
 		assert.NotNil(t, be)
+	})
+
+	t.Run("error when partitioner already set", func(t *testing.T) {
+		cfg := exporterhelper.NewDefaultQueueConfig()
+		cfg.MetadataKeys = []string{"key1"}
+		cfg.Enabled = true
+
+		set := NewTracesQueueBatchSettings()
+		// Set a custom partitioner
+		set.Partitioner = queuebatch.NewPartitioner(func(context.Context, request.Request) string {
+			return "custom"
+		})
+
+		option := WithQueueBatch(cfg, set)
+
+		_, err := internal.NewBaseExporter(
+			exportertest.NewNopSettings(exportertest.NopType),
+			pipeline.SignalTraces,
+			func(context.Context, request.Request) error { return nil },
+			option,
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom partitioner is already configured")
+	})
+
+	t.Run("error when merge function already set", func(t *testing.T) {
+		cfg := exporterhelper.NewDefaultQueueConfig()
+		cfg.MetadataKeys = []string{"key1"}
+		cfg.Enabled = true
+
+		set := NewTracesQueueBatchSettings()
+		// Set a custom merge function
+		set.MergeCtx = func(context.Context, context.Context) context.Context {
+			return context.Background()
+		}
+
+		option := WithQueueBatch(cfg, set)
+
+		_, err := internal.NewBaseExporter(
+			exportertest.NewNopSettings(exportertest.NopType),
+			pipeline.SignalTraces,
+			func(context.Context, request.Request) error { return nil },
+			option,
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom merge function is already configured")
 	})
 }
