@@ -67,29 +67,9 @@ type ClientConfig struct {
 	// Advanced configuration options for the Compression
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
 
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// By default, it is set to 100. Zero means no limit.
-	MaxIdleConns int `mapstructure:"max_idle_conns"`
-
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states. Default is 0 (unlimited).
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
-
-	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// By default, it is set to 90 seconds.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
-
-	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
-	// for a single HTTP request.
-	//
-	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
-	// connection for every request. Before enabling this option please consider whether changes
-	// to idle connection settings can achieve your goal.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// This is needed in case you run into
 	// https://github.com/golang/go/issues/59690
@@ -112,11 +92,31 @@ type ClientConfig struct {
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// Keepalive configuration.
+	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
 	_ struct{}
+}
+
+// KeepaliveClientConfig describes the keepalive configuration.
+type KeepaliveClientConfig struct {
+	_ struct{}
+
+	// IdleConnTimeout is the maximum amount of time an iddle (keep-alive) connection will remain open before closing itself.
+	// By default, it is set to 90 seconds.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
+
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// By default, it is set to 100. Zero means no limit.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
+	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -128,8 +128,10 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		MaxIdleConns:      defaultTransport.MaxIdleConns,
-		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		Keepalive: configoptional.Some(KeepaliveClientConfig{
+			MaxIdleConns:    defaultTransport.MaxIdleConns,
+			IdleConnTimeout: defaultTransport.IdleConnTimeout,
+		}),
 		ForceAttemptHTTP2: true,
 	}
 }
@@ -167,12 +169,13 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 		transport.WriteBufferSize = cc.WriteBufferSize
 	}
 
-	transport.MaxIdleConns = cc.MaxIdleConns
-	transport.MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+	if kaCfg := cc.Keepalive.Get(); cc.Keepalive.HasValue() {
+		transport.MaxIdleConns = kaCfg.MaxIdleConns
+		transport.MaxIdleConnsPerHost = kaCfg.MaxIdleConnsPerHost
+		transport.IdleConnTimeout = kaCfg.IdleConnTimeout
+	}
 	transport.MaxConnsPerHost = cc.MaxConnsPerHost
-	transport.IdleConnTimeout = cc.IdleConnTimeout
 	transport.ForceAttemptHTTP2 = cc.ForceAttemptHTTP2
-
 	// Setting the Proxy URL
 	if cc.ProxyURL != "" {
 		proxyURL, parseErr := url.ParseRequestURI(cc.ProxyURL)
@@ -182,7 +185,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
-	transport.DisableKeepAlives = cc.DisableKeepAlives
+	transport.DisableKeepAlives = !cc.Keepalive.HasValue()
 
 	if cc.HTTP2ReadIdleTimeout > 0 {
 		transport2, transportErr := http2.ConfigureTransports(transport)
