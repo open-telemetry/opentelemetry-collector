@@ -37,7 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
-				QueueConfig:        configoptional.Default(*queueCfg.Get()),
+				QueueConfig:        configoptional.Default(queueCfg),
 			},
 		},
 		{

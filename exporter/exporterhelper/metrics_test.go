@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -101,7 +102,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.Get().StorageID = &storageID
+	qCfg.StorageID = &storageID
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_metrics", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -148,7 +149,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 			})
 
 			ms := consumertest.MetricsSink{}
-			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(qCfg))
+			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
 			require.NoError(t, te.Start(context.Background(), host))
 			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })

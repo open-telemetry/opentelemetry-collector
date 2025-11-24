@@ -34,7 +34,7 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet.Telemetry.Logger = zap.New(logger)
 	qCfg := NewDefaultQueueConfig()
 	be, err := NewQueueSender(
-		qSet, *qCfg.Get(), "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -48,14 +48,14 @@ func TestQueueConfig_Validate(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	require.NoError(t, qCfg.Validate())
 
-	qCfg.Get().NumConsumers = 0
+	qCfg.NumConsumers = 0
 	require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
 
 	qCfg = NewDefaultQueueConfig()
-	qCfg.Get().QueueSize = 0
+	qCfg.QueueSize = 0
 	require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	qCfg = configoptional.None[queuebatch.Config]()
-	assert.NoError(t, qCfg.Validate())
+	noCfg := configoptional.None[queuebatch.Config]()
+	assert.NoError(t, noCfg.Validate())
 }

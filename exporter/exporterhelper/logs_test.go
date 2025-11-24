@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -99,7 +100,7 @@ func TestLogs_Default_ReturnError(t *testing.T) {
 func TestLogs_WithPersistentQueue(t *testing.T) {
 	fgOrigReadState := queue.PersistRequestContextOnRead
 	fgOrigWriteState := queue.PersistRequestContextOnWrite
-	qCfg := NewDefaultQueueConfig()
+	qCfg := configoptional.Some(NewDefaultQueueConfig())
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.Get().StorageID = &storageID
 	set := exportertest.NewNopSettings(exportertest.NopType)

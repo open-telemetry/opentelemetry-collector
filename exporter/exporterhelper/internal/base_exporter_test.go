@@ -50,16 +50,16 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, bs.queueBatchSettings.Encoding)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.Error(t, err)
 
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewID(component.MustNewType("test"))
-	qCfg.Get().StorageID = &storageID
+	qCfg.StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
+		WithQueueBatch(configoptional.Some(qCfg), queuebatch.Settings[request.Request]{}))
 	require.Error(t, err)
 }
 
@@ -70,10 +70,10 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	qCfg := NewDefaultQueueConfig()
-	qCfg.Get().WaitForResult = true
+	qCfg.WaitForResult = true
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
-		WithQueue(qCfg),
+		WithQueue(configoptional.Some(qCfg)),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))

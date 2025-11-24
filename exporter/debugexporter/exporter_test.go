@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -112,7 +113,7 @@ func createTestCases() []testCase {
 			name: "default config",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
-				c.QueueConfig = exporterhelper.NewDefaultQueueConfig()
+				c.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 				c.QueueConfig.Get().QueueSize = 10
 				return c
 			}(),
@@ -121,7 +122,7 @@ func createTestCases() []testCase {
 			name: "don't use internal logger",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.QueueConfig = exporterhelper.NewDefaultQueueConfig()
+				cfg.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 				cfg.QueueConfig.Get().QueueSize = 10
 				cfg.UseInternalLogger = false
 				return cfg

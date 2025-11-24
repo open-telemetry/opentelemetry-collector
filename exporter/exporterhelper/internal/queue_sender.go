@@ -16,14 +16,16 @@ import (
 )
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
-// By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
-func NewDefaultQueueConfig() configoptional.Optional[queuebatch.Config] {
-	return configoptional.Some(queuebatch.Config{
-		Sizer:        request.SizerTypeRequests,
-		NumConsumers: 10,
-		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
-		// This can be estimated at 1-4 GB worth of maximum memory usage
-		// This default is probably still too high, and may be adjusted further down in a future release
+// By default:
+//
+// - the queue stores 1000 requests of telemetry
+// - is non-blocking when full
+// - concurrent exports limited to 10
+// - emits batches of 8192 items, timeout 200ms
+func NewDefaultQueueConfig() queuebatch.Config {
+	return queuebatch.Config{
+		Sizer:           request.SizerTypeRequests,
+		NumConsumers:    10,
 		QueueSize:       1_000,
 		BlockOnOverflow: false,
 		Batch: configoptional.Default(queuebatch.BatchConfig{
@@ -31,7 +33,7 @@ func NewDefaultQueueConfig() configoptional.Optional[queuebatch.Config] {
 			Sizer:        request.SizerTypeItems,
 			MinSize:      8192,
 		}),
-	})
+	}
 }
 
 func NewQueueSender(
