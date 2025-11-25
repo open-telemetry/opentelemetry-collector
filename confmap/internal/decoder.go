@@ -7,7 +7,6 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
-	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -208,22 +207,11 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
-					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
-					// we merge this partially unmarshaled struct with the rest of the result.
-					// note we already unmarshaled the main struct earlier, and therefore merge with it.
-					conf := New()
-					if err := conf.Marshal(unmarshaler); err != nil {
-						return nil, err
-					}
-					resultMap := conf.ToStringMap()
-					if fromAsMap == nil && len(resultMap) > 0 {
-						fromAsMap = make(map[string]any, len(resultMap))
-					}
-					maps.Copy(fromAsMap, resultMap)
+					to.Field(i).Set(reflect.ValueOf(unmarshaler))
 				}
 			}
 		}
-		return fromAsMap, nil
+		return to, nil
 	})
 }
 
