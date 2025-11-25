@@ -207,11 +207,10 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
-					to.Field(i).Set(reflect.ValueOf(unmarshaler))
 				}
 			}
 		}
-		return to, nil
+		return fromAsMap, nil
 	})
 }
 
