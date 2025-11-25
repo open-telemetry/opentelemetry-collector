@@ -207,11 +207,41 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
+					// Remove all fields that could overwrite the value just set by Unmarshal.
+					// Note that this could cause issues if there are fields with conflicting names.
+					removeFields(fromAsMap, f.Type)
 				}
 			}
 		}
 		return fromAsMap, nil
 	})
+}
+
+// removeFields removes fields from a map that could overwrite parts of an embedded field of type to.
+func removeFields(fromAsMap map[string]any, to reflect.Type) {
+	if to.Kind() == reflect.Ptr {
+		to = to.Elem()
+	}
+	if to.Kind() != reflect.Struct {
+		return
+	}
+	for i := 0; i < to.NumField(); i++ {
+		f := to.Field(i)
+		if !f.IsExported() {
+			continue
+		}
+		tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
+		squash := slices.Contains(tagParts, "squash")
+		if squash {
+			removeFields(fromAsMap, f.Type)
+			return
+		}
+		fieldName := f.Name
+		if tagParts[0] != "" {
+			fieldName = tagParts[0]
+		}
+		delete(fromAsMap, fieldName) // We use string equality for fields
+	}
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
