@@ -56,7 +56,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
-			unmarshalerEmbeddedStructsHookFunc(),
+			unmarshalerEmbeddedStructsHookFunc(settings),
 			zeroSliceAndMapHookFunc(),
 		),
 	}
@@ -188,7 +188,10 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 
 // unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
-func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
+func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.DecodeHookFuncValue {
+	// Recursive calls need to ignore sibling keys
+	settings.IgnoreUnused = true
+
 	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
@@ -197,51 +200,70 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 		if !ok {
 			return from.Interface(), nil
 		}
+		// First call Unmarshaler on squashed embedded fields, if necessary
+		var squashedUnmarshalers []int
 		for i := 0; i < to.Type().NumField(); i++ {
-			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
 			f := to.Type().Field(i)
-			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get(MapstructureTag), ","), "squash") {
-				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
-					c := NewFromStringMap(fromAsMap)
-					c.skipTopLevelUnmarshaler = true
-					if err := unmarshaler.Unmarshal(c); err != nil {
-						return nil, err
-					}
-					// Remove all fields that could overwrite the value just set by Unmarshal.
-					// Note that this could cause issues if there are fields with conflicting names.
-					removeFields(fromAsMap, f.Type)
-				}
+			if !f.IsExported() {
+				continue
 			}
+			tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
+			if !slices.Contains(tagParts[1:], "squash") {
+				continue
+			}
+			unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler)
+			if !ok {
+				continue
+			}
+			c := NewFromStringMap(fromAsMap)
+			c.skipTopLevelUnmarshaler = true
+			if err := unmarshaler.Unmarshal(c); err != nil {
+				return nil, err
+			}
+			squashedUnmarshalers = append(squashedUnmarshalers, i)
 		}
-		return fromAsMap, nil
-	})
-}
 
-// removeFields removes fields from a map that could overwrite parts of an embedded field of type to.
-func removeFields(fromAsMap map[string]any, to reflect.Type) {
-	if to.Kind() == reflect.Ptr {
-		to = to.Elem()
-	}
-	if to.Kind() != reflect.Struct {
-		return
-	}
-	for i := 0; i < to.NumField(); i++ {
-		f := to.Field(i)
-		if !f.IsExported() {
-			continue
+		if len(squashedUnmarshalers) == 0 {
+			// We can let mapstructure do its job
+			return fromAsMap, nil
 		}
-		tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
-		squash := slices.Contains(tagParts, "squash")
-		if squash {
-			removeFields(fromAsMap, f.Type)
-			return
+
+		// We need to unmarshal into all other fields without overwriting the output of the Unmarshal calls.
+		// To do that, create a custom struct containing only the non-squashed fields:
+		var fields []reflect.StructField
+		var fieldValues []reflect.Value
+		for i := 0; i < to.Type().NumField(); i++ {
+			f := to.Type().Field(i)
+			if !f.IsExported() {
+				continue
+			}
+			if slices.Contains(squashedUnmarshalers, i) {
+				continue
+			}
+			fields = append(fields, f)
+			fieldValues = append(fieldValues, to.Field(i))
 		}
-		fieldName := f.Name
-		if tagParts[0] != "" {
-			fieldName = tagParts[0]
+		restType := reflect.StructOf(fields)
+		restValue := reflect.New(restType)
+
+		// Copy initial values into partial struct
+		for i, fieldValue := range fieldValues {
+			restValue.Elem().Field(i).Set(fieldValue)
 		}
-		delete(fromAsMap, fieldName) // We use string equality for fields
-	}
+
+		// Decode into the partial struct
+		// This performs a recursive call into this hook, which will be caught by the "no unmarshalers" case
+		if err := Decode(fromAsMap, restValue.Interface(), settings, true); err != nil {
+			return nil, err
+		}
+
+		// Copy outputs back to the original struct
+		for i, fieldValue := range fieldValues {
+			fieldValue.Set(restValue.Elem().Field(i))
+		}
+
+		return to, nil
+	})
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
