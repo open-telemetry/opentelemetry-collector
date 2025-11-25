@@ -17,21 +17,29 @@ type clientInfoHandler struct {
 
 	// include client metadata or not
 	includeMetadata bool
+
+	// metadata keys to determine the client address
+	clientAddrMetadataKeys []string
 }
 
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
 // a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	req = req.WithContext(contextWithClient(req, h.includeMetadata)) //nolint:contextcheck //context already handled through contextWithClient
+	req = req.WithContext(contextWithClient(req, h.includeMetadata, h.clientAddrMetadataKeys)) //nolint:contextcheck //context already handled through contextWithClient
 	h.next.ServeHTTP(w, req)
 }
 
-// contextWithClient attempts to add the client IP address to the client.Info from the context. When no
-// client.Info exists in the context, one is created.
-func contextWithClient(req *http.Request, includeMetadata bool) context.Context {
+// contextWithClient attempts to add the client IP address to the client.Info from the context.
+// The address is found by first checking the metadata using clientAddrMetadataKeys and
+// falls back to the request Remote address
+// When no client.Info exists in the context, one is created.
+func contextWithClient(req *http.Request, includeMetadata bool, clientAddrMetadataKeys []string) context.Context {
 	cl := client.FromContext(req.Context())
 
-	ip := parseIP(req.RemoteAddr)
+	var ip *net.IPAddr
+	if ip = getIP(req.Header, clientAddrMetadataKeys); ip == nil {
+		ip = parseIP(req.RemoteAddr)
+	}
 	if ip != nil {
 		cl.Addr = ip
 	}
@@ -47,6 +55,21 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 	ctx := client.NewContext(req.Context(), cl)
 	return ctx
+}
+
+// getIP checks keys in order to get an IP address.
+// Returns the first valid IP address found, otherwise
+// returns nil.
+func getIP(header http.Header, keys []string) *net.IPAddr {
+	for _, key := range keys {
+		addr := header.Get(key)
+		if addr != "" {
+			if ip := parseIP(addr); ip != nil {
+				return ip
+			}
+		}
+	}
+	return nil
 }
 
 // parseIP parses the given string for an IP address. The input string might contain the port,

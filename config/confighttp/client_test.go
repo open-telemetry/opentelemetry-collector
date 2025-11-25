@@ -615,10 +615,11 @@ func TestHttpTransportOptions(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		name       string
-		input      *http.Request
-		doMetadata bool
-		expected   client.Info
+		name           string
+		input          *http.Request
+		doMetadata     bool
+		clientAddrKeys []string
+		expected       client.Info
 	}{
 		{
 			name:     "request without client IP or headers",
@@ -626,10 +627,39 @@ func TestContextWithClient(t *testing.T) {
 			expected: client.Info{},
 		},
 		{
-			name: "request with client IP",
+			name: "request with client IP from RemoteAddr",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
+			name: "request with client IP from metadata keys",
+			input: &http.Request{
+				RemoteAddr: "1.2.3.4:55443",
+				Header:     map[string][]string{http.CanonicalHeaderKey("x-forwarded-for"): {"1.1.1.1"}},
+			},
+			clientAddrKeys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 1, 1, 1),
+				},
+			},
+		},
+		{
+			name: "request with client IP, no valid IP default to RemoteAddr",
+			input: &http.Request{
+				RemoteAddr: "1.2.3.4:55443",
+				Header: map[string][]string{
+					http.CanonicalHeaderKey("x-forwarded-for"): {""},
+					http.CanonicalHeaderKey("x-real-ip"):       {"invalid address"},
+				},
+			},
+			clientAddrKeys: []string{"x-forwarded-for", "x-real-ip"},
 			expected: client.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
@@ -668,7 +698,7 @@ func TestContextWithClient(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := contextWithClient(tt.input, tt.doMetadata)
+			ctx := contextWithClient(tt.input, tt.doMetadata, tt.clientAddrKeys)
 			assert.Equal(t, tt.expected, client.FromContext(ctx))
 		})
 	}

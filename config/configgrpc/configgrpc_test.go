@@ -784,10 +784,11 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc       string
-		input      context.Context
-		doMetadata bool
-		expected   client.Info
+		desc           string
+		input          context.Context
+		doMetadata     bool
+		clientAddrKeys []string
+		expected       client.Info
 	}{
 		{
 			desc:     "no peer information, empty client",
@@ -838,6 +839,53 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
+			desc: "empty client, existing IP gets overridden from metadata keys",
+			input: metadata.NewIncomingContext(
+				context.Background(),
+				metadata.Pairs("x-forwarded-for", "1.1.1.1"),
+			),
+			clientAddrKeys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 1, 1, 1),
+				},
+			},
+		},
+		{
+			desc: "existing client, existing IP gets overridden from metadata keys",
+			input: metadata.NewIncomingContext(
+				peer.NewContext(context.Background(), &peer.Peer{
+					Addr: &net.IPAddr{
+						IP: net.IPv4(1, 2, 3, 4),
+					},
+				}),
+				metadata.Pairs("x-forwarded-for", "1.1.1.1"),
+			),
+			clientAddrKeys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 1, 1, 1),
+				},
+			},
+		},
+		{
+			desc: "existing client, no valid IP in metadata existing overridden by defaulting to peer information",
+			input: metadata.NewIncomingContext(
+				peer.NewContext(context.Background(), &peer.Peer{
+					Addr: &net.IPAddr{
+						IP: net.IPv4(1, 2, 3, 4),
+					},
+				}),
+				metadata.Pairs("x-forwarded-for", "", "x-real-ip", "invalid address"),
+			),
+			clientAddrKeys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
 			desc: "existing client with metadata",
 			input: client.NewContext(context.Background(), client.Info{
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
@@ -880,8 +928,94 @@ func TestContextWithClient(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tt.input, tt.doMetadata))
+			cl := client.FromContext(contextWithClient(tt.input, tt.doMetadata, tt.clientAddrKeys))
 			assert.Equal(t, tt.expected, cl)
+		})
+	}
+}
+
+func TestGetIP(t *testing.T) {
+	testCases := []struct {
+		name     string
+		md       metadata.MD
+		keys     []string
+		expected *net.IPAddr
+	}{
+		{
+			name: "valid ip in first key",
+			md: metadata.Pairs(
+				"x-forwarded-for", "1.2.3.4",
+			),
+			keys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: &net.IPAddr{
+				IP: net.IPv4(1, 2, 3, 4),
+			},
+		},
+		{
+			name: "valid ip in second key",
+			md: metadata.Pairs(
+				"x-forwarded-for", "",
+				"x-real-ip", "5.6.7.8",
+			),
+			keys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: &net.IPAddr{
+				IP: net.IPv4(5, 6, 7, 8),
+			},
+		},
+		{
+			name: "valid ip with port",
+			md: metadata.Pairs(
+				"x-forwarded-for", "1.2.3.4:8080",
+			),
+			keys: []string{"x-forwarded-for"},
+			expected: &net.IPAddr{
+				IP: net.IPv4(1, 2, 3, 4),
+			},
+		},
+		{
+			name: "invalid ip falls to next key",
+			md: metadata.Pairs(
+				"x-forwarded-for", "invalid",
+				"x-real-ip", "9.10.11.12",
+			),
+			keys: []string{"x-forwarded-for", "x-real-ip"},
+			expected: &net.IPAddr{
+				IP: net.IPv4(9, 10, 11, 12),
+			},
+		},
+		{
+			name: "no valid ip",
+			md: metadata.Pairs(
+				"x-forwarded-for", "invalid",
+				"x-real-ip", "also-invalid",
+			),
+			keys:     []string{"x-forwarded-for", "x-real-ip"},
+			expected: nil,
+		},
+		{
+			name:     "empty keys",
+			md:       metadata.Pairs("x-forwarded-for", "1.2.3.4"),
+			keys:     []string{},
+			expected: nil,
+		},
+		{
+			name:     "empty metadata",
+			md:       metadata.MD{},
+			keys:     []string{"x-forwarded-for", "x-real-ip"},
+			expected: nil,
+		},
+		{
+			name: "missing key",
+			md: metadata.Pairs(
+				"other-header", "1.2.3.4",
+			),
+			keys:     []string{"x-forwarded-for", "x-real-ip"},
+			expected: nil,
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, getIP(tt.md, tt.keys))
 		})
 	}
 }
@@ -905,7 +1039,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
+	err := enhanceStreamWithClientInformation(false, nil)(nil, stream, nil, handler)
 
 	// verify
 	require.NoError(t, err)

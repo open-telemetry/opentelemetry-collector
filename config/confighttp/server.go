@@ -96,6 +96,11 @@ type ServerConfig struct {
 	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+
+	// ClientAddressMetadataKeys list of metadata keys to determine the client address.
+	// Keys are processed in order, the first valid value is used to set the client.Addr.
+	// The client.Addr will default to using http RemoteAddr or grpc Peer values.
+	ClientAddressMetadataKeys []string `mapstructure:"client_address_metadata_keys,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -262,8 +267,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
-		next:            handler,
-		includeMetadata: sc.IncludeMetadata,
+		next:                   handler,
+		includeMetadata:        sc.IncludeMetadata,
+		clientAddrMetadataKeys: sc.ClientAddressMetadataKeys,
 	}
 
 	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)

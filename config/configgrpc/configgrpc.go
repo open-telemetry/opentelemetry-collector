@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -205,6 +206,11 @@ type ServerConfig struct {
 
 	// Middlewares for the gRPC server.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// ClientAddressMetadataKeys list of metadata keys to determine the client address.
+	// Keys are processed in order, the first valid value is used to set the client.Addr.
+	// The client.Addr will default to using Peer address.
+	ClientAddressMetadataKeys []string `mapstructure:"client_address_metadata_keys,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -532,8 +538,8 @@ func (sc *ServerConfig) getGrpcServerOptions(
 
 	// Enable OpenTelemetry observability plugin.
 
-	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata))
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata)) //nolint:contextcheck // context already handled
+	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata, sc.ClientAddressMetadataKeys))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata, sc.ClientAddressMetadataKeys)) //nolint:contextcheck // context already handled
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
@@ -571,35 +577,74 @@ func getGRPCCompressionName(compressionType configcompression.Type) (string, err
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(includeMetadata bool) grpc.UnaryServerInterceptor {
+func enhanceWithClientInformation(includeMetadata bool, clientAddrMetadataKeys []string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		return handler(contextWithClient(ctx, includeMetadata), req)
+		return handler(contextWithClient(ctx, includeMetadata, clientAddrMetadataKeys), req)
 	}
 }
 
-func enhanceStreamWithClientInformation(includeMetadata bool) grpc.StreamServerInterceptor {
+func enhanceStreamWithClientInformation(includeMetadata bool, clientAddrMetadataKeys []string) grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		return handler(srv, wrapServerStream(contextWithClient(ss.Context(), includeMetadata), ss))
+		return handler(srv, wrapServerStream(contextWithClient(ss.Context(), includeMetadata, clientAddrMetadataKeys), ss))
 	}
 }
 
-// contextWithClient attempts to add the peer address to the client.Info from the context. When no
-// client.Info exists in the context, one is created.
-func contextWithClient(ctx context.Context, includeMetadata bool) context.Context {
+// contextWithClient attempts to add the client address to the client.Info from the context.
+// The address is found by first checking the metadata using clientAddrMetadataKeys and
+// falls back to the peer address.
+// When no client.Info exists in the context, one is created.
+func contextWithClient(ctx context.Context, includeMetadata bool, clientAddrMetadataKeys []string) context.Context {
 	cl := client.FromContext(ctx)
-	if p, ok := peer.FromContext(ctx); ok {
+	md, mdExists := metadata.FromIncomingContext(ctx)
+
+	var ip *net.IPAddr
+	if mdExists {
+		ip = getIP(md, clientAddrMetadataKeys)
+	}
+	if ip != nil {
+		cl.Addr = ip
+	} else if p, ok := peer.FromContext(ctx); ok {
 		cl.Addr = p.Addr
 	}
-	if includeMetadata {
-		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			copiedMD := md.Copy()
-			if len(md[client.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
-				copiedMD[client.MetadataHostName] = md[":authority"]
-			}
-			cl.Metadata = client.NewMetadata(copiedMD)
+
+	if includeMetadata && mdExists {
+		copiedMD := md.Copy()
+		if len(md[client.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
+			copiedMD[client.MetadataHostName] = md[":authority"]
 		}
+		cl.Metadata = client.NewMetadata(copiedMD)
 	}
 	return client.NewContext(ctx, cl)
+}
+
+// getIP checks keys in order to get an IP address.
+// Returns the first valid IP address found, otherwise
+// returns nil.
+func getIP(md metadata.MD, keys []string) *net.IPAddr {
+	for _, key := range keys {
+		if values := md.Get(key); len(values) > 0 && values[0] != "" {
+			if ip := parseIP(values[0]); ip != nil {
+				return ip
+			}
+		}
+	}
+	return nil
+}
+
+// parseIP parses the given string for an IP address. The input string might contain the port,
+// but must not contain a protocol or path. Suitable for getting the IP part of a client connection.
+func parseIP(source string) *net.IPAddr {
+	ipstr, _, err := net.SplitHostPort(source)
+	if err == nil {
+		source = ipstr
+	}
+	ip := net.ParseIP(source)
+	if ip != nil {
+		return &net.IPAddr{
+			IP: ip,
+		}
+	}
+	return nil
 }
 
 func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
