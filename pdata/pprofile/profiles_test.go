@@ -171,7 +171,7 @@ func TestProfilesSwitchDictionary(t *testing.T) {
 func BenchmarkProfilesUsage(b *testing.B) {
 	pd := generateTestProfiles()
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	dur := uint64(time.Second.Nanoseconds())
+	dur := uint64(1_000_000_000)
 	testValProfileID := ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	testSecondValProfileID := ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 
