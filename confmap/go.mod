@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/internal/testutil v0.140.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 )
 
