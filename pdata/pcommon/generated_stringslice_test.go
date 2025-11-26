@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -157,6 +158,7 @@ func TestStringSliceEqual(t *testing.T) {
 }
 
 func BenchmarkStringSliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := NewStringSlice()
 	ms.Append("a", "b", "c")
 	cmp := NewStringSlice()
