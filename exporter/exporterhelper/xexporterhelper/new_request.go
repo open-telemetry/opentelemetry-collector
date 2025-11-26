@@ -5,7 +5,6 @@ package xexporterhelper // import "go.opentelemetry.io/collector/exporter/export
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -87,20 +86,5 @@ func NewTracesQueueBatchSettings() QueueBatchSettings {
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set QueueBatchSettings) exporterhelper.Option {
-	// Automatically configure partitioner if MetadataKeys is set
-	if len(cfg.MetadataKeys) > 0 {
-		if set.Partitioner != nil {
-			return func(*internal.BaseExporter) error {
-				return errors.New("cannot use metadata_keys when a custom partitioner is already configured")
-			}
-		}
-		if set.MergeCtx != nil {
-			return func(*internal.BaseExporter) error {
-				return errors.New("cannot use metadata_keys when a custom merge function is already configured")
-			}
-		}
-		set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.MetadataKeys)
-		set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.MetadataKeys)
-	}
 	return internal.WithQueueBatch(cfg, set)
 }
