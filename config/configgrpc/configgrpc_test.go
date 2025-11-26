@@ -483,7 +483,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ClientConfig{
 				Headers:     nil,
-				Endpoint:    "",
+				Endpoint:    "localhost:1234",
 				Compression: "",
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
@@ -498,7 +498,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ClientConfig{
 				Headers:     nil,
-				Endpoint:    "",
+				Endpoint:    "localhost:1234",
 				Compression: "",
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{

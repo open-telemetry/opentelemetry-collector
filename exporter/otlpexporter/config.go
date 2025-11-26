@@ -22,8 +22,10 @@ type Config struct {
 	_ struct{}
 }
 
-var _ component.Config = (*Config)(nil)
-var _ xconfmap.Validator = (*Config)(nil)
+var (
+	_ component.Config   = (*Config)(nil)
+	_ xconfmap.Validator = (*Config)(nil)
+)
 
 func (c *Config) Validate() error {
 	return nil
