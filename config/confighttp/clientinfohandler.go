@@ -31,7 +31,7 @@ func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 
 // contextWithClient attempts to add the client IP address to the client.Info from the context.
 // The address is found by first checking the metadata using clientAddrMetadataKeys and
-// falls back to the request Remote address
+// falls back to the request Remote address.
 // When no client.Info exists in the context, one is created.
 func contextWithClient(req *http.Request, includeMetadata bool, clientAddrMetadataKeys []string) context.Context {
 	cl := client.FromContext(req.Context())
