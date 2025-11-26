@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestLocationEqual(t *testing.T) {
@@ -272,6 +273,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkLocationSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	l := NewLocation()
 	l.AttributeIndices().Append(1, 2)
 

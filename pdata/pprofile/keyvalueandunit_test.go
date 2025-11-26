@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -200,6 +201,8 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	kvu := NewKeyValueAndUnit()
 	kvu.SetKeyStrindex(1)
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestValueTypeSwitchDictionary(t *testing.T) {
@@ -150,6 +151,8 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkValueTypeSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	vt := NewValueType()
 	vt.SetTypeStrindex(1)
 	vt.SetUnitStrindex(2)

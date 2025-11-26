@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestMappingEqual(t *testing.T) {
@@ -223,6 +224,8 @@ func TestMappingSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkMappingSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	m := NewMapping()
 	m.AttributeIndices().Append(1, 2)
 

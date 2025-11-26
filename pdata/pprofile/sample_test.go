@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -231,6 +232,8 @@ func TestSampleSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkSampleSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	s := NewSample()
 	s.SetLinkIndex(1)
 	s.SetStackIndex(1)

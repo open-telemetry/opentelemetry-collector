@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -212,6 +213,8 @@ func TestProfileSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkProfileSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	p := NewProfile()
 	p.AttributeIndices().Append(1, 2)
 

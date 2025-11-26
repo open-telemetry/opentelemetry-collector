@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestLineSliceEqual(t *testing.T) {
@@ -223,6 +224,8 @@ func TestLineSwitchDictionary(t *testing.T) {
 }
 
 func BenchmarkLineSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	l := NewLine()
 	l.SetFunctionIndex(1)
 
