@@ -49,3 +49,5 @@ replace go.opentelemetry.io/collector/scraper => ../../scraper
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
