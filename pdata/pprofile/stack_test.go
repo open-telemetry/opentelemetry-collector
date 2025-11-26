@@ -205,13 +205,15 @@ func BenchmarkStackSwitchDictionary(b *testing.B) {
 	src.LocationTable().AppendEmpty().SetAddress(42)
 	src.LocationTable().AppendEmpty().SetAddress(43)
 
-	dst := NewProfilesDictionary()
-	dst.LocationTable().AppendEmpty()
-	dst.LocationTable().AppendEmpty().SetAddress(43)
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.LocationTable().AppendEmpty()
+		dst.LocationTable().AppendEmpty().SetAddress(43)
+		b.StartTimer()
+
 		_ = s.switchDictionary(src, dst)
 	}
 }

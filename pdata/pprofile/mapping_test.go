@@ -232,14 +232,16 @@ func BenchmarkMappingSwitchDictionary(b *testing.B) {
 	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
 	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
 
-	dst := NewProfilesDictionary()
-	dst.StringTable().Append("", "foo")
-	dst.AttributeTable().AppendEmpty()
-	dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		dst.AttributeTable().AppendEmpty()
+		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		b.StartTimer()
+
 		_ = m.switchDictionary(src, dst)
 	}
 }

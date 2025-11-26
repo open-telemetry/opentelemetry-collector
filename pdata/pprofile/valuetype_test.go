@@ -157,12 +157,14 @@ func BenchmarkValueTypeSwitchDictionary(b *testing.B) {
 	src := NewProfilesDictionary()
 	src.StringTable().Append("", "test", "foo")
 
-	dst := NewProfilesDictionary()
-	dst.StringTable().Append("", "foo")
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		b.StartTimer()
+
 		_ = vt.switchDictionary(src, dst)
 	}
 }

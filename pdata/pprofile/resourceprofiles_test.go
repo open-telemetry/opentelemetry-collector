@@ -99,11 +99,13 @@ func BenchmarkResourceProfilesSwitchDictionary(b *testing.B) {
 	src.LinkTable().AppendEmpty()
 	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 
-	dst := NewProfilesDictionary()
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		b.StartTimer()
+
 		_ = r.switchDictionary(src, dst)
 	}
 }

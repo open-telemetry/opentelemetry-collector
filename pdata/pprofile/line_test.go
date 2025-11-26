@@ -232,11 +232,13 @@ func BenchmarkLineSwitchDictionary(b *testing.B) {
 	src.FunctionTable().AppendEmpty()
 	src.FunctionTable().AppendEmpty().SetNameStrindex(1)
 
-	dst := NewProfilesDictionary()
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		b.StartTimer()
+
 		_ = l.switchDictionary(src, dst)
 	}
 }

@@ -206,11 +206,13 @@ func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
 	src := NewProfilesDictionary()
 	src.StringTable().Append("", "test")
 
-	dst := NewProfilesDictionary()
-
 	b.ReportAllocs()
 
 	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		b.StartTimer()
+
 		_ = kvu.switchDictionary(src, dst)
 	}
 }
