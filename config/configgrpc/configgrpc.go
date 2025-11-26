@@ -42,9 +42,11 @@ import (
 
 var errMetadataNotFound = errors.New("no request metadata found")
 
+const useOtelGRPCGateID = "configgrpc.useOtelGRPCInstrumentation"
+
 // useOtelGRPCGate is the feature gate that controls whether to use the otelgrpc instrumentation for gRPC clients and servers.
 var useOtelGRPCGate = featuregate.GlobalRegistry().MustRegister(
-	"configgrpc.useOtelGRPCInstrumentation",
+	useOtelGRPCGateID,
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.141.0"),
 	featuregate.WithRegisterReferenceURL("TODO: Create one if this PR is accepted"),

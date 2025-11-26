@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -122,13 +123,31 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
-	require.NoError(t, err)
-	/* Expecting 2 DialOptions:
-	 * - WithTransportCredentials (TLS)
-	 * - WithStatsHandler (always, for self-telemetry)
-	 */
-	assert.Len(t, opts, 2)
+
+	t.Run("configgrpc.useOtelGRPCInstrumentation enabled", func(t *testing.T) {
+		oldVal := useOtelGRPCGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, true))
+		defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, oldVal)) }()
+		opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+		require.NoError(t, err)
+		/* Expecting 2 DialOptions:
+		 * - WithTransportCredentials (TLS)
+		 * - WithStatsHandler (always, for self-telemetry)
+		 */
+		assert.Len(t, opts, 2)
+	})
+
+	t.Run("configgrpc.useOtelGRPCInstrumentation disabled", func(t *testing.T) {
+		oldVal := useOtelGRPCGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, false))
+		defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, oldVal)) }()
+		opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+		require.NoError(t, err)
+		/* Expecting 2 DialOptions:
+		 * - WithTransportCredentials (TLS)
+		 */
+		assert.Len(t, opts, 1)
+	})
 }
 
 func TestGrpcClientExtraOption(t *testing.T) {
@@ -145,13 +164,12 @@ func TestGrpcClientExtraOption(t *testing.T) {
 		[]ToClientConnOption{WithGrpcDialOption(extraOpt)},
 	)
 	require.NoError(t, err)
-	/* Expecting 3 DialOptions:
+	/* Expecting 2 DialOptions:
 	 * - WithTransportCredentials (TLS)
-	 * - WithStatsHandler (always, for self-telemetry)
 	 * - extraOpt
 	 */
-	assert.Len(t, opts, 3)
-	assert.Equal(t, opts[2], extraOpt)
+	assert.Len(t, opts, 2)
+	assert.Equal(t, opts[1], extraOpt)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -257,14 +275,13 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			 * - WithTransportCredentials (TLS)
 			 * - WithDefaultServiceConfig (BalancerName)
 			 * - WithAuthority (Authority)
-			 * - WithStatsHandler (always, for self-telemetry)
 			 * - WithReadBufferSize (ReadBufferSize)
 			 * - WithWriteBufferSize (WriteBufferSize)
 			 * - WithKeepaliveParams (Keepalive)
 			 * - WithPerRPCCredentials (Auth)
 			 * - WithUnaryInterceptor/WithStreamInterceptor (Headers)
 			 */
-			assert.Len(t, opts, 11)
+			assert.Len(t, opts, 10)
 		})
 	}
 }
@@ -304,9 +321,24 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
-	require.NoError(t, err)
-	assert.Len(t, opts, 3)
+
+	t.Run("configgrpc.useOtelGRPCInstrumentation enabled", func(t *testing.T) {
+		oldVal := useOtelGRPCGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, true))
+		defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, oldVal)) }()
+		opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+		require.NoError(t, err)
+		assert.Len(t, opts, 3)
+	})
+
+	t.Run("configgrpc.useOtelGRPCInstrumentation disabled", func(t *testing.T) {
+		oldVal := useOtelGRPCGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, false))
+		defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(useOtelGRPCGateID, oldVal)) }()
+		opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+		require.NoError(t, err)
+		assert.Len(t, opts, 2)
+	})
 }
 
 func TestGrpcServerExtraOption(t *testing.T) {
@@ -323,8 +355,8 @@ func TestGrpcServerExtraOption(t *testing.T) {
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
 	)
 	require.NoError(t, err)
-	assert.Len(t, opts, 4)
-	assert.Equal(t, opts[3], extraOpt)
+	assert.Len(t, opts, 3)
+	assert.Equal(t, opts[2], extraOpt)
 }
 
 func TestGrpcServerValidate(t *testing.T) {
@@ -409,7 +441,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
-	assert.Len(t, opts, 10)
+	assert.Len(t, opts, 9)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
@@ -560,7 +592,7 @@ func TestUseSecure(t *testing.T) {
 	}
 	dialOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
-	assert.Len(t, dialOpts, 2)
+	assert.Len(t, dialOpts, 1)
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
