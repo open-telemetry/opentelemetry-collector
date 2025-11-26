@@ -89,8 +89,6 @@ func createTraces(
 		return nil, err
 	}
 
-	qbs := xexporterhelper.NewTracesQueueBatchSettings()
-
 	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
@@ -98,7 +96,7 @@ func createTraces(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
 func createMetrics(
@@ -117,8 +115,6 @@ func createMetrics(
 		return nil, err
 	}
 
-	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
-
 	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
@@ -126,7 +122,7 @@ func createMetrics(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
 func createLogs(
@@ -144,8 +140,6 @@ func createLogs(
 		return nil, err
 	}
 
-	qbs := xexporterhelper.NewLogsQueueBatchSettings()
-
 	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
@@ -153,7 +147,7 @@ func createLogs(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueueBatch(oCfg.QueueConfig, qbs))
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
 func createProfiles(

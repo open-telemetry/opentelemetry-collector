@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 // WithQueue overrides the default QueueBatchConfig for an exporter.
@@ -40,15 +39,3 @@ var ErrQueueIsFull = queue.ErrQueueIsFull
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
 // By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
-
-// WithQueueBatch enables queueing and batching for an exporter.
-// This option should be used with the new exporter helpers New[Traces|Metrics|Logs].
-// If cfg.MetadataKeys is set, it will automatically configure the partitioner and merge function
-// to partition batches based on the specified metadata keys.
-// The set parameter should be obtained from queuebatch.NewTracesQueueBatchSettings(),
-// queuebatch.NewMetricsQueueBatchSettings(), or queuebatch.NewLogsQueueBatchSettings().
-func WithQueueBatch(cfg QueueBatchConfig, set any) Option {
-	// xexporterhelper.Request is a type alias for request.Request, so the types are compatible
-	// We use any to accept settings from xexporterhelper package and convert to internal type
-	return internal.WithQueueBatch(cfg, set.(queuebatch.Settings[request.Request]))
-}
