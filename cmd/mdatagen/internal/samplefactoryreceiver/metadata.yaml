@@ -2,6 +2,7 @@
 
 type: sample
 display_name: Sample Factory Receiver
+description: This receiver is used for testing purposes to check the output of mdatagen.
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplefactoryreceiver
 github_project: open-telemetry/opentelemetry-collector
 
