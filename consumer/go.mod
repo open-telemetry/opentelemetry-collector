@@ -29,3 +29,5 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
