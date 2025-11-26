@@ -4,16 +4,10 @@
 package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
 
 import (
-	"errors"
-	"fmt"
-	"net"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -28,43 +22,9 @@ type Config struct {
 	_ struct{}
 }
 
+var _ component.Config = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)
+
 func (c *Config) Validate() error {
-	if after, ok := strings.CutPrefix(c.ClientConfig.Endpoint, "unix://"); ok {
-		if after == "" {
-			return errors.New("unix socket path cannot be empty")
-		}
-		return nil
-	}
-
-	endpoint := c.sanitizedEndpoint()
-	if endpoint == "" {
-		return errors.New(`requires a non-empty "endpoint"`)
-	}
-
-	// Validate that the port is in the address
-	_, port, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return err
-	}
-	if _, err := strconv.Atoi(port); err != nil {
-		return fmt.Errorf(`invalid port "%s"`, port)
-	}
-
 	return nil
 }
-
-func (c *Config) sanitizedEndpoint() string {
-	switch {
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "http://"):
-		return strings.TrimPrefix(c.ClientConfig.Endpoint, "http://")
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
-		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
-	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
-		r := regexp.MustCompile(`^dns:///?`)
-		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
-	default:
-		return c.ClientConfig.Endpoint
-	}
-}
-
-var _ component.Config = (*Config)(nil)

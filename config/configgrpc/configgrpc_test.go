@@ -269,6 +269,24 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 }
 
+func TestSanitizeEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:////backend.example.com:4317"
+	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+}
+
+func TestValidateEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "unix:///my/unix/socket.sock"
+	assert.NoError(t, cfg.Validate())
+}
+
 func TestHeaders(t *testing.T) {
 	traceServer := &grpcTraceServer{}
 	server, addr := traceServer.startTestServer(t, configoptional.Some(ServerConfig{
