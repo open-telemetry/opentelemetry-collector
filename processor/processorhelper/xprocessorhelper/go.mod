@@ -72,3 +72,5 @@ replace go.opentelemetry.io/collector/processor/processorhelper => ../
 replace go.opentelemetry.io/collector/processor/xprocessor => ../../xprocessor
 
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil
