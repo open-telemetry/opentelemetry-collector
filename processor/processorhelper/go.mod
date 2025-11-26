@@ -70,3 +70,5 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
