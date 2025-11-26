@@ -37,9 +37,19 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
+
+// useOtelGRPCGate is the feature gate that controls whether to use the otelgrpc instrumentation for gRPC clients and servers.
+var useOtelGRPCGate = featuregate.GlobalRegistry().MustRegister(
+	"configgrpc.useOtelGRPCInstrumentation",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.141.0"),
+	featuregate.WithRegisterReferenceURL("TODO: Create one if this PR is accepted"),
+	featuregate.WithRegisterDescription("Controls whether configgrpc created gRPC clients and servers use the unstable otelgrpc instrumentation (see go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc)."),
+)
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -367,14 +377,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithAuthority(cc.Authority))
 	}
 
-	otelOpts := []otelgrpc.Option{
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
-	}
+	if useOtelGRPCGate.IsEnabled() {
+		otelOpts := []otelgrpc.Option{
+			otelgrpc.WithTracerProvider(settings.TracerProvider),
+			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+			otelgrpc.WithMeterProvider(settings.MeterProvider),
+		}
 
-	// Enable OpenTelemetry observability plugin.
-	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
+		// Enable OpenTelemetry observability plugin.
+		opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
+	}
 
 	if len(cc.Headers) > 0 {
 		opts = append(opts,
@@ -524,18 +536,21 @@ func (sc *ServerConfig) getGrpcServerOptions(
 		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator)) //nolint:contextcheck // context already handled
 	}
 
-	otelOpts := []otelgrpc.Option{
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
-	}
+	if useOtelGRPCGate.IsEnabled() {
+		otelOpts := []otelgrpc.Option{
+			otelgrpc.WithTracerProvider(settings.TracerProvider),
+			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+			otelgrpc.WithMeterProvider(settings.MeterProvider),
+		}
 
-	// Enable OpenTelemetry observability plugin.
+		// Enable OpenTelemetry observability plugin.
+		opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)))
+	}
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata))
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata)) //nolint:contextcheck // context already handled
 
-	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range sc.Middlewares {
