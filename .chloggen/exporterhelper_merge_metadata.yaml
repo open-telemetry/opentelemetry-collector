@@ -17,8 +17,8 @@ issues: [14139]
 # Use pipe (|) for multiline entries.
 subtext: |
   The `metadata_keys` configuration option is now available in the `sending_queue` section for all exporters
-  using queue batch functionality. When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition.This feature
-  is automatically configured when using `xexporterhelper.WithQueueBatch()`.
+  using queue batch functionality. When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition. This feature
+  is automatically configured when using `exporterhelper.WithQueue()`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
