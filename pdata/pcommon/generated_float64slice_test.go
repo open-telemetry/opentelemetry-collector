@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -157,6 +158,7 @@ func TestFloat64SliceEqual(t *testing.T) {
 }
 
 func BenchmarkFloat64SliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := NewFloat64Slice()
 	ms.Append(1.1, 2.2, 3.3)
 	cmp := NewFloat64Slice()
