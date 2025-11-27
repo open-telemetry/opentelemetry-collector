@@ -742,7 +742,7 @@ func runMetricsProcessorBenchmark(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	require.NoError(b, metrics.Start(ctx, componenttest.NewNopHost()))
 
-	const metricsPerRequest = 15_000
+	const metricsPerRequest = 150_000
 	b.StartTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
