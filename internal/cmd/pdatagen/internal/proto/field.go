@@ -31,6 +31,8 @@ type FieldInterface interface {
 
 	GenUnmarshalProto() string
 
+	GenSkipProto() string
+
 	GenMessageField() string
 
 	GenOneOfMessages() string

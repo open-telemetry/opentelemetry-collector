@@ -67,6 +67,13 @@ func (pid *ProfileID) UnmarshalProtoOpts(buf []byte, _ *pdata.UnmarshalOptions) 
 	return nil
 }
 
+func SkipProfileIDProto(data []byte) error {
+	if len(data) == 0 || len(data) == profileIDSize {
+		return nil
+	}
+	return errUnmarshalProfileID
+}
+
 // MarshalJSON converts ProfileID into a hex string.
 //
 //nolint:govet

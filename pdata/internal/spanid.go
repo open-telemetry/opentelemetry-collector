@@ -66,6 +66,13 @@ func (sid *SpanID) UnmarshalProtoOpts(data []byte, _ *pdata.UnmarshalOptions) er
 	return nil
 }
 
+func SkipSpanIDProto(data []byte) error {
+	if len(data) == 0 || len(data) == spanIDSize {
+		return nil
+	}
+	return errUnmarshalSpanID
+}
+
 // MarshalJSON converts SpanID into a hex string.
 //
 //nolint:govet

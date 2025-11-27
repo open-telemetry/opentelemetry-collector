@@ -67,6 +67,13 @@ func (tid *TraceID) UnmarshalProtoOpts(buf []byte, _ *pdata.UnmarshalOptions) er
 	return nil
 }
 
+func SkipTraceIDProto(data []byte) error {
+	if len(data) == 0 || len(data) == traceIDSize {
+		return nil
+	}
+	return errUnmarshalTraceID
+}
+
 // MarshalJSON converts TraceID into a hex string.
 //
 //nolint:govet

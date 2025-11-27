@@ -151,9 +151,16 @@ func (orig *Lazy{{ .messageName }}) UnmarshalProtoOpts(buf []byte, opts *pdata.U
     if !opts.LazyDecoding {
         return orig.{{ .messageName }}.UnmarshalProtoOpts(buf, opts)
     }
+    if err := Skip{{ .messageName }}Proto(buf); err != nil {
+        return err
+    }
     orig.bytes = buf
     orig.{{ .messageName }}.Reset()
     return nil
+}
+
+func SkipLazy{{ .messageName }}Proto(buf []byte) error {
+    return Skip{{ .messageName }}Proto(buf)
 }
 
 func (orig *Lazy{{ .messageName }}) FinishUnmarshal(buf *{{ .messageName }}) (*{{ .messageName }}, error) {
