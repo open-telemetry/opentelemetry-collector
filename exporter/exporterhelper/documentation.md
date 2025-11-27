@@ -64,7 +64,7 @@ Current size of the retry queue (in batches). [Alpha]
 
 ### otelcol_exporter_retry_dropped_log_records
 
-Number of log records dropped after exhausting configured retries. [Alpha]
+Number of log records dropped after exhausting configured retries. Only available on detailed level. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -72,7 +72,7 @@ Number of log records dropped after exhausting configured retries. [Alpha]
 
 ### otelcol_exporter_retry_dropped_metric_points
 
-Number of metric points dropped after exhausting configured retries. [Alpha]
+Number of metric points dropped after exhausting configured retries. Only available on detailed level. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +80,7 @@ Number of metric points dropped after exhausting configured retries. [Alpha]
 
 ### otelcol_exporter_retry_dropped_spans
 
-Number of spans dropped after exhausting configured retries. [Alpha]
+Number of spans dropped after exhausting configured retries. Only available on detailed level. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

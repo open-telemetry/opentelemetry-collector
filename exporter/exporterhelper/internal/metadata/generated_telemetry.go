@@ -161,19 +161,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterRetryDroppedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_retry_dropped_log_records",
-		metric.WithDescription("Number of log records dropped after exhausting configured retries. [Alpha]"),
+		metric.WithDescription("Number of log records dropped after exhausting configured retries. Only available on detailed level. [Alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRetryDroppedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_retry_dropped_metric_points",
-		metric.WithDescription("Number of metric points dropped after exhausting configured retries. [Alpha]"),
+		metric.WithDescription("Number of metric points dropped after exhausting configured retries. Only available on detailed level. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRetryDroppedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_retry_dropped_spans",
-		metric.WithDescription("Number of spans dropped after exhausting configured retries. [Alpha]"),
+		metric.WithDescription("Number of spans dropped after exhausting configured retries. Only available on detailed level. [Alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

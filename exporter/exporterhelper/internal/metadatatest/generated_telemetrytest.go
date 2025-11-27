@@ -121,7 +121,7 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualExporterRetryDroppedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_retry_dropped_log_records",
-		Description: "Number of log records dropped after exhausting configured retries. [Alpha]",
+		Description: "Number of log records dropped after exhausting configured retries. Only available on detailed level. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -137,7 +137,7 @@ func AssertEqualExporterRetryDroppedLogRecords(t *testing.T, tt *componenttest.T
 func AssertEqualExporterRetryDroppedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_retry_dropped_metric_points",
-		Description: "Number of metric points dropped after exhausting configured retries. [Alpha]",
+		Description: "Number of metric points dropped after exhausting configured retries. Only available on detailed level. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -153,7 +153,7 @@ func AssertEqualExporterRetryDroppedMetricPoints(t *testing.T, tt *componenttest
 func AssertEqualExporterRetryDroppedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_retry_dropped_spans",
-		Description: "Number of spans dropped after exhausting configured retries. [Alpha]",
+		Description: "Number of spans dropped after exhausting configured retries. Only available on detailed level. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

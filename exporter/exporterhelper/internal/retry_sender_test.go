@@ -73,7 +73,9 @@ func TestRetrySenderMaxElapsedTime(t *testing.T) {
 	expErr := errors.New("transient error")
 	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(context.Context, request.Request) error { return expErr }))
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
-	require.ErrorIs(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2}), expErr)
+	err := rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
+	require.ErrorIs(t, err, expErr)
+	require.True(t, experr.IsRetriesExhaustedErr(err))
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
 
@@ -94,6 +96,29 @@ func TestRetrySenderRetriesExhaustedErrorWrapped(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, experr.IsRetriesExhaustedErr(err))
 	require.GreaterOrEqual(t, attempts, 2)
+	require.NoError(t, rs.Shutdown(context.Background()))
+}
+
+func TestRetrySenderPermanentErrorAfterRetryNotWrapped(t *testing.T) {
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.InitialInterval = time.Millisecond
+	rCfg.RandomizationFactor = 0
+	rCfg.Multiplier = 1
+	rCfg.MaxInterval = time.Millisecond
+	attempts := 0
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(context.Context, request.Request) error {
+		attempts++
+		if attempts == 1 {
+			return errors.New("transient error")
+		}
+		return consumererror.NewPermanent(errors.New("bad data"))
+	}))
+	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
+	err := rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
+	require.Error(t, err)
+	require.False(t, experr.IsRetriesExhaustedErr(err))
+	require.ErrorContains(t, err, "not retryable error: Permanent error: bad data")
+	require.Equal(t, 2, attempts)
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
 

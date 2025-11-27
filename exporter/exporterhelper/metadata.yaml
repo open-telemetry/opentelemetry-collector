@@ -127,7 +127,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of log records dropped after exhausting configured retries.
+      description: Number of log records dropped after exhausting configured retries. Only available on detailed level.
       unit: "{records}"
       sum:
         value_type: int
@@ -137,7 +137,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of metric points dropped after exhausting configured retries.
+      description: Number of metric points dropped after exhausting configured retries. Only available on detailed level.
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -147,7 +147,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of spans dropped after exhausting configured retries.
+      description: Number of spans dropped after exhausting configured retries. Only available on detailed level.
       unit: "{spans}"
       sum:
         value_type: int
