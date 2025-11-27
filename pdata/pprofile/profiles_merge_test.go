@@ -27,12 +27,12 @@ func TestProfilesMergeTo(t *testing.T) {
 
 func TestProfilesMergeToSelf(t *testing.T) {
 	profiles := NewProfiles()
-	profiles.Dictionary().StringTable().Append("test")
+	profiles.Dictionary().StringTable().Append("", "test")
 	profiles.ResourceProfiles().AppendEmpty()
 
 	require.NoError(t, profiles.MergeTo(profiles))
 
-	assert.Equal(t, 1, profiles.Dictionary().StringTable().Len())
+	assert.Equal(t, 2, profiles.Dictionary().StringTable().Len())
 	assert.Equal(t, 1, profiles.ResourceProfiles().Len())
 }
 
