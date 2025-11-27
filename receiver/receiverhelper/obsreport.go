@@ -139,10 +139,10 @@ func (rec *ObsReport) StartProfilesOp(operationCtx context.Context) context.Cont
 func (rec *ObsReport) EndProfilesOp(
 	receiverCtx context.Context,
 	format string,
-	numReceivedSpans int,
+	numReceivedProfileSamples int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, xpipeline.SignalProfiles)
+	rec.endOp(receiverCtx, format, numReceivedProfileSamples, err, xpipeline.SignalProfiles)
 }
 
 // startOp creates the span used to trace the operation. Returning
