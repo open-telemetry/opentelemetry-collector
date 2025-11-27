@@ -9,8 +9,10 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -194,6 +196,21 @@ func (c Config) Validate() error {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
+	// Ensure certificate is not set using both file and PEM
+	if c.hasCertFile() && c.hasCertPem() {
+		return errors.New("provide either certificate file or PEM, but not both")
+	}
+
+	// Ensure key is not set using both file and PEM
+	if c.hasKeyFile() && c.hasKeyPem() {
+		return errors.New("provide either key file or PEM, but not both")
+	}
+
+	// Fail if only one of cert/key is provided (mismatch case)
+	if c.hasCert() != c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -208,6 +225,16 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	return nil
+}
+
+func (c ServerConfig) Validate() error {
+	// For servers, both certificate and key are required:
+	// - If both are missing, error.
+	// - If only one is provided (mismatch), error.
+	if !c.hasCert() && !c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key for server connections")
+	}
 	return nil
 }
 
@@ -243,13 +270,22 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	allowedCurves := slices.Collect(maps.Values(tlsCurveTypes))
 	curvePreferences := make([]tls.CurveID, 0, len(c.CurvePreferences))
 	for _, curve := range c.CurvePreferences {
 		curveID, ok := tlsCurveTypes[curve]
 		if !ok {
-			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519]", curveID)
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are %s", curveID, allowedCurves)
 		}
 		curvePreferences = append(curvePreferences, curveID)
+	}
+
+	// If no curve preferences were explicitly specified in the configuration, use
+	// the ones we allow. This helps in particular with FIPS builds where not all curves
+	// are allowed.
+	if len(curvePreferences) == 0 {
+		curvePreferences = allowedCurves
 	}
 
 	return &tls.Config{
@@ -475,11 +511,4 @@ var tlsVersions = map[string]uint16{
 	"1.1": tls.VersionTLS11,
 	"1.2": tls.VersionTLS12,
 	"1.3": tls.VersionTLS13,
-}
-
-var tlsCurveTypes = map[string]tls.CurveID{
-	"P256":   tls.CurveP256,
-	"P384":   tls.CurveP384,
-	"P521":   tls.CurveP521,
-	"X25519": tls.X25519,
 }

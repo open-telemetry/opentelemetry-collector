@@ -8,8 +8,8 @@ UPSTREAM_REMOTE_NAME=${UPSTREAM_REMOTE_NAME:-"upstream"} # Your upstream remote 
 MAIN_BRANCH_NAME=${MAIN_BRANCH_NAME:-"main"}
 LOCAL_MAIN_BRANCH_NAME=${LOCAL_MAIN_BRANCH_NAME:-"${MAIN_BRANCH_NAME}"}
 # These variables are only used if git user.name and git user.email are not configured
-GIT_CONFIG_USER_NAME=${GIT_CONFIG_USER_NAME:-"opentelemetrybot"}
-GIT_CONFIG_USER_EMAIL=${GIT_CONFIG_USER_EMAIL:-"107717825+opentelemetrybot@users.noreply.github.com"}
+GIT_CONFIG_USER_NAME=${GIT_CONFIG_USER_NAME:-"otelbot"}
+GIT_CONFIG_USER_EMAIL=${GIT_CONFIG_USER_EMAIL:-"197425009+otelbot@users.noreply.github.com"}
 
 # --- Extract release information from tag ---
 if [[ -z "$GITHUB_REF" ]]; then

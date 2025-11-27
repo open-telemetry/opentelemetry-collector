@@ -23,3 +23,4 @@ headers:
   header1: "234"
   another: "somevalue"
 compression: gzip
+profiles_endpoint: "https://custom.profiles.endpoint:8080/v1development/profiles"

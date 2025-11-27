@@ -92,11 +92,11 @@ func TestLogsConcurrency(t *testing.T) {
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 10000; j++ {
+			for range 10000 {
 				assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
 			}
 		}()
@@ -181,6 +181,33 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestLogs_ProcessInternalDuration(t *testing.T) {
+	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		return ld, nil
+	}
+
+	incomingLogs := plog.NewLogs()
+
+	tel := componenttest.NewTelemetry()
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorInternalDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }
 
 func newSettings(tel *componenttest.Telemetry) processor.Settings {

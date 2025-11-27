@@ -6,6 +6,7 @@
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fforward%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fforward) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fforward%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fforward) |
 
+[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -15,6 +16,7 @@
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
+| profiles | profiles | [development] |
 | traces | traces | [beta] |
 | metrics | metrics | [beta] |
 | logs | logs | [beta] |
@@ -43,7 +45,7 @@ connectors:
 
 ### Example Usage
 
-Annotate distinct log streams, then merge them together, batch, and export.
+Annotate distinct log streams, then merge them together, and export.
 
 ```yaml
 receivers:
@@ -52,7 +54,6 @@ receivers:
 processors:
   attributes/blue:
   attributes/green:
-  batch:
 exporters:
   bar:
 connectors:
@@ -69,7 +70,6 @@ service:
       exporters: [forward]
     logs:
       receivers: [forward]
-      processors: [batch]
       exporters: [bar]
 ```
 
@@ -82,7 +82,6 @@ processors:
   resourcedetection:
   sample:
   attributes:
-  batch:
 exporters:
   bar/hot:
   bar/cold:
@@ -96,7 +95,7 @@ service:
       exporters: [forward]
     traces/hot:
       receivers: [forward]
-      processors: [sample, batch]
+      processors: [sample]
       exporters: [bar/hot]
     traces/cold:
       receivers: [forward]
@@ -111,7 +110,6 @@ receivers:
   foo:
 processors:
   filter:
-  batch:
 exporters:
   bar:
 # connectors:
@@ -123,7 +121,6 @@ service:
         - foo
       processors:
         - filter
-        - batch
       exporters:
         - bar
       # - forward

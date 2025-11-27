@@ -1,0 +1,23 @@
+receivers:
+    nop:
+    nop/myreceiver:
+
+processors:
+    nop:
+    nop/myprocessor:
+
+exporters:
+    nop:
+    nop/myexporter:
+
+extensions:
+    nop:
+    nop/myextension:
+
+service:
+    extensions: [nop]
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [nop]
+            exporters: [nop]

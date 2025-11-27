@@ -20,4 +20,4 @@ if [[ -z "${OWNERS}" ]]; then
     exit 0
 fi
 
-gh issue comment "${ISSUE}" --body "Pinging code owners for ${COMPONENT}: ${OWNERS}. See [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself. For example, comment '/label priority:p2 -needs-triaged' to set the priority and remove the needs-triaged label."
+gh issue comment "${ISSUE}" --body "Pinging code owners for ${COMPONENT}: ${OWNERS}. See [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself. For example, comment '/label priority:p2 -needs-triage' to set the priority and remove the needs-triage label."

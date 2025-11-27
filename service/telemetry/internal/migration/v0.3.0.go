@@ -46,12 +46,12 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 	for _, r := range c.Processors {
 		if r.Batch != nil {
 			if r.Batch.Exporter.OTLP != nil {
-				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint)
+				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint, r.Batch.Exporter.OTLP.Insecure)
 			}
 		}
 		if r.Simple != nil {
 			if r.Simple.Exporter.OTLP != nil && r.Simple.Exporter.OTLP.Endpoint != nil {
-				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint)
+				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint, r.Simple.Exporter.OTLP.Insecure)
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	for _, r := range c.Readers {
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
-				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint)
+				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
 		}
 	}
@@ -206,12 +206,12 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	for _, r := range c.Processors {
 		if r.Batch != nil {
 			if r.Batch.Exporter.OTLP != nil {
-				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint)
+				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint, r.Batch.Exporter.OTLP.Insecure)
 			}
 		}
 		if r.Simple != nil {
 			if r.Simple.Exporter.OTLP != nil && r.Simple.Exporter.OTLP.Endpoint != nil {
-				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint)
+				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint, r.Simple.Exporter.OTLP.Insecure)
 			}
 		}
 	}

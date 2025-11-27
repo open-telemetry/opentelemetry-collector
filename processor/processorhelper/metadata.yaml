@@ -19,6 +19,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_internal_duration:
+      enabled: true
+      stability:
+        level: alpha
+      description: Duration of time taken to process a batch of telemetry data through the processor.
+      unit: s
+      histogram:
+        async: false
+        value_type: double
+
     processor_outgoing_items:
       enabled: true
       stability:

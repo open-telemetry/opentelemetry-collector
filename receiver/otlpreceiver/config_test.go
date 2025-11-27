@@ -16,26 +16,12 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
-
-// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
-func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
-	if opt.HasValue() {
-		return opt.Get()
-	}
-
-	empty := confmap.NewFromStringMap(map[string]any{})
-	require.NoError(t, empty.Unmarshal(opt))
-	val := opt.Get()
-	require.NotNil(t, "Expected a default value to be set for %T", val)
-	return val
-}
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
@@ -44,8 +30,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 	expectedCfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &expectedCfg.GRPC)
-	GetOrInsertDefault(t, &expectedCfg.HTTP)
+	expectedCfg.GRPC.GetOrInsertDefault()
+	expectedCfg.HTTP.GetOrInsertDefault()
 	assert.Equal(t, expectedCfg, cfg)
 }
 
@@ -57,7 +43,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyGRPC.GRPC)
+	defaultOnlyGRPC.GRPC.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -69,7 +55,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -81,7 +67,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -93,7 +79,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -111,49 +97,49 @@ func TestUnmarshalConfig(t *testing.T) {
 						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
-					},
+					}),
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
 							MaxConnectionAgeGrace: 13 * time.Second,
 							Time:                  30 * time.Second,
 							Timeout:               5 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
-						},
-					},
+						}),
+					}),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Auth: &confighttp.AuthConfig{
+						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
-						},
+						}),
 						Endpoint: "localhost:4318",
-						TLS: &configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",
 							},
-						},
-						CORS: &confighttp.CORSConfig{
+						}),
+						CORS: configoptional.Some(confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
-						},
-						ResponseHeaders: map[string]configopaque.String{},
+						}),
+						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
@@ -161,10 +147,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 			},
 		}, cfg)
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
 
 func TestUnmarshalConfigUnix(t *testing.T) {
@@ -182,13 +164,12 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
-					Keepalive:      ptr(configgrpc.NewDefaultKeepaliveServerConfig()),
+					Keepalive:      configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint:        "/tmp/http_otlp.sock",
-						CORS:            ptr(confighttp.NewDefaultCORSConfig()),
-						ResponseHeaders: map[string]configopaque.String{},
+						Endpoint:          "/tmp/http_otlp.sock",
+						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,

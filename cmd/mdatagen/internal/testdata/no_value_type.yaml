@@ -15,6 +15,8 @@ metrics:
   system.cpu.time:
     enabled: true
     description: Total CPU seconds broken down by different states.
+    stability:
+      level: development
     unit: s
     sum:
       monotonic: true

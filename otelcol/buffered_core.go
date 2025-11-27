@@ -25,7 +25,7 @@ var _ zapcore.Core = (*bufferedCore)(nil)
 
 type bufferedCore struct {
 	zapcore.LevelEnabler
-	mu        sync.RWMutex
+	mu        sync.Mutex
 	logs      []loggedEntry
 	context   []zapcore.Field
 	logsTaken bool
@@ -69,13 +69,13 @@ func (bc *bufferedCore) Sync() error {
 }
 
 func (bc *bufferedCore) TakeLogs() []loggedEntry {
-	if !bc.logsTaken {
-		bc.mu.Lock()
-		defer bc.mu.Unlock()
-		logs := bc.logs
-		bc.logs = nil
-		bc.logsTaken = true
-		return logs
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
+	if bc.logsTaken {
+		return nil
 	}
-	return nil
+	logs := bc.logs
+	bc.logs = nil
+	bc.logsTaken = true
+	return logs
 }

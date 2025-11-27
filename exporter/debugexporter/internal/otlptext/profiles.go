@@ -19,15 +19,15 @@ type textProfilesMarshaler struct{}
 // MarshalProfiles pprofile.Profiles to OTLP text.
 func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, error) {
 	buf := dataBuffer{}
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 	rps := pd.ResourceProfiles()
 
 	buf.logProfileMappings(dic.MappingTable())
 	buf.logProfileLocations(dic.LocationTable())
 	buf.logProfileFunctions(dic.FunctionTable())
 	buf.logAttributesWithIndentation(
-		"Attribute units",
-		attributeUnitsToMap(dic.AttributeUnits()),
+		"Attribute table",
+		keyValueAndUnitsToMap(dic.AttributeTable()),
 		0)
 
 	buf.logAttributesWithIndentation(
@@ -42,6 +42,7 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 		rp := rps.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rp.SchemaUrl())
 		buf.logAttributes("Resource attributes", rp.Resource().Attributes())
+		buf.logEntityRefs(rp.Resource())
 		ilps := rp.ScopeProfiles()
 		for j := 0; j < ilps.Len(); j++ {
 			buf.logEntry("ScopeProfiles #%d", j)
@@ -54,12 +55,10 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				profile := profiles.At(k)
 				buf.logAttr("Profile ID", profile.ProfileID())
 				buf.logAttr("Start time", profile.Time().String())
-				buf.logAttr("Duration", profile.Duration().String())
+				buf.logAttr("DurationNano", strconv.FormatUint(profile.DurationNano(), 10))
 				buf.logAttr("Dropped attributes count", strconv.FormatUint(uint64(profile.DroppedAttributesCount()), 10))
-				buf.logEntry("    Location indices: %d", profile.LocationIndices().AsRaw())
 
-				buf.logProfileSamples(profile.Sample(), dic.AttributeTable())
-				buf.logComment(profile.CommentStrindices())
+				buf.logProfileSamples(profile.Samples(), dic)
 			}
 		}
 	}

@@ -8,40 +8,40 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_batch_batch_send_size
 
-Number of units in the batch
+Number of units in the batch [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {units} | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {units} | Histogram | Int | Development |
 
 ### otelcol_processor_batch_batch_send_size_bytes
 
-Number of bytes in batch that was sent. Only available on detailed level.
+Number of bytes in batch that was sent. Only available on detailed level. [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Development |
 
 ### otelcol_processor_batch_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger
+Number of times the batch was sent due to a size trigger [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {times} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {times} | Sum | Int | true | Development |
 
 ### otelcol_processor_batch_metadata_cardinality
 
-Number of distinct metadata value combinations being processed
+Number of distinct metadata value combinations being processed [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {combinations} | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {combinations} | Sum | Int | false | Development |
 
 ### otelcol_processor_batch_timeout_trigger_send
 
-Number of times the batch was sent due to a timeout trigger
+Number of times the batch was sent due to a timeout trigger [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {times} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {times} | Sum | Int | true | Development |

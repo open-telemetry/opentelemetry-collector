@@ -10,17 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -45,21 +39,15 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
-		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
-	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
+	var droppedAttrs []string
+	set.Logger = telemetrytest.MockInjectorLogger(set.Logger, &droppedAttrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.NoError(t, tp.Shutdown(context.Background()))
 	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	mp, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
@@ -75,27 +63,23 @@ func TestCreateProcessor(t *testing.T) {
 	pp, err := factory.CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NotNil(t, pp)
-	assert.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Test that we've dropped the relevant injected attributes exactly once
+	assert.ElementsMatch(t, droppedAttrs, []string{
+		telemetry.SignalKey, telemetry.ComponentIDKey, telemetry.PipelineIDKey,
+	})
 
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 	assert.NoError(t, pp.Shutdown(context.Background()))
 	// verify that no monitoring routine is running
-	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.NoError(t, tp.Shutdown(context.Background()))
 
 	// start and shutdown a new monitoring routine
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, lp.Shutdown(context.Background()))
-	// calling it again should throw an error
-	require.ErrorIs(t, lp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
-
-	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created singleton logger" {
-			createLoggerCount++
-			assert.Empty(t, observer.All()[0].Context)
-		}
-	}
-	assert.Equal(t, 1, createLoggerCount)
+	// calling it again should throw no error
+	require.NoError(t, lp.Shutdown(context.Background()))
 }

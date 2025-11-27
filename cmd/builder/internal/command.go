@@ -5,10 +5,9 @@ package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/env/v2"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
@@ -116,12 +115,7 @@ func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
 	}
 
 	// handle env variables
-	if err = k.Load(env.Provider("", ".", func(s string) string {
-		// Only values from the `dist.` group can be set,
-		// and the subfields in `dist.` contain `_` in their names.
-		// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrays.
-		return strings.Replace(strings.ToLower(s), "dist_", "dist.", 1)
-	}), nil); err != nil {
+	if err = k.Load(env.Provider(".", env.Opt{}), nil); err != nil {
 		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 

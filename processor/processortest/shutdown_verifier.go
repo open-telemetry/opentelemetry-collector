@@ -31,7 +31,7 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 
 	// Send some traces to the proc.
 	const generatedCount = 10
-	for i := 0; i < generatedCount; i++ {
+	for range generatedCount {
 		require.NoError(t, proc.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 	}
 
@@ -55,7 +55,7 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 
 	// Send some logs to the proc.
 	const generatedCount = 10
-	for i := 0; i < generatedCount; i++ {
+	for range generatedCount {
 		require.NoError(t, proc.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 	}
 
@@ -79,7 +79,7 @@ func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fa
 
 	// Send some metrics to the proc. testdata.GenerateMetrics creates metrics with 2 data points each.
 	const generatedCount = 10
-	for i := 0; i < generatedCount; i++ {
+	for range generatedCount {
 		require.NoError(t, proc.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 	}
 

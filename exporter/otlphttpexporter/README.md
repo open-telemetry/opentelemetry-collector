@@ -34,12 +34,15 @@ The following settings can be optionally configured:
 - `metrics_endpoint` (no default): The target URL to send metric data to (e.g.: https://example.com:4318/v1/metrics).
    If this setting is present the `endpoint` setting is ignored for metrics.
 - `logs_endpoint` (no default): The target URL to send log data to (e.g.: https://example.com:4318/v1/logs).
+- `profiles_endpoint` (no default): The target URL to send profile data to (e.g.: https://example.com:4318/v1development/profiles).
    If this setting is present the `endpoint` setting is ignored for logs.
 - `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
+- `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+- `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:
 

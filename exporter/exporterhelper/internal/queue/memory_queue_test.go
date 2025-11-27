@@ -15,16 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-type sizerInt64 struct{}
-
-func (s sizerInt64) Sizeof(el int64) int64 {
-	return el
-}
-
 func TestMemoryQueue(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7})
+	set := newSettings(request.SizerTypeItems, 7)
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, q.Offer(context.Background(), 1))
 	assert.EqualValues(t, 1, q.Size())
 	assert.EqualValues(t, 7, q.Capacity())
@@ -36,24 +33,28 @@ func TestMemoryQueue(t *testing.T) {
 	require.ErrorIs(t, q.Offer(context.Background(), 4), ErrQueueIsFull)
 	assert.EqualValues(t, 4, q.Size())
 
-	assert.True(t, consume(q, func(_ context.Context, el int64) error {
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
 		assert.EqualValues(t, 1, el)
 		return nil
 	}))
 	assert.EqualValues(t, 3, q.Size())
 
-	assert.True(t, consume(q, func(_ context.Context, el int64) error {
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
 		assert.EqualValues(t, 3, el)
 		return nil
 	}))
 	assert.EqualValues(t, 0, q.Size())
 
 	require.NoError(t, q.Shutdown(context.Background()))
-	assert.False(t, consume(q, func(context.Context, int64) error { t.FailNow(); return nil }))
+	assert.False(t, consume(q, func(context.Context, intRequest) error { t.FailNow(); return nil }))
+	require.NoError(t, q.Shutdown(context.Background()))
 }
 
 func TestMemoryQueueBlockingCancelled(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 5, blockOnOverflow: true})
+	set := newSettings(request.SizerTypeItems, 5)
+	set.BlockOnOverflow = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, q.Offer(context.Background(), 3))
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
@@ -65,7 +66,7 @@ func TestMemoryQueueBlockingCancelled(t *testing.T) {
 	cancel()
 	wg.Wait()
 	assert.EqualValues(t, 3, q.Size())
-	assert.True(t, consume(q, func(_ context.Context, el int64) error {
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
 		assert.EqualValues(t, 3, el)
 		return nil
 	}))
@@ -73,45 +74,59 @@ func TestMemoryQueueBlockingCancelled(t *testing.T) {
 }
 
 func TestMemoryQueueDrainWhenShutdown(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7})
+	set := newSettings(request.SizerTypeItems, 7)
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, q.Offer(context.Background(), 1))
 	require.NoError(t, q.Offer(context.Background(), 3))
 
-	assert.True(t, consume(q, func(_ context.Context, el int64) error {
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
 		assert.EqualValues(t, 1, el)
 		return nil
 	}))
 	assert.EqualValues(t, 3, q.Size())
 	require.NoError(t, q.Shutdown(context.Background()))
 	assert.EqualValues(t, 3, q.Size())
-	assert.True(t, consume(q, func(_ context.Context, el int64) error {
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
 		assert.EqualValues(t, 3, el)
 		return nil
 	}))
 	assert.EqualValues(t, 0, q.Size())
-	assert.False(t, consume(q, func(context.Context, int64) error { t.FailNow(); return nil }))
+	assert.False(t, consume(q, func(context.Context, intRequest) error { t.FailNow(); return nil }))
+	require.NoError(t, q.Shutdown(context.Background()))
 }
 
 func TestMemoryQueueOfferInvalidSize(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	set := newSettings(request.SizerTypeItems, 1)
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.ErrorIs(t, q.Offer(context.Background(), -1), errInvalidSize)
+	require.NoError(t, q.Shutdown(context.Background()))
 }
 
 func TestMemoryQueueRejectOverCapacityElements(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7, blockOnOverflow: true})
+	set := newSettings(request.SizerTypeItems, 1)
+	set.BlockOnOverflow = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.ErrorIs(t, q.Offer(context.Background(), 8), errSizeTooLarge)
+	require.NoError(t, q.Shutdown(context.Background()))
 }
 
 func TestMemoryQueueOfferZeroSize(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	set := newSettings(request.SizerTypeItems, 1)
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, q.Offer(context.Background(), 0))
 	require.NoError(t, q.Shutdown(context.Background()))
 	// Because the size 0 is ignored, nothing to drain.
-	assert.False(t, consume(q, func(context.Context, int64) error { t.FailNow(); return nil }))
+	assert.False(t, consume(q, func(context.Context, intRequest) error { t.FailNow(); return nil }))
 }
 
-func TestMemoryQueueZeroCapacity(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+func TestMemoryQueueOverflow(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 1)
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, q.Offer(context.Background(), 1))
 	require.ErrorIs(t, q.Offer(context.Background(), 1), ErrQueueIsFull)
 	require.NoError(t, q.Shutdown(context.Background()))
@@ -120,7 +135,9 @@ func TestMemoryQueueZeroCapacity(t *testing.T) {
 func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 	wg := sync.WaitGroup{}
 	myErr := errors.New("test error")
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	wg.Add(1)
 	go func() {
@@ -130,7 +147,7 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 		assert.EqualValues(t, 1, req)
 		done.OnDone(myErr)
 	}()
-	require.ErrorIs(t, q.Offer(context.Background(), int64(1)), myErr)
+	require.ErrorIs(t, q.Offer(context.Background(), intRequest(1)), myErr)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
 }
@@ -138,7 +155,9 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
@@ -158,7 +177,7 @@ func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 		<-time.After(time.Second)
 		cancel()
 	}()
-	require.ErrorIs(t, q.Offer(ctx, int64(1)), context.Canceled)
+	require.ErrorIs(t, q.Offer(ctx, intRequest(1)), context.Canceled)
 	close(stop)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
@@ -167,7 +186,9 @@ func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
@@ -185,7 +206,7 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, q.Offer(context.Background(), int64(1)))
+		assert.NoError(t, q.Offer(context.Background(), intRequest(1)))
 	}()
 	assert.Eventually(t, func() bool { return q.Size() == 1 }, 1*time.Second, 10*time.Millisecond)
 	assert.EqualValues(t, 100, q.Capacity())
@@ -197,7 +218,9 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	wg := sync.WaitGroup{}
 	consumed := &atomic.Int64{}
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1000, waitForResult: true})
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
 	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
@@ -209,18 +232,19 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 			if !ok {
 				return
 			}
-			consumed.Add(req)
+			consumed.Add(int64(req))
 			done.OnDone(nil)
 		}
 	}()
 
-	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		require.NoError(b, q.Offer(context.Background(), int64(1)))
+	for b.Loop() {
+		for range 100 {
+			require.NoError(b, q.Offer(context.Background(), intRequest(1)))
+		}
 	}
 	require.NoError(b, q.Shutdown(context.Background()))
-	assert.Equal(b, int64(b.N), consumed.Load())
+	assert.Equal(b, int64(b.N)*100, consumed.Load())
 }
 
 func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {

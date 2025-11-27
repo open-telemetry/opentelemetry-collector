@@ -1,0 +1,63 @@
+name: codeowners
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  pull_request_target:
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
+    types:
+      - opened
+      - synchronize
+      - edited
+      - reopened
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  check-codeowners:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          path: pr
+
+      - uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94 # v2.2.0
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+
+      # NOTE: the make command below intentionally uses the Makefile from the
+      # target branch, and not the PR checkout, since it runs with the
+      # pull_request_target event and has elevated permissions.
+      - name: Gen CODEOWNERS
+        run: |
+          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=./pr" make generate-codeowners
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make generate-codeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)

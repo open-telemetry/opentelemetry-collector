@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -51,5 +52,6 @@ func TestConfmapMarshalConfigGRPC(t *testing.T) {
 	require.NoError(t, conf.Marshal(configgrpc.NewDefaultServerConfig()))
 	assert.Equal(t, map[string]any{
 		"keepalive": keepaliveServerConfig,
+		"transport": confignet.TransportType("tcp"),
 	}, conf.ToStringMap())
 }

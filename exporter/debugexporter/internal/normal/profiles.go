@@ -24,7 +24,7 @@ func NewNormalProfilesMarshaler() pprofile.Marshaler {
 
 func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, error) {
 	var buffer bytes.Buffer
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 
 	for i := 0; i < pd.ResourceProfiles().Len(); i++ {
 		resourceProfiles := pd.ResourceProfiles().At(i)
@@ -42,13 +42,13 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 				buffer.WriteString(profile.ProfileID().String())
 
 				buffer.WriteString(" samples=")
-				buffer.WriteString(strconv.Itoa(profile.Sample().Len()))
+				buffer.WriteString(strconv.Itoa(profile.Samples().Len()))
 
 				if profile.AttributeIndices().Len() > 0 {
 					attrs := []string{}
 					for _, i := range profile.AttributeIndices().AsRaw() {
 						a := dic.AttributeTable().At(int(i))
-						attrs = append(attrs, fmt.Sprintf("%s=%s", a.Key(), a.Value().AsString()))
+						attrs = append(attrs, fmt.Sprintf("%s=%s", dic.StringTable().At(int(a.KeyStrindex())), a.Value().AsString()))
 					}
 
 					buffer.WriteString(" ")

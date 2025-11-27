@@ -97,7 +97,7 @@ func TestCheckScraperLogs(t *testing.T) {
 	checkScraperLogs(t, tel, receiverID, scraperID, 7, 0)
 }
 
-func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver component.ID, scraper component.ID, scrapedLogRecords int64, erroredLogRecords int64) {
+func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, scrapedLogRecords, erroredLogRecords int64) {
 	metadatatest.AssertEqualScraperScrapedLogRecords(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{

@@ -6,6 +6,7 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -49,10 +50,14 @@ func NewLogs(
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
+
+		startTime := time.Now()
+
 		recordsIn := ld.LogRecordCount()
 
 		var errFunc error
 		ld, errFunc = logsFunc(ctx, ld)
+		obs.recordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, recordsIn, 0)

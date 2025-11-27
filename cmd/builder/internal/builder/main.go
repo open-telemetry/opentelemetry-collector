@@ -40,6 +40,13 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 
+	cmd.Env = os.Environ()
+	if cfg.Distribution.CGoEnabled {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=1")
+	} else {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
+	}
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -127,9 +134,11 @@ func Compile(cfg *Config) error {
 			gcflags = cfg.GCFlags
 		}
 	}
+	if cfg.Distribution.CGoEnabled {
+		cfg.Logger.Info("Building with cgo enabled")
+	}
 
-	args = append(args, "-ldflags="+ldflags)
-	args = append(args, "-gcflags="+gcflags)
+	args = append(args, "-ldflags="+ldflags, "-gcflags="+gcflags)
 
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
@@ -149,7 +158,7 @@ func GetModules(cfg *Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.23"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.24"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 

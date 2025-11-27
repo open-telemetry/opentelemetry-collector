@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type flavor int
@@ -25,6 +27,7 @@ const (
 // It supports a third flavor for struct types: Default(defaultVal).
 //
 // For struct types, it supports unmarshaling from a configuration source.
+// For struct types, it supports an 'enabled' field to explicitly disable a section.
 // The zero value of Optional is None.
 type Optional[T any] struct {
 	// value is the value of the Optional.
@@ -134,7 +137,46 @@ func (o *Optional[T]) Get() *T {
 	return &o.value
 }
 
+// GetOrInsertDefault makes the Optional into a Some(val) and returns val.
+//
+// In particular, if it is Default(val) it turns it into Some(val)
+// and if it is None[T]() it turns it into Some(zeroVal) where zeroVal is T's zero value.
+// This method is useful for programmatic usage of an optional.
+//
+// It panics if
+// - T is not a struct OR
+// - T has a field with the mapstructure tag "enabled".
+func (o *Optional[T]) GetOrInsertDefault() *T {
+	err := errors.Join(assertStructKind[T](), assertNoEnabledField[T]())
+	if err != nil {
+		panic(err)
+	}
+
+	if o.HasValue() {
+		return o.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	if err := empty.Unmarshal(o); err != nil {
+		// This should never happen, if it happens it is a bug, so this panic is not documented.
+		panic(fmt.Errorf("failed to unmarshal empty map into %T type: %w. Please report this bug", o.value, err))
+	}
+
+	return o.Get()
+}
+
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
+
+var (
+	addEnabledFieldFeatureGateID = "configoptional.AddEnabledField"
+	addEnabledFieldFeatureGate   = featuregate.GlobalRegistry().MustRegister(
+		addEnabledFieldFeatureGateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterFromVersion("v0.138.0"),
+		featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
+	)
+)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -143,6 +185,11 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 //   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
 //   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
 //     using val without overrides from the configuration if the configuration is nil.
+//
+// (Under the `configoptional.AddEnabledField` feature gate)
+// If the configuration contains an 'enabled' field:
+//   - if enabled is true: the Optional becomes Some after unmarshaling.
+//   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
@@ -157,11 +204,29 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
+	isEnabled := true
+	if addEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
+		enabled := conf.Get("enabled")
+		conf.Delete("enabled")
+		var ok bool
+		if isEnabled, ok = enabled.(bool); !ok {
+			return fmt.Errorf("unexpected type %T for 'enabled': got '%v' value expected 'true' or 'false'", enabled, enabled)
+		}
+	}
+
 	if err := conf.Unmarshal(&o.value); err != nil {
 		return err
 	}
 
-	o.flavor = someFlavor
+	if isEnabled {
+		o.flavor = someFlavor
+	} else {
+		o.flavor = noneFlavor
+		// override o.value with zero value.
+		var zero T
+		o.value = zero
+	}
+
 	return nil
 }
 
@@ -188,4 +253,27 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+var _ xconfmap.Validator = (*Optional[any])(nil)
+
+// Validate implements [xconfmap.Validator]. This is required because the
+// private fields in [xconfmap.Validator] can't be seen by the reflection used
+// by [xconfmap.Validate], and therefore we have to continue the validation
+// chain manually. This method isn't meant to be called directly, and should
+// generally only be called by [xconfmap.Validate].
+func (o *Optional[T]) Validate() error {
+	// When the flavor is None, the user has not passed this value,
+	// and therefore we should not validate it. The parent struct holding
+	// the Optional type can determine whether a None value is valid for
+	// a given config.
+	//
+	// If the flavor is still Default, then the user has not passed this
+	// value and we should also not validate it.
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		return nil
+	}
+
+	// For the some flavor, validate the actual value.
+	return xconfmap.Validate(o.value)
 }

@@ -15,6 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestTwoPackagesInDirectory(t *testing.T) {
 	contents, err := os.ReadFile("testdata/twopackages.yaml")
 	require.NoError(t, err)
@@ -43,7 +47,8 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
-				SemConvVersion:       "1.9.0",
+				SemConvVersion:       "1.37.0",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -69,77 +74,85 @@ func TestLoadMetadata(t *testing.T) {
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr",
+						FullName:         "string.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Enum:        []string{"one", "two"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.enum.resource.attr",
+						FullName:         "string.enum.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
-						Enabled:     false,
+						EnabledPtr:  boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional.resource.attr",
+						FullName:         "optional.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice.resource.attr",
+						FullName:         "slice.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
-						Enabled:     true,
+						EnabledPtr:  boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map.resource.attr",
+						FullName:         "map.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_disable_warning",
+						FullName:         "string.resource.attr_disable_warning",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_remove_warning": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: false,
+						EnabledPtr: boolPtr(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_remove_warning",
+						FullName:         "string.resource.attr_remove_warning",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string.resource.attr_to_be_removed": {
 						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						Enabled: true,
+						EnabledPtr: boolPtr(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string.resource.attr_to_be_removed",
+						FullName:         "string.resource.attr_to_be_removed",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 				},
 
@@ -151,7 +164,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "enum_attr",
+						FullName:         "enum_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -159,7 +173,8 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "string_attr",
+						FullName:         "string_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -167,60 +182,77 @@ func TestLoadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "overridden_int_attr",
+						FullName:         "overridden_int_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr",
+						FullName:         "boolean_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"boolean_attr2": {
 						Description: "Another attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-						FullName: "boolean_attr2",
+						FullName:         "boolean_attr2",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
-						FullName: "slice_attr",
+						FullName:         "slice_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
-						FullName: "map_attr",
+						FullName:         "map_attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
-					"optional_int_attr": {
-						Description: "An optional attribute with an integer value",
+					"conditional_int_attr": {
+						Description: "A conditional attribute with an integer value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
-						FullName: "optional_int_attr",
-						Optional: true,
+						FullName:         "conditional_int_attr",
+						RequirementLevel: AttributeRequirementLevelConditionallyRequired,
 					},
-					"optional_string_attr": {
-						Description: "An optional attribute with any string value",
+					"conditional_string_attr": {
+						Description: "A conditional attribute with any string value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional_string_attr",
-						Optional: true,
+						FullName:         "conditional_string_attr",
+						RequirementLevel: AttributeRequirementLevelConditionallyRequired,
+					},
+					"opt_in_bool_attr": {
+						Description: "An opt-in attribute with a boolean value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+						FullName:         "opt_in_bool_attr",
+						RequirementLevel: AttributeRequirementLevelOptIn,
 					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
-						Enabled:               true,
-						Description:           "Monotonic cumulative sum int metric enabled by default.",
-						ExtendedDocumentation: "The metric will be become optional soon.",
-						Warnings: Warnings{
-							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
+							Stability:             Stability{Level: component.StabilityLevelDevelopment},
+							Warnings: Warnings{
+								IfEnabledNotSet: "This metric will be disabled by default soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -228,39 +260,62 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+					},
+					"system.cpu.time": {
+						Signal: Signal{
+							Enabled:               true,
+							Stability:             Stability{Level: component.StabilityLevelBeta},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
 					},
 					"optional.metric": {
-						Enabled:     false,
-						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: Warnings{
-							IfConfigured: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:     false,
+							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
+							Warnings: Warnings{
+								IfConfigured: "This metric is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"optional.metric.empty_unit": {
-						Enabled:     false,
-						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: Warnings{
-							IfConfigured: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:     false,
+							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
+							Warnings: Warnings{
+								IfConfigured: "This metric is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr"},
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr"},
 					},
 
 					"default.metric.to_be_removed": {
-						Enabled:               true,
-						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
-						ExtendedDocumentation: "The metric will be removed soon.",
-						Warnings: Warnings{
-							IfEnabled: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
+							ExtendedDocumentation: "The metric will be removed soon.",
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
+							Warnings: Warnings{
+								IfEnabled: "This metric is deprecated and will be removed soon.",
+							},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -270,73 +325,88 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 					"metric.input_type": {
-						Enabled:     true,
-						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
-						Unit:        strPtr("s"),
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+							Stability:   Stability{Level: component.StabilityLevelDevelopment},
+							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						},
+						Unit: strPtr("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							MetricInputType:        MetricInputType{InputType: "string"},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Events: map[EventName]Event{
 					"default.event": {
-						Enabled:     true,
-						Description: "Example event enabled by default.",
-						Warnings: Warnings{
-							IfEnabledNotSet: "This event will be disabled by default soon.",
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Example event enabled by default.",
+							Warnings: Warnings{
+								IfEnabledNotSet: "This event will be disabled by default soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"default.event.to_be_renamed": {
-						Enabled:               false,
-						Description:           "[DEPRECATED] Example event disabled by default.",
-						ExtendedDocumentation: "The event will be renamed soon.",
-						Warnings: Warnings{
-							IfConfigured: "This event is deprecated and will be renamed soon.",
+						Signal: Signal{
+							Enabled:               false,
+							Description:           "[DEPRECATED] Example event disabled by default.",
+							ExtendedDocumentation: "The event will be renamed soon.",
+							Warnings: Warnings{
+								IfConfigured: "This event is deprecated and will be renamed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"default.event.to_be_removed": {
-						Enabled:               true,
-						Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
-						ExtendedDocumentation: "The event will be removed soon.",
-						Warnings: Warnings{
-							IfEnabled: "This event is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
+							ExtendedDocumentation: "The event will be removed soon.",
+							Warnings: Warnings{
+								IfEnabled: "This event is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Telemetry: Telemetry{
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
-							Enabled:     true,
-							Stability:   Stability{Level: "deprecated", From: "v0.110.0"},
-							Description: "Number of times the batch was sent due to a size trigger",
-							Unit:        strPtr("{times}"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: component.StabilityLevelDeprecated, From: "v0.110.0"},
+								Description: "Number of times the batch was sent due to a size trigger",
+							},
+							Unit: strPtr("{times}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
 							},
 						},
 						"request_duration": {
-							Enabled:     true,
-							Stability:   Stability{Level: "alpha"},
-							Description: "Duration of request",
-							Unit:        strPtr("s"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: component.StabilityLevelAlpha},
+								Description: "Duration of request",
+							},
+							Unit: strPtr("s"),
 							Histogram: &Histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
 						},
 						"process_runtime_total_alloc_bytes": {
-							Enabled:     true,
-							Stability:   Stability{Level: "stable"},
-							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
-							Unit:        strPtr("By"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: component.StabilityLevelStable},
+								Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+							},
+							Unit: strPtr("By"),
 							Sum: &Sum{
 								Mono: Mono{true},
 								MetricValueType: MetricValueType{
@@ -346,12 +416,14 @@ func TestLoadMetadata(t *testing.T) {
 							},
 						},
 						"queue_length": {
-							Enabled:               true,
-							Stability:             Stability{Level: "alpha"},
-							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
-							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
-							Unit:                  strPtr("{items}"),
-							Optional:              true,
+							Signal: Signal{
+								Enabled:               true,
+								Stability:             Stability{Level: component.StabilityLevelAlpha},
+								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
+							},
+							Unit:     strPtr("{items}"),
+							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -360,9 +432,12 @@ func TestLoadMetadata(t *testing.T) {
 							},
 						},
 						"queue_capacity": {
-							Enabled:     true,
-							Description: "Queue capacity - sync gauge example.",
-							Unit:        strPtr("{items}"),
+							Signal: Signal{
+								Enabled:     true,
+								Description: "Queue capacity - sync gauge example.",
+								Stability:   Stability{Level: component.StabilityLevelDevelopment},
+							},
+							Unit: strPtr("{items}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -373,7 +448,7 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           Tests{Host: "componenttest.NewNopHost()"},
+				Tests:           Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
 		{
@@ -383,8 +458,9 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
 		{
@@ -393,8 +469,9 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -411,8 +488,9 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -455,6 +533,21 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
+		},
+		{
+			name:    "testdata/invalid_metric_stability.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' decoding failed due to the following error(s):\n\n'level' unsupported stability level: \"development42\"",
+		},
+		{
+			name:    "testdata/invalid_metric_semconvref.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
+		},
+		{
+			name:    "testdata/no_metric_stability.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' missing required field: `stability.level`",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
