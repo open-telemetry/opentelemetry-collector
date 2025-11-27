@@ -64,3 +64,5 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

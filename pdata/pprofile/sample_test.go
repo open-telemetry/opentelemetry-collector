@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -227,5 +228,31 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantSample, sample)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkSampleSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	s := NewSample()
+	s.SetLinkIndex(1)
+	s.SetStackIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LocationTable().AppendEmpty()
+	src.LocationTable().AppendEmpty().SetAddress(2)
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	src.StackTable().AppendEmpty()
+	src.StackTable().AppendEmpty().LocationIndices().Append(1)
+
+	dst := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = s.switchDictionary(src, dst)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -52,6 +53,7 @@ func TestSetLink(t *testing.T) {
 }
 
 func BenchmarkSetLink(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	for _, bb := range []struct {
 		name string
 		link Link
