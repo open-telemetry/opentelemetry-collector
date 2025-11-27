@@ -18,7 +18,7 @@ func SetLink(table LinkSlice, li Link) (int32, error) {
 			if j > math.MaxInt32 {
 				return 0, errTooManyLinkTableEntries
 			}
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -27,5 +27,5 @@ func SetLink(table LinkSlice, li Link) (int32, error) {
 	}
 
 	li.CopyTo(table.AppendEmpty())
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }
