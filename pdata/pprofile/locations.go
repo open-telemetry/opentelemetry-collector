@@ -32,7 +32,7 @@ func SetLocation(table LocationSlice, loc Location) (int32, error) {
 			if j > math.MaxInt32 {
 				return 0, errTooManyLocationTableEntries
 			}
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -41,5 +41,5 @@ func SetLocation(table LocationSlice, loc Location) (int32, error) {
 	}
 
 	loc.CopyTo(table.AppendEmpty())
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }

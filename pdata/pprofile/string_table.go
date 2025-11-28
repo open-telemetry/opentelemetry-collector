@@ -20,7 +20,7 @@ func SetString(table pcommon.StringSlice, val string) (int32, error) {
 				return 0, errTooManyStringTableEntries
 			}
 			// Return the index of the existing value.
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -29,5 +29,5 @@ func SetString(table pcommon.StringSlice, val string) (int32, error) {
 	}
 
 	table.Append(val)
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }

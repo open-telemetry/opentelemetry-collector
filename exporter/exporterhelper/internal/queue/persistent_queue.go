@@ -141,7 +141,6 @@ func (pq *persistentQueue[T]) internalSize() int64 {
 }
 
 func (pq *persistentQueue[T]) requestSize() int64 {
-	//nolint:gosec
 	return int64(pq.metadata.WriteIndex-pq.metadata.ReadIndex) + int64(len(pq.metadata.CurrentlyDispatchedItems))
 }
 
