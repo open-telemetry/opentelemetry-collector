@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -169,7 +170,7 @@ func createGRPCExporter(t *testing.T, s *status.Status) consumer.Logs {
 
 	f := otlpexporter.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpexporter.Config)
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
@@ -203,7 +204,7 @@ func createHTTPExporter(t *testing.T, code int) consumer.Logs {
 
 	f := otlphttpexporter.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlphttpexporter.Config)
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.RetryConfig.Enabled = false
 	cfg.Encoding = otlphttpexporter.EncodingProto
 	cfg.LogsEndpoint = srv.URL + "/v1/logs"
