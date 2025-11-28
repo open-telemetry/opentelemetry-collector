@@ -163,8 +163,8 @@ type LogsConfigV030 struct {
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
 
-	// DisableResourceAttributes disables adding resource attributes to logs.
-	DisableResourceAttributes bool `mapstructure:"disable_resource_attributes,omitempty"`
+	// DisableZapResource disables adding resource attributes to logs.
+	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the

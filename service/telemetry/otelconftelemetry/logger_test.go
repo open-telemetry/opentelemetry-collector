@@ -133,15 +133,15 @@ func TestCreateLogger(t *testing.T) {
 			name: "log config with `disable_resource_attributes` enabled",
 			cfg: Config{
 				Logs: LogsConfig{
-					Level:                     zapcore.InfoLevel,
-					Development:               false,
-					Encoding:                  "console",
-					OutputPaths:               []string{"stderr"},
-					ErrorOutputPaths:          []string{"stderr"},
-					DisableCaller:             false,
-					DisableStacktrace:         false,
-					InitialFields:             map[string]any(nil),
-					DisableResourceAttributes: true,
+					Level:              zapcore.InfoLevel,
+					Development:        false,
+					Encoding:           "console",
+					OutputPaths:        []string{"stderr"},
+					ErrorOutputPaths:   []string{"stderr"},
+					DisableCaller:      false,
+					DisableStacktrace:  false,
+					InitialFields:      map[string]any(nil),
+					DisableZapResource: true,
 				},
 			},
 		},
@@ -251,7 +251,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			resourceConfig: map[string]*string{},
 			wantFields:     map[string]string{},
 			setConfig: func(cfg *Config) {
-				cfg.Logs.DisableResourceAttributes = true
+				cfg.Logs.DisableZapResource = true
 			},
 		},
 	}
