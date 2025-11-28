@@ -806,11 +806,12 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		require.NoError(b, ps.Offer(context.Background(), req))
-	}
-
-	for b.Loop() {
-		require.True(b, consume(ps, func(context.Context, intRequest) error { return nil }))
+		for range 100 {
+			require.NoError(b, ps.Offer(context.Background(), req))
+		}
+		for range 100 {
+			require.True(b, consume(ps, func(context.Context, intRequest) error { return nil }))
+		}
 	}
 	require.NoError(b, ext.Shutdown(context.Background()))
 }

@@ -60,6 +60,9 @@ type TracerSettings struct {
 type Settings struct {
 	// BuildInfo contains build information about the collector.
 	BuildInfo component.BuildInfo
+
+	// Resource is the telemetry resource that should be used by all telemetry providers.
+	Resource *pcommon.Resource
 }
 
 // Factory is a factory interface for internal telemetry.

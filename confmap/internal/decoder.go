@@ -168,7 +168,7 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 		}
 
 		// Create a map with key value of to's key to bool.
-		fieldNameSet := reflect.MakeMap(reflect.MapOf(to.Key(), reflect.TypeOf(true)))
+		fieldNameSet := reflect.MakeMap(reflect.MapOf(to.Key(), reflect.TypeFor[bool]()))
 		for k := range data.(map[string]any) {
 			// Create a new value of the to's key type.
 			tKey := reflect.New(to.Key())

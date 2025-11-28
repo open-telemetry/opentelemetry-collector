@@ -82,8 +82,8 @@ var componentTypes = []string{
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
 	for _, cType := range componentTypes {
-		if strings.HasSuffix(parentFolder, cType) {
-			return strings.TrimSuffix(parentFolder, cType)
+		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
+			return before
 		}
 	}
 	return parentFolder

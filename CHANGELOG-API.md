@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.46.0/v0.140.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.9.0 (#14128)
+  * Drop field `CommentStrindices` in `Profile`.
+  * Rename `Sample` to `Samples` in `Profile`.
+  * Rename `Line` to `Lines` in `Location`.
+  * Remove `AggregationTemporality` field in `ValueType`.
+  
+  See https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v1.9.0
+  
+- `pkg/otelcol`: The `otelcol.Factories.Telemetry` field is now required (#14003)
+  Previously if this field was not set, then it would default to an otelconftelemetry factory.
+  Callers of the otelcol package must now set the field explicitly.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/pdata`: Upgrade the OTLP protobuf definitions to version 1.9.0 (#14128)
+
+<!-- previous-version -->
+
 ## v1.45.0/v0.139.0
 
 ### 🛑 Breaking changes 🛑

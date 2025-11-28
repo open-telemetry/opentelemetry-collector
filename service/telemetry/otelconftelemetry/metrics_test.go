@@ -119,7 +119,12 @@ func TestCreateMeterProvider(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+			resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+			require.NoError(t, err)
+
+			mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+				Settings: telemetry.Settings{Resource: &resource},
+			}, cfg)
 			require.NoError(t, err)
 			defer func() {
 				assert.NoError(t, mp.Shutdown(t.Context()))
@@ -209,7 +214,12 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 		// Invalid -- no OTLP protocol defined
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
-	_, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	_, err = createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+	}, cfg)
 	require.EqualError(t, err, "no valid metric exporter")
 }
 
@@ -221,17 +231,27 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 	}}
 
 	core, observedLogs := observer.New(zapcore.DebugLevel)
-	settings := telemetry.MeterSettings{}
-	settings.Logger = zap.New(core)
 
 	factory := NewFactory()
-	_, err := factory.CreateMeterProvider(context.Background(), settings, cfg)
+	resource, err := factory.CreateResource(context.Background(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	settings := telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+	}
+	settings.Logger = zap.New(core)
+
+	_, err = factory.CreateMeterProvider(context.Background(), settings, cfg)
 	require.EqualError(t, err, "no valid metric exporter")
 	assert.Zero(t, observedLogs.Len())
 
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
+	resource2, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+	settings.Resource = &resource2
+
 	mp, err := createMeterProvider(t.Context(), settings, cfg)
 	require.NoError(t, err)
 	assert.NoError(t, mp.Shutdown(t.Context()))
@@ -249,7 +269,12 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	meterProvider, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	meterProvider, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+	}, cfg)
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, meterProvider.Shutdown(t.Context()))

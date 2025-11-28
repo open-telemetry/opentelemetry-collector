@@ -278,7 +278,11 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
+	if len(d.decoders) == 0 {
+		return nil, nil // Signal: don't replace r.Body
+	}
 	encoding := r.Header.Get(headerContentEncoding)
+
 	decoder, ok := d.decoders[encoding]
 	if !ok {
 		return nil, fmt.Errorf("unsupported %s: %s", headerContentEncoding, encoding)
