@@ -50,6 +50,7 @@ components:
     - pkg/xexporterhelper
     - pkg/xprocessor
     - pkg/xreceiver
+    - pkg/xscraper
     - processor/batch
     - processor/memory_limiter
     - processor/sample
