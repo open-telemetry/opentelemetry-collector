@@ -110,43 +110,35 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 	})
 
 	t.Run("without MetadataKeys - does not configure partitioner", func(t *testing.T) {
-		qCfg := NewDefaultQueueConfig()
-		qCfg.MetadataKeys = []string{}
-		qCfg.Enabled = true
+		tests := []struct {
+			name         string
+			metadataKeys []string
+		}{
+			{"empty slice", []string{}},
+			{"nil", nil},
+		}
 
-		be, err := NewBaseExporter(
-			exportertest.NewNopSettings(exportertest.NopType),
-			pipeline.SignalMetrics,
-			noopExport,
-			WithQueueBatchSettings(newFakeQueueBatch()),
-			WithQueue(qCfg),
-		)
-		require.NoError(t, err)
-		assert.NotNil(t, be)
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				qCfg := NewDefaultQueueConfig()
+				qCfg.MetadataKeys = tt.metadataKeys
+				qCfg.Enabled = true
 
-		// Verify partitioner and merge function are NOT configured
-		assert.Nil(t, be.queueBatchSettings.Partitioner, "Partitioner should not be set when MetadataKeys is empty")
-		assert.Nil(t, be.queueBatchSettings.MergeCtx, "MergeCtx should not be set when MetadataKeys is empty")
-	})
+				be, err := NewBaseExporter(
+					exportertest.NewNopSettings(exportertest.NopType),
+					pipeline.SignalMetrics,
+					noopExport,
+					WithQueueBatchSettings(newFakeQueueBatch()),
+					WithQueue(qCfg),
+				)
+				require.NoError(t, err)
+				assert.NotNil(t, be)
 
-	t.Run("with nil MetadataKeys - does not configure partitioner", func(t *testing.T) {
-		qCfg := NewDefaultQueueConfig()
-		qCfg.MetadataKeys = nil
-		qCfg.Enabled = true
-
-		be, err := NewBaseExporter(
-			exportertest.NewNopSettings(exportertest.NopType),
-			pipeline.SignalMetrics,
-			noopExport,
-			WithQueueBatchSettings(newFakeQueueBatch()),
-			WithQueue(qCfg),
-		)
-		require.NoError(t, err)
-		assert.NotNil(t, be)
-
-		// Verify partitioner and merge function are NOT configured
-		assert.Nil(t, be.queueBatchSettings.Partitioner, "Partitioner should not be set when MetadataKeys is nil")
-		assert.Nil(t, be.queueBatchSettings.MergeCtx, "MergeCtx should not be set when MetadataKeys is nil")
+				// Verify partitioner and merge function are NOT configured
+				assert.Nil(t, be.queueBatchSettings.Partitioner, "Partitioner should not be set when MetadataKeys is %s", tt.name)
+				assert.Nil(t, be.queueBatchSettings.MergeCtx, "MergeCtx should not be set when MetadataKeys is %s", tt.name)
+			})
+		}
 	})
 
 	t.Run("error when custom partitioner already set and metadata_keys used", func(t *testing.T) {
