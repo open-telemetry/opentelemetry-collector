@@ -21,3 +21,5 @@ replace go.opentelemetry.io/collector/pdata => ../
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pprofile
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

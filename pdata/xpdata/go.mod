@@ -35,3 +35,5 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

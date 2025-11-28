@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -56,3 +56,5 @@ replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipe
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
