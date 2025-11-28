@@ -63,26 +63,6 @@ func TestConfig_Validate_MetadataKeys(t *testing.T) {
 		require.NoError(t, xconfmap.Validate(cfg))
 	})
 
-	t.Run("duplicate keys same case - invalid", func(t *testing.T) {
-		cfg := newTestConfig()
-		cfg.MetadataKeys = []string{"key1", "key2", "key1"}
-		err := xconfmap.Validate(cfg)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
-		assert.Contains(t, err.Error(), "key1")
-		assert.Contains(t, err.Error(), "case-insensitive")
-	})
-
-	t.Run("duplicate keys different case - invalid", func(t *testing.T) {
-		cfg := newTestConfig()
-		cfg.MetadataKeys = []string{"key1", "KEY1", "key2"}
-		err := xconfmap.Validate(cfg)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
-		assert.Contains(t, err.Error(), "key1")
-		assert.Contains(t, err.Error(), "case-insensitive")
-	})
-
 	t.Run("duplicate keys mixed case - invalid", func(t *testing.T) {
 		cfg := newTestConfig()
 		cfg.MetadataKeys = []string{"Key1", "kEy1", "key2"}
