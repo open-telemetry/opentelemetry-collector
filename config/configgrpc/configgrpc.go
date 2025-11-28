@@ -9,6 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -224,6 +227,24 @@ func NewDefaultServerConfig() ServerConfig {
 }
 
 func (cc *ClientConfig) Validate() error {
+	if after, ok := strings.CutPrefix(cc.Endpoint, "unix://"); ok {
+		if after == "" {
+			return errors.New("unix socket path cannot be empty")
+		}
+		return nil
+	}
+
+	if endpoint := cc.sanitizedEndpoint(); endpoint != "" {
+		// Validate that the port is in the address
+		_, port, err := net.SplitHostPort(endpoint)
+		if err != nil {
+			return err
+		}
+		if _, err := strconv.Atoi(port); err != nil {
+			return fmt.Errorf(`invalid port "%v"`, port)
+		}
+	}
+
 	if cc.BalancerName != "" {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
@@ -240,6 +261,9 @@ func (cc *ClientConfig) sanitizedEndpoint() string {
 		return strings.TrimPrefix(cc.Endpoint, "http://")
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
+	case strings.HasPrefix(cc.Endpoint, "dns://"):
+		r := regexp.MustCompile(`^dns:///?`)
+		return r.ReplaceAllString(cc.Endpoint, "")
 	default:
 		return cc.Endpoint
 	}
