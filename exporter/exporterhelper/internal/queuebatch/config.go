@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -46,6 +47,16 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+
+	// MetadataKeys is a list of client.Metadata keys that will be used to partition
+	// the data into batches. If this setting is empty, a single batcher instance
+	// will be used. When this setting is not empty, one batcher will be used per
+	// distinct combination of values for the listed metadata keys.
+	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
+	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -88,6 +99,16 @@ func (cfg *Config) Validate() error {
 		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
 		}
+	}
+
+	// Validate metadata_keys for duplicates (case-insensitive)
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
+		}
+		uniq[l] = true
 	}
 
 	return nil
