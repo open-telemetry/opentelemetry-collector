@@ -163,7 +163,7 @@ type LogsConfigV030 struct {
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
 
-	// DisableZapResource disables adding resource attributes to logs.
+	// DisableZapResource disables adding resource attributes to logs exported through Zap. This does not affect logs exported through OTLP.
 	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
 }
 
