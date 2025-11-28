@@ -124,11 +124,8 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 		},
 	}
 
-	// Create a test host with our mock extensions
-	host := &mockHost{ext: mockExt}
-
 	// Send a request using the client with middleware
-	resp, err := sendTestRequestWithHost(t, clientConfig, host)
+	resp, err := sendTestRequestWithExtensions(t, clientConfig, mockExt)
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
@@ -147,16 +144,14 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 // specifically related to middleware resolution and API calls.
 func TestClientMiddlewareToClientErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		host    component.Host
-		config  ClientConfig
-		errText string
+		name       string
+		extensions map[component.ID]component.Component
+		config     ClientConfig
+		errText    string
 	}{
 		{
-			name: "extension_not_found",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{},
-			},
+			name:       "extension_not_found",
+			extensions: map[component.ID]component.Component{},
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLS: configtls.ClientConfig{
@@ -172,10 +167,8 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 		},
 		{
 			name: "get_client_options_fails",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get options failed")),
-				},
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get options failed")),
 			},
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
@@ -195,7 +188,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test creating the client with middleware errors
-			_, err := tc.config.ToClientConn(context.Background(), tc.host, componenttest.NewNopTelemetrySettings())
+			_, err := tc.config.ToClientConn(context.Background(), tc.extensions, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errText)
 		})

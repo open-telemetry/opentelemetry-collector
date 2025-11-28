@@ -44,10 +44,8 @@ var (
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			testAuthID: extensionauthtest.NewNopClient(),
-		},
+	extensions := map[component.ID]component.Component{
+		testAuthID: extensionauthtest.NewNopClient(),
 	}
 
 	maxIdleConns := 50
@@ -75,7 +73,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              CookiesConfig{Enabled: true},
+				Cookies:              configoptional.Some(CookiesConfig{}),
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -97,7 +95,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              CookiesConfig{Enabled: true},
+				Cookies:              configoptional.Some(CookiesConfig{}),
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -169,7 +167,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tel := componenttest.NewNopTelemetrySettings()
 			tel.TracerProvider = nil
-			client, err := tt.settings.ToClient(context.Background(), host, tel)
+			client, err := tt.settings.ToClient(context.Background(), extensions, tel)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return
@@ -192,10 +190,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 }
 
 func TestPartialHTTPClientSettings(t *testing.T) {
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			testAuthID: extensionauthtest.NewNopClient(),
-		},
+	extensions := map[component.ID]component.Component{
+		testAuthID: extensionauthtest.NewNopClient(),
 	}
 
 	tests := []struct {
@@ -221,7 +217,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tel := componenttest.NewNopTelemetrySettings()
 			tel.TracerProvider = nil
-			client, err := tt.settings.ToClient(context.Background(), host, tel)
+			client, err := tt.settings.ToClient(context.Background(), extensions, tel)
 			require.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.Equal(t, 1024, transport.ReadBufferSize)
@@ -270,7 +266,7 @@ func TestProxyURL(t *testing.T) {
 
 			tel := componenttest.NewNopTelemetrySettings()
 			tel.TracerProvider = nil
-			client, err := s.ToClient(context.Background(), componenttest.NewNopHost(), tel)
+			client, err := s.ToClient(context.Background(), nil, tel)
 
 			if tt.err {
 				require.Error(t, err)
@@ -297,9 +293,7 @@ func TestProxyURL(t *testing.T) {
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
-	host := &mockHost{
-		ext: map[component.ID]component.Component{},
-	}
+	extensions := map[component.ID]component.Component{}
 	tests := []struct {
 		settings ClientConfig
 		err      string
@@ -340,7 +334,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.err, func(t *testing.T) {
-			_, err := tt.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
+			_, err := tt.settings.ToClient(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, tt.err, err)
 		})
 	}
@@ -371,10 +365,10 @@ func (m *mockClient) RoundTripper(http.RoundTripper) (http.RoundTripper, error) 
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
-		name      string
-		shouldErr bool
-		settings  ClientConfig
-		host      component.Host
+		name       string
+		shouldErr  bool
+		settings   ClientConfig
+		extensions map[component.ID]component.Component
 	}{
 		{
 			name: "no_auth_extension_enabled",
@@ -383,10 +377,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     configoptional.None[configauth.Config](),
 			},
 			shouldErr: false,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewNopClient(),
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: extensionauthtest.NewNopClient(),
 			},
 		},
 		{
@@ -396,10 +388,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
 			},
 			shouldErr: true,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewNopClient(),
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: extensionauthtest.NewNopClient(),
 			},
 		},
 		{
@@ -409,7 +399,6 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
 			},
 			shouldErr: true,
-			host:      componenttest.NewNopHost(),
 		},
 		{
 			name: "with_auth_configuration_has_extension",
@@ -418,10 +407,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 			},
 			shouldErr: false,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: &mockClient{},
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: &mockClient{},
 			},
 		},
 		{
@@ -434,10 +421,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				},
 			},
 			shouldErr: false,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: &mockClient{},
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: &mockClient{},
 			},
 		},
 		{
@@ -448,10 +433,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Compression: configcompression.TypeGzip,
 			},
 			shouldErr: false,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: &mockClient{},
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: &mockClient{},
 			},
 		},
 		{
@@ -461,17 +444,15 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 			},
 			shouldErr: true,
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewErr(errors.New("error")),
-				},
+			extensions: map[component.ID]component.Component{
+				mockID: extensionauthtest.NewErr(errors.New("error")),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := tt.settings.ToClient(context.Background(), tt.host, nilProvidersSettings)
+			client, err := tt.settings.ToClient(context.Background(), tt.extensions, nilProvidersSettings)
 			if tt.shouldErr {
 				assert.Error(t, err)
 				return
@@ -534,7 +515,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				Timeout:         0,
 				Headers:         tt.headers,
 			}
-			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, _ := setting.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, http.NoBody)
 			require.NoError(t, err)
 			_, err = client.Do(req)
@@ -570,7 +551,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 			Timeout:         0,
 			Headers:         tt.headers,
 		}
-		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+		client, _ := setting.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, http.NoBody)
 		require.NoError(t, err)
 		_, err = client.Do(req)
@@ -589,7 +570,7 @@ func TestHttpTransportOptions(t *testing.T) {
 	clientConfig.IdleConnTimeout = time.Duration(100)
 	clientConfig.MaxConnsPerHost = 100
 	clientConfig.MaxIdleConnsPerHost = 100
-	client, err := clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	client, err := clientConfig.ToClient(context.Background(), nil, settings)
 	require.NoError(t, err)
 	transport, ok := client.Transport.(*http.Transport)
 	require.True(t, ok, "client.Transport is not an *http.Transport")
@@ -603,7 +584,7 @@ func TestHttpTransportOptions(t *testing.T) {
 	clientConfig.IdleConnTimeout = 0
 	clientConfig.MaxConnsPerHost = 0
 	clientConfig.IdleConnTimeout = time.Duration(0)
-	client, err = clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	client, err = clientConfig.ToClient(context.Background(), nil, settings)
 	require.NoError(t, err)
 	transport, ok = client.Transport.(*http.Transport)
 	require.True(t, ok, "client.Transport is not an *http.Transport")
