@@ -233,8 +233,8 @@ func (cc *ClientConfig) Validate() error {
 		}
 		return nil
 	}
-	
-	if endpoint := cc.sanitizedEndpoint(); endpoint != "" {	
+
+	if endpoint := cc.sanitizedEndpoint(); endpoint != "" {
 		// Validate that the port is in the address
 		_, port, err := net.SplitHostPort(endpoint)
 		if err != nil {
@@ -243,11 +243,11 @@ func (cc *ClientConfig) Validate() error {
 		if _, err := strconv.Atoi(port); err != nil {
 			return fmt.Errorf(`invalid port "%v"`, port)
 		}
+	}
 
-		if cc.BalancerName != "" {
-			if balancer.Get(cc.BalancerName) == nil {
-				return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
-			}
+	if cc.BalancerName != "" {
+		if balancer.Get(cc.BalancerName) == nil {
+			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
 	}
 

@@ -4,6 +4,10 @@
 package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
 
 import (
+	"errors"
+	"regexp"
+	"strings"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -28,5 +32,22 @@ var (
 )
 
 func (c *Config) Validate() error {
+	if endpoint := c.sanitizedEndpoint(); endpoint == "" {
+		return errors.New(`requires a non-empty "endpoint"`)
+	}
 	return nil
+}
+
+func (c *Config) sanitizedEndpoint() string {
+	switch {
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "http://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "http://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
+		r := regexp.MustCompile(`^dns:///?`)
+		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
+	default:
+		return c.ClientConfig.Endpoint
+	}
 }
