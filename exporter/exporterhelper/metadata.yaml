@@ -11,8 +11,87 @@ status:
   stability:
     beta: [traces, metrics, logs]
 
+attributes:
+  direction:
+    description: "up or down"
+    type: string
+    enum: ["up","down"]
+
 telemetry:
   metrics:
+    exporter_arc_acquire_wait_ms:
+      enabled: true
+      stability:
+        level: alpha
+      description: Time a worker waited to acquire an ARC permit.
+      unit: "ms"
+      histogram:
+        value_type: int
+        explicit:
+          buckets: [0, 1, 2, 5, 10, 20, 50, 100, 250, 500, 1000, 2000, 5000]
+
+    exporter_arc_backoff_events:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of ARC backoff (shrink) events triggered by error or RTT signal.
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_arc_failures:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of requests considered failures by ARC (feeds adaptive shrink).
+      unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_arc_limit:
+      enabled: true
+      stability:
+        level: alpha
+      description: Current ARC dynamic concurrency limit.
+      unit: "{permits}"
+      gauge:
+        value_type: int
+        async: true
+
+    exporter_arc_limit_changes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of times ARC changed its concurrency limit.
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [direction]
+
+    exporter_arc_permits_in_use:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of permits currently acquired.
+      unit: "{permits}"
+      gauge:
+        value_type: int
+        async: true
+
+    exporter_arc_rtt_ms:
+      enabled: true
+      stability:
+        level: alpha
+      description: Request round-trip-time measured by ARC (from permit acquire to release).
+      unit: "ms"
+      histogram:
+        value_type: int
+        explicit:
+          buckets: [0, 5, 10, 20, 50, 100, 200, 400, 800, 1600, 3200, 6400]
+
     exporter_enqueue_failed_log_records:
       enabled: true
       stability:
