@@ -255,17 +255,10 @@ var profile = &messageStruct{
 			protoID:         3,
 			returnType:      timestampType,
 		},
-		&TypedField{
-			fieldName:       "Duration",
-			originFieldName: "DurationNano",
-			protoID:         4,
-			returnType: &TypedType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				protoType:   proto.TypeUint64,
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
+		&PrimitiveField{
+			fieldName: "DurationNano",
+			protoID:   4,
+			protoType: proto.TypeUint64,
 		},
 		&MessageField{
 			fieldName:     "PeriodType",
