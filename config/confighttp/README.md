@@ -113,6 +113,8 @@ will not be enabled.
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 - [`middlewares`](../configmiddleware/README.md)
+- `include_metadata`
+- `client_address_metadata_keys`
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -137,6 +139,8 @@ receivers:
           max_age: 7200
         endpoint: 0.0.0.0:55690
         compression_algorithms: ["", "gzip"]
+        client_address_metadata_keys:
+          - x-forwarded-for
 processors:
   attributes:
     actions:

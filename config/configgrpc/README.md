@@ -114,3 +114,5 @@ README](../confignet/README.md).
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
 - [`auth`](../configauth/README.md)
 - [`middlewares`](../configmiddleware/README.md)
+- `include_metadata`
+- `client_address_metadata_keys`
