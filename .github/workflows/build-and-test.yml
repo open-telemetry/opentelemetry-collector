@@ -225,6 +225,10 @@ jobs:
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # 5.5.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Validate coverage requirements
+        run: |
+          cd internal/cmd/checkcover
+          go run . -c ../../../coverage.txt -r ../../.. -v
 
   cross-build-collector:
     needs: [setup-environment]
