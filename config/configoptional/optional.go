@@ -222,6 +222,9 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		o.flavor = someFlavor
 	} else {
 		o.flavor = noneFlavor
+		// override o.value with zero value.
+		var zero T
+		o.value = zero
 	}
 
 	return nil

@@ -43,3 +43,5 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
