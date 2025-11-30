@@ -3,6 +3,8 @@
 
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
+import "go.opentelemetry.io/collector/pdata/internal/proto"
+
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
@@ -16,6 +18,18 @@ func (e *ProtoMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 
 func (e *ProtoMarshaler) LogsSize(ld Logs) int {
 	return ld.getOrig().SizeProto()
+}
+
+func (e *ProtoMarshaler) ResourceLogsItemSize(ld ResourceLogs) int {
+	l := ld.orig.Resource.SizeProto()
+	n := 1 + proto.Sov(uint64(l)) + l
+	return n
+}
+
+func (e *ProtoMarshaler) ScopeLogsItemSize(ld ScopeLogs) int {
+	l := ld.orig.Scope.SizeProto()
+	n := 1 + proto.Sov(uint64(l)) + l
+	return n
 }
 
 func (e *ProtoMarshaler) ResourceLogsSize(ld ResourceLogs) int {
