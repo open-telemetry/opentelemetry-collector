@@ -9,19 +9,18 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	reqint "go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
 
 // MarshalProfiles marshals pprofile.Profiles along with the context into a byte slice.
 func MarshalProfiles(ctx context.Context, ld pprofile.Profiles) ([]byte, error) {
-	otlpProfiles := internal.ProfilesToProto(internal.Profiles(ld))
-	rc := encodeContext(ctx)
-	pr := reqint.ProfilesRequest{
+	pr := internal.ProfilesRequest{
 		FormatVersion:  requestFormatVersion,
-		ProfilesData:   &otlpProfiles,
-		RequestContext: &rc,
+		ProfilesData:   internal.ProfilesToProto(internal.ProfilesWrapper(ld)),
+		RequestContext: encodeContext(ctx),
 	}
-	return pr.Marshal()
+	buf := make([]byte, pr.SizeProto())
+	pr.MarshalProto(buf)
+	return buf, nil
 }
 
 // UnmarshalProfiles unmarshals a byte slice into pprofile.Profiles and the context.
@@ -30,9 +29,9 @@ func UnmarshalProfiles(buf []byte) (context.Context, pprofile.Profiles, error) {
 	if !isRequestPayloadV1(buf) {
 		return ctx, pprofile.Profiles{}, ErrInvalidFormat
 	}
-	pr := reqint.ProfilesRequest{}
-	if err := pr.Unmarshal(buf); err != nil {
+	pr := internal.ProfilesRequest{}
+	if err := pr.UnmarshalProto(buf); err != nil {
 		return ctx, pprofile.Profiles{}, fmt.Errorf("failed to unmarshal profiles request: %w", err)
 	}
-	return decodeContext(ctx, pr.RequestContext), pprofile.Profiles(internal.ProfilesFromProto(*pr.ProfilesData)), nil
+	return decodeContext(ctx, pr.RequestContext), pprofile.Profiles(internal.ProfilesFromProto(pr.ProfilesData)), nil
 }

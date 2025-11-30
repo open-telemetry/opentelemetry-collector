@@ -4,7 +4,7 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"sync"
+	"sync/atomic"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -12,47 +12,44 @@ import (
 var _ zapcore.Core = (*collectorCore)(nil)
 
 type collectorCore struct {
-	core zapcore.Core
-	rw   sync.RWMutex
+	delegate atomic.Pointer[zapcore.Core]
+}
+
+func newCollectorCore(core zapcore.Core) *collectorCore {
+	cc := &collectorCore{}
+	cc.SetCore(core)
+	return cc
 }
 
 func (c *collectorCore) Enabled(l zapcore.Level) bool {
-	c.rw.RLock()
-	defer c.rw.RUnlock()
-	return c.core.Enabled(l)
+	return c.loadDelegate().Enabled(l)
 }
 
 func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
-	c.rw.RLock()
-	defer c.rw.RUnlock()
-	return &collectorCore{
-		core: c.core.With(f),
-	}
+	return newCollectorCore(c.loadDelegate().With(f))
 }
 
 func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	c.rw.RLock()
-	defer c.rw.RUnlock()
-	if c.core.Enabled(e.Level) {
-		return ce.AddCore(e, c)
+	core := c.loadDelegate()
+	if core.Enabled(e.Level) {
+		return ce.AddCore(e, core)
 	}
 	return ce
 }
 
 func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
-	c.rw.RLock()
-	defer c.rw.RUnlock()
-	return c.core.Write(e, f)
+	return c.loadDelegate().Write(e, f)
 }
 
 func (c *collectorCore) Sync() error {
-	c.rw.RLock()
-	defer c.rw.RUnlock()
-	return c.core.Sync()
+	return c.loadDelegate().Sync()
 }
 
 func (c *collectorCore) SetCore(core zapcore.Core) {
-	c.rw.Lock()
-	defer c.rw.Unlock()
-	c.core = core
+	c.delegate.Store(&core)
+}
+
+// loadDelegate returns the delegate.
+func (c *collectorCore) loadDelegate() zapcore.Core {
+	return *c.delegate.Load()
 }

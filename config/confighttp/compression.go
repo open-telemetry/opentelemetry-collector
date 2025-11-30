@@ -13,7 +13,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
+	"sync"
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
@@ -25,17 +27,49 @@ import (
 
 var enableFramedSnappy = featuregate.GlobalRegistry().MustRegister(
 	"confighttp.framedSnappy",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.125.0"),
 	featuregate.WithRegisterDescription("Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/10584"),
 )
+
+func defaultCompressionAlgorithms() []string {
+	if enableFramedSnappy.IsEnabled() {
+		return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
+	}
+	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+}
 
 type compressRoundTripper struct {
 	rt                http.RoundTripper
 	compressionType   configcompression.Type
 	compressionParams configcompression.CompressionParams
 	compressor        *compressor
+}
+
+var zstdReaderPool sync.Pool
+
+type pooledZstdReadCloser struct {
+	inner *zstd.Decoder
+}
+
+func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
+	if pzrc.inner == nil {
+		return 0, zstd.ErrDecoderClosed
+	}
+	return pzrc.inner.Read(dst)
+}
+
+func (pzrc *pooledZstdReadCloser) Close() error {
+	if pzrc.inner != nil {
+		err := pzrc.inner.Reset(nil)
+		if err != nil {
+			return err
+		}
+		zstdReaderPool.Put(pzrc.inner)
+		pzrc.inner = nil
+	}
+	return nil
 }
 
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
@@ -51,18 +85,24 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return gr, nil
 	},
 	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
-		zr, err := zstd.NewReader(
-			body,
+		v := zstdReaderPool.Get()
+		var zr *zstd.Decoder
+		var err error
+		if v == nil {
+			// NOTE(tigrannajaryan):
 			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
 			// for our use-case (a server accepting decoding http requests).
 			// Disabling async improves performance (I benchmarked it previously when working
 			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
-			zstd.WithDecoderConcurrency(1),
-		)
+			zr, err = zstd.NewReader(body, zstd.WithDecoderConcurrency(1))
+		} else {
+			zr = v.(*zstd.Decoder)
+			err = zr.Reset(body)
+		}
 		if err != nil {
 			return nil, err
 		}
-		return zr.IOReadCloser(), nil
+		return &pooledZstdReadCloser{inner: zr}, nil
 	},
 	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
 		zr, err := zlib.NewReader(body)
@@ -213,9 +253,7 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		decoders:           enabled,
 	}
 
-	for key, dec := range decoders {
-		d.decoders[key] = dec
-	}
+	maps.Copy(d.decoders, decoders)
 
 	return d
 }
@@ -240,7 +278,11 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
+	if len(d.decoders) == 0 {
+		return nil, nil // Signal: don't replace r.Body
+	}
 	encoding := r.Header.Get(headerContentEncoding)
+
 	decoder, ok := d.decoders[encoding]
 	if !ok {
 		return nil, fmt.Errorf("unsupported %s: %s", headerContentEncoding, encoding)

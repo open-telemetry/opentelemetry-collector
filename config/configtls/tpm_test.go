@@ -73,7 +73,7 @@ func TestTPM_loadCertificate(t *testing.T) {
 
 	// this is delegated to the TPM
 	signer := tlsCertificate.PrivateKey.(crypto.Signer)
-	signature, _ := signer.Sign((io.Reader)(nil), b, crypto.SHA256)
+	signature, _ := signer.Sign(io.Reader(nil), b, crypto.SHA256)
 
 	// load the key again to get access to verify function
 	loadedTPMKey, err := keyfile.Decode(tpmKey)

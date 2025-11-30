@@ -26,7 +26,6 @@ data:
         retry_on_failure:
           enabled: true
     processors:
-      batch:
       memory_limiter:
         # 80% of maximum memory up to 2G
         limit_mib: 400
@@ -40,7 +39,7 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [otlp]
 ---
 apiVersion: apps/v1
@@ -114,7 +113,6 @@ data:
           http:
             endpoint: ${env:MY_POD_IP}:4318
     processors:
-      batch:
       memory_limiter:
         # 80% of maximum memory up to 2G
         limit_mib: 1500
@@ -133,7 +131,7 @@ data:
       pipelines:
         traces/1:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [otlp]
 ---
 apiVersion: v1

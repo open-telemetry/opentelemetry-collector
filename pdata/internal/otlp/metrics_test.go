@@ -8,19 +8,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestDeprecatedScopeMetrics(t *testing.T) {
-	sm := new(otlpmetrics.ScopeMetrics)
-	rms := []*otlpmetrics.ResourceMetrics{
+	sm := new(internal.ScopeMetrics)
+	rms := []*internal.ResourceMetrics{
 		{
-			ScopeMetrics:           []*otlpmetrics.ScopeMetrics{sm},
-			DeprecatedScopeMetrics: []*otlpmetrics.ScopeMetrics{sm},
+			ScopeMetrics:           []*internal.ScopeMetrics{sm},
+			DeprecatedScopeMetrics: []*internal.ScopeMetrics{sm},
 		},
 		{
-			ScopeMetrics:           []*otlpmetrics.ScopeMetrics{},
-			DeprecatedScopeMetrics: []*otlpmetrics.ScopeMetrics{sm},
+			ScopeMetrics:           []*internal.ScopeMetrics{},
+			DeprecatedScopeMetrics: []*internal.ScopeMetrics{sm},
 		},
 	}
 

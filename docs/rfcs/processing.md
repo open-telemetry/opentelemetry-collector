@@ -279,8 +279,7 @@ pipelines:
 ```
 
 The expressions would be executed in order, with each expression either mutating an input telemetry, dropping input
-telemetry, or adding additional telemetry (usually for stateful processors like batch processor which will drop telemetry
-for a window and then add them all at the same time). One caveat to note is that we would like to implement optimizations
+telemetry, or adding additional telemetry. One caveat to note is that we would like to implement optimizations
 in the transform engine, for example to only apply filtering once for multiple operations with a shared filter. Functions
 with unknown side effects may cause issues with optimization we will need to explore.
 

@@ -98,30 +98,31 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 	}
 
 	for i, field := range fields[_miFieldIDOptionalFields:] {
-		if field == _mountInfoOptionalFieldsSep {
-			fsTypeStart := _miFieldIDOptionalFields + i + 1
-
-			if len(fields) != fsTypeStart+_miFieldCountSecondHalf {
-				return nil, mountPointFormatInvalidError{line}
-			}
-
-			miFieldIDFSType := _miFieldOffsetFSType + fsTypeStart
-			miFieldIDMountSource := _miFieldOffsetMountSource + fsTypeStart
-			miFieldIDSuperOptions := _miFieldOffsetSuperOptions + fsTypeStart
-
-			return &MountPoint{
-				MountID:        mountID,
-				ParentID:       parentID,
-				DeviceID:       fields[_miFieldIDDeviceID],
-				Root:           fields[_miFieldIDRoot],
-				MountPoint:     fields[_miFieldIDMountPoint],
-				Options:        strings.Split(fields[_miFieldIDOptions], _mountInfoOptsSep),
-				OptionalFields: fields[_miFieldIDOptionalFields:(fsTypeStart - 1)],
-				FSType:         fields[miFieldIDFSType],
-				MountSource:    fields[miFieldIDMountSource],
-				SuperOptions:   strings.Split(fields[miFieldIDSuperOptions], _mountInfoOptsSep),
-			}, nil
+		if field != _mountInfoOptionalFieldsSep {
+			continue
 		}
+		fsTypeStart := _miFieldIDOptionalFields + i + 1
+
+		if len(fields) != fsTypeStart+_miFieldCountSecondHalf {
+			return nil, mountPointFormatInvalidError{line}
+		}
+
+		miFieldIDFSType := _miFieldOffsetFSType + fsTypeStart
+		miFieldIDMountSource := _miFieldOffsetMountSource + fsTypeStart
+		miFieldIDSuperOptions := _miFieldOffsetSuperOptions + fsTypeStart
+
+		return &MountPoint{
+			MountID:        mountID,
+			ParentID:       parentID,
+			DeviceID:       fields[_miFieldIDDeviceID],
+			Root:           fields[_miFieldIDRoot],
+			MountPoint:     fields[_miFieldIDMountPoint],
+			Options:        strings.Split(fields[_miFieldIDOptions], _mountInfoOptsSep),
+			OptionalFields: fields[_miFieldIDOptionalFields:(fsTypeStart - 1)],
+			FSType:         fields[miFieldIDFSType],
+			MountSource:    fields[miFieldIDMountSource],
+			SuperOptions:   strings.Split(fields[miFieldIDSuperOptions], _mountInfoOptsSep),
+		}, nil
 	}
 
 	return nil, mountPointFormatInvalidError{line}

@@ -377,7 +377,7 @@ func TestEncodeNil(t *testing.T) {
 }
 
 func testHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, _ reflect.Value) (any, error) {
+	return func(from, _ reflect.Value) (any, error) {
 		if from.Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}

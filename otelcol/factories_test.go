@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func nopFactories() (Factories, error) {
@@ -65,6 +66,10 @@ func nopFactories() (Factories, error) {
 	for _, proc := range factories.Processors {
 		factories.ProcessorModules[proc.Type()] = "go.opentelemetry.io/collector/processor/processortest v1.2.3"
 	}
+
+	factories.Telemetry = telemetry.NewFactory(func() component.Config {
+		return fakeTelemetryConfig{}
+	})
 
 	return factories, err
 }

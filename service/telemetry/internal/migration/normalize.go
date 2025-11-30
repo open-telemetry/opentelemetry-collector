@@ -5,9 +5,13 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/int
 
 import "strings"
 
-func normalizeEndpoint(endpoint string) *string {
+func normalizeEndpoint(endpoint string, insecure *bool) *string {
 	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
-		endpoint = "http://" + endpoint
+		if insecure != nil && *insecure {
+			endpoint = "http://" + endpoint
+		} else {
+			endpoint = "https://" + endpoint
+		}
 	}
 	return &endpoint
 }

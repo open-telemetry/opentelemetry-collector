@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestValue(t *testing.T) {
@@ -46,8 +46,9 @@ func TestValue(t *testing.T) {
 }
 
 func TestValueReadOnly(t *testing.T) {
-	state := internal.StateReadOnly
-	v := newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}, &state)
+	state := internal.NewState()
+	state.MarkReadOnly()
+	v := newValue(&internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "v"}}, state)
 
 	assert.Equal(t, ValueTypeStr, v.Type())
 	assert.Equal(t, "v", v.Str())
@@ -156,10 +157,9 @@ func TestValueMap(t *testing.T) {
 	_, exists = m1.Map().Get("child_map")
 	assert.False(t, exists)
 
-	// Test nil KvlistValue case for Map() func.
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	state := internal.StateMutable
-	m1 = newValue(orig, &state)
+	// Test nil KvlistValue case for MapWrapper() func.
+	orig := &internal.AnyValue{Value: &internal.AnyValue_KvlistValue{KvlistValue: nil}}
+	m1 = newValue(orig, internal.NewState())
 	assert.Equal(t, Map{}, m1.Map())
 }
 
@@ -196,8 +196,7 @@ func TestValueSlice(t *testing.T) {
 	assert.Equal(t, "somestr", v.Str())
 
 	// Test nil values case for Slice() func.
-	state := internal.StateMutable
-	a1 = newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}, &state)
+	a1 = newValue(&internal.AnyValue{Value: &internal.AnyValue_ArrayValue{ArrayValue: nil}}, internal.NewState())
 	assert.Equal(t, newSlice(nil, nil), a1.Slice())
 }
 
@@ -250,38 +249,18 @@ func TestValue_MoveTo(t *testing.T) {
 }
 
 func TestValue_CopyTo(t *testing.T) {
-	state := internal.StateMutable
-
-	// Test nil KvlistValue case for Map() func.
 	dest := NewValueEmpty()
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	newValue(orig, &state).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
-
-	// Test nil ArrayValue case for Slice() func.
-	dest = NewValueEmpty()
-	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
-	newValue(orig, &state).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
-
-	// Test copy empty value.
-	orig = &otlpcommon.AnyValue{}
-	newValue(orig, &state).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value)
-
-	av := NewValueEmpty()
-	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
-	av.CopyTo(newValue(&destVal, &state))
-	assert.Nil(t, destVal.Value)
+	orig := internal.GenTestAnyValue()
+	newValue(orig, internal.NewState()).CopyTo(dest)
+	assert.Equal(t, internal.GenTestAnyValue(), dest.getOrig())
 }
 
 func TestSliceWithNilValues(t *testing.T) {
-	origWithNil := []otlpcommon.AnyValue{
+	origWithNil := []internal.AnyValue{
 		{},
-		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+		{Value: &internal.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	state := internal.StateMutable
-	sm := newSlice(&origWithNil, &state)
+	sm := newSlice(&origWithNil, internal.NewState())
 
 	val := sm.At(0)
 	assert.Equal(t, ValueTypeEmpty, val.Type())
@@ -593,7 +572,9 @@ func TestInvalidValue(t *testing.T) {
 	assert.Panics(t, func() { v.SetEmptyBytes() })
 	assert.Panics(t, func() { v.SetEmptyMap() })
 	assert.Panics(t, func() { v.SetEmptySlice() })
-	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
+	nv := NewValueEmpty()
+	v.CopyTo(nv)
+	assert.Nil(t, nv.getOrig().Value)
 }
 
 func TestValueEqual(t *testing.T) {
@@ -755,6 +736,8 @@ func TestValueEqual(t *testing.T) {
 }
 
 func BenchmarkValueEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	for _, bb := range []struct {
 		name       string
 		value      Value
@@ -829,7 +812,7 @@ func BenchmarkValueEqual(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				_ = bb.value.Equal(bb.comparison)
 			}
 		})

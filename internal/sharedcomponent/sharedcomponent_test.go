@@ -165,7 +165,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			comps := NewMap[component.ID, *baseComponent]()
 			var comp *Component[*baseComponent]
 			var err error
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				comp, err = comps.LoadOrStore(
 					id,
 					func() (*baseComponent, error) { return base, nil },
@@ -174,7 +174,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			}
 
 			baseHost := componenttest.NewNopHost()
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
 				if err != nil {
 					break

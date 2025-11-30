@@ -68,7 +68,9 @@ We use the following rules for some common situations where we split into separa
    it is part of the `config` folder, and `extensionauth` has `extension` as a prefix since it is
    part of the `extension` module.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
-   have a module `component`, the helpers should be in `component/componenttest`.
+   have a module `component`, the helpers should be in `component/componenttest`. Testing helpers
+   that are used across multiple modules should be in the [`internal/testutil`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/internal/testutil)
+   module.
 1. Experimental packages that will later be added to another module should be in their own module,
    named as they will be after integration. For example, if adding a `pprofile` package to `pdata`,
    you should add a separate module `pdata/pprofile` for the experimental code.

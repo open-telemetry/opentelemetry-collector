@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
@@ -31,11 +31,11 @@ type GRPCClient interface {
 
 // NewGRPCClient returns a new GRPCClient connected using the given connection.
 func NewGRPCClient(cc *grpc.ClientConn) GRPCClient {
-	return &grpcClient{rawClient: otlpcollectorprofile.NewProfilesServiceClient(cc)}
+	return &grpcClient{rawClient: otelgrpc.NewProfilesServiceClient(cc)}
 }
 
 type grpcClient struct {
-	rawClient otlpcollectorprofile.ProfilesServiceClient
+	rawClient otelgrpc.ProfilesServiceClient
 }
 
 // Export implements the Client interface.
@@ -44,8 +44,7 @@ func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...
 	if err != nil {
 		return ExportResponse{}, err
 	}
-	state := internal.StateMutable
-	return ExportResponse{orig: rsp, state: &state}, err
+	return ExportResponse{orig: rsp, state: internal.NewState()}, err
 }
 
 func (c *grpcClient) unexported() {}
@@ -76,16 +75,15 @@ func (*UnimplementedGRPCServer) unexported() {}
 
 // RegisterGRPCServer registers the GRPCServer to the grpc.Server.
 func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
-	otlpcollectorprofile.RegisterProfilesServiceServer(s, &rawProfilesServer{srv: srv})
+	otelgrpc.RegisterProfilesServiceServer(s, &rawProfilesServer{srv: srv})
 }
 
 type rawProfilesServer struct {
 	srv GRPCServer
 }
 
-func (s rawProfilesServer) Export(ctx context.Context, request *otlpcollectorprofile.ExportProfilesServiceRequest) (*otlpcollectorprofile.ExportProfilesServiceResponse, error) {
+func (s rawProfilesServer) Export(ctx context.Context, request *internal.ExportProfilesServiceRequest) (*internal.ExportProfilesServiceResponse, error) {
 	otlp.MigrateProfiles(request.ResourceProfiles)
-	state := internal.StateMutable
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: &state})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
 	return rsp.orig, err
 }

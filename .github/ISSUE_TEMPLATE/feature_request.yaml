@@ -14,6 +14,8 @@ body:
       # Start components list
       - cmd/builder
       - cmd/mdatagen
+      - cmd/mdatagen/internal/sampleconnector
+      - cmd/mdatagen/internal/samplefactoryreceiver
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - cmd/mdatagen/internal/samplescraper
@@ -29,8 +31,8 @@ body:
       - docs/rfcs
       - exporter/debug
       - exporter/exporterhelper
+      - exporter/exporterhelper/internal/queuebatch
       - exporter/exporterhelper/xexporterhelper
-      - exporter/exporterqueue
       - exporter/nop
       - exporter/otlp
       - exporter/otlphttp
@@ -39,8 +41,10 @@ body:
       - extension/x
       - extension/x/storage
       - extension/zpages
+      - otelcol
       - pdata
       - pdata/pprofile
+      - pdata/xpdata
       - processor/batch
       - processor/memorylimiter
       - processor/processorhelper
@@ -57,8 +61,7 @@ body:
   - type: textarea
     attributes:
       label: Is your feature request related to a problem? Please describe.
-      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]. We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with the current roadmap and are not aimed at stabilizing and preparing the Collector for the release will
-  not be prioritized.
+      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]. We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with the current roadmap and are not aimed at stabilizing and preparing the Collector for the release will not be prioritized.
     validations:
       required: true
   - type: textarea

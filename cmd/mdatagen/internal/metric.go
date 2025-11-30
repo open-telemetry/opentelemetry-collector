@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -15,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+var reNonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
 
 type MetricName string
 
@@ -27,21 +30,7 @@ func (mn MetricName) RenderUnexported() (string, error) {
 }
 
 type Metric struct {
-	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
-
-	// Warnings that will be shown to user under specified conditions.
-	Warnings Warnings `mapstructure:"warnings"`
-
-	// Description of the metric.
-	Description string `mapstructure:"description"`
-
-	// The stability level of the metric.
-	Stability Stability `mapstructure:"stability"`
-
-	// ExtendedDocumentation of the metric. If specified, this will
-	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+	Signal `mapstructure:",squash"`
 
 	// Optional can be used to specify metrics that may
 	// or may not be present in all cases, depending on configuration.
@@ -57,29 +46,34 @@ type Metric struct {
 	// Histogram stores metadata for histogram metric type
 	Histogram *Histogram `mapstructure:"histogram,omitempty"`
 
-	// Attributes is the list of attributes that the metric emits.
-	Attributes []AttributeName `mapstructure:"attributes"`
-
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
 }
 
 type Stability struct {
-	Level string `mapstructure:"level"`
-	From  string `mapstructure:"from"`
+	Level component.StabilityLevel `mapstructure:"level"`
+	From  string                   `mapstructure:"from"`
 }
 
 func (s Stability) String() string {
-	if len(s.Level) == 0 || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+	if s.Level == component.StabilityLevelUndefined ||
+		s.Level == component.StabilityLevelStable {
 		return ""
 	}
-	if len(s.From) > 0 {
-		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
+	if s.From != "" {
+		return fmt.Sprintf(" [%s since %s]", s.Level.String(), s.From)
 	}
-	return fmt.Sprintf(" [%s]", s.Level)
+	return fmt.Sprintf(" [%s]", s.Level.String())
 }
 
-func (m *Metric) validate() error {
+func (s *Stability) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("level") {
+		return errors.New("missing required field: `stability.level`")
+	}
+	return parser.Unmarshal(s)
+}
+
+func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
@@ -101,12 +95,55 @@ func (m *Metric) validate() error {
 	if m.Gauge != nil {
 		errs = errors.Join(errs, m.Gauge.Validate())
 	}
+	if m.SemanticConvention != nil {
+		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
 	return errs
+}
+
+func metricAnchor(metricName string) string {
+	m := strings.ToLower(strings.TrimSpace(metricName))
+	m = reNonAlnum.ReplaceAllString(m, "")
+	return "metric-" + m
+}
+
+// validateSemConvMetricURL verifies the URL matches exactly:
+// https://github.com/open-telemetry/semantic-conventions/blob/<semConvVersion>/*#metric-<metricName>
+func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
+	if strings.TrimSpace(rawURL) == "" {
+		return errors.New("url is empty")
+	}
+	if strings.TrimSpace(semConvVersion) == "" {
+		return errors.New("semConvVersion is empty")
+	}
+	if strings.TrimSpace(metricName) == "" {
+		return errors.New("metricName is empty")
+	}
+	semConvVersion = "v" + semConvVersion
+
+	anchor := metricAnchor(metricName)
+	// Build a strict regex that enforces https, repo, blob, given version, any doc path, and exact anchor.
+	pattern := fmt.Sprintf(`^https://github\.com/open-telemetry/semantic-conventions/blob/%s/[^#\s]+#%s$`,
+		semConvVersion,
+		anchor,
+	)
+	re := regexp.MustCompile(pattern)
+	if !re.MatchString(rawURL) {
+		return fmt.Errorf(
+			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
+			semConvVersion, anchor, rawURL)
+	}
+	return nil
 }
 
 func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
+	}
+	if !parser.IsSet("stability") {
+		return errors.New("missing required field: `stability`")
 	}
 	return parser.Unmarshal(m)
 }
@@ -122,15 +159,6 @@ func (m Metric) Data() MetricData {
 		return m.Histogram
 	}
 	return nil
-}
-
-func (m Metric) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
-	for _, attr := range m.Attributes {
-		if v, exists := attrs[attr]; exists && v.Optional {
-			return true
-		}
-	}
-	return false
 }
 
 // MetricData is generic interface for all metric datatypes.

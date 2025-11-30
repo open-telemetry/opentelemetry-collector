@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -71,11 +72,11 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Keepalive: &configgrpc.KeepaliveClientConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
-					},
+					}),
 				},
 			},
 		},
@@ -120,9 +121,9 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					Headers: configopaque.MapList{
+						{Name: "hdr1", Value: "val1"},
+						{Name: "hdr2", Value: "val2"},
 					},
 				},
 			},
@@ -222,11 +223,11 @@ func TestCreateProfiles(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Keepalive: &configgrpc.KeepaliveClientConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
-					},
+					}),
 				},
 			},
 		},
@@ -271,9 +272,9 @@ func TestCreateProfiles(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					Headers: configopaque.MapList{
+						{Name: "hdr1", Value: "val1"},
+						{Name: "hdr2", Value: "val2"},
 					},
 				},
 			},

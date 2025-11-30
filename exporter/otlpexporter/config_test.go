@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -55,17 +56,18 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeItems,
 				NumConsumers: 2,
 				QueueSize:    100000,
-				Batch: &exporterhelper.BatchConfig{
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      1000,
 					MaxSize:      10000,
-				},
+				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
+				Headers: configopaque.MapList{
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
@@ -75,14 +77,46 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				Keepalive: &configgrpc.KeepaliveClientConfig{
+				Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 					Time:                20 * time.Second,
 					PermitWithoutStream: true,
 					Timeout:             30 * time.Second,
-				},
+				}),
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Config{AuthenticatorID: component.MustNewID("nop")},
+				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("nop")}),
+			},
+		}, cfg)
+}
+
+func TestUnmarshalDefaultBatchConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default-batch.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, xconfmap.Validate(&cfg))
+	assert.Equal(t,
+		&Config{
+			TimeoutConfig: exporterhelper.TimeoutConfig{
+				Timeout: 10 * time.Second,
+			},
+			RetryConfig: configretry.NewDefaultBackOffConfig(),
+			QueueConfig: exporterhelper.QueueBatchConfig{
+				Enabled:      true,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
+				QueueSize:    1000,
+				NumConsumers: 10,
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      8192,
+				}),
+			},
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint:        "1.2.3.4:1234",
+				Compression:     "gzip",
+				WriteBufferSize: 512 * 1024,
 			},
 		}, cfg)
 }
@@ -127,6 +161,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			name:     "invalid_port",
 			errorMsg: `invalid port "port"`,
 		},
+		{
+			name:     "invalid_unix_socket",
+			errorMsg: "unix socket path cannot be empty",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
@@ -142,6 +180,13 @@ func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidUnixSocketEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, cfg.Validate())
 }
 

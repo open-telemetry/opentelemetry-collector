@@ -37,7 +37,7 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -73,7 +73,7 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 	assert.True(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -112,7 +112,7 @@ func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	md.MarkReadOnly()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -147,7 +147,7 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -185,7 +185,7 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -221,7 +221,7 @@ func TestMetricsWhenErrors(t *testing.T) {
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
 	md := testdata.GenerateMetrics(1)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		require.Error(t, mfc.ConsumeMetrics(context.Background(), md))
 	}
 

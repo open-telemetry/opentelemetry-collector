@@ -9,10 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -23,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry/telemetrytest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -40,17 +36,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	core, observer := observer.New(zapcore.DebugLevel)
-	attrs := attribute.NewSet(
-		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
-		attribute.String(componentattribute.ComponentIDKey, "otlp"),
-	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	creationSet.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
-	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
+	var droppedAttrs []string
+	creationSet.Logger = telemetrytest.MockInjectorLogger(creationSet.Logger, &droppedAttrs)
+
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -71,16 +63,8 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, lReceiver)
 	assert.Same(t, tReceiver, pReceiver)
 
-	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created signal-agnostic logger" {
-			createLoggerCount++
-			require.Len(t, log.Context, 1)
-			assert.Equal(t, componentattribute.ComponentIDKey, log.Context[0].Key)
-			assert.Equal(t, "otlp", log.Context[0].String)
-		}
-	}
-	assert.Equal(t, 1, createLoggerCount)
+	// Test that we've dropped the relevant injected attributes exactly once
+	assert.ElementsMatch(t, droppedAttrs, []string{telemetry.SignalKey})
 }
 
 func TestCreateTraces(t *testing.T) {
@@ -157,10 +141,10 @@ func TestCreateTraces(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			tr, err := factory.CreateTraces(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -168,10 +152,10 @@ func TestCreateTraces(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, tr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.NoError(t, tr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(ctx))
 			}
 		})
 	}
@@ -251,10 +235,10 @@ func TestCreateMetric(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			mr, err := factory.CreateMetrics(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -262,10 +246,10 @@ func TestCreateMetric(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, mr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(ctx))
 			}
 		})
 	}
@@ -345,10 +329,10 @@ func TestCreateLogs(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -356,10 +340,10 @@ func TestCreateLogs(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, mr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(ctx))
 			}
 		})
 	}
@@ -438,10 +422,10 @@ func TestCreateProfiles(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			tr, err := factory.(xreceiver.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -449,10 +433,10 @@ func TestCreateProfiles(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, tr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.NoError(t, tr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(ctx))
 			}
 		})
 	}

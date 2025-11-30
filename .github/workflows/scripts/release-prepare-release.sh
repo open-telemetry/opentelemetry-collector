@@ -22,8 +22,8 @@ fi
 
 make chlog-update VERSION="${RELEASE_VERSION}"
 COMMANDS="- make chlog-update VERSION=${RELEASE_VERSION}"
-git config user.name opentelemetrybot
-git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+git config user.name otelbot
+git config user.email 197425009+otelbot@users.noreply.github.com
 BRANCH="prepare-release-prs/${CANDIDATE_BETA}"
 git checkout -b "${BRANCH}"
 git add --all

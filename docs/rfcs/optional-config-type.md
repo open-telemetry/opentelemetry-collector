@@ -142,15 +142,15 @@ func NewDefaultServerConfig() ServerConfig {
 	}
 }
 
-func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+	listener, err := net.Listen("tcp", sc.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	if hss.TLSSetting.HasValue() {
+	if sc.TLSSetting.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.Value().LoadTLSConfig(ctx)
+		tlsCfg, err = sc.TLSSetting.Value().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -161,30 +161,30 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	return listener, nil
 }
 
-func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (sc *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	// ...
 
 	handler = httpContentDecompressor(
 		handler,
-		hss.MaxRequestBodySize,
+		sc.MaxRequestBodySize,
 		serverOpts.ErrHandler,
-		hss.CompressionAlgorithms,
+		sc.CompressionAlgorithms,
 		serverOpts.Decoders,
 	)
 
 	// ...
 
-	if hss.Auth.HasValue() {
-		server, err := hss.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
+	if sc.Auth.HasValue() {
+		server, err := sc.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.Value().RequestParameters)
+		handler = authInterceptor(handler, server, sc.Auth.Value().RequestParameters)
 	}
 
-	corsValue := hss.CORS.Value()
-	if hss.CORS.HasValue() && len(hss.CORS.AllowedOrigins) > 0 {
+	corsValue := sc.CORS.Value()
+	if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
 			AllowedOrigins:   corsValue.AllowedOrigins,
 			AllowCredentials: true,
@@ -193,12 +193,12 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS.HasValue() && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+	if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) == 0 && len(sc.CORS.AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 
-	if hss.ResponseHeaders.HasValue() {
-		handler = responseHeadersHandler(handler, hss.ResponseHeaders.Value())
+	if sc.ResponseHeaders.HasValue() {
+		handler = responseHeadersHandler(handler, sc.ResponseHeaders.Value())
 	}
 
 	// ...

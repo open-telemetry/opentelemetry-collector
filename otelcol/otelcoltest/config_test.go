@@ -58,6 +58,20 @@ func TestLoadConfig(t *testing.T) {
 		},
 		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)],
 		"Did not load pipeline config correctly")
+
+	// Verify telemetry
+	assert.Equal(t, struct{}{}, cfg.Service.Telemetry)
+}
+
+func TestLoadConfig_DefaultNopTelemetry(t *testing.T) {
+	factories, err := NopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = nil
+
+	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+
+	assert.Equal(t, struct{}{}, cfg.Service.Telemetry)
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {

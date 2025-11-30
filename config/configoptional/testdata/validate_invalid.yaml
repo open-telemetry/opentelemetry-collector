@@ -1,0 +1,5 @@
+default:
+  string_val: invalid
+some:
+  nested:
+    string_val: invalid

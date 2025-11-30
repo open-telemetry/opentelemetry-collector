@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -77,6 +78,15 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
+	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	if readErr != nil {
+		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
+	}
+
+	if err = validateYAMLKeyOrder(raw); err != nil {
+		return fmt.Errorf("metadata.yaml ordering check failed: %w", err)
+	}
+
 	md, err := LoadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
@@ -89,42 +99,41 @@ func run(ymlPath string) error {
 	if md.Status != nil {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
-			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
+			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+			if err != nil {
 				return err
 			}
 		} else {
 			if _, err = os.Stat(filepath.Join(codeDir, "generated_status.go")); err == nil {
-				if err = os.Remove(filepath.Join(codeDir, "generated_status.go")); err != nil {
+				err = os.Remove(filepath.Join(codeDir, "generated_status.go"))
+				if err != nil {
 					return err
 				}
 			}
 			if _, err = os.Stat(filepath.Join(ymlDir, "generated_component_test.go")); err == nil {
-				if err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go")); err != nil {
+				err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go"))
+				if err != nil {
 					return err
 				}
 			}
 		}
 
-		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
+		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+		if err != nil {
 			return err
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
-			if err = inlineReplace(
+			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName); err != nil {
+				md, statusStart, statusEnd, md.GeneratedPackageName)
+			if err != nil {
 				return err
 			}
 		}
-	}
-
-	// TODO: Remove this after version v0.122.0 when all the deprecated code should be deleted.
-	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12067
-	if err = os.Remove(filepath.Join(ymlDir, "generated_component_telemetry_test.go")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("unable to remove generated file \"generated_component_telemetry_test.go\": %w", err)
 	}
 
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
@@ -138,22 +147,26 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go"))
+			if err != nil {
 				return err
 			}
 		}
@@ -198,7 +211,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
 	}
@@ -218,14 +231,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
-				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Events {
 						for _, attribute := range event.Attributes {
 							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
+							if exists && v.IsConditional() && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}
@@ -235,14 +248,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 
 					return used
 				},
-				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getMetricConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Metrics {
 						for _, attribute := range event.Attributes {
 							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
+							if exists && v.IsConditional() && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}
@@ -287,11 +300,11 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
-					result := ""
+					var result strings.Builder
 					for _, part := range parts {
-						result += caser(part)
+						fmt.Fprintf(&result, "%s", caser(part))
 					}
-					return result
+					return result.String()
 				},
 				"inc":       func(i int) int { return i + 1 },
 				"distroURL": distroURL,
@@ -348,7 +361,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 	return buf.Bytes(), nil
 }
 
-func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
+func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
@@ -377,7 +390,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 	return nil
 }
 
-func generateFile(tmplFile string, outputFile string, md Metadata, goPackage string) error {
+func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
@@ -400,4 +413,64 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 	}
 
 	return formatErr
+}
+
+func validateMappingKeysSorted(root *yaml.Node, path ...string) error {
+	// unwrap doc
+	n := root
+	if n.Kind == yaml.DocumentNode && len(n.Content) > 0 {
+		n = n.Content[0]
+	}
+	// follow path
+	for _, seg := range path {
+		if n.Kind != yaml.MappingNode {
+			return nil
+		}
+		var next *yaml.Node
+		for i := 0; i < len(n.Content); i += 2 {
+			if n.Content[i].Value == seg {
+				next = n.Content[i+1]
+				break
+			}
+		}
+		if next == nil {
+			return nil
+		}
+		n = next
+	}
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	// collect keys
+	keys := make([]string, 0, len(n.Content)/2)
+	for i := 0; i < len(n.Content); i += 2 {
+		keys = append(keys, n.Content[i].Value)
+	}
+
+	if !slices.IsSorted(keys) {
+		return fmt.Errorf("%v keys are not sorted: %v", path, keys)
+	}
+	return nil
+}
+
+// ValidateYAMLKeyOrder checks the sections we care about.
+func validateYAMLKeyOrder(raw []byte) error {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(raw, &doc); err != nil {
+		return err
+	}
+	for _, p := range [][]string{
+		{"resource_attributes"},
+		{"entities"},
+		{"attributes"},
+		{"metrics"},
+		{"events"},
+		{"telemetry", "metrics"},
+	} {
+		if err := validateMappingKeysSorted(&doc, p...); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
@@ -82,6 +83,18 @@ func (rb *ResourceBuilder) SetStringResourceAttrToBeRemoved(val string) {
 	if rb.config.StringResourceAttrToBeRemoved.Enabled {
 		rb.res.Attributes().PutStr("string.resource.attr_to_be_removed", val)
 	}
+}
+
+// AssociateWithTestEntity associates the resource with entity type "test.entity".
+// This method is experimental and will be replaced with an entity builder pattern in the future.
+// However, for now, it allows associating resources with entities and producing correct entity references.
+func (rb *ResourceBuilder) AssociateWithTestEntity() {
+	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
+	entityRef.SetType("test.entity")
+	idKeys := entityRef.IdKeys()
+	idKeys.Append("string.resource.attr")
+	descKeys := entityRef.DescriptionKeys()
+	descKeys.Append("map.resource.attr")
 }
 
 // Emit returns the built resource and resets the internal builder state.

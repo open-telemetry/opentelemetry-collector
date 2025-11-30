@@ -64,6 +64,7 @@ Tier 3 platforms are currently:
 | linux/386     | [@andrzej-stencel](https://github.com/andrzej-stencel)                                                                                                         |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                                                                                 |
 | linux/ppc64le | [@IBM-Currency-Helper](https://github.com/IBM-Currency-Helper), [@adilhusain-s](https://github.com/adilhusain-s), [@seth-priya](https://github.com/seth-priya) |
+| linux/riscv64 | [@shanduur](https://github.com/shanduur)                                                                                                                       |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                   |
 | windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
 

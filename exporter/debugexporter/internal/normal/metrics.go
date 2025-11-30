@@ -83,16 +83,16 @@ func writeHistogramDataPoints(metric pmetric.Metric) (lines []string) {
 		dataPoint := metric.Histogram().DataPoints().At(i)
 		dataPointAttributes := writeAttributes(dataPoint.Attributes())
 
-		var value string
-		value = fmt.Sprintf("count=%d", dataPoint.Count())
+		var value strings.Builder
+		fmt.Fprintf(&value, "count=%d", dataPoint.Count())
 		if dataPoint.HasSum() {
-			value += fmt.Sprintf(" sum=%v", dataPoint.Sum())
+			fmt.Fprintf(&value, " sum=%v", dataPoint.Sum())
 		}
 		if dataPoint.HasMin() {
-			value += fmt.Sprintf(" min=%v", dataPoint.Min())
+			fmt.Fprintf(&value, " min=%v", dataPoint.Min())
 		}
 		if dataPoint.HasMax() {
-			value += fmt.Sprintf(" max=%v", dataPoint.Max())
+			fmt.Fprintf(&value, " max=%v", dataPoint.Max())
 		}
 
 		for bucketIndex := 0; bucketIndex < dataPoint.BucketCounts().Len(); bucketIndex++ {
@@ -101,10 +101,10 @@ func writeHistogramDataPoints(metric pmetric.Metric) (lines []string) {
 				bucketBound = fmt.Sprintf("le%v=", dataPoint.ExplicitBounds().At(bucketIndex))
 			}
 			bucketCount := dataPoint.BucketCounts().At(bucketIndex)
-			value += fmt.Sprintf(" %s%d", bucketBound, bucketCount)
+			fmt.Fprintf(&value, " %s%d", bucketBound, bucketCount)
 		}
 
-		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value)
+		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value.String())
 		lines = append(lines, dataPointLine)
 	}
 	return lines
@@ -140,16 +140,16 @@ func writeSummaryDataPoints(metric pmetric.Metric) (lines []string) {
 		dataPoint := metric.Summary().DataPoints().At(i)
 		dataPointAttributes := writeAttributes(dataPoint.Attributes())
 
-		var value string
-		value = fmt.Sprintf("count=%d", dataPoint.Count())
-		value += fmt.Sprintf(" sum=%f", dataPoint.Sum())
+		var value strings.Builder
+		fmt.Fprintf(&value, "count=%d", dataPoint.Count())
+		fmt.Fprintf(&value, " sum=%f", dataPoint.Sum())
 
 		for quantileIndex := 0; quantileIndex < dataPoint.QuantileValues().Len(); quantileIndex++ {
 			quantile := dataPoint.QuantileValues().At(quantileIndex)
-			value += fmt.Sprintf(" q%v=%v", quantile.Quantile(), quantile.Value())
+			fmt.Fprintf(&value, " q%v=%v", quantile.Quantile(), quantile.Value())
 		}
 
-		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value)
+		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value.String())
 		lines = append(lines, dataPointLine)
 	}
 	return lines

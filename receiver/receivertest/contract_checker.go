@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
@@ -144,7 +145,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create concurrent goroutines that use the generator.
 	// The total number of generator calls will be equal to params.GenerateCount.
 
-	for j := 0; j < concurrency; j++ {
+	for range concurrency {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -222,7 +223,7 @@ func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttr
 			onlyInOther = append(onlyInOther, k)
 		}
 	}
-	return
+	return missingInOther, onlyInOther
 }
 
 // merge another set into this one and return a list of duplicate ids.
@@ -234,7 +235,7 @@ func (ds idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 			ds[k] = v
 		}
 	}
-	return
+	return duplicates
 }
 
 // mergeSlice merges another set into this one and return a list of duplicate ids.
@@ -246,16 +247,14 @@ func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVa
 			ds[id] = true
 		}
 	}
-	return
+	return duplicates
 }
 
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
 func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
-	for k, v := range ds {
-		union[k] = v
-	}
+	maps.Copy(union, ds)
 	for k, v := range other {
 		if _, ok := union[k]; ok {
 			duplicates = append(duplicates, k)
@@ -263,7 +262,7 @@ func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 			union[k] = v
 		}
 	}
-	return
+	return union, duplicates
 }
 
 // A function that returns a value indicating what the receiver's next consumer decides
