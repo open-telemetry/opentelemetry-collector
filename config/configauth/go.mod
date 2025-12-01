@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.47.0
 	go.opentelemetry.io/collector/extension v1.47.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.47.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.140.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.141.0
 	go.uber.org/goleak v1.3.0
 )
 
