@@ -604,7 +604,7 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := histogram.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}
@@ -653,7 +653,7 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			expHistogram := srcMetric.SetEmptyExponentialHistogram()
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := expHistogram.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}
@@ -702,7 +702,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			summary := srcMetric.SetEmptySummary()
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := summary.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}

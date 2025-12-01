@@ -6,14 +6,14 @@ replace go.opentelemetry.io/collector/processor => ../
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.46.0
-	go.opentelemetry.io/collector/component/componenttest v0.140.0
-	go.opentelemetry.io/collector/consumer v1.46.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.140.0
-	go.opentelemetry.io/collector/pdata v1.46.0
-	go.opentelemetry.io/collector/pipeline v1.46.0
-	go.opentelemetry.io/collector/processor v1.46.0
-	go.opentelemetry.io/collector/processor/processortest v0.140.0
+	go.opentelemetry.io/collector/component v1.47.0
+	go.opentelemetry.io/collector/component/componenttest v0.141.0
+	go.opentelemetry.io/collector/consumer v1.47.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.141.0
+	go.opentelemetry.io/collector/pdata v1.47.0
+	go.opentelemetry.io/collector/pipeline v1.47.0
+	go.opentelemetry.io/collector/processor v1.47.0
+	go.opentelemetry.io/collector/processor/processortest v0.141.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
@@ -32,12 +32,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.140.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.140.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.46.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.140.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.140.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.140.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.141.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.141.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.141.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.141.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.141.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
