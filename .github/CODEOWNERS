@@ -62,6 +62,7 @@ receiver/xreceiver/                          @open-telemetry/collector-approvers
 scraper/                                     @open-telemetry/collector-approvers
 scraper/xscraper                             @open-telemetry/collector-approvers
 scraper/scraperhelper/                       @open-telemetry/collector-approvers
+scraper/scraperhelper/xscraperhelper         @open-telemetry/collector-approvers
 service/                                     @open-telemetry/collector-approvers
 service/internal/graph/                      @open-telemetry/collector-approvers
 

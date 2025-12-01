@@ -19,6 +19,17 @@ body:
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - cmd/mdatagen/internal/samplescraper
+      - config/configauth
+      - config/configcompression
+      - config/configgrpc
+      - config/confighttp
+      - config/configmiddleware
+      - config/confignet
+      - config/configopaque
+      - config/configoptional
+      - config/configretry
+      - config/configtelemetry
+      - config/configtls
       - confmap
       - confmap/provider/envprovider
       - confmap/provider/fileprovider
@@ -55,6 +66,8 @@ body:
       - receiver/x
       - scraper
       - scraper/scraperhelper
+      - scraper/scraperhelper/xscraperhelper
+      - scraper/xscraper
       - service
       - service/internal/graph
       # End components list
