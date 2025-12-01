@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/debug
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added logging for dropped attributes, events, and links counts in debug exporter OTLP text traces marshaler."
+note: "Add logging of dropped attributes, events, and links counts in detailed verbosity"
 
 # One or more tracking issues or pull requests related to the change
 issues: [14202]

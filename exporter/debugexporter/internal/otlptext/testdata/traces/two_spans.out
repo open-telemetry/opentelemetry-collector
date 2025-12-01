@@ -17,6 +17,8 @@ Span #0
     Status code    : Error
     Status message : status-cancelled
     DroppedAttributesCount: 1
+    DroppedEventsCount: 1
+    DroppedLinksCount: 0
 Events:
 SpanEvent #0
      -> Name: event-with-attr
@@ -28,8 +30,6 @@ SpanEvent #1
      -> Name: event
      -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
      -> DroppedAttributesCount: 2
-    DroppedEventsCount: 1
-    DroppedLinksCount: 0
 Span #1
     Trace ID       : 
     Parent ID      : 
@@ -42,6 +42,7 @@ Span #1
     Status message : 
     DroppedAttributesCount: 0
     DroppedEventsCount: 0
+    DroppedLinksCount: 3
 Links:
 SpanLink #0
      -> Trace ID: 
@@ -55,4 +56,3 @@ SpanLink #1
      -> ID: 
      -> TraceState: 
      -> DroppedAttributesCount: 4
-    DroppedLinksCount: 3

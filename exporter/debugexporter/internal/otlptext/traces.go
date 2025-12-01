@@ -51,12 +51,13 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("Status code", span.Status().Code().String())
 				buf.logAttr("Status message", span.Status().Message())
 
-				buf.logAttributes("Attributes", span.Attributes())
 				buf.logAttr("DroppedAttributesCount", strconv.FormatUint(uint64(span.DroppedAttributesCount()), 10))
-				buf.logEvents("Events", span.Events())
 				buf.logAttr("DroppedEventsCount", strconv.FormatUint(uint64(span.DroppedEventsCount()), 10))
-				buf.logLinks("Links", span.Links())
 				buf.logAttr("DroppedLinksCount", strconv.FormatUint(uint64(span.DroppedLinksCount()), 10))
+
+				buf.logAttributes("Attributes", span.Attributes())
+				buf.logEvents("Events", span.Events())
+				buf.logLinks("Links", span.Links())
 			}
 		}
 	}
