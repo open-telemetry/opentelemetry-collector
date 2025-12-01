@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -168,9 +169,32 @@ func TestProfilesSwitchDictionary(t *testing.T) {
 	}
 }
 
+func BenchmarkProfilesSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	p := NewProfiles()
+	profile := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	profile.Samples().AppendEmpty().SetLinkIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		b.StartTimer()
+
+		_ = p.switchDictionary(src, dst)
+	}
+}
+
 func BenchmarkProfilesUsage(b *testing.B) {
 	pd := generateTestProfiles()
 	ts := pcommon.NewTimestampFromTime(time.Now())
+	dur := uint64(1_000_000_000)
 	testValProfileID := ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	testSecondValProfileID := ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 
@@ -197,13 +221,13 @@ func BenchmarkProfilesUsage(b *testing.B) {
 					assert.Equal(b, testValProfileID, s.ProfileID())
 					s.SetTime(ts)
 					assert.Equal(b, ts, s.Time())
-					s.SetDuration(ts)
-					assert.Equal(b, ts, s.Duration())
+					s.SetDurationNano(dur)
+					assert.Equal(b, dur, s.DurationNano())
 				}
 				s := iss.Profiles().AppendEmpty()
 				s.SetProfileID(testSecondValProfileID)
 				s.SetTime(ts)
-				s.SetDuration(ts)
+				s.SetDurationNano(dur)
 				s.AttributeIndices().Append(1)
 				iss.Profiles().RemoveIf(func(lr Profile) bool {
 					return lr.ProfileID() == testSecondValProfileID

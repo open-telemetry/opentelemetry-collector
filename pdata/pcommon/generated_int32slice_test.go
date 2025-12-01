@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -157,6 +158,7 @@ func TestInt32SliceEqual(t *testing.T) {
 }
 
 func BenchmarkInt32SliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := NewInt32Slice()
 	ms.Append(1, 2, 3)
 	cmp := NewInt32Slice()
