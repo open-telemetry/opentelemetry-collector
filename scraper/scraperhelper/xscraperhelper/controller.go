@@ -77,6 +77,10 @@ func NewProfilesController(cfg *ControllerConfig,
 		if err != nil {
 			return nil, err
 		}
+		s, err = wrapObsProfiles(s, rSet.ID, set.ID, set.TelemetrySettings)
+		if err != nil {
+			return nil, err
+		}
 		scrapers = append(scrapers, s)
 	}
 	return newController[xscraper.Profiles](
