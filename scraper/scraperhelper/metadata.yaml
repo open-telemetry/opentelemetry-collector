@@ -29,6 +29,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    scraper_errored_profile_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of profile records that were unable to be scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
     scraper_scraped_log_records:
       enabled: true
       stability:
@@ -44,16 +54,6 @@ telemetry:
       stability:
         level: alpha
       description: Number of metric points successfully scraped.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    scraper_errored_profile_records:
-      enabled: true
-      stability:
-        level: alpha
-      description: Number of profile records that were unable to be scraped.
       unit: "{datapoints}"
       sum:
         value_type: int
