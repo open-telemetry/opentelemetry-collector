@@ -116,10 +116,9 @@ func scrapeProfiles(c *controller[xscraper.Profiles], nextConsumer xconsumer.Pro
 		md.ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 	}
 
-	profilesRecordCount := profiles.SampleCount()
-	ctx = c.obsrecv.StartMetricsOp(ctx)
-	err := nextConsumer.ConsumeProfiles(ctx, profiles)
-	c.obsrecv.EndMetricsOp(ctx, "", profilesRecordCount, err)
+	// TODO: Add proper receiver observability for profiles when receiverhelper supports it
+	// For now, we skip the obs report and just consume the profiles directly
+	_ = nextConsumer.ConsumeProfiles(ctx, profiles)
 }
 
 // withScrapeContext will return a context that has no deadline if timeout is 0
