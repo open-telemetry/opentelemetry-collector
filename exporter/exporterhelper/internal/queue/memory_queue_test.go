@@ -239,10 +239,12 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 
 	b.ReportAllocs()
 	for b.Loop() {
-		require.NoError(b, q.Offer(context.Background(), intRequest(1)))
+		for range 100 {
+			require.NoError(b, q.Offer(context.Background(), intRequest(1)))
+		}
 	}
 	require.NoError(b, q.Shutdown(context.Background()))
-	assert.Equal(b, int64(b.N), consumed.Load())
+	assert.Equal(b, int64(b.N)*100, consumed.Load())
 }
 
 func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {

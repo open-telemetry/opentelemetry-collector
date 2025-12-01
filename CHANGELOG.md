@@ -7,6 +7,24 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.47.0/v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/confighttp`: Use configoptional.Optional for confighttp.ClientConfig.Cookies field (#14021)
+
+### 💡 Enhancements 💡
+
+- `pkg/config/confighttp`: Setting `compression_algorithms` to an empty list now disables automatic decompression, ignoring Content-Encoding (#14131)
+- `pkg/service`: Update semantic conventions from internal telemetry to v1.37.0 (#14232)
+- `pkg/xscraper`: Implement xscraper for Profiles. (#13915)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configoptional`: Ensure that configoptional.None values resulting from unmarshaling are equivalent to configoptional.Optional zero value. (#14218)
+
+<!-- previous-version -->
+
 ## v1.46.0/v0.140.0
 
 ### 💡 Enhancements 💡

@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestSlice_AsFromRaw(t *testing.T) {
@@ -49,6 +51,8 @@ func TestSliceEqual(t *testing.T) {
 }
 
 func BenchmarkSliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
 	es := NewSlice()
 	v := es.AppendEmpty()
 	v.SetStr("test")
