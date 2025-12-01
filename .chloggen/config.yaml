@@ -12,6 +12,7 @@ components:
     - cmd/mdatagen
     - connector/forward
     - connector/sample
+    - consumer/consumererror/xconsumererror
     - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
