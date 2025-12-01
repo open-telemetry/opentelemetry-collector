@@ -189,9 +189,6 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 // unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
 func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.DecodeHookFuncValue {
-	// Recursive calls need to ignore sibling keys
-	settings.IgnoreUnused = true
-
 	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
@@ -200,7 +197,8 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 		if !ok {
 			return from.Interface(), nil
 		}
-		// First call Unmarshaler on squashed embedded fields, if necessary
+
+		// First call Unmarshaler on squashed embedded fields, if necessary.
 		var squashedUnmarshalers []int
 		for i := 0; i < to.Type().NumField(); i++ {
 			f := to.Type().Field(i)
@@ -223,13 +221,13 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 			squashedUnmarshalers = append(squashedUnmarshalers, i)
 		}
 
+		// No squashed unmarshalers, we can let mapstructure do its job.
 		if len(squashedUnmarshalers) == 0 {
-			// We can let mapstructure do its job
 			return fromAsMap, nil
 		}
 
 		// We need to unmarshal into all other fields without overwriting the output of the Unmarshal calls.
-		// To do that, create a custom struct containing only the non-squashed fields:
+		// To do that, create a custom "partial" struct containing only the non-squashed fields.
 		var fields []reflect.StructField
 		var fieldValues []reflect.Value
 		for i := 0; i < to.Type().NumField(); i++ {
@@ -246,18 +244,20 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 		restType := reflect.StructOf(fields)
 		restValue := reflect.New(restType)
 
-		// Copy initial values into partial struct
+		// Copy initial values into partial struct.
 		for i, fieldValue := range fieldValues {
 			restValue.Elem().Field(i).Set(fieldValue)
 		}
 
-		// Decode into the partial struct
-		// This performs a recursive call into this hook, which will be caught by the "no unmarshalers" case
+		// Decode into the partial struct.
+		// This performs a recursive call into this hook, which will be handled by the "no squashed unmarshalers" case above.
+		// We need to set `IgnoreUnused` to avoid errors from the map containing fields only present in the full struct.
+		settings.IgnoreUnused = true
 		if err := Decode(fromAsMap, restValue.Interface(), settings, true); err != nil {
 			return nil, err
 		}
 
-		// Copy outputs back to the original struct
+		// Copy decoding results back to the original struct.
 		for i, fieldValue := range fieldValues {
 			fieldValue.Set(restValue.Elem().Field(i))
 		}
