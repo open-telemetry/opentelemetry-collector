@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -607,6 +608,7 @@ func TestReadOnlyMetricsInvalidUsage(t *testing.T) {
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	req := &internal.ExportMetricsServiceRequest{
 		ResourceMetrics: []*internal.ResourceMetrics{
 			{
@@ -632,6 +634,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	req := &internal.ExportMetricsServiceRequest{
 		ResourceMetrics: []*internal.ResourceMetrics{
 			{
@@ -659,6 +662,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	req := &internal.ExportMetricsServiceRequest{
 		ResourceMetrics: []*internal.ResourceMetrics{
 			{
@@ -686,6 +690,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	req := &internal.ExportMetricsServiceRequest{
 		ResourceMetrics: []*internal.ResourceMetrics{
 			{
