@@ -51,6 +51,7 @@ components:
     - pkg/xprocessor
     - pkg/xreceiver
     - pkg/xscraper
+    - pkg/xscraperhelper
     - processor/batch
     - processor/memory_limiter
     - processor/sample
