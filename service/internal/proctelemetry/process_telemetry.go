@@ -70,7 +70,6 @@ func RegisterProcessMetrics(cfg component.TelemetrySettings, opts ...RegisterOpt
 		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: set.hostProc})
 	}
 	pm.context = ctx
-	//nolint:gosec
 	pm.proc, err = process.NewProcessWithContext(pm.context, int32(os.Getpid()))
 	if err != nil {
 		return err
@@ -100,7 +99,6 @@ func (pm *processMetrics) updateAllocMem(_ context.Context, obs metric.Int64Obse
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	//nolint:gosec
 	obs.Observe(int64(pm.ms.Alloc))
 	return nil
 }
@@ -109,7 +107,6 @@ func (pm *processMetrics) updateTotalAllocMem(_ context.Context, obs metric.Int6
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	//nolint:gosec
 	obs.Observe(int64(pm.ms.TotalAlloc))
 	return nil
 }
@@ -118,7 +115,6 @@ func (pm *processMetrics) updateSysMem(_ context.Context, obs metric.Int64Observ
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	//nolint:gosec
 	obs.Observe(int64(pm.ms.Sys))
 	return nil
 }
@@ -139,7 +135,6 @@ func (pm *processMetrics) updateRSSMemory(_ context.Context, obs metric.Int64Obs
 	if err != nil {
 		return err
 	}
-	//nolint:gosec
 	obs.Observe(int64(mem.RSS))
 	return nil
 }

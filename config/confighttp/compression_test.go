@@ -179,7 +179,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := clientSettings.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {
@@ -478,7 +478,7 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 
 			srv, err := serverConfig.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
 			)
