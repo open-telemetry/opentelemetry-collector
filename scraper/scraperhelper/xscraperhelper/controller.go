@@ -54,6 +54,15 @@ func AddFactoryWithConfig(f xscraper.Factory, cfg component.Config) ControllerOp
 	})
 }
 
+// WithTickerChannel allows you to override the scraper controller's ticker
+// channel to specify when scrape is called. This is only expected to be
+// used by tests.
+func WithTickerChannel(tickerCh <-chan time.Time) ControllerOption {
+	return optionFunc(func(o *controllerOptions) {
+		o.tickerCh = tickerCh
+	})
+}
+
 // NewProfilesController creates a receiver.Profiles with the configured options, that can control multiple xscraper.Profiles.
 func NewProfilesController(cfg *ControllerConfig,
 	rSet receiver.Settings,
