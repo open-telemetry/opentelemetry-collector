@@ -21,18 +21,26 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
 	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
+	tb.ScraperErroredProfileRecords.Add(context.Background(), 1)
 	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
 	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
+	tb.ScraperScrapedProfileRecords.Add(context.Background(), 1)
 	AssertEqualScraperErroredLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualScraperErroredMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualScraperErroredProfileRecords(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualScraperScrapedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualScraperScrapedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualScraperScrapedProfileRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
