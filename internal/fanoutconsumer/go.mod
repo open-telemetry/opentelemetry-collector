@@ -38,3 +38,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/testutil => ../testutil
