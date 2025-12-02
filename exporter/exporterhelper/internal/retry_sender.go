@@ -104,7 +104,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			return experr.NewRetriesExhaustedErr(fmt.Errorf("no more retries left: %w", err))
+			return experr.NewRetriesExhaustedErr(err)
 		}
 
 		throttleErr := throttleRetry{}
@@ -115,7 +115,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		nextRetryTime := time.Now().Add(backoffDelay)
 		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
 			// The delay is longer than the maxElapsedTime.
-			return experr.NewRetriesExhaustedErr(fmt.Errorf("no more retries left: %w", err))
+			return experr.NewRetriesExhaustedErr(err)
 		}
 
 		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {
