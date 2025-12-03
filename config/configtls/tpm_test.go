@@ -33,7 +33,6 @@ import (
 )
 
 func TestTPM_loadCertificate(t *testing.T) {
-	testutil.SkipIfFIPSOnly(t, "use of CFB is not allowed in FIPS 140-only mode")
 	tpm, err := simulator.OpenSimulator()
 	require.NoError(t, err)
 	defer tpm.Close()
@@ -191,6 +190,7 @@ func TestTPM_open(t *testing.T) {
 }
 
 func createTPMKeyCert(t *testing.T, tpm transport.TPMCloser) ([]byte, []byte) {
+	testutil.SkipIfFIPSOnly(t, "use of CFB is not allowed in FIPS 140-only mode")
 	tpmKey, err := keyfile.NewLoadableKey(tpm, tpm2.TPMAlgECC, 256, []byte(""))
 	require.NoError(t, err)
 	tpmKeySigner, err := tpmKey.Signer(tpm, []byte(""), []byte(""))
