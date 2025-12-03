@@ -6,6 +6,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component/componenttest v0.141.0
 	go.opentelemetry.io/collector/config/confighttp v0.141.0
+	go.opentelemetry.io/collector/config/confignet v1.47.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
 	go.opentelemetry.io/otel/sdk v1.39.0
 	go.opentelemetry.io/otel/trace v1.39.0
@@ -101,6 +102,8 @@ replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../configmiddleware
+
+replace go.opentelemetry.io/collector/config/confignet => ../../confignet
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../../extension/extensionmiddleware/extensionmiddlewaretest
 
