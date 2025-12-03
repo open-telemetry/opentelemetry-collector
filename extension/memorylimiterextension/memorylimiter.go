@@ -13,7 +13,13 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
+)
+
+var (
+	_ extensionmiddleware.GRPCServer = (*memoryLimiterExtension)(nil)
+	_ extensionmiddleware.HTTPServer = (*memoryLimiterExtension)(nil)
 )
 
 type memoryLimiterExtension struct {
