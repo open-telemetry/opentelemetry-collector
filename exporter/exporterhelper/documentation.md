@@ -64,7 +64,7 @@ Current size of the retry queue (in batches). [Alpha]
 
 ### otelcol_exporter_send_failed_log_records
 
-Number of log records in failed attempts to send to destination. [Alpha]
+Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -72,7 +72,7 @@ Number of log records in failed attempts to send to destination. [Alpha]
 
 ### otelcol_exporter_send_failed_metric_points
 
-Number of metric points in failed attempts to send to destination. [Alpha]
+Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +80,7 @@ Number of metric points in failed attempts to send to destination. [Alpha]
 
 ### otelcol_exporter_send_failed_spans
 
-Number of spans in failed attempts to send to destination. [Alpha]
+Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

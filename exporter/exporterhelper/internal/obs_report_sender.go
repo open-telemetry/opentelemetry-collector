@@ -5,14 +5,21 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
+	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -21,7 +28,6 @@ import (
 )
 
 const (
-	// spanNameSep is duplicate between receiver and exporter.
 	spanNameSep = "/"
 
 	// ExporterKey used to identify exporters in metrics and traces.
@@ -34,6 +40,9 @@ const (
 	ItemsSent = "items.sent"
 	// ItemsFailed used to track number of items that failed to be sent by exporters.
 	ItemsFailed = "items.failed"
+
+	// FailurePermanentKey indicates whether the error is permanent (non-retryable).
+	FailurePermanentKey = "failure.permanent"
 )
 
 type obsReportSender[K request.Request] struct {
@@ -46,6 +55,7 @@ type obsReportSender[K request.Request] struct {
 	metricAttr      metric.MeasurementOption
 	itemsSentInst   metric.Int64Counter
 	itemsFailedInst metric.Int64Counter
+	exporterID      string
 	next            sender.Sender[K]
 }
 
@@ -63,6 +73,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 		tracer:     metadata.Tracer(set.TelemetrySettings),
 		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
 		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		exporterID: idStr,
 		next:       next,
 	}
 
@@ -88,7 +99,6 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
-	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
 	ors.endOp(c, items, err)
 	return err
@@ -112,21 +122,22 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
-	// No metrics recorded for profiles.
-	if ors.itemsFailedInst != nil {
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr)
+	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
+		failedAttrs := extractFailureAttributes(err)
+		baseAttrs := attribute.NewSet(attribute.String(ExporterKey, ors.exporterID))
+		combinedAttrs := attribute.NewSet(append(baseAttrs.ToSlice(), failedAttrs.ToSlice()...)...)
+		ors.itemsFailedInst.Add(ctx, numFailedToSend, metric.WithAttributeSet(combinedAttrs))
 	}
 
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
-	// End the span according to errors.
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.Int64(ItemsSent, numSent),
 			attribute.Int64(ItemsFailed, numFailedToSend),
 		)
 		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
+			span.SetStatus(otelcodes.Error, err.Error())
 		}
 	}
 }
@@ -136,4 +147,66 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0
+}
+
+func extractFailureAttributes(err error) attribute.Set {
+	if err == nil {
+		return attribute.NewSet()
+	}
+
+	attrs := []attribute.KeyValue{}
+
+	errorType := determineErrorType(err)
+	attrs = append(attrs, attribute.String(string(semconv.ErrorTypeKey), errorType))
+
+	isPermanent := consumererror.IsPermanent(err)
+	attrs = append(attrs, attribute.Bool(FailurePermanentKey, isPermanent))
+
+	return attribute.NewSet(attrs...)
+}
+
+func determineErrorType(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	if IsRetryExhaustedErr(err) {
+		return "RetryExhausted"
+	}
+
+	if experr.IsShutdownErr(err) {
+		return "Shutdown"
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return "Canceled"
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "DeadlineExceeded"
+	}
+
+	if st, ok := status.FromError(err); ok && st.Code() != codes.OK {
+		return st.Code().String()
+	}
+
+	if httpCode := extractHTTPStatusCode(err); httpCode > 0 {
+		return strconv.Itoa(httpCode)
+	}
+
+	return "Unknown"
+}
+
+// extractHTTPStatusCode attempts to extract an HTTP status code from the error.
+func extractHTTPStatusCode(err error) int {
+	type httpStatusCoder interface {
+		HTTPStatusCode() int
+	}
+
+	var statusCoder httpStatusCoder
+	if errors.As(err, &statusCoder) {
+		return statusCoder.HTTPStatusCode()
+	}
+
+	return 0
 }

@@ -6,6 +6,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,10 +15,15 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	grpccodes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -30,6 +36,347 @@ var (
 
 	errFake = errors.New("errFake")
 )
+
+// httpStatusError is a test error type that implements HTTPStatusCode()
+type httpStatusError struct {
+	statusCode int
+	message    string
+}
+
+func (e httpStatusError) Error() string {
+	return e.message
+}
+
+func (e httpStatusError) HTTPStatusCode() int {
+	return e.statusCode
+}
+
+func TestExportTraceFailureAttributesRetryExhausted(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return NewRetryExhaustedErr(errFake)
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 7}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "RetryExhausted"),
+		attribute.Bool(FailurePermanentKey, false),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesPermanentError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return consumererror.NewPermanent(errors.New("bad data"))
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 5}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+		attribute.Bool(FailurePermanentKey, true),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesShutdownError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return experr.NewShutdownErr(errors.New("shutting down"))
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 3}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
+		attribute.Bool(FailurePermanentKey, false),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesContextCanceled(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return context.Canceled
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 2}
+	sendErr := obsrep.Send(ctx, req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
+		attribute.Bool(FailurePermanentKey, false),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesContextDeadlineExceeded(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return context.DeadlineExceeded
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 4}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
+		attribute.Bool(FailurePermanentKey, false),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesUnknownError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return errFake
+		}),
+	)
+	require.NoError(t, err)
+
+	req := &requesttest.FakeRequest{Items: 8}
+	sendErr := obsrep.Send(context.Background(), req)
+	require.Error(t, sendErr)
+
+	wantAttrs := attribute.NewSet(
+		attribute.String("exporter", exporterID.String()),
+		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+		attribute.Bool(FailurePermanentKey, false),
+	)
+
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestExportTraceFailureAttributesHTTPError(t *testing.T) {
+	tests := []struct {
+		name         string
+		httpCode     int
+		expectedType string
+		isPermanent  bool
+	}{
+		{
+			name:         "HTTP 404",
+			httpCode:     404,
+			expectedType: "404",
+			isPermanent:  false,
+		},
+		{
+			name:         "HTTP 500",
+			httpCode:     500,
+			expectedType: "500",
+			isPermanent:  false,
+		},
+		{
+			name:         "HTTP 503",
+			httpCode:     503,
+			expectedType: "503",
+			isPermanent:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			telemetry := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+
+			httpErr := httpStatusError{statusCode: tt.httpCode, message: "test error"}
+			obsrep, err := newObsReportSender(
+				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				pipeline.SignalTraces,
+				sender.NewSender(func(context.Context, request.Request) error {
+					return httpErr
+				}),
+			)
+			require.NoError(t, err)
+
+			req := &requesttest.FakeRequest{Items: 10}
+			sendErr := obsrep.Send(context.Background(), req)
+			require.Error(t, sendErr)
+
+			wantAttrs := attribute.NewSet(
+				attribute.String("exporter", exporterID.String()),
+				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
+				attribute.Bool(FailurePermanentKey, tt.isPermanent),
+			)
+
+			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
+				[]metricdata.DataPoint[int64]{
+					{
+						Attributes: wantAttrs,
+						Value:      int64(req.Items),
+					},
+				}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		})
+	}
+}
+
+func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
+	tests := []struct {
+		name         string
+		grpcCode     grpccodes.Code
+		expectedType string
+		isPermanent  bool
+	}{
+		{
+			name:         "Unavailable",
+			grpcCode:     grpccodes.Unavailable,
+			expectedType: "Unavailable",
+			isPermanent:  false,
+		},
+		{
+			name:         "ResourceExhausted",
+			grpcCode:     grpccodes.ResourceExhausted,
+			expectedType: "ResourceExhausted",
+			isPermanent:  false,
+		},
+		{
+			name:         "DataLoss",
+			grpcCode:     grpccodes.DataLoss,
+			expectedType: "DataLoss",
+			isPermanent:  false,
+		},
+		{
+			name:         "InvalidArgument",
+			grpcCode:     grpccodes.InvalidArgument,
+			expectedType: "InvalidArgument",
+			isPermanent:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			telemetry := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+
+			grpcErr := status.Error(tt.grpcCode, "test error")
+			obsrep, err := newObsReportSender(
+				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				pipeline.SignalTraces,
+				sender.NewSender(func(context.Context, request.Request) error {
+					return grpcErr
+				}),
+			)
+			require.NoError(t, err)
+
+			req := &requesttest.FakeRequest{Items: 10}
+			sendErr := obsrep.Send(context.Background(), req)
+			require.Error(t, sendErr)
+
+			wantAttrs := attribute.NewSet(
+				attribute.String("exporter", exporterID.String()),
+				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
+				attribute.Bool(FailurePermanentKey, tt.isPermanent),
+			)
+
+			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
+				[]metricdata.DataPoint[int64]{
+					{
+						Attributes: wantAttrs,
+						Value:      int64(req.Items),
+					},
+				}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		})
+	}
+}
 
 func TestExportTraceDataOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
@@ -87,16 +434,22 @@ func TestExportTraceDataOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
+	var expectedDataPoints []metricdata.DataPoint[int64]
 	if failedToSendSpans > 0 {
-		metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-			[]metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("exporter", exporterID.String())),
-					Value: int64(failedToSendSpans),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		wantAttrs := attribute.NewSet(
+			attribute.String("exporter", exporterID.String()),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.Bool(FailurePermanentKey, false),
+		)
+		expectedDataPoints = []metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(failedToSendSpans),
+			},
+		}
 	}
+	metadatatest.AssertEqualExporterSendFailedSpans(t, tt, expectedDataPoints,
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestExportMetricsOp(t *testing.T) {
@@ -155,16 +508,22 @@ func TestExportMetricsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
+	var expectedDataPoints []metricdata.DataPoint[int64]
 	if failedToSendMetricPoints > 0 {
-		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
-			[]metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("exporter", exporterID.String())),
-					Value: int64(failedToSendMetricPoints),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		wantAttrs := attribute.NewSet(
+			attribute.String("exporter", exporterID.String()),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.Bool(FailurePermanentKey, false),
+		)
+		expectedDataPoints = []metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(failedToSendMetricPoints),
+			},
+		}
 	}
+	metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt, expectedDataPoints,
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestExportLogsOp(t *testing.T) {
@@ -223,15 +582,243 @@ func TestExportLogsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
+	var expectedDataPoints []metricdata.DataPoint[int64]
 	if failedToSendLogRecords > 0 {
-		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt,
-			[]metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("exporter", exporterID.String())),
-					Value: int64(failedToSendLogRecords),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		wantAttrs := attribute.NewSet(
+			attribute.String("exporter", exporterID.String()),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.Bool(FailurePermanentKey, false),
+		)
+		expectedDataPoints = []metricdata.DataPoint[int64]{
+			{
+				Attributes: wantAttrs,
+				Value:      int64(failedToSendLogRecords),
+			},
+		}
+	}
+	metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt, expectedDataPoints,
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestDetermineErrorType tests the determineErrorType function directly
+func TestDetermineErrorType(t *testing.T) {
+	tests := []struct {
+		name              string
+		err               error
+		expectedErrorType string
+	}{
+		{
+			name:              "nil error",
+			err:               nil,
+			expectedErrorType: "",
+		},
+		{
+			name:              "retry exhausted error",
+			err:               NewRetryExhaustedErr(errors.New("underlying error")),
+			expectedErrorType: "RetryExhausted",
+		},
+		{
+			name:              "shutdown error",
+			err:               experr.NewShutdownErr(errors.New("shutting down")),
+			expectedErrorType: "Shutdown",
+		},
+		{
+			name:              "context canceled",
+			err:               context.Canceled,
+			expectedErrorType: "Canceled",
+		},
+		{
+			name:              "context deadline exceeded",
+			err:               context.DeadlineExceeded,
+			expectedErrorType: "DeadlineExceeded",
+		},
+		{
+			name:              "unknown error",
+			err:               errors.New("some error"),
+			expectedErrorType: "Unknown",
+		},
+		{
+			name:              "wrapped context canceled",
+			err:               fmt.Errorf("failed: %w", context.Canceled),
+			expectedErrorType: "Canceled",
+		},
+		{
+			name:              "wrapped context deadline exceeded",
+			err:               fmt.Errorf("timeout: %w", context.DeadlineExceeded),
+			expectedErrorType: "DeadlineExceeded",
+		},
+		{
+			name:              "gRPC Unavailable",
+			err:               status.Error(grpccodes.Unavailable, "service unavailable"),
+			expectedErrorType: "Unavailable",
+		},
+		{
+			name:              "gRPC ResourceExhausted",
+			err:               status.Error(grpccodes.ResourceExhausted, "quota exceeded"),
+			expectedErrorType: "ResourceExhausted",
+		},
+		{
+			name:              "HTTP 404",
+			err:               httpStatusError{statusCode: 404, message: "not found"},
+			expectedErrorType: "404",
+		},
+		{
+			name:              "HTTP 500",
+			err:               httpStatusError{statusCode: 500, message: "internal server error"},
+			expectedErrorType: "500",
+		},
+		{
+			name:              "HTTP 503",
+			err:               httpStatusError{statusCode: 503, message: "service unavailable"},
+			expectedErrorType: "503",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errorType := determineErrorType(tt.err)
+			assert.Equal(t, tt.expectedErrorType, errorType, "error.type mismatch")
+		})
+	}
+}
+
+// TestExtractFailureAttributes tests the extractFailureAttributes function directly
+func TestExtractFailureAttributes(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected attribute.Set
+	}{
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: attribute.NewSet(),
+		},
+		{
+			name: "retry exhausted error",
+			err:  NewRetryExhaustedErr(errors.New("underlying error")),
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "RetryExhausted"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "permanent error",
+			err:  consumererror.NewPermanent(errors.New("bad data")),
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.Bool(FailurePermanentKey, true),
+			),
+		},
+		{
+			name: "non-permanent error",
+			err:  errors.New("transient error"),
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "shutdown error",
+			err:  experr.NewShutdownErr(errors.New("shutdown")),
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "context canceled",
+			err:  context.Canceled,
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "context deadline exceeded",
+			err:  context.DeadlineExceeded,
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "gRPC Unavailable",
+			err:  status.Error(grpccodes.Unavailable, "service unavailable"),
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "Unavailable"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "HTTP 404",
+			err:  httpStatusError{statusCode: 404, message: "not found"},
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "404"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+		{
+			name: "HTTP 503",
+			err:  httpStatusError{statusCode: 503, message: "service unavailable"},
+			expected: attribute.NewSet(
+				attribute.String(string(semconv.ErrorTypeKey), "503"),
+				attribute.Bool(FailurePermanentKey, false),
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractFailureAttributes(tt.err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractHTTPStatusCode(t *testing.T) {
+	tests := []struct {
+		name         string
+		err          error
+		expectedCode int
+	}{
+		{
+			name:         "nil error",
+			err:          nil,
+			expectedCode: 0,
+		},
+		{
+			name:         "HTTP 404",
+			err:          httpStatusError{statusCode: 404, message: "not found"},
+			expectedCode: 404,
+		},
+		{
+			name:         "HTTP 500",
+			err:          httpStatusError{statusCode: 500, message: "internal server error"},
+			expectedCode: 500,
+		},
+		{
+			name:         "HTTP 503",
+			err:          httpStatusError{statusCode: 503, message: "service unavailable"},
+			expectedCode: 503,
+		},
+		{
+			name:         "non-HTTP error",
+			err:          errors.New("generic error"),
+			expectedCode: 0,
+		},
+		{
+			name:         "gRPC error",
+			err:          status.Error(grpccodes.Unavailable, "unavailable"),
+			expectedCode: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code := extractHTTPStatusCode(tt.err)
+			assert.Equal(t, tt.expectedCode, code)
+		})
 	}
 }
 
