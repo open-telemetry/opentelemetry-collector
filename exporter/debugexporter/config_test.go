@@ -71,7 +71,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			err = cm.Unmarshal(&cfg)
 			if err != nil {
 				if tt.expectedErr != "" {
-					assert.ErrorContains(t, err, tt.expectedErr)
+					require.ErrorContains(t, err, tt.expectedErr)
 				} else {
 					require.NoError(t, err)
 				}

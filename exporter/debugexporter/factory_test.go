@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	// Verify default config
 	config := cfg.(*Config)
@@ -225,7 +225,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 
 	// Write a test message
 	logger.Info("test message to file")
-	assert.NoError(t, logger.Sync())
+	require.NoError(t, logger.Sync())
 
 	// Verify file was created and contains the message
 	_, err := os.Stat(filePath)
