@@ -118,13 +118,18 @@ func TestCreateCustomLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a copy of config to avoid issues with t.TempDir() being called multiple times
 			config := *tt.config
+			var tmpDir string
+			var hasFileOutput bool
 			if len(config.OutputPaths) > 0 {
 				// Check if it's a file path (not stdout/stderr)
 				for i, path := range config.OutputPaths {
 					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
 						// This is a relative path that might need temp dir
-						tmpDir := t.TempDir()
+						if tmpDir == "" {
+							tmpDir = t.TempDir()
+						}
 						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
+						hasFileOutput = true
 					}
 				}
 			}
@@ -137,10 +142,22 @@ func TestCreateCustomLogger(t *testing.T) {
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
 			// Set logger to nil and force GC to help release file handles
-			logger = nil
-			if runtime.GOOS == "windows" {
+			if runtime.GOOS == "windows" && hasFileOutput {
+				// Ensure logger is cleaned up on Windows to release file handles
+				defer func(l *zap.Logger) {
+					if l != nil {
+						_ = l.Sync()
+					}
+					// Give Windows more time to release file handles
+					runtime.GC()
+					time.Sleep(500 * time.Millisecond)
+					runtime.GC()
+					time.Sleep(100 * time.Millisecond)
+				}(logger)
+				logger = nil
 				runtime.GC()
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(500 * time.Millisecond)
+				runtime.GC()
 			}
 		})
 	}
@@ -201,13 +218,18 @@ func TestCreateLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a copy of config to avoid issues with t.TempDir() being called multiple times
 			config := *tt.config
+			var tmpDir string
+			var hasFileOutput bool
 			if len(config.OutputPaths) > 0 {
 				// Check if it's a file path (not stdout/stderr)
 				for i, path := range config.OutputPaths {
 					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
 						// This is a relative path that might need temp dir
-						tmpDir := t.TempDir()
+						if tmpDir == "" {
+							tmpDir = t.TempDir()
+						}
 						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
+						hasFileOutput = true
 					}
 				}
 			}
@@ -221,10 +243,22 @@ func TestCreateLogger(t *testing.T) {
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
 			// Set logger to nil and force GC to help release file handles
-			logger = nil
-			if runtime.GOOS == "windows" {
+			if runtime.GOOS == "windows" && hasFileOutput {
+				// Ensure logger is cleaned up on Windows to release file handles
+				defer func(l *zap.Logger) {
+					if l != nil {
+						_ = l.Sync()
+					}
+					// Give Windows more time to release file handles
+					runtime.GC()
+					time.Sleep(500 * time.Millisecond)
+					runtime.GC()
+					time.Sleep(100 * time.Millisecond)
+				}(logger)
+				logger = nil
 				runtime.GC()
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(500 * time.Millisecond)
+				runtime.GC()
 			}
 		})
 	}
@@ -272,10 +306,21 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, err, "log file should be created")
 
 	// On Windows, we need to ensure file handles are released before cleanup
-	// Set logger to nil and force GC to help release file handles
-	logger = nil
+	// Ensure logger is cleaned up on Windows to release file handles
 	if runtime.GOOS == "windows" {
+		defer func(l *zap.Logger) {
+			if l != nil {
+				_ = l.Sync()
+			}
+			// Give Windows more time to release file handles
+			runtime.GC()
+			time.Sleep(500 * time.Millisecond)
+			runtime.GC()
+			time.Sleep(100 * time.Millisecond)
+		}(logger)
+		logger = nil
 		runtime.GC()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		runtime.GC()
 	}
 }
