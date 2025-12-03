@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -22,7 +23,7 @@ var typeStr = component.MustNewType("example")
 
 // exampleConfig holds configuration settings for the exporter.
 type exampleConfig struct {
-	QueueSettings exporterhelper.QueueBatchConfig
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig]
 	BackOffConfig configretry.BackOffConfig
 }
 
