@@ -59,5 +59,10 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("output_paths must be specified and non-empty when use_internal_logger is false")
 	}
 
+	// If use_internal_logger is true, output_paths should not be specified (it's ignored)
+	if cfg.UseInternalLogger && len(cfg.OutputPaths) > 0 {
+		return fmt.Errorf("output_paths should not be specified when use_internal_logger is true")
+	}
+
 	return nil
 }

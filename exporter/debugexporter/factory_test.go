@@ -25,11 +25,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	
-	// Verify default config includes OutputPaths
+	// Verify default config
 	config := cfg.(*Config)
-	assert.NotNil(t, config.OutputPaths)
-	assert.Equal(t, []string{"stdout"}, config.OutputPaths)
 	assert.True(t, config.UseInternalLogger)
+	// When UseInternalLogger is true, OutputPaths should be empty
+	assert.Empty(t, config.OutputPaths)
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -74,15 +74,6 @@ func TestCreateCustomLogger(t *testing.T) {
 		config      *Config
 		expectPaths []string
 	}{
-		{
-			name: "empty output paths defaults to stdout",
-			config: &Config{
-				OutputPaths:        []string{},
-				SamplingInitial:    2,
-				SamplingThereafter: 1,
-			},
-			expectPaths: []string{"stdout"},
-		},
 		{
 			name: "single output path",
 			config: &Config{
@@ -199,24 +190,6 @@ func TestCreateLogger(t *testing.T) {
 	}
 }
 
-func TestCreateCustomLoggerWithEmptyPathsFallback(t *testing.T) {
-	// This test specifically targets the fallback code path in createCustomLogger
-	// when OutputPaths is empty. Even though validation should prevent this,
-	// we test the defensive fallback behavior.
-	config := &Config{
-		OutputPaths:        []string{},
-		SamplingInitial:    2,
-		SamplingThereafter: 1,
-	}
-
-	logger := createCustomLogger(config)
-	require.NotNil(t, logger)
-
-	// Verify the logger works and defaults to stdout
-	logger.Info("test message")
-	// Note: Sync() may fail for stdout in test environments, which is acceptable
-	_ = logger.Sync()
-}
 
 func TestCreateLoggerWithInternalLogger(t *testing.T) {
 	// Test that createLogger properly uses internal logger when configured

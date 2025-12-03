@@ -173,6 +173,14 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "output_paths specified when use_internal_logger is true (error)",
+			cfg: &Config{
+				UseInternalLogger: true,
+				OutputPaths:       []string{"stdout"},
+			},
+			expectedErr: "output_paths should not be specified when use_internal_logger is true",
+		},
+		{
 			name: "empty output_paths when use_internal_logger is true (allowed)",
 			cfg: &Config{
 				UseInternalLogger: true,

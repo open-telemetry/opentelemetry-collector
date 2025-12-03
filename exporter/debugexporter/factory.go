@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		OutputPaths:        []string{"stdout"},
+		OutputPaths:        []string{},
 		QueueConfig:        queueCfg,
 	}
 }
@@ -129,11 +129,6 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 	encoderConfig.LevelKey = ""
 	// Do not prefix the output with current timestamp.
 	encoderConfig.TimeKey = ""
-	outputPaths := exporterConfig.OutputPaths
-	if len(outputPaths) == 0 {
-		// Default to stdout if not specified
-		outputPaths = []string{"stdout"}
-	}
 	zapConfig := zap.Config{
 		Level:         zap.NewAtomicLevelAt(zap.InfoLevel),
 		DisableCaller: true,
@@ -143,7 +138,7 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 		},
 		Encoding:      "console",
 		EncoderConfig: encoderConfig,
-		OutputPaths:   outputPaths,
+		OutputPaths:   exporterConfig.OutputPaths,
 	}
 	return zap.Must(zapConfig.Build())
 }
