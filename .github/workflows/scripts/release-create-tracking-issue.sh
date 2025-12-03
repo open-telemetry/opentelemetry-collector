@@ -31,8 +31,8 @@ gh issue create -a "${GITHUB_ACTOR}" --repo "${REPO}" --label release --title "R
 
 **Performed by collector releases release manager**
 
-- [ ] Prepare container images release v${CANDIDATE_BETA}
-- [ ] Tag and container images release v${CANDIDATE_BETA}
+- [ ] Prepare otelcol containers images release v${CANDIDATE_BETA}
+- [ ] Tag and otelcol containers images release v${CANDIDATE_BETA}
 
 **Performed by operator maintainers**
 
