@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.46.0
-	go.opentelemetry.io/collector/internal/testutil v0.140.0
+	go.opentelemetry.io/collector/featuregate v1.47.0
+	go.opentelemetry.io/collector/internal/testutil v0.141.0
 	go.opentelemetry.io/proto/slim/otlp v1.9.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.2.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.2.0
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
