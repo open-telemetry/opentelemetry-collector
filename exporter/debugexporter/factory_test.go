@@ -7,7 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,11 +97,11 @@ func TestCreateCustomLogger(t *testing.T) {
 		{
 			name: "file path",
 			config: &Config{
-				OutputPaths:        []string{filepath.Join(t.TempDir(), "test.log")},
+				OutputPaths:        []string{"test.log"}, // Will be resolved to temp dir in test
 				SamplingInitial:    2,
 				SamplingThereafter: 1,
 			},
-			expectPaths: []string{filepath.Join(t.TempDir(), "test.log")},
+			expectPaths: []string{"test.log"}, // Path will be adjusted in test
 		},
 		{
 			name: "stdout path",
@@ -114,13 +116,32 @@ func TestCreateCustomLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := createCustomLogger(tt.config)
+			// Create a copy of config to avoid issues with t.TempDir() being called multiple times
+			config := *tt.config
+			if len(config.OutputPaths) > 0 {
+				// Check if it's a file path (not stdout/stderr)
+				for i, path := range config.OutputPaths {
+					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
+						// This is a relative path that might need temp dir
+						tmpDir := t.TempDir()
+						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
+					}
+				}
+			}
+			logger := createCustomLogger(&config)
 			require.NotNil(t, logger)
 			// Verify logger can be used without panicking
 			logger.Info("test message")
-			// Sync to ensure all writes are complete
+			// Sync to ensure all writes are complete and close file handles
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
+			// On Windows, we need to ensure file handles are released before cleanup
+			// Set logger to nil and force GC to help release file handles
+			logger = nil
+			if runtime.GOOS == "windows" {
+				runtime.GC()
+				time.Sleep(10 * time.Millisecond)
+			}
 		})
 	}
 }
@@ -160,7 +181,7 @@ func TestCreateLogger(t *testing.T) {
 			name: "use custom logger with file",
 			config: &Config{
 				UseInternalLogger:  false,
-				OutputPaths:        []string{filepath.Join(t.TempDir(), "test.log")},
+				OutputPaths:        []string{"test.log"}, // Will be resolved to temp dir in test
 				SamplingInitial:    2,
 				SamplingThereafter: 1,
 			},
@@ -178,14 +199,33 @@ func TestCreateLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a copy of config to avoid issues with t.TempDir() being called multiple times
+			config := *tt.config
+			if len(config.OutputPaths) > 0 {
+				// Check if it's a file path (not stdout/stderr)
+				for i, path := range config.OutputPaths {
+					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
+						// This is a relative path that might need temp dir
+						tmpDir := t.TempDir()
+						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
+					}
+				}
+			}
 			baseLogger := zap.NewNop()
-			logger := createLogger(tt.config, baseLogger)
+			logger := createLogger(&config, baseLogger)
 			require.NotNil(t, logger)
 			// Verify logger can be used without panicking
 			logger.Info("test message")
-			// Sync to ensure all writes are complete
+			// Sync to ensure all writes are complete and close file handles
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
+			// On Windows, we need to ensure file handles are released before cleanup
+			// Set logger to nil and force GC to help release file handles
+			logger = nil
+			if runtime.GOOS == "windows" {
+				runtime.GC()
+				time.Sleep(10 * time.Millisecond)
+			}
 		})
 	}
 }
@@ -230,4 +270,12 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	// Verify file was created and contains the message
 	_, err := os.Stat(filePath)
 	assert.NoError(t, err, "log file should be created")
+
+	// On Windows, we need to ensure file handles are released before cleanup
+	// Set logger to nil and force GC to help release file handles
+	logger = nil
+	if runtime.GOOS == "windows" {
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+	}
 }
