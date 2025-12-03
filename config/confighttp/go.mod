@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.18.1
+	github.com/klauspost/compress v1.18.2
 	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.11.1
@@ -41,7 +41,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-tpm v0.9.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
