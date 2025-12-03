@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -150,7 +151,7 @@ func TestTraces_WithPersistentQueue(t *testing.T) {
 			})
 
 			ts := consumertest.TracesSink{}
-			te, err := NewTraces(context.Background(), set, &fakeTracesConfig, ts.ConsumeTraces, WithQueue(qCfg))
+			te, err := NewTraces(context.Background(), set, &fakeTracesConfig, ts.ConsumeTraces, WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
 			require.NoError(t, te.Start(context.Background(), host))
 			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })

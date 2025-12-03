@@ -38,8 +38,9 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	}
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.Telemetry.Logger = zap.New(logger)
+	qCfg := NewDefaultQueueConfig()
 	be, err := NewQueueSender(
-		qSet, NewDefaultQueueConfig(), "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -145,8 +146,8 @@ func TestQueueConfig_Validate(t *testing.T) {
 	require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	qCfg.Enabled = false
-	assert.NoError(t, qCfg.Validate())
+	noCfg := configoptional.None[queuebatch.Config]()
+	assert.NoError(t, noCfg.Validate())
 }
 
 func TestArc_BackpressureTriggersShrinkAndMetrics(t *testing.T) {
