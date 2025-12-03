@@ -16,9 +16,6 @@ import (
 
 // Config defines configuration for queueing and batching incoming requests.
 type Config struct {
-	// Enabled indicates whether to not enqueue and batch before exporting.
-	Enabled bool `mapstructure:"enabled"`
-
 	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
 	// Currently, this option is not available when persistent queue is configured using the storage configuration.
 	WaitForResult bool `mapstructure:"wait_for_result"`
@@ -66,10 +63,6 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 // Validate checks if the Config is valid
 func (cfg *Config) Validate() error {
-	if !cfg.Enabled {
-		return nil
-	}
-
 	if cfg.NumConsumers <= 0 {
 		return errors.New("`num_consumers` must be positive")
 	}

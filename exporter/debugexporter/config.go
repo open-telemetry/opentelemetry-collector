@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -40,7 +41,7 @@ type Config struct {
 	// (default = ["stdout"])
 	OutputPaths []string `mapstructure:"output_paths"`
 
-	QueueConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

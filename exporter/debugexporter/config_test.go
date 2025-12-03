@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -24,8 +25,6 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
 	tests := []struct {
 		filename    string
 		cfg         *Config
@@ -39,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 50,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stdout"},
-				QueueConfig:        queueCfg,
+				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 			},
 		},
 		{
@@ -50,7 +49,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 1,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stderr"},
-				QueueConfig:        queueCfg,
+				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 			},
 		},
 		{
