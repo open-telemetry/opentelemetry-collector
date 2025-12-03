@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -53,7 +54,10 @@ func newZpagesTelemetrySettings() component.TelemetrySettings {
 func TestZPagesExtensionUsage(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	}
 
@@ -80,7 +84,10 @@ func TestZPagesExtensionUsage(t *testing.T) {
 func TestZPagesExtensionBadAuthExtension(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  "localhost:0",
+				Transport: confignet.TransportTypeTCP,
+			},
 			Auth: configoptional.Some(confighttp.AuthConfig{
 				Config: configauth.Config{
 					AuthenticatorID: component.MustNewIDWithName("foo", "bar"),
@@ -100,7 +107,10 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: endpoint,
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  endpoint,
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	}
 	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
@@ -112,7 +122,10 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 func TestZPagesMultipleStarts(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	}
 
@@ -129,7 +142,10 @@ func TestZPagesMultipleStarts(t *testing.T) {
 func TestZPagesMultipleShutdowns(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	}
 
@@ -144,7 +160,10 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 func TestZPagesShutdownWithoutStart(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	}
 
@@ -157,7 +176,10 @@ func TestZPagesShutdownWithoutStart(t *testing.T) {
 func TestZPagesEnableExpvar(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 		Expvar: ExpvarConfig{
 			Enabled: true,

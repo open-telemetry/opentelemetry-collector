@@ -124,7 +124,10 @@ func TestCreateTraces(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:112233",
+							AddrConfig: confignet.AddrConfig{
+								Endpoint:  "localhost:112233",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						TracesURLPath: defaultTracesURLPath,
 					}),
@@ -218,7 +221,10 @@ func TestCreateMetric(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "327.0.0.1:1122",
+							AddrConfig: confignet.AddrConfig{
+								Endpoint:  "327.0.0.1:1122",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						MetricsURLPath: defaultMetricsURLPath,
 					}),
@@ -312,7 +318,10 @@ func TestCreateLogs(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "327.0.0.1:1122",
+							AddrConfig: confignet.AddrConfig{
+								Endpoint:  "327.0.0.1:1122",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						LogsURLPath: defaultLogsURLPath,
 					}),
@@ -406,7 +415,10 @@ func TestCreateProfiles(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:112233",
+							AddrConfig: confignet.AddrConfig{
+								Endpoint:  "localhost:112233",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 					}),
 				},

@@ -276,7 +276,10 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 	rcfg.HTTP = configoptional.Some(
 		otlpreceiver.HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  testutil.GetAvailableLocalAddress(t),
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 			LogsURLPath: "/v1/logs",
 		},

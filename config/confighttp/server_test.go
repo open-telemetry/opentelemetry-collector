@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -56,7 +57,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
@@ -67,7 +71,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
@@ -78,7 +85,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				}),
@@ -219,8 +229,11 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint: "localhost:0",
-				TLS:      tt.tlsServerCreds,
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				TLS: tt.tlsServerCreds,
 			}
 			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
@@ -332,8 +345,11 @@ func TestHttpCors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint: "localhost:0",
-				CORS:     tt.CORSConfig,
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				CORS: tt.CORSConfig,
 			}
 
 			ln, err := sc.ToListener(context.Background())
@@ -375,8 +391,11 @@ func TestHttpCors(t *testing.T) {
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
-		CORS:     configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		CORS: configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
@@ -392,7 +411,10 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 func TestHttpCorsWithSettings(t *testing.T) {
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
 		}),
@@ -444,7 +466,10 @@ func TestHttpServerHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint:        "localhost:0",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				ResponseHeaders: tt.headers,
 			}
 
@@ -529,7 +554,10 @@ func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
@@ -577,7 +605,10 @@ func TestInvalidServerAuth(t *testing.T) {
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
@@ -605,7 +636,10 @@ func TestFailedServerAuth(t *testing.T) {
 func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
@@ -641,7 +675,10 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 func TestServerWithErrorHandler(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 	}
 	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
 		assert.Equal(t, http.StatusBadRequest, statusCode)
@@ -788,7 +825,10 @@ func TestAuthWithQueryParams(t *testing.T) {
 	// prepare
 	authCalled := false
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			RequestParameters: []string{"auth"},
 			Config: configauth.Config{
@@ -865,8 +905,11 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
-		TLS:      tlsServerCreds,
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		TLS: tlsServerCreds,
 	}
 
 	s, err := sc.ToServer(
@@ -957,7 +1000,10 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint:          "localhost:0",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				KeepAlivesEnabled: tt.keepAlivesEnabled,
 			}
 
@@ -1136,7 +1182,10 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 func TestServerMiddlewaresFieldCompatibility(t *testing.T) {
 	// Test that we can create a config with middlewares using the new field name
 	serverConfig := ServerConfig{
-		Endpoint: "0.0.0.0:4318",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  "0.0.0.0:4318",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Middlewares: []configmiddleware.Config{
 			{ID: component.MustNewID("server_middleware")},
 		},
