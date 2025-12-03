@@ -24,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	
+
 	// Verify default config
 	config := cfg.(*Config)
 	assert.True(t, config.UseInternalLogger)
@@ -189,7 +189,6 @@ func TestCreateLogger(t *testing.T) {
 		})
 	}
 }
-
 
 func TestCreateLoggerWithInternalLogger(t *testing.T) {
 	// Test that createLogger properly uses internal logger when configured
