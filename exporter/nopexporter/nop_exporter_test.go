@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -42,4 +43,10 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
+
+	profiles, err := factory.CreateProfiles(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
+	require.NoError(t, err)
+	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profiles.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profiles.Shutdown(context.Background()))
 }
