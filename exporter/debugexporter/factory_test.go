@@ -269,7 +269,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 
 	// Verify file was created and contains the message
 	_, err := os.Stat(filePath)
-	assert.NoError(t, err, "log file should be created")
+	require.NoError(t, err, "log file should be created")
 
 	// On Windows, we need to ensure file handles are released before cleanup
 	// Set logger to nil and force GC to help release file handles
