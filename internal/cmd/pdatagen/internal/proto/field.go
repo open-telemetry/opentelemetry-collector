@@ -218,7 +218,6 @@ func genProtoTag(fieldNumber uint32, wt WireType) []string {
 	i := 0
 	keybuf := make([]byte, 0)
 	for i = 0; x > 127; i++ {
-		//nolint:gosec
 		keybuf = append(keybuf, 0x80|uint8(x&0x7F))
 		x >>= 7
 	}

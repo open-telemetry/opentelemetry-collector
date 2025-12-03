@@ -12,7 +12,6 @@ import (
 
 func TestUnixNanosConverters(t *testing.T) {
 	t1 := time.Date(2020, 3, 24, 1, 13, 23, 789, time.UTC)
-	//nolint:gosec
 	tun := Timestamp(t1.UnixNano())
 
 	assert.EqualValues(t, uint64(1585012403000000789), tun)
