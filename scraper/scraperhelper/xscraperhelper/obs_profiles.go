@@ -63,10 +63,10 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 			var partialErr scrapererror.PartialScrapeError
 			if errors.As(err, &partialErr) {
 				numErroredProfiles = partialErr.Failed
-				numScrapedProfiles = md.SampleCount()
+				numScrapedProfiles = md.ProfileCount()
 			}
 		} else {
-			numScrapedProfiles = md.SampleCount()
+			numScrapedProfiles = md.ProfileCount()
 		}
 
 		telemetryBuilder.ScraperScrapedProfileRecords.Add(ctx, int64(numScrapedProfiles), otelAttrs)
