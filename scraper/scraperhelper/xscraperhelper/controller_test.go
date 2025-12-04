@@ -13,10 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,29 +24,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
-
-type testInitialize struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testInitialize) start(context.Context, component.Host) error {
-	ts.ch <- true
-	return ts.err
-}
-
-type testClose struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testClose) shutdown(context.Context) error {
-	ts.ch <- true
-	return ts.err
-}
 
 type testScrape struct {
 	ch                chan int
@@ -155,7 +135,7 @@ func TestProfilesScrapeController(t *testing.T) {
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
 			} else if test.initialize {
-				assertChannelsCalled(t, initializeChs, "start was not called")
+				testhelper.AssertChannelsCalled(t, initializeChs, "start was not called")
 			}
 
 			const iterations = 5
@@ -186,9 +166,7 @@ func TestProfilesScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
-				// Note: Receiver span is not expected for profiles since receiverhelper doesn't support profiles yet
-				// assertReceiverSpan(t, spans)
-				assertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeProfiles")
+				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeProfiles")
 				assertProfilesScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
 
@@ -197,7 +175,7 @@ func TestProfilesScrapeController(t *testing.T) {
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
 			} else if test.close {
-				assertChannelsCalled(t, closeChs, "shutdown was not called")
+				testhelper.AssertChannelsCalled(t, closeChs, "shutdown was not called")
 			}
 		})
 	}
@@ -219,20 +197,6 @@ func getExpectedShutdownErr(test scraperTestCase) error {
 	return errors.Join(errs...)
 }
 
-func assertChannelCalled(t *testing.T, ch chan bool, message string) {
-	select {
-	case <-ch:
-	default:
-		assert.Fail(t, message)
-	}
-}
-
-func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
-	for _, ic := range chs {
-		assertChannelCalled(t, ic, message)
-	}
-}
-
 func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs []chan bool, scrapeLogsChs []chan int, closeChs []chan bool) []ControllerOption {
 	var logsOptions []ControllerOption
 
@@ -243,13 +207,13 @@ func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs 
 		var xscraperOptions []xscraper.Option
 		if test.initialize {
 			initializeChs[i] = make(chan bool, 1)
-			ti := &testInitialize{ch: initializeChs[i], err: test.initializeErr}
-			xscraperOptions = append(xscraperOptions, xscraper.WithStart(ti.start))
+			ti := testhelper.NewTestInitialize(initializeChs[i], test.initializeErr)
+			xscraperOptions = append(xscraperOptions, xscraper.WithStart(ti.Start))
 		}
 		if test.close {
 			closeChs[i] = make(chan bool, 1)
-			tc := &testClose{ch: closeChs[i], err: test.closeErr}
-			xscraperOptions = append(xscraperOptions, xscraper.WithShutdown(tc.shutdown))
+			tc := testhelper.NewTestClose(closeChs[i], test.closeErr)
+			xscraperOptions = append(xscraperOptions, xscraper.WithShutdown(tc.Shutdown))
 		}
 
 		scp, err := xscraper.NewProfiles(ts.scrapeProfiles, xscraperOptions...)
@@ -404,26 +368,6 @@ func TestProfilesScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 	}
 }
 
-func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan, expectedSpanName string) {
-	expectedStatusCode := codes.Unset
-	expectedStatusMessage := ""
-	if expectedErr != nil {
-		expectedStatusCode = codes.Error
-		expectedStatusMessage = expectedErr.Error()
-	}
-
-	scraperSpan := false
-	for _, span := range spans {
-		if span.Name() == expectedSpanName {
-			scraperSpan = true
-			assert.Equal(t, expectedStatusCode, span.Status().Code)
-			assert.Equal(t, expectedStatusMessage, span.Status().Description)
-			break
-		}
-	}
-	assert.True(t, scraperSpan)
-}
-
 func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, expectedErr error, sink *consumertest.ProfilesSink) {
 	sampleCounts := 0
 	for _, md := range sink.AllProfiles() {
@@ -446,8 +390,8 @@ func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(receiverKey, receiver.String()),
-					attribute.String(scraperKey, scraper.String())),
+					attribute.String(metadata.ReceiverKey, receiver.String()),
+					attribute.String(metadata.ScraperKey, scraper.String())),
 				Value: expectedScraped,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -456,8 +400,8 @@ func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(receiverKey, receiver.String()),
-					attribute.String(scraperKey, scraper.String())),
+					attribute.String(metadata.ReceiverKey, receiver.String()),
+					attribute.String(metadata.ScraperKey, scraper.String())),
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

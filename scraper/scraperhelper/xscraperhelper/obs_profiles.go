@@ -22,13 +22,6 @@ import (
 )
 
 const (
-	// scraperKey used to identify scrapers in metrics and traces.
-	scraperKey  = "scraper"
-	spanNameSep = "/"
-	// receiverKey used to identify receivers in metrics and traces.
-	receiverKey = "receiver"
-	// FormatKey used to identify the format of the data received.
-	formatKey = "format"
 
 	// scrapedProfileRecordsKey used to identify profile records scraped by the
 	// Collector.
@@ -45,10 +38,10 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 	}
 
 	tracer := metadata.Tracer(set)
-	spanName := scraperKey + spanNameSep + scraperID.String() + spanNameSep + "ScrapeProfiles"
+	spanName := metadata.ScraperKey + metadata.SpanNameSep + scraperID.String() + metadata.SpanNameSep + "ScrapeProfiles"
 	otelAttrs := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(receiverKey, receiverID.String()),
-		attribute.String(scraperKey, scraperID.String()),
+		attribute.String(metadata.ReceiverKey, receiverID.String()),
+		attribute.String(metadata.ScraperKey, scraperID.String()),
 	))
 
 	scraperFuncs := func(ctx context.Context) (pprofile.Profiles, error) {
@@ -75,7 +68,7 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 		// end span according to errors
 		if span.IsRecording() {
 			span.SetAttributes(
-				attribute.String(formatKey, pipeline.SignalMetrics.String()),
+				attribute.String(metadata.FormatKey, pipeline.SignalMetrics.String()),
 				attribute.Int64(scrapedProfileRecordsKey, int64(numScrapedProfiles)),
 				attribute.Int64(erroredProfileRecordsKey, int64(numErroredProfiles)),
 			)
