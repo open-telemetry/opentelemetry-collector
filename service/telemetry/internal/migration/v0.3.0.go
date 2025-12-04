@@ -162,6 +162,9 @@ type LogsConfigV030 struct {
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+
+	// DisableZapResource disables adding resource attributes to logs exported through Zap. This does not affect logs exported through OTLP.
+	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
