@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -22,7 +23,10 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:55679",
+			AddrConfig: confignet.AddrConfig{
+				Endpoint:  "localhost:55679",
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 	},
 		cfg)

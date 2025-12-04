@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -33,8 +34,8 @@ const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
-	// Endpoint configures the listening address for the server.
-	Endpoint string `mapstructure:"endpoint,omitempty"`
+	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
+	confignet.AddrConfig `mapstructure:",squash"`
 
 	// TLS struct exposes TLS client configuration.
 	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
@@ -102,7 +103,12 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
+	netAddr := confignet.NewDefaultAddrConfig()
+	// We typically want to create a TCP server and listen over a network.
+	netAddr.Transport = confignet.TransportTypeTCP
+
 	return ServerConfig{
+		AddrConfig:        netAddr,
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -123,7 +129,7 @@ type AuthConfig struct {
 
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := net.Listen("tcp", sc.Endpoint)
+	listener, err := sc.Listen(ctx)
 	if err != nil {
 		return nil, err
 	}

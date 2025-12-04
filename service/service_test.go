@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
@@ -251,7 +252,12 @@ func testZPages(t *testing.T, zpagesAddr string) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.ExtensionsConfigs = map[component.ID]component.Config{
 		component.MustNewID("zpages"): &zpagesextension.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
+			ServerConfig: confighttp.ServerConfig{
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  zpagesAddr,
+					Transport: confignet.TransportTypeTCP,
+				},
+			},
 		},
 	}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{

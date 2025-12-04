@@ -828,7 +828,10 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		Protocols: Protocols{
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					AddrConfig: confignet.AddrConfig{
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+						Transport: confignet.TransportTypeTCP,
+					},
 					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
@@ -861,7 +864,10 @@ func testHTTPMaxRequestBodySize(t *testing.T, path, contentType string, payload 
 		Protocols: Protocols{
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint:           addr,
+					AddrConfig: confignet.AddrConfig{
+						Endpoint:  addr,
+						Transport: confignet.TransportTypeTCP,
+					},
 					MaxRequestBodySize: int64(size),
 				},
 				TracesURLPath:  defaultTracesURLPath,

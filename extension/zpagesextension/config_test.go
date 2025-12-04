@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -35,7 +36,10 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:56888",
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:56888",
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 		}, cfg)
 }
