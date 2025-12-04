@@ -110,7 +110,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepGRPC))
 	}
 
 	var gln net.Listener
@@ -160,7 +160,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
+		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepHTTP)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})

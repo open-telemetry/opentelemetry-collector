@@ -16,11 +16,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestExport(t *testing.T) {
@@ -86,7 +90,16 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(tc)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.ID = component.MustNewIDWithName("otlp", "profiles")
+	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              "grpc",
+		ReceiverCreateSettings: set,
+	})
+	require.NoError(t, err)
+
+	r := New(tc, obsreport)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pprofileotlp.RegisterGRPCServer(srv, r)
