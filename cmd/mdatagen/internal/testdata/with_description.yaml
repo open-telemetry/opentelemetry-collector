@@ -1,0 +1,8 @@
+type: test
+display_name: Test Component
+description: This is a test component used to validate the description field functionality in mdatagen.
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: []

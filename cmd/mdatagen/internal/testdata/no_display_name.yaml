@@ -1,10 +1,6 @@
-type: test
-display_name: Test
+type: nodisplayname
 
 status:
   class: receiver
   stability:
     beta: [logs]
-
-tests:
-  config:
