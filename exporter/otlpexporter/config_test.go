@@ -178,23 +178,12 @@ func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestValidUnixSocketEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
-	assert.NoError(t, cfg.Validate())
-}
-
-func TestSanitizeEndpoint(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.ClientConfig.Endpoint = "dns:///backend.example.com:4317"
-	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.ClientConfig.Endpoint = "dns:////backend.example.com:4317"
-	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+	assert.NoError(t, xconfmap.Validate(cfg))
 }
