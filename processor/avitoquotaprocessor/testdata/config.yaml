@@ -1,0 +1,28 @@
+receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+    start_at: end
+    include_file_path: true
+    include_file_name: false
+
+processors:
+  avitoquota:
+    loglevel: WARN
+    rules_update_interval: 10s
+    default_ttl_days: 2
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [avitoquota]
+      exporters: [nop]
+
+  telemetry:
+    logs:
+      level: debug
+      encoding: json

@@ -1,0 +1,96 @@
+type: avitoquota
+
+status:
+  class: processor
+  stability:
+    beta: [logs]
+
+telemetry:
+  level: normal
+  metrics:
+    processor_avitoquota_try_rule:
+      enabled: true
+      description: Number of times a rule was tried in the quota processor
+      unit: "1"
+      sum:
+        value_type: int
+      attributes: [qp_rule_id, qp_rule_result, qp_limiter_name]
+    processor_avitoquota_rules_update_attempt:
+      enabled: true
+      description: Number of times rules were updated in the quota processor
+      unit: "1"
+      sum:
+        value_type: int
+      attributes: [qp_rules_update_result]
+    processor_avitoquota_rules_usage_count:
+      enabled: true
+      description: Number of quota units used by rules in the quota processor
+      unit: "1"
+      sum:
+        value_type: int
+      attributes: [qp_rule_id, qp_quota_type]
+    processor_avitoquota_service_usage_count:
+      enabled: true
+      description: Number of quota units used by services in the quota processor
+      unit: "1"
+      sum:
+        value_type: int
+      attributes: [qp_rule_id, qp_quota_type, qp_service, qp_system, qp_severity]
+    processor_avitoquota_batch_count:
+      enabled: true
+      description: Number of batches processed
+      unit: "1"
+      sum:
+        value_type: int
+    processor_avitoquota_batch_size:
+      enabled: true
+      description: Size of batches processed
+      unit: "1"
+      sum:
+        value_type: int
+    processor_avitoquota_batch_duration_us:
+      enabled: true
+      description: Duration of processing batches
+      unit: "us"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912, 1073741824, 2147483648]
+    processor_avitoquota_avg_event_duration_ns:
+      enabled: true
+      description: Average duration of processing single event (duration / size)
+      unit: "ns"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912, 1073741824, 2147483648]
+
+
+
+attributes:
+  qp_rule_id:
+    description: The ID of the rule for quota processor
+    type: string
+  qp_rule_result:
+    description: The result of the rule try for quota processor
+    enum: [ok, ratelimited]
+    type: string
+  qp_limiter_name:
+    description: The name of the limiter for quota processor
+    enum: [ratelimit, storelimit]
+    type: string
+  qp_rules_update_result:
+    description: The result of the rules update for quota processor
+    enum: [updated, unchanged, failed]
+    type: string
+  qp_quota_type:
+    description: The type of the quota for quota processor
+    enum: [ratelimit, storelimit]
+    type: string
+  qp_service:
+    description: The service name for quota processor
+    type: string
+  qp_system:
+    description: The system name for quota processor
+    type: string
+  qp_severity:
+    description: The severity of the log for quota processor
+    type: string

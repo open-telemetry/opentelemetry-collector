@@ -1,0 +1,43 @@
+service "paas-observability"
+
+idempotent rpc listLogsRules (ListLogsRulesIn) ListLogsRulesOut
+
+message ListLogsRulesIn {
+}
+
+message LogsAttributeKeyV3 {
+    name string `Ключ атрибута, например "service" или "severity"`
+    kind string `Вид атрибута, принимает одно из значений AttributeKind, (log, resource, system)`
+}
+
+message LogsAttributeExpression {
+    key       LogsAttributeKeyV3
+    operator *string             `Оператор фильтрации. Один из LogTagOperator. Отсутствие приравнивается к "="`
+    value    *string             `Значение фильтра, поддерживается всеми операторами, кроме IN, NOT_IN`
+    values   *[]string           `Множественное значение фильтра, поддерживается только операторами IN, NOT_IN`
+}
+
+message LogsRuleVersionQuota {
+    resourceMetricID string
+    value            int
+}
+
+message LogsRuleTTLProfile {
+    id              string
+    resourceId      string
+    name            string
+    durationSeconds int
+    isDefault       bool
+}
+
+message ActualLogsRule {
+    ruleID   string
+    ruleName string
+    filter   []LogsAttributeExpression
+    quotas   []LogsRuleVersionQuota
+    ttl      LogsRuleTTLProfile
+}
+
+message ListLogsRulesOut {
+    rules []ActualLogsRule
+}

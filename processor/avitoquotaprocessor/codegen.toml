@@ -1,0 +1,6 @@
+kind = "golang"
+name = "opentelemetry-collector-avito"
+
+[[generators]]
+  name = "rpc-clients"
+  version = 1
