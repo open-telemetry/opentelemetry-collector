@@ -19,7 +19,7 @@ func NewNopHost() component.Host {
 	return &nopHost{}
 }
 
-// GetExtensions returns a `nil` extensions map.
+// GetExtensions returns an empty extensions map.
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
+	return map[component.ID]component.Component{}
 }

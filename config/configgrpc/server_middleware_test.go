@@ -62,11 +62,9 @@ func newTestServerMiddleware(name string) extension.Extension {
 
 func TestGrpcServerUnaryInterceptor(t *testing.T) {
 	// Register two test extensions
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			component.MustNewID("test1"): newTestServerMiddleware("test1"),
-			component.MustNewID("test2"): newTestServerMiddleware("test2"),
-		},
+	extensions := map[component.ID]component.Component{
+		component.MustNewID("test1"): newTestServerMiddleware("test1"),
+		component.MustNewID("test2"): newTestServerMiddleware("test2"),
 	}
 
 	// Setup the server with both middleware options
@@ -76,7 +74,7 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 	// Create the server with middleware interceptors
 	{
 		var srv *grpc.Server
-		srv, addr = server.startTestServerWithHost(t, configoptional.Some(ServerConfig{
+		srv, addr = server.startTestServerWithExtensions(t, configoptional.Some(ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  "localhost:0",
 				Transport: confignet.TransportTypeTCP,
@@ -85,7 +83,7 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 				newTestMiddlewareConfig("test1"),
 				newTestMiddlewareConfig("test2"),
 			},
-		}), host)
+		}), extensions)
 		defer srv.Stop()
 	}
 
@@ -107,16 +105,14 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 // specifically related to middleware resolution and API calls.
 func TestServerMiddlewareToServerErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		host    component.Host
-		config  ServerConfig
-		errText string
+		name       string
+		extensions map[component.ID]component.Component
+		config     ServerConfig
+		errText    string
 	}{
 		{
-			name: "extension_not_found",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{},
-			},
+			name:       "extension_not_found",
+			extensions: map[component.ID]component.Component{},
 			config: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:0",
@@ -132,10 +128,8 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 		},
 		{
 			name: "get_server_options_fails",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get server options failed")),
-				},
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get server options failed")),
 			},
 			config: ServerConfig{
 				NetAddr: confignet.AddrConfig{
@@ -156,7 +150,7 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test creating the server with middleware errors
 			server := &grpcTraceServer{}
-			srv, err := server.startTestServerWithHostError(t, tc.config, tc.host)
+			srv, err := server.startTestServerWithExtensionsError(t, tc.config, tc.extensions)
 			if srv != nil {
 				srv.Stop()
 			}

@@ -37,7 +37,7 @@ func TestSetFunction(t *testing.T) {
 	idx, err = SetFunction(table, f2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing function
 	idx, err = SetFunction(table, f)
@@ -48,7 +48,7 @@ func TestSetFunction(t *testing.T) {
 	idx, err = SetFunction(table, f2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkSetFunction(b *testing.B) {
@@ -96,7 +96,7 @@ func BenchmarkSetFunction(b *testing.B) {
 			runBefore: func(_ *testing.B, table FunctionSlice) {
 				for i := range 100 {
 					f := table.AppendEmpty()
-					f.SetNameStrindex(int32(i)) //nolint:gosec // overflow checked
+					f.SetNameStrindex(int32(i))
 				}
 			},
 		},

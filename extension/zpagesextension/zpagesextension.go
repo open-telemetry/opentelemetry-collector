@@ -92,7 +92,7 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 	}
 
 	zpe.telemetry.Logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
-	zpe.server, err = zpe.config.ToServer(ctx, host, zpe.telemetry, zPagesMux)
+	zpe.server, err = zpe.config.ToServer(ctx, host.GetExtensions(), zpe.telemetry, zPagesMux)
 	if err != nil {
 		return err
 	}
