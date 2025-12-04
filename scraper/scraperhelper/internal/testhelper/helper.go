@@ -9,10 +9,9 @@ import (
 	"context"
 	"testing"
 
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
 )
