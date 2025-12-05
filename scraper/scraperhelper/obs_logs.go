@@ -36,10 +36,10 @@ func wrapObsLogs(sc scraper.Logs, receiverID, scraperID component.ID, set compon
 	}
 
 	tracer := metadata.Tracer(set)
-	spanName := scraperKey + spanNameSep + scraperID.String() + spanNameSep + "ScrapeLogs"
+	spanName := metadata.ScraperKey + metadata.SpanNameSep + scraperID.String() + metadata.SpanNameSep + "ScrapeLogs"
 	otelAttrs := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(receiverKey, receiverID.String()),
-		attribute.String(scraperKey, scraperID.String()),
+		attribute.String(metadata.ReceiverKey, receiverID.String()),
+		attribute.String(metadata.ScraperKey, scraperID.String()),
 	))
 
 	scraperFuncs := func(ctx context.Context) (plog.Logs, error) {
@@ -66,7 +66,7 @@ func wrapObsLogs(sc scraper.Logs, receiverID, scraperID component.ID, set compon
 		// end span according to errors
 		if span.IsRecording() {
 			span.SetAttributes(
-				attribute.String(formatKey, pipeline.SignalMetrics.String()),
+				attribute.String(metadata.FormatKey, pipeline.SignalMetrics.String()),
 				attribute.Int64(scrapedLogRecordsKey, int64(numScrapedLogs)),
 				attribute.Int64(erroredLogRecordsKey, int64(numErroredLogs)),
 			)

@@ -23,13 +23,15 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                      metric.Meter
-	mu                         sync.Mutex
-	registrations              []metric.Registration
-	ScraperErroredLogRecords   metric.Int64Counter
-	ScraperErroredMetricPoints metric.Int64Counter
-	ScraperScrapedLogRecords   metric.Int64Counter
-	ScraperScrapedMetricPoints metric.Int64Counter
+	meter                        metric.Meter
+	mu                           sync.Mutex
+	registrations                []metric.Registration
+	ScraperErroredLogRecords     metric.Int64Counter
+	ScraperErroredMetricPoints   metric.Int64Counter
+	ScraperErroredProfileRecords metric.Int64Counter
+	ScraperScrapedLogRecords     metric.Int64Counter
+	ScraperScrapedMetricPoints   metric.Int64Counter
+	ScraperScrapedProfileRecords metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -73,6 +75,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ScraperErroredProfileRecords, err = builder.meter.Int64Counter(
+		"otelcol_scraper_errored_profile_records",
+		metric.WithDescription("Number of profile records that were unable to be scraped. [Alpha]"),
+		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ScraperScrapedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_scraper_scraped_log_records",
 		metric.WithDescription("Number of log records successfully scraped. [Alpha]"),
@@ -82,6 +90,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped. [Alpha]"),
+		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ScraperScrapedProfileRecords, err = builder.meter.Int64Counter(
+		"otelcol_scraper_scraped_profile_records",
+		metric.WithDescription("Number of profile records successfully scraped. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)

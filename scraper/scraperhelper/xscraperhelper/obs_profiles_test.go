@@ -1,7 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scraperhelper
+// Package xscraperhelper provides utilities for scrapers.
+package xscraperhelper // import "go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper"
 
 import (
 	"context"
@@ -17,12 +18,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
 var (
@@ -38,11 +39,12 @@ type testParams struct {
 	err   error
 }
 
-func TestScrapeMetricsDataOp(t *testing.T) {
+func TestScrapeProfilesDataOp(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
 	set := tel.NewTelemetrySettings()
+
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -52,39 +54,39 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
-			return testdata.GenerateMetrics(params[i].items), params[i].err
+		sm, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
+			return testdata.GenerateProfiles(params[i].items), params[i].err
 		})
 		require.NoError(t, err)
-		sf, err := wrapObsMetrics(sm, receiverID, scraperID, set)
+		sf, err := wrapObsProfiles(sm, receiverID, scraperID, set)
 		require.NoError(t, err)
-		_, err = sf.ScrapeMetrics(parentCtx)
+		_, err = sf.ScrapeProfiles(parentCtx)
 		require.ErrorIs(t, err, params[i].err)
 	}
 
 	spans := tel.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
-	var scrapedMetricPoints, erroredMetricPoints int
+	var scrapedProfileRecords, erroredProfileRecords int
 	for i, span := range spans {
-		assert.Equal(t, "scraper/"+scraperID.String()+"/ScrapeMetrics", span.Name())
+		assert.Equal(t, "scraper/"+scraperID.String()+"/ScrapeProfiles", span.Name())
 		switch {
 		case params[i].err == nil:
-			scrapedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
-			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 0))
+			scrapedProfileRecords += params[i].items
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedProfileRecordsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredProfileRecordsKey, 0))
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
-			// Since we get an error, we cannot record any metrics because we don't know if the returned pmetric.Metrics is valid instance.
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, 0))
-			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 0))
+			// Since we get an error, we cannot record any metrics because we don't know if the returned pprofile.Profiles is valid instance.
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedProfileRecordsKey, 0))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredProfileRecordsKey, 0))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		case errors.Is(params[i].err, partialErrFake):
-			scrapedMetricPoints += params[i].items
-			erroredMetricPoints += 2
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
-			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 2))
+			scrapedProfileRecords += params[i].items
+			erroredProfileRecords += 2
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedProfileRecordsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredProfileRecordsKey, 2))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
@@ -92,42 +94,43 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		}
 	}
 
-	checkScraperMetrics(t, tel, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints))
+	checkScraperProfiles(t, tel, receiverID, scraperID, int64(scrapedProfileRecords), int64(erroredProfileRecords))
 }
 
-func TestCheckScraperMetrics(t *testing.T) {
+func TestCheckScraperProfiles(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
-	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
-		return testdata.GenerateMetrics(7), nil
+	sm, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
+		return testdata.GenerateProfiles(7), nil
 	})
 	require.NoError(t, err)
-	sf, err := wrapObsMetrics(sm, receiverID, scraperID, tel.NewTelemetrySettings())
+	sf, err := wrapObsProfiles(sm, receiverID, scraperID, tel.NewTelemetrySettings())
 	require.NoError(t, err)
-	_, err = sf.ScrapeMetrics(context.Background())
+	_, err = sf.ScrapeProfiles(context.Background())
 	require.NoError(t, err)
 
-	checkScraperMetrics(t, tel, receiverID, scraperID, 7, 0)
+	checkScraperProfiles(t, tel, receiverID, scraperID, 7, 0)
 }
 
-func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) {
-	metadatatest.AssertEqualScraperScrapedMetricPoints(t, tt,
+func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, scrapedProfileRecords, erroredProfileRecords int64) {
+	metadatatest.AssertEqualScraperScrapedProfileRecords(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(metadata.ReceiverKey, receiver.String()),
 					attribute.String(metadata.ScraperKey, scraper.String())),
-				Value: scrapedMetricPoints,
+				Value: scrapedProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualScraperErroredMetricPoints(t, tt,
+
+	metadatatest.AssertEqualScraperErroredProfileRecords(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(metadata.ReceiverKey, receiver.String()),
 					attribute.String(metadata.ScraperKey, scraper.String())),
-				Value: erroredMetricPoints,
+				Value: erroredProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
