@@ -17,7 +17,6 @@ ALL_MODULES := $(shell find . -mindepth 2 \
 				-type f \
 				-name "go.mod" \
 				-not -path "./internal/tools/*" \
-				-not -path "./local/*" \
 				-exec dirname {} \; | sort )
 
 CMD?=
