@@ -37,20 +37,6 @@ var (
 	errFake = errors.New("errFake")
 )
 
-// httpStatusError is a test error type that implements HTTPStatusCode()
-type httpStatusError struct {
-	statusCode int
-	message    string
-}
-
-func (e httpStatusError) Error() string {
-	return e.message
-}
-
-func (e httpStatusError) HTTPStatusCode() int {
-	return e.statusCode
-}
-
 func TestExportTraceFailureAttributesRetryExhausted(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -70,8 +56,9 @@ func TestExportTraceFailureAttributesRetryExhausted(t *testing.T) {
 
 	wantAttrs := attribute.NewSet(
 		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "RetryExhausted"),
+		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, false),
+		attribute.Bool(FailureRetriesExhaustedKey, true),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -104,6 +91,7 @@ func TestExportTraceFailureAttributesPermanentError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, true),
+		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -136,6 +124,7 @@ func TestExportTraceFailureAttributesShutdownError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
 		attribute.Bool(FailurePermanentKey, false),
+		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -171,6 +160,7 @@ func TestExportTraceFailureAttributesContextCanceled(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
 		attribute.Bool(FailurePermanentKey, false),
+		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -203,6 +193,7 @@ func TestExportTraceFailureAttributesContextDeadlineExceeded(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
 		attribute.Bool(FailurePermanentKey, false),
+		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -235,6 +226,7 @@ func TestExportTraceFailureAttributesUnknownError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, false),
+		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -244,69 +236,6 @@ func TestExportTraceFailureAttributesUnknownError(t *testing.T) {
 				Value:      int64(req.Items),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func TestExportTraceFailureAttributesHTTPError(t *testing.T) {
-	tests := []struct {
-		name         string
-		httpCode     int
-		expectedType string
-		isPermanent  bool
-	}{
-		{
-			name:         "HTTP 404",
-			httpCode:     404,
-			expectedType: "404",
-			isPermanent:  false,
-		},
-		{
-			name:         "HTTP 500",
-			httpCode:     500,
-			expectedType: "500",
-			isPermanent:  false,
-		},
-		{
-			name:         "HTTP 503",
-			httpCode:     503,
-			expectedType: "503",
-			isPermanent:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			telemetry := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
-
-			httpErr := httpStatusError{statusCode: tt.httpCode, message: "test error"}
-			obsrep, err := newObsReportSender(
-				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-				pipeline.SignalTraces,
-				sender.NewSender(func(context.Context, request.Request) error {
-					return httpErr
-				}),
-			)
-			require.NoError(t, err)
-
-			req := &requesttest.FakeRequest{Items: 10}
-			sendErr := obsrep.Send(context.Background(), req)
-			require.Error(t, sendErr)
-
-			wantAttrs := attribute.NewSet(
-				attribute.String("exporter", exporterID.String()),
-				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
-				attribute.Bool(FailurePermanentKey, tt.isPermanent),
-			)
-
-			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
-				[]metricdata.DataPoint[int64]{
-					{
-						Attributes: wantAttrs,
-						Value:      int64(req.Items),
-					},
-				}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-		})
-	}
 }
 
 func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
@@ -365,6 +294,7 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 				attribute.String("exporter", exporterID.String()),
 				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
 				attribute.Bool(FailurePermanentKey, tt.isPermanent),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			)
 
 			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
@@ -440,6 +370,7 @@ func TestExportTraceDataOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -514,6 +445,7 @@ func TestExportMetricsOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -588,6 +520,7 @@ func TestExportLogsOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -615,7 +548,12 @@ func TestDetermineErrorType(t *testing.T) {
 		{
 			name:              "retry exhausted error",
 			err:               NewRetryExhaustedErr(errors.New("underlying error")),
-			expectedErrorType: "RetryExhausted",
+			expectedErrorType: "Unknown",
+		},
+		{
+			name:              "retry exhausted with gRPC error",
+			err:               NewRetryExhaustedErr(status.Error(grpccodes.Unavailable, "service unavailable")),
+			expectedErrorType: "Unavailable",
 		},
 		{
 			name:              "shutdown error",
@@ -657,21 +595,6 @@ func TestDetermineErrorType(t *testing.T) {
 			err:               status.Error(grpccodes.ResourceExhausted, "quota exceeded"),
 			expectedErrorType: "ResourceExhausted",
 		},
-		{
-			name:              "HTTP 404",
-			err:               httpStatusError{statusCode: 404, message: "not found"},
-			expectedErrorType: "404",
-		},
-		{
-			name:              "HTTP 500",
-			err:               httpStatusError{statusCode: 500, message: "internal server error"},
-			expectedErrorType: "500",
-		},
-		{
-			name:              "HTTP 503",
-			err:               httpStatusError{statusCode: 503, message: "service unavailable"},
-			expectedErrorType: "503",
-		},
 	}
 
 	for _, tt := range tests {
@@ -698,8 +621,9 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "retry exhausted error",
 			err:  NewRetryExhaustedErr(errors.New("underlying error")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "RetryExhausted"),
+				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, true),
 			),
 		},
 		{
@@ -708,6 +632,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, true),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -716,6 +641,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -724,6 +650,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
 				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -732,6 +659,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
 				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -740,6 +668,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
 				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -748,22 +677,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unavailable"),
 				attribute.Bool(FailurePermanentKey, false),
-			),
-		},
-		{
-			name: "HTTP 404",
-			err:  httpStatusError{statusCode: 404, message: "not found"},
-			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "404"),
-				attribute.Bool(FailurePermanentKey, false),
-			),
-		},
-		{
-			name: "HTTP 503",
-			err:  httpStatusError{statusCode: 503, message: "service unavailable"},
-			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "503"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 	}
@@ -772,52 +686,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractFailureAttributes(tt.err)
 			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestExtractHTTPStatusCode(t *testing.T) {
-	tests := []struct {
-		name         string
-		err          error
-		expectedCode int
-	}{
-		{
-			name:         "nil error",
-			err:          nil,
-			expectedCode: 0,
-		},
-		{
-			name:         "HTTP 404",
-			err:          httpStatusError{statusCode: 404, message: "not found"},
-			expectedCode: 404,
-		},
-		{
-			name:         "HTTP 500",
-			err:          httpStatusError{statusCode: 500, message: "internal server error"},
-			expectedCode: 500,
-		},
-		{
-			name:         "HTTP 503",
-			err:          httpStatusError{statusCode: 503, message: "service unavailable"},
-			expectedCode: 503,
-		},
-		{
-			name:         "non-HTTP error",
-			err:          errors.New("generic error"),
-			expectedCode: 0,
-		},
-		{
-			name:         "gRPC error",
-			err:          status.Error(grpccodes.Unavailable, "unavailable"),
-			expectedCode: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			code := extractHTTPStatusCode(tt.err)
-			assert.Equal(t, tt.expectedCode, code)
 		})
 	}
 }

@@ -6,7 +6,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -43,6 +42,8 @@ const (
 
 	// FailurePermanentKey indicates whether the error is permanent (non-retryable).
 	FailurePermanentKey = "failure.permanent"
+	// FailureRetriesExhaustedKey indicates whether the error occurred after exhausting all retry attempts.
+	FailureRetriesExhaustedKey = "failure.retries_exhausted"
 )
 
 type obsReportSender[K request.Request] struct {
@@ -162,6 +163,9 @@ func extractFailureAttributes(err error) attribute.Set {
 	isPermanent := consumererror.IsPermanent(err)
 	attrs = append(attrs, attribute.Bool(FailurePermanentKey, isPermanent))
 
+	retriesExhausted := IsRetryExhaustedErr(err)
+	attrs = append(attrs, attribute.Bool(FailureRetriesExhaustedKey, retriesExhausted))
+
 	return attribute.NewSet(attrs...)
 }
 
@@ -170,8 +174,13 @@ func determineErrorType(err error) string {
 		return ""
 	}
 
+	// Unwrap RetryExhaustedErr to get the underlying error type
+	// This preserves diagnostic information about the root cause
 	if IsRetryExhaustedErr(err) {
-		return "RetryExhausted"
+		err = errors.Unwrap(err)
+		if err == nil {
+			return "Unknown"
+		}
 	}
 
 	if experr.IsShutdownErr(err) {
@@ -190,23 +199,5 @@ func determineErrorType(err error) string {
 		return st.Code().String()
 	}
 
-	if httpCode := extractHTTPStatusCode(err); httpCode > 0 {
-		return strconv.Itoa(httpCode)
-	}
-
 	return "Unknown"
-}
-
-// extractHTTPStatusCode attempts to extract an HTTP status code from the error.
-func extractHTTPStatusCode(err error) int {
-	type httpStatusCoder interface {
-		HTTPStatusCode() int
-	}
-
-	var statusCoder httpStatusCoder
-	if errors.As(err, &statusCoder) {
-		return statusCoder.HTTPStatusCode()
-	}
-
-	return 0
 }

@@ -348,7 +348,8 @@ func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id c
 					Attributes: attribute.NewSet(
 						attribute.String("exporter", id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-						attribute.Bool(internal.FailurePermanentKey, false)),
+						attribute.Bool(internal.FailurePermanentKey, false),
+						attribute.Bool(internal.FailureRetriesExhaustedKey, false)),
 					Value: int64(numBatches * ld.LogRecordCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
