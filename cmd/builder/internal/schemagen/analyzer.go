@@ -47,7 +47,7 @@ func (pa *PackageAnalyzer) LoadPackage(importPath string) (*packages.Package, er
 
 	pkg := pkgs[0]
 	if len(pkg.Errors) > 0 {
-		return nil, fmt.Errorf("package %s has errors: %v", importPath, pkg.Errors[0])
+		return nil, fmt.Errorf("package %s has errors: %w", importPath, pkg.Errors[0])
 	}
 
 	pa.packages[importPath] = pkg
@@ -71,12 +71,12 @@ func (pa *PackageAnalyzer) FindConfigType(pkg *packages.Package) (*types.Named, 
 
 	named, ok := obj.Type().(*types.Named)
 	if !ok {
-		return nil, fmt.Errorf("Config in package %s is not a named type", pkg.PkgPath)
+		return nil, fmt.Errorf("config in package %s is not a named type", pkg.PkgPath)
 	}
 
 	// Verify it's a struct
 	if _, ok := named.Underlying().(*types.Struct); !ok {
-		return nil, fmt.Errorf("Config in package %s is not a struct", pkg.PkgPath)
+		return nil, fmt.Errorf("config in package %s is not a struct", pkg.PkgPath)
 	}
 
 	return named, nil

@@ -25,12 +25,12 @@ func TestGenerateSchema(t *testing.T) {
 	repoRoot := filepath.Join(cwd, "..", "..", "..", "..")
 
 	tests := []struct {
-		name           string
-		kind           component.Kind
-		componentName  string
-		importPath     string
-		expectedFile   string
-		analyzerRoot   string
+		name          string
+		kind          component.Kind
+		componentName string
+		importPath    string
+		expectedFile  string
+		analyzerRoot  string
 	}{
 		{
 			name:          "testcomponent",
@@ -63,7 +63,7 @@ func TestGenerateSchema(t *testing.T) {
 
 			// Read generated schema
 			generatedPath := filepath.Join(tempDir, fmt.Sprintf("%s_%s.json", strings.ToLower(tt.kind.String()), tt.componentName))
-			generatedContent, err := os.ReadFile(generatedPath)
+			generatedContent, err := os.ReadFile(generatedPath) // #nosec G304 -- test file path from test setup
 			require.NoError(t, err)
 
 			// Read expected schema
@@ -74,7 +74,7 @@ func TestGenerateSchema(t *testing.T) {
 			if !assert.JSONEq(t, string(expectedContent), string(generatedContent)) {
 				// If test fails and UPDATE_GOLDEN env is set, update the expected file
 				if os.Getenv("UPDATE_GOLDEN") == "1" {
-					err := os.WriteFile(tt.expectedFile, generatedContent, 0644)
+					err := os.WriteFile(tt.expectedFile, generatedContent, 0o600)
 					require.NoError(t, err)
 					t.Logf("Updated expected file: %s", tt.expectedFile)
 				} else {
@@ -323,7 +323,7 @@ func TestSchemaGenerator_WriteSchemaToFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read and verify content
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filePath) // #nosec G304 -- test file path from test setup
 	require.NoError(t, err)
 	assert.Contains(t, string(content), `"$schema"`)
 	assert.Contains(t, string(content), `"properties"`)
@@ -353,12 +353,12 @@ func TestCommentExtractor_GetFieldComment(t *testing.T) {
 
 	t.Run("missing comment", func(t *testing.T) {
 		comment := ce.GetFieldComment("test/package", "Config", "NonExistent")
-		assert.Equal(t, "", comment)
+		assert.Empty(t, comment)
 	})
 
 	t.Run("missing package", func(t *testing.T) {
 		comment := ce.GetFieldComment("other/package", "Config", "Name")
-		assert.Equal(t, "", comment)
+		assert.Empty(t, comment)
 	})
 }
 

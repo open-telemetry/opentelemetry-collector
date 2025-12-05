@@ -74,23 +74,6 @@ func GetOptionalInnerType(t types.Type) (types.Type, bool) {
 	return nil, false
 }
 
-// basicTypeToSchema converts a basic Go type to JSON Schema type.
-func basicTypeToSchema(basic *types.Basic) map[string]any {
-	switch basic.Kind() {
-	case types.String:
-		return map[string]any{"type": "string"}
-	case types.Bool:
-		return map[string]any{"type": "boolean"}
-	case types.Int, types.Int8, types.Int16, types.Int32, types.Int64,
-		types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64:
-		return map[string]any{"type": "integer"}
-	case types.Float32, types.Float64:
-		return map[string]any{"type": "number"}
-	default:
-		return map[string]any{"type": "object"}
-	}
-}
-
 // IsDeprecatedFromDescription checks if a field description indicates deprecation.
 func IsDeprecatedFromDescription(description string) bool {
 	if description == "" {
@@ -120,7 +103,7 @@ func IsDeprecatedFromTag(tag string) bool {
 
 	// Check for deprecated in mapstructure or json tags
 	if strings.Contains(tag, `mapstructure:"`) {
-		for _, part := range strings.Split(extractTagValue(tag, "mapstructure"), ",") {
+		for part := range strings.SplitSeq(extractTagValue(tag, "mapstructure"), ",") {
 			if strings.TrimSpace(part) == "deprecated" {
 				return true
 			}
@@ -128,7 +111,7 @@ func IsDeprecatedFromTag(tag string) bool {
 	}
 
 	if strings.Contains(tag, `json:"`) {
-		for _, part := range strings.Split(extractTagValue(tag, "json"), ",") {
+		for part := range strings.SplitSeq(extractTagValue(tag, "json"), ",") {
 			if strings.TrimSpace(part) == "deprecated" {
 				return true
 			}

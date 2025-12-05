@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/types"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -288,9 +289,7 @@ func (sg *SchemaGenerator) populateTypeSchema(t types.Type, property map[string]
 
 		// Check for special types (Duration, Time, configopaque.String)
 		if schema, ok := HandleSpecialType(typ); ok {
-			for k, v := range schema {
-				property[k] = v
-			}
+			maps.Copy(property, schema)
 			return nil
 		}
 
@@ -376,10 +375,11 @@ func (sg *SchemaGenerator) generateTypeSchema(t types.Type) map[string]any {
 	case *types.Slice, *types.Array:
 		schema["type"] = "array"
 		var elemType types.Type
-		if s, ok := typ.(*types.Slice); ok {
-			elemType = s.Elem()
-		} else if a, ok := typ.(*types.Array); ok {
-			elemType = a.Elem()
+		switch t := typ.(type) {
+		case *types.Slice:
+			elemType = t.Elem()
+		case *types.Array:
+			elemType = t.Elem()
 		}
 		if elemType != nil {
 			schema["items"] = sg.generateTypeSchema(elemType)
@@ -400,21 +400,21 @@ func (sg *SchemaGenerator) generateTypeSchema(t types.Type) map[string]any {
 			return specialSchema
 		}
 
-		if st, ok := typ.Underlying().(*types.Struct); ok {
-			schema["type"] = "object"
-			properties := make(map[string]any)
-			typeName := typ.Obj().Name()
-			pkgPath := ""
-			if typ.Obj().Pkg() != nil {
-				pkgPath = typ.Obj().Pkg().Path()
-				// Load package and extract comments before analyzing fields
-				sg.ensurePackageComments(pkgPath)
-			}
-			if err := sg.analyzeStructFields(st, properties, typeName, pkgPath); err == nil && len(properties) > 0 {
-				schema["properties"] = properties
-			}
-		} else {
+		st, ok := typ.Underlying().(*types.Struct)
+		if !ok {
 			return sg.generateTypeSchema(typ.Underlying())
+		}
+		schema["type"] = "object"
+		properties := make(map[string]any)
+		typeName := typ.Obj().Name()
+		pkgPath := ""
+		if typ.Obj().Pkg() != nil {
+			pkgPath = typ.Obj().Pkg().Path()
+			// Load package and extract comments before analyzing fields
+			sg.ensurePackageComments(pkgPath)
+		}
+		if err := sg.analyzeStructFields(st, properties, typeName, pkgPath); err == nil && len(properties) > 0 {
+			schema["properties"] = properties
 		}
 
 	case *types.Interface:
@@ -442,7 +442,7 @@ func (sg *SchemaGenerator) writeSchemaToFile(filePath string, schema map[string]
 		return fmt.Errorf("failed to marshal schema to JSON: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
