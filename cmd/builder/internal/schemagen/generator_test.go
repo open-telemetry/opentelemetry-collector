@@ -11,7 +11,42 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 )
+
+func TestGenerateSchema(t *testing.T) {
+	// Create temp directory for output
+	tempDir := t.TempDir()
+
+	// The test component package import path
+	testComponentImportPath := "go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent"
+
+	// Create analyzer with current working directory (where go.mod is)
+	// We need to use the project root so the package can be resolved
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Navigate up to find the go.mod file for the builder module
+	builderRoot := filepath.Join(cwd, "..", "..")
+	analyzer := NewPackageAnalyzer(builderRoot)
+	generator := NewSchemaGenerator(tempDir, analyzer)
+
+	// Generate schema for the test component
+	err = generator.GenerateSchema(component.KindExporter, "testcomponent", testComponentImportPath)
+	require.NoError(t, err)
+
+	// Read generated schema
+	generatedPath := filepath.Join(tempDir, "exporter_testcomponent.json")
+	generatedContent, err := os.ReadFile(generatedPath)
+	require.NoError(t, err)
+
+	// Read expected schema
+	expectedContent, err := os.ReadFile("testdata/exporter_testcomponent.json")
+	require.NoError(t, err)
+
+	// Compare JSON (ignoring formatting differences)
+	assert.JSONEq(t, string(expectedContent), string(generatedContent))
+}
 
 func TestGetFieldName(t *testing.T) {
 	tests := []struct {
