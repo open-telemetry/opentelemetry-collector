@@ -9,8 +9,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	{{- if or .Metrics .Events }}
 
 	"go.opentelemetry.io/collector/confmap"
+	{{- end }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
