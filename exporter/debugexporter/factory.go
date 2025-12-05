@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		OutputPaths:        []string{},
+		OutputPaths:        []string{"stdout"},
 		QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 	}
 }
