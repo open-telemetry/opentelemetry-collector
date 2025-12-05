@@ -99,7 +99,8 @@ type CollectorSettings struct {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
+	set            CollectorSettings
+	buildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 
 	configProvider *ConfigProvider
 
@@ -136,9 +137,10 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	state := new(atomic.Int64)
 	state.Store(int64(StateStarting))
 	return &Collector{
-		set:          set,
-		state:        state,
-		shutdownChan: make(chan struct{}),
+		set:            set,
+		buildZapLogger: zap.Config.Build,
+		state:          state,
+		shutdownChan:   make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
@@ -220,6 +222,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+		BuildZapLogger:    col.buildZapLogger,
 		TelemetryFactory:  factories.Telemetry,
 	}, cfg.Service)
 	if err != nil {

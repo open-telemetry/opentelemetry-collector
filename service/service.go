@@ -89,7 +89,14 @@ type Settings struct {
 	AsyncErrorChannel chan error
 
 	// LoggingOptions provides a way to change behavior of zap logging.
+	//
+	// These options will be appended to any options passed to BuildZapLogger.
 	LoggingOptions []zap.Option
+
+	// BuildZapLogger holds an optional function for creating a Zap
+	// logger from a zap.Config and options. If this is unspecified,
+	// zap.Config.Build will be used.
+	BuildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 
 	// TelemetryFactory is the factory for creating internal telemetry providers.
 	TelemetryFactory telemetry.Factory
@@ -137,9 +144,23 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	}
 	telemetrySettings.Resource = &resource
 
+	// Create a function for telemetry providers to build the Zap logger.
+	// This injects any LoggingOptions specified in the Settings.
+	buildZapLogger := set.BuildZapLogger
+	if buildZapLogger == nil {
+		buildZapLogger = zap.Config.Build
+	}
+	if len(set.LoggingOptions) > 0 {
+		origBuildZapLogger := buildZapLogger
+		buildZapLogger = func(cfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+			opts = append(opts, set.LoggingOptions...)
+			return origBuildZapLogger(cfg, opts...)
+		}
+	}
+
 	loggerSettings := telemetry.LoggerSettings{
-		Settings:   telemetrySettings,
-		ZapOptions: set.LoggingOptions,
+		Settings:       telemetrySettings,
+		BuildZapLogger: buildZapLogger,
 	}
 	logger, loggerShutdownFunc, err := set.TelemetryFactory.CreateLogger(ctx, loggerSettings, cfg.Telemetry)
 	if err != nil {

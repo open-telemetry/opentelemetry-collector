@@ -137,9 +137,12 @@ func TestCreateLogger(t *testing.T) {
 			resource, err := factory.CreateResource(context.Background(), telemetry.Settings{BuildInfo: buildInfo}, &tt.cfg)
 			require.NoError(t, err)
 
-			_, provider, err := factory.CreateLogger(context.Background(), telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
-			}, &tt.cfg)
+			_, provider, err := factory.CreateLogger(
+				context.Background(), telemetry.LoggerSettings{
+					Settings:       telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
+					BuildZapLogger: zap.Config.Build,
+				}, &tt.cfg,
+			)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
@@ -243,9 +246,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 
 			set := telemetry.LoggerSettings{
 				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource},
-				ZapOptions: []zap.Option{
+				BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
 					// Redirect logs to the observer core
-					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+					return zap.New(core), nil
 				},
 			}
 
@@ -280,6 +283,47 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateLoggerZapOptions(t *testing.T) {
+	buildInfo := component.BuildInfo{}
+	factory := NewFactory()
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+	}
+	resource, err := factory.CreateResource(
+		context.Background(), telemetry.Settings{BuildInfo: buildInfo}, cfg,
+	)
+	require.NoError(t, err)
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
+
+		// Test deprecated behavior: no BuildZapLogger, but ZapOptions provided.
+		BuildZapLogger: nil,
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+		},
+	}
+
+	logger, provider, err := factory.CreateLogger(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, provider)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(context.Background()))
+	}()
+
+	testMessage := "Test deprecated zap options"
+	logger.Info(testMessage)
+
+	require.Len(t, observedLogs.All(), 1)
+	logEntry := observedLogs.All()[0]
+	assert.Equal(t, testMessage, logEntry.Message)
+	assert.Equal(t, zapcore.InfoLevel, logEntry.Level)
 }
 
 func TestLogger_OTLP(t *testing.T) {
@@ -349,7 +393,8 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 	require.NoError(t, err)
 
 	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
-		Settings: telemetry.Settings{Resource: &resource},
+		Settings:       telemetry.Settings{Resource: &resource},
+		BuildZapLogger: zap.Config.Build,
 	}, cfg)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -412,9 +457,9 @@ func TestLogAttributeInjection(t *testing.T) {
 
 	set := telemetry.LoggerSettings{
 		Settings: telemetry.Settings{Resource: &resource},
-		ZapOptions: []zap.Option{
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
 			// Redirect console logs to the observer core
-			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+			return zap.New(core), nil
 		},
 	}
 
