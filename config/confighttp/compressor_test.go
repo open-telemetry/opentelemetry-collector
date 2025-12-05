@@ -16,9 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func BenchmarkCompression(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	benchmarks := []struct {
 		codec    configcompression.Type
 		name     string
