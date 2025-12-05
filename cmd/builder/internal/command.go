@@ -25,6 +25,7 @@ const (
 	skipCompilationFlag        = "skip-compilation"
 	skipGetModulesFlag         = "skip-get-modules"
 	skipStrictVersioningFlag   = "skip-strict-versioning"
+	generateSchemaFlag         = "generate-schema"
 	ldflagsFlag                = "ldflags"
 	gcflagsFlag                = "gcflags"
 	distributionOutputPathFlag = "output-path"
@@ -82,6 +83,7 @@ func initFlags(flags *flag.FlagSet) error {
 	flags.Bool(skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	flags.Bool(skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
 	flags.Bool(skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
+	flags.Bool(generateSchemaFlag, false, "Experimental: Whether builder should generate JSON schemas for component configs (default false)")
 	flags.Bool(verboseFlag, false, "Whether builder should print verbose output (default false)")
 	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	flags.String(gcflagsFlag, "", `gcflags to include in the "go build" command`)
@@ -139,6 +141,8 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	cfg.SkipGetModules, err = flags.GetBool(skipGetModulesFlag)
 	errs = multierr.Append(errs, err)
 	cfg.SkipStrictVersioning, err = flags.GetBool(skipStrictVersioningFlag)
+	errs = multierr.Append(errs, err)
+	cfg.GenerateSchema, err = flags.GetBool(generateSchemaFlag)
 	errs = multierr.Append(errs, err)
 
 	if flags.Changed(ldflagsFlag) {

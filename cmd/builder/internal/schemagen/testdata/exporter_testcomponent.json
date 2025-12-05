@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name is the name of the component."
+    },
+    "count": {
+      "type": "integer",
+      "description": "Count is a numeric counter."
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Enabled controls whether the component is enabled."
+    },
+    "rate": {
+      "type": "number",
+      "description": "Rate is a floating point rate."
+    },
+    "timeout": {
+      "type": "string",
+      "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$",
+      "description": "Timeout is the timeout duration."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags is a list of tags."
+    },
+    "numbers": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "Numbers is a list of integers."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Metadata is a key-value map."
+    },
+    "nested": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Host is the server host."
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port is the server port."
+        },
+        "deep_nested": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Value is a configuration value."
+            }
+          },
+          "description": "DeepNested contains deeply nested configuration."
+        }
+      },
+      "description": "Nested contains nested configuration."
+    },
+    "nested_ptr": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Host is the server host."
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port is the server port."
+        },
+        "deep_nested": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Value is a configuration value."
+            }
+          },
+          "description": "DeepNested contains deeply nested configuration."
+        }
+      },
+      "description": "NestedPtr is a pointer to nested configuration."
+    },
+    "old_field": {
+      "type": "string",
+      "description": "OldField is deprecated and should not be used.",
+      "deprecated": true
+    }
+  }
+}

@@ -17,6 +17,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
+
+	"go.opentelemetry.io/collector/cmd/builder/internal/schemagen"
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
@@ -72,6 +75,13 @@ func GenerateAndCompile(cfg *Config) error {
 		return err
 	}
 
+	// Generate JSON schemas for component configs
+	if cfg.GenerateSchema {
+		if err := GenerateSchemas(cfg); err != nil {
+			return err
+		}
+	}
+
 	return Compile(cfg)
 }
 
@@ -91,13 +101,15 @@ func Generate(cfg *Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, tmpl := range []*template.Template{
+	templates := []*template.Template{
 		mainTemplate,
 		mainOthersTemplate,
 		mainWindowsTemplate,
 		componentsTemplate,
 		goModTemplate,
-	} {
+	}
+
+	for _, tmpl := range templates {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
@@ -148,6 +160,71 @@ func Compile(cfg *Config) error {
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
 
+	return nil
+}
+
+// GenerateSchemas uses static analysis to generate JSON schema files for component configs
+func GenerateSchemas(cfg *Config) error {
+	cfg.Logger.Info("Generating JSON schemas for component configs")
+
+	schemaOutputPath := filepath.Join(cfg.Distribution.OutputPath, "schemas")
+
+	// Create schemas directory
+	if err := os.MkdirAll(schemaOutputPath, 0o750); err != nil {
+		return fmt.Errorf("failed to create schema output directory: %w", err)
+	}
+
+	// Create the static analyzer with the generated code directory as working dir
+	analyzer := schemagen.NewPackageAnalyzer(cfg.Distribution.OutputPath)
+	generator := schemagen.NewSchemaGenerator(schemaOutputPath, analyzer)
+
+	// Generate schemas for each component category
+	for _, ext := range cfg.Extensions {
+		if err := generator.GenerateSchema(component.KindExtension, ext.Name, ext.Import); err != nil {
+			cfg.Logger.Warn("Failed to generate schema for extension",
+				zap.String("component", ext.Name), zap.Error(err))
+		} else {
+			cfg.Logger.Debug("Generated schema", zap.String("component", "extension/"+ext.Name))
+		}
+	}
+
+	for _, recv := range cfg.Receivers {
+		if err := generator.GenerateSchema(component.KindReceiver, recv.Name, recv.Import); err != nil {
+			cfg.Logger.Warn("Failed to generate schema for receiver",
+				zap.String("component", recv.Name), zap.Error(err))
+		} else {
+			cfg.Logger.Debug("Generated schema", zap.String("component", "receiver/"+recv.Name))
+		}
+	}
+
+	for _, proc := range cfg.Processors {
+		if err := generator.GenerateSchema(component.KindProcessor, proc.Name, proc.Import); err != nil {
+			cfg.Logger.Warn("Failed to generate schema for processor",
+				zap.String("component", proc.Name), zap.Error(err))
+		} else {
+			cfg.Logger.Debug("Generated schema", zap.String("component", "processor/"+proc.Name))
+		}
+	}
+
+	for _, exp := range cfg.Exporters {
+		if err := generator.GenerateSchema(component.KindExporter, exp.Name, exp.Import); err != nil {
+			cfg.Logger.Warn("Failed to generate schema for exporter",
+				zap.String("component", exp.Name), zap.Error(err))
+		} else {
+			cfg.Logger.Debug("Generated schema", zap.String("component", "exporter/"+exp.Name))
+		}
+	}
+
+	for _, conn := range cfg.Connectors {
+		if err := generator.GenerateSchema(component.KindConnector, conn.Name, conn.Import); err != nil {
+			cfg.Logger.Warn("Failed to generate schema for connector",
+				zap.String("component", conn.Name), zap.Error(err))
+		} else {
+			cfg.Logger.Debug("Generated schema", zap.String("component", "connector/"+conn.Name))
+		}
+	}
+
+	cfg.Logger.Info("Schemas generated", zap.String("path", schemaOutputPath))
 	return nil
 }
 
