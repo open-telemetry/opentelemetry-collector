@@ -44,6 +44,7 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
 - `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+  - `retryable_statuses` (default = [429, 502, 503, 504]): List of HTTP status codes that should trigger retries. This option allows limiting which codes will be retried in case a backend is known to return codes that are not actually retryable.
 - `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:
@@ -70,6 +71,17 @@ exporters:
   otlp_http:
     ...
     encoding: json
+```
+
+To customize which HTTP status codes should trigger retries (should only be done for certain backends):
+
+```yaml
+exporters:
+  otlp_http:
+    endpoint: https://backend:4318
+    retry_on_failure:
+      enabled: true
+      retryable_statuses: [502, 503, 504]  # Don't retry 429 rate limits
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
