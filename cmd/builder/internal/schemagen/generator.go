@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // SchemaGenerator generates JSON schemas for collector component configurations using static analysis.
@@ -45,7 +47,7 @@ func (sg *SchemaGenerator) ensurePackageComments(pkgPath string) {
 }
 
 // GenerateSchema generates a JSON schema for a component's Config type and writes it to a file.
-func (sg *SchemaGenerator) GenerateSchema(category, componentType, importPath string) error {
+func (sg *SchemaGenerator) GenerateSchema(kind component.Kind, componentType, importPath string) error {
 	pkg, err := sg.analyzer.LoadPackage(importPath)
 	if err != nil {
 		return fmt.Errorf("failed to load package %s: %w", importPath, err)
@@ -67,7 +69,7 @@ func (sg *SchemaGenerator) GenerateSchema(category, componentType, importPath st
 	}
 
 	// Write to file
-	filename := fmt.Sprintf("%s_%s.json", category, componentType)
+	filename := fmt.Sprintf("%s_%s.json", strings.ToLower(kind.String()), componentType)
 	filePath := filepath.Join(sg.outputDir, filename)
 
 	if err := sg.writeSchemaToFile(filePath, schema); err != nil {

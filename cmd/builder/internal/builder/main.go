@@ -19,6 +19,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/schemagen"
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
@@ -182,7 +183,7 @@ func GenerateSchemas(cfg *Config) error {
 
 	// Generate schemas for each component category
 	for _, ext := range cfg.Extensions {
-		if err := generator.GenerateSchema("extension", ext.Name, ext.Import); err != nil {
+		if err := generator.GenerateSchema(component.KindExtension, ext.Name, ext.Import); err != nil {
 			cfg.Logger.Warn("Failed to generate schema for extension",
 				zap.String("component", ext.Name), zap.Error(err))
 		} else {
@@ -191,7 +192,7 @@ func GenerateSchemas(cfg *Config) error {
 	}
 
 	for _, recv := range cfg.Receivers {
-		if err := generator.GenerateSchema("receiver", recv.Name, recv.Import); err != nil {
+		if err := generator.GenerateSchema(component.KindReceiver, recv.Name, recv.Import); err != nil {
 			cfg.Logger.Warn("Failed to generate schema for receiver",
 				zap.String("component", recv.Name), zap.Error(err))
 		} else {
@@ -200,7 +201,7 @@ func GenerateSchemas(cfg *Config) error {
 	}
 
 	for _, proc := range cfg.Processors {
-		if err := generator.GenerateSchema("processor", proc.Name, proc.Import); err != nil {
+		if err := generator.GenerateSchema(component.KindProcessor, proc.Name, proc.Import); err != nil {
 			cfg.Logger.Warn("Failed to generate schema for processor",
 				zap.String("component", proc.Name), zap.Error(err))
 		} else {
@@ -209,7 +210,7 @@ func GenerateSchemas(cfg *Config) error {
 	}
 
 	for _, exp := range cfg.Exporters {
-		if err := generator.GenerateSchema("exporter", exp.Name, exp.Import); err != nil {
+		if err := generator.GenerateSchema(component.KindExporter, exp.Name, exp.Import); err != nil {
 			cfg.Logger.Warn("Failed to generate schema for exporter",
 				zap.String("component", exp.Name), zap.Error(err))
 		} else {
@@ -218,7 +219,7 @@ func GenerateSchemas(cfg *Config) error {
 	}
 
 	for _, conn := range cfg.Connectors {
-		if err := generator.GenerateSchema("connector", conn.Name, conn.Import); err != nil {
+		if err := generator.GenerateSchema(component.KindConnector, conn.Name, conn.Import); err != nil {
 			cfg.Logger.Warn("Failed to generate schema for connector",
 				zap.String("component", conn.Name), zap.Error(err))
 		} else {
