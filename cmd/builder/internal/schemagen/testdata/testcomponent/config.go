@@ -4,10 +4,6 @@
 // Package testcomponent provides a test configuration for schema generation testing.
 // It covers all basic Go types, special types (time.Duration), nested structs,
 // slices, maps, and deprecation detection.
-//
-// Note: configopaque.String and configoptional.Optional[T] types are tested
-// via integration tests with real collector components (e.g., otlpexporter)
-// since they require additional module dependencies.
 package testcomponent // import "go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent"
 
 import (
