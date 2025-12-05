@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type flavor int
@@ -26,6 +27,7 @@ const (
 // It supports a third flavor for struct types: Default(defaultVal).
 //
 // For struct types, it supports unmarshaling from a configuration source.
+// For struct types, it supports an 'enabled' field to explicitly disable a section.
 // The zero value of Optional is None.
 type Optional[T any] struct {
 	// value is the value of the Optional.
@@ -165,6 +167,17 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
+var (
+	addEnabledFieldFeatureGateID = "configoptional.AddEnabledField"
+	addEnabledFieldFeatureGate   = featuregate.GlobalRegistry().MustRegister(
+		addEnabledFieldFeatureGateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterFromVersion("v0.138.0"),
+		featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
+	)
+)
+
 // Unmarshal the configuration into the Optional value.
 //
 // The behavior of this method depends on the state of the Optional:
@@ -172,6 +185,11 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 //   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
 //   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
 //     using val without overrides from the configuration if the configuration is nil.
+//
+// (Under the `configoptional.AddEnabledField` feature gate)
+// If the configuration contains an 'enabled' field:
+//   - if enabled is true: the Optional becomes Some after unmarshaling.
+//   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
@@ -186,11 +204,29 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
+	isEnabled := true
+	if addEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
+		enabled := conf.Get("enabled")
+		conf.Delete("enabled")
+		var ok bool
+		if isEnabled, ok = enabled.(bool); !ok {
+			return fmt.Errorf("unexpected type %T for 'enabled': got '%v' value expected 'true' or 'false'", enabled, enabled)
+		}
+	}
+
 	if err := conf.Unmarshal(&o.value); err != nil {
 		return err
 	}
 
-	o.flavor = someFlavor
+	if isEnabled {
+		o.flavor = someFlavor
+	} else {
+		o.flavor = noneFlavor
+		// override o.value with zero value.
+		var zero T
+		o.value = zero
+	}
+
 	return nil
 }
 

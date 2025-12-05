@@ -19,16 +19,6 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_outgoing_items:
-      enabled: true
-      stability:
-        level: alpha
-      description: Number of items emitted from the processor.
-      unit: "{items}"
-      sum:
-        value_type: int
-        monotonic: true
-
     processor_internal_duration:
       enabled: true
       stability:
@@ -38,3 +28,13 @@ telemetry:
       histogram:
         async: false
         value_type: double
+
+    processor_outgoing_items:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of items emitted from the processor.
+      unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true

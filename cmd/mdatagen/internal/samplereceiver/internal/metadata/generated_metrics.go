@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -62,6 +62,9 @@ var MetricsInfo = metricsInfo{
 	OptionalMetricEmptyUnit: metricInfo{
 		Name: "optional.metric.empty_unit",
 	},
+	SystemCPUTime: metricInfo{
+		Name: "system.cpu.time",
+	},
 }
 
 type metricsInfo struct {
@@ -70,6 +73,7 @@ type metricsInfo struct {
 	MetricInputType          metricInfo
 	OptionalMetric           metricInfo
 	OptionalMetricEmptyUnit  metricInfo
+	SystemCPUTime            metricInfo
 }
 
 type metricInfo struct {
@@ -86,15 +90,15 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 	maof(dp)
 }
 
-func WithOptionalIntAttrMetricAttribute(optionalIntAttrAttributeValue int64) MetricAttributeOption {
+func WithConditionalIntAttrMetricAttribute(conditionalIntAttrAttributeValue int64) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutInt("optional_int_attr", optionalIntAttrAttributeValue)
+		dp.Attributes().PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
 	})
 }
 
-func WithOptionalStringAttrMetricAttribute(optionalStringAttrAttributeValue string) MetricAttributeOption {
+func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValue string) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutStr("optional_string_attr", optionalStringAttrAttributeValue)
+		dp.Attributes().PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
 	})
 }
 
@@ -115,7 +119,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
+func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -128,6 +132,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -374,6 +379,57 @@ func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmpt
 	return m
 }
 
+type metricSystemCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.time metric with initial data.
+func (m *metricSystemCPUTime) init() {
+	m.data.SetName("system.cpu.time")
+	m.data.SetDescription("Monotonic cumulative sum int metric enabled by default.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
+	m := metricSystemCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -389,6 +445,7 @@ type MetricsBuilder struct {
 	metricMetricInputType          metricMetricInputType
 	metricOptionalMetric           metricOptionalMetric
 	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
+	metricSystemCPUTime            metricSystemCPUTime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -440,6 +497,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
+		metricSystemCPUTime:            newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -566,6 +624,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMetricInputType.emit(ils.Metrics())
 	mb.metricOptionalMetric.emit(ils.Metrics())
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
+	mb.metricSystemCPUTime.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -598,8 +657,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
+func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...MetricAttributeOption) {
+	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, optInBoolAttrAttributeValue, options...)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
@@ -625,6 +684,11 @@ func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, va
 // RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
 func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
+}
+
+// RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

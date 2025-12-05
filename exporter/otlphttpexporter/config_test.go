@@ -53,8 +53,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
+			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -63,13 +62,13 @@ func TestUnmarshalConfig(t *testing.T) {
 					FlushTimeout: 200 * time.Millisecond,
 					MinSize:      8192,
 				}),
-			},
+			}),
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
+				Headers: configopaque.MapList{
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint: "https://1.2.3.4:1234",
 				TLS: configtls.ClientConfig{

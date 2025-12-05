@@ -63,7 +63,7 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
 	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings, agentOpt); err != nil {
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
@@ -71,7 +71,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.ClientConfig.Headers {
+	for k, v := range e.config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
 	}
 	e.metadata = metadata.New(headers)

@@ -8,8 +8,6 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,11 +19,11 @@ import (
 // Must use NewProfile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Profile struct {
-	orig  *otlpprofiles.Profile
+	orig  *internal.Profile
 	state *internal.State
 }
 
-func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
+func newProfile(orig *internal.Profile, state *internal.State) Profile {
 	return Profile{orig: orig, state: state}
 }
 
@@ -34,7 +32,7 @@ func newProfile(orig *otlpprofiles.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	return newProfile(internal.NewOrigProfile(), internal.NewState())
+	return newProfile(internal.NewProfile(), internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +44,7 @@ func (ms Profile) MoveTo(dest Profile) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigProfile(dest.orig, false)
+	internal.DeleteProfile(dest.orig, false)
 	*dest.orig, *ms.orig = *ms.orig, *dest.orig
 }
 
@@ -55,9 +53,9 @@ func (ms Profile) SampleType() ValueType {
 	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
-// Sample returns the Sample associated with this Profile.
-func (ms Profile) Sample() SampleSlice {
-	return newSampleSlice(&ms.orig.Sample, ms.state)
+// Samples returns the Samples associated with this Profile.
+func (ms Profile) Samples() SampleSlice {
+	return newSampleSlice(&ms.orig.Samples, ms.state)
 }
 
 // Time returns the time associated with this Profile.
@@ -71,15 +69,15 @@ func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
-// Duration returns the duration associated with this Profile.
-func (ms Profile) Duration() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.DurationNano)
+// DurationNano returns the durationnano associated with this Profile.
+func (ms Profile) DurationNano() uint64 {
+	return ms.orig.DurationNano
 }
 
-// SetDuration replaces the duration associated with this Profile.
-func (ms Profile) SetDuration(v pcommon.Timestamp) {
+// SetDurationNano replaces the durationnano associated with this Profile.
+func (ms Profile) SetDurationNano(v uint64) {
 	ms.state.AssertMutable()
-	ms.orig.DurationNano = uint64(v)
+	ms.orig.DurationNano = v
 }
 
 // PeriodType returns the periodtype associated with this Profile.
@@ -98,11 +96,6 @@ func (ms Profile) SetPeriod(v int64) {
 	ms.orig.Period = v
 }
 
-// CommentStrindices returns the CommentStrindices associated with this Profile.
-func (ms Profile) CommentStrindices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
-}
-
 // ProfileID returns the profileid associated with this Profile.
 func (ms Profile) ProfileID() ProfileID {
 	return ProfileID(ms.orig.ProfileId)
@@ -111,7 +104,7 @@ func (ms Profile) ProfileID() ProfileID {
 // SetProfileID replaces the profileid associated with this Profile.
 func (ms Profile) SetProfileID(v ProfileID) {
 	ms.state.AssertMutable()
-	ms.orig.ProfileId = data.ProfileID(v)
+	ms.orig.ProfileId = internal.ProfileID(v)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Profile.
@@ -138,16 +131,16 @@ func (ms Profile) SetOriginalPayloadFormat(v string) {
 
 // OriginalPayload returns the OriginalPayload associated with this Profile.
 func (ms Profile) OriginalPayload() pcommon.ByteSlice {
-	return pcommon.ByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state))
+	return pcommon.ByteSlice(internal.NewByteSliceWrapper(&ms.orig.OriginalPayload, ms.state))
 }
 
 // AttributeIndices returns the AttributeIndices associated with this Profile.
 func (ms Profile) AttributeIndices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
+	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	internal.CopyOrigProfile(dest.orig, ms.orig)
+	internal.CopyProfile(dest.orig, ms.orig)
 }

@@ -51,8 +51,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
+			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeItems,
 				NumConsumers: 2,
 				QueueSize:    100000,
@@ -62,12 +61,12 @@ func TestUnmarshalConfig(t *testing.T) {
 					MinSize:      1000,
 					MaxSize:      10000,
 				}),
-			},
+			}),
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
+				Headers: configopaque.MapList{
+					{Name: "another", Value: "somevalue"},
+					{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+					{Name: "header1", Value: "234"},
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
@@ -102,8 +101,7 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetryConfig: configretry.NewDefaultBackOffConfig(),
-			QueueConfig: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
+			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				QueueSize:    1000,
 				NumConsumers: 10,
@@ -112,7 +110,7 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      8192,
 				}),
-			},
+			}),
 			ClientConfig: configgrpc.ClientConfig{
 				Endpoint:        "1.2.3.4:1234",
 				Compression:     "gzip",

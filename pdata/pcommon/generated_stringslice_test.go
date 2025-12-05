@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -52,7 +53,7 @@ func TestStringSliceReadOnly(t *testing.T) {
 	raw := []string{"a", "b", "c"}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := StringSlice(internal.NewStringSlice(&raw, sharedState))
+	ms := StringSlice(internal.NewStringSliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.Equal(t, string("a"), ms.At(0))
@@ -157,6 +158,7 @@ func TestStringSliceEqual(t *testing.T) {
 }
 
 func BenchmarkStringSliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := NewStringSlice()
 	ms.Append("a", "b", "c")
 	cmp := NewStringSlice()

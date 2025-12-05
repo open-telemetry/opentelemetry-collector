@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -52,7 +53,7 @@ func TestFloat64SliceReadOnly(t *testing.T) {
 	raw := []float64{1.1, 2.2, 3.3}
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
-	ms := Float64Slice(internal.NewFloat64Slice(&raw, sharedState))
+	ms := Float64Slice(internal.NewFloat64SliceWrapper(&raw, sharedState))
 
 	assert.Equal(t, 3, ms.Len())
 	assert.InDelta(t, float64(1.1), ms.At(0), 0.01)
@@ -157,6 +158,7 @@ func TestFloat64SliceEqual(t *testing.T) {
 }
 
 func BenchmarkFloat64SliceEqual(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := NewFloat64Slice()
 	ms.Append(1.1, 2.2, 3.3)
 	cmp := NewFloat64Slice()

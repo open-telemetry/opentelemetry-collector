@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -52,7 +53,7 @@ type ServerConfig struct {
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
-	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
@@ -102,7 +103,6 @@ type ServerConfig struct {
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
-		ResponseHeaders:   map[string]configopaque.String{},
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -169,7 +169,11 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+//
+// To allow the configuration to reference middleware or authentication extensions,
+// the `extensions` argument should be the output of `host.GetExtensions()`.
+// It may also be `nil` in tests where no such extension is expected to be used.
+func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -184,8 +188,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	// Apply middlewares in reverse order so they execute in
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
+	if len(sc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
+	}
 	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -210,8 +217,12 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	}
 
 	if sc.Auth.HasValue() {
+		if extensions == nil {
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
+		}
+
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
+		server, err := auth.GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -287,11 +298,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	return server, err
 }
 
-func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
+func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 
-		for k, v := range headers {
+		for k, v := range headers.Iter {
 			h.Set(k, string(v))
 		}
 

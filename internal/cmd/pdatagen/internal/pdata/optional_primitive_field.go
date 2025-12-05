@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/pdata"
-
 import (
 	"strings"
 
@@ -24,7 +23,7 @@ func (ms {{ .structName }}) Has{{ .fieldName }}() bool {
 // Set{{ .fieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .fieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
-	ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: v}
+	ms.orig.{{ .fieldName }}_ = &internal.{{ .originStructType }}{{ "{" }}{{ .fieldName }}: v}
 }
 
 // Remove{{ .fieldName }} removes the {{ .lowerFieldName }} associated with this {{ .structName }}.
@@ -55,19 +54,18 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
-const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
+const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &internal.{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
-const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
-	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
-	if !ok {
-		dest{{ .fieldName }} = &{{ .originStructType }}{}
-		dest.{{ .fieldName }}_ = dest{{ .fieldName }}
+const optionalOneOfMessageOrigTemplate = `
+func (m *{{ .ParentMessageName }}) Get{{ .OneOfGroup }}() any {
+	if m != nil {
+		return m.{{ .Name }}_
 	}
-	dest{{ .fieldName }}.{{ .fieldName }} = src{{ .fieldName }}.{{ .fieldName }}
-} else {
-	dest.{{ .fieldName }}_ = nil
-}`
+	return nil
+}
+
+`
 
 type OptionalPrimitiveField struct {
 	fieldName string
@@ -87,65 +85,66 @@ func (opv *OptionalPrimitiveField) GenerateTestValue(ms *messageStruct) string {
 	return template.Execute(template.Parse("optionalPrimitiveSetTestTemplate", []byte(optionalPrimitiveSetTestTemplate)), opv.templateFields(ms))
 }
 
-func (opv *OptionalPrimitiveField) GenerateTestFailingUnmarshalProtoValues(ms *messageStruct) string {
-	return opv.toProtoField(ms).GenTestFailingUnmarshalProtoValues()
+type optionalPrimitiveProtoField struct {
+	*proto.Field
 }
 
-func (opv *OptionalPrimitiveField) GenerateTestEncodingValues(ms *messageStruct) string {
-	return opv.toProtoField(ms).GenTestEncodingValues()
+func (opv optionalPrimitiveProtoField) GetName() string {
+	return opv.Name + "_"
 }
 
-func (opv *OptionalPrimitiveField) GeneratePoolOrig(ms *messageStruct) string {
-	return opv.toProtoField(ms).GenPoolVarOrig()
+func (opv optionalPrimitiveProtoField) TestValue() string {
+	return "&" + opv.OneOfMessageName + "{" + opv.Name + ": " + opv.Field.TestValue() + "}"
 }
 
-func (opv *OptionalPrimitiveField) GenerateDeleteOrig(ms *messageStruct) string {
-	return "switch ov := orig." + opv.fieldName + "_.(type) {\n\tcase *" + ms.getOriginFullName() + "_" + opv.fieldName + ":\n\t" + opv.toProtoField(ms).GenDeleteOrig() + "\n}\n"
+func (opv optionalPrimitiveProtoField) GenMessageField() string {
+	return opv.Name + "_ any"
 }
 
-func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
-	return template.Execute(template.Parse("optionalPrimitiveCopyOrigTemplate", []byte(optionalPrimitiveCopyOrigTemplate)), opv.templateFields(ms))
+func (opv optionalPrimitiveProtoField) GenOneOfMessages() string {
+	return template.Execute(template.Parse("optionalOneOfMessageOrigTemplate", []byte(optionalOneOfMessageOrigTemplate)), opv.Field) + opv.Field.GenOneOfMessages()
 }
 
-func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	return "if orig, ok := orig." + opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + "); ok {\n\t" + opv.toProtoField(ms).GenMarshalJSON() + "}"
+func (opv optionalPrimitiveProtoField) GenCopy() string {
+	return "switch t := src." + opv.Name + "_.(type) {\n\tcase *" + opv.OneOfMessageName + ":\n\t" + opv.Field.GenCopy() + "\ndefault: dest." + opv.Name + "_ = nil\n}\n"
 }
 
-func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
-	return opv.toProtoField(ms).GenUnmarshalJSON()
+func (opv optionalPrimitiveProtoField) GenDelete() string {
+	return "switch ov := orig." + opv.Name + "_.(type) {\n\tcase *" + opv.OneOfMessageName + ":\n\t" + opv.Field.GenDelete() + "\n}\n"
 }
 
-func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {
-	return "if orig, ok := orig." + opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + "); ok {\n\t_ = orig\n\t" + opv.toProtoField(ms).GenSizeProto() + "}"
+func (opv optionalPrimitiveProtoField) GenMarshalJSON() string {
+	return "if orig, ok := orig." + opv.Name + "_.(*" + opv.OneOfMessageName + "); ok {\n\t" + opv.Field.GenMarshalJSON() + "}"
 }
 
-func (opv *OptionalPrimitiveField) GenerateMarshalProto(ms *messageStruct) string {
-	return "if orig, ok := orig." + opv.fieldName + "_.(*" + ms.originFullName + "_" + opv.fieldName + "); ok {\n\t" + opv.toProtoField(ms).GenMarshalProto() + "}"
+func (opv optionalPrimitiveProtoField) GenSizeProto() string {
+	return "if orig, ok := orig." + opv.Name + "_.(*" + opv.OneOfMessageName + "); ok {\n\t_ = orig\n\t" + opv.Field.GenSizeProto() + "}"
 }
 
-func (opv *OptionalPrimitiveField) GenerateUnmarshalProto(ms *messageStruct) string {
-	return opv.toProtoField(ms).GenUnmarshalProto()
+func (opv optionalPrimitiveProtoField) GenMarshalProto() string {
+	return "if orig, ok := orig." + opv.Name + "_.(*" + opv.OneOfMessageName + "); ok {\n\t" + opv.Field.GenMarshalProto() + "}"
 }
 
-func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct) *proto.Field {
-	return &proto.Field{
-		Type:                 opv.protoType,
-		ID:                   opv.protoID,
-		OneOfGroup:           opv.fieldName + "_",
-		Name:                 opv.fieldName,
-		OneOfMessageFullName: ms.originFullName + "_" + opv.fieldName,
-		Nullable:             true,
-	}
+func (opv *OptionalPrimitiveField) toProtoField(ms *messageStruct) proto.FieldInterface {
+	return optionalPrimitiveProtoField{&proto.Field{
+		Type:              opv.protoType,
+		ID:                opv.protoID,
+		OneOfGroup:        opv.fieldName + "_",
+		Name:              opv.fieldName,
+		OneOfMessageName:  ms.protoName + "_" + opv.fieldName,
+		ParentMessageName: ms.protoName,
+		Nullable:          true,
+	}}
 }
 
 func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]any {
-	pf := opv.toProtoField(ms)
+	pf := opv.toProtoField(ms).(optionalPrimitiveProtoField)
 	return map[string]any{
 		"structName":       ms.getName(),
 		"defaultVal":       pf.DefaultValue(),
 		"fieldName":        opv.fieldName,
 		"lowerFieldName":   strings.ToLower(opv.fieldName),
-		"testValue":        pf.TestValue(),
+		"testValue":        pf.Field.TestValue(),
 		"returnType":       pf.GoType(),
 		"originName":       ms.getOriginName(),
 		"originStructName": ms.getOriginFullName(),

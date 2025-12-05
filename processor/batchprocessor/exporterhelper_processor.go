@@ -18,7 +18,6 @@ import (
 func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfig {
 	// These settings match legacy behavior
 	queueBatchConfig := exporterhelper.QueueBatchConfig{
-		Enabled:         true,
 		WaitForResult:   propagateErrors.IsEnabled(),
 		BlockOnOverflow: true,
 		Sizer:           exporterhelper.RequestSizerTypeItems,
@@ -78,7 +77,7 @@ func newTracesProcessorWithExporterHelper(ctx context.Context, set processor.Set
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeTraces,
-		exporterhelper.WithQueue(queueBatchConfig),
+		exporterhelper.WithQueue(configoptional.Some(queueBatchConfig)),
 	)
 	return result, err
 }
@@ -98,7 +97,7 @@ func newMetricsProcessorWithExporterHelper(ctx context.Context, set processor.Se
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeMetrics,
-		exporterhelper.WithQueue(queueBatchConfig),
+		exporterhelper.WithQueue(configoptional.Some(queueBatchConfig)),
 	)
 }
 
@@ -117,6 +116,6 @@ func newLogsProcessorWithExporterHelper(ctx context.Context, set processor.Setti
 		exporterSet,
 		cfg,
 		nextConsumer.ConsumeLogs,
-		exporterhelper.WithQueue(queueBatchConfig),
+		exporterhelper.WithQueue(configoptional.Some(queueBatchConfig)),
 	)
 }

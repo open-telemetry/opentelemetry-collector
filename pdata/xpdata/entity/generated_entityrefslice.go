@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 // EntityRefSlice logically represents a slice of EntityRef.
@@ -21,16 +20,16 @@ import (
 //
 // Must use NewEntityRefSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type EntityRefSlice internal.EntityRefSlice
+type EntityRefSlice internal.EntityRefSliceWrapper
 
-func newEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *internal.State) EntityRefSlice {
-	return EntityRefSlice(internal.NewEntityRefSlice(orig, state))
+func newEntityRefSlice(orig *[]*internal.EntityRef, state *internal.State) EntityRefSlice {
+	return EntityRefSlice(internal.NewEntityRefSliceWrapper(orig, state))
 }
 
-// NewEntityRefSlice creates a EntityRefSlice with 0 elements.
+// NewEntityRefSlice creates a EntityRefSliceWrapper with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewEntityRefSlice() EntityRefSlice {
-	orig := []*otlpcommon.EntityRef(nil)
+	orig := []*internal.EntityRef(nil)
 	return newEntityRefSlice(&orig, internal.NewState())
 }
 
@@ -87,7 +86,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpcommon.EntityRef, len(*es.getOrig()), newCap)
+	newOrig := make([]*internal.EntityRef, len(*es.getOrig()), newCap)
 	copy(newOrig, *es.getOrig())
 	*es.getOrig() = newOrig
 }
@@ -96,7 +95,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 // It returns the newly added EntityRef.
 func (es EntityRefSlice) AppendEmpty() EntityRef {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), internal.NewOrigEntityRef())
+	*es.getOrig() = append(*es.getOrig(), internal.NewEntityRef())
 	return es.At(es.Len() - 1)
 }
 
@@ -125,7 +124,7 @@ func (es EntityRefSlice) RemoveIf(f func(EntityRef) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigEntityRef((*es.getOrig())[i], true)
+			internal.DeleteEntityRef((*es.getOrig())[i], true)
 			(*es.getOrig())[i] = nil
 
 			continue
@@ -149,7 +148,7 @@ func (es EntityRefSlice) CopyTo(dest EntityRefSlice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyOrigEntityRefSlice(*dest.getOrig(), *es.getOrig())
+	*dest.getOrig() = internal.CopyEntityRefPtrSlice(*dest.getOrig(), *es.getOrig())
 }
 
 // Sort sorts the EntityRef elements within EntityRefSlice given the
@@ -160,10 +159,10 @@ func (es EntityRefSlice) Sort(less func(a, b EntityRef) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-func (ms EntityRefSlice) getOrig() *[]*otlpcommon.EntityRef {
-	return internal.GetOrigEntityRefSlice(internal.EntityRefSlice(ms))
+func (ms EntityRefSlice) getOrig() *[]*internal.EntityRef {
+	return internal.GetEntityRefSliceOrig(internal.EntityRefSliceWrapper(ms))
 }
 
 func (ms EntityRefSlice) getState() *internal.State {
-	return internal.GetEntityRefSliceState(internal.EntityRefSlice(ms))
+	return internal.GetEntityRefSliceState(internal.EntityRefSliceWrapper(ms))
 }

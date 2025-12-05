@@ -15,9 +15,12 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
-func setAttributesFullName(attrs map[AttributeName]Attribute) {
+func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
 		v.FullName = k
+		if v.RequirementLevel == "" {
+			v.RequirementLevel = AttributeRequirementLevelRecommended
+		}
 		attrs[k] = v
 	}
 }
@@ -61,8 +64,8 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
-	setAttributesFullName(md.Attributes)
-	setAttributesFullName(md.ResourceAttributes)
+	setAttributeDefaultFields(md.Attributes)
+	setAttributeDefaultFields(md.ResourceAttributes)
 
 	return md, nil
 }
@@ -79,8 +82,8 @@ var componentTypes = []string{
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
 	for _, cType := range componentTypes {
-		if strings.HasSuffix(parentFolder, cType) {
-			return strings.TrimSuffix(parentFolder, cType)
+		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
+			return before
 		}
 	}
 	return parentFolder

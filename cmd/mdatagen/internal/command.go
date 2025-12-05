@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -76,6 +77,15 @@ func run(ymlPath string) error {
 
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
+
+	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	if readErr != nil {
+		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
+	}
+
+	if err = validateYAMLKeyOrder(raw); err != nil {
+		return fmt.Errorf("metadata.yaml ordering check failed: %w", err)
+	}
 
 	md, err := LoadMetadata(ymlPath)
 	if err != nil {
@@ -221,14 +231,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
-				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Events {
 						for _, attribute := range event.Attributes {
 							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
+							if exists && v.IsConditional() && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}
@@ -238,14 +248,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 
 					return used
 				},
-				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getMetricConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Metrics {
 						for _, attribute := range event.Attributes {
 							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
+							if exists && v.IsConditional() && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}
@@ -290,11 +300,11 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
-					result := ""
+					var result strings.Builder
 					for _, part := range parts {
-						result += caser(part)
+						fmt.Fprintf(&result, "%s", caser(part))
 					}
-					return result
+					return result.String()
 				},
 				"inc":       func(i int) int { return i + 1 },
 				"distroURL": distroURL,
@@ -403,4 +413,64 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) er
 	}
 
 	return formatErr
+}
+
+func validateMappingKeysSorted(root *yaml.Node, path ...string) error {
+	// unwrap doc
+	n := root
+	if n.Kind == yaml.DocumentNode && len(n.Content) > 0 {
+		n = n.Content[0]
+	}
+	// follow path
+	for _, seg := range path {
+		if n.Kind != yaml.MappingNode {
+			return nil
+		}
+		var next *yaml.Node
+		for i := 0; i < len(n.Content); i += 2 {
+			if n.Content[i].Value == seg {
+				next = n.Content[i+1]
+				break
+			}
+		}
+		if next == nil {
+			return nil
+		}
+		n = next
+	}
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	// collect keys
+	keys := make([]string, 0, len(n.Content)/2)
+	for i := 0; i < len(n.Content); i += 2 {
+		keys = append(keys, n.Content[i].Value)
+	}
+
+	if !slices.IsSorted(keys) {
+		return fmt.Errorf("%v keys are not sorted: %v", path, keys)
+	}
+	return nil
+}
+
+// ValidateYAMLKeyOrder checks the sections we care about.
+func validateYAMLKeyOrder(raw []byte) error {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(raw, &doc); err != nil {
+		return err
+	}
+	for _, p := range [][]string{
+		{"resource_attributes"},
+		{"entities"},
+		{"attributes"},
+		{"metrics"},
+		{"events"},
+		{"telemetry", "metrics"},
+	} {
+		if err := validateMappingKeysSorted(&doc, p...); err != nil {
+			return err
+		}
+	}
+	return nil
 }

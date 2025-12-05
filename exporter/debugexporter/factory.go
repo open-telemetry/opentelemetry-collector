@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -42,15 +43,12 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.QueueSize = 1
-
 	return &Config{
 		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		QueueConfig:        queueCfg,
+		QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
@@ -61,6 +59,7 @@ func createTraces(ctx context.Context, set exporter.Settings, config component.C
 	return exporterhelper.NewTraces(ctx, set, config,
 		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(cfg.QueueConfig),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
@@ -73,6 +72,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, config component.
 	return exporterhelper.NewMetrics(ctx, set, config,
 		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(cfg.QueueConfig),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
@@ -85,6 +85,7 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(cfg.QueueConfig),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
@@ -97,6 +98,7 @@ func createProfiles(ctx context.Context, set exporter.Settings, config component
 	return xexporterhelper.NewProfiles(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(cfg.QueueConfig),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)

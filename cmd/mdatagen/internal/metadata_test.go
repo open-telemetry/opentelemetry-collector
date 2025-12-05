@@ -120,12 +120,32 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/no_type_attr.yaml",
 			wantErr: "empty type for attribute: used_attr",
 		},
+		{
+			name:    "testdata/entity_undefined_id_attribute.yaml",
+			wantErr: `entity "host": identity refers to undefined resource attribute: host.missing`,
+		},
+		{
+			name:    "testdata/entity_undefined_description_attribute.yaml",
+			wantErr: `entity "host": description refers to undefined resource attribute: host.missing`,
+		},
+		{
+			name:    "testdata/entity_empty_id_attributes.yaml",
+			wantErr: `entity "host": identity is required`,
+		},
+		{
+			name:    "testdata/entity_duplicate_attributes.yaml",
+			wantErr: `attribute host.name is already used by entity`,
+		},
+		{
+			name:    "testdata/entity_duplicate_types.yaml",
+			wantErr: `duplicate entity type: host`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
 			require.Error(t, err)
-			require.EqualError(t, err, tt.wantErr)
+			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
@@ -211,6 +231,95 @@ func TestCodeCovID(t *testing.T) {
 		t.Run(tt.md.Type, func(t *testing.T) {
 			got := tt.md.GetCodeCovComponentID()
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestAttributeRequirementLevel(t *testing.T) {
+	tests := []struct {
+		name             string
+		requirementLevel AttributeRequirementLevel
+		wantConditional  bool
+	}{
+		{
+			name:             "required",
+			requirementLevel: AttributeRequirementLevelRequired,
+			wantConditional:  false,
+		},
+		{
+			name:             "conditionally_required",
+			requirementLevel: AttributeRequirementLevelConditionallyRequired,
+			wantConditional:  true,
+		},
+		{
+			name:             "recommended",
+			requirementLevel: AttributeRequirementLevelRecommended,
+			wantConditional:  false,
+		},
+		{
+			name:             "opt_in",
+			requirementLevel: AttributeRequirementLevelOptIn,
+			wantConditional:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := Attribute{RequirementLevel: tt.requirementLevel}
+			assert.Equal(t, tt.wantConditional, attr.IsConditional())
+		})
+	}
+}
+
+func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    AttributeRequirementLevel
+		wantErr bool
+	}{
+		{
+			name:  "required",
+			input: "required",
+			want:  AttributeRequirementLevelRequired,
+		},
+		{
+			name:  "conditionally_required",
+			input: "conditionally_required",
+			want:  AttributeRequirementLevelConditionallyRequired,
+		},
+		{
+			name:  "recommended",
+			input: "recommended",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:  "opt_in",
+			input: "opt_in",
+			want:  AttributeRequirementLevelOptIn,
+		},
+		{
+			name:  "empty defaults to recommended",
+			input: "",
+			want:  AttributeRequirementLevelRecommended,
+		},
+		{
+			name:    "invalid value",
+			input:   "invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rl AttributeRequirementLevel
+			err := rl.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, rl)
 		})
 	}
 }

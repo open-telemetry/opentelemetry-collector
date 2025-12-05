@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
@@ -140,7 +141,6 @@ func (pq *persistentQueue[T]) internalSize() int64 {
 }
 
 func (pq *persistentQueue[T]) requestSize() int64 {
-	//nolint:gosec
 	return int64(pq.metadata.WriteIndex-pq.metadata.ReadIndex) + int64(len(pq.metadata.CurrentlyDispatchedItems))
 }
 
@@ -179,8 +179,7 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 		return errValueNotSet
 	}
 
-	metadata := &pq.metadata
-	if err := metadata.Unmarshal(buf); err != nil {
+	if err := proto.Unmarshal(buf, &pq.metadata); err != nil {
 		return err
 	}
 
@@ -222,7 +221,7 @@ func (pq *persistentQueue[T]) loadLegacyMetadata(ctx context.Context) {
 	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
 
 	// Save to a new format and clean up legacy keys
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		pq.logger.Error("Failed to marshal metadata", zap.Error(err))
 		return
@@ -294,7 +293,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	pq.metadata.WriteIndex++
 
-	metadataBuf, err := pq.metadata.Marshal()
+	metadataBuf, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return err
 	}
@@ -363,7 +362,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 
 	var req T
 	restoredCtx := context.Background()
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return 0, req, restoredCtx, false
 	}
@@ -516,7 +515,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		pq.metadata.ItemsSize = 0
 	}
 
-	metadataBytes, err := pq.metadata.Marshal()
+	metadataBytes, err := proto.Marshal(&pq.metadata)
 	if err != nil {
 		return err
 	}
