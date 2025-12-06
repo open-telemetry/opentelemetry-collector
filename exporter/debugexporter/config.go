@@ -40,6 +40,7 @@ type Config struct {
 	// Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively.
 	// All other values are treated as file paths.
 	// (default = ["stdout"])
+	// OutputPaths will be ignored when UseInternalLogger is true
 	OutputPaths []string `mapstructure:"output_paths"`
 
 	QueueConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
