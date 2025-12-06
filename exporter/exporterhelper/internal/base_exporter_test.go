@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -49,7 +50,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, bs.queueBatchSettings.Encoding)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.Error(t, err)
 
 	qCfg := NewDefaultQueueConfig()
@@ -58,7 +59,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
+		WithQueueBatch(configoptional.Some(qCfg), queuebatch.Settings[request.Request]{}))
 	require.Error(t, err)
 }
 
@@ -72,7 +73,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	qCfg.WaitForResult = true
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
-		WithQueue(qCfg),
+		WithQueue(configoptional.Some(qCfg)),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
@@ -98,9 +99,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			queueOptions: []Option{
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				func() Option {
-					qs := NewDefaultQueueConfig()
-					qs.Enabled = false
-					return WithQueue(qs)
+					return WithQueue(configoptional.None[queuebatch.Config]())
 				}(),
 			},
 		},
@@ -108,9 +107,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			name: "WithRequestQueue",
 			queueOptions: []Option{
 				func() Option {
-					qs := NewDefaultQueueConfig()
-					qs.Enabled = false
-					return WithQueueBatch(qs, newFakeQueueBatch())
+					return WithQueueBatch(configoptional.None[queuebatch.Config](), newFakeQueueBatch())
 				}(),
 			},
 		},
