@@ -203,7 +203,6 @@ func BenchmarkQueueSender_ARC(b *testing.B) {
 	for _, sc := range scenarios {
 		b.Run(sc.name, func(b *testing.B) {
 			qCfg := NewDefaultQueueConfig()
-			qCfg.Enabled = true
 			qCfg.QueueSize = 100_000
 			qCfg.Batch = configoptional.Optional[queuebatch.BatchConfig]{}
 			qCfg.NumConsumers = sc.numConsumers

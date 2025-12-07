@@ -54,8 +54,6 @@ func NewQueueSender(
 ) (sender.Sender[request.Request], error) {
 	var arcCtl *arc.Controller
 	exportFunc := func(ctx context.Context, req request.Request) error {
-		// Have to read the number of items before sending the request since the request can
-		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 		if errSend := next.Send(ctx, req); errSend != nil {
 			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
@@ -65,15 +63,18 @@ func NewQueueSender(
 		return nil
 	}
 
-	// If ARC is enabled, wrap the export function with ARC logic.
 	if qCfg.Arc.Enabled {
+		// Ensure physical consumers can support the theoretical ARC limit
+		if qCfg.NumConsumers < qCfg.Arc.MaxConcurrency {
+			qCfg.NumConsumers = qCfg.Arc.MaxConcurrency
+		}
+
 		tel, err := metadata.NewTelemetryBuilder(qSet.Telemetry)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create telemetry builder for ARC: %w", err)
 		}
 		arcCtl = arc.NewController(qCfg.Arc, tel, qSet.ID, qSet.Signal)
 
-		// Create the attributes for sync ARC metrics
 		exporterAttr := attribute.String("exporter", qSet.ID.String())
 		dataTypeAttr := attribute.String("data_type", strings.ToLower(qSet.Signal.String()))
 		arcAttrs := metric.WithAttributes(exporterAttr, dataTypeAttr)
@@ -82,15 +83,8 @@ func NewQueueSender(
 		exportFunc = func(ctx context.Context, req request.Request) error {
 			startWait := time.Now()
 			if !arcCtl.Acquire(ctx) {
-				// This context is from the queue, so it's a background context.
-				// If Acquire fails, it means context was cancelled, which shouldn't happen
-				// unless shutdown is happening.
-
-				// Record wait time even on failure
 				waitMs := time.Since(startWait).Milliseconds()
 				tel.ExporterArcAcquireWaitMs.Record(ctx, waitMs, arcAttrs)
-
-				// Record failure
 				tel.ExporterArcFailures.Add(ctx, 1, arcAttrs)
 
 				if err := ctx.Err(); err != nil {
@@ -108,7 +102,6 @@ func NewQueueSender(
 			rtt := time.Since(startTime)
 
 			isBackpressure := experr.IsRetryableError(err)
-
 			isSuccess := err == nil
 
 			arcCtl.ReleaseWithSample(ctx, rtt, isSuccess, isBackpressure)
@@ -121,7 +114,6 @@ func NewQueueSender(
 		return nil, err
 	}
 
-	// If ARC is enabled, we need to chain its shutdown.
 	if arcCtl != nil {
 		return &queueSenderWithArc{
 			QueueBatch: qbs,
