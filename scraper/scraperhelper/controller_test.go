@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
@@ -64,8 +63,8 @@ func (ts *testScrape) scrapeMetrics(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func newTestNoDelaySettings() *controller.ControllerConfig {
-	return &controller.ControllerConfig{
+func newTestNoDelaySettings() *ControllerConfig {
+	return &ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       0,
 	}
@@ -75,7 +74,7 @@ type scraperTestCase struct {
 	name string
 
 	scrapers                  int
-	scraperControllerSettings *controller.ControllerConfig
+	scraperControllerSettings *ControllerConfig
 	scrapeErr                 error
 	expectScraped             bool
 
@@ -562,7 +561,7 @@ func TestLogsScraperControllerStartsOnInit(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewLogsController(
-		&controller.ControllerConfig{
+		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
@@ -589,7 +588,7 @@ func TestMetricsScraperControllerStartsOnInit(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewMetricsController(
-		&controller.ControllerConfig{
+		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
@@ -615,7 +614,7 @@ func TestLogsScraperControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = controller.ControllerConfig{
+		cfg     = ControllerConfig{
 			CollectionInterval: time.Second,
 			InitialDelay:       300 * time.Millisecond,
 		}
@@ -654,7 +653,7 @@ func TestMetricsScraperControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = controller.ControllerConfig{
+		cfg     = ControllerConfig{
 			CollectionInterval: time.Second,
 			InitialDelay:       300 * time.Millisecond,
 		}
@@ -684,7 +683,7 @@ func TestMetricsScraperControllerInitialDelay(t *testing.T) {
 }
 
 func TestLogsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
-	cfg := controller.ControllerConfig{
+	cfg := ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       5 * time.Second,
 	}
@@ -718,7 +717,7 @@ func TestLogsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 }
 
 func TestMetricsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
-	cfg := controller.ControllerConfig{
+	cfg := ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       5 * time.Second,
 	}

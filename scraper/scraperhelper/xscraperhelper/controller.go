@@ -6,16 +6,18 @@ package xscraperhelper // import "go.opentelemetry.io/collector/scraper/scraperh
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
@@ -62,7 +64,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ControllerOption {
 }
 
 // NewProfilesController creates a receiver.Profiles with the configured options, that can control multiple xscraper.Profiles.
-func NewProfilesController(cfg *controller.ControllerConfig,
+func NewProfilesController(cfg *ControllerConfig,
 	rSet receiver.Settings,
 	nextConsumer xconsumer.Profiles,
 	options ...ControllerOption,
@@ -81,8 +83,8 @@ func NewProfilesController(cfg *controller.ControllerConfig,
 		}
 		scrapers = append(scrapers, s)
 	}
-	return controller.NewController[xscraper.Profiles](
-		cfg, rSet, scrapers, func(c *controller.Controller[xscraper.Profiles]) { scrapeProfiles(c, nextConsumer) }, co.tickerCh)
+	return newController[xscraper.Profiles](
+		cfg, rSet, scrapers, func(c *controller[xscraper.Profiles]) { scrapeProfiles(c, nextConsumer) }, co.tickerCh)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
@@ -101,13 +103,13 @@ func getSettings(sType component.Type, rSet receiver.Settings) scraper.Settings 
 	}
 }
 
-func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) {
-	ctx, done := withScrapeContext(c.Timeout)
+func scrapeProfiles(c *controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) {
+	ctx, done := withScrapeContext(c.timeout)
 	defer done()
 
 	profiles := pprofile.NewProfiles()
-	for i := range c.Scrapers {
-		md, err := c.Scrapers[i].ScrapeProfiles(ctx)
+	for i := range c.scrapers {
+		md, err := c.scrapers[i].ScrapeProfiles(ctx)
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
 			continue
 		}
@@ -127,4 +129,109 @@ func withScrapeContext(timeout time.Duration) (context.Context, context.CancelFu
 		return context.WithCancel(context.Background())
 	}
 	return context.WithTimeout(context.Background(), timeout)
+}
+
+type controller[T component.Component] struct {
+	collectionInterval time.Duration
+	initialDelay       time.Duration
+	timeout            time.Duration
+
+	scrapers   []T
+	scrapeFunc func(*controller[T])
+	tickerCh   <-chan time.Time
+
+	done chan struct{}
+	wg   sync.WaitGroup
+
+	obsrecv *receiverhelper.ObsReport
+}
+
+func newController[T component.Component](
+	cfg *ControllerConfig,
+	rSet receiver.Settings,
+	scrapers []T,
+	scrapeFunc func(*controller[T]),
+	tickerCh <-chan time.Time,
+) (*controller[T], error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             rSet.ID,
+		Transport:              "",
+		ReceiverCreateSettings: rSet,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cs := &controller[T]{
+		collectionInterval: cfg.CollectionInterval,
+		initialDelay:       cfg.InitialDelay,
+		timeout:            cfg.Timeout,
+		scrapers:           scrapers,
+		scrapeFunc:         scrapeFunc,
+		done:               make(chan struct{}),
+		tickerCh:           tickerCh,
+		obsrecv:            obsrecv,
+	}
+
+	return cs, nil
+}
+
+// Start the receiver, invoked during service start.
+func (sc *controller[T]) Start(ctx context.Context, host component.Host) error {
+	for _, scrp := range sc.scrapers {
+		if err := scrp.Start(ctx, host); err != nil {
+			return err
+		}
+	}
+
+	sc.startScraping()
+	return nil
+}
+
+// Shutdown the receiver, invoked during service shutdown.
+func (sc *controller[T]) Shutdown(ctx context.Context) error {
+	// Signal the goroutine to stop.
+	close(sc.done)
+	sc.wg.Wait()
+	var errs []error
+	for _, scrp := range sc.scrapers {
+		errs = append(errs, scrp.Shutdown(ctx))
+	}
+
+	return errors.Join(errs...)
+}
+
+// startScraping initiates a ticker that calls Scrape based on the configured
+// collection interval.
+func (sc *controller[T]) startScraping() {
+	sc.wg.Add(1)
+	go func() {
+		defer sc.wg.Done()
+		if sc.initialDelay > 0 {
+			select {
+			case <-time.After(sc.initialDelay):
+			case <-sc.done:
+				return
+			}
+		}
+
+		if sc.tickerCh == nil {
+			ticker := time.NewTicker(sc.collectionInterval)
+			defer ticker.Stop()
+
+			sc.tickerCh = ticker.C
+		}
+		// Call scrape method during initialization to ensure
+		// that scrapers start from when the component starts
+		// instead of waiting for the full duration to start.
+		sc.scrapeFunc(sc)
+		for {
+			select {
+			case <-sc.tickerCh:
+				sc.scrapeFunc(sc)
+			case <-sc.done:
+				return
+			}
+		}
+	}()
 }
