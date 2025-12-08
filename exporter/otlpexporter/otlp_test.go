@@ -28,8 +28,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -309,7 +311,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -481,7 +483,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -586,7 +588,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -778,7 +780,7 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -882,7 +884,7 @@ func TestSendProfiles(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeProfiles
 	// otherwise we will not see any errors.
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
