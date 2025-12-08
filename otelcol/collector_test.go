@@ -741,8 +741,8 @@ func TestCollectorLoggingOptions(t *testing.T) {
 				*zap.Logger, component.ShutdownFunc, error,
 			) {
 				require.Empty(t, set.ZapOptions) // injected through BuidlZapLogger
-				logger, err := set.BuildZapLogger(zap.NewDevelopmentConfig())
-				return logger, nil, err
+				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
+				return logger, nil, buildErr
 			},
 		),
 	)
@@ -754,7 +754,7 @@ func TestCollectorLoggingOptions(t *testing.T) {
 			[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
 		),
 		LoggingOptions: []zap.Option{
-			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			zap.WrapCore(func(zapcore.Core) zapcore.Core {
 				return observerCore
 			}),
 		},
@@ -774,5 +774,5 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	// Check that logs have been redirected to our observer core,
 	// which proves that LoggingOptions were applied.
 	entries := observedLogs.All()
-	require.Greater(t, len(entries), 0, "Logger should have logged messages")
+	require.NotEmpty(t, entries, "Logger should have logged messages")
 }
