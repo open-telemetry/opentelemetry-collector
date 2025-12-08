@@ -91,11 +91,16 @@ type Settings struct {
 	// LoggingOptions provides a way to change behavior of zap logging.
 	//
 	// These options will be appended to any options passed to BuildZapLogger.
+	//
+	// Deprecated [v0.142.0]: use BuildZapLogger instead. This field will be
+	// removed in the future, and options must be injected through BuildZapLogger.
 	LoggingOptions []zap.Option
 
-	// BuildZapLogger holds an optional function for creating a Zap
-	// logger from a zap.Config and options. If this is unspecified,
-	// zap.Config.Build will be used.
+	// BuildZapLogger holds an optional function for creating a Zap logger from
+	// a zap.Config and options. If this is unspecified, zap.Config.Build will
+	// be used.
+	//
+	// NOTE: in the future this field will be required.
 	BuildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 
 	// TelemetryFactory is the factory for creating internal telemetry providers.

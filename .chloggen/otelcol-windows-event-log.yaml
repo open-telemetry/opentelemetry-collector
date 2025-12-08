@@ -7,7 +7,7 @@ change_type: deprecation
 component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate telemetry.LoggerSettings.ZapOptions, add telemetry.LoggerSettings.BuildZapLogger
+note: Deprecate Settings.LoggingOptions and telemetry.LoggerSettings.ZapOptions, add telemetry.LoggerSettings.BuildZapLogger
 
 # One or more tracking issues or pull requests related to the change
 issues: [14002]

@@ -198,6 +198,17 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("could not marshal configuration: %w", err)
 	}
 
+	// Wrap the buildZapLogger to append LoggingOptions from collector settings,
+	// since service.Settings.LoggingOptions is deprecated.
+	buildZapLogger := col.buildZapLogger
+	if len(col.set.LoggingOptions) > 0 {
+		origBuildZapLogger := buildZapLogger
+		buildZapLogger = func(zapCfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+			opts = append(opts, col.set.LoggingOptions...)
+			return origBuildZapLogger(zapCfg, opts...)
+		}
+	}
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:     col.set.BuildInfo,
 		CollectorConf: conf,
@@ -221,8 +232,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Connector: buildModuleInfo(factories.ConnectorModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
-		LoggingOptions:    col.set.LoggingOptions,
-		BuildZapLogger:    col.buildZapLogger,
+		BuildZapLogger:    buildZapLogger,
 		TelemetryFactory:  factories.Telemetry,
 	}, cfg.Service)
 	if err != nil {
