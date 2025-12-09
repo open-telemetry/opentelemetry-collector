@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -14,6 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeEnumAttr specifies the value enum_attr attribute.
@@ -81,9 +89,11 @@ type metricInfo struct {
 }
 
 type metricDefaultMetric struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills default.metric metric with initial data.
@@ -101,15 +111,58 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "state") {
+		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
+		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
+		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
+		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
-	dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
-	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
-	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
-	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -122,6 +175,11 @@ func (m *metricDefaultMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -130,6 +188,19 @@ func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 
 func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
 	m := metricDefaultMetric{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -138,9 +209,11 @@ func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
 }
 
 type metricDefaultMetricToBeRemoved struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills default.metric.to_be_removed metric with initial data.
@@ -157,10 +230,38 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -173,6 +274,11 @@ func (m *metricDefaultMetricToBeRemoved) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -181,6 +287,19 @@ func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 
 func newMetricDefaultMetricToBeRemoved(cfg MetricConfig) metricDefaultMetricToBeRemoved {
 	m := metricDefaultMetricToBeRemoved{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -189,9 +308,11 @@ func newMetricDefaultMetricToBeRemoved(cfg MetricConfig) metricDefaultMetricToBe
 }
 
 type metricMetricInputType struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills metric.input_type metric with initial data.
@@ -209,15 +330,58 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "state") {
+		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
+		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
+		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
+		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
-	dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
-	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
-	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
-	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -230,6 +394,11 @@ func (m *metricMetricInputType) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -238,6 +407,19 @@ func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMetricInputType(cfg MetricConfig) metricMetricInputType {
 	m := metricMetricInputType{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -246,9 +428,11 @@ func newMetricMetricInputType(cfg MetricConfig) metricMetricInputType {
 }
 
 type metricOptionalMetric struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills optional.metric metric with initial data.
@@ -264,13 +448,50 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
+		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr2") {
+		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
-	dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
-	dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -283,6 +504,11 @@ func (m *metricOptionalMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -291,6 +517,19 @@ func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 	m := metricOptionalMetric{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -299,9 +538,11 @@ func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 }
 
 type metricOptionalMetricEmptyUnit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills optional.metric.empty_unit metric with initial data.
@@ -317,12 +558,46 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	}
+
+	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
+		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
-	dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -335,6 +610,11 @@ func (m *metricOptionalMetricEmptyUnit) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -343,6 +623,19 @@ func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmptyUnit {
 	m := metricOptionalMetricEmptyUnit{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -351,9 +644,11 @@ func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmpt
 }
 
 type metricSystemCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.time metric with initial data.
@@ -370,10 +665,38 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -386,6 +709,11 @@ func (m *metricSystemCPUTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -394,6 +722,19 @@ func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 	m := metricSystemCPUTime{config: cfg}
+
+	// do this once on start up instead of every time we record
+	filterFunc := func(m string) bool {
+		return !slices.Contains(cfg.requiredAttributes, m)
+	}
+	if len(cfg.DisabledAttributes) > 0 {
+		for _, a := range cfg.DisabledAttributes {
+			if filterFunc(a) {
+				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+			}
+		}
+	}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
