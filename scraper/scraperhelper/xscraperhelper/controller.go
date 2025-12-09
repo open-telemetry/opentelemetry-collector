@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
@@ -64,7 +65,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ControllerOption {
 }
 
 // NewProfilesController creates a receiver.Profiles with the configured options, that can control multiple xscraper.Profiles.
-func NewProfilesController(cfg *ControllerConfig,
+func NewProfilesController(cfg *scraperhelper.ControllerConfig,
 	rSet receiver.Settings,
 	nextConsumer xconsumer.Profiles,
 	options ...ControllerOption,
@@ -147,7 +148,7 @@ type controller[T component.Component] struct {
 }
 
 func newController[T component.Component](
-	cfg *ControllerConfig,
+	cfg *scraperhelper.ControllerConfig,
 	rSet receiver.Settings,
 	scrapers []T,
 	scrapeFunc func(*controller[T]),

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
@@ -50,8 +51,8 @@ func (ts *testScrape) scrapeProfiles(context.Context) (pprofile.Profiles, error)
 	return md, nil
 }
 
-func newTestNoDelaySettings() *ControllerConfig {
-	return &ControllerConfig{
+func newTestNoDelaySettings() *scraperhelper.ControllerConfig {
+	return &scraperhelper.ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       0,
 	}
@@ -61,7 +62,7 @@ type scraperTestCase struct {
 	name string
 
 	scrapers                  int
-	scraperControllerSettings *ControllerConfig
+	scraperControllerSettings *scraperhelper.ControllerConfig
 	scrapeErr                 error
 	expectScraped             bool
 
@@ -279,7 +280,7 @@ func TestProfilesScraperControllerStartsOnInit(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewProfilesController(
-		&ControllerConfig{
+		&scraperhelper.ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
@@ -305,7 +306,7 @@ func TestProfilesScraperControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = ControllerConfig{
+		cfg     = scraperhelper.ControllerConfig{
 			CollectionInterval: time.Second,
 			InitialDelay:       300 * time.Millisecond,
 		}
@@ -335,7 +336,7 @@ func TestProfilesScraperControllerInitialDelay(t *testing.T) {
 }
 
 func TestProfilesScraperShutdownBeforeScrapeCanStart(t *testing.T) {
-	cfg := ControllerConfig{
+	cfg := scraperhelper.ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       5 * time.Second,
 	}
