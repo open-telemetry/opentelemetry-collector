@@ -3,18 +3,24 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled             bool     `mapstructure:"enabled"`
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	DisabledAttributes  []string `mapstructure:"disabled_attributes"`
+	requiredAttributes  []string
 
 	enabledSetByUser bool
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	// hello
 	if parser == nil {
 		return nil
 	}
@@ -22,8 +28,21 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for sample metrics.
@@ -39,22 +58,34 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
 		},
 		MetricInputType: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
 		},
 		OptionalMetric: MetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
 		},
 		SystemCPUTime: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
 		},
 	}
 }

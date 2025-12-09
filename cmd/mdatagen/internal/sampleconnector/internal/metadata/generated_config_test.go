@@ -27,11 +27,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: true},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
-					MetricInputType:          MetricConfig{Enabled: true},
-					OptionalMetric:           MetricConfig{Enabled: true},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
+					DefaultMetric: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					DefaultMetricToBeRemoved: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					MetricInputType: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					OptionalMetric: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
+					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -49,11 +64,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: false},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
-					MetricInputType:          MetricConfig{Enabled: false},
-					OptionalMetric:           MetricConfig{Enabled: false},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+					DefaultMetric: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					DefaultMetricToBeRemoved: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					MetricInputType: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+					},
+					OptionalMetric: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
+					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},

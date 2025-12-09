@@ -1,4 +1,16 @@
 {{- define "putAttribute" -}}
+  {{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
+  dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+  {{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
+  dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+  {{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
+  dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+  {{- else }}
+  dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+  {{- end }}
+{{- end -}}
+
+{{- define "putMetricAttribute" -}}
   if !slices.Contains(m.actualDisabledAttributes, "{{ (attributeInfo .).Name }}") {
     {{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
     dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
