@@ -1,0 +1,51 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: localhost:${env:OTEL_PORT}
+
+processors:
+  batch:
+    timeout: 100ms
+    send_batch_size: 100
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp/fail:
+    endpoint: http://127.0.0.1:65535
+    timeout: 100ms
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10ms
+      max_interval: 50ms
+      max_elapsed_time: 200ms
+    sending_queue:
+      enabled: false
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                port: ${env:METRICS_PORT}
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/fail]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/fail]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/fail]
