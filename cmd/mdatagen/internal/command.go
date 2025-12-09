@@ -231,6 +231,15 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
+				"requiredAttributes": func(ans []AttributeName) []string {
+					var atts []string
+					for _, an := range ans {
+						if md.Attributes[an].IsRequired() {
+							atts = append(atts, string(an))
+						}
+					}
+					return atts
+				},
 				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)

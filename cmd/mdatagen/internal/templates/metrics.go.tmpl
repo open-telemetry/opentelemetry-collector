@@ -8,6 +8,7 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
+  "slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,6 +22,13 @@ import (
 	{{ if .ResourceAttributes -}}
 	"go.opentelemetry.io/collector/filter"
 	{{- end }}
+)
+
+const (
+  AggregationStrategySum = "sum"
+  AggregationStrategyAvg = "avg"
+  AggregationStrategyMin = "min"
+  AggregationStrategyMax = "max"
 )
 
 {{ range $name, $info := .Attributes }}
@@ -96,9 +104,11 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data                     pmetric.Metric // data buffer for generated metric.
+	config                   MetricConfig   // metric config provided by user.
+	capacity                 int            // max observed number of data points added to the metric.
+  actualDisabledAttributes []string // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
+  aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index 
 }
 
 // init fills {{ $name }} metric with initial data.
@@ -123,21 +133,49 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-	{{- range $metric.Attributes }}
-    {{- if not (attributeInfo .).IsConditional -}}
-	{{- template "putAttribute" . -}}
-	{{- end }}
-	{{- end }}
+	{{ range $metric.Attributes }}
+    {{ if not (attributeInfo .).IsConditional }}
+	    {{ template "putAttribute" . }}
+	  {{ end }}
+	{{ end }}
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
     for _, op := range options {
         op.apply(dp)
     }
-    {{- end }}
+  {{- end }}
+
+  var s string
+	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+      switch s = m.config.AggregationStrategy; s {
+      case AggregationStrategySum, AggregationStrategyAvg:
+        dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
+        m.aggDataPoints[i] += 1
+        return
+      case AggregationStrategyMin:
+        if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
+          dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
+        }
+        return
+      case AggregationStrategyMax:
+        if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
+          dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
+        }
+        return
+      }
+		}
+	}
+
+	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+  m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -149,7 +187,12 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+  if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+    if m.config.AggregationStrategy == AggregationStrategyAvg {
+      for i, aggCount := range m.aggDataPoints {
+        m.data.{{ $metric.Data.Type }}().DataPoints().At(i).Set{{ $metric.Data.MetricValueType }}Value(m.data.{{ $metric.Data.Type }}().DataPoints().At(i).{{ $metric.Data.MetricValueType }}Value() / aggCount)
+      }
+    }
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -158,6 +201,19 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 
 func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
 	m := metric{{ $name.Render }}{config: cfg}
+
+  // do this once on start up instead of every time we record
+  filterFunc := func(m string) bool {
+      return !slices.Contains(cfg.requiredAttributes, m)
+  }
+  if len(cfg.DisabledAttributes) > 0 {
+    for _, a := range cfg.DisabledAttributes {
+      if filterFunc(a) {
+        m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
+      }
+    }
+  }
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

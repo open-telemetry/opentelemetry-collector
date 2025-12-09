@@ -412,6 +412,11 @@ func (a Attribute) IsConditional() bool {
 	return a.RequirementLevel == AttributeRequirementLevelConditionallyRequired
 }
 
+// IsRequired returns true if the attribute is required.
+func (a Attribute) IsRequired() bool {
+	return a.RequirementLevel == AttributeRequirementLevelRequired
+}
+
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (rl *AttributeRequirementLevel) UnmarshalText(text []byte) error {
 	switch string(text) {
