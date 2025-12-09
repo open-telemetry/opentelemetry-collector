@@ -15,8 +15,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled             bool   `mapstructure:"enabled"`
-  AggregationStrategy string `mapstructure:"aggregation_strategy"`
+	Enabled             bool     `mapstructure:"enabled"`
+  AggregationStrategy string   `mapstructure:"aggregation_strategy"`
   DisabledAttributes  []string `mapstructure:"disabled_attributes"`
   requiredAttributes  []string
 
