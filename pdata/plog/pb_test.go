@@ -73,9 +73,9 @@ func TestProtoSizerEmptyLogs(t *testing.T) {
 	assert.Equal(t, 0, sizer.LogsSize(NewLogs()))
 }
 
-func BenchmarkLogsToProto(b *testing.B) {
+func BenchmarkLogsToProto2k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
-	logs := generateBenchmarkLogs(128)
+	logs := generateBenchmarkLogs(2_000)
 
 	for b.Loop() {
 		buf, err := marshaler.MarshalLogs(logs)
@@ -84,10 +84,10 @@ func BenchmarkLogsToProto(b *testing.B) {
 	}
 }
 
-func BenchmarkLogsFromProto(b *testing.B) {
+func BenchmarkLogsFromProto2k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	unmarshaler := &ProtoUnmarshaler{}
-	baseLogs := generateBenchmarkLogs(128)
+	baseLogs := generateBenchmarkLogs(2_000)
 	buf, err := marshaler.MarshalLogs(baseLogs)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
