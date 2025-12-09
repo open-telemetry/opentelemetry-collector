@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
@@ -756,4 +757,10 @@ func addLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
 			return sc, nil
 		}, component.StabilityLevelAlpha))
 	return AddFactoryWithConfig(f, nil)
+}
+
+func TestNewDefaultControllerConfig(t *testing.T) {
+	controllerConfig := NewDefaultControllerConfig()
+	intControllerConfig := controller.NewDefaultControllerConfig()
+	require.Equal(t, intControllerConfig, controllerConfig)
 }

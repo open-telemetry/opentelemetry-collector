@@ -19,6 +19,12 @@ import (
 
 type ControllerConfig = controller.ControllerConfig
 
+// NewDefaultControllerConfig returns default scraper controller
+// settings with a collection interval of one minute.
+func NewDefaultControllerConfig() ControllerConfig {
+	return controller.NewDefaultControllerConfig()
+}
+
 // ControllerOption apply changes to internal options.
 type ControllerOption interface {
 	apply(*controllerOptions)
