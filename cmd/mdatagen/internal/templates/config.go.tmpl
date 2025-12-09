@@ -3,6 +3,8 @@
 package {{ .Package }}
 
 import (
+    "fmt"
+
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
     "go.opentelemetry.io/collector/filter"
@@ -10,14 +12,19 @@ import (
 )
 {{ if .Metrics -}}
 
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled             bool   `mapstructure:"enabled"`
+  AggregationStrategy string `mapstructure:"aggregation_strategy"`
+  DisabledAttributes  []string `mapstructure:"disabled_attributes"`
+  requiredAttributes  []string
 
 	enabledSetByUser bool
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+  // hello
 	if parser == nil {
 		return nil
 	}
@@ -25,9 +32,23 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+  if ms.AggregationStrategy != AggregationStrategySum && 
+     ms.AggregationStrategy != AggregationStrategyAvg && 
+     ms.AggregationStrategy != AggregationStrategyMin && 
+     ms.AggregationStrategy != AggregationStrategyMax {
+    return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+  }
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+  Enabled bool `mapstructure:"enabled"`
+}
+
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
@@ -41,6 +62,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+    {{ if eq $metric.Data.Type "Sum" -}}
+      AggregationStrategy: AggregationStrategySum,
+    {{- end }}
+    {{- if eq $metric.Data.Type "Gauge" -}}
+      AggregationStrategy: AggregationStrategyAvg,
+    {{- end }}
+      requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
 		},
 		{{- end }}
 	}
