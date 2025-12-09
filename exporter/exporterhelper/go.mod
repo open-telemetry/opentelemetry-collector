@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.141.0
 	go.opentelemetry.io/collector/extension/xextension v0.141.0
 	go.opentelemetry.io/collector/featuregate v1.47.0
+	go.opentelemetry.io/collector/internal/testutil v0.141.0
 	go.opentelemetry.io/collector/pdata v1.47.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.141.0
 	go.opentelemetry.io/collector/pdata/testdata v0.141.0
