@@ -139,7 +139,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	{{ range $metric.Attributes }}
     {{ if not (attributeInfo .).IsConditional }}
-	    {{ template "putAttribute" . }}
+	    {{ template "putMetricAttribute" . }}
 	  {{ end }}
 	{{ end }}
 
