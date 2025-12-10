@@ -102,8 +102,8 @@ func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scra
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: scrapedLogRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -112,8 +112,8 @@ func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scra
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: erroredLogRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

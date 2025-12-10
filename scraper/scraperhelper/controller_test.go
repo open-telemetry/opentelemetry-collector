@@ -409,8 +409,8 @@ func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, rec
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: expectedScraped,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -419,8 +419,8 @@ func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, rec
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -448,8 +448,8 @@ func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: expectedScraped,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -457,8 +457,8 @@ func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

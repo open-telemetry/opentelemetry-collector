@@ -117,8 +117,8 @@ func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: scrapedProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -127,8 +127,8 @@ func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(ReceiverKey, receiver.String()),
-					attribute.String(ScraperKey, scraper.String())),
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
 				Value: erroredProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
