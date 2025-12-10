@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -13,20 +14,39 @@ import (
 type MetricConfig struct {
 	Enabled             bool     `mapstructure:"enabled"`
 	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	DisabledAttributes  []string `mapstructure:"disabled_attributes"`
-	requiredAttributes  []string
+	EnabledAttributes   []string `mapstructure:"attributes"` // user defined list of attributes
+	definedAttributes   []string // list of attributes defined in metrics metadata entry
+	requiredAttributes  []string // list of attributes defined as required
 
 	enabledSetByUser bool
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	// hello
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
+	}
+
+	// we have to enforce that the user supplied list of enabled attributes fits
+	// inside the set of attributes defined by the metadata.yaml AND contains the
+	// list of attributes which have a requirement_level of `required`
+
+	// slightly redundent since definedAttributes is a set which necessarily
+	// contians requiredAttributes
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
 	}
 
 	if ms.AggregationStrategy != AggregationStrategySum &&
@@ -61,31 +81,43 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MetricInputType: MetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 		},
 		OptionalMetric: MetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2"},
+			EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2"},
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "boolean_attr"},
+			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
 		ReagMetric: MetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "boolean_attr"},
+			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
 	}
 }
