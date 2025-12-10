@@ -107,7 +107,6 @@ type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
 	config                   MetricConfig   // metric config provided by user.
 	capacity                 int            // max observed number of data points added to the metric.
-  actualDisabledAttributes []string // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
   aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index 
 }
 
@@ -200,19 +199,11 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
+  // when creating our list of enabled metric attributes we must contain
+  // required metrics and the user defined list must be included in the list of
+  // defined attributes for the metric. This is all handled during the
+  // unmarshal step 
 	m := metric{{ $name.Render }}{config: cfg}
-
-  // do this once on start up instead of every time we record
-  filterFunc := func(m string) bool {
-      return !slices.Contains(cfg.requiredAttributes, m)
-  }
-  if len(cfg.DisabledAttributes) > 0 {
-    for _, a := range cfg.DisabledAttributes {
-      if filterFunc(a) {
-        m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-      }
-    }
-  }
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()

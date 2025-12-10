@@ -44,7 +44,7 @@ reag_set:
       enabled: false
     reag.metric:
       enabled: true
-      disabled_attributes: [string_attr, boolean_attr]
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
