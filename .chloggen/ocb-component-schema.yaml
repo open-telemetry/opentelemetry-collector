@@ -17,7 +17,7 @@ issues: [9769]
 # Use pipe (|) for multiline entries.
 subtext: |
   The collector builder can generate JSON schema for all components listed in the manifest.
-  The schema generation is exprimental and it can be enabled with `--generate-schema` flag.
+  The schema generation is experimental and it can be enabled with `--generate-schema` flag.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
