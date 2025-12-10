@@ -47,6 +47,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
 					},
+					ReagMetric: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
 					SystemCPUTime: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -85,6 +89,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 					},
 					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
+					ReagMetric: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
 					},

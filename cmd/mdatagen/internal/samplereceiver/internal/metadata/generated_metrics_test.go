@@ -20,6 +20,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -36,6 +37,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reag_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -114,6 +120,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordReagMetricDataPoint(ts, 1, "required_string_attr-val", "string_attr-val", true)
+
+			mb.RecordReagMetricDataPoint(ts, 1, "required_string_attr-val-2", "string_attr-val-2", false)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -268,6 +280,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("boolean_attr")
+					assert.True(t, ok)
+					assert.True(t, attrVal.Bool())
+				case "reag.metric":
+					assert.False(t, validatedMetrics["reag.metric"], "Found a duplicate in the metrics slice: reag.metric")
+					validatedMetrics["reag.metric"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("required_string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "required_string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("string_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "string_attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("boolean_attr")

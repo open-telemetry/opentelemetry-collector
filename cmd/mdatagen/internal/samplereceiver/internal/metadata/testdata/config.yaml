@@ -11,6 +11,8 @@ all_set:
       enabled: true
     optional.metric.empty_unit:
       enabled: true
+    reag.metric:
+      enabled: true
     system.cpu.time:
       enabled: true
   events:
@@ -48,6 +50,8 @@ none_set:
     optional.metric:
       enabled: false
     optional.metric.empty_unit:
+      enabled: false
+    reag.metric:
       enabled: false
     system.cpu.time:
       enabled: false

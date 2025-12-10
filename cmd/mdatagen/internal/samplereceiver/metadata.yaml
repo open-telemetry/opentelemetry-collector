@@ -115,6 +115,11 @@ attributes:
     description: Integer attribute with overridden name.
     type: int
 
+  required_string_attr:
+    description: A required string attribute
+    type: string
+    requirement_level: required
+
   slice_attr:
     description: Attribute with a slice value.
     type: slice
@@ -235,6 +240,16 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  reag.metric:
+    enabled: true
+    description: Metric for testing spacial reaggregation
+    unit: "1"
+    stability:
+      level: beta
+    gauge:
+      value_type: double 
+    attributes: [required_string_attr, string_attr, boolean_attr]
 
   system.cpu.time:
     enabled: true

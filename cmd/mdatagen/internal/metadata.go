@@ -481,6 +481,31 @@ func (a Attribute) TestValue() string {
 	return ""
 }
 
+func (a Attribute) TestValueTwo() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
+	}
+	return ""
+}
+
 type Signal struct {
 	// Enabled defines whether the signal is enabled by default.
 	Enabled bool `mapstructure:"enabled"`

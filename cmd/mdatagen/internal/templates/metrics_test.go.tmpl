@@ -22,6 +22,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+  testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -39,6 +40,11 @@ func TestMetricsBuilder(t *testing.T) {
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
 		},
+    {
+      name: "reag_set",
+      metricsSet: testDataSetReag,
+      resAttrsSet: testDataSetReag,
+    },
 		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
@@ -131,7 +137,22 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
+        {{ if eq $name "reag.metric" }}
+          mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}1{{ end }}
+          {{- range $metric.Attributes -}}
+          {{- if not (attributeInfo .).IsConditional -}}
+            , {{- template "getAttributeValueTwo" . -}}
+          {{- end -}}
+          {{- end -}}
+          {{- range $metric.Attributes -}}
+                  {{- if (attributeInfo .).IsConditional -}}
+                      , With{{ .Render }}MetricAttribute({{- template "getAttributeValueTwo" . -}})
+                  {{- end -}}
+                  {{- end -}}
+                  )
+        {{ end }}
 			{{- end }}
+
 
 			{{ if .ResourceAttributes }}
 			rb := mb.NewResourceBuilder()
