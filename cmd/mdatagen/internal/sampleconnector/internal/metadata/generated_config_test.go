@@ -30,26 +30,32 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					DefaultMetric: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
 					DefaultMetricToBeRemoved: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
 					},
 					MetricInputType: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
 					OptionalMetric: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2"},
 					},
 					OptionalMetricEmptyUnit: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
 					ReagMetric: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -71,26 +77,32 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					DefaultMetric: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
 					DefaultMetricToBeRemoved: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
 					},
 					MetricInputType: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
 					OptionalMetric: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2"},
 					},
 					OptionalMetricEmptyUnit: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
 					ReagMetric: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
