@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
@@ -44,22 +43,6 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualScraperErroredProfileRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_errored_profile_records",
-		Description: "Number of profile records that were unable to be scraped. [Alpha]",
-		Unit:        "{datapoints}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_scraper_errored_profile_records")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_log_records",
@@ -88,22 +71,6 @@ func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telem
 		},
 	}
 	got, err := tt.GetMetric("otelcol_scraper_scraped_metric_points")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualScraperScrapedProfileRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_scraped_profile_records",
-		Description: "Number of profile records successfully scraped. [Alpha]",
-		Unit:        "{datapoints}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_scraper_scraped_profile_records")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

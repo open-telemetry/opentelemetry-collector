@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -19,20 +19,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
-	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
-	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
-	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
-	AssertEqualScraperErroredLogRecords(t, testTel,
+	tb.ScraperErroredProfileRecords.Add(context.Background(), 1)
+	tb.ScraperScrapedProfileRecords.Add(context.Background(), 1)
+	AssertEqualScraperErroredProfileRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualScraperErroredMetricPoints(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualScraperScrapedLogRecords(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualScraperScrapedMetricPoints(t, testTel,
+	AssertEqualScraperScrapedProfileRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

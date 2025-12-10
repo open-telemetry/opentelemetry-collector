@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
@@ -116,8 +115,8 @@ func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, sc
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: scrapedMetricPoints,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -125,8 +124,8 @@ func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, sc
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: erroredMetricPoints,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

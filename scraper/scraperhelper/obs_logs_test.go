@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/scraper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
@@ -103,8 +102,8 @@ func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scra
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: scrapedLogRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -113,8 +112,8 @@ func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scra
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: erroredLogRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

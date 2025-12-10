@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
 )
@@ -410,8 +409,8 @@ func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, rec
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: expectedScraped,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -420,8 +419,8 @@ func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, rec
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -449,8 +448,8 @@ func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: expectedScraped,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -458,8 +457,8 @@ func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

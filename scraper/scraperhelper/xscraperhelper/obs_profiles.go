@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
@@ -38,10 +38,10 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 	}
 
 	tracer := metadata.Tracer(set)
-	spanName := metadata.ScraperKey + metadata.SpanNameSep + scraperID.String() + metadata.SpanNameSep + "ScrapeProfiles"
+	spanName := ScraperKey + SpanNameSep + scraperID.String() + SpanNameSep + "ScrapeProfiles"
 	otelAttrs := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(metadata.ReceiverKey, receiverID.String()),
-		attribute.String(metadata.ScraperKey, scraperID.String()),
+		attribute.String(ReceiverKey, receiverID.String()),
+		attribute.String(ScraperKey, scraperID.String()),
 	))
 
 	scraperFuncs := func(ctx context.Context) (pprofile.Profiles, error) {
@@ -68,7 +68,7 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 		// end span according to errors
 		if span.IsRecording() {
 			span.SetAttributes(
-				attribute.String(metadata.FormatKey, xpipeline.SignalProfiles.String()),
+				attribute.String(FormatKey, xpipeline.SignalProfiles.String()),
 				attribute.Int64(scrapedProfileRecordsKey, int64(numScrapedProfiles)),
 				attribute.Int64(erroredProfileRecordsKey, int64(numErroredProfiles)),
 			)

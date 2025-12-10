@@ -21,8 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
@@ -118,8 +117,8 @@ func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: scrapedProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -128,8 +127,8 @@ func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, 
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(metadata.ReceiverKey, receiver.String()),
-					attribute.String(metadata.ScraperKey, scraper.String())),
+					attribute.String(ReceiverKey, receiver.String()),
+					attribute.String(ScraperKey, scraper.String())),
 				Value: erroredProfileRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

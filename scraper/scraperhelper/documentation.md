@@ -22,14 +22,6 @@ Number of metric points that were unable to be scraped. [Alpha]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
 
-### otelcol_scraper_errored_profile_records
-
-Number of profile records that were unable to be scraped. [Alpha]
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
-
 ### otelcol_scraper_scraped_log_records
 
 Number of log records successfully scraped. [Alpha]
@@ -41,14 +33,6 @@ Number of log records successfully scraped. [Alpha]
 ### otelcol_scraper_scraped_metric_points
 
 Number of metric points successfully scraped. [Alpha]
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
-
-### otelcol_scraper_scraped_profile_records
-
-Number of profile records successfully scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
