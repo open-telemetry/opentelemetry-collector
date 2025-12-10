@@ -89,3 +89,5 @@ replace go.opentelemetry.io/collector/consumer => ../../../consumer
 replace go.opentelemetry.io/collector/component => ../../../component
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../../receiver/receivertest
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
