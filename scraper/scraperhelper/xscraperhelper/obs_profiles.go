@@ -15,7 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper/xscraper"
@@ -68,7 +68,7 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 		// end span according to errors
 		if span.IsRecording() {
 			span.SetAttributes(
-				attribute.String(metadata.FormatKey, pipeline.SignalMetrics.String()),
+				attribute.String(metadata.FormatKey, xpipeline.SignalProfiles.String()),
 				attribute.Int64(scrapedProfileRecordsKey, int64(numScrapedProfiles)),
 				attribute.Int64(erroredProfileRecordsKey, int64(numErroredProfiles)),
 			)
