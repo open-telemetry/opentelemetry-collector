@@ -568,3 +568,437 @@ func TestBasicTypeToSchema(t *testing.T) {
 		})
 	}
 }
+
+func TestPackageAnalyzer_GetPackage(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	analyzer := NewPackageAnalyzer(filepath.Join(cwd, "..", ".."))
+
+	t.Run("returns nil for unloaded package", func(t *testing.T) {
+		pkg := analyzer.GetPackage("nonexistent/package")
+		assert.Nil(t, pkg)
+	})
+
+	t.Run("returns cached package after load", func(t *testing.T) {
+		importPath := "go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent"
+		loaded, err := analyzer.LoadPackage(importPath)
+		require.NoError(t, err)
+
+		cached := analyzer.GetPackage(importPath)
+		assert.Equal(t, loaded, cached)
+	})
+}
+
+func TestPackageAnalyzer_LoadPackage_Caching(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	analyzer := NewPackageAnalyzer(filepath.Join(cwd, "..", ".."))
+	importPath := "go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent"
+
+	// First load
+	pkg1, err := analyzer.LoadPackage(importPath)
+	require.NoError(t, err)
+
+	// Second load should return cached
+	pkg2, err := analyzer.LoadPackage(importPath)
+	require.NoError(t, err)
+
+	assert.Same(t, pkg1, pkg2, "LoadPackage should return cached package on second call")
+}
+
+func TestPackageAnalyzer_LoadPackage_Errors(t *testing.T) {
+	tempDir := t.TempDir()
+	analyzer := NewPackageAnalyzer(tempDir)
+
+	t.Run("nonexistent package", func(t *testing.T) {
+		_, err := analyzer.LoadPackage("nonexistent/fake/package/that/does/not/exist")
+		assert.Error(t, err)
+	})
+}
+
+func TestExtractTypeFromConversionExpr(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     string
+		expected string
+	}{
+		{
+			name: "valid conversion expression",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var _ component.Config = (*MyConfig)(nil)
+`,
+			expected: "MyConfig",
+		},
+		{
+			name: "non-pointer conversion",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var _ component.Config = MyConfig{}
+`,
+			expected: "",
+		},
+		{
+			name: "multiple arguments",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var _ component.Config = (*MyConfig)(nil, nil)
+`,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "test.go", tt.code, parser.ParseComments)
+			require.NoError(t, err)
+
+			analyzer := &PackageAnalyzer{}
+
+			// Find the var declaration and extract the value
+			for _, decl := range file.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl.Tok != token.VAR {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					valueSpec, ok := spec.(*ast.ValueSpec)
+					if !ok || len(valueSpec.Values) == 0 {
+						continue
+					}
+					result := analyzer.extractTypeFromConversionExpr(valueSpec.Values[0])
+					assert.Equal(t, tt.expected, result)
+					return
+				}
+			}
+		})
+	}
+}
+
+func TestHandleSpecialType(t *testing.T) {
+	// Test with nil type
+	t.Run("non-named type returns false", func(t *testing.T) {
+		// Basic types are not named types
+		schema, ok := HandleSpecialType(nil)
+		assert.False(t, ok)
+		assert.Nil(t, schema)
+	})
+}
+
+func TestGetOptionalInnerType(t *testing.T) {
+	t.Run("non-named type returns false", func(t *testing.T) {
+		innerType, ok := GetOptionalInnerType(nil)
+		assert.False(t, ok)
+		assert.Nil(t, innerType)
+	})
+}
+
+func TestIsDeprecatedFromDescription_AdditionalCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		expected    bool
+	}{
+		{
+			name:        "legacy keyword",
+			description: "This is a legacy field",
+			expected:    true,
+		},
+		{
+			name:        "do not use keyword",
+			description: "Do not use this field",
+			expected:    true,
+		},
+		{
+			name:        "will be removed keyword",
+			description: "This will be removed in v2.0",
+			expected:    true,
+		},
+		{
+			name:        "case insensitive deprecated",
+			description: "DEPRECATED: use new field instead",
+			expected:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsDeprecatedFromDescription(tt.description)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractTagValue_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		tag      string
+		key      string
+		expected string
+	}{
+		{
+			name:     "unclosed quote",
+			tag:      `mapstructure:"field`,
+			key:      "mapstructure",
+			expected: "",
+		},
+		{
+			name:     "empty tag",
+			tag:      "",
+			key:      "mapstructure",
+			expected: "",
+		},
+		{
+			name:     "tag with empty value",
+			tag:      `mapstructure:""`,
+			key:      "mapstructure",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractTagValue(tt.tag, tt.key)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetStructFromNamed(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	analyzer := NewPackageAnalyzer(filepath.Join(cwd, "..", ".."))
+	pkg, err := analyzer.LoadPackage("go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent")
+	require.NoError(t, err)
+
+	configType, err := analyzer.FindConfigType(pkg)
+	require.NoError(t, err)
+
+	st, ok := GetStructFromNamed(configType)
+	assert.True(t, ok)
+	assert.NotNil(t, st)
+	assert.Greater(t, st.NumFields(), 0)
+}
+
+func TestSchemaGenerator_GenerateSchema_Errors(t *testing.T) {
+	tempDir := t.TempDir()
+	analyzer := NewPackageAnalyzer(tempDir)
+	generator := NewSchemaGenerator(tempDir, analyzer)
+
+	t.Run("nonexistent package", func(t *testing.T) {
+		err := generator.GenerateSchema(component.KindReceiver, "test", "nonexistent/package")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to load package")
+	})
+}
+
+func TestCommentExtractor_ExtractComments(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	analyzer := NewPackageAnalyzer(filepath.Join(cwd, "..", ".."))
+	pkg, err := analyzer.LoadPackage("go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent")
+	require.NoError(t, err)
+
+	ce := NewCommentExtractor()
+	ce.ExtractComments(pkg)
+
+	// The testcomponent should have some comments extracted
+	// Check that the cache is populated
+	assert.NotEmpty(t, ce.commentCache)
+}
+
+func TestBuildImportAliasMap_DotImport(t *testing.T) {
+	code := `package test
+import . "fmt"
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "test.go", code, parser.ImportsOnly)
+	require.NoError(t, err)
+
+	result := buildImportAliasMap(file)
+	// Dot import uses "." as the local name
+	assert.Equal(t, "fmt", result["."])
+}
+
+func TestIsComponentConfigType_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     string
+		expected bool
+	}{
+		{
+			name: "non-selector expression",
+			code: `package test
+var _ int = 0
+`,
+			expected: false,
+		},
+		{
+			name: "nested selector expression",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var _ component.sub.Config = (*Config)(nil)
+`,
+			expected: false, // This won't parse correctly anyway
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "test.go", tt.code, parser.ParseComments)
+			if err != nil {
+				// Some test cases have intentionally invalid Go code
+				return
+			}
+
+			importAliases := buildImportAliasMap(file)
+
+			// Find the var declaration
+			for _, decl := range file.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl.Tok != token.VAR {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					valueSpec, ok := spec.(*ast.ValueSpec)
+					if ok && len(valueSpec.Names) == 1 && valueSpec.Names[0].Name == "_" {
+						result := isComponentConfigType(valueSpec.Type, importAliases)
+						assert.Equal(t, tt.expected, result)
+						return
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestExtractConfigTypeFromValueSpec_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     string
+		expected string
+	}{
+		{
+			name: "multiple names in var declaration",
+			code: `package test
+var a, b int = 1, 2
+`,
+			expected: "",
+		},
+		{
+			name: "named variable not blank identifier",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var cfg component.Config = (*Config)(nil)
+`,
+			expected: "",
+		},
+		{
+			name: "no values in var declaration",
+			code: `package test
+import "go.opentelemetry.io/collector/component"
+var _ component.Config
+`,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "test.go", tt.code, parser.ParseComments)
+			require.NoError(t, err)
+
+			importAliases := buildImportAliasMap(file)
+			analyzer := &PackageAnalyzer{}
+
+			// Find the var declaration
+			for _, decl := range file.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl.Tok != token.VAR {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					valueSpec, ok := spec.(*ast.ValueSpec)
+					if !ok {
+						continue
+					}
+					result := analyzer.extractConfigTypeFromValueSpec(valueSpec, importAliases)
+					assert.Equal(t, tt.expected, result)
+					return
+				}
+			}
+		})
+	}
+}
+
+func TestSchemaGenerator_getFieldName_EdgeCases(t *testing.T) {
+	tempDir := t.TempDir()
+	analyzer := NewPackageAnalyzer(tempDir)
+	sg := NewSchemaGenerator(tempDir, analyzer)
+
+	tests := []struct {
+		name       string
+		tag        string
+		goName     string
+		expected   string
+	}{
+		{
+			name:     "empty mapstructure value falls back to json",
+			tag:      `mapstructure:"" json:"json_field"`,
+			goName:   "TestField",
+			expected: "json_field",
+		},
+		{
+			name:     "json with dash skips to lowercase",
+			tag:      `json:"-"`,
+			goName:   "TestField",
+			expected: "testfield",
+		},
+		{
+			name:     "mapstructure with options",
+			tag:      `mapstructure:"field_name,omitempty"`,
+			goName:   "TestField",
+			expected: "field_name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sg.getFieldName(tt.tag, tt.goName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewSchemaGenerator(t *testing.T) {
+	tempDir := t.TempDir()
+	analyzer := NewPackageAnalyzer(tempDir)
+	sg := NewSchemaGenerator(tempDir, analyzer)
+
+	assert.NotNil(t, sg)
+	assert.Equal(t, tempDir, sg.outputDir)
+	assert.Equal(t, analyzer, sg.analyzer)
+	assert.NotNil(t, sg.comments)
+}
+
+func TestSchemaGenerator_ensurePackageComments(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	analyzer := NewPackageAnalyzer(filepath.Join(cwd, "..", ".."))
+	sg := NewSchemaGenerator(t.TempDir(), analyzer)
+
+	// Should not panic on empty path
+	sg.ensurePackageComments("")
+
+	// Should load and cache comments for valid package
+	sg.ensurePackageComments("go.opentelemetry.io/collector/cmd/builder/internal/schemagen/testdata/testcomponent")
+	assert.NotEmpty(t, sg.comments.commentCache)
+}
