@@ -61,7 +61,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
             {{- else }}
             AggregationStrategy: AggregationStrategyAvg,
             {{- end }}
-            EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+            EnabledAttributes: []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
           },
 					{{- end }}
 				},

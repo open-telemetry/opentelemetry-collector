@@ -231,11 +231,20 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
+				"defaultAttributes": func(ans []AttributeName) []string {
+					var atts []string
+					for _, an := range ans {
+						if md.Attributes[an].IsNotOptIn() {
+							atts = append(atts, string(md.Attributes[an].Name()))
+						}
+					}
+					return atts
+				},
 				"requiredAttributes": func(ans []AttributeName) []string {
 					var atts []string
 					for _, an := range ans {
 						if md.Attributes[an].IsRequired() {
-							atts = append(atts, string(an))
+							atts = append(atts, string(md.Attributes[an].Name()))
 						}
 					}
 					return atts

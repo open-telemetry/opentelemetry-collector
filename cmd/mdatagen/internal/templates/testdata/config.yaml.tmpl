@@ -2,9 +2,11 @@ default:
 all_set:
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: true
+      attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
+      #attributes: [{{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}}]
     {{- end }}
   {{- end }}
   {{- if .Events }}
@@ -52,9 +54,10 @@ reag_set:
 none_set:
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: false
+      attributes: [{{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}}]
     {{- end }}
   {{- end }}
   {{- if .Events }}

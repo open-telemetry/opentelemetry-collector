@@ -417,6 +417,12 @@ func (a Attribute) IsRequired() bool {
 	return a.RequirementLevel == AttributeRequirementLevelRequired
 }
 
+// IsNotOptIn returns true if the attribute is any requirement_level above
+// opt_in
+func (a Attribute) IsNotOptIn() bool {
+	return a.RequirementLevel != AttributeRequirementLevelOptIn
+}
+
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (rl *AttributeRequirementLevel) UnmarshalText(text []byte) error {
 	switch string(text) {
