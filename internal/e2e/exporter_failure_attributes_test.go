@@ -7,13 +7,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
-	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,31 +24,107 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestExporterFailureAttributesDetailed(t *testing.T) {
+	t.Run("permanent error sets failure.permanent", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/v1/metrics" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			http.Error(w, "bad request", http.StatusBadRequest)
+		}))
+		defer server.Close()
+
+		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
+
+		require.NoError(t, sendTestMetrics(otelPort))
+
+		require.Eventually(t, func() bool {
+			metric := scrapeFailureMetric(t, metricsPort, "otlphttp/test")
+			if metric == nil {
+				return false
+			}
+			failurePermanent, ok := labelValue(metric, "failure_permanent")
+			if !ok || failurePermanent != "true" {
+				return false
+			}
+			retriesExhausted, ok := labelValue(metric, "failure_retries_exhausted")
+			return ok && retriesExhausted == "false"
+		}, 5*time.Second, 200*time.Millisecond, "expected permanent failure metric")
+	})
+
+	t.Run("transient error that recovers has no failure metric", func(t *testing.T) {
+		var attempts atomic.Int32
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/v1/metrics" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			if attempts.Add(1) == 1 {
+				http.Error(w, "try again", http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
+
+		require.NoError(t, sendTestMetrics(otelPort))
+		assertNoFailureMetric(t, metricsPort, "otlphttp/test")
+	})
+
+	t.Run("retryable error exhausts retries", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/v1/metrics" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
+
+		require.NoError(t, sendTestMetrics(otelPort))
+
+		require.Eventually(t, func() bool {
+			metric := scrapeFailureMetric(t, metricsPort, "otlphttp/test")
+			if metric == nil {
+				return false
+			}
+			failurePermanent, ok := labelValue(metric, "failure_permanent")
+			if !ok || failurePermanent != "false" {
+				return false
+			}
+			retriesExhausted, ok := labelValue(metric, "failure_retries_exhausted")
+			return ok && retriesExhausted == "true"
+		}, 5*time.Second, 200*time.Millisecond, "expected retry exhaustion metric")
+	})
+}
+
+func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (string, string) {
+	t.Helper()
 	otelPort := getFreePort(t)
 	metricsPort := getFreePort(t)
 
 	t.Setenv("METRICS_PORT", metricsPort)
 	t.Setenv("OTEL_PORT", otelPort)
+	t.Setenv("EXPORTER_ENDPOINT", exporterEndpoint)
 
 	collector, err := otelcol.NewCollector(otelcol.CollectorSettings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: func() (otelcol.Factories, error) {
 			return otelcol.Factories{
-				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
-				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
+				Receivers: map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Exporters: map[component.Type]exporter.Factory{
-					debugexporter.NewFactory().Type():    debugexporter.NewFactory(),
 					otlphttpexporter.NewFactory().Type(): otlphttpexporter.NewFactory(),
 				},
 				Telemetry: otelconftelemetry.NewFactory(),
@@ -66,11 +144,10 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Cleanup(cancel)
 
 	go func() {
-		err := collector.Run(ctx)
-		if err != nil {
+		if err := collector.Run(ctx); err != nil {
 			t.Logf("Collector stopped with error: %v", err)
 		}
 	}()
@@ -84,77 +161,70 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		return resp.StatusCode == http.StatusOK
 	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
 
-	require.NoError(t, sendTestTraces(otelPort))
-	require.NoError(t, sendTestMetrics(otelPort))
-	require.NoError(t, sendTestLogs(otelPort))
-
-	require.Eventually(t, func() bool {
-		return verifyFailureAttributes(t, metricsPort, "otelcol_exporter_send_failed_spans") &&
-			verifyFailureAttributes(t, metricsPort, "otelcol_exporter_send_failed_metric_points") &&
-			verifyFailureAttributes(t, metricsPort, "otelcol_exporter_send_failed_log_records")
-	}, 5*time.Second, 200*time.Millisecond, "metrics should have detailed failure attributes")
+	return otelPort, metricsPort
 }
 
-func verifyFailureAttributes(t *testing.T, metricsPort string, metricName string) bool {
+func scrapeFailureMetric(t *testing.T, metricsPort, exporterName string) *dto.Metric {
 	t.Helper()
-
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
 	if err != nil {
-		return false
+		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return false
+		return nil
 	}
 
 	parser := expfmt.NewTextParser(model.UTF8Validation)
 	parsed, err := parser.TextToMetricFamilies(resp.Body)
 	if err != nil {
-		return false
+		return nil
 	}
 
-	metricFamily, ok := parsed[metricName]
+	metricFamily, ok := parsed["otelcol_exporter_send_failed_metric_points"]
 	if !ok {
-		metricFamily, ok = parsed[metricName+"_total"]
+		metricFamily, ok = parsed["otelcol_exporter_send_failed_metric_points_total"]
 	}
-	if !ok || len(metricFamily.Metric) == 0 {
-		return false
+	if !ok {
+		return nil
 	}
 
-	var foundMetric *dto.Metric
 	for _, metric := range metricFamily.Metric {
-		for _, label := range metric.Label {
-			if label.GetName() == "exporter" && label.GetValue() == "otlphttp/fail" {
-				foundMetric = metric
-				break
-			}
-		}
-		if foundMetric != nil {
-			break
-		}
-	}
-	if foundMetric == nil {
-		return false
-	}
-
-	hasErrorType := false
-	hasFailurePermanent := false
-	for _, label := range foundMetric.Label {
-		labelName := label.GetName()
-		labelValue := label.GetValue()
-		if labelName == "error_type" {
-			if labelValue == "" {
-				return false
-			}
-			hasErrorType = true
-		}
-		if labelName == "failure_permanent" {
-			if labelValue != "true" && labelValue != "false" {
-				return false
-			}
-			hasFailurePermanent = true
+		if hasLabel(metric, "exporter", exporterName) {
+			return metric
 		}
 	}
 
-	return hasErrorType && hasFailurePermanent
+	return nil
+}
+
+func hasLabel(metric *dto.Metric, name, expected string) bool {
+	for _, label := range metric.Label {
+		if label.GetName() == name && label.GetValue() == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func labelValue(metric *dto.Metric, labelName string) (string, bool) {
+	for _, label := range metric.Label {
+		if label.GetName() == labelName {
+			return label.GetValue(), true
+		}
+	}
+	return "", false
+}
+
+func assertNoFailureMetric(t *testing.T, metricsPort, exporterName string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if metric := scrapeFailureMetric(t, metricsPort, exporterName); metric != nil {
+			failurePermanent, _ := labelValue(metric, "failure_permanent")
+			retriesExhausted, _ := labelValue(metric, "failure_retries_exhausted")
+			t.Fatalf("unexpected failure metric recorded, failure_permanent=%s, failure_retries_exhausted=%s", failurePermanent, retriesExhausted)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
