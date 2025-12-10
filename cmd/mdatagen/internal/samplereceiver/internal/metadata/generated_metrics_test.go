@@ -199,9 +199,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("conditional_string_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "conditional_string_attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("opt_in_bool_attr")
-					assert.True(t, ok)
-					assert.True(t, attrVal.Bool())
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true

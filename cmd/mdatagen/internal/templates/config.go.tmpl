@@ -89,7 +89,7 @@ func DefaultMetricsConfig() MetricsConfig {
     {{- end }}
       requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
       definedAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
-      EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+      EnabledAttributes: []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
 		},
 		{{- end }}
 	}
