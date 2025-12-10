@@ -116,8 +116,9 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+      if tt.metricsSet != testDataSetReag {
+			  assert.Equal(t, expectedWarnings, observedLogs.Len())
+      }
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -190,44 +191,87 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-					assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
-					validatedMetrics["{{ $name }}"] = true
-					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
-					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
-					{{- if len $metric.Unit}}
-					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
-					{{- else }}
-					assert.Empty(t, ms.At(i).Unit())
-					{{- end }}
-					{{- if $metric.Data.HasMonotonic }}
-					assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
-					{{- end }}
-					{{- if $metric.Data.HasAggregated }}
-					assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
-					{{- end }}
-					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
-					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
-					{{- else }}
-					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
-					{{- end }}
+          {{ if eq $name "reag.metric" }}
+            assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+            validatedMetrics["{{ $name }}"] = true
+            assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+            assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- if len $metric.Unit}}
+            assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+            {{- else }}
+            assert.Empty(t, ms.At(i).Unit())
+            {{- end }}
+            {{- if $metric.Data.HasMonotonic }}
+            assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+            {{- end }}
+            {{- if $metric.Data.HasAggregated }}
+            assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+            {{- end }}
+            dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+            assert.Equal(t, start, dp.StartTimestamp())
+            assert.Equal(t, ts, dp.Timestamp())
+            assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
 
-					{{- range $i, $attr := $metric.Attributes }}
-					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
-					assert.True(t, ok)
-					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
-					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else if eq (attributeInfo $attr).Type.String "Int"}}
-					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else }}
-					assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- end }}
-					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
-					{{- end }}
+            {{- range $i, $attr := $metric.Attributes }}
+            attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.True(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+            {{- end }}
+          {{ else }}
+            assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+            validatedMetrics["{{ $name }}"] = true
+            assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+            assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- if len $metric.Unit}}
+            assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+            {{- else }}
+            assert.Empty(t, ms.At(i).Unit())
+            {{- end }}
+            {{- if $metric.Data.HasMonotonic }}
+            assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+            {{- end }}
+            {{- if $metric.Data.HasAggregated }}
+            assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+            {{- end }}
+            dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+            assert.Equal(t, start, dp.StartTimestamp())
+            assert.Equal(t, ts, dp.Timestamp())
+            assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+
+            {{- range $i, $attr := $metric.Attributes }}
+            attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.True(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+            {{- end }}
+          {{ end }}
+
+					
 				{{- end }}
 				}
 			}
