@@ -170,6 +170,16 @@ metrics:
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
+  reag.metric:
+    enabled: true
+    description: Metric for testing spacial reaggregation
+    unit: "1"
+    stability:
+      level: beta
+    gauge:
+      value_type: double 
+    attributes: [string_attr, boolean_attr]
+
   system.cpu.time:
     enabled: true
     stability:

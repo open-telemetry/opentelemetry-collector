@@ -698,7 +698,7 @@ func (m *metricReagMetric) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, requiredStringAttrAttributeValue string, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -706,10 +706,6 @@ func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
-	if !slices.Contains(m.actualDisabledAttributes, "required_string_attr") {
-		dp.Attributes().PutStr("required_string_attr", requiredStringAttrAttributeValue)
-	}
 
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
@@ -1150,8 +1146,8 @@ func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Time
 }
 
 // RecordReagMetricDataPoint adds a data point to reag.metric metric.
-func (mb *MetricsBuilder) RecordReagMetricDataPoint(ts pcommon.Timestamp, val float64, requiredStringAttrAttributeValue string, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
-	mb.metricReagMetric.recordDataPoint(mb.startTime, ts, val, requiredStringAttrAttributeValue, stringAttrAttributeValue, booleanAttrAttributeValue)
+func (mb *MetricsBuilder) RecordReagMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	mb.metricReagMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.

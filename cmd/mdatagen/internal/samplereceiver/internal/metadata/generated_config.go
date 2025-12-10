@@ -86,7 +86,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		ReagMetric: MetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{"required_string_attr"},
+			requiredAttributes:  []string{},
 		},
 		SystemCPUTime: MetricConfig{
 			Enabled:             true,

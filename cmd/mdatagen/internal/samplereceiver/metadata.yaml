@@ -115,11 +115,6 @@ attributes:
     description: Integer attribute with overridden name.
     type: int
 
-  required_string_attr:
-    description: A required string attribute
-    type: string
-    requirement_level: required
-
   slice_attr:
     description: Attribute with a slice value.
     type: slice
@@ -249,7 +244,7 @@ metrics:
       level: beta
     gauge:
       value_type: double 
-    attributes: [required_string_attr, string_attr, boolean_attr]
+    attributes: [string_attr, boolean_attr]
 
   system.cpu.time:
     enabled: true

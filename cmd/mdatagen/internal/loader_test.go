@@ -235,14 +235,6 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "conditional_string_attr",
 						RequirementLevel: AttributeRequirementLevelConditionallyRequired,
 					},
-					"required_string_attr": {
-						Description: "A required string attribute",
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
-						},
-						FullName:         "required_string_attr",
-						RequirementLevel: AttributeRequirementLevelRequired,
-					},
 					"opt_in_bool_attr": {
 						Description: "An opt-in attribute with a boolean value",
 						Type: ValueType{
@@ -276,7 +268,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:     true,
 							Description: "Metric for testing spacial reaggregation",
 							Stability:   Stability{Level: component.StabilityLevelBeta},
-							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
+							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{

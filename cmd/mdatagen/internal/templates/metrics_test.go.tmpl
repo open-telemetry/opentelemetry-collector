@@ -139,7 +139,7 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 )
         {{ if eq $name "reag.metric" }}
-          mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}1{{ end }}
+          mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
           {{- range $metric.Attributes -}}
           {{- if not (attributeInfo .).IsConditional -}}
             , {{- template "getAttributeValueTwo" . -}}
@@ -191,12 +191,10 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-          {{ if eq $name "reag.metric" }}
+          {{- if eq $name "reag.metric" }}
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
             validatedMetrics["{{ $name }}"] = true
             assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
-            assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
-            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
             {{- if len $metric.Unit}}
             assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
             {{- else }}
@@ -209,28 +207,38 @@ func TestMetricsBuilder(t *testing.T) {
             assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
             {{- end }}
             dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+            if tt.name != "reag_set" {
+              assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+              {{- range $i, $attr := $metric.Attributes }}
+              attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+              assert.True(t, ok)
+              {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+              assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+              {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+              assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+              {{- else }}
+              assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+              {{- end }}
+              {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+              {{- end }}
+            } else {
+              assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+            }
+            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
             assert.Equal(t, start, dp.StartTimestamp())
             assert.Equal(t, ts, dp.Timestamp())
             assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
-            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
-            {{- else }}
-            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
-            {{- end }}
-
-            {{- range $i, $attr := $metric.Attributes }}
-            attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
-            assert.True(t, ok)
-            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
-            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
-            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- else }}
-            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-            {{- end }}
-            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
-            {{- end }}
-          {{ else }}
+          {{- else }}
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
             validatedMetrics["{{ $name }}"] = true
             assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
@@ -269,9 +277,7 @@ func TestMetricsBuilder(t *testing.T) {
             {{- end }}
             {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
             {{- end }}
-          {{ end }}
-
-					
+          {{- end }}
 				{{- end }}
 				}
 			}

@@ -52,6 +52,7 @@ type MetricsConfig struct {
 	MetricInputType          MetricConfig `mapstructure:"metric.input_type"`
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
 	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
+	ReagMetric               MetricConfig `mapstructure:"reag.metric"`
 	SystemCPUTime            MetricConfig `mapstructure:"system.cpu.time"`
 }
 
@@ -79,6 +80,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
 			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+		},
+		ReagMetric: MetricConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
 		},
