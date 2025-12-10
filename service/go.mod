@@ -253,5 +253,3 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exp
 replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
 
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
-
-replace go.opentelemetry.io/contrib/otelconf => github.com/codeboten/opentelemetry-go-contrib/otelconf v0.0.0-20251118191952-6b54d7369417

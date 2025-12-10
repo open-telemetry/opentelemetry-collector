@@ -302,5 +302,3 @@ replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../conf
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/exporterhelper
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
-
-replace go.opentelemetry.io/contrib/otelconf => github.com/codeboten/opentelemetry-go-contrib/otelconf v0.0.0-20251118191952-6b54d7369417

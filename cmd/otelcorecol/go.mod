@@ -333,5 +333,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/contrib/otelconf => github.com/codeboten/opentelemetry-go-contrib/otelconf v0.0.0-20251118191952-6b54d7369417
