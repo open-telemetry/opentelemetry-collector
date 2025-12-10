@@ -3,18 +3,32 @@ all_set:
   metrics:
     default.metric:
       enabled: true
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
+      #attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: true
+      attributes: []
+      #attributes: []
     metric.input_type:
       enabled: true
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
+      #attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     optional.metric:
       enabled: true
+      attributes: ["string_attr","boolean_attr","boolean_attr2"]
+      #attributes: ["string_attr","boolean_attr","boolean_attr2"]
     optional.metric.empty_unit:
       enabled: true
+      attributes: ["string_attr","boolean_attr"]
+      #attributes: ["string_attr","boolean_attr"]
     reag.metric:
       enabled: true
+      attributes: ["string_attr","boolean_attr"]
+      #attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
+      attributes: []
+      #attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -70,18 +84,25 @@ none_set:
   metrics:
     default.metric:
       enabled: false
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: false
+      attributes: []
     metric.input_type:
       enabled: false
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     optional.metric:
       enabled: false
+      attributes: ["string_attr","boolean_attr","boolean_attr2"]
     optional.metric.empty_unit:
       enabled: false
+      attributes: ["string_attr","boolean_attr"]
     reag.metric:
       enabled: false
+      attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: false
