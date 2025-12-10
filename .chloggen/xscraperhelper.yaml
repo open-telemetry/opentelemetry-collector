@@ -7,7 +7,7 @@ change_type: new_component
 component: pkg/xscraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add xscraperhelper so it can be used with xscraper.
+note: Add xscraperhelper for the experimental OTel profiling signal.
 
 # One or more tracking issues or pull requests related to the change
 issues: [14235]
