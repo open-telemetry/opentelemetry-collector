@@ -21,6 +21,34 @@ all_set:
       enabled: true
     {{- end }}
   {{- end }}
+reag_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{- if eq $name "reag.metric" }}
+    {{ $name }}:
+      enabled: true
+      disabled_attributes: [string_attr, boolean_attr]
+    {{- else }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
 none_set:
   {{- if .Metrics }}
   metrics:

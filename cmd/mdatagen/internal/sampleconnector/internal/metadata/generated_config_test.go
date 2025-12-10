@@ -47,6 +47,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
 					},
+					ReagMetric: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -81,6 +85,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 					},
 					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+					},
+					ReagMetric: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
 					},

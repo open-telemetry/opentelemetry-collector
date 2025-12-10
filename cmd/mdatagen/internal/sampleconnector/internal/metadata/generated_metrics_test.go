@@ -123,6 +123,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordReagMetricDataPoint(ts, 1, "string_attr-val", true)
+
+			mb.RecordReagMetricDataPoint(ts, 3, "string_attr-val-2", false)
+
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 			rb.SetOptionalResourceAttr("optional.resource.attr-val")
@@ -155,7 +161,6 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "default.metric":
-
 					assert.False(t, validatedMetrics["default.metric"], "Found a duplicate in the metrics slice: default.metric")
 					validatedMetrics["default.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -184,9 +189,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					assert.True(t, ok)
 					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
-
 				case "default.metric.to_be_removed":
-
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -200,9 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-
 				case "metric.input_type":
-
 					assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
 					validatedMetrics["metric.input_type"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -231,9 +232,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					assert.True(t, ok)
 					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
-
 				case "optional.metric":
-
 					assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 					validatedMetrics["optional.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -254,9 +253,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr2")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
-
 				case "optional.metric.empty_unit":
-
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -274,7 +271,29 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
-
+				case "reag.metric":
+					assert.False(t, validatedMetrics["reag.metric"], "Found a duplicate in the metrics slice: reag.metric")
+					validatedMetrics["reag.metric"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					if tt.name != "reag_set" {
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					} else {
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+					}
+					assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 				}
 			}
 		})

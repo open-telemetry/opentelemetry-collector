@@ -75,7 +75,6 @@ Metric for testing spacial reaggregation
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| required_string_attr | A required string attribute | Any Str | Required |
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
