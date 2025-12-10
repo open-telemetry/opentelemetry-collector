@@ -11,8 +11,44 @@ all_set:
       enabled: true
     optional.metric.empty_unit:
       enabled: true
+    reag.metric:
+      enabled: true
     system.cpu.time:
       enabled: true
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+    slice.resource.attr:
+      enabled: true
+    string.enum.resource.attr:
+      enabled: true
+    string.resource.attr:
+      enabled: true
+    string.resource.attr_disable_warning:
+      enabled: true
+    string.resource.attr_remove_warning:
+      enabled: true
+    string.resource.attr_to_be_removed:
+      enabled: true
+reag_set:
+  metrics:
+    default.metric:
+      enabled: false
+    default.metric.to_be_removed:
+      enabled: false
+    metric.input_type:
+      enabled: false
+    optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
+      enabled: false
+    reag.metric:
+      enabled: true
+      disabled_attributes: [string_attr, boolean_attr]
+    system.cpu.time:
+      enabled: false
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -41,6 +77,8 @@ none_set:
     optional.metric:
       enabled: false
     optional.metric.empty_unit:
+      enabled: false
+    reag.metric:
       enabled: false
     system.cpu.time:
       enabled: false
