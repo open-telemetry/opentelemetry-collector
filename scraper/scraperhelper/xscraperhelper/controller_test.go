@@ -116,9 +116,9 @@ func TestProfilesScrapeController(t *testing.T) {
 			defer parentSpan.End()
 
 			initializeChs := make([]chan bool, test.scrapers)
-			scrapeLogsChs := make([]chan int, test.scrapers)
+			scrapeProfilesChs := make([]chan int, test.scrapers)
 			closeChs := make([]chan bool, test.scrapers)
-			options := configureProfilesOptions(t, test, initializeChs, scrapeLogsChs, closeChs)
+			options := configureProfilesOptions(t, test, initializeChs, scrapeProfilesChs, closeChs)
 
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
@@ -144,14 +144,14 @@ func TestProfilesScrapeController(t *testing.T) {
 
 			if test.expectScraped || test.scrapeErr != nil {
 				// validate that scrape is called at least N times for each configured scraper
-				for _, ch := range scrapeLogsChs {
+				for _, ch := range scrapeProfilesChs {
 					<-ch
 				}
 				// Consume the initial scrapes on start
 				for range iterations {
 					tickerCh <- time.Now()
 
-					for _, ch := range scrapeLogsChs {
+					for _, ch := range scrapeProfilesChs {
 						<-ch
 					}
 				}
@@ -199,12 +199,12 @@ func getExpectedShutdownErr(test scraperTestCase) error {
 	return multierr.Combine(errs...)
 }
 
-func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs []chan bool, scrapeLogsChs []chan int, closeChs []chan bool) []ControllerOption {
-	var logsOptions []ControllerOption
+func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs []chan bool, scrapeProfilesChs []chan int, closeChs []chan bool) []ControllerOption {
+	var profilesOptions []ControllerOption
 
 	for i := 0; i < test.scrapers; i++ {
-		scrapeLogsChs[i] = make(chan int)
-		ts := &testScrape{ch: scrapeLogsChs[i], err: test.scrapeErr}
+		scrapeProfilesChs[i] = make(chan int)
+		ts := &testScrape{ch: scrapeProfilesChs[i], err: test.scrapeErr}
 
 		var xscraperOptions []xscraper.Option
 		if test.initialize {
@@ -221,10 +221,10 @@ func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs 
 		scp, err := xscraper.NewProfiles(ts.scrapeProfiles, xscraperOptions...)
 		require.NoError(t, err)
 
-		logsOptions = append(logsOptions, addProfilesScraper(component.MustNewType("scraper"), scp))
+		profilesOptions = append(profilesOptions, addProfilesScraper(component.MustNewType("scraper"), scp))
 	}
 
-	return logsOptions
+	return profilesOptions
 }
 
 func TestSingleProfilesScraperPerInterval(t *testing.T) {
