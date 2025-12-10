@@ -357,7 +357,7 @@ Semantic Conventions changes are completed.
 
 ### Metrics
 
-Metrics emitted by Collector components follow the same stability levels documented by
+Metrics emitted by Collector scrapers/receivers (i.e. `system.cpu.time`) follow the same stability levels documented by
 [Internal Telemetry Stability](https://opentelemetry.io/docs/collector/internal-telemetry/#metrics).
 
 In particular, for beta and stable levels the following guidelines apply:
