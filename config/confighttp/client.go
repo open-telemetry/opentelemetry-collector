@@ -151,7 +151,11 @@ type ToClientOption interface {
 }
 
 // ToClient creates an HTTP client.
-func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+//
+// To allow the configuration to reference middleware or authentication extensions,
+// the `extensions` argument should be the output of `host.GetExtensions()`.
+// It may also be `nil` in tests where no such extension is expected to be used.
+func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -197,9 +201,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 
 	// Apply middlewares in reverse order so they execute in
 	// forward order. The first middleware runs after authentication.
+	if len(cc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
+	}
 	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -215,13 +222,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, host component.Host, setti
 	// request signing-based auth mechanisms operate after compression
 	// and header middleware modifies the request
 	if cc.Auth.HasValue() {
-		ext := host.GetExtensions()
-		if ext == nil {
-			return nil, errors.New("extensions configuration not found")
+		if extensions == nil {
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
 		}
 
 		auth := cc.Auth.Get()
-		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
+		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, extensions)
 		if aerr != nil {
 			return nil, aerr
 		}

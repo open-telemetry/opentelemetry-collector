@@ -16,9 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func BenchmarkCompression(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	benchmarks := []struct {
 		codec    configcompression.Type
 		name     string
@@ -35,7 +37,7 @@ func BenchmarkCompression(b *testing.B) {
 			function: benchmarkCompressionNoConcurrency,
 		},
 	}
-	payload := make([]byte, 10<<20)
+	payload := make([]byte, 10<<22)
 	buffer := bytes.Buffer{}
 	buffer.Grow(len(payload))
 
@@ -55,38 +57,31 @@ func BenchmarkCompression(b *testing.B) {
 
 func benchmarkCompression(b *testing.B, _ configcompression.Type, buf *bytes.Buffer, payload []byte) {
 	// Concurrency Enabled
-
-	b.Run("compress", func(b *testing.B) {
-		stringReader := strings.NewReader(string(payload))
-		stringReadCloser := io.NopCloser(stringReader)
-		var enc io.Writer
-		b.ResetTimer()
-		b.ReportAllocs()
-		b.SetBytes(int64(len(payload)))
-		for b.Loop() {
-			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(5))
-			enc.(writeCloserReset).Reset(buf)
-			_, copyErr := io.Copy(enc, stringReadCloser)
-			require.NoError(b, copyErr)
-		}
-	})
+	stringReader := strings.NewReader(string(payload))
+	stringReadCloser := io.NopCloser(stringReader)
+	var enc io.Writer
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.SetBytes(int64(len(payload)))
+	for b.Loop() {
+		enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(5))
+		enc.(writeCloserReset).Reset(buf)
+		_, copyErr := io.Copy(enc, stringReadCloser)
+		require.NoError(b, copyErr)
+	}
 }
 
 func benchmarkCompressionNoConcurrency(b *testing.B, _ configcompression.Type, buf *bytes.Buffer, payload []byte) {
-	// Concurrency Disabled
-
-	b.Run("compress", func(b *testing.B) {
-		stringReader := strings.NewReader(string(payload))
-		stringReadCloser := io.NopCloser(stringReader)
-		var enc io.Writer
-		b.ResetTimer()
-		b.ReportAllocs()
-		b.SetBytes(int64(len(payload)))
-		for b.Loop() {
-			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
-			enc.(writeCloserReset).Reset(buf)
-			_, copyErr := io.Copy(enc, stringReadCloser)
-			require.NoError(b, copyErr)
-		}
-	})
+	stringReader := strings.NewReader(string(payload))
+	stringReadCloser := io.NopCloser(stringReader)
+	var enc io.Writer
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.SetBytes(int64(len(payload)))
+	for b.Loop() {
+		enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
+		enc.(writeCloserReset).Reset(buf)
+		_, copyErr := io.Copy(enc, stringReadCloser)
+		require.NoError(b, copyErr)
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -57,7 +58,7 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 		dic.StringTable().Append(fmt.Sprintf("key_%d", i))
 
 		att := table.AppendEmpty()
-		att.SetKeyStrindex(int32(dic.StringTable().Len())) //nolint:gosec // overflow impossible in test
+		att.SetKeyStrindex(int32(dic.StringTable().Len()))
 		att.Value().SetStr(fmt.Sprintf("value_%d", i))
 	}
 
@@ -100,7 +101,7 @@ func TestSetAttribute(t *testing.T) {
 	idx, err = SetAttribute(table, attr2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing value
 	idx, err = SetAttribute(table, attr)
@@ -111,10 +112,11 @@ func TestSetAttribute(t *testing.T) {
 	idx, err = SetAttribute(table, attr2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkSetAttribute(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	for _, bb := range []struct {
 		name string
 		attr KeyValueAndUnit
@@ -158,7 +160,7 @@ func BenchmarkSetAttribute(b *testing.B) {
 			runBefore: func(_ *testing.B, table KeyValueAndUnitSlice) {
 				for i := range 100 {
 					l := table.AppendEmpty()
-					l.SetKeyStrindex(int32(i)) //nolint:gosec // overflow checked
+					l.SetKeyStrindex(int32(i))
 				}
 			},
 		},

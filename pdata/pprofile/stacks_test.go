@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestSetStack(t *testing.T) {
@@ -35,7 +37,7 @@ func TestSetStack(t *testing.T) {
 	idx, err = SetStack(table, s2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing stack
 	idx, err = SetStack(table, s)
@@ -46,10 +48,11 @@ func TestSetStack(t *testing.T) {
 	idx, err = SetStack(table, s2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkSetStack(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	for _, bb := range []struct {
 		name  string
 		stack Stack

@@ -18,7 +18,7 @@ func SetMapping(table MappingSlice, ma Mapping) (int32, error) {
 			if j > math.MaxInt32 {
 				return 0, errTooManyMappingTableEntries
 			}
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -27,5 +27,5 @@ func SetMapping(table MappingSlice, ma Mapping) (int32, error) {
 	}
 
 	ma.CopyTo(table.AppendEmpty())
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }

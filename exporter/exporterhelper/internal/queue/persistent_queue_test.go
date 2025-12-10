@@ -1185,7 +1185,6 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[intR
 func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
-	//nolint:gosec
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
 		buf = binary.LittleEndian.AppendUint64(buf, item)

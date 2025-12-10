@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -325,6 +326,7 @@ func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -339,6 +341,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -353,6 +356,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -367,6 +371,7 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 }
 
 func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -382,6 +387,7 @@ func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -394,6 +400,7 @@ func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {

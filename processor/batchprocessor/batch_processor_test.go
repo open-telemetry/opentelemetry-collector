@@ -716,7 +716,7 @@ func BenchmarkTraceSizeSpanCount(b *testing.B) {
 	}
 }
 
-func BenchmarkBatchMetricProcessor(b *testing.B) {
+func BenchmarkBatchMetricProcessor2k(b *testing.B) {
 	b.StopTimer()
 	cfg := &Config{
 		Timeout:       100 * time.Millisecond,
@@ -725,7 +725,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	runMetricsProcessorBenchmark(b, cfg)
 }
 
-func BenchmarkMultiBatchMetricProcessor(b *testing.B) {
+func BenchmarkMultiBatchMetricProcessor2k(b *testing.B) {
 	b.StopTimer()
 	cfg := &Config{
 		Timeout:       100 * time.Millisecond,
@@ -742,7 +742,7 @@ func runMetricsProcessorBenchmark(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	require.NoError(b, metrics.Start(ctx, componenttest.NewNopHost()))
 
-	const metricsPerRequest = 1000
+	const metricsPerRequest = 150_000
 	b.StartTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

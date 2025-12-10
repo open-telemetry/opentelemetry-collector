@@ -41,7 +41,7 @@ func SetAttribute(table KeyValueAndUnitSlice, attr KeyValueAndUnit) (int32, erro
 			if j > math.MaxInt32 {
 				return 0, errTooManyAttributeTableEntries
 			}
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -50,5 +50,5 @@ func SetAttribute(table KeyValueAndUnitSlice, attr KeyValueAndUnit) (int32, erro
 	}
 
 	attr.CopyTo(table.AppendEmpty())
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }

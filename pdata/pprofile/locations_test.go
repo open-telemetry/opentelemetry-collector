@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestFromLocationIndices(t *testing.T) {
@@ -59,7 +61,7 @@ func TestSetLocation(t *testing.T) {
 	idx, err = SetLocation(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing value
 	idx, err = SetLocation(table, l)
@@ -70,18 +72,20 @@ func TestSetLocation(t *testing.T) {
 	idx, err = SetLocation(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkFromLocationIndices(b *testing.B) {
 	table := NewLocationSlice()
 
-	for i := range 10 {
-		table.AppendEmpty().SetAddress(uint64(i)) //nolint:gosec // overflow checked
+	for i := range 100 {
+		table.AppendEmpty().SetAddress(uint64(i))
 	}
 
 	obj := NewStack()
-	obj.LocationIndices().Append(1, 3, 7)
+	for i := range int32(50) {
+		obj.LocationIndices().Append(2*i + 1)
+	}
 
 	b.ReportAllocs()
 
@@ -91,6 +95,7 @@ func BenchmarkFromLocationIndices(b *testing.B) {
 }
 
 func BenchmarkSetLocation(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	for _, bb := range []struct {
 		name     string
 		location Location
@@ -134,7 +139,7 @@ func BenchmarkSetLocation(b *testing.B) {
 			runBefore: func(_ *testing.B, table LocationSlice) {
 				for i := range 100 {
 					l := table.AppendEmpty()
-					l.SetAddress(uint64(i)) //nolint:gosec // overflow checked
+					l.SetAddress(uint64(i))
 				}
 
 				l := table.AppendEmpty()

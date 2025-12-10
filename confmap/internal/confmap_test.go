@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"encoding"
 	"errors"
 	"math"
 	"os"
@@ -557,6 +558,53 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 
 	tc := &testConfigWithMarshalError{}
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
+}
+
+// stringOpaque is similar to configopaque.String, in that
+// marshaling then unmarshaling it changes its value.
+type stringOpaque string
+
+var _ encoding.TextMarshaler = stringOpaque("")
+
+func (s stringOpaque) MarshalText() (text []byte, err error) {
+	return []byte("opaque"), nil
+}
+
+type squashedConfigOpaque struct {
+	Value  stringOpaque `mapstructure:"value"`
+	secret bool
+}
+
+var _ Unmarshaler = (*squashedConfigOpaque)(nil)
+
+func (ecwrt *squashedConfigOpaque) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(ecwrt); err != nil {
+		return err
+	}
+	ecwrt.secret = true
+	return nil
+}
+
+type testConfigOpaque struct {
+	// Don't embed, otherwise testConfigOpaque will implement Unmarshaler,
+	// and unmarshalerHookFunc will be called instead of unmarshalerEmbeddedStructsHookFunc.
+	Squashed squashedConfigOpaque `mapstructure:",squash"`
+}
+
+// Regression test: the hook processing embedded marshalers previously made the assumption that
+// marshaling a struct then unmarshaling the resulting map back into the struct
+// is a no-op, which is not true for configopaque.String.
+func TestEmbeddedMarshalerWithoutRoundtrip(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"value": "hello",
+	})
+
+	tc := &testConfigOpaque{}
+	require.NoError(t, cfgMap.Unmarshal(tc))
+	// Check that "hello" hasn't been replaced by "opaque"
+	assert.Equal(t, "hello", string(tc.Squashed.Value))
+	// Check that the inner Unmarshal was called
+	assert.True(t, tc.Squashed.secret)
 }
 
 type B struct {

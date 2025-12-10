@@ -93,7 +93,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 
 	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -167,7 +167,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 

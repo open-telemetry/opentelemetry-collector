@@ -18,7 +18,7 @@ func SetFunction(table FunctionSlice, fn Function) (int32, error) {
 			if j > math.MaxInt32 {
 				return 0, errTooManyFunctionTableEntries
 			}
-			return int32(j), nil //nolint:gosec // G115 overflow checked
+			return int32(j), nil
 		}
 	}
 
@@ -27,5 +27,5 @@ func SetFunction(table FunctionSlice, fn Function) (int32, error) {
 	}
 
 	fn.CopyTo(table.AppendEmpty())
-	return int32(table.Len() - 1), nil //nolint:gosec // G115 overflow checked
+	return int32(table.Len() - 1), nil
 }

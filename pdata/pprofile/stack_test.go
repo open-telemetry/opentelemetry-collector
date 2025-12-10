@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestStackEqual(t *testing.T) {
@@ -193,5 +195,29 @@ func TestStackSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantStack, stack)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkStackSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	s := NewStack()
+	s.LocationIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.LocationTable().AppendEmpty()
+	src.LocationTable().AppendEmpty().SetAddress(42)
+	src.LocationTable().AppendEmpty().SetAddress(43)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.LocationTable().AppendEmpty()
+		dst.LocationTable().AppendEmpty().SetAddress(43)
+		b.StartTimer()
+
+		_ = s.switchDictionary(src, dst)
 	}
 }

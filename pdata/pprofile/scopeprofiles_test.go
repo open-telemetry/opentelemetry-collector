@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -87,5 +88,25 @@ func TestScopeProfilesSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantScopeProfiles, sp)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkScopeProfilesSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	s := NewScopeProfiles()
+	profile := s.Profiles().AppendEmpty()
+	profile.Samples().AppendEmpty().SetLinkIndex(1)
+
+	src := NewProfilesDictionary()
+	src.LinkTable().AppendEmpty()
+	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	dst := NewProfilesDictionary()
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = s.switchDictionary(src, dst)
 	}
 }

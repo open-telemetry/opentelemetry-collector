@@ -7,6 +7,34 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.47.0/v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/configgrpc`: Replace `component.Host` parameter of ToServer/ToClientConn by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+- `pkg/config/confighttp`: Replace `component.Host` parameter of ToServer/ToClient by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/pdata`: Deprecate profile.Duration() and profile.SetDuration() (#14188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `MergeTo` method (#14091)
+- `pkg/pdata`: Add profile.DurationNano() and profile.SetDurationNano() (#14188)
+
+<!-- previous-version -->
+
 ## v1.46.0/v0.140.0
 
 ### 🛑 Breaking changes 🛑

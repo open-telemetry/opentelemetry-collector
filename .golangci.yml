@@ -78,6 +78,15 @@ linters:
               desc: "Use the newer 'math/rand/v2' instead of math/rand"
             - pkg: "sigs.k8s.io/yaml"
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+        semconv:
+          list-mode: lax
+          files:
+            - "!cmd/mdatagen/**" # Exclude mdatagen
+          deny:
+            - pkg: go.opentelemetry.io/otel/semconv
+              desc: Use go.opentelemetry.io/otel/semconv/v1.37.0 instead. If a newer semconv version has been released, update the depguard rule.
+          allow:
+            - go.opentelemetry.io/otel/semconv/v1.37.0
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.

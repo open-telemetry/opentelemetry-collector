@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestMappingEqual(t *testing.T) {
@@ -219,6 +221,32 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantMapping, m)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkMappingSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	m := NewMapping()
+	m.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		dst.AttributeTable().AppendEmpty()
+		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		b.StartTimer()
+
+		_ = m.switchDictionary(src, dst)
 	}
 }
 

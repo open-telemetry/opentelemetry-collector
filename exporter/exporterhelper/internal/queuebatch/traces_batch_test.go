@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -338,6 +339,7 @@ func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -352,6 +354,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -366,6 +369,7 @@ func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B
 }
 
 func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {

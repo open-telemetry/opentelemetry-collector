@@ -124,7 +124,6 @@ func TestQueueBatchDifferentSizers(t *testing.T) {
 	// because the bytes size is used for the queue,
 	// but split because the items size is used for batch.
 	cfg := Config{
-		Enabled:         true,
 		WaitForResult:   false,
 		Sizer:           request.SizerTypeBytes,
 		QueueSize:       100,
@@ -604,7 +603,6 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 
 func newTestConfig() Config {
 	return Config{
-		Enabled:         true,
 		WaitForResult:   false,
 		Sizer:           request.SizerTypeItems,
 		NumConsumers:    runtime.NumCPU(),

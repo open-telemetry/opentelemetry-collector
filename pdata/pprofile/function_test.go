@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestFunctionEqual(t *testing.T) {
@@ -249,6 +251,28 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantFunction, fn)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkFunctionSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	fn := NewFunction()
+	fn.SetNameStrindex(1)
+	fn.SetSystemNameStrindex(2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		b.StartTimer()
+
+		_ = fn.switchDictionary(src, dst)
 	}
 }
 

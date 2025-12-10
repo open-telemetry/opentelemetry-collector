@@ -28,7 +28,7 @@ func createLogger(
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
-	zapCfg := &zap.Config{
+	zapCfg := zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Logs.Level),
 		Development:       cfg.Logs.Development,
 		Encoding:          cfg.Logs.Encoding,
@@ -45,7 +45,13 @@ func createLogger(
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
 
-	logger, err := zapCfg.Build(set.ZapOptions...)
+	buildZapLogger := set.BuildZapLogger
+	if buildZapLogger == nil {
+		// For backwards compatibility, use zap.Config.Build
+		// if set.BuildZapLogger is not provided.
+		buildZapLogger = zap.Config.Build
+	}
+	logger, err := buildZapLogger(zapCfg, set.ZapOptions...)
 	if err != nil {
 		return nil, nil, err
 	}

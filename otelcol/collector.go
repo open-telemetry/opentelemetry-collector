@@ -99,7 +99,8 @@ type CollectorSettings struct {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
+	set            CollectorSettings
+	buildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 
 	configProvider *ConfigProvider
 
@@ -136,9 +137,10 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	state := new(atomic.Int64)
 	state.Store(int64(StateStarting))
 	return &Collector{
-		set:          set,
-		state:        state,
-		shutdownChan: make(chan struct{}),
+		set:            set,
+		buildZapLogger: zap.Config.Build,
+		state:          state,
+		shutdownChan:   make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
@@ -196,6 +198,17 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("could not marshal configuration: %w", err)
 	}
 
+	// Wrap the buildZapLogger to append LoggingOptions from collector settings,
+	// since service.Settings.LoggingOptions is deprecated.
+	buildZapLogger := col.buildZapLogger
+	if len(col.set.LoggingOptions) > 0 {
+		origBuildZapLogger := buildZapLogger
+		buildZapLogger = func(zapCfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+			opts = append(opts, col.set.LoggingOptions...)
+			return origBuildZapLogger(zapCfg, opts...)
+		}
+	}
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:     col.set.BuildInfo,
 		CollectorConf: conf,
@@ -219,7 +232,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Connector: buildModuleInfo(factories.ConnectorModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
-		LoggingOptions:    col.set.LoggingOptions,
+		BuildZapLogger:    buildZapLogger,
 		TelemetryFactory:  factories.Telemetry,
 	}, cfg.Service)
 	if err != nil {
