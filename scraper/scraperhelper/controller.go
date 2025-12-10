@@ -89,7 +89,7 @@ func NewLogsController(cfg *ControllerConfig,
 	co := getOptions(options)
 	scrapers := make([]scraper.Logs, 0, len(co.factoriesWithConfig))
 	for _, fwc := range co.factoriesWithConfig {
-		set := getSettings(fwc.f.Type(), rSet)
+		set := controller.GetSettings(fwc.f.Type(), rSet)
 		s, err := fwc.f.CreateLogs(context.Background(), set, fwc.cfg)
 		if err != nil {
 			return nil, err
@@ -113,7 +113,7 @@ func NewMetricsController(cfg *ControllerConfig,
 	co := getOptions(options)
 	scrapers := make([]scraper.Metrics, 0, len(co.factoriesWithConfig))
 	for _, fwc := range co.factoriesWithConfig {
-		set := getSettings(fwc.f.Type(), rSet)
+		set := controller.GetSettings(fwc.f.Type(), rSet)
 		s, err := fwc.f.CreateMetrics(context.Background(), set, fwc.cfg)
 		if err != nil {
 			return nil, err
@@ -129,7 +129,7 @@ func NewMetricsController(cfg *ControllerConfig,
 }
 
 func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs) {
-	ctx, done := withScrapeContext(c.Timeout)
+	ctx, done := controller.WithScrapeContext(c.Timeout)
 	defer done()
 
 	logs := plog.NewLogs()
@@ -148,7 +148,7 @@ func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Lo
 }
 
 func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) {
-	ctx, done := withScrapeContext(c.Timeout)
+	ctx, done := controller.WithScrapeContext(c.Timeout)
 	defer done()
 
 	metrics := pmetric.NewMetrics()
@@ -172,22 +172,4 @@ func getOptions(options []ControllerOption) controllerOptions {
 		op.apply(&co)
 	}
 	return co
-}
-
-func getSettings(sType component.Type, rSet receiver.Settings) scraper.Settings {
-	return scraper.Settings{
-		ID:                component.NewID(sType),
-		TelemetrySettings: rSet.TelemetrySettings,
-		BuildInfo:         rSet.BuildInfo,
-	}
-}
-
-// withScrapeContext will return a context that has no deadline if timeout is 0
-// which implies no explicit timeout had occurred, otherwise, a context
-// with a deadline of the provided timeout is returned.
-func withScrapeContext(timeout time.Duration) (context.Context, context.CancelFunc) {
-	if timeout == 0 {
-		return context.WithCancel(context.Background())
-	}
-	return context.WithTimeout(context.Background(), timeout)
 }

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 type Controller[T component.Component] struct {
@@ -120,4 +121,22 @@ func (sc *Controller[T]) startScraping() {
 			}
 		}
 	}()
+}
+
+func GetSettings(sType component.Type, rSet receiver.Settings) scraper.Settings {
+	return scraper.Settings{
+		ID:                component.NewID(sType),
+		TelemetrySettings: rSet.TelemetrySettings,
+		BuildInfo:         rSet.BuildInfo,
+	}
+}
+
+// WithScrapeContext will return a context that has no deadline if timeout is 0
+// which implies no explicit timeout had occurred, otherwise, a context
+// with a deadline of the provided timeout is returned.
+func WithScrapeContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout == 0 {
+		return context.WithCancel(context.Background())
+	}
+	return context.WithTimeout(context.Background(), timeout)
 }
