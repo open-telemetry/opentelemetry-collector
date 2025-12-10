@@ -781,7 +781,7 @@ func TestGetStructFromNamed(t *testing.T) {
 	st, ok := GetStructFromNamed(configType)
 	assert.True(t, ok)
 	assert.NotNil(t, st)
-	assert.Greater(t, st.NumFields(), 0)
+	assert.Positive(t, st.NumFields())
 }
 
 func TestSchemaGenerator_GenerateSchema_Errors(t *testing.T) {
@@ -791,7 +791,7 @@ func TestSchemaGenerator_GenerateSchema_Errors(t *testing.T) {
 
 	t.Run("nonexistent package", func(t *testing.T) {
 		err := generator.GenerateSchema(component.KindReceiver, "test", "nonexistent/package")
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to load package")
 	})
 }
@@ -944,10 +944,10 @@ func TestSchemaGenerator_getFieldName_EdgeCases(t *testing.T) {
 	sg := NewSchemaGenerator(tempDir, analyzer)
 
 	tests := []struct {
-		name       string
-		tag        string
-		goName     string
-		expected   string
+		name     string
+		tag      string
+		goName   string
+		expected string
 	}{
 		{
 			name:     "empty mapstructure value falls back to json",
