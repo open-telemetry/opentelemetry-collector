@@ -46,7 +46,7 @@ reag_set:
       enabled: false
     reag.metric:
       enabled: true
-      disabled_attributes: [string_attr, boolean_attr]
+      attributes: []
     system.cpu.time:
       enabled: false
   resource_attributes:

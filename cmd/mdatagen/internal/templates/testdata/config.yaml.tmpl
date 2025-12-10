@@ -28,7 +28,7 @@ reag_set:
     {{- if eq $name "reag.metric" }}
     {{ $name }}:
       enabled: true
-      disabled_attributes: [string_attr, boolean_attr]
+      attributes: []
     {{- else }}
     {{ $name }}:
       enabled: false

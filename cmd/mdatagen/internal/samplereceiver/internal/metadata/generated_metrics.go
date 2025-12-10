@@ -115,11 +115,10 @@ func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValu
 }
 
 type metricDefaultMetric struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills default.metric metric with initial data.
@@ -141,22 +140,22 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "enum_attr") {
 		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "opt_in_bool_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "opt_in_bool_attr") {
 		dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	}
 	for _, op := range options {
@@ -214,19 +213,11 @@ func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricDefaultMetric{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -236,11 +227,10 @@ func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
 }
 
 type metricDefaultMetricToBeRemoved struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills default.metric.to_be_removed metric with initial data.
@@ -313,19 +303,11 @@ func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricDefaultMetricToBeRemoved(cfg MetricConfig) metricDefaultMetricToBeRemoved {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricDefaultMetricToBeRemoved{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -335,11 +317,10 @@ func newMetricDefaultMetricToBeRemoved(cfg MetricConfig) metricDefaultMetricToBe
 }
 
 type metricMetricInputType struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills metric.input_type metric with initial data.
@@ -361,19 +342,19 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "enum_attr") {
 		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
 
@@ -428,19 +409,11 @@ func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricMetricInputType(cfg MetricConfig) metricMetricInputType {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricMetricInputType{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -450,11 +423,10 @@ func newMetricMetricInputType(cfg MetricConfig) metricMetricInputType {
 }
 
 type metricOptionalMetric struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills optional.metric metric with initial data.
@@ -474,13 +446,13 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr2") {
+	if slices.Contains(m.config.EnabledAttributes, "boolean_attr2") {
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
 	for _, op := range options {
@@ -538,19 +510,11 @@ func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricOptionalMetric{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -560,11 +524,10 @@ func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 }
 
 type metricOptionalMetricEmptyUnit struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills optional.metric.empty_unit metric with initial data.
@@ -584,10 +547,10 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
 
@@ -642,19 +605,11 @@ func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmptyUnit {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricOptionalMetricEmptyUnit{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -664,11 +619,10 @@ func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmpt
 }
 
 type metricReagMetric struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills reag.metric metric with initial data.
@@ -688,10 +642,10 @@ func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
+	if slices.Contains(m.config.EnabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
 
@@ -746,19 +700,11 @@ func (m *metricReagMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricReagMetric(cfg MetricConfig) metricReagMetric {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricReagMetric{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -768,11 +714,10 @@ func newMetricReagMetric(cfg MetricConfig) metricReagMetric {
 }
 
 type metricSystemCPUTime struct {
-	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-	actualDisabledAttributes []string       // difference between the set of disabled attributes and the required attributes as defined by metadata.yaml
-	aggDataPoints            []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.time metric with initial data.
@@ -845,19 +790,11 @@ func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
+	// when creating our list of enabled metric attributes we must contain
+	// required metrics and the user defined list must be included in the list of
+	// defined attributes for the metric. This is all handled during the
+	// unmarshal step
 	m := metricSystemCPUTime{config: cfg}
-
-	// do this once on start up instead of every time we record
-	filterFunc := func(m string) bool {
-		return !slices.Contains(cfg.requiredAttributes, m)
-	}
-	if len(cfg.DisabledAttributes) > 0 {
-		for _, a := range cfg.DisabledAttributes {
-			if filterFunc(a) {
-				m.actualDisabledAttributes = append(m.actualDisabledAttributes, a)
-			}
-		}
-	}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
