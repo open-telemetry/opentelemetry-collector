@@ -141,31 +141,24 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
 		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "opt_in_bool_attr") {
 		dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	}
-
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -368,23 +361,18 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "enum_attr") {
 		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
@@ -486,19 +474,15 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr2") {
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
-
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -600,11 +584,9 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
@@ -706,11 +688,9 @@ func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
 	if !slices.Contains(m.actualDisabledAttributes, "string_attr") {
 		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	}
-
 	if !slices.Contains(m.actualDisabledAttributes, "boolean_attr") {
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
