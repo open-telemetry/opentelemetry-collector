@@ -199,10 +199,6 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
-  // when creating our list of enabled metric attributes we must contain
-  // required metrics and the user defined list must be included in the list of
-  // defined attributes for the metric. This is all handled during the
-  // unmarshal step 
 	m := metric{{ $name.Render }}{config: cfg}
 
 	if cfg.Enabled {
