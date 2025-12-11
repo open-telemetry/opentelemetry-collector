@@ -129,6 +129,22 @@ func TestCreateLogger(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log config with `disable_resource_attributes` enabled",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:              zapcore.InfoLevel,
+					Development:        false,
+					Encoding:           "console",
+					OutputPaths:        []string{"stderr"},
+					ErrorOutputPaths:   []string{"stderr"},
+					DisableCaller:      false,
+					DisableStacktrace:  false,
+					InitialFields:      map[string]any(nil),
+					DisableZapResource: true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -159,6 +175,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig map[string]*string
 		wantFields     map[string]string
+		setConfig      func(cfg *Config)
 	}{
 		{
 			name: "auto-populated fields only",
@@ -228,17 +245,33 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				string(semconv.ServiceInstanceIDKey): "", // Just check presence
 			},
 		},
+		{
+			name: "validate `DisableResourceAttributes=true` shouldn't add resource fields",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{},
+			wantFields:     map[string]string{},
+			setConfig: func(cfg *Config) {
+				cfg.Logs.DisableZapResource = true
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zapcore.DebugLevel)
+
 			cfg := &Config{
 				Logs: LogsConfig{
 					Level:    zapcore.InfoLevel,
 					Encoding: "json",
 				},
 				Resource: tt.resourceConfig,
+			}
+			if tt.setConfig != nil {
+				tt.setConfig(cfg)
 			}
 
 			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
@@ -262,7 +295,8 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			require.Len(t, observedLogs.All(), 1)
 
 			entry := observedLogs.All()[0]
-			if tt.wantFields == nil {
+			// treat empty map as "no expected fields"
+			if len(tt.wantFields) == 0 {
 				assert.Empty(t, entry.Context)
 				return
 			}
