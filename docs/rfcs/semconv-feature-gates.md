@@ -1,0 +1,196 @@
+# Semantic conventions migrations in the Collector
+
+## Overview
+
+The OpenTelemetry Collector internal telemetry as well as its components emit telemetry that often
+conforms to semantic conventions. Semantic conventions have [varying levels of stability][1] and
+often have an SDK-focused migration guide.
+
+This RFC defines how migration should be handled in components or areas of the Collector that have
+semantic conventions that migrate to a stable version, in a Collector-native way.
+
+## Goals
+
+The migration mechanism should have the following characteristics:
+
+1. **Collector native**: the mechanism should work in a similar way to other Collector migrations
+   and should feel natural and intuitive to users. 
+2. **Simple**: a user should have to make a small number of changes to their Collector deployment to
+   migrate to a new set of conventions.
+3. **Easy to understand**: It should be easy to understand how to migrate a particular set of
+   conventions.
+5. **Flexible (double publish)**: The mechanism should allow you to 'double publish' old and new
+   conventions
+6. **Flexible (other conventions)**: The mechanism should still allow for evolution of other
+   semantic conventions that are not being migrated.
+
+## Background 
+
+### Setup
+
+We want to write guidance for when we have a component or module that emits telemetry from a common
+`area` that is undergoing a migration mandated by the Semantic Conventions SIG. In the rest of this
+document we refer to the **old** conventions and the **new** conventions, which are the conventions
+in this area before and after the migration.
+
+When the semantic conventions are specific to a component we use 
+- `kind` to refer to the component kind (receiver, exporter...)
+- `id` for the component id (e.g. `hostmetrics`)
+
+### What does the semconv spec say?
+
+The semantic conventions specification defines an environment variable named
+`OTEL_SEMCONV_STABILITY_OPT_IN` that, for each area, takes two possible values:
+1. One value representing the new semantic conventions (e.g. `http`, `gen_ai_latest_experimental`)
+2. Once mature enough, a second value ending in `/dup` that emits both the old conventions and the
+   new ones.
+
+This is a consistent pattern across all semantic conventions areas that are being actively worked
+on:
+
+<details>
+
+<summary> Example 1: HTTP compatibility warning </summary>
+
+Taken from [semconv v1.38.0][2]:
+
+> **Warning**
+> Existing HTTP instrumentations that are using
+> [v1.20.0 of this document](https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md)
+> (or prior):
+>
+> * SHOULD NOT change the version of the HTTP or networking conventions that they emit
+>   until the HTTP semantic conventions are marked stable (HTTP stabilization will
+>   include stabilization of a core set of networking conventions which are also used
+>   in HTTP instrumentations). Conventions include, but are not limited to, attributes,
+>   metric and span names, and unit of measure.
+> * SHOULD introduce an environment variable `OTEL_SEMCONV_STABILITY_OPT_IN`
+>   in the existing major version which is a comma-separated list of values.
+>   The only values defined so far are:
+>   * `http` - emit the new, stable HTTP and networking conventions,
+>     and stop emitting the old experimental HTTP and networking conventions
+>     that the instrumentation emitted previously.
+>   * `http/dup` - emit both the old and the stable HTTP and networking conventions,
+>     allowing for a seamless transition.
+>   * The default behavior (in the absence of one of these values) is to continue
+>     emitting whatever version of the old experimental HTTP and networking conventions
+>     the instrumentation was emitting previously.
+>   * Note: `http/dup` has higher precedence than `http` in case both values are present
+> * SHOULD maintain (security patching at a minimum) the existing major version
+>   for at least six months after it starts emitting both sets of conventions.
+> * SHOULD drop the environment variable in the next major version (stable
+>   next major version SHOULD NOT be released prior to October 1, 2023).
+
+</details>
+
+<details>
+
+<summary> Example 2: GenAI compatibility warning </summary>
+
+From [semconv v1.38.0][3]:
+
+> [!Warning]
+>
+> Existing GenAI instrumentations that are using
+> [v1.36.0 of this document](https://github.com/open-telemetry/semantic-conventions/blob/v1.36.0/docs/gen-ai/README.md)
+> (or prior):
+>
+> * SHOULD NOT change the version of the GenAI conventions that they emit by default.
+>   Conventions include, but are not limited to, attributes, metric, span and event names,
+>   span kind and unit of measure.
+> * SHOULD introduce an environment variable `OTEL_SEMCONV_STABILITY_OPT_IN`
+>   as a comma-separated list of category-specific values. The list of values
+>   includes:
+>   * `gen_ai_latest_experimental` - emit the latest experimental version of
+>     GenAI conventions (supported by the instrumentation) and do not emit the
+>     old one (v1.36.0 or prior).
+>   * The default behavior is to continue emitting whatever version of the GenAI
+>     conventions the instrumentation was emitting (1.36.0 or prior).
+>
+> This transition plan will be updated to include stable version before the
+> GenAI conventions are marked as stable.
+
+</details>
+
+## Proposed mechanism
+
+Support the `<id>` (e.g. `hostmetrics`) `kind` (e.g. `receiver`) component is migrating from old to new
+semantic conventions on the area `area` (e.g. `process`). To support this, it defines two semantic
+conventions: `<kind>.<id>.EmitNew<Area>Conventions` (e.g.
+`receiver.hostmetrics.EmitNewProcessConventions`) and `<kind>.<id>.DontEmitOld<Area>Conventions`
+(e.g. `receiver.hostmetrics.DontEmitOldProcessConventions`). These feature gates work as follows:
+
+| `<kind>.<id>.EmitNew<Area>Conventions` status | `<kind>.<id>.DontEmitOld<Area>Conventions` status    | Resulting behavior                                        |
+|-----------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------|
+| Disabled                                      | Disabled                                              | Emit telemetry under the 'old' conventions                |
+| Disabled                                      | Enabled                                               | Error at startup since this would not emit any telemetry  |
+| Enabled                                       | Disabled                                              | Emit telemetry under both the old and the new conventions |
+| Enabled                                       | Enabled                                               | Emit telemetry under the new conventions                  |
+
+Both feature gates evolve at the same pace through the feature gate stages, so that the progression
+is as follows:
+1. Initially both are at **alpha** stage (disabled by default). This means that the default behavior
+   is to emit only the 'old' conventions. Users can opt-in to emit the new conventions alongside the
+   old conventions or to emit only the new conventions.
+2. Whenever the semantic conventions are mature enough, the feature gates are promoted to the
+   **beta** stage on the same release. This means that the default behavior is to emit only the
+   'new' conventions. Users can opt-out to emit the new conventions alongside the old conventions or
+   to emit only the old conventions.
+3. At some poin the features are promoted to the **stable** stage. At this point users can only use
+   the new conventions.
+
+This mechanism is applicable also at the module level. For example we could have a pair of feature
+gates for `configgrpc`: `configgrpc.EmitNewRPCConventions` and
+`configgrpc.DontEmitOldRPCConventions`.
+
+This mechanism does not cover experimental semantic conventions. These pressumably would be covered
+by separate feature gates or some other mechanism.
+
+## Alternative mechanisms
+
+There are some other possibilities:
+
+### Environment variable
+
+We could just use the `OTEL_SEMCONV_STABILITY_OPT_IN` mechanism. However, this does not feel
+"Collector native": Collector users expect experimental features to be controlled via feature gates
+and as such this could be a suprising mechanism. In particular, users would expect that they are
+able to 'roll back' to the previous behavior even after a Collector upgrade, something that the
+environment variable mechanism explicitly does not support.
+
+### More granular feature gate pairs
+
+The granularity of the feature gates described could be changed: we could have a pair per convention
+or even a pair for the whole Collector. I argue 'per component' strikes the right balance between
+simplicity and flexibility: 
+- per convention would lead to dozens of feature gates on some of the areas we want to stabilize. It
+  would also be unclear how these interact on edge cases (semantic conventions may only make sense
+  holistically)
+- a single pair of feature gates would effectively be perma-unstable and would not be flexible
+  enough to allow people to migrate on a per dashboard basis
+
+### Meta feature gate
+
+We could have both a feature gate pair per component and a meta target feature gate pair that allows
+you to enable/disable all new conventions at the same time. This is effectively a superset of the
+proposed mechanism, so I argue we can postpone this for later: if users ask for it, we can always
+add it in the future.
+
+## Open questions and future possibilities
+
+This document does not cover how to deal with experimental semantic conventions after the 'big'
+migration has been completed in one particular area. What to do here in part depends on the
+[stabilization changes][4]. Quoting the blogpost:
+> Instrumentation stability should be decoupled from semantic convention stability. We have a lot of
+> stable instrumentation that is safe to run in production, but has data that may change in the
+> future. Users have told us that conflating these two levels of stability is confusing and limits
+> their options.
+
+How to deal with these remains an open question that should be tackled in OTEPs first.
+
+As mentioned above, the 'Meta feature gate' remains a possibility even when adopting this mechanism.
+
+[1]: https://opentelemetry.io/docs/specs/semconv/general/semantic-convention-groups/#group-stability
+[2]: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/http/README.md
+[3]: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/gen-ai/README.md
+[4]: https://opentelemetry.io/blog/2025/stability-proposal-announcement/
