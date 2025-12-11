@@ -35,8 +35,8 @@ func (m EntityAttributeMap) Get(key string) (pcommon.Value, bool) {
 //
 // Use this method before calling Put* methods to avoid conflicts:
 //
-//	if entity.IDAttributes().CanPut("service.name") {
-//	    entity.IDAttributes().PutStr("service.name", "my-service")
+//	if entity.IdentifyingAttributes().CanPut("service.name") {
+//	    entity.IdentifyingAttributes().PutStr("service.name", "my-service")
 //	}
 func (m EntityAttributeMap) CanPut(key string) bool {
 	if m.containsKey(key) {
