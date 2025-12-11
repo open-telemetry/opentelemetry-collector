@@ -41,7 +41,7 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
     {
-      name: "reag_set",
+      name: "reaggregate_set",
       metricsSet: testDataSetReag,
       resAttrsSet: testDataSetReag,
     },
@@ -138,7 +138,7 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
-        {{ if eq $name "reag.metric" }}
+        {{ if eq $name "reaggregate.metric" }}
           mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
           {{- range $metric.Attributes -}}
           {{- if not (attributeInfo .).IsConditional -}}
@@ -191,7 +191,7 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-          {{- if eq $name "reag.metric" }}
+          {{- if eq $name "reaggregate.metric" }}
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
             validatedMetrics["{{ $name }}"] = true
             assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
@@ -207,7 +207,7 @@ func TestMetricsBuilder(t *testing.T) {
             assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
             {{- end }}
             dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
-            if tt.name != "reag_set" {
+            if tt.name != "reaggregate_set" {
               assert.Equal(t, 2, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
               {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
               assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)

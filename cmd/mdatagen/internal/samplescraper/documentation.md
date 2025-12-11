@@ -60,7 +60,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
-### reag.metric
+### reaggregate.metric
 
 Metric for testing spacial reaggregation
 
