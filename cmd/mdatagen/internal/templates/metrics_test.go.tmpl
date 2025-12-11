@@ -266,19 +266,19 @@ func TestMetricsBuilder(t *testing.T) {
             {{- end }}
 
             {{- range $i, $attr := $metric.Attributes }}
-              {{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
-              attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
-              assert.True(t, ok)
-              {{- if eq (attributeInfo $attr).Type.String "Bool"}}
-              assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-              {{- else if eq (attributeInfo $attr).Type.String "Int"}}
-              assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-              {{- else }}
-              assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-              {{- end }}
-              {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
-              {{- end }}
-              {{- end }}
+            {{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
+            attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.True(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+            {{- end }}
+            {{- end }}
             {{- end }}
 				  {{- end }}
 				}

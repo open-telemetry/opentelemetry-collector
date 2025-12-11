@@ -213,10 +213,6 @@ func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricDefaultMetric{config: cfg}
 
 	if cfg.Enabled {
@@ -303,10 +299,6 @@ func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricDefaultMetricToBeRemoved(cfg MetricConfig) metricDefaultMetricToBeRemoved {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricDefaultMetricToBeRemoved{config: cfg}
 
 	if cfg.Enabled {
@@ -409,10 +401,6 @@ func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricMetricInputType(cfg MetricConfig) metricMetricInputType {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricMetricInputType{config: cfg}
 
 	if cfg.Enabled {
@@ -510,10 +498,6 @@ func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricOptionalMetric{config: cfg}
 
 	if cfg.Enabled {
@@ -605,10 +589,6 @@ func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmptyUnit {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricOptionalMetricEmptyUnit{config: cfg}
 
 	if cfg.Enabled {
@@ -700,10 +680,6 @@ func (m *metricReagMetric) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricReagMetric(cfg MetricConfig) metricReagMetric {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricReagMetric{config: cfg}
 
 	if cfg.Enabled {
@@ -790,10 +766,6 @@ func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 }
 
 func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
-	// when creating our list of enabled metric attributes we must contain
-	// required metrics and the user defined list must be included in the list of
-	// defined attributes for the metric. This is all handled during the
-	// unmarshal step
 	m := metricSystemCPUTime{config: cfg}
 
 	if cfg.Enabled {

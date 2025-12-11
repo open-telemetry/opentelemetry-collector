@@ -17,9 +17,9 @@ import (
 type MetricConfig struct {
 	Enabled             bool     `mapstructure:"enabled"`
   AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-  EnabledAttributes   []string `mapstructure:"attributes"` // user defined list of attributes
-  definedAttributes   []string                             // list of attributes defined in metrics metadata entry
-  requiredAttributes  []string                             // list of attributes defined as required
+  EnabledAttributes   []string `mapstructure:"attributes"` 
+  definedAttributes   []string   
+  requiredAttributes  []string                             
 
 	enabledSetByUser bool
 }
@@ -34,12 +34,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 
-  // we have to enforce that the user supplied list of enabled attributes fits
-  // inside the set of attributes defined by the metadata.yaml AND contains the
-  // list of attributes which have a requirement_level of `required`
-
-  // slightly redundent since definedAttributes is a set which necessarily
-  // contians requiredAttributes
   for _, val := range ms.EnabledAttributes {
     if !slices.Contains(ms.definedAttributes, val) {
       return fmt.Errorf("%v is not defined in metadata.yaml", val)
