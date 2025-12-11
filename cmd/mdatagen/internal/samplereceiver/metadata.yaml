@@ -236,7 +236,7 @@ metrics:
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
-  reag.metric:
+  reaggregate.metric:
     enabled: true
     description: Metric for testing spacial reaggregation
     unit: "1"

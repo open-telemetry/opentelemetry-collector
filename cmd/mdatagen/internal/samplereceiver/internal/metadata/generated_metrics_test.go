@@ -39,7 +39,7 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:        "reag_set",
+			name:        "reaggregate_set",
 			metricsSet:  testDataSetReag,
 			resAttrsSet: testDataSetReag,
 		},
@@ -125,9 +125,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordReagMetricDataPoint(ts, 1, "string_attr-val", true)
+			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 
-			mb.RecordReagMetricDataPoint(ts, 3, "string_attr-val-2", false)
+			mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -284,13 +284,13 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
-				case "reag.metric":
-					assert.False(t, validatedMetrics["reag.metric"], "Found a duplicate in the metrics slice: reag.metric")
-					validatedMetrics["reag.metric"] = true
+				case "reaggregate.metric":
+					assert.False(t, validatedMetrics["reaggregate.metric"], "Found a duplicate in the metrics slice: reaggregate.metric")
+					validatedMetrics["reaggregate.metric"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
-					if tt.name != "reag_set" {
+					if tt.name != "reaggregate_set" {
 						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 						attrVal, ok := dp.Attributes().Get("string_attr")

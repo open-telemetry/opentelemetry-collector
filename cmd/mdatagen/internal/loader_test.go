@@ -263,7 +263,7 @@ func TestLoadMetadata(t *testing.T) {
 							Mono:                   Mono{Monotonic: true},
 						},
 					},
-					"reag.metric": {
+					"reaggregate.metric": {
 						Signal: Signal{
 							Enabled:     true,
 							Description: "Metric for testing spacial reaggregation",

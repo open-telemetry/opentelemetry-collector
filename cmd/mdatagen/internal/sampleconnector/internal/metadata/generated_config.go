@@ -66,7 +66,7 @@ type MetricsConfig struct {
 	MetricInputType          MetricConfig `mapstructure:"metric.input_type"`
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
 	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
-	ReagMetric               MetricConfig `mapstructure:"reag.metric"`
+	ReaggregateMetric        MetricConfig `mapstructure:"reaggregate.metric"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -106,7 +106,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			definedAttributes:   []string{"string_attr", "boolean_attr"},
 			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
-		ReagMetric: MetricConfig{
+		ReaggregateMetric: MetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},

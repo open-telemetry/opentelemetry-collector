@@ -70,8 +70,8 @@ var MetricsInfo = metricsInfo{
 	OptionalMetricEmptyUnit: metricInfo{
 		Name: "optional.metric.empty_unit",
 	},
-	ReagMetric: metricInfo{
-		Name: "reag.metric",
+	ReaggregateMetric: metricInfo{
+		Name: "reaggregate.metric",
 	},
 }
 
@@ -81,7 +81,7 @@ type metricsInfo struct {
 	MetricInputType          metricInfo
 	OptionalMetric           metricInfo
 	OptionalMetricEmptyUnit  metricInfo
-	ReagMetric               metricInfo
+	ReaggregateMetric        metricInfo
 }
 
 type metricInfo struct {
@@ -563,23 +563,23 @@ func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmpt
 	return m
 }
 
-type metricReagMetric struct {
+type metricReaggregateMetric struct {
 	data          pmetric.Metric // data buffer for generated metric.
 	config        MetricConfig   // metric config provided by user.
 	capacity      int            // max observed number of data points added to the metric.
 	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
-// init fills reag.metric metric with initial data.
-func (m *metricReagMetric) init() {
-	m.data.SetName("reag.metric")
+// init fills reaggregate.metric metric with initial data.
+func (m *metricReaggregateMetric) init() {
+	m.data.SetName("reaggregate.metric")
 	m.data.SetDescription("Metric for testing spacial reaggregation")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+func (m *metricReaggregateMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -624,14 +624,14 @@ func (m *metricReagMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricReagMetric) updateCapacity() {
+func (m *metricReaggregateMetric) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricReagMetric) emit(metrics pmetric.MetricSlice) {
+func (m *metricReaggregateMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -644,8 +644,8 @@ func (m *metricReagMetric) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricReagMetric(cfg MetricConfig) metricReagMetric {
-	m := metricReagMetric{config: cfg}
+func newMetricReaggregateMetric(cfg MetricConfig) metricReaggregateMetric {
+	m := metricReaggregateMetric{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -669,7 +669,7 @@ type MetricsBuilder struct {
 	metricMetricInputType          metricMetricInputType
 	metricOptionalMetric           metricOptionalMetric
 	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
-	metricReagMetric               metricReagMetric
+	metricReaggregateMetric        metricReaggregateMetric
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -721,7 +721,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings connector.Settings, op
 		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
-		metricReagMetric:               newMetricReagMetric(mbc.Metrics.ReagMetric),
+		metricReaggregateMetric:        newMetricReaggregateMetric(mbc.Metrics.ReaggregateMetric),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -848,7 +848,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMetricInputType.emit(ils.Metrics())
 	mb.metricOptionalMetric.emit(ils.Metrics())
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
-	mb.metricReagMetric.emit(ils.Metrics())
+	mb.metricReaggregateMetric.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -910,9 +910,9 @@ func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Time
 	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
-// RecordReagMetricDataPoint adds a data point to reag.metric metric.
-func (mb *MetricsBuilder) RecordReagMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
-	mb.metricReagMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
+// RecordReaggregateMetricDataPoint adds a data point to reaggregate.metric metric.
+func (mb *MetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	mb.metricReaggregateMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
