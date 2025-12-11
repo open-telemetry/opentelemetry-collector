@@ -17,7 +17,7 @@ all_set:
       enabled: true
     string.resource.attr_to_be_removed:
       enabled: true
-reag_set:
+reaggregate_set:
   resource_attributes:
     map.resource.attr:
       enabled: true

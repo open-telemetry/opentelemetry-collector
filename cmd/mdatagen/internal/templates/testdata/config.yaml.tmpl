@@ -6,7 +6,6 @@ all_set:
     {{ $name }}:
       enabled: true
       attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
-      #attributes: [{{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}}]
     {{- end }}
   {{- end }}
   {{- if .Events }}
@@ -23,11 +22,11 @@ all_set:
       enabled: true
     {{- end }}
   {{- end }}
-reag_set:
+reaggregate_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}
-    {{- if eq $name "reag.metric" }}
+    {{- if eq $name "reaggregate.metric" }}
     {{ $name }}:
       enabled: true
       attributes: []
