@@ -357,7 +357,8 @@ Semantic Conventions changes are completed.
 
 ### Metrics
 
-Metrics emitted by Collector scrapers/receivers (i.e. `system.cpu.time`) follow the same stability levels documented by
+Metrics emitted by Collector scrapers/receivers (e.g. `system.cpu.time`) follow the same stability levels
+as the Collector's internal metrics (e.g. `otelcol_process_cpu_seconds`), as documented in
 [Internal Telemetry Stability](https://opentelemetry.io/docs/collector/internal-telemetry/#metrics).
 
 In particular, for beta and stable levels the following guidelines apply:
