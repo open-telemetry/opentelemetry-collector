@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -83,20 +84,84 @@ type ServerConfig struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+
+	renamedFields []renamedField
+}
+
+func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
+	type oldFields struct {
+		IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
+		KeepAlivesEnabled bool          `mapstructure:"keep_alives_enabled,omitempty"`
+	}
+
+	type serverConfigFields ServerConfig
+
+	type legacyConfig struct {
+		serverConfigFields `mapstructure:",squash"`
+		oldFields          `mapstructure:",squash"`
+	}
+
+	var cfg legacyConfig
+	cfg.serverConfigFields = serverConfigFields(*sc)
+	cfg.oldFields = oldFields{
+		IdleTimeout:       1 * time.Minute,
+		KeepAlivesEnabled: true,
+	}
+	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	deprecatedFields := []struct {
+		old, new string
+	}{
+		{"idle_timeout", "keepalive::idle_timeout"},
+		{"keep_alives_enabled", "keepalive::enabled"},
+	}
+
+	var warnings []renamedField
+	for _, field := range deprecatedFields {
+		if conf.IsSet(field.old) {
+			warnings = append(warnings, field)
+		}
+	}
+
+	if len(warnings) > 0 && conf.IsSet("keepalive") {
+		return errors.New("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+	}
+
+	if !cfg.KeepAlivesEnabled {
+		// should never happen with default values
+		cfg.Keepalive = configoptional.None[KeepaliveServerConfig]()
+	} else {
+		if !cfg.Keepalive.HasValue() {
+			cfg.Keepalive = configoptional.Some(KeepaliveServerConfig{})
+		}
+		if conf.IsSet("idle_timeout") {
+			cfg.Keepalive.Get().IdleTimeout = cfg.IdleTimeout
+		}
+	}
+
+	*sc = ServerConfig(cfg.serverConfigFields)
+	sc.renamedFields = warnings
+	return nil
+}
+
+type KeepaliveServerConfig struct {
+	_ struct{}
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -105,8 +170,9 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
-		IdleTimeout:       1 * time.Minute,
-		KeepAlivesEnabled: true,
+		Keepalive: configoptional.Some(KeepaliveServerConfig{
+			IdleTimeout: 1 * time.Minute,
+		}),
 	}
 }
 
@@ -174,6 +240,10 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	for _, field := range sc.renamedFields {
+		field.Log(settings.Logger)
+	}
+
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -283,17 +353,22 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
 
+	var idleTimeout time.Duration
+	if kaCfg := sc.Keepalive.Get(); sc.Keepalive.HasValue() {
+		idleTimeout = kaCfg.IdleTimeout
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       sc.ReadTimeout,
 		ReadHeaderTimeout: sc.ReadHeaderTimeout,
 		WriteTimeout:      sc.WriteTimeout,
-		IdleTimeout:       sc.IdleTimeout,
+		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
 	}
 
 	// Set keep-alives enabled/disabled
-	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
+	server.SetKeepAlivesEnabled(sc.Keepalive.HasValue())
 
 	return server, err
 }
