@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -20,6 +21,32 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+type DroppedItems struct {
+	reason string
+	count  int
+}
+
+func NewDroppedItems(reason string, count int) error {
+	return &DroppedItems{reason: reason, count: count}
+}
+
+func (e *DroppedItems) Error() string {
+	return "items dropped: " + e.reason
+}
+
+func IsDroppedItems(err error) bool {
+	var droppedItems *DroppedItems
+	return errors.As(err, &droppedItems)
+}
+
+func GetDroppedCount(err error) int {
+	var droppedItems *DroppedItems
+	if errors.As(err, &droppedItems) {
+		return droppedItems.count
+	}
+	return 0
+}
+
 const (
 	// spanNameSep is duplicate between receiver and exporter.
 	spanNameSep = "/"
@@ -34,19 +61,22 @@ const (
 	ItemsSent = "items.sent"
 	// ItemsFailed used to track number of items that failed to be sent by exporters.
 	ItemsFailed = "items.failed"
+	// ItemsDropped used to track number of items that were dropped by exporters.
+	ItemsDropped = "items.dropped"
 )
 
 type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName         string
+	tracer           trace.Tracer
+	spanAttrs        trace.SpanStartEventOption
+	metricAttr       metric.MeasurementOption
+	itemsSentInst    metric.Int64Counter
+	itemsFailedInst  metric.Int64Counter
+	itemsDroppedInst metric.Int64Counter
+	next             sender.Sender[K]
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -70,14 +100,17 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalTraces:
 		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedSpans
 
 	case pipeline.SignalMetrics:
 		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedMetricPoints
 
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedLogRecords
 	}
 
 	return or, nil
@@ -106,7 +139,7 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err error) {
-	numSent, numFailedToSend := toNumItems(numLogRecords, err)
+	numSent, numFailedToSend, numDropped := toNumItems(numLogRecords, err)
 
 	// No metrics recorded for profiles.
 	if ors.itemsSentInst != nil {
@@ -116,6 +149,10 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	if ors.itemsFailedInst != nil {
 		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr)
 	}
+	// No metrics recorded for profiles.
+	if ors.itemsDroppedInst != nil {
+		ors.itemsDroppedInst.Add(ctx, numDropped, ors.metricAttr)
+	}
 
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
@@ -124,6 +161,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 		span.SetAttributes(
 			attribute.Int64(ItemsSent, numSent),
 			attribute.Int64(ItemsFailed, numFailedToSend),
+			attribute.Int64(ItemsDropped, numDropped),
 		)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
@@ -131,9 +169,16 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	}
 }
 
-func toNumItems(numExportedItems int, err error) (int64, int64) {
+func toNumItems(numExportedItems int, err error) (int64, int64, int64) {
 	if err != nil {
-		return 0, int64(numExportedItems)
+		if IsDroppedItems(err) {
+			droppedCount := GetDroppedCount(err)
+			if droppedCount > 0 {
+				return int64(numExportedItems - droppedCount), 0, int64(droppedCount)
+			}
+			return 0, 0, int64(numExportedItems)
+		}
+		return 0, int64(numExportedItems), 0
 	}
-	return int64(numExportedItems), 0
+	return int64(numExportedItems), 0, 0
 }
