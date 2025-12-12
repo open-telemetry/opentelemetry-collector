@@ -5,16 +5,14 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"errors"
-	"fmt"
-	"net"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,28 +27,15 @@ type Config struct {
 	_ struct{}
 }
 
-func (c *Config) Validate() error {
-	if after, ok := strings.CutPrefix(c.ClientConfig.Endpoint, "unix://"); ok {
-		if after == "" {
-			return errors.New("unix socket path cannot be empty")
-		}
-		return nil
-	}
+var (
+	_ component.Config   = (*Config)(nil)
+	_ xconfmap.Validator = (*Config)(nil)
+)
 
-	endpoint := c.sanitizedEndpoint()
-	if endpoint == "" {
+func (c *Config) Validate() error {
+	if endpoint := c.sanitizedEndpoint(); endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
-
-	// Validate that the port is in the address
-	_, port, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return err
-	}
-	if _, err := strconv.Atoi(port); err != nil {
-		return fmt.Errorf(`invalid port "%s"`, port)
-	}
-
 	return nil
 }
 
@@ -67,5 +52,3 @@ func (c *Config) sanitizedEndpoint() string {
 		return c.ClientConfig.Endpoint
 	}
 }
-
-var _ component.Config = (*Config)(nil)
