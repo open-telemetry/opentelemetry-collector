@@ -48,7 +48,8 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		OutputPaths:        []string{"stdout"},
+		QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 	}
 }
 
@@ -135,8 +136,7 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 		},
 		Encoding:      "console",
 		EncoderConfig: encoderConfig,
-		// Send exporter's output to stdout. This should be made configurable.
-		OutputPaths: []string{"stdout"},
+		OutputPaths:   exporterConfig.OutputPaths,
 	}
 	return zap.Must(zapConfig.Build())
 }
