@@ -20,6 +20,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -36,6 +37,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -92,7 +98,9 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++
 			}
 
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -114,6 +122,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
+
+			mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -261,6 +275,29 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
+				case "reaggregate.metric":
+					assert.False(t, validatedMetrics["reaggregate.metric"], "Found a duplicate in the metrics slice: reaggregate.metric")
+					validatedMetrics["reaggregate.metric"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					if tt.name != "reaggregate_set" {
+						assert.Equal(t, 2, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					} else {
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+					}
+					assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 				case "system.cpu.time":
 					assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
 					validatedMetrics["system.cpu.time"] = true
