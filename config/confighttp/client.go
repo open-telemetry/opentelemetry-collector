@@ -247,7 +247,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		field.Log(settings.Logger)
 	}
 
-  tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
+	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

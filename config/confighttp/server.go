@@ -244,7 +244,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		field.Log(settings.Logger)
 	}
 
-  serverOpts := &toServerOptions{}
+	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
 	if sc.MaxRequestBodySize <= 0 {
