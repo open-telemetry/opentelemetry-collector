@@ -127,7 +127,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of log records in failed attempts to send to destination.
+      description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent."
       unit: "{records}"
       sum:
         value_type: int
@@ -137,7 +137,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of metric points in failed attempts to send to destination.
+      description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent."
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -147,7 +147,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Number of spans in failed attempts to send to destination.
+      description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), failure.permanent."
       unit: "{spans}"
       sum:
         value_type: int
