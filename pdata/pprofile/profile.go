@@ -3,7 +3,11 @@
 
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
-import "fmt"
+import (
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 // switchDictionary updates the Profile, switching its indices from one
 // dictionary to another.
@@ -42,4 +46,17 @@ func (ms Profile) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	return nil
+}
+
+// Duration returns the duration associated with this Profile.
+//
+// Deprecated: Use Profile.DurationNano instead.
+func (ms Profile) Duration() pcommon.Timestamp {
+	return pcommon.Timestamp(0)
+}
+
+// SetDuration replaces the duration associated with this Profile.
+//
+// Deprecated: Use Profile.SetDurationNano instead.
+func (ms Profile) SetDuration(_ pcommon.Timestamp) {
 }

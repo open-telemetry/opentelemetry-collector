@@ -9,6 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -224,6 +227,24 @@ func NewDefaultServerConfig() ServerConfig {
 }
 
 func (cc *ClientConfig) Validate() error {
+	if after, ok := strings.CutPrefix(cc.Endpoint, "unix://"); ok {
+		if after == "" {
+			return errors.New("unix socket path cannot be empty")
+		}
+		return nil
+	}
+
+	if endpoint := cc.sanitizedEndpoint(); endpoint != "" {
+		// Validate that the port is in the address
+		_, port, err := net.SplitHostPort(endpoint)
+		if err != nil {
+			return err
+		}
+		if _, err := strconv.Atoi(port); err != nil {
+			return fmt.Errorf(`invalid port "%v"`, port)
+		}
+	}
+
 	if cc.BalancerName != "" {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
@@ -240,6 +261,9 @@ func (cc *ClientConfig) sanitizedEndpoint() string {
 		return strings.TrimPrefix(cc.Endpoint, "http://")
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
+	case strings.HasPrefix(cc.Endpoint, "dns://"):
+		r := regexp.MustCompile(`^dns:///?`)
+		return r.ReplaceAllString(cc.Endpoint, "")
 	default:
 		return cc.Endpoint
 	}
@@ -272,13 +296,17 @@ func (grpcDialOptionWrapper) isToClientConnOption() {}
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use the WithGrpcDialOption(grpc.WithBlock()) option.
+//
+// To allow the configuration to reference middleware or authentication extensions,
+// the `extensions` argument should be the output of `host.GetExtensions()`.
+// It may also be `nil` in tests where no such extension is expected to be used.
 func (cc *ClientConfig) ToClientConn(
 	ctx context.Context,
-	host component.Host,
+	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := cc.getGrpcDialOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := cc.getGrpcDialOptions(ctx, extensions, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +327,7 @@ func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context 
 
 func (cc *ClientConfig) getGrpcDialOptions(
 	ctx context.Context,
-	host component.Host,
+	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
@@ -343,11 +371,11 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 
 	if cc.Auth.HasValue() {
-		if host.GetExtensions() == nil {
-			return nil, errors.New("no extensions configuration available")
+		if extensions == nil {
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
 		}
 
-		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := cc.Auth.Get().GetGRPCClientAuthenticator(ctx, extensions)
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -388,8 +416,11 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
+	if len(cc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
+	}
 	for _, middleware := range cc.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, extensions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC client options from middleware: %w", err)
 		}
@@ -437,13 +468,17 @@ func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 func (grpcServerOptionWrapper) isToServerOption() {}
 
 // ToServer returns a [grpc.Server] for the configuration.
+//
+// To allow the configuration to reference middleware or authentication extensions,
+// the `extensions` argument should be the output of `host.GetExtensions()`.
+// It may also be `nil` in tests where no such extension is expected to be used.
 func (sc *ServerConfig) ToServer(
 	ctx context.Context,
-	host component.Host,
+	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := sc.getGrpcServerOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := sc.getGrpcServerOptions(ctx, extensions, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -452,7 +487,7 @@ func (sc *ServerConfig) ToServer(
 
 func (sc *ServerConfig) getGrpcServerOptions(
 	ctx context.Context,
-	host component.Host,
+	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
 ) ([]grpc.ServerOption, error) {
@@ -515,7 +550,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if sc.Auth.HasValue() {
-		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
+		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -539,7 +574,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range sc.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, extensions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}
