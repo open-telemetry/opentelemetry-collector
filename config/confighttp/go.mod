@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v1.47.0
 	go.opentelemetry.io/collector/config/configcompression v1.47.0
 	go.opentelemetry.io/collector/config/configmiddleware v1.47.0
+	go.opentelemetry.io/collector/config/confignet v1.47.0
 	go.opentelemetry.io/collector/config/configopaque v1.47.0
 	go.opentelemetry.io/collector/config/configoptional v1.47.0
 	go.opentelemetry.io/collector/config/configtls v1.47.0
@@ -78,6 +79,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../configauth
 replace go.opentelemetry.io/collector/config/configcompression => ../configcompression
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
+
+replace go.opentelemetry.io/collector/config/confignet => ../confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 

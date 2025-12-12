@@ -272,12 +272,16 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 	logProto, err := protoMarshaler.MarshalLogs(ld)
 	require.NoError(t, err)
 
+	addr := testutil.GetAvailableLocalAddress(t)
 	rf := otlpreceiver.NewFactory()
 	rcfg := rf.CreateDefaultConfig().(*otlpreceiver.Config)
 	rcfg.HTTP = configoptional.Some(
 		otlpreceiver.HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  addr,
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 			LogsURLPath: "/v1/logs",
 		},
@@ -293,7 +297,7 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	})
 
-	doHTTPRequest(t, rcfg.HTTP.Get().ServerConfig.Endpoint+"/v1/logs", logProto, code)
+	doHTTPRequest(t, addr+"/v1/logs", logProto, code)
 }
 
 func doHTTPRequest(
