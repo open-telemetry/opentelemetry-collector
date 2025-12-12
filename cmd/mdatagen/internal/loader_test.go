@@ -47,6 +47,8 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
+				DisplayName:          "Sample Receiver",
+				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.37.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
@@ -455,6 +457,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/parent.yaml",
 			want: Metadata{
 				Type:                 "subcomponent",
+				DisplayName:          "Subcomponent",
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -467,6 +470,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/generated_package_name.yaml",
 			want: Metadata{
 				Type:                 "custom",
+				DisplayName:          "Custom",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -486,6 +490,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/empty_test_config.yaml",
 			want: Metadata{
 				Type:                 "test",
+				DisplayName:          "Test",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -552,6 +557,62 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
+		},
+		{
+			name: "testdata/display_name.yaml",
+			want: Metadata{
+				Type:                 "test",
+				DisplayName:          "Test Receiver",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/no_display_name.yaml",
+			want: Metadata{
+				Type:                 "nodisplayname",
+				DisplayName:          "",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_description.yaml",
+			want: Metadata{
+				Type:                 "test",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component used to validate the description field functionality in mdatagen.",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
+					Distributions: []string{},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

@@ -8,18 +8,19 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
+	{{- if .SemConvVersion }}
+
+	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
+	{{- end }}
 
 	"go.opentelemetry.io/collector/component"
+	{{ if .ResourceAttributes -}}
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
-	{{- end }}
-	{{- if .SemConvVersion }}
-	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
-	{{- end }}
-	{{ if .ResourceAttributes -}}
-	"go.opentelemetry.io/collector/filter"
 	{{- end }}
 )
 
