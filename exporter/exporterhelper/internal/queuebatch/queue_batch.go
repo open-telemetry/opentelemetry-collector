@@ -50,7 +50,8 @@ func NewQueueBatch(
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Batch.HasValue() && set.Partitioner == nil {
+	// If ARC is enabled, we respect the higher NumConsumers (concurrency) even if batching is on.
+	if cfg.Batch.HasValue() && set.Partitioner == nil && !cfg.Arc.Enabled {
 		// If batching is enabled and partitioner is not defined then keep the number of queue consumers to 1.
 		// see: https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
