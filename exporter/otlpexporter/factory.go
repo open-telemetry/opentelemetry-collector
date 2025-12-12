@@ -31,6 +31,41 @@ func NewFactory() exporter.Factory {
 	)
 }
 
+// NewFactoryWithAlias creates a factory for OTLP exporter with the otlp_grpc alias type and wraps the original factory.
+func NewFactoryWithAlias() exporter.Factory {
+	originalFactory := NewFactory().(xexporter.Factory)
+	aliasType := component.MustNewType("otlp_grpc")
+
+	// Helper function to adjust the ID from otlp_grpc to otlp while preserving the name
+	adjustID := func(id component.ID) component.ID {
+		if id.Name() == "" {
+			return component.NewID(metadata.Type)
+		}
+		return component.NewIDWithName(metadata.Type, id.Name())
+	}
+
+	return xexporter.NewFactory(
+		aliasType,
+		createDefaultConfig,
+		xexporter.WithTraces(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+			set.ID = adjustID(set.ID) // transform otlp_grpc to otlp
+			return originalFactory.CreateTraces(ctx, set, cfg)
+		}, metadata.TracesStability),
+		xexporter.WithMetrics(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateMetrics(ctx, set, cfg)
+		}, metadata.MetricsStability),
+		xexporter.WithLogs(func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateLogs(ctx, set, cfg)
+		}, metadata.LogsStability),
+		xexporter.WithProfiles(func(ctx context.Context, set exporter.Settings, cfg component.Config) (xexporter.Profiles, error) {
+			set.ID = adjustID(set.ID)
+			return originalFactory.CreateProfiles(ctx, set, cfg)
+		}, metadata.ProfilesStability),
+	)
+}
+
 func createDefaultConfig() component.Config {
 	clientCfg := configgrpc.NewDefaultClientConfig()
 	// Default to gzip compression
