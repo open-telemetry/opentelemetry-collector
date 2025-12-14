@@ -141,17 +141,19 @@ func TestCreateCustomLogger(t *testing.T) {
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
-			// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
+			// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
 			if runtime.GOOS == "windows" && hasFileOutput {
-				// Multiple syncs to ensure all writes are flushed
-				_ = logger.Sync()
-				// Give Windows time to release file handles
-				time.Sleep(200 * time.Millisecond)
-				_ = logger.Sync()
-				time.Sleep(200 * time.Millisecond)
-				// Force GC to help release file handles
-				runtime.GC()
-				time.Sleep(100 * time.Millisecond)
+				t.Cleanup(func() {
+					// Multiple syncs to ensure all writes are flushed
+					_ = logger.Sync()
+					// Give Windows time to release file handles
+					time.Sleep(300 * time.Millisecond)
+					_ = logger.Sync()
+					time.Sleep(300 * time.Millisecond)
+					// Force GC to help release file handles
+					runtime.GC()
+					time.Sleep(200 * time.Millisecond)
+				})
 			}
 		})
 	}
@@ -236,17 +238,19 @@ func TestCreateLogger(t *testing.T) {
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
-			// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
+			// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
 			if runtime.GOOS == "windows" && hasFileOutput {
-				// Multiple syncs to ensure all writes are flushed
-				_ = logger.Sync()
-				// Give Windows time to release file handles
-				time.Sleep(200 * time.Millisecond)
-				_ = logger.Sync()
-				time.Sleep(200 * time.Millisecond)
-				// Force GC to help release file handles
-				runtime.GC()
-				time.Sleep(100 * time.Millisecond)
+				t.Cleanup(func() {
+					// Multiple syncs to ensure all writes are flushed
+					_ = logger.Sync()
+					// Give Windows time to release file handles
+					time.Sleep(300 * time.Millisecond)
+					_ = logger.Sync()
+					time.Sleep(300 * time.Millisecond)
+					// Force GC to help release file handles
+					runtime.GC()
+					time.Sleep(200 * time.Millisecond)
+				})
 			}
 		})
 	}
@@ -294,16 +298,18 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, err, "log file should be created")
 
 	// On Windows, we need to ensure file handles are released before cleanup
-	// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
+	// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
 	if runtime.GOOS == "windows" {
-		// Multiple syncs to ensure all writes are flushed
-		_ = logger.Sync()
-		// Give Windows time to release file handles
-		time.Sleep(200 * time.Millisecond)
-		_ = logger.Sync()
-		time.Sleep(200 * time.Millisecond)
-		// Force GC to help release file handles
-		runtime.GC()
-		time.Sleep(100 * time.Millisecond)
+		t.Cleanup(func() {
+			// Multiple syncs to ensure all writes are flushed
+			_ = logger.Sync()
+			// Give Windows time to release file handles
+			time.Sleep(300 * time.Millisecond)
+			_ = logger.Sync()
+			time.Sleep(300 * time.Millisecond)
+			// Force GC to help release file handles
+			runtime.GC()
+			time.Sleep(200 * time.Millisecond)
+		})
 	}
 }
