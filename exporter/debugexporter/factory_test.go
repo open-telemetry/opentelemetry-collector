@@ -120,13 +120,24 @@ func TestCreateCustomLogger(t *testing.T) {
 			config := *tt.config
 			var tmpDir string
 			var hasFileOutput bool
+			var cleanupDir func()
 			if len(config.OutputPaths) > 0 {
 				// Check if it's a file path (not stdout/stderr)
 				for i, path := range config.OutputPaths {
 					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
 						// This is a relative path that might need temp dir
 						if tmpDir == "" {
-							tmpDir = t.TempDir()
+							if runtime.GOOS == "windows" {
+								// On Windows, manually manage temp dir to ensure logger is closed before cleanup
+								var err error
+								tmpDir, err = os.MkdirTemp("", "test-*")
+								require.NoError(t, err)
+								cleanupDir = func() {
+									os.RemoveAll(tmpDir)
+								}
+							} else {
+								tmpDir = t.TempDir()
+							}
 						}
 						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
 						hasFileOutput = true
@@ -140,20 +151,17 @@ func TestCreateCustomLogger(t *testing.T) {
 			// Sync to ensure all writes are complete
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
-			// On Windows, we need to ensure file handles are released before cleanup
-			// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
-			if runtime.GOOS == "windows" && hasFileOutput {
-				t.Cleanup(func() {
-					// Multiple syncs to ensure all writes are flushed
-					_ = logger.Sync()
-					// Give Windows time to release file handles
-					time.Sleep(300 * time.Millisecond)
-					_ = logger.Sync()
-					time.Sleep(300 * time.Millisecond)
-					// Force GC to help release file handles
-					runtime.GC()
-					time.Sleep(200 * time.Millisecond)
-				})
+			// On Windows with file output, manually clean up after logger is fully closed
+			if runtime.GOOS == "windows" && hasFileOutput && cleanupDir != nil {
+				// Ensure logger is fully synced and file handles are released
+				_ = logger.Sync()
+				time.Sleep(500 * time.Millisecond)
+				_ = logger.Sync()
+				time.Sleep(500 * time.Millisecond)
+				runtime.GC()
+				time.Sleep(200 * time.Millisecond)
+				// Now manually clean up the directory
+				cleanupDir()
 			}
 		})
 	}
@@ -216,13 +224,24 @@ func TestCreateLogger(t *testing.T) {
 			config := *tt.config
 			var tmpDir string
 			var hasFileOutput bool
+			var cleanupDir func()
 			if len(config.OutputPaths) > 0 {
 				// Check if it's a file path (not stdout/stderr)
 				for i, path := range config.OutputPaths {
 					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
 						// This is a relative path that might need temp dir
 						if tmpDir == "" {
-							tmpDir = t.TempDir()
+							if runtime.GOOS == "windows" {
+								// On Windows, manually manage temp dir to ensure logger is closed before cleanup
+								var err error
+								tmpDir, err = os.MkdirTemp("", "test-*")
+								require.NoError(t, err)
+								cleanupDir = func() {
+									os.RemoveAll(tmpDir)
+								}
+							} else {
+								tmpDir = t.TempDir()
+							}
 						}
 						config.OutputPaths[i] = filepath.Join(tmpDir, filepath.Base(path))
 						hasFileOutput = true
@@ -237,20 +256,17 @@ func TestCreateLogger(t *testing.T) {
 			// Sync to ensure all writes are complete
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
-			// On Windows, we need to ensure file handles are released before cleanup
-			// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
-			if runtime.GOOS == "windows" && hasFileOutput {
-				t.Cleanup(func() {
-					// Multiple syncs to ensure all writes are flushed
-					_ = logger.Sync()
-					// Give Windows time to release file handles
-					time.Sleep(300 * time.Millisecond)
-					_ = logger.Sync()
-					time.Sleep(300 * time.Millisecond)
-					// Force GC to help release file handles
-					runtime.GC()
-					time.Sleep(200 * time.Millisecond)
-				})
+			// On Windows with file output, manually clean up after logger is fully closed
+			if runtime.GOOS == "windows" && hasFileOutput && cleanupDir != nil {
+				// Ensure logger is fully synced and file handles are released
+				_ = logger.Sync()
+				time.Sleep(500 * time.Millisecond)
+				_ = logger.Sync()
+				time.Sleep(500 * time.Millisecond)
+				runtime.GC()
+				time.Sleep(200 * time.Millisecond)
+				// Now manually clean up the directory
+				cleanupDir()
 			}
 		})
 	}
@@ -277,7 +293,21 @@ func TestCreateLoggerWithInternalLogger(t *testing.T) {
 
 func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	// Test creating a logger that writes to a file
-	tmpDir := t.TempDir()
+	var tmpDir string
+	var cleanupDir func()
+
+	if runtime.GOOS == "windows" {
+		// On Windows, manually manage temp dir to ensure logger is closed before cleanup
+		var err error
+		tmpDir, err = os.MkdirTemp("", "test-*")
+		require.NoError(t, err)
+		cleanupDir = func() {
+			os.RemoveAll(tmpDir)
+		}
+	} else {
+		tmpDir = t.TempDir()
+	}
+
 	filePath := filepath.Join(tmpDir, "debug.log")
 
 	config := &Config{
@@ -297,19 +327,16 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	_, err := os.Stat(filePath)
 	require.NoError(t, err, "log file should be created")
 
-	// On Windows, we need to ensure file handles are released before cleanup
-	// Use t.Cleanup() to ensure logger is closed before t.TempDir() cleanup runs
-	if runtime.GOOS == "windows" {
-		t.Cleanup(func() {
-			// Multiple syncs to ensure all writes are flushed
-			_ = logger.Sync()
-			// Give Windows time to release file handles
-			time.Sleep(300 * time.Millisecond)
-			_ = logger.Sync()
-			time.Sleep(300 * time.Millisecond)
-			// Force GC to help release file handles
-			runtime.GC()
-			time.Sleep(200 * time.Millisecond)
-		})
+	// On Windows, manually clean up after logger is fully closed
+	if runtime.GOOS == "windows" && cleanupDir != nil {
+		// Ensure logger is fully synced and file handles are released
+		_ = logger.Sync()
+		time.Sleep(500 * time.Millisecond)
+		_ = logger.Sync()
+		time.Sleep(500 * time.Millisecond)
+		runtime.GC()
+		time.Sleep(200 * time.Millisecond)
+		// Now manually clean up the directory
+		cleanupDir()
 	}
 }
