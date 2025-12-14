@@ -127,11 +127,16 @@ func TestCreateCustomLogger(t *testing.T) {
 					if path != "stdout" && path != "stderr" && !filepath.IsAbs(path) {
 						// This is a relative path that might need temp dir
 						if tmpDir == "" {
-							if runtime.GOOS == "windows" && cleanupDir != nil {
+							if runtime.GOOS == "windows" {
 								// On Windows, manually manage temp dir to ensure logger is closed before cleanup
+								// We can't use t.TempDir() here because its cleanup runs at an unpredictable time,
+								// causing file locking issues when the logger still holds file handles.
 								var err error
+								tmpDir, err = os.MkdirTemp("", "test-*") //nolint:usetesting
 								require.NoError(t, err)
-								cleanupDir()
+								cleanupDir = func() {
+									os.RemoveAll(tmpDir)
+								}
 							} else {
 								tmpDir = t.TempDir()
 							}
@@ -295,8 +300,10 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 
 	if runtime.GOOS == "windows" {
 		// On Windows, manually manage temp dir to ensure logger is closed before cleanup
+		// We can't use t.TempDir() here because its cleanup runs at an unpredictable time,
+		// causing file locking issues when the logger still holds file handles.
 		var err error
-		tmpDir, err = os.MkdirTemp("", "test-*")
+		tmpDir, err = os.MkdirTemp("", "test-*") //nolint:usetesting
 		require.NoError(t, err)
 		cleanupDir = func() {
 			os.RemoveAll(tmpDir)
