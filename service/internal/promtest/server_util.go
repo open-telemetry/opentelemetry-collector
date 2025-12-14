@@ -8,20 +8,20 @@ import (
 	"strconv"
 	"testing"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
-func GetAvailableLocalIPv6AddressPrometheus(tb testing.TB) *config.Prometheus {
+func GetAvailableLocalIPv6AddressPrometheus(tb testing.TB) *otelconf.ExperimentalPrometheusMetricExporter {
 	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(tb))
 }
 
-func GetAvailableLocalAddressPrometheus(tb testing.TB) *config.Prometheus {
+func GetAvailableLocalAddressPrometheus(tb testing.TB) *otelconf.ExperimentalPrometheusMetricExporter {
 	return addrToPrometheus(testutil.GetAvailableLocalAddress(tb))
 }
 
-func addrToPrometheus(address string) *config.Prometheus {
+func addrToPrometheus(address string) *otelconf.ExperimentalPrometheusMetricExporter {
 	host, port, err := net.SplitHostPort(address)
 	if host == "::1" {
 		host = "[::1]"
@@ -33,13 +33,12 @@ func addrToPrometheus(address string) *config.Prometheus {
 	if err != nil {
 		return nil
 	}
-	return &config.Prometheus{
-		Host:              &host,
-		Port:              &portInt,
-		WithoutScopeInfo:  ptr(true),
-		WithoutUnits:      ptr(true),
-		WithoutTypeSuffix: ptr(true),
-		WithResourceConstantLabels: &config.IncludeExclude{
+	return &otelconf.ExperimentalPrometheusMetricExporter{
+		Host:                &host,
+		Port:                &portInt,
+		WithoutScopeInfo:    ptr(true),
+		TranslationStrategy: ptr(otelconf.ExperimentalPrometheusMetricExporterTranslationStrategyUnderscoreEscapingWithoutSuffixes),
+		WithResourceConstantLabels: &otelconf.IncludeExclude{
 			Included: []string{},
 		},
 	}
