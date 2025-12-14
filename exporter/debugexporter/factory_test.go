@@ -137,27 +137,21 @@ func TestCreateCustomLogger(t *testing.T) {
 			require.NotNil(t, logger)
 			// Verify logger can be used without panicking
 			logger.Info("test message")
-			// Sync to ensure all writes are complete and close file handles
+			// Sync to ensure all writes are complete
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
-			// Set logger to nil and force GC to help release file handles
+			// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
 			if runtime.GOOS == "windows" && hasFileOutput {
-				// Ensure logger is cleaned up on Windows to release file handles
-				defer func(l *zap.Logger) {
-					if l != nil {
-						_ = l.Sync()
-					}
-					// Give Windows more time to release file handles
-					runtime.GC()
-					time.Sleep(500 * time.Millisecond)
-					runtime.GC()
-					time.Sleep(100 * time.Millisecond)
-				}(logger)
-				logger = nil
+				// Multiple syncs to ensure all writes are flushed
+				_ = logger.Sync()
+				// Give Windows time to release file handles
+				time.Sleep(200 * time.Millisecond)
+				_ = logger.Sync()
+				time.Sleep(200 * time.Millisecond)
+				// Force GC to help release file handles
 				runtime.GC()
-				time.Sleep(500 * time.Millisecond)
-				runtime.GC()
+				time.Sleep(100 * time.Millisecond)
 			}
 		})
 	}
@@ -238,27 +232,21 @@ func TestCreateLogger(t *testing.T) {
 			require.NotNil(t, logger)
 			// Verify logger can be used without panicking
 			logger.Info("test message")
-			// Sync to ensure all writes are complete and close file handles
+			// Sync to ensure all writes are complete
 			// Note: Sync() may fail for stdout/stderr in test environments, which is acceptable
 			_ = logger.Sync()
 			// On Windows, we need to ensure file handles are released before cleanup
-			// Set logger to nil and force GC to help release file handles
+			// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
 			if runtime.GOOS == "windows" && hasFileOutput {
-				// Ensure logger is cleaned up on Windows to release file handles
-				defer func(l *zap.Logger) {
-					if l != nil {
-						_ = l.Sync()
-					}
-					// Give Windows more time to release file handles
-					runtime.GC()
-					time.Sleep(500 * time.Millisecond)
-					runtime.GC()
-					time.Sleep(100 * time.Millisecond)
-				}(logger)
-				logger = nil
+				// Multiple syncs to ensure all writes are flushed
+				_ = logger.Sync()
+				// Give Windows time to release file handles
+				time.Sleep(200 * time.Millisecond)
+				_ = logger.Sync()
+				time.Sleep(200 * time.Millisecond)
+				// Force GC to help release file handles
 				runtime.GC()
-				time.Sleep(500 * time.Millisecond)
-				runtime.GC()
+				time.Sleep(100 * time.Millisecond)
 			}
 		})
 	}
@@ -306,21 +294,16 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, err, "log file should be created")
 
 	// On Windows, we need to ensure file handles are released before cleanup
-	// Ensure logger is cleaned up on Windows to release file handles
+	// Do this synchronously before test returns to ensure handles are closed before t.TempDir() cleanup
 	if runtime.GOOS == "windows" {
-		defer func(l *zap.Logger) {
-			if l != nil {
-				_ = l.Sync()
-			}
-			// Give Windows more time to release file handles
-			runtime.GC()
-			time.Sleep(500 * time.Millisecond)
-			runtime.GC()
-			time.Sleep(100 * time.Millisecond)
-		}(logger)
-		logger = nil
+		// Multiple syncs to ensure all writes are flushed
+		_ = logger.Sync()
+		// Give Windows time to release file handles
+		time.Sleep(200 * time.Millisecond)
+		_ = logger.Sync()
+		time.Sleep(200 * time.Millisecond)
+		// Force GC to help release file handles
 		runtime.GC()
-		time.Sleep(500 * time.Millisecond)
-		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
 	}
 }
