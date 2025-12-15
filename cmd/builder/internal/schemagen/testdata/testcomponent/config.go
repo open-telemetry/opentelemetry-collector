@@ -38,10 +38,19 @@ type EmbeddedConfig struct {
 	EmbeddedField string `mapstructure:"embedded_field"`
 }
 
+// EmbeddedPtrConfig is embedded as a pointer to test embedded pointer handling.
+type EmbeddedPtrConfig struct {
+	// PtrEmbeddedField is a field from the embedded pointer struct.
+	PtrEmbeddedField string `mapstructure:"ptr_embedded_field"`
+}
+
 // MySettings is the configuration for the test component.
 type MySettings struct {
 	// Embed EmbeddedConfig to test embedded struct handling
 	EmbeddedConfig `mapstructure:",squash"`
+
+	// Embed EmbeddedPtrConfig as pointer to test embedded pointer handling
+	*EmbeddedPtrConfig `mapstructure:",squash"`
 
 	// Name is the name of the component.
 	Name string `mapstructure:"name"`
