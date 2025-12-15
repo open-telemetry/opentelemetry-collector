@@ -820,3 +820,40 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		})
 	}
 }
+
+func TestGenerateSchema_Skipped(t *testing.T) {
+	tests := []struct {
+		name string
+		md   Metadata
+	}{
+		{
+			name: "schema is nil",
+			md: Metadata{
+				Type:   "test",
+				Status: &Status{Class: "exporter"},
+			},
+		},
+		{
+			name: "explicitly disabled",
+			md: Metadata{
+				Type:   "test",
+				Status: &Status{Class: "exporter"},
+				Schema: &SchemaConfig{Enabled: false},
+			},
+		},
+		{
+			name: "non-component type",
+			md: Metadata{
+				Type:   "test",
+				Status: &Status{Class: "cmd"},
+				Schema: &SchemaConfig{Enabled: true},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := generateSchema(tt.md, t.TempDir())
+			require.NoError(t, err)
+		})
+	}
+}
