@@ -311,7 +311,7 @@ func TestConfigureViews_BatchExporterMetrics(t *testing.T) {
 			views := configureViews(tt.level)
 
 			exporterHelperScope := "go.opentelemetry.io/collector/exporter/exporterhelper"
-			bucketMetricName := "otelcol_exporter_queue_batch_send_size_bucket"
+			bucketMetricName := "otelcol_exporter_queue_batch_send_size"
 			bytesMetricName := "otelcol_exporter_queue_batch_send_size_bytes"
 
 			var foundBucketDrop, foundBytesDrop bool

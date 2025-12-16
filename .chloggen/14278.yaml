@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: all
+component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change verbosity level for otelcol_exporter_queue_batch_send_size_bucket to detailed.
+note: Change verbosity level for otelcol_exporter_queue_batch_send_size metric to detailed.
 
 # One or more tracking issues or pull requests related to the change
 issues: [14278]

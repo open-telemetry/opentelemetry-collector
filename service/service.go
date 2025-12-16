@@ -454,7 +454,7 @@ func configureViews(level configtelemetry.Level) []config.View {
 			}),
 			dropViewOption(&config.ViewSelector{
 				MeterName:      scope,
-				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bucket"),
+				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size"),
 			}))
 	}
 
