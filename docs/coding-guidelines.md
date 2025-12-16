@@ -353,6 +353,40 @@ SemConv approvers.
 At their discretion, the code owners may choose to block the component’s implementation PR until the related
 Semantic Conventions changes are completed.
 
+## Telemetry Stability Levels
+
+### Metrics
+
+Metrics emitted by Collector scrapers/receivers (e.g. `system.cpu.time`) follow the same stability levels
+as the Collector's internal metrics (e.g. `otelcol_process_cpu_seconds`), as documented in
+[Internal Telemetry Stability](https://opentelemetry.io/docs/collector/internal-telemetry/#metrics).
+
+In particular, for beta and stable levels the following guidelines apply:
+
+#### Beta stability level
+
+It is highly encouraged that metrics in beta stage
+are also defined as Semantic Conventions based on the [Semantic Conventions compatibility](#semantic-conventions-compatibility),
+ensuring cross-project consistency.
+
+#### Stable stability level
+
+Before promoting a metric to stable, it should be discussed whether it needs to
+be defined as a Semantic Convention, following the [Semantic Conventions compatibility](#semantic-conventions-compatibility).
+Promoting a metric to stable without it being a Semantic Convention involves
+the risk of potential divergence within OpenTelemetry's projects.
+For example, a stable metric in the Collector might be introduced in a slightly
+different way in another OpenTelemetry project in the future, or it might be proposed
+as a Semantic Convention in the future.
+In case of such divergence, a stable Collector metric won't be allowed to
+change, and if wider alignment is needed, the metric should be deprecated and
+removed in order to come into alignment with the Semantic Conventions.
+Consequently, the Collector's maintainers and components' code owners should
+acknowledge that risk before marking a metric as stable without it being a
+stable Semantic Convention and should provide justification for the decision. In
+any case, [Semantic Conventions' guidelines](https://opentelemetry.io/docs/specs/semconv/how-to-write-conventions/)
+should be advised when metrics are defined within the Collector directly.
+
 ### Testing Library Recommendations
 
 To keep testing practices consistent across the project, it is advised to use these libraries under
