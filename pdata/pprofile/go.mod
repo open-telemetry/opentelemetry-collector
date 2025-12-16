@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.2.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.77.0
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
