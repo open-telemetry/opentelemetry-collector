@@ -42,8 +42,6 @@ const (
 
 	// FailurePermanentKey indicates whether the error is permanent (non-retryable).
 	FailurePermanentKey = "failure.permanent"
-	// FailureRetriesExhaustedKey indicates whether the error occurred after exhausting all retry attempts.
-	FailureRetriesExhaustedKey = "failure.retries_exhausted"
 )
 
 type obsReportSender[K request.Request] struct {
@@ -162,9 +160,6 @@ func extractFailureAttributes(err error) attribute.Set {
 
 	isPermanent := consumererror.IsPermanent(err)
 	attrs = append(attrs, attribute.Bool(FailurePermanentKey, isPermanent))
-
-	retriesExhausted := IsRetryExhaustedErr(err)
-	attrs = append(attrs, attribute.Bool(FailureRetriesExhaustedKey, retriesExhausted))
 
 	return attribute.NewSet(attrs...)
 }

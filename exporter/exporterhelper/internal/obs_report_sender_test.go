@@ -58,7 +58,6 @@ func TestExportTraceFailureAttributesRetryExhausted(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, false),
-		attribute.Bool(FailureRetriesExhaustedKey, true),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -91,7 +90,6 @@ func TestExportTraceFailureAttributesPermanentError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, true),
-		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -124,7 +122,6 @@ func TestExportTraceFailureAttributesShutdownError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
 		attribute.Bool(FailurePermanentKey, false),
-		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -160,7 +157,6 @@ func TestExportTraceFailureAttributesContextCanceled(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
 		attribute.Bool(FailurePermanentKey, false),
-		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -193,7 +189,6 @@ func TestExportTraceFailureAttributesContextDeadlineExceeded(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
 		attribute.Bool(FailurePermanentKey, false),
-		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -226,7 +221,6 @@ func TestExportTraceFailureAttributesUnknownError(t *testing.T) {
 		attribute.String("exporter", exporterID.String()),
 		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 		attribute.Bool(FailurePermanentKey, false),
-		attribute.Bool(FailureRetriesExhaustedKey, false),
 	)
 
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
@@ -294,7 +288,6 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 				attribute.String("exporter", exporterID.String()),
 				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
 				attribute.Bool(FailurePermanentKey, tt.isPermanent),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			)
 
 			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
@@ -370,7 +363,6 @@ func TestExportTraceDataOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
-			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -445,7 +437,6 @@ func TestExportMetricsOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
-			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -520,7 +511,6 @@ func TestExportLogsOp(t *testing.T) {
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(FailurePermanentKey, false),
-			attribute.Bool(FailureRetriesExhaustedKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -623,7 +613,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, true),
 			),
 		},
 		{
@@ -632,7 +621,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, true),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -641,7 +629,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -650,7 +637,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -659,7 +645,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -668,7 +653,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 		{
@@ -677,7 +661,6 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unavailable"),
 				attribute.Bool(FailurePermanentKey, false),
-				attribute.Bool(FailureRetriesExhaustedKey, false),
 			),
 		},
 	}

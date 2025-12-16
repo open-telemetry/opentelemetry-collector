@@ -357,8 +357,7 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-						attribute.Bool(internal.FailurePermanentKey, false),
-						attribute.Bool(internal.FailureRetriesExhaustedKey, false)),
+						attribute.Bool(internal.FailurePermanentKey, false)),
 					Value: int64(numBatches * td.SpanCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
