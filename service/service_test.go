@@ -166,6 +166,49 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	assert.Equal(t, "warn_message", entries[0].Message)
 }
 
+func TestServiceTelemetryLogging_Settings(t *testing.T) {
+	observerCore, observedLogs := observer.New(zapcore.WarnLevel)
+	zapConfig := zap.Config{Encoding: "foo"}
+
+	set := newNopSettings()
+	set.BuildZapLogger = func(cfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+		require.Equal(t, zapConfig, cfg)
+		return zap.New(observerCore, opts...), nil
+	}
+	set.LoggingOptions = []zap.Option{zap.Fields(zap.String("extra.field", "value"))}
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.TelemetryFactory = telemetry.NewFactory(
+		func() component.Config { return nil },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
+				*zap.Logger, component.ShutdownFunc, error,
+			) {
+				require.NotNil(t, set.BuildZapLogger)
+				require.Empty(t, set.ZapOptions)
+				logger, err := set.BuildZapLogger(zapConfig)
+				return logger, nil, err
+			},
+		),
+	)
+
+	cfg := newNopConfig()
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+	defer func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	}()
+
+	require.NotNil(t, srv.telemetrySettings.Logger)
+	assert.Equal(t, srv.telemetrySettings.Logger, srv.Logger())
+	assert.Equal(t, zapcore.WarnLevel, srv.telemetrySettings.Logger.Level())
+	srv.telemetrySettings.Logger.Warn("warn_message")
+
+	entries := observedLogs.All()
+	require.Len(t, entries, 1)
+	assert.Contains(t, entries[0].ContextMap(), "extra.field")
+}
+
 func TestServiceTelemetryMetrics(t *testing.T) {
 	// Start a service and check that metrics are produced as expected.
 	// We do this twice to ensure that the server is stopped cleanly.
