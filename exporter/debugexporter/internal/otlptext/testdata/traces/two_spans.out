@@ -16,6 +16,9 @@ Span #0
     End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Status code    : Error
     Status message : status-cancelled
+    DroppedAttributesCount: 1
+    DroppedEventsCount: 1
+    DroppedLinksCount: 0
 Events:
 SpanEvent #0
      -> Name: event-with-attr
@@ -37,6 +40,9 @@ Span #1
     End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Status code    : Unset
     Status message : 
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 3
 Links:
 SpanLink #0
      -> Trace ID: 

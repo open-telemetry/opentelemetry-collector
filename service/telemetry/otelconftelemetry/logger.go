@@ -63,7 +63,7 @@ func createLogger(
 	// add them to the logger using With, because that would apply to all logs,
 	// even ones exported through the core that wraps the LoggerProvider,
 	// meaning that the attributes would be exported twice.
-	if res != nil && len(res.Attributes()) > 0 {
+	if !cfg.Logs.DisableZapResource && res != nil && len(res.Attributes()) > 0 {
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			var fields []zap.Field
 			for _, attr := range res.Attributes() {
