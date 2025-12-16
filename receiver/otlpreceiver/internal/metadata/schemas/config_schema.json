@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "otlp receiver configuration",
-  "description": "Config defines configuration for OTLP receiver.",
   "type": "object",
   "properties": {
     "grpc": {
