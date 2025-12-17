@@ -4,7 +4,6 @@
 package schemagen
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,28 +29,16 @@ func TestSchemaGenerator_GenerateSchema(t *testing.T) {
 	require.NoError(t, err, "schema file was not created")
 
 	// Read the generated schema
-	generatedData, err := os.ReadFile(schemaPath)
+	generatedData, err := os.ReadFile(schemaPath) //#nosec G304 -- test file path
 	require.NoError(t, err)
 
 	// Read the expected schema from testdata
 	expectedPath := filepath.Join("testdata", "config_schema.json")
-	expectedData, err := os.ReadFile(expectedPath)
+	expectedData, err := os.ReadFile(expectedPath) //#nosec G304 -- test file path
 	require.NoError(t, err)
 
-	// Parse both schemas to compare them (to ignore formatting differences)
-	var generatedSchema, expectedSchema Schema
-	err = json.Unmarshal(generatedData, &generatedSchema)
-	require.NoError(t, err)
-	err = json.Unmarshal(expectedData, &expectedSchema)
-	require.NoError(t, err)
-
-	// Re-marshal both schemas with consistent formatting for comparison
-	generatedJSON, err := json.MarshalIndent(generatedSchema, "", "  ")
-	require.NoError(t, err)
-	expectedJSON, err := json.MarshalIndent(expectedSchema, "", "  ")
-	require.NoError(t, err)
-
-	assert.Equal(t, string(expectedJSON), string(generatedJSON))
+	// Compare JSON content (ignoring formatting differences)
+	assert.JSONEq(t, string(expectedData), string(generatedData))
 }
 
 func TestSetSchemaType(t *testing.T) {

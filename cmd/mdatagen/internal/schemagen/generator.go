@@ -6,6 +6,7 @@ package schemagen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ func (g *SchemaGenerator) GenerateSchema(componentKind, componentName, configTyp
 	schema := g.structToSchema(structInfo, componentKind, componentName)
 
 	// Ensure output directory exists
-	if err := os.MkdirAll(g.outputDir, 0o700); err != nil {
+	if err = os.MkdirAll(g.outputDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -77,9 +78,7 @@ func (g *SchemaGenerator) structToSchema(info *StructInfo, componentKind, compon
 		if propSchema != nil {
 			if field.Embedded {
 				// For embedded structs, merge properties into parent
-				for name, prop := range propSchema.Properties {
-					schema.Properties[name] = prop
-				}
+				maps.Copy(schema.Properties, propSchema.Properties)
 				required = append(required, propSchema.Required...)
 			} else {
 				schema.Properties[field.JSONName] = propSchema
@@ -174,8 +173,8 @@ func (g *SchemaGenerator) setSchemaType(schema *Schema, goType string) {
 	}
 
 	// Handle pointer types
-	if strings.HasPrefix(goType, "*") {
-		g.setSchemaType(schema, strings.TrimPrefix(goType, "*"))
+	if after, found := strings.CutPrefix(goType, "*"); found {
+		g.setSchemaType(schema, after)
 		return
 	}
 
@@ -195,10 +194,10 @@ func (g *SchemaGenerator) setSchemaType(schema *Schema, goType string) {
 	}
 
 	// Handle slice types
-	if strings.HasPrefix(goType, "[]") {
+	if after, found := strings.CutPrefix(goType, "[]"); found {
 		schema.Type = "array"
 		itemSchema := &Schema{}
-		g.setSchemaType(itemSchema, strings.TrimPrefix(goType, "[]"))
+		g.setSchemaType(itemSchema, after)
 		schema.Items = itemSchema
 		return
 	}
@@ -207,13 +206,10 @@ func (g *SchemaGenerator) setSchemaType(schema *Schema, goType string) {
 	if strings.HasPrefix(goType, "map[") {
 		schema.Type = "object"
 		// Extract value type from map[string]ValueType
-		if idx := strings.Index(goType, "]"); idx != -1 {
-			valueType := goType[idx+1:]
-			if valueType != "" {
-				addProps := &Schema{}
-				g.setSchemaType(addProps, valueType)
-				schema.AdditionalProperties = addProps
-			}
+		if _, valueType, found := strings.Cut(goType, "]"); found && valueType != "" {
+			addProps := &Schema{}
+			g.setSchemaType(addProps, valueType)
+			schema.AdditionalProperties = addProps
 		}
 		return
 	}
@@ -260,9 +256,10 @@ func extractOptionalInnerType(goType string) string {
 	// Find matching closing bracket
 	depth := 1
 	for i := start; i < len(goType); i++ {
-		if goType[i] == '[' {
+		switch goType[i] {
+		case '[':
 			depth++
-		} else if goType[i] == ']' {
+		case ']':
 			depth--
 			if depth == 0 {
 				return goType[start:i]
