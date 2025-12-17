@@ -8,7 +8,25 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+var TelemetryDisableOldFormatMetrics = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableOldFormatMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, disables all metrics which use _ delimiter."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/12909"),
+	featuregate.WithRegisterFromVersion("v0.133.0"),
+)
+
+var TelemetryEnableNewFormatMetrics = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.enableNewFormatMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, enables equivalent metrics to those which disableOldFormatMetrics disables (e.g. otelcol_exporter_send_failed_spans becomes otelcol.exporter.send.failed.spans)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/12909"),
+	featuregate.WithRegisterFromVersion("v0.133.0"),
 )
 
 // TelemetrySettings provides components with APIs to report telemetry.

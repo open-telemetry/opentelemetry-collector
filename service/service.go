@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:generate mdatagen metadata.yaml
+//go:generate mdatagen metadata_old.yaml
 
 package service // import "go.opentelemetry.io/collector/service"
 

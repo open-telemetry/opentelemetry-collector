@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal/metadata"
+	"go.opentelemetry.io/collector/service/internal/metadata_old"
 )
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
@@ -79,14 +80,35 @@ func RegisterProcessMetrics(cfg component.TelemetrySettings, opts ...RegisterOpt
 	if err != nil {
 		return err
 	}
-	return errors.Join(
-		tb.RegisterProcessUptimeCallback(pm.updateProcessUptime),
-		tb.RegisterProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
-		tb.RegisterProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
-		tb.RegisterProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
-		tb.RegisterProcessCPUSecondsCallback(pm.updateCPUSeconds),
-		tb.RegisterProcessMemoryRssCallback(pm.updateRSSMemory),
-	)
+
+	errs := []error{}
+	if !component.TelemetryDisableOldFormatMetrics.IsEnabled() {
+		tbOld, err := metadata_old.NewTelemetryBuilder(cfg)
+		if err != nil {
+			return err
+		}
+		errs = append(errs, []error{
+			tbOld.RegisterProcessUptimeCallback(pm.updateProcessUptime),
+			tbOld.RegisterProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
+			tbOld.RegisterProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
+			tbOld.RegisterProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
+			tbOld.RegisterProcessCPUSecondsCallback(pm.updateCPUSeconds),
+			tbOld.RegisterProcessMemoryRssCallback(pm.updateRSSMemory),
+		}...,
+		)
+	}
+	if component.TelemetryEnableNewFormatMetrics.IsEnabled() {
+		errs = append(errs, []error{
+			tb.RegisterProcessUptimeCallback(pm.updateProcessUptime),
+			tb.RegisterProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
+			tb.RegisterProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
+			tb.RegisterProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
+			tb.RegisterProcessCPUSecondsCallback(pm.updateCPUSeconds),
+			tb.RegisterProcessMemoryRssCallback(pm.updateRSSMemory),
+		}...,
+		)
+	}
+	return errors.Join(errs...)
 }
 
 func (pm *processMetrics) updateProcessUptime(_ context.Context, obs metric.Float64Observer) error {
