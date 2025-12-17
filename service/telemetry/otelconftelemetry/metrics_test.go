@@ -317,89 +317,133 @@ func TestInstrumentEnabled(t *testing.T) {
 	assert.Implements(t, new(enabledInstrument), floatGauge)
 }
 
-func TestTelemetryMetrics_DefaultViews(t *testing.T) {
-	type testcase struct {
-		configuredViews    []config.View
-		expectedMeterNames []string
-	}
-
-	defaultViews := func(level configtelemetry.Level) []config.View {
+func TestTelemetryMetrics_DefaultDroppedInstrument(t *testing.T) {
+	defaultDroppedInstruments := func(level configtelemetry.Level) []telemetry.InstrumentSelector {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
-		return []config.View{{
-			Selector: &config.ViewSelector{
-				MeterName: ptr("a"),
-			},
-			Stream: &config.ViewStream{
-				Aggregation: &config.ViewStreamAggregation{
-					Drop: config.ViewStreamAggregationDrop{},
-				},
-			},
+		return []telemetry.InstrumentSelector{{
+			MeterName: "a",
+		}, {
+			InstrumentName: "b.count*",
+		}, {
+			MeterName:      "c",
+			InstrumentName: "*.histogram",
 		}}
 	}
 
-	for name, tc := range map[string]testcase{
-		"no_configured_views": {
-			expectedMeterNames: []string{"b", "c"},
+	var metrics pmetric.Metrics
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+
+		exportRequest := pmetricotlp.NewExportRequest()
+		assert.NoError(t, exportRequest.UnmarshalProto(body))
+		metrics = exportRequest.Metrics()
+	}))
+	defer srv.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Level = configtelemetry.LevelDetailed
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Periodic: &config.PeriodicMetricReader{
+			Exporter: config.PushMetricExporter{
+				OTLP: &config.OTLPMetric{
+					Endpoint: ptr(srv.URL),
+					Protocol: ptr("http/protobuf"),
+					Insecure: ptr(true),
+				},
+			},
 		},
-		"configured_views": {
-			configuredViews: []config.View{{
-				Selector: &config.ViewSelector{
-					MeterName: ptr("b"),
-				},
-				Stream: &config.ViewStream{
-					Aggregation: &config.ViewStreamAggregation{
-						Drop: config.ViewStreamAggregationDrop{},
-					},
-				},
-			}},
-			expectedMeterNames: []string{"a", "c"},
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			var metrics pmetric.Metrics
-			srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
-				body, err := io.ReadAll(req.Body)
-				assert.NoError(t, err)
+	}}
 
-				exportRequest := pmetricotlp.NewExportRequest()
-				assert.NoError(t, exportRequest.UnmarshalProto(body))
-				metrics = exportRequest.Metrics()
-			}))
-			defer srv.Close()
+	factory := NewFactory()
+	settings := telemetry.MeterSettings{DefaultDroppedInstruments: defaultDroppedInstruments}
+	provider, err := factory.CreateMeterProvider(t.Context(), settings, cfg)
+	require.NoError(t, err)
 
-			cfg := createDefaultConfig().(*Config)
-			cfg.Metrics.Level = configtelemetry.LevelDetailed
-			cfg.Metrics.Views = tc.configuredViews
-			cfg.Metrics.Readers = []config.MetricReader{{
-				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.PushMetricExporter{
-						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
-						},
-					},
-				},
-			}}
+	for _, meterName := range []string{"a", "b", "c"} {
+		counter, _ := provider.Meter(meterName).Int64Counter(meterName + ".counter")
+		counter.Add(t.Context(), 1)
 
-			factory := NewFactory()
-			settings := telemetry.MeterSettings{DefaultViews: defaultViews}
-			provider, err := factory.CreateMeterProvider(t.Context(), settings, cfg)
-			require.NoError(t, err)
+		gauge, _ := provider.Meter(meterName).Int64Gauge(meterName + ".gauge")
+		gauge.Record(t.Context(), 2)
 
-			for _, meterName := range []string{"a", "b", "c"} {
-				counter, _ := provider.Meter(meterName).Int64Counter(meterName + ".counter")
-				counter.Add(t.Context(), 1)
-			}
-			require.NoError(t, provider.Shutdown(t.Context())) // should flush metrics
-
-			var scopes []string
-			for _, rm := range metrics.ResourceMetrics().All() {
-				for _, sm := range rm.ScopeMetrics().All() {
-					scopes = append(scopes, sm.Scope().Name())
-				}
-			}
-			assert.ElementsMatch(t, tc.expectedMeterNames, scopes)
-		})
+		histogram, _ := provider.Meter(meterName).Float64Histogram(meterName + ".histogram")
+		histogram.Record(t.Context(), 3)
 	}
+	require.NoError(t, provider.Shutdown(t.Context())) // should flush metrics
+
+	var metricNames []string
+	for _, rm := range metrics.ResourceMetrics().All() {
+		for _, sm := range rm.ScopeMetrics().All() {
+			for _, metric := range sm.Metrics().All() {
+				metricNames = append(metricNames, metric.Name())
+			}
+		}
+	}
+	assert.ElementsMatch(t, []string{
+		"b.gauge",
+		"b.histogram",
+		"c.counter",
+		"c.gauge",
+	}, metricNames)
+}
+
+func TestTelemetryMetrics_DefaultDroppedInstruments_ViewsConfig(t *testing.T) {
+	var metrics pmetric.Metrics
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+
+		exportRequest := pmetricotlp.NewExportRequest()
+		assert.NoError(t, exportRequest.UnmarshalProto(body))
+		metrics = exportRequest.Metrics()
+	}))
+	defer srv.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Level = configtelemetry.LevelDetailed
+	cfg.Metrics.Views = []config.View{{
+		Selector: &config.ViewSelector{
+			MeterName: ptr("b"),
+		},
+		Stream: &config.ViewStream{
+			Aggregation: &config.ViewStreamAggregation{
+				Drop: config.ViewStreamAggregationDrop{},
+			},
+		},
+	}}
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Periodic: &config.PeriodicMetricReader{
+			Exporter: config.PushMetricExporter{
+				OTLP: &config.OTLPMetric{
+					Endpoint: ptr(srv.URL),
+					Protocol: ptr("http/protobuf"),
+					Insecure: ptr(true),
+				},
+			},
+		},
+	}}
+
+	factory := NewFactory()
+	settings := telemetry.MeterSettings{
+		DefaultDroppedInstruments: func(configtelemetry.Level) []telemetry.InstrumentSelector {
+			panic("DefaultDroppedInstruments function should not be called when views are configured")
+		},
+	}
+	provider, err := factory.CreateMeterProvider(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	for _, meterName := range []string{"a", "b", "c"} {
+		counter, _ := provider.Meter(meterName).Int64Counter(meterName + ".counter")
+		counter.Add(t.Context(), 1)
+	}
+	require.NoError(t, provider.Shutdown(t.Context())) // should flush metrics
+
+	var scopes []string
+	for _, rm := range metrics.ResourceMetrics().All() {
+		for _, sm := range rm.ScopeMetrics().All() {
+			scopes = append(scopes, sm.Scope().Name())
+		}
+	}
+	assert.ElementsMatch(t, []string{"a", "c"}, scopes)
 }
