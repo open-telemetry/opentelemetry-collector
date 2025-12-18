@@ -18,10 +18,10 @@ issues: [13956]
 subtext: |-
   The `otelcol_exporter_send_failed_{spans,metric_points,log_records}` metrics now include
   failure attributes when telemetry level is Detailed: `error.type` (OpenTelemetry semantic convention
-  describing the error class) and `failure.permanent` (indicates if error is permanent).
+  describing the error class) and `error.permanent` (indicates if error is permanent/non-retryable).
   The `error.type` attribute captures gRPC status codes (e.g., "Unavailable", "ResourceExhausted"),
-  HTTP status codes (e.g., "404", "503"), standard Go errors (e.g., "Canceled", "DeadlineExceeded"),
-  and collector-specific errors (e.g., "RetryExhausted", "Shutdown").
+  standard Go context errors (e.g., "Canceled", "DeadlineExceeded"),
+  and collector-specific errors (e.g., "Shutdown").
   This enables better alerting and debugging by providing standardized error classification.
 
 # Optional: The change log or logs in which this entry should be included.

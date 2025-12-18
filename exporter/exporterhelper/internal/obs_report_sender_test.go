@@ -37,199 +37,97 @@ var (
 	errFake = errors.New("errFake")
 )
 
-func TestExportTraceFailureAttributesRetryExhausted(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return NewRetryExhaustedErr(errFake)
-		}),
-	)
-	require.NoError(t, err)
-
-	req := &requesttest.FakeRequest{Items: 7}
-	sendErr := obsrep.Send(context.Background(), req)
-	require.Error(t, sendErr)
-
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-		attribute.Bool(FailurePermanentKey, false),
-	)
-
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
+func TestExportTraceFailureAttributes(t *testing.T) {
+	tests := []struct {
+		name         string
+		err          error
+		numItems     int
+		expectedType string
+		expectedPerm bool
+		useCustomCtx bool
+		ctxSetup     func() context.Context
+	}{
+		{
+			name:         "PermanentError",
+			err:          consumererror.NewPermanent(errors.New("bad data")),
+			numItems:     5,
+			expectedType: "Unknown",
+			expectedPerm: true,
+		},
+		{
+			name:         "ShutdownError",
+			err:          experr.NewShutdownErr(errors.New("shutting down")),
+			numItems:     3,
+			expectedType: "Shutdown",
+			expectedPerm: false,
+		},
+		{
+			name:         "ContextCanceled",
+			err:          context.Canceled,
+			numItems:     2,
+			expectedType: "Canceled",
+			expectedPerm: false,
+			useCustomCtx: true,
+			ctxSetup: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
 			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
+		},
+		{
+			name:         "ContextDeadlineExceeded",
+			err:          context.DeadlineExceeded,
+			numItems:     4,
+			expectedType: "DeadlineExceeded",
+			expectedPerm: false,
+		},
+		{
+			name:         "UnknownError",
+			err:          errFake,
+			numItems:     8,
+			expectedType: "Unknown",
+			expectedPerm: false,
+		},
+	}
 
-func TestExportTraceFailureAttributesPermanentError(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			telemetry := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
 
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return consumererror.NewPermanent(errors.New("bad data"))
-		}),
-	)
-	require.NoError(t, err)
+			obsrep, err := newObsReportSender(
+				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				pipeline.SignalTraces,
+				sender.NewSender(func(context.Context, request.Request) error {
+					return tt.err
+				}),
+			)
+			require.NoError(t, err)
 
-	req := &requesttest.FakeRequest{Items: 5}
-	sendErr := obsrep.Send(context.Background(), req)
-	require.Error(t, sendErr)
+			ctx := context.Background()
+			if tt.useCustomCtx && tt.ctxSetup != nil {
+				ctx = tt.ctxSetup()
+			}
 
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-		attribute.Bool(FailurePermanentKey, true),
-	)
+			req := &requesttest.FakeRequest{Items: tt.numItems}
+			sendErr := obsrep.Send(ctx, req)
+			require.Error(t, sendErr)
 
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
+			wantAttrs := attribute.NewSet(
+				attribute.String("exporter", exporterID.String()),
+				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
+				attribute.Bool(ErrorPermanentKey, tt.expectedPerm),
+			)
 
-func TestExportTraceFailureAttributesShutdownError(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return experr.NewShutdownErr(errors.New("shutting down"))
-		}),
-	)
-	require.NoError(t, err)
-
-	req := &requesttest.FakeRequest{Items: 3}
-	sendErr := obsrep.Send(context.Background(), req)
-	require.Error(t, sendErr)
-
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
-		attribute.Bool(FailurePermanentKey, false),
-	)
-
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func TestExportTraceFailureAttributesContextCanceled(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return context.Canceled
-		}),
-	)
-	require.NoError(t, err)
-
-	req := &requesttest.FakeRequest{Items: 2}
-	sendErr := obsrep.Send(ctx, req)
-	require.Error(t, sendErr)
-
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
-		attribute.Bool(FailurePermanentKey, false),
-	)
-
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func TestExportTraceFailureAttributesContextDeadlineExceeded(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return context.DeadlineExceeded
-		}),
-	)
-	require.NoError(t, err)
-
-	req := &requesttest.FakeRequest{Items: 4}
-	sendErr := obsrep.Send(context.Background(), req)
-	require.Error(t, sendErr)
-
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
-		attribute.Bool(FailurePermanentKey, false),
-	)
-
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func TestExportTraceFailureAttributesUnknownError(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalTraces,
-		sender.NewSender(func(context.Context, request.Request) error {
-			return errFake
-		}),
-	)
-	require.NoError(t, err)
-
-	req := &requesttest.FakeRequest{Items: 8}
-	sendErr := obsrep.Send(context.Background(), req)
-	require.Error(t, sendErr)
-
-	wantAttrs := attribute.NewSet(
-		attribute.String("exporter", exporterID.String()),
-		attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-		attribute.Bool(FailurePermanentKey, false),
-	)
-
-	metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
+				[]metricdata.DataPoint[int64]{
+					{
+						Attributes: wantAttrs,
+						Value:      int64(req.Items),
+					},
+				}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		})
+	}
 }
 
 func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
@@ -287,7 +185,7 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 			wantAttrs := attribute.NewSet(
 				attribute.String("exporter", exporterID.String()),
 				attribute.String(string(semconv.ErrorTypeKey), tt.expectedType),
-				attribute.Bool(FailurePermanentKey, tt.isPermanent),
+				attribute.Bool(ErrorPermanentKey, tt.isPermanent),
 			)
 
 			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
@@ -362,7 +260,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -436,7 +334,7 @@ func TestExportMetricsOp(t *testing.T) {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -510,7 +408,7 @@ func TestExportLogsOp(t *testing.T) {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-			attribute.Bool(FailurePermanentKey, false),
+			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
 			{
@@ -534,16 +432,6 @@ func TestDetermineErrorType(t *testing.T) {
 			name:              "nil error",
 			err:               nil,
 			expectedErrorType: "",
-		},
-		{
-			name:              "retry exhausted error",
-			err:               NewRetryExhaustedErr(errors.New("underlying error")),
-			expectedErrorType: "Unknown",
-		},
-		{
-			name:              "retry exhausted with gRPC error",
-			err:               NewRetryExhaustedErr(status.Error(grpccodes.Unavailable, "service unavailable")),
-			expectedErrorType: "Unavailable",
 		},
 		{
 			name:              "shutdown error",
@@ -608,19 +496,11 @@ func TestExtractFailureAttributes(t *testing.T) {
 			expected: attribute.NewSet(),
 		},
 		{
-			name: "retry exhausted error",
-			err:  NewRetryExhaustedErr(errors.New("underlying error")),
-			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-				attribute.Bool(FailurePermanentKey, false),
-			),
-		},
-		{
 			name: "permanent error",
 			err:  consumererror.NewPermanent(errors.New("bad data")),
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-				attribute.Bool(FailurePermanentKey, true),
+				attribute.Bool(ErrorPermanentKey, true),
 			),
 		},
 		{
@@ -628,7 +508,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			err:  errors.New("transient error"),
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
 		{
@@ -636,7 +516,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			err:  experr.NewShutdownErr(errors.New("shutdown")),
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
 		{
@@ -644,7 +524,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			err:  context.Canceled,
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
 		{
@@ -652,7 +532,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			err:  context.DeadlineExceeded,
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
 		{
@@ -660,7 +540,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			err:  status.Error(grpccodes.Unavailable, "service unavailable"),
 			expected: attribute.NewSet(
 				attribute.String(string(semconv.ErrorTypeKey), "Unavailable"),
-				attribute.Bool(FailurePermanentKey, false),
+				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
 	}

@@ -119,6 +119,7 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 func TestRetrySenderWithCancelledContext(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = true
+	// First attempt after 1s is attempted
 	rCfg.InitialInterval = 1 * time.Second
 	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(context.Context, request.Request) error { return errors.New("transient error") }))
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
@@ -133,37 +134,4 @@ func TestRetrySenderWithCancelledContext(t *testing.T) {
 		"request is cancelled or timed out: transient error")
 	require.Less(t, time.Since(start), 1*time.Second)
 	require.NoError(t, rs.Shutdown(context.Background()))
-}
-
-func TestRetrySenderShutdownDuringRetry(t *testing.T) {
-	rCfg := configretry.NewDefaultBackOffConfig()
-	rCfg.InitialInterval = 100 * time.Millisecond
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(context.Context, request.Request) error { return errors.New("transient error") }))
-	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
-
-	go func() {
-		<-time.After(50 * time.Millisecond)
-		_ = rs.Shutdown(context.Background())
-	}()
-
-	err := rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "shutdown")
-}
-
-func TestRetryExhaustedError(t *testing.T) {
-	testErr := errors.New("underlying error")
-	retryErr := NewRetryExhaustedErr(testErr)
-
-	assert.Contains(t, retryErr.Error(), "no more retries left")
-	assert.Contains(t, retryErr.Error(), "underlying error")
-
-	require.ErrorIs(t, retryErr, testErr)
-
-	assert.True(t, IsRetryExhaustedErr(retryErr))
-	assert.False(t, IsRetryExhaustedErr(testErr))
-	assert.False(t, IsRetryExhaustedErr(nil))
-
-	wrappedErr := fmt.Errorf("wrapped: %w", retryErr)
-	assert.True(t, IsRetryExhaustedErr(wrappedErr))
 }

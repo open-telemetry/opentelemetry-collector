@@ -45,28 +45,6 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type retryExhaustedError struct {
-	err error
-}
-
-func (e retryExhaustedError) Error() string {
-	return "no more retries left: " + e.err.Error()
-}
-
-func (e retryExhaustedError) Unwrap() error {
-	return e.err
-}
-
-// NewRetryExhaustedErr creates a new retry exhausted error.
-func NewRetryExhaustedErr(err error) error {
-	return retryExhaustedError{err: err}
-}
-
-func IsRetryExhaustedErr(err error) bool {
-	var retryExhaustedErr retryExhaustedError
-	return errors.As(err, &retryExhaustedErr)
-}
-
 type retrySender struct {
 	component.StartFunc
 	cfg    configretry.BackOffConfig
@@ -126,7 +104,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			return NewRetryExhaustedErr(err)
+			return fmt.Errorf("no more retries left: %w", err)
 		}
 
 		throttleErr := throttleRetry{}
@@ -136,7 +114,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		nextRetryTime := time.Now().Add(backoffDelay)
 		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
-			return NewRetryExhaustedErr(err)
+			return fmt.Errorf("no more retries left: %w", err)
 		}
 
 		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {

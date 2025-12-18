@@ -40,8 +40,8 @@ const (
 	// ItemsFailed used to track number of items that failed to be sent by exporters.
 	ItemsFailed = "items.failed"
 
-	// FailurePermanentKey indicates whether the error is permanent (non-retryable).
-	FailurePermanentKey = "failure.permanent"
+	// ErrorPermanentKey indicates whether the error is permanent (non-retryable).
+	ErrorPermanentKey = "error.permanent"
 )
 
 type obsReportSender[K request.Request] struct {
@@ -52,9 +52,9 @@ type obsReportSender[K request.Request] struct {
 	tracer          trace.Tracer
 	spanAttrs       trace.SpanStartEventOption
 	metricAttr      metric.MeasurementOption
+	baseAttrSet     attribute.Set
 	itemsSentInst   metric.Int64Counter
 	itemsFailedInst metric.Int64Counter
-	exporterID      string
 	next            sender.Sender[K]
 }
 
@@ -66,14 +66,15 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)
+	baseAttrSet := attribute.NewSet(expAttr)
 
 	or := &obsReportSender[K]{
-		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:     metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		exporterID: idStr,
-		next:       next,
+		spanName:    ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:      metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:   trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr:  metric.WithAttributeSet(baseAttrSet),
+		baseAttrSet: baseAttrSet,
+		next:        next,
 	}
 
 	switch signal {
@@ -123,8 +124,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	}
 	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
 		failedAttrs := extractFailureAttributes(err)
-		baseAttrs := attribute.NewSet(attribute.String(ExporterKey, ors.exporterID))
-		combinedAttrs := attribute.NewSet(append(baseAttrs.ToSlice(), failedAttrs.ToSlice()...)...)
+		combinedAttrs := attribute.NewSet(append(ors.baseAttrSet.ToSlice(), failedAttrs.ToSlice()...)...)
 		ors.itemsFailedInst.Add(ctx, numFailedToSend, metric.WithAttributeSet(combinedAttrs))
 	}
 
@@ -159,7 +159,7 @@ func extractFailureAttributes(err error) attribute.Set {
 	attrs = append(attrs, attribute.String(string(semconv.ErrorTypeKey), errorType))
 
 	isPermanent := consumererror.IsPermanent(err)
-	attrs = append(attrs, attribute.Bool(FailurePermanentKey, isPermanent))
+	attrs = append(attrs, attribute.Bool(ErrorPermanentKey, isPermanent))
 
 	return attribute.NewSet(attrs...)
 }
@@ -167,15 +167,6 @@ func extractFailureAttributes(err error) attribute.Set {
 func determineErrorType(err error) string {
 	if err == nil {
 		return ""
-	}
-
-	// Unwrap RetryExhaustedErr to get the underlying error type
-	// This preserves diagnostic information about the root cause
-	if IsRetryExhaustedErr(err) {
-		err = errors.Unwrap(err)
-		if err == nil {
-			return "Unknown"
-		}
 	}
 
 	if experr.IsShutdownErr(err) {
