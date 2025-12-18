@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestAssertMutable(t *testing.T) {
@@ -19,6 +21,7 @@ func TestAssertMutable(t *testing.T) {
 }
 
 func BenchmarkAssertMutable(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	b.ReportAllocs()
 
 	mutable := NewState()

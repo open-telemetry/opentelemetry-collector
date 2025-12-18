@@ -8,7 +8,7 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func newSDK(ctx context.Context, res *sdkresource.Resource, conf config.OpenTelemetryConfiguration) (config.SDK, error) {

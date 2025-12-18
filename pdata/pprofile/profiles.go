@@ -3,6 +3,8 @@
 
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
+import "fmt"
+
 // MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
 func (ms Profiles) MarkReadOnly() {
 	ms.getState().MarkReadOnly()
@@ -28,4 +30,31 @@ func (ms Profiles) SampleCount() int {
 		}
 	}
 	return sampleCount
+}
+
+// switchDictionary updates the Profiles, switching its indices from one
+// dictionary to another.
+func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
+	for i, v := range ms.ResourceProfiles().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("error switching dictionary for resource profile %d: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+// ProfileCount calculates the total number of profile records.
+func (ms Profiles) ProfileCount() int {
+	profileCount := 0
+	rps := ms.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			profileCount += sps.At(j).Profiles().Len()
+		}
+	}
+	return profileCount
 }

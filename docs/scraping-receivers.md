@@ -79,6 +79,10 @@ Nevertheless, metrics that are emitted by default MUST be always kept up-to-date
 monitored system. Given that, occasional breaking changes in the emitted metrics are expected even in the stable 
 receivers. Any breaking change MUST be applied following [the deprecation process](#changing-the-emitted-metrics).
 
+## Stability levels for metrics and attributes
+
+See [Collector's Telemetry Stability levels](./coding-guidelines.md#telemetry-stability-levels)
+
 ## Changing the emitted metrics
 
 Some changes are not considered breaking and can be applied to metrics emitted by scraping receivers of any 

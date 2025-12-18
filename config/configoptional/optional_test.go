@@ -528,6 +528,21 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 	}
 }
 
+func TestEnabledFalseResetsValue(t *testing.T) {
+	oldVal := addEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
+	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+
+	cfg := Config[Sub]{Sub1: Some(Sub{Foo: "initial"})}
+	require.True(t, cfg.Sub1.HasValue())
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"sub": map[string]any{"enabled": false, "foo": "ignored"},
+	})
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.Equal(t, None[Sub](), cfg.Sub1)
+}
+
 func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
 	oldVal := addEnabledFieldFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))

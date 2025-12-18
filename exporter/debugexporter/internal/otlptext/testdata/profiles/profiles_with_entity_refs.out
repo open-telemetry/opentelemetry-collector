@@ -26,7 +26,7 @@ InstrumentationScope test-scope
 Profile #0
     Profile ID     : 
     Start time     : 1970-01-01 00:00:00 +0000 UTC
-    Duration       : 1970-01-01 00:00:00 +0000 UTC
+    DurationNano   : 0
     Dropped attributes count: 0
     Sample #0
         Values: [100]

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -21,12 +22,13 @@ func createLogger(
 	componentConfig component.Config,
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
-	res := newResource(set.Settings, cfg)
+	attrs := pcommonAttrsToOTelAttrs(set.Resource)
+	res := sdkresource.NewWithAttributes("", attrs...)
 
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
-	zapCfg := &zap.Config{
+	zapCfg := zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Logs.Level),
 		Development:       cfg.Logs.Development,
 		Encoding:          cfg.Logs.Encoding,
@@ -43,7 +45,13 @@ func createLogger(
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
 
-	logger, err := zapCfg.Build(set.ZapOptions...)
+	buildZapLogger := set.BuildZapLogger
+	if buildZapLogger == nil {
+		// For backwards compatibility, use zap.Config.Build
+		// if set.BuildZapLogger is not provided.
+		buildZapLogger = zap.Config.Build
+	}
+	logger, err := buildZapLogger(zapCfg, set.ZapOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,7 +63,7 @@ func createLogger(
 	// add them to the logger using With, because that would apply to all logs,
 	// even ones exported through the core that wraps the LoggerProvider,
 	// meaning that the attributes would be exported twice.
-	if res != nil && len(res.Attributes()) > 0 {
+	if !cfg.Logs.DisableZapResource && res != nil && len(res.Attributes()) > 0 {
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			var fields []zap.Field
 			for _, attr := range res.Attributes() {
