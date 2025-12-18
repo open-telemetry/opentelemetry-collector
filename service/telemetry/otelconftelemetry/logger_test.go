@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -129,13 +128,36 @@ func TestCreateLogger(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log config with `disable_resource_attributes` enabled",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:              zapcore.InfoLevel,
+					Development:        false,
+					Encoding:           "console",
+					OutputPaths:        []string{"stderr"},
+					ErrorOutputPaths:   []string{"stderr"},
+					DisableCaller:      false,
+					DisableStacktrace:  false,
+					InitialFields:      map[string]any(nil),
+					DisableZapResource: true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buildInfo := component.BuildInfo{}
-			_, provider, err := NewFactory().CreateLogger(context.Background(), telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: buildInfo},
-			}, &tt.cfg)
+			factory := NewFactory()
+			resource, err := factory.CreateResource(context.Background(), telemetry.Settings{BuildInfo: buildInfo}, &tt.cfg)
+			require.NoError(t, err)
+
+			_, provider, err := factory.CreateLogger(
+				context.Background(), telemetry.LoggerSettings{
+					Settings:       telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
+					BuildZapLogger: zap.Config.Build,
+				}, &tt.cfg,
+			)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
@@ -152,6 +174,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig map[string]*string
 		wantFields     map[string]string
+		setConfig      func(cfg *Config)
 	}{
 		{
 			name: "auto-populated fields only",
@@ -161,9 +184,9 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			resourceConfig: map[string]*string{},
 			wantFields: map[string]string{
-				string(semconv.ServiceNameKey):       "mycommand",
-				string(semconv.ServiceVersionKey):    "1.0.0",
-				string(semconv.ServiceInstanceIDKey): "",
+				"service.name":        "mycommand",
+				"service.version":     "1.0.0",
+				"service.instance.id": "",
 			},
 		},
 		{
@@ -173,12 +196,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Version: "1.0.0",
 			},
 			resourceConfig: map[string]*string{
-				string(semconv.ServiceNameKey): ptr("custom-service"),
+				"service.name": ptr("custom-service"),
 			},
 			wantFields: map[string]string{
-				string(semconv.ServiceNameKey):       "custom-service",
-				string(semconv.ServiceVersionKey):    "1.0.0",
-				string(semconv.ServiceInstanceIDKey): "",
+				"service.name":        "custom-service",
+				"service.version":     "1.0.0",
+				"service.instance.id": "",
 			},
 		},
 		{
@@ -188,12 +211,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Version: "1.0.0",
 			},
 			resourceConfig: map[string]*string{
-				string(semconv.ServiceVersionKey): ptr("2.0.0"),
+				"service.version": ptr("2.0.0"),
 			},
 			wantFields: map[string]string{
-				string(semconv.ServiceNameKey):       "mycommand",
-				string(semconv.ServiceVersionKey):    "2.0.0",
-				string(semconv.ServiceInstanceIDKey): "",
+				"service.name":        "mycommand",
+				"service.version":     "2.0.0",
+				"service.instance.id": "",
 			},
 		},
 		{
@@ -206,10 +229,10 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				"custom.field": ptr("custom-value"),
 			},
 			wantFields: map[string]string{
-				string(semconv.ServiceNameKey):       "mycommand",
-				string(semconv.ServiceVersionKey):    "1.0.0",
-				string(semconv.ServiceInstanceIDKey): "", // Just check presence
-				"custom.field":                       "custom-value",
+				"service.name":        "mycommand",
+				"service.version":     "1.0.0",
+				"service.instance.id": "", // Just check presence
+				"custom.field":        "custom-value",
 			},
 		},
 		{
@@ -218,7 +241,19 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			resourceConfig: nil,
 			wantFields: map[string]string{
 				// A random UUID is injected for service.instance.id by default
-				string(semconv.ServiceInstanceIDKey): "", // Just check presence
+				"service.instance.id": "", // Just check presence
+			},
+		},
+		{
+			name: "validate `DisableResourceAttributes=true` shouldn't add resource fields",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{},
+			wantFields:     map[string]string{},
+			setConfig: func(cfg *Config) {
+				cfg.Logs.DisableZapResource = true
 			},
 		},
 	}
@@ -226,19 +261,27 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zapcore.DebugLevel)
-			set := telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: tt.buildInfo},
-				ZapOptions: []zap.Option{
-					// Redirect logs to the observer core
-					zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
-				},
-			}
+
 			cfg := &Config{
 				Logs: LogsConfig{
 					Level:    zapcore.InfoLevel,
 					Encoding: "json",
 				},
 				Resource: tt.resourceConfig,
+			}
+			if tt.setConfig != nil {
+				tt.setConfig(cfg)
+			}
+
+			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
+			require.NoError(t, err)
+
+			set := telemetry.LoggerSettings{
+				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource},
+				BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+					// Redirect logs to the observer core
+					return zap.New(core), nil
+				},
 			}
 
 			logger, loggerProvider, err := createLogger(t.Context(), set, cfg)
@@ -251,7 +294,8 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			require.Len(t, observedLogs.All(), 1)
 
 			entry := observedLogs.All()[0]
-			if tt.wantFields == nil {
+			// treat empty map as "no expected fields"
+			if len(tt.wantFields) == 0 {
 				assert.Empty(t, entry.Context)
 				return
 			}
@@ -263,7 +307,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 
 			// Verify all expected fields
 			for k, v := range tt.wantFields {
-				if k == string(semconv.ServiceInstanceIDKey) {
+				if k == "service.instance.id" {
 					// For service.instance.id just verify it exists since it's auto-generated
 					assert.Contains(t, enc.Fields, k)
 				} else {
@@ -274,6 +318,47 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	}
 }
 
+func TestCreateLoggerZapOptions(t *testing.T) {
+	buildInfo := component.BuildInfo{}
+	factory := NewFactory()
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+	}
+	resource, err := factory.CreateResource(
+		context.Background(), telemetry.Settings{BuildInfo: buildInfo}, cfg,
+	)
+	require.NoError(t, err)
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
+
+		// Test deprecated behavior: no BuildZapLogger, but ZapOptions provided.
+		BuildZapLogger: nil,
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
+		},
+	}
+
+	logger, provider, err := factory.CreateLogger(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, provider)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(context.Background()))
+	}()
+
+	testMessage := "Test deprecated zap options"
+	logger.Info(testMessage)
+
+	require.Len(t, observedLogs.All(), 1)
+	logEntry := observedLogs.All()[0]
+	assert.Equal(t, testMessage, logEntry.Message)
+	assert.Equal(t, zapcore.InfoLevel, logEntry.Level)
+}
+
 func TestLogger_OTLP(t *testing.T) {
 	// Create a backend to receive the logs and assert the content
 	receivedLogs := 0
@@ -282,16 +367,16 @@ func TestLogger_OTLP(t *testing.T) {
 		rl := logs.ResourceLogs().At(0)
 
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		assert.Equal(t, service, resourceAttrs[string(semconv.ServiceNameKey)])
-		assert.Equal(t, version, resourceAttrs[string(semconv.ServiceVersionKey)])
+		assert.Equal(t, service, resourceAttrs["service.name"])
+		assert.Equal(t, version, resourceAttrs["service.version"])
 		assert.Equal(t, testValue, resourceAttrs[testAttribute])
 
 		// Check that the resource attributes are not duplicated in the log records
 		sl := rl.ScopeLogs().At(0)
 		logRecord := sl.LogRecords().At(0)
 		attrs := logRecord.Attributes().AsRaw()
-		assert.NotContains(t, attrs, string(semconv.ServiceNameKey))
-		assert.NotContains(t, attrs, string(semconv.ServiceVersionKey))
+		assert.NotContains(t, attrs, "service.name")
+		assert.NotContains(t, attrs, "service.version")
 		assert.NotContains(t, attrs, testAttribute)
 
 		receivedLogs++
@@ -331,13 +416,19 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 			// written to the OTLP processor
 		},
 		Resource: map[string]*string{
-			string(semconv.ServiceNameKey):    ptr(service),
-			string(semconv.ServiceVersionKey): ptr(version),
-			testAttribute:                     ptr(testValue),
+			"service.name":    ptr(service),
+			"service.version": ptr(version),
+			testAttribute:     ptr(testValue),
 		},
 	}
 
-	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
+		Settings:       telemetry.Settings{Resource: &resource},
+		BuildZapLogger: zap.Config.Build,
+	}, cfg)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, shutdown.Shutdown(context.WithoutCancel(t.Context())))
@@ -371,12 +462,6 @@ func TestLogAttributeInjection(t *testing.T) {
 	})
 	t.Cleanup(srv.Close)
 
-	set := telemetry.LoggerSettings{
-		ZapOptions: []zap.Option{
-			// Redirect console logs to the observer core
-			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
-		},
-	}
 	cfg := &Config{
 		Resource: map[string]*string{
 			"service.instance.id": nil,
@@ -397,6 +482,17 @@ func TestLogAttributeInjection(t *testing.T) {
 					},
 				},
 			}},
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			// Redirect console logs to the observer core
+			return zap.New(core), nil
 		},
 	}
 

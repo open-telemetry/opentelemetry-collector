@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -137,9 +136,9 @@ func TestBuildResource(t *testing.T) {
 
 	// Check override by nil
 	resMap = map[string]*string{
-		string(semconv.ServiceNameKey):       nil,
-		string(semconv.ServiceVersionKey):    nil,
-		string(semconv.ServiceInstanceIDKey): nil,
+		"service.name":        nil,
+		"service.version":     nil,
+		"service.instance.id": nil,
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
@@ -150,9 +149,9 @@ func TestBuildResource(t *testing.T) {
 	// Check override values
 	strPtr := func(v string) *string { return &v }
 	resMap = map[string]*string{
-		string(semconv.ServiceNameKey):       strPtr("a"),
-		string(semconv.ServiceVersionKey):    strPtr("b"),
-		string(semconv.ServiceInstanceIDKey): strPtr("c"),
+		"service.name":        strPtr("a"),
+		"service.version":     strPtr("b"),
+		"service.instance.id": strPtr("c"),
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)

@@ -23,7 +23,18 @@ type LoggerSettings struct {
 	Settings
 
 	// ZapOptions contains options for creating the zap logger.
+	//
+	// Deprecated [v0.142.0]: use BuildZapLogger instead.
+	// This field will be removed in the future, and options
+	// must be injected through BuildZapLogger.
 	ZapOptions []zap.Option
+
+	// BuildZapLogger holds a function for building a *zap.Logger
+	// from a zap.Config and options.
+	//
+	// If BuildZapLogger is nil, zap.Config.Build should be used.
+	// NOTE: in the future this field will be required.
+	BuildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 }
 
 // MeterSettings holds settings for building meter providers.
@@ -60,6 +71,9 @@ type TracerSettings struct {
 type Settings struct {
 	// BuildInfo contains build information about the collector.
 	BuildInfo component.BuildInfo
+
+	// Resource is the telemetry resource that should be used by all telemetry providers.
+	Resource *pcommon.Resource
 }
 
 // Factory is a factory interface for internal telemetry.
