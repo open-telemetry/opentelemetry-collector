@@ -74,6 +74,8 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 	destProfiles := pprofile.NewProfiles()
 	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
 	removedSize := 0
+
+	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
