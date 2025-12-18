@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" ]]; then
-    echo "PR_NUMBER or COMMENT not set"
+if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" || -z "${SENDER:-}" ]]; then
+    echo "PR_NUMBER, COMMENT, or SENDER not set"
     exit 0
 fi
 
@@ -16,7 +16,14 @@ if [[ ${COMMENT:0:6} != "/rerun" ]]; then
     exit 0
 fi
 
-HEAD_SHA=$(gh pr view "${PR_NUMBER}" --json headRefOid --jq .headRefOid)
+PR_DATA=$(gh pr view "${PR_NUMBER}" --json headRefOid,author)
+HEAD_SHA=$(echo "${PR_DATA}" | jq -r '.headRefOid')
+PR_AUTHOR=$(echo "${PR_DATA}" | jq -r '.author.login')
+
+if [[ "${SENDER}" != "${PR_AUTHOR}" ]]; then
+    echo "Only PR author can rerun workflows"
+    exit 0
+fi
 
 echo "Finding failed workflows for commit: ${HEAD_SHA}"
 

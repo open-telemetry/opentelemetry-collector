@@ -21,3 +21,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.comment.user.login }}
