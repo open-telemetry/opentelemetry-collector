@@ -57,7 +57,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(5)),
 			expected: []Request{newProfilesRequest(func() pprofile.Profiles {
 				profiles := testdata.GenerateProfiles(0)
-				testdata.GenerateProfiles(5).MergeTo(profiles)
+				_ = testdata.GenerateProfiles(5).MergeTo(profiles)
 				return profiles
 			}())},
 		},
