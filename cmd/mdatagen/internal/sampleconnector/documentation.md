@@ -124,8 +124,8 @@ A test entity.
 
 **Stability:** stable
 
-**Identity Attributes:**
+**Identifying Attributes:**
 - `string.resource.attr`
 
-**Description Attributes:**
+**Descriptive Attributes:**
 - `map.resource.attr`

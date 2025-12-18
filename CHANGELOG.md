@@ -7,6 +7,21 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.48.0/v0.142.0
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Add logging of dropped attributes, events, and links counts in detailed verbosity (#14202)
+- `extension/memory_limiter`: The memorylimiter extension can be used as an HTTP/GRPC middleware. (#14081)
+- `pkg/config/configgrpc`: Statically validate gRPC endpoint (#10451)
+  This validation was already done in the OTLP exporter. It will now be applied to any gRPC client.
+  
+- `pkg/service`: Add support to disabling adding resource attributes as zap fields in internal logging (#13869)
+  Note that this does not affect logs exported through OTLP.
+  
+
+<!-- previous-version -->
+
 ## v1.47.0/v0.141.0
 
 ### 🛑 Breaking changes 🛑
