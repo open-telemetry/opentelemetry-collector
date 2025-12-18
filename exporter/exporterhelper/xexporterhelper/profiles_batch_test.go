@@ -325,8 +325,6 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
-	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -341,13 +339,11 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 			)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
-		assert.Len(b, merged, 1)
+		assert.Len(b, merged, 2)
 	}
 }
 
 func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.B) {
-	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -368,8 +364,6 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 }
 
 func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
-	b.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
