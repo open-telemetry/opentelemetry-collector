@@ -22,9 +22,8 @@ func TestMergeProfiles(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
 	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
 	require.NoError(t, err)
-	assert.Len(t, res, 2)
-	assert.Equal(t, 2, res[0].ItemsCount())
-	assert.Equal(t, 3, res[1].ItemsCount())
+	assert.Len(t, res, 1)
+	assert.Equal(t, 5, res[0].ItemsCount())
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
