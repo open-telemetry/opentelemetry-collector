@@ -114,10 +114,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		nextRetryTime := time.Now().Add(backoffDelay)
 		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
+			// The delay is longer than the maxElapsedTime.
 			return fmt.Errorf("no more retries left: %w", err)
 		}
 
 		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {
+			// The delay is longer than the deadline.  There is no point in
+			// waiting for cancelation.
 			return fmt.Errorf("request will be cancelled before next retry: %w", err)
 		}
 

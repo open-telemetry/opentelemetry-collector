@@ -86,6 +86,7 @@ func TestRetrySenderThrottleError(t *testing.T) {
 	start := time.Now()
 	sink.SetExportErr(retry)
 	require.NoError(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
+	// The initial backoff is 10ms, but because of the throttle this should wait at least 100ms.
 	assert.Less(t, 100*time.Millisecond, time.Since(start))
 	assert.Equal(t, 5, sink.ItemsCount())
 	assert.Equal(t, 1, sink.RequestsCount())
@@ -96,8 +97,10 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 	const testTimeout = 10 * time.Second
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = true
+	// First attempt after 100ms is attempted
 	rCfg.InitialInterval = 100 * time.Millisecond
 	rCfg.RandomizationFactor = 0
+	// Second attempt is at twice the testTimeout
 	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	logger, observed := observer.New(zap.InfoLevel)

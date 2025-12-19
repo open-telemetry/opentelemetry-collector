@@ -20,8 +20,8 @@ subtext: |-
   failure attributes when telemetry level is Detailed: `error.type` (OpenTelemetry semantic convention
   describing the error class) and `error.permanent` (indicates if error is permanent/non-retryable).
   The `error.type` attribute captures gRPC status codes (e.g., "Unavailable", "ResourceExhausted"),
-  standard Go context errors (e.g., "Canceled", "DeadlineExceeded"),
-  and collector-specific errors (e.g., "Shutdown").
+  standard Go context errors (e.g., "canceled", "deadline_exceeded"),
+  and collector-specific errors (e.g., "shutdown").
   This enables better alerting and debugging by providing standardized error classification.
 
 # Optional: The change log or logs in which this entry should be included.

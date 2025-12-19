@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -51,21 +51,21 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "PermanentError",
 			err:          consumererror.NewPermanent(errors.New("bad data")),
 			numItems:     5,
-			expectedType: "Unknown",
+			expectedType: "unknown",
 			expectedPerm: true,
 		},
 		{
 			name:         "ShutdownError",
 			err:          experr.NewShutdownErr(errors.New("shutting down")),
 			numItems:     3,
-			expectedType: "Shutdown",
+			expectedType: "shutdown",
 			expectedPerm: false,
 		},
 		{
 			name:         "ContextCanceled",
 			err:          context.Canceled,
 			numItems:     2,
-			expectedType: "Canceled",
+			expectedType: "canceled",
 			expectedPerm: false,
 			useCustomCtx: true,
 			ctxSetup: func() context.Context {
@@ -78,14 +78,14 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "ContextDeadlineExceeded",
 			err:          context.DeadlineExceeded,
 			numItems:     4,
-			expectedType: "DeadlineExceeded",
+			expectedType: "deadline_exceeded",
 			expectedPerm: false,
 		},
 		{
 			name:         "UnknownError",
 			err:          errFake,
 			numItems:     8,
-			expectedType: "Unknown",
+			expectedType: "unknown",
 			expectedPerm: false,
 		},
 	}
@@ -259,7 +259,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	if failedToSendSpans > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -333,7 +333,7 @@ func TestExportMetricsOp(t *testing.T) {
 	if failedToSendMetricPoints > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -407,7 +407,7 @@ func TestExportLogsOp(t *testing.T) {
 	if failedToSendLogRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -429,39 +429,34 @@ func TestDetermineErrorType(t *testing.T) {
 		expectedErrorType string
 	}{
 		{
-			name:              "nil error",
-			err:               nil,
-			expectedErrorType: "",
-		},
-		{
 			name:              "shutdown error",
 			err:               experr.NewShutdownErr(errors.New("shutting down")),
-			expectedErrorType: "Shutdown",
+			expectedErrorType: "shutdown",
 		},
 		{
 			name:              "context canceled",
 			err:               context.Canceled,
-			expectedErrorType: "Canceled",
+			expectedErrorType: "canceled",
 		},
 		{
 			name:              "context deadline exceeded",
 			err:               context.DeadlineExceeded,
-			expectedErrorType: "DeadlineExceeded",
+			expectedErrorType: "deadline_exceeded",
 		},
 		{
 			name:              "unknown error",
 			err:               errors.New("some error"),
-			expectedErrorType: "Unknown",
+			expectedErrorType: "unknown",
 		},
 		{
 			name:              "wrapped context canceled",
 			err:               fmt.Errorf("failed: %w", context.Canceled),
-			expectedErrorType: "Canceled",
+			expectedErrorType: "canceled",
 		},
 		{
 			name:              "wrapped context deadline exceeded",
 			err:               fmt.Errorf("timeout: %w", context.DeadlineExceeded),
-			expectedErrorType: "DeadlineExceeded",
+			expectedErrorType: "deadline_exceeded",
 		},
 		{
 			name:              "gRPC Unavailable",
@@ -491,15 +486,10 @@ func TestExtractFailureAttributes(t *testing.T) {
 		expected attribute.Set
 	}{
 		{
-			name:     "nil error",
-			err:      nil,
-			expected: attribute.NewSet(),
-		},
-		{
 			name: "permanent error",
 			err:  consumererror.NewPermanent(errors.New("bad data")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "unknown"),
 				attribute.Bool(ErrorPermanentKey, true),
 			),
 		},
@@ -507,7 +497,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "non-permanent error",
 			err:  errors.New("transient error"),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "unknown"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -515,7 +505,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "shutdown error",
 			err:  experr.NewShutdownErr(errors.New("shutdown")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
+				attribute.String(string(semconv.ErrorTypeKey), "shutdown"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -523,7 +513,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "context canceled",
 			err:  context.Canceled,
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
+				attribute.String(string(semconv.ErrorTypeKey), "canceled"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -531,7 +521,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "context deadline exceeded",
 			err:  context.DeadlineExceeded,
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "DeadlineExceeded"),
+				attribute.String(string(semconv.ErrorTypeKey), "deadline_exceeded"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},

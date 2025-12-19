@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	// spanNameSep is duplicate between receiver and exporter.
 	spanNameSep = "/"
 
 	// ExporterKey used to identify exporters in metrics and traces.
@@ -52,7 +53,6 @@ type obsReportSender[K request.Request] struct {
 	tracer          trace.Tracer
 	spanAttrs       trace.SpanStartEventOption
 	metricAttr      metric.MeasurementOption
-	baseAttrSet     attribute.Set
 	itemsSentInst   metric.Int64Counter
 	itemsFailedInst metric.Int64Counter
 	next            sender.Sender[K]
@@ -66,15 +66,13 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)
-	baseAttrSet := attribute.NewSet(expAttr)
 
 	or := &obsReportSender[K]{
-		spanName:    ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:      metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:   trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr:  metric.WithAttributeSet(baseAttrSet),
-		baseAttrSet: baseAttrSet,
-		next:        next,
+		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:     metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		next:       next,
 	}
 
 	switch signal {
@@ -99,6 +97,7 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
+	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
 	ors.endOp(c, items, err)
 	return err
@@ -123,13 +122,13 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
 	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
-		failedAttrs := extractFailureAttributes(err)
-		combinedAttrs := attribute.NewSet(append(ors.baseAttrSet.ToSlice(), failedAttrs.ToSlice()...)...)
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, metric.WithAttributeSet(combinedAttrs))
+		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
+		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
 	}
 
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
+	// End the span according to errors.
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.Int64(ItemsSent, numSent),
@@ -165,25 +164,20 @@ func extractFailureAttributes(err error) attribute.Set {
 }
 
 func determineErrorType(err error) string {
-	if err == nil {
-		return ""
-	}
-
 	if experr.IsShutdownErr(err) {
-		return "Shutdown"
+		return "shutdown"
 	}
 
 	if errors.Is(err, context.Canceled) {
-		return "Canceled"
+		return "canceled"
 	}
-
 	if errors.Is(err, context.DeadlineExceeded) {
-		return "DeadlineExceeded"
+		return "deadline_exceeded"
 	}
 
 	if st, ok := status.FromError(err); ok && st.Code() != codes.OK {
 		return st.Code().String()
 	}
 
-	return "Unknown"
+	return "unknown"
 }

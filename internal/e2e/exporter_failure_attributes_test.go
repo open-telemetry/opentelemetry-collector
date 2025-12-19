@@ -32,7 +32,7 @@ import (
 )
 
 func TestExporterFailureAttributesDetailed(t *testing.T) {
-	t.Run("permanent error sets failure.permanent", func(t *testing.T) {
+	t.Run("permanent error sets error.permanent", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path != "/v1/metrics" {
 				w.WriteHeader(http.StatusNotFound)

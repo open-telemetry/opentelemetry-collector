@@ -206,7 +206,8 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
 				Exporters: map[component.Type]exporter.Factory{
-					debugexporter.NewFactory().Type():    debugexporter.NewFactory(),
+					debugexporter.NewFactory().Type(): debugexporter.NewFactory(),
+					// otlphttpexporter is needed because the test config files use otlphttp/fail exporter
 					otlphttpexporter.NewFactory().Type(): otlphttpexporter.NewFactory(),
 				},
 				Telemetry: otelconftelemetry.NewFactory(),
