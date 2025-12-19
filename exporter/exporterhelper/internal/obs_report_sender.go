@@ -121,6 +121,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
+	// No metrics recorded for profiles.
 	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
 		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
 		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
