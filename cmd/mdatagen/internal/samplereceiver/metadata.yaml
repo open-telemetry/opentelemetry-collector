@@ -4,7 +4,7 @@ type: sample
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.37.0
+sem_conv_version: 1.38.0
 
 status:
   disable_codecov_badge: true
@@ -246,7 +246,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
 
 telemetry:
   metrics:
