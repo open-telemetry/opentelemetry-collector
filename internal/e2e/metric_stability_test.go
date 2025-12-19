@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -204,8 +205,12 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 			return otelcol.Factories{
 				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
-				Exporters:  map[component.Type]exporter.Factory{debugexporter.NewFactory().Type(): debugexporter.NewFactory()},
-				Telemetry:  otelconftelemetry.NewFactory(),
+				Exporters: map[component.Type]exporter.Factory{
+					debugexporter.NewFactory().Type(): debugexporter.NewFactory(),
+					// otlphttpexporter is needed because the test config files use otlphttp/fail exporter
+					otlphttpexporter.NewFactory().Type(): otlphttpexporter.NewFactory(),
+				},
+				Telemetry: otelconftelemetry.NewFactory(),
 			}, nil
 		},
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
