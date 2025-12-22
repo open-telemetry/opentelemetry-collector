@@ -60,6 +60,22 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
+	if qCfg.ConcurrencyControllerID == nil {
+		exportFunc := func(ctx context.Context, req request.Request) error {
+			// Have to read the number of items before sending the request since the request can
+			// be modified by the downstream components like the batcher.
+			itemsCount := req.ItemsCount()
+			if errSend := next.Send(ctx, req); errSend != nil {
+				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+				return errSend
+			}
+			return nil
+		}
+
+		return queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
+	}
+
 	enforceMinConsumers(&qCfg, qSet.Telemetry.Logger)
 
 	qs := &queueSender{
@@ -74,26 +90,24 @@ func NewQueueSender(
 		itemsCount := req.ItemsCount()
 
 		ctrl := qs.ctrl
-		if ctrl != nil {
-			// This blocks the worker if the dynamic limit is reached.
-			if err := ctrl.Acquire(ctx); err != nil {
-				return err
-			}
-
-			start := time.Now()
-			var errSend error
-			defer func() { ctrl.Record(ctx, time.Since(start), errSend) }()
-
-			errSend = next.Send(ctx, req)
-			if errSend != nil {
+		if ctrl == nil {
+			if errSend := next.Send(ctx, req); errSend != nil {
 				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
 				return errSend
 			}
 			return nil
 		}
+		// This blocks the worker if the dynamic limit is reached.
+		if err := ctrl.Acquire(ctx); err != nil {
+			return err
+		}
 
-		errSend := next.Send(ctx, req)
+		start := time.Now()
+		var errSend error
+		defer func() { ctrl.Record(ctx, time.Since(start), errSend) }()
+
+		errSend = next.Send(ctx, req)
 		if errSend != nil {
 			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
@@ -113,10 +127,6 @@ func NewQueueSender(
 
 // enforceMinConsumers ensures sufficient worker headroom when a concurrency controller is configured.
 func enforceMinConsumers(cfg *queuebatch.Config, logger *zap.Logger) {
-	if cfg.NumConsumers < 1 {
-		cfg.NumConsumers = 1
-	}
-
 	if cfg.ConcurrencyControllerID == nil {
 		return
 	}
@@ -138,7 +148,7 @@ func enforceMinConsumers(cfg *queuebatch.Config, logger *zap.Logger) {
 
 	// If the user explicitly set num_consumers below the recommended headroom, don't override,
 	// but warn that the controller will be capped by the worker pool.
-	if cfg.NumConsumers < minConsumersWithController && logger != nil {
+	if cfg.NumConsumers > 0 && cfg.NumConsumers < minConsumersWithController && logger != nil {
 		logger.Warn("sending_queue.num_consumers caps concurrency_controller; consider increasing num_consumers for headroom",
 			zap.Int("num_consumers", cfg.NumConsumers),
 			zap.Int("recommended_min", minConsumersWithController),
