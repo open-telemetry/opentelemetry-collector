@@ -22,6 +22,12 @@ import (
 const minConsumersWithController = 200
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
+// By default:
+//
+// - the queue stores 1000 requests of telemetry
+// - is non-blocking when full
+// - concurrent exports limited to 10
+// - emits batches of 8192 items, timeout 200ms
 func NewDefaultQueueConfig() queuebatch.Config {
 	return queuebatch.Config{
 		Sizer:           request.SizerTypeRequests,
@@ -63,6 +69,8 @@ func NewQueueSender(
 	}
 
 	exportFunc := func(ctx context.Context, req request.Request) error {
+		// Have to read the number of items before sending the request since the request can
+		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 
 		if qs.ctrl != nil {
