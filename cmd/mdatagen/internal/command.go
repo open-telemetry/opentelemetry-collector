@@ -22,6 +22,8 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/schemagen"
 )
 
 const (
@@ -214,6 +216,11 @@ func run(ymlPath string) error {
 		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
+	}
+
+	// Generate JSON schema if enabled
+	if err := generateSchema(md, ymlDir); err != nil {
+		return fmt.Errorf("failed to generate schema: %w", err)
 	}
 
 	return nil
@@ -473,4 +480,30 @@ func validateYAMLKeyOrder(raw []byte) error {
 		}
 	}
 	return nil
+}
+
+// generateSchema generates a JSON schema for the component's config if enabled.
+func generateSchema(md Metadata, ymlDir string) error {
+	// Skip if schema generation is not enabled
+	if md.Schema == nil || !md.Schema.Enabled {
+		return nil
+	}
+
+	// Skip non-component types
+	if md.Status == nil || slices.Contains(nonComponents, md.Status.Class) {
+		return nil
+	}
+
+	// Create schemas directory
+	outputDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName, "schemas")
+	if err := os.MkdirAll(outputDir, 0o700); err != nil {
+		return fmt.Errorf("failed to create schemas directory: %w", err)
+	}
+
+	// Create analyzer and generator
+	analyzer := schemagen.NewPackageAnalyzer(ymlDir)
+	generator := schemagen.NewSchemaGenerator(outputDir, analyzer)
+
+	// Generate schema (config type is auto-detected)
+	return generator.GenerateSchema(md.Status.Class, md.Type, "")
 }

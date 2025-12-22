@@ -18,7 +18,7 @@ import (
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
-		func() component.Config { return &struct{}{} },
+		func() component.Config { return &MyConfig{} },
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		receiver.WithLogs(createLogs, metadata.LogsStability))
