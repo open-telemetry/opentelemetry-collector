@@ -6,6 +6,7 @@ require (
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/extension v1.48.0
+	go.opentelemetry.io/collector/pipeline v1.48.0
 )
 
 require (

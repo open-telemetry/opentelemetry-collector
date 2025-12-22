@@ -1,0 +1,13 @@
+change_type: enhancement
+component: exporterhelper
+note: >
+  Add `ConcurrencyController` interface support to the queue sender. This allows
+  extensions to dynamically control the number of concurrent requests in the
+  export pipeline.
+issues: [14080]
+subtext: |
+  The `ConcurrencyControllerFactory` interface has been added to a new
+  `extension/extensioncapabilities` module. The `exporterhelper`'s sending queue
+  can now be configured with a `concurrency_controller` ID to delegate flow
+  control logic to an extension.
+change_logs: [user, api]
