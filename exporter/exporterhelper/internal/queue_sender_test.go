@@ -183,7 +183,7 @@ func TestNewQueueSender_ConcurrencyControllerEnforcesMinConsumers(t *testing.T) 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.inputConfig
-			enforceMinConsumers(&cfg)
+			enforceMinConsumers(&cfg, zap.NewNop())
 			assert.Equal(t, tt.wantConsumers, cfg.NumConsumers)
 		})
 	}
