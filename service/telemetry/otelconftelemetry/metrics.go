@@ -24,8 +24,9 @@ func createMeterProvider(
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		set.Logger.Info("Internal metrics telemetry disabled")
 		return noopMeterProvider{MeterProvider: noopmetric.NewMeterProvider()}, nil
-	} else if cfg.Metrics.Views == nil && set.DefaultViews != nil {
-		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
+	} else if cfg.Metrics.Views == nil && set.DefaultDroppedInstruments != nil {
+		selectors := set.DefaultDroppedInstruments(cfg.Metrics.Level)
+		cfg.Metrics.Views = buildViewsFromSelectors(selectors)
 	}
 
 	attrs := pcommonAttrsToOTelAttrs(set.Resource)
@@ -46,4 +47,30 @@ type noopMeterProvider struct {
 
 func (noopMeterProvider) Shutdown(context.Context) error {
 	return nil
+}
+
+// buildViewsFromSelectors converts InstrumentSelectors into views.
+//
+// Each selector is converted to a drop view that matches the specified
+// meter and instrument name patterns.
+func buildViewsFromSelectors(selectors []telemetry.InstrumentSelector) []config.View {
+	views := make([]config.View, len(selectors))
+	for i, selector := range selectors {
+		viewSelector := &config.ViewSelector{}
+		if selector.MeterName != "" {
+			viewSelector.MeterName = ptr(selector.MeterName)
+		}
+		if selector.InstrumentName != "" {
+			viewSelector.InstrumentName = ptr(selector.InstrumentName)
+		}
+		views[i] = config.View{
+			Selector: viewSelector,
+			Stream: &config.ViewStream{
+				Aggregation: &config.ViewStreamAggregation{
+					Drop: config.ViewStreamAggregationDrop{},
+				},
+			},
+		}
+	}
+	return views
 }

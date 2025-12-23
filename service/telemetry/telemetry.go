@@ -6,7 +6,6 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 
-	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -46,15 +45,27 @@ type MeterSettings struct {
 	// for logging its internal operations.
 	Logger *zap.Logger
 
-	// DefaultViews holds a function that returns default metric
-	// views for the given internal telemetry metrics level.
+	// DefaultDroppedInstruments holds a function that takes the configured
+	// metrics telemetry level, and returns a list of selectors that
+	// indicate which instruments should be dropped by default.
 	//
-	// The meter provider is expected to use this if no user-provided
-	// view configuration is supplied.
+	// The meter provider implementation is expected to use this to create
+	// appropriate views if and only if no user-provided view configuration
+	// is supplied.
+	DefaultDroppedInstruments func(level configtelemetry.Level) []InstrumentSelector
+}
+
+// InstrumentSelector holds parameters for selecting a metric instrument.
+type InstrumentSelector struct {
+	// MeterName is a wildcard pattern for matching meter names.
 	//
-	// TODO we should not use otelconf.View directly here, change
-	// to something independent of otelconf.
-	DefaultViews func(configtelemetry.Level) []otelconf.View
+	// If MeterName is empty, it matches all meter names.
+	MeterName string
+
+	// InstrumentName is a wildcard pattern for matching instrument names.
+	//
+	// If InstrumentName is empty, it matches all instrument names.
+	InstrumentName string
 }
 
 // TracerSettings holds settings for building tracer providers.
