@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"slices"
 	"strconv"
 	"time"
 
@@ -222,7 +223,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
-	if !isRetryableStatusCode(resp.StatusCode) {
+	if !e.isRetryableStatusCode(resp.StatusCode) {
 		return consumererror.NewPermanent(formattedErr)
 	}
 
@@ -253,7 +254,13 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 
 // Determine if the status code is retryable according to the specification.
 // For more, see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
-func isRetryableStatusCode(code int) bool {
+func (e *baseExporter) isRetryableStatusCode(code int) bool {
+	// First, check if this status code is explicitly configured as non-retryable
+	if slices.Contains(e.config.RetryConfig.NonRetryableStatus, code) {
+		return false
+	}
+
+	// Then check the default retryable status codes per OTLP spec
 	switch code {
 	case http.StatusTooManyRequests:
 		return true
