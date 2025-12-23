@@ -27,6 +27,7 @@ import (
 	internalTelemetry "go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/service/internal/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -36,6 +37,21 @@ const (
 	testAttribute = "test-attribute"
 	testValue     = "test-value"
 )
+
+func legacyResourceFromMap(values map[string]*string) resource.Config {
+	if len(values) == 0 {
+		return resource.Config{}
+	}
+	converted := make(map[string]any, len(values))
+	for key, val := range values {
+		if val == nil {
+			converted[key] = nil
+			continue
+		}
+		converted[key] = *val
+	}
+	return resource.Config{DeprecatedAttributes: converted}
+}
 
 func TestCreateLogger(t *testing.T) {
 	tests := []struct {
@@ -267,7 +283,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 					Level:    zapcore.InfoLevel,
 					Encoding: "json",
 				},
-				Resource: tt.resourceConfig,
+				Resource: legacyResourceFromMap(tt.resourceConfig),
 			}
 			if tt.setConfig != nil {
 				tt.setConfig(cfg)
@@ -415,10 +431,12 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 			// OutputPaths is empty, so logs are only
 			// written to the OTLP processor
 		},
-		Resource: map[string]*string{
-			"service.name":    ptr(service),
-			"service.version": ptr(version),
-			testAttribute:     ptr(testValue),
+		Resource: resource.Config{
+			Attributes: []resource.Attribute{
+				{Name: "service.name", Value: service},
+				{Name: "service.version", Value: version},
+				{Name: testAttribute, Value: testValue},
+			},
 		},
 	}
 
@@ -463,10 +481,12 @@ func TestLogAttributeInjection(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	cfg := &Config{
-		Resource: map[string]*string{
-			"service.instance.id": nil,
-			"service.name":        nil,
-			"service.version":     nil,
+		Resource: resource.Config{
+			Attributes: []resource.Attribute{
+				{Name: "service.instance.id", Value: nil},
+				{Name: "service.name", Value: nil},
+				{Name: "service.version", Value: nil},
+			},
 		},
 		Logs: LogsConfig{
 			Encoding: "json",
