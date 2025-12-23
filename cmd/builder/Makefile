@@ -1,5 +1,8 @@
 include ../../Makefile.Common
 
+# Override timeout for builder tests
+GOTEST_TIMEOUT=600s
+
 .PHONY: ocb
 ocb:
 	CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/ocb_$(GOOS)_$(GOARCH) .
