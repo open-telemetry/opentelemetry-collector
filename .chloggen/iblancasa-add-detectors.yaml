@@ -1,0 +1,47 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: all
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add support for resource detectors in service telemetry configuration
+
+# One or more tracking issues or pull requests related to the change
+issues: [14311, 10909]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Service telemetry now supports automatic resource attribute detection using OpenTelemetry SDK detectors.
+  Configure detectors under `service.telemetry.detectors` to auto-detect environment variables, host information, and cloud metadata.
+  This aligns the Collector configuration surface with the declarative schema maintained in https://github.com/open-telemetry/opentelemetry-configuration (resource.yaml), while keeping extra SDK detectors available.
+  To use `OTEL_RESOURCE_ATTRIBUTES` and `OTEL_SERVICE_NAME` environment variables, enable the `env` detector.
+  Supported detectors: env, host, aws (ec2/ecs/eks/lambda), gcp, azure.
+  Example configuration (now aligned with the declarative schema):
+
+    service:
+      telemetry:
+        resource:
+          attributes:
+            - name: service.name
+              value: otelcol
+          attributes_list: deployment.environment=prod
+          detection/development:
+            detectors:
+              - env: {}
+              - host: {}
+              - aws/ec2: {}
+            attributes:
+              excluded:
+                - "cloud.account.id"
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []
