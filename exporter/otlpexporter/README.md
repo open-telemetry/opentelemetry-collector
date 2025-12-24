@@ -20,6 +20,8 @@ Export data via gRPC using [OTLP](
 https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md)
 format. By default, this exporter requires TLS and offers queued retry capabilities.
 
+This exporter can be configured using either `otlp` or `otlp_grpc` as the exporter type. Both are equivalent and refer to the same OTLP gRPC exporter. The `otlp_grpc` alias makes the protocol explicit and helps distinguish it from the `otlphttp` exporter.
+
 ## Getting Started
 
 The following settings are required:
@@ -43,6 +45,11 @@ exporters:
       cert_file: file.cert
       key_file: file.key
   otlp/2:
+    endpoint: otelcol2:4317
+    tls:
+      insecure: true
+  # Alternative: using the otlp_grpc alias
+  otlp_grpc:
     endpoint: otelcol2:4317
     tls:
       insecure: true
