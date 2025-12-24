@@ -500,3 +500,121 @@ func getWorkspaceDir() string {
 	_, thisFile, _, _ := runtime.Caller(0)
 	return filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
 }
+
+func TestGenerateSchemas(t *testing.T) {
+	tests := []struct {
+		name       string
+		cfgBuilder func(t *testing.T) *Config
+		wantErr    bool
+	}{
+		{
+			name: "handles empty components",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Exporters = []Module{}
+				cfg.Receivers = []Module{}
+				cfg.Processors = []Module{}
+				cfg.Extensions = []Module{}
+				cfg.Connectors = []Module{}
+				return cfg
+			},
+			wantErr: false,
+		},
+		{
+			name: "logs warning for invalid extension",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Extensions = []Module{{Name: "invalid", Import: "nonexistent/ext"}}
+				cfg.Receivers = []Module{}
+				cfg.Processors = []Module{}
+				cfg.Exporters = []Module{}
+				cfg.Connectors = []Module{}
+				return cfg
+			},
+			wantErr: false,
+		},
+		{
+			name: "logs warning for invalid receiver",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Extensions = []Module{}
+				cfg.Receivers = []Module{{Name: "invalid", Import: "nonexistent/recv"}}
+				cfg.Processors = []Module{}
+				cfg.Exporters = []Module{}
+				cfg.Connectors = []Module{}
+				return cfg
+			},
+			wantErr: false,
+		},
+		{
+			name: "logs warning for invalid processor",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Extensions = []Module{}
+				cfg.Receivers = []Module{}
+				cfg.Processors = []Module{{Name: "invalid", Import: "nonexistent/proc"}}
+				cfg.Exporters = []Module{}
+				cfg.Connectors = []Module{}
+				return cfg
+			},
+			wantErr: false,
+		},
+		{
+			name: "logs warning for invalid exporter",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Extensions = []Module{}
+				cfg.Receivers = []Module{}
+				cfg.Processors = []Module{}
+				cfg.Exporters = []Module{{Name: "invalid", Import: "nonexistent/exp"}}
+				cfg.Connectors = []Module{}
+				return cfg
+			},
+			wantErr: false,
+		},
+		{
+			name: "logs warning for invalid connector",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.GenerateSchema = true
+				cfg.Extensions = []Module{}
+				cfg.Receivers = []Module{}
+				cfg.Processors = []Module{}
+				cfg.Exporters = []Module{}
+				cfg.Connectors = []Module{{Name: "invalid", Import: "nonexistent/conn"}}
+				return cfg
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.cfgBuilder(t)
+
+			err := GenerateSchemas(cfg)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Verify schemas directory was created
+			schemaDir := filepath.Join(cfg.Distribution.OutputPath, "schemas")
+			_, err = os.Stat(schemaDir)
+			require.NoError(t, err, "schemas directory should exist")
+		})
+	}
+}
