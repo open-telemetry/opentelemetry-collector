@@ -51,6 +51,7 @@ type Status struct {
 	Deprecation          DeprecationMap `mapstructure:"deprecation"`
 	CodeCovComponentID   string         `mapstructure:"codecov_component_id"`
 	DisableCodeCov       bool           `mapstructure:"disable_codecov_badge"`
+	CoverageMinimum      int            `mapstructure:"coverage_minimum"`
 }
 
 type DeprecationMap map[string]DeprecationInfo
@@ -134,6 +135,9 @@ func (s *Status) Validate() error {
 	if err := s.Deprecation.Validate(s.Stability); err != nil {
 		errs = errors.Join(errs, err)
 	}
+	if err := s.validateCoverageMinimum(); err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return errs
 }
 
@@ -143,6 +147,13 @@ func (s *Status) validateClass() error {
 	}
 	if !slices.Contains(validClasses, s.Class) {
 		return fmt.Errorf("invalid class: %v", s.Class)
+	}
+	return nil
+}
+
+func (s *Status) validateCoverageMinimum() error {
+	if s.CoverageMinimum < 0 || s.CoverageMinimum > 100 {
+		return fmt.Errorf("coverage_minimum must be between 0 and 100, got: %d", s.CoverageMinimum)
 	}
 	return nil
 }
