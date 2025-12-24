@@ -12,7 +12,7 @@ import (
 
 func ExampleServerConfig() {
 	settings := NewDefaultServerConfig()
-	settings.Endpoint = "localhost:443"
+	settings.NetAddr.Endpoint = "localhost:443"
 
 	// Typically obtained as an argument of Component.Start()
 	host := componenttest.NewNopHost()

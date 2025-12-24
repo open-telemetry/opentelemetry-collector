@@ -241,3 +241,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
