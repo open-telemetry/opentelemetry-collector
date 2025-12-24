@@ -76,6 +76,22 @@ type metricInfo struct {
 	Name string
 }
 
+type MetricAttributeOption interface {
+	apply(pmetric.NumberDataPoint)
+}
+
+type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+
+func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
+	maof(dp)
+}
+
+func WithEnumAttrMetricAttribute(enumAttrAttributeValue AttributeEnumAttr) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue.String())
+	})
+}
+
 type metricDefaultMetric struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -93,7 +109,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -103,9 +119,11 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
-	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	for _, op := range options {
+		op.apply(dp)
+	}
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -201,7 +219,7 @@ func (m *metricMetricInputType) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -211,9 +229,11 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
-	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	for _, op := range options {
+		op.apply(dp)
+	}
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -570,8 +590,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
+	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
@@ -580,12 +600,12 @@ func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Tim
 }
 
 // RecordMetricInputTypeDataPoint adds a data point to metric.input_type metric.
-func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) error {
+func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MetricInputType, value was %s: %w", inputVal, err)
 	}
-	mb.metricMetricInputType.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+	mb.metricMetricInputType.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 	return nil
 }
 
