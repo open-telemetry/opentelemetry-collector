@@ -1,0 +1,5 @@
+change_logs:
+  - change_type: bug_fix
+    component: opentelemetry-collector
+    note: "Fix panic in process metrics on unsupported OSes (e.g. AIX)"
+    issues: [14307]
