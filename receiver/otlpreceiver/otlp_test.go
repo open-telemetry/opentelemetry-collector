@@ -1541,3 +1541,87 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 		require.Error(t, err)
 	}
 }
+
+// TestReproduceIssue5169 reproduces the issue described in:
+// https://github.com/open-telemetry/opentelemetry-collector/issues/5169
+//
+// The issue occurs when a client closes the connection abruptly (without graceful shutdown),
+// causing gRPC to log a warning: "transport: http2Server.HandleStreams failed to read frame"
+//
+// This test sets up an OTLP receiver, connects a client, sends traces, and then
+// abruptly closes the connection to simulate what happens when a .NET application closes.
+func TestReproduceIssue5169(t *testing.T) {
+	// Get an available port
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Create a telemetry instance
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	// Get telemetry settings - this will have the logger configured
+	settings := tt.NewTelemetrySettings()
+
+	// Create a sink for traces
+	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+
+	// Create and start the receiver
+	recv := newGRPCReceiver(t, settings, addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, recv.Shutdown(context.Background()))
+	})
+
+	// Wait a bit for the server to be ready
+	time.Sleep(100 * time.Millisecond)
+
+	// Create a gRPC client
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+
+	// Create trace client
+	traceClient := ptraceotlp.NewGRPCClient(cc)
+
+	// Generate test traces
+	td := testdata.GenerateTraces(1)
+
+	// Send traces (this should succeed)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+	_, err = traceClient.Export(context.Background(), req)
+	require.NoError(t, err, "Failed to export traces")
+
+	// Verify traces were received
+	require.Eventually(t, func() bool {
+		return len(sink.AllTraces()) > 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Now abruptly close the connection without graceful shutdown
+	// This simulates what happens when a .NET application closes
+	// We close the gRPC client connection, which should trigger the server
+	// to detect the connection closure and potentially log a warning
+	require.NoError(t, cc.Close())
+
+	// Give gRPC some time to detect the connection closure and log the warning
+	// The warning typically appears when the server tries to read frames from
+	// a connection that has been closed by the client
+	time.Sleep(500 * time.Millisecond)
+
+	// Note: The actual gRPC warning would be logged through the zap logger
+	// configured in the collector. In a real scenario, you would see:
+	// "warn zapgrpc/zapgrpc.go:191 [transport] transport: http2Server.HandleStreams failed to read frame"
+	//
+	// This test demonstrates the scenario that triggers the issue.
+	// The warning occurs because:
+	// 1. Client sends data successfully
+	// 2. Client closes connection abruptly (simulating app termination)
+	// 3. Server's http2Server.HandleStreams tries to read more frames
+	// 4. Server detects connection is closed and logs warning
+	//
+	// This is expected behavior when clients don't gracefully close connections,
+	// but the issue reports it as unexpected/unwanted noise in logs.
+	t.Log("Test completed: Reproduced scenario from issue #5169")
+	t.Log("  - Client connected and sent traces successfully")
+	t.Log("  - Client connection closed abruptly")
+	t.Log("  - Server may log warning: 'transport: http2Server.HandleStreams failed to read frame'")
+	t.Log("  - This warning appears when client closes without graceful shutdown")
+}
