@@ -94,3 +94,38 @@ func (c *mockComponent) Info(args ...any) {
 func (c *mockComponent) Warning(args ...any) {
 	c.logger.Warning(args...)
 }
+
+// TestFilterHandleStreamsWarning verifies that benign "HandleStreams failed to read frame"
+// warnings are filtered out (issue #5169).
+func TestFilterHandleStreamsWarning(t *testing.T) {
+	warnLogged := false
+	hook := zap.Hooks(func(entry zapcore.Entry) error {
+		if entry.Level == zapcore.WarnLevel {
+			warnLogged = true
+		}
+		return nil
+	})
+
+	cfg := zap.Config{
+		Level:    zap.NewAtomicLevelAt(zapcore.WarnLevel),
+		Encoding: "console",
+	}
+	logger, err := cfg.Build(hook)
+	require.NoError(t, err)
+
+	// Create GRPCLogger with filter
+	glogger := SetLogger(logger)
+	assert.NotNil(t, glogger)
+
+	// Test that the filtered message is NOT logged
+	component := &mockComponent{logger: grpclog.Component("transport")}
+	component.Warning("transport: http2Server.HandleStreams failed to read frame: read tcp [::1]:4317->[::1]:64933: connection reset")
+	assert.False(t, warnLogged, "HandleStreams warning should be filtered")
+
+	// Reset flag
+	warnLogged = false
+
+	// Test that other warnings ARE logged
+	component.Warning("some other warning message")
+	assert.True(t, warnLogged, "Other warnings should not be filtered")
+}

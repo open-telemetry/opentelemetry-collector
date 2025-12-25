@@ -4,11 +4,32 @@
 package grpclog // import "go.opentelemetry.io/collector/otelcol/internal/grpclog"
 
 import (
+	"strings"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zapgrpc"
 	"google.golang.org/grpc/grpclog"
 )
+
+// filterCore wraps a zapcore.Core to filter out benign gRPC transport errors.
+type filterCore struct {
+	zapcore.Core
+}
+
+// Check filters log entries before they are written.
+func (c *filterCore) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	// Filter out benign transport errors during client disconnection (issue #5169)
+	if strings.Contains(entry.Message, "HandleStreams failed to read frame") {
+		return nil
+	}
+	return c.Core.Check(entry, ce)
+}
+
+// With returns a new filterCore with the additional fields.
+func (c *filterCore) With(fields []zapcore.Field) zapcore.Core {
+	return &filterCore{Core: c.Core.With(fields)}
+}
 
 // SetLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
 // exact configuration. The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to
@@ -27,7 +48,7 @@ func SetLogger(baseLogger *zap.Logger) *zapgrpc.Logger {
 		if err != nil {
 			c = core
 		}
-		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
+		return &filterCore{Core: c.With([]zapcore.Field{zap.Bool("grpc_log", true)})}
 	}), zap.AddCallerSkip(5)))
 
 	grpclog.SetLoggerV2(logger)
