@@ -120,6 +120,7 @@ func TestMetricsBuilder(t *testing.T) {
 				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 				allMetricsCount++
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+				{{- if eq $metric.Data.Type "Histogram" -}}, 1.0, []uint64{1, 0, 0, 0, 0}{{ end }}
 				{{- range $metric.Attributes -}}
 				{{- if not (attributeInfo .).IsConditional -}}
 					, {{- template "getAttributeValue" . -}}
@@ -188,11 +189,18 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					{{- if eq $metric.Data.Type "Histogram" }}
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.Equal(t, 1.0, dp.Sum())
+					assert.Equal(t, []float64{ {{ range $metric.Data.Boundaries }}{{ . }}, {{ end }} }, dp.ExplicitBounds().AsRaw())
+					assert.Equal(t, []uint64{1, 0, 0, 0, 0}, dp.BucketCounts().AsRaw())
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
 					{{- else }}
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+					{{- end }}
 					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}

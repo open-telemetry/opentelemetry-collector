@@ -34,6 +34,7 @@ type MetricsConfig struct {
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
 	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
 	SystemCPUTime            MetricConfig `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization     MetricConfig `mapstructure:"system.cpu.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -54,6 +55,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemCPUTime: MetricConfig{
+			Enabled: true,
+		},
+		SystemCPUUtilization: MetricConfig{
 			Enabled: true,
 		},
 	}

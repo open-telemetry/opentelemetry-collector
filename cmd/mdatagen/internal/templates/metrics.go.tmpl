@@ -118,7 +118,9 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- end }}
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
+{{- if eq $metric.Data.Type "Histogram" -}}, sum {{ $metric.Data.MetricValueType.BasicType }}, bucketCounts []uint64{{- end -}}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
 		return
@@ -126,7 +128,14 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	{{- if eq $metric.Data.Type "Histogram" }}
+	dp.SetCount(uint64(val))
+	dp.SetSum(sum)
+	dp.BucketCounts().FromRaw(bucketCounts)
+	dp.ExplicitBounds().FromRaw([]float64{ {{ range $metric.Data.Boundaries }}{{ . }}, {{ end }} })
+	{{- else }}
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+	{{- end }}
 	{{- range $metric.Attributes }}
     {{- if not (attributeInfo .).IsConditional -}}
 	{{- template "putAttribute" . -}}
@@ -376,6 +385,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
+	{{- if eq $metric.Data.Type "Histogram" -}}, sum {{ $metric.Data.MetricValueType.BasicType }}, bucketCounts []uint64{{- end -}}
 	{{- range $metric.Attributes -}}
 	{{- if not (attributeInfo .).IsConditional -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
@@ -397,6 +407,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	}
 	{{- end }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
+	    {{- if eq $metric.Data.Type "Histogram" -}}, sum, bucketCounts{{- end -}}
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}

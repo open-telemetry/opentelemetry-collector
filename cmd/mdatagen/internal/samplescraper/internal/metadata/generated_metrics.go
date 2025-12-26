@@ -7,13 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // AttributeEnumAttr specifies the value enum_attr attribute.
@@ -65,6 +64,9 @@ var MetricsInfo = metricsInfo{
 	SystemCPUTime: metricInfo{
 		Name: "system.cpu.time",
 	},
+	SystemCPUUtilization: metricInfo{
+		Name: "system.cpu.utilization",
+	},
 }
 
 type metricsInfo struct {
@@ -74,6 +76,7 @@ type metricsInfo struct {
 	OptionalMetric           metricInfo
 	OptionalMetricEmptyUnit  metricInfo
 	SystemCPUTime            metricInfo
+	SystemCPUUtilization     metricInfo
 }
 
 type metricInfo struct {
@@ -97,6 +100,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !m.config.Enabled {
 		return
@@ -153,6 +157,7 @@ func (m *metricDefaultMetricToBeRemoved) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
@@ -205,6 +210,7 @@ func (m *metricMetricInputType) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !m.config.Enabled {
 		return
@@ -260,6 +266,7 @@ func (m *metricOptionalMetric) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
 	if !m.config.Enabled {
 		return
@@ -313,6 +320,7 @@ func (m *metricOptionalMetricEmptyUnit) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	if !m.config.Enabled {
 		return
@@ -366,6 +374,7 @@ func (m *metricSystemCPUTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
+// recordDataPoint helper function for mdatagen
 func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
@@ -401,6 +410,60 @@ func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 	return m
 }
 
+type metricSystemCPUUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.utilization metric with initial data.
+func (m *metricSystemCPUUtilization) init() {
+	m.data.SetName("system.cpu.utilization")
+	m.data.SetDescription("Gauge double metric enabled by default.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyHistogram()
+	m.data.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
+}
+
+// recordDataPoint helper function for mdatagen
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sum float64, bucketCounts []uint64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Histogram().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetCount(uint64(val))
+	dp.SetSum(sum)
+	dp.BucketCounts().FromRaw(bucketCounts)
+	dp.ExplicitBounds().FromRaw([]float64{0, 0.25, 0.5, 0.75, 1})
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUUtilization) updateCapacity() {
+	if m.data.Histogram().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Histogram().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Histogram().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
+	m := metricSystemCPUUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -417,6 +480,7 @@ type MetricsBuilder struct {
 	metricOptionalMetric           metricOptionalMetric
 	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
 	metricSystemCPUTime            metricSystemCPUTime
+	metricSystemCPUUtilization     metricSystemCPUUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -469,6 +533,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
 		metricSystemCPUTime:            newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
+		metricSystemCPUUtilization:     newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -596,6 +661,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOptionalMetric.emit(ils.Metrics())
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
+	mb.metricSystemCPUUtilization.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -660,6 +726,11 @@ func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Time
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
 func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, sum float64, bucketCounts []uint64) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, sum, bucketCounts)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

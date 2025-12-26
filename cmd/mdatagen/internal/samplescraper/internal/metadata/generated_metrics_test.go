@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testDataSet int
@@ -118,6 +117,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, 1.0, []uint64{1, 0, 0, 0, 0})
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -275,6 +278,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.cpu.utilization":
+					assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
+					validatedMetrics["system.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeHistogram, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Histogram().DataPoints().Len())
+					assert.Equal(t, "Gauge double metric enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, pmetric.AggregationTemporalityUnspecified, ms.At(i).Histogram().AggregationTemporality())
+					dp := ms.At(i).Histogram().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.Equal(t, 1.0, dp.Sum())
+					assert.Equal(t, []float64{0, 0.25, 0.5, 0.75, 1}, dp.ExplicitBounds().AsRaw())
+					assert.Equal(t, []uint64{1, 0, 0, 0, 0}, dp.BucketCounts().AsRaw())
 				}
 			}
 		})
