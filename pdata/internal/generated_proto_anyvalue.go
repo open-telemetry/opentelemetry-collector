@@ -237,6 +237,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		}
 		ov.StringValue = t.StringValue
 		dest.Value = ov
+
 	case *AnyValue_BoolValue:
 		var ov *AnyValue_BoolValue
 		if !UseProtoPooling.IsEnabled() {
@@ -246,6 +247,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		}
 		ov.BoolValue = t.BoolValue
 		dest.Value = ov
+
 	case *AnyValue_IntValue:
 		var ov *AnyValue_IntValue
 		if !UseProtoPooling.IsEnabled() {
@@ -255,6 +257,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		}
 		ov.IntValue = t.IntValue
 		dest.Value = ov
+
 	case *AnyValue_DoubleValue:
 		var ov *AnyValue_DoubleValue
 		if !UseProtoPooling.IsEnabled() {
@@ -264,6 +267,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		}
 		ov.DoubleValue = t.DoubleValue
 		dest.Value = ov
+
 	case *AnyValue_ArrayValue:
 		var ov *AnyValue_ArrayValue
 		if !UseProtoPooling.IsEnabled() {
@@ -295,6 +299,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		}
 		ov.BytesValue = t.BytesValue
 		dest.Value = ov
+
 	default:
 		dest.Value = nil
 	}

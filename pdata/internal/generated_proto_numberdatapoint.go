@@ -134,9 +134,7 @@ func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
 	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
-
 	dest.TimeUnixNano = src.TimeUnixNano
-
 	switch t := src.Value.(type) {
 	case *NumberDataPoint_AsDouble:
 		var ov *NumberDataPoint_AsDouble
@@ -147,6 +145,7 @@ func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
 		}
 		ov.AsDouble = t.AsDouble
 		dest.Value = ov
+
 	case *NumberDataPoint_AsInt:
 		var ov *NumberDataPoint_AsInt
 		if !UseProtoPooling.IsEnabled() {
@@ -156,6 +155,7 @@ func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
 		}
 		ov.AsInt = t.AsInt
 		dest.Value = ov
+
 	default:
 		dest.Value = nil
 	}
@@ -325,10 +325,10 @@ func (orig *NumberDataPoint) SizeProto() int {
 		l = orig.Attributes[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		n += 9
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		n += 9
 	}
 	switch orig := orig.Value.(type) {
@@ -344,7 +344,7 @@ func (orig *NumberDataPoint) SizeProto() int {
 		l = orig.Exemplars[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		n += 1 + proto.Sov(uint64(orig.Flags))
 	}
 	return n
@@ -361,13 +361,13 @@ func (orig *NumberDataPoint) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x3a
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		pos -= 8
 		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.StartTimeUnixNano))
 		pos--
 		buf[pos] = 0x11
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		pos -= 8
 		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
 		pos--
@@ -394,7 +394,7 @@ func (orig *NumberDataPoint) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x2a
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.Flags))
 		pos--
 		buf[pos] = 0x40
@@ -518,7 +518,6 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-
 			orig.Flags = uint32(num)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)

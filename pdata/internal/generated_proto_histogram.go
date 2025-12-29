@@ -174,7 +174,7 @@ func (orig *Histogram) SizeProto() int {
 		l = orig.DataPoints[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.AggregationTemporality != 0 {
+	if orig.AggregationTemporality != AggregationTemporality(0) {
 		n += 1 + proto.Sov(uint64(orig.AggregationTemporality))
 	}
 	return n
@@ -191,7 +191,7 @@ func (orig *Histogram) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0xa
 	}
-	if orig.AggregationTemporality != 0 {
+	if orig.AggregationTemporality != AggregationTemporality(0) {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
 		pos--
 		buf[pos] = 0x10
@@ -239,7 +239,6 @@ func (orig *Histogram) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-
 			orig.AggregationTemporality = AggregationTemporality(num)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)

@@ -184,6 +184,7 @@ func (orig *ScopeSpans) SizeProto() int {
 		l = orig.Spans[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.SchemaUrl)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l

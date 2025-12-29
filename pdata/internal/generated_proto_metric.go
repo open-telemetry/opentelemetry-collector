@@ -188,11 +188,8 @@ func CopyMetric(dest, src *Metric) *Metric {
 		dest = NewMetric()
 	}
 	dest.Name = src.Name
-
 	dest.Description = src.Description
-
 	dest.Unit = src.Unit
-
 	switch t := src.Data.(type) {
 	case *Metric_Gauge:
 		var ov *Metric_Gauge
@@ -456,14 +453,17 @@ func (orig *Metric) SizeProto() int {
 	var n int
 	var l int
 	_ = l
+
 	l = len(orig.Name)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.Description)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.Unit)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
