@@ -50,10 +50,6 @@ gomoddownload:
 gotest:
 	@$(MAKE) for-all-target TARGET="test"
 
-.PHONY: gotest-fips140-only
-gotest-fips140-only:
-	@$(MAKE) for-all-target TARGET="test-fips140-only"
-
 .PHONY: gobenchmark
 gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
