@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 func TestNewNopFactory(t *testing.T) {
@@ -37,4 +38,9 @@ func TestNewNopFactory(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
+
+	profiles, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(receivertest.NopType), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profiles.Shutdown(context.Background()))
 }
