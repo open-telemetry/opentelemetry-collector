@@ -101,6 +101,7 @@ func TestTPM_loadCertificate_error(t *testing.T) {
 }
 
 func TestTPM_tpmCertificate_errors(t *testing.T) {
+	testutil.SkipIfFIPSOnly(t, "use of CFB is not allowed in FIPS 140-only mode")
 	tpm, err := simulator.OpenSimulator()
 	require.NoError(t, err)
 	defer tpm.Close()
