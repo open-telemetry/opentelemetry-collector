@@ -47,7 +47,6 @@ func DeleteSpanContext(orig *SpanContext, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteTraceID(&orig.TraceID, false)
 	DeleteSpanID(&orig.SpanID, false)
 

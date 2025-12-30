@@ -15,9 +15,9 @@ const sizeProtoI8 = `{{ if .repeated -}}
 		l *= 8
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if ne .oneOfGroup "" -}}
+{{- else if ne .oneOfGroup "" }}
 		n+= {{ add .protoTagSize 8 }}
-{{- else -}}
+{{- else }}
 	{{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
 	{{- else -}}
@@ -33,9 +33,9 @@ const sizeProtoI4 = `{{ if .repeated -}}
 		l *= 4
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if ne .oneOfGroup "" -}}
+{{- else if ne .oneOfGroup "" }}
 		n+= {{ add .protoTagSize 4 }}
-{{- else -}}
+{{- else }}
 	{{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
 	{{- else -}}
@@ -50,7 +50,7 @@ const sizeProtoBool = `{{ if .repeated -}}
 	if l > 0 {
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if ne .oneOfGroup "" -}}
+{{- else if ne .oneOfGroup "" }}
 		n+= {{ add .protoTagSize 1 }}
 {{- else -}}
 	{{- if not .nullable -}}
@@ -62,7 +62,7 @@ const sizeProtoBool = `{{ if .repeated -}}
 	}
 {{- end }}`
 
-const sizeProtoVarint = `{{ if .repeated -}}
+const sizeProtoVarint = `{{ if .repeated }}
 	if len(orig.{{ .fieldName }}) > 0 {
 		l = 0
 		for _, e := range orig.{{ .fieldName }} {
@@ -70,9 +70,9 @@ const sizeProtoVarint = `{{ if .repeated -}}
 		}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if ne .oneOfGroup "" -}}
+{{- else if ne .oneOfGroup "" }}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
-{{- else -}}
+{{- else }}
 	{{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
 	{{- else -}}

@@ -45,7 +45,6 @@ func DeleteLogsRequest(orig *LogsRequest, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteRequestContext(orig.RequestContext, true)
 	DeleteLogsData(&orig.LogsData, false)
 

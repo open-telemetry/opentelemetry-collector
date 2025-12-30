@@ -45,7 +45,6 @@ func DeleteTracesRequest(orig *TracesRequest, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteRequestContext(orig.RequestContext, true)
 	DeleteTracesData(&orig.TracesData, false)
 

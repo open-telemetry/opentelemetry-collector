@@ -55,12 +55,13 @@ func DeleteProfile(orig *Profile, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteValueType(&orig.SampleType, false)
 	for i := range orig.Samples {
 		DeleteSample(orig.Samples[i], true)
 	}
+
 	DeleteValueType(&orig.PeriodType, false)
+
 	DeleteProfileID(&orig.ProfileId, false)
 
 	orig.Reset()
@@ -291,6 +292,7 @@ func (orig *Profile) SizeProto() int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		l = 0
 		for _, e := range orig.AttributeIndices {

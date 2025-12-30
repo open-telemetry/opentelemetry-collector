@@ -60,21 +60,24 @@ func DeleteSpan(orig *Span, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
+
 	DeleteSpanID(&orig.ParentSpanId, false)
+
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	for i := range orig.Events {
 		DeleteSpanEvent(orig.Events[i], true)
 	}
+
 	for i := range orig.Links {
 		DeleteSpanLink(orig.Links[i], true)
 	}
-	DeleteStatus(&orig.Status, false)
 
+	DeleteStatus(&orig.Status, false)
 	orig.Reset()
 	if nullable {
 		protoPoolSpan.Put(orig)

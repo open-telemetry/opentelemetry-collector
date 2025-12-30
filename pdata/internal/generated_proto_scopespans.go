@@ -45,7 +45,6 @@ func DeleteScopeSpans(orig *ScopeSpans, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Spans {
 		DeleteSpan(orig.Spans[i], true)

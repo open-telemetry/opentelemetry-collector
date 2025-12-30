@@ -45,7 +45,6 @@ func DeleteExponentialHistogram(orig *ExponentialHistogram, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.DataPoints {
 		DeleteExponentialHistogramDataPoint(orig.DataPoints[i], true)
 	}

@@ -62,12 +62,13 @@ func DeleteExponentialHistogramDataPoint(orig *ExponentialHistogramDataPoint, nu
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	DeleteExponentialHistogramDataPointBuckets(&orig.Positive, false)
 	DeleteExponentialHistogramDataPointBuckets(&orig.Negative, false)
+
 	for i := range orig.Exemplars {
 		DeleteExemplar(&orig.Exemplars[i], false)
 	}

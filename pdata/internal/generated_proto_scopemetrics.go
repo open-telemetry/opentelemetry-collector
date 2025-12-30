@@ -45,7 +45,6 @@ func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Metrics {
 		DeleteMetric(orig.Metrics[i], true)
