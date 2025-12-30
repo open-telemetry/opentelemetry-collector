@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -256,7 +256,7 @@ func assertMetrics(t *testing.T, rm metricdata.ResourceMetrics) {
 }
 
 func TestServiceTelemetryDefaultViews(t *testing.T) {
-	var views []otelconf.View
+	var views []config.View
 	set := newNopSettings()
 	set.TelemetryFactory = telemetry.NewFactory(
 		func() component.Config { return nil },
@@ -277,6 +277,145 @@ func TestServiceTelemetryDefaultViews(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	}()
 	require.NotEmpty(t, views)
+}
+
+func TestConfigureViews(t *testing.T) {
+	viewCache.Range(func(key, _ any) bool {
+		viewCache.Delete(key)
+		return true
+	})
+
+	tests := []struct {
+		name           string
+		level          configtelemetry.Level
+		registerConfig func()
+		wantViewCount  int
+		validateView   func(*testing.T, []config.View)
+	}{
+		{
+			name:  "LevelDetailed drops no metrics",
+			level: configtelemetry.LevelDetailed,
+			registerConfig: func() {
+				component.RegisterMetricLevelConfigs(
+					component.MetricLevelConfig{
+						MeterName: "test/meter",
+						Level:     component.MetricLevel(configtelemetry.LevelNormal),
+					},
+				)
+			},
+			wantViewCount: 0,
+		},
+		{
+			name:  "LevelNormal drops Detailed metrics",
+			level: configtelemetry.LevelNormal,
+			registerConfig: func() {
+				component.RegisterMetricLevelConfigs(
+					component.MetricLevelConfig{
+						MeterName: "test/detailed",
+						Level:     component.MetricLevel(configtelemetry.LevelDetailed),
+					},
+					component.MetricLevelConfig{
+						MeterName: "test/normal",
+						Level:     component.MetricLevel(configtelemetry.LevelNormal),
+					},
+				)
+			},
+			wantViewCount: 1,
+			validateView: func(t *testing.T, views []config.View) {
+				require.Len(t, views, 1)
+				assert.NotNil(t, views[0].Selector)
+				assert.Equal(t, "test/detailed", *views[0].Selector.MeterName)
+			},
+		},
+		{
+			name:  "LevelBasic drops Normal and Detailed metrics",
+			level: configtelemetry.LevelBasic,
+			registerConfig: func() {
+				component.RegisterMetricLevelConfigs(
+					component.MetricLevelConfig{
+						MeterName: "test/detailed",
+						Level:     component.MetricLevel(configtelemetry.LevelDetailed),
+					},
+					component.MetricLevelConfig{
+						MeterName: "test/normal",
+						Level:     component.MetricLevel(configtelemetry.LevelNormal),
+					},
+					component.MetricLevelConfig{
+						MeterName: "test/basic",
+						Level:     component.MetricLevel(configtelemetry.LevelBasic),
+					},
+				)
+			},
+			wantViewCount: 2,
+		},
+		{
+			name:  "instrument-specific config",
+			level: configtelemetry.LevelNormal,
+			registerConfig: func() {
+				component.RegisterMetricLevelConfigs(
+					component.MetricLevelConfig{
+						MeterName:      "test/meter",
+						InstrumentName: "specific_instrument",
+						Level:          component.MetricLevel(configtelemetry.LevelDetailed),
+					},
+				)
+			},
+			wantViewCount: 1,
+			validateView: func(t *testing.T, views []config.View) {
+				require.Len(t, views, 1)
+				assert.NotNil(t, views[0].Selector.InstrumentName)
+				assert.Equal(t, "specific_instrument", *views[0].Selector.InstrumentName)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			component.ResetMetricLevelRegistryForTesting()
+			viewCache.Range(func(key, _ any) bool {
+				viewCache.Delete(key)
+				return true
+			})
+
+			tt.registerConfig()
+			views := configureViews(tt.level)
+
+			if tt.wantViewCount >= 0 {
+				assert.GreaterOrEqual(t, len(views), tt.wantViewCount)
+			}
+			if tt.validateView != nil {
+				tt.validateView(t, views)
+			}
+
+			views2 := configureViews(tt.level)
+			assert.Equal(t, views, views2)
+		})
+	}
+}
+
+func TestConfigureViewsCaching(t *testing.T) {
+	viewCache.Range(func(key, _ any) bool {
+		viewCache.Delete(key)
+		return true
+	})
+	component.ResetMetricLevelRegistryForTesting()
+
+	component.RegisterMetricLevelConfigs(
+		component.MetricLevelConfig{
+			MeterName: "test/cache",
+			Level:     component.MetricLevel(configtelemetry.LevelDetailed),
+		},
+	)
+
+	level := configtelemetry.LevelNormal
+	views1 := configureViews(level)
+	views2 := configureViews(level)
+
+	assert.Equal(t, views1, views2)
+
+	cached, ok := viewCache.Load(level)
+	require.True(t, ok)
+	assert.Equal(t, views1, cached.([]config.View))
 }
 
 // TestServiceTelemetryZPages verifies that the zpages extension works correctly with servce telemetry.

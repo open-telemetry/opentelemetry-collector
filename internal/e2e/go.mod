@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.48.0
 	go.opentelemetry.io/collector/config/configoptional v1.48.0
 	go.opentelemetry.io/collector/config/configretry v1.48.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.142.0
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0
 	go.opentelemetry.io/collector/config/configtls v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.48.0

@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
 	go.opentelemetry.io/collector/config/configoptional v1.48.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.142.0
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/consumer v1.48.0
 	go.opentelemetry.io/collector/exporter v1.48.0

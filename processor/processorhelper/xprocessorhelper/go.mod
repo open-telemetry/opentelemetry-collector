@@ -29,6 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.142.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.48.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.142.0 // indirect
@@ -73,5 +74,7 @@ replace go.opentelemetry.io/collector/processor/processorhelper => ../
 replace go.opentelemetry.io/collector/processor/xprocessor => ../../xprocessor
 
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil

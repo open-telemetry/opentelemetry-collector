@@ -33,6 +33,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/client v1.48.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.48.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
@@ -75,6 +76,8 @@ replace go.opentelemetry.io/collector/receiver => ../receiver
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 
