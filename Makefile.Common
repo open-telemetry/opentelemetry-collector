@@ -25,7 +25,9 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 .PHONY: test
 test:
-	$(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
+    # GODEBUG=fips140=only is used to surface any FIPS-140-3 non-compliant cryptographic
+    # calls into the Go standard library. See: https://go.dev/doc/security/fips140#fips-140-3-mode
+	GODEBUG=fips140=only $(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
 test-with-cover:
