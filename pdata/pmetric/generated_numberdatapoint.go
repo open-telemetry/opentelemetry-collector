@@ -76,7 +76,7 @@ func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
 }
 
 // ValueType returns the type of the value for this NumberDataPoint.
-// Calling this function on zero-initialized NumberDataPoint will cause a panic.
+// Calling this function on zero-initialized NumberDataPoint is invalid and will cause a panic.
 func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	switch ms.orig.Value.(type) {
 	case *internal.NumberDataPoint_AsDouble:

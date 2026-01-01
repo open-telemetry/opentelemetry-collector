@@ -148,7 +148,7 @@ func (v Value) getState() *internal.State {
 }
 
 // FromRaw sets the value from the given raw value.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) FromRaw(iv any) error {
 	switch tv := iv.(type) {
 	case nil:
@@ -194,7 +194,7 @@ func (v Value) FromRaw(iv any) error {
 }
 
 // Type returns the type of the value for this Value.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) Type() ValueType {
 	switch v.getOrig().Value.(type) {
 	case *internal.AnyValue_StringValue:
@@ -277,7 +277,7 @@ func (v Value) Bytes() ByteSlice {
 // it also changes the type to be ValueTypeStr.
 // The shorter name is used instead of SetString to avoid implementing
 // fmt.Stringer interface by the corresponding getter method.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetStr(sv string) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -289,7 +289,7 @@ func (v Value) SetStr(sv string) {
 
 // SetInt replaces the int64 value associated with this Value,
 // it also changes the type to be ValueTypeInt.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetInt(iv int64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -301,7 +301,7 @@ func (v Value) SetInt(iv int64) {
 
 // SetDouble replaces the float64 value associated with this Value,
 // it also changes the type to be ValueTypeDouble.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetDouble(dv float64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -313,7 +313,7 @@ func (v Value) SetDouble(dv float64) {
 
 // SetBool replaces the bool value associated with this Value,
 // it also changes the type to be ValueTypeBool.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetBool(bv bool) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -324,7 +324,7 @@ func (v Value) SetBool(bv bool) {
 }
 
 // SetEmptyBytes sets value to an empty byte slice and returns it.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetEmptyBytes() ByteSlice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -335,7 +335,7 @@ func (v Value) SetEmptyBytes() ByteSlice {
 }
 
 // SetEmptyMap sets value to an empty map and returns it.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetEmptyMap() Map {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -347,7 +347,7 @@ func (v Value) SetEmptyMap() Map {
 }
 
 // SetEmptySlice sets value to an empty slice and returns it.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) SetEmptySlice() Slice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
@@ -360,7 +360,7 @@ func (v Value) SetEmptySlice() Slice {
 
 // MoveTo moves the Value from current overriding the destination and
 // resetting the current instance to empty value.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) MoveTo(dest Value) {
 	v.getState().AssertMutable()
 	dest.getState().AssertMutable()
@@ -373,7 +373,7 @@ func (v Value) MoveTo(dest Value) {
 }
 
 // CopyTo copies the Value instance overriding the destination.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) CopyTo(dest Value) {
 	dest.getState().AssertMutable()
 	internal.CopyAnyValue(dest.getOrig(), v.getOrig())
@@ -382,7 +382,7 @@ func (v Value) CopyTo(dest Value) {
 // AsString converts an OTLP Value object of any type to its equivalent string
 // representation. This differs from Str which only returns a non-empty value
 // if the ValueType is ValueTypeStr.
-// Calling this function on zero-initialized Value will cause a panic.
+// Calling this function on zero-initialized Value is invalid and will cause a panic.
 func (v Value) AsString() string {
 	switch v.Type() {
 	case ValueTypeEmpty:

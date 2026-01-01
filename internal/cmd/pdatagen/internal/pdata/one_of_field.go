@@ -11,7 +11,7 @@ import (
 )
 
 const oneOfAccessorTemplate = `// {{ .typeFuncName }} returns the type of the {{ .lowerOriginFieldName }} for this {{ .structName }}.
-// Calling this function on zero-initialized {{ .structName }} will cause a panic.
+// Calling this function on zero-initialized {{ .structName }} is invalid and will cause a panic.
 func (ms {{ .structName }}) {{ .typeFuncName }}() {{ .typeName }} {
 	switch ms.{{ .origAccessor }}.{{ .originFieldName }}.(type) {
 		{{- range .values }}
