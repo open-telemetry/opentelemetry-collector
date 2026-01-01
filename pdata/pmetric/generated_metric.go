@@ -83,7 +83,7 @@ func (ms Metric) SetUnit(v string) {
 }
 
 // Type returns the type of the data for this Metric.
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) Type() MetricType {
 	switch ms.orig.Data.(type) {
 	case *internal.Metric_Gauge:
@@ -105,7 +105,7 @@ func (ms Metric) Type() MetricType {
 // Calling this function when Type() != MetricTypeGauge returns an invalid
 // zero-initialized instance of Gauge. Note that using such Gauge instance can cause panic.
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) Gauge() Gauge {
 	v, ok := ms.orig.GetData().(*internal.Metric_Gauge)
 	if !ok {
@@ -118,7 +118,7 @@ func (ms Metric) Gauge() Gauge {
 //
 // After this, Type() function will return MetricTypeGauge".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
 	ms.state.AssertMutable()
 	var ov *internal.Metric_Gauge
@@ -137,7 +137,7 @@ func (ms Metric) SetEmptyGauge() Gauge {
 // Calling this function when Type() != MetricTypeSum returns an invalid
 // zero-initialized instance of Sum. Note that using such Sum instance can cause panic.
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) Sum() Sum {
 	v, ok := ms.orig.GetData().(*internal.Metric_Sum)
 	if !ok {
@@ -150,7 +150,7 @@ func (ms Metric) Sum() Sum {
 //
 // After this, Type() function will return MetricTypeSum".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
 	ms.state.AssertMutable()
 	var ov *internal.Metric_Sum
@@ -169,7 +169,7 @@ func (ms Metric) SetEmptySum() Sum {
 // Calling this function when Type() != MetricTypeHistogram returns an invalid
 // zero-initialized instance of Histogram. Note that using such Histogram instance can cause panic.
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) Histogram() Histogram {
 	v, ok := ms.orig.GetData().(*internal.Metric_Histogram)
 	if !ok {
@@ -182,7 +182,7 @@ func (ms Metric) Histogram() Histogram {
 //
 // After this, Type() function will return MetricTypeHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
 	ms.state.AssertMutable()
 	var ov *internal.Metric_Histogram
@@ -201,7 +201,7 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 // Calling this function when Type() != MetricTypeExponentialHistogram returns an invalid
 // zero-initialized instance of ExponentialHistogram. Note that using such ExponentialHistogram instance can cause panic.
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 	v, ok := ms.orig.GetData().(*internal.Metric_ExponentialHistogram)
 	if !ok {
@@ -214,7 +214,7 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 //
 // After this, Type() function will return MetricTypeExponentialHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 	ms.state.AssertMutable()
 	var ov *internal.Metric_ExponentialHistogram
@@ -233,7 +233,7 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 // Calling this function when Type() != MetricTypeSummary returns an invalid
 // zero-initialized instance of Summary. Note that using such Summary instance can cause panic.
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) Summary() Summary {
 	v, ok := ms.orig.GetData().(*internal.Metric_Summary)
 	if !ok {
@@ -246,7 +246,7 @@ func (ms Metric) Summary() Summary {
 //
 // After this, Type() function will return MetricTypeSummary".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
+// Calling this function on zero-initialized Metric is invalid and will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
 	ms.state.AssertMutable()
 	var ov *internal.Metric_Summary
