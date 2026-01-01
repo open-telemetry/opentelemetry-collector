@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // ModuleInfo describes the Go module for a particular component.
@@ -223,8 +224,11 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		return nil, err
 	}
 
-	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-		return nil, fmt.Errorf("failed to register process metrics: %w", err)
+	// Only register process metrics if metrics telemetry is enabled
+	if telemetryCfg, ok := cfg.Telemetry.(*otelconftelemetry.Config); !ok || telemetryCfg.Metrics.Level != configtelemetry.LevelNone {
+		if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+		}
 	}
 	return srv, nil
 }
