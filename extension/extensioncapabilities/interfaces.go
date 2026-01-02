@@ -7,10 +7,12 @@ package extensioncapabilities // import "go.opentelemetry.io/collector/extension
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Dependent is an optional interface that can be implemented by extensions
@@ -46,4 +48,30 @@ type ConfigWatcher interface {
 	// extensions to store the `conf` pointer and use it concurrently with any other
 	// instances of `conf`.
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
+}
+
+// ConcurrencyController governs how many requests can be in-flight simultaneously.
+type ConcurrencyController interface {
+	// Acquire attempts to acquire a permit. It blocks until a permit is available,
+	// the context is cancelled, or the controller shuts down.
+	// It returns nil if acquired, or an error if failed/cancelled.
+	Acquire(context.Context) error
+
+	// Record reports the duration and result of a request to update the controller's
+	// internal state (e.g. modifying the limit based on backpressure).
+	// This method also releases the permit acquired by Acquire.
+	Record(context.Context, time.Duration, error)
+
+	// Shutdown cleans up any resources used by the controller.
+	Shutdown(context.Context) error
+}
+
+// ConcurrencyControllerFactory is an interface for extensions that can create
+// concurrency controllers for specific components.
+type ConcurrencyControllerFactory interface {
+	extension.Extension
+
+	// CreateConcurrencyController creates a controller for a specific exporter and signal.
+	// This allows the extension to maintain separate limits per exporter/signal if desired.
+	CreateConcurrencyController(component.ID, pipeline.Signal) (ConcurrencyController, error)
 }
