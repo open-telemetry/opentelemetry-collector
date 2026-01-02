@@ -14,12 +14,22 @@ By default, TLS is enabled:
   the exporter's HTTPs or gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
-- `curve_preferences` (default = []): specify your curve preferences  that will
+- `curve_preferences` (default = optimal order based on Go version and build mode): specify your curve preferences  that will
 	 be used in an ECDHE handshake, in preference order. Accepted values are:
+  - X25519MLKEM768 (post-quantum hybrid key exchange, requires Go 1.24+)
   - X25519
   - P521
   - P256
   - P384
+
+  __Note__: `X25519MLKEM768` provides quantum-resistant security through hybrid key exchange,
+  combining classical X25519 with post-quantum ML-KEM-768 (Module-Lattice-Based Key-Encapsulation Mechanism).
+  This is only available when compiling with Go 1.24 or later and is not available in FIPS mode.
+
+  When `curve_preferences` is not explicitly configured:
+  - **Non-FIPS builds (Go 1.24+)**: Automatically uses `[X25519MLKEM768, X25519, P256, P384, P521]`
+    providing post-quantum security by default with backward compatibility.
+  - **FIPS builds**: Automatically uses `[P256, P384, P521]` (only NIST P-curves are FIPS-approved).
 
 As a result, the following parameters are also required:
 
@@ -117,6 +127,16 @@ exporters:
     tls:
       insecure: false
       insecure_skip_verify: true
+  otlp/pqc:
+    endpoint: myserver.local:55690
+    tls:
+      ca_file: server.crt
+      cert_file: client.crt
+      key_file: client.key
+      curve_preferences:
+        - X25519MLKEM768
+        - X25519
+        - P256
 ```
 
 ## Server Configuration
@@ -152,6 +172,16 @@ receivers:
           client_ca_file: client.pem
           cert_file: server.crt
           key_file: server.key
+  otlp/pqc:
+    protocols:
+      grpc:
+        endpoint: mysite.local:55690
+        tls:
+          cert_file: server.crt
+          key_file: server.key
+          curve_preferences:
+            - X25519MLKEM768
+            - X25519
   otlp/notls:
     protocols:
       grpc:
