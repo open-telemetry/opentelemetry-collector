@@ -184,6 +184,7 @@ func (orig *ResourceProfiles) SizeProto() int {
 		l = orig.ScopeProfiles[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.SchemaUrl)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l

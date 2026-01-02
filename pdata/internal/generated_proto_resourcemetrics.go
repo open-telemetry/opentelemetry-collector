@@ -79,7 +79,6 @@ func CopyResourceMetrics(dest, src *ResourceMetrics) *ResourceMetrics {
 	dest.ScopeMetrics = CopyScopeMetricsPtrSlice(dest.ScopeMetrics, src.ScopeMetrics)
 
 	dest.SchemaUrl = src.SchemaUrl
-
 	dest.DeprecatedScopeMetrics = CopyScopeMetricsPtrSlice(dest.DeprecatedScopeMetrics, src.DeprecatedScopeMetrics)
 
 	return dest
@@ -206,6 +205,7 @@ func (orig *ResourceMetrics) SizeProto() int {
 		l = orig.ScopeMetrics[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.SchemaUrl)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l

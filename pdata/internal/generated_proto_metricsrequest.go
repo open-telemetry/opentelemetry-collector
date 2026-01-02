@@ -173,7 +173,7 @@ func (orig *MetricsRequest) SizeProto() int {
 	}
 	l = orig.MetricsData.SizeProto()
 	n += 1 + proto.Sov(uint64(l)) + l
-	if orig.FormatVersion != 0 {
+	if orig.FormatVersion != uint32(0) {
 		n += 5
 	}
 	return n
@@ -196,7 +196,7 @@ func (orig *MetricsRequest) MarshalProto(buf []byte) int {
 	pos--
 	buf[pos] = 0x1a
 
-	if orig.FormatVersion != 0 {
+	if orig.FormatVersion != uint32(0) {
 		pos -= 4
 		binary.LittleEndian.PutUint32(buf[pos:], uint32(orig.FormatVersion))
 		pos--
