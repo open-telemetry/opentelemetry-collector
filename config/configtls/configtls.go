@@ -282,10 +282,11 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	}
 
 	// If no curve preferences were explicitly specified in the configuration, use
-	// the ones we allow. This helps in particular with FIPS builds where not all curves
-	// are allowed.
+	// the default preference order. This provides optimal security by prioritizing
+	// post-quantum hybrid key exchange (X25519MLKEM768) when available (Go 1.24+),
+	// while maintaining compatibility with FIPS builds.
 	if len(curvePreferences) == 0 {
-		curvePreferences = allowedCurves
+		curvePreferences = defaultCurvePreferences
 	}
 
 	return &tls.Config{
