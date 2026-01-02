@@ -921,7 +921,7 @@ func TestCurvePreferences(t *testing.T) {
 			testCase{
 				name:             "X25519MLKEM768",
 				preferences:      []string{"X25519MLKEM768"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+				expectedCurveIDs: []tls.CurveID{X25519MLKEM768}, // 0x11EC
 			},
 			testCase{
 				name:             "X25519",
@@ -946,6 +946,34 @@ func TestCurvePreferences(t *testing.T) {
 				require.ErrorContains(t, err, test.expectedErr)
 			}
 		})
+	}
+}
+
+func TestDefaultCurvePreferences(t *testing.T) {
+	// Test that when no curve preferences are specified, the default order is used
+	tlsSetting := ClientConfig{
+		Config: Config{
+			// CurvePreferences is intentionally not set
+		},
+	}
+	config, err := tlsSetting.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	// Verify that curve preferences are set to the default order
+	require.Equal(t, defaultCurvePreferences, config.CurvePreferences,
+		"Expected default curve preferences to be used when none specified")
+
+	// Verify the order is preserved (not just the elements)
+	for i, curve := range defaultCurvePreferences {
+		require.Equal(t, curve, config.CurvePreferences[i],
+			"Expected curve at position %d to be %v, got %v", i, curve, config.CurvePreferences[i])
+	}
+
+	// In non-FIPS builds, verify X25519MLKEM768 is first
+	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
+		require.Equal(t, tls.X25519MLKEM768, config.CurvePreferences[0],
+			"Expected X25519MLKEM768 to be the first curve preference in non-FIPS builds")
 	}
 }
 
