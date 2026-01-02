@@ -97,6 +97,7 @@ func CopyProfilesDictionary(dest, src *ProfilesDictionary) *ProfilesDictionary {
 	dest.LinkTable = CopyLinkPtrSlice(dest.LinkTable, src.LinkTable)
 
 	dest.StringTable = append(dest.StringTable[:0], src.StringTable...)
+
 	dest.AttributeTable = CopyKeyValueAndUnitPtrSlice(dest.AttributeTable, src.AttributeTable)
 
 	dest.StackTable = CopyStackPtrSlice(dest.StackTable, src.StackTable)
@@ -209,6 +210,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.AttributeTable) > 0 {
 		dest.WriteObjectField("attributeTable")
 		dest.WriteArrayStart()

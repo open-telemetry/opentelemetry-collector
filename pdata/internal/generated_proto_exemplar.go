@@ -135,7 +135,6 @@ func CopyExemplar(dest, src *Exemplar) *Exemplar {
 	dest.FilteredAttributes = CopyKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 
 	dest.TimeUnixNano = src.TimeUnixNano
-
 	switch t := src.Value.(type) {
 	case *Exemplar_AsDouble:
 		var ov *Exemplar_AsDouble
@@ -146,6 +145,7 @@ func CopyExemplar(dest, src *Exemplar) *Exemplar {
 		}
 		ov.AsDouble = t.AsDouble
 		dest.Value = ov
+
 	case *Exemplar_AsInt:
 		var ov *Exemplar_AsInt
 		if !UseProtoPooling.IsEnabled() {
@@ -155,6 +155,7 @@ func CopyExemplar(dest, src *Exemplar) *Exemplar {
 		}
 		ov.AsInt = t.AsInt
 		dest.Value = ov
+
 	default:
 		dest.Value = nil
 	}
@@ -310,7 +311,7 @@ func (orig *Exemplar) SizeProto() int {
 		l = orig.FilteredAttributes[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		n += 9
 	}
 	switch orig := orig.Value.(type) {
@@ -340,7 +341,7 @@ func (orig *Exemplar) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x3a
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		pos -= 8
 		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
 		pos--

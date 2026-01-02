@@ -75,7 +75,6 @@ func CopyResource(dest, src *Resource) *Resource {
 	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
-
 	dest.EntityRefs = CopyEntityRefPtrSlice(dest.EntityRefs, src.EntityRefs)
 
 	return dest
@@ -195,7 +194,7 @@ func (orig *Resource) SizeProto() int {
 		l = orig.Attributes[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	if orig.DroppedAttributesCount != 0 {
+	if orig.DroppedAttributesCount != uint32(0) {
 		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
 	}
 	for i := range orig.EntityRefs {
@@ -216,7 +215,7 @@ func (orig *Resource) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0xa
 	}
-	if orig.DroppedAttributesCount != 0 {
+	if orig.DroppedAttributesCount != uint32(0) {
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
 		pos--
 		buf[pos] = 0x10
@@ -271,7 +270,6 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-
 			orig.DroppedAttributesCount = uint32(num)
 
 		case 3:

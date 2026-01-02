@@ -178,6 +178,10 @@ func (of *oneOfProtoField) DefaultValue() string {
 	panic("implement me")
 }
 
+func (of *oneOfProtoField) GenTest() string {
+	return "orig." + of.GetName() + " = " + of.TestValue()
+}
+
 func (of *oneOfProtoField) TestValue() string {
 	return "&" + of.protoName + "_" + of.fields[0].GetName() + "{" + of.fields[0].GetName() + ": " + of.fields[0].TestValue() + "}"
 }

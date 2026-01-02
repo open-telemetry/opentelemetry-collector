@@ -226,16 +226,28 @@ func genTestEncodingValuesExponentialHistogramDataPoint() map[string]*Exponentia
 		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
-		"Count/test":             {Count: uint64(13)}, "Sum/default": {Sum_: &ExponentialHistogramDataPoint_Sum{Sum: float64(0)}},
-		"Sum/test":       {Sum_: &ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		"Count/test":             {Count: uint64(13)},
+		"Sum/test": func() *ExponentialHistogramDataPoint {
+			ms := NewExponentialHistogramDataPoint()
+			ms.SetSum(float64(3.1415926))
+			return ms
+		}(),
 		"Scale/test":     {Scale: int32(13)},
 		"ZeroCount/test": {ZeroCount: uint64(13)},
 		"Positive/test":  {Positive: *GenTestExponentialHistogramDataPointBuckets()},
 		"Negative/test":  {Negative: *GenTestExponentialHistogramDataPointBuckets()},
 		"Flags/test":     {Flags: uint32(13)},
-		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}}, "Min/default": {Min_: &ExponentialHistogramDataPoint_Min{Min: float64(0)}},
-		"Min/test": {Min_: &ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}}, "Max/default": {Max_: &ExponentialHistogramDataPoint_Max{Max: float64(0)}},
-		"Max/test":           {Max_: &ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}},
+		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
+		"Min/test": func() *ExponentialHistogramDataPoint {
+			ms := NewExponentialHistogramDataPoint()
+			ms.SetMin(float64(3.1415926))
+			return ms
+		}(),
+		"Max/test": func() *ExponentialHistogramDataPoint {
+			ms := NewExponentialHistogramDataPoint()
+			ms.SetMax(float64(3.1415926))
+			return ms
+		}(),
 		"ZeroThreshold/test": {ZeroThreshold: float64(3.1415926)},
 	}
 }
