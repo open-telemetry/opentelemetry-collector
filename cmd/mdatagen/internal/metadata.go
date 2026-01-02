@@ -18,6 +18,10 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DisplayName is a human-readable display name for the component.
+	DisplayName string `mapstructure:"display_name"`
+	// Description is a brief description of the component.
+	Description string `mapstructure:"description"`
 	// Type of the parent component (applicable to subcomponents).
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
