@@ -25,7 +25,6 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	tests := []struct {
 		filename    string
 		cfg         *Config
@@ -37,8 +36,25 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
-				QueueConfig:        configoptional.Default(queueCfg),
+				UseInternalLogger:  false,
+				OutputPaths:        []string{"stdout"},
+				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 			},
+		},
+		{
+			filename: "config_output_paths.yaml",
+			cfg: &Config{
+				Verbosity:          configtelemetry.LevelBasic,
+				SamplingInitial:    2,
+				SamplingThereafter: 1,
+				UseInternalLogger:  false,
+				OutputPaths:        []string{"stderr"},
+				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
+			},
+		},
+		{
+			filename:    "config_output_paths_empty.yaml",
+			expectedErr: "output_paths must be specified and non-empty when use_internal_logger is false",
 		},
 		{
 			filename:    "config_verbosity_typo.yaml",
@@ -53,10 +69,24 @@ func TestUnmarshalConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			err = cm.Unmarshal(&cfg)
-			if tt.expectedErr != "" {
-				assert.ErrorContains(t, err, tt.expectedErr)
-			} else {
+			if err != nil {
+				if tt.expectedErr != "" {
+					require.ErrorContains(t, err, tt.expectedErr)
+				} else {
+					require.NoError(t, err)
+				}
+				return
+			}
+			// Validate the config (validation errors are separate from unmarshal errors)
+			if cfgCasted, ok := cfg.(*Config); ok {
+				err = cfgCasted.Validate()
+				if tt.expectedErr != "" {
+					assert.ErrorContains(t, err, tt.expectedErr)
+					return
+				}
 				require.NoError(t, err)
+			}
+			if tt.expectedErr == "" {
 				assert.Equal(t, tt.cfg, cfg)
 			}
 		})
@@ -122,7 +152,30 @@ func TestValidate(t *testing.T) {
 		{
 			name: "verbosity detailed",
 			cfg: &Config{
-				Verbosity: configtelemetry.LevelDetailed,
+				Verbosity:         configtelemetry.LevelDetailed,
+				UseInternalLogger: true, // Default behavior
+			},
+		},
+		{
+			name: "empty output_paths when use_internal_logger is false",
+			cfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{},
+			},
+			expectedErr: "output_paths must be specified and non-empty when use_internal_logger is false",
+		},
+		{
+			name: "valid output_paths when use_internal_logger is false",
+			cfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{"stdout"},
+			},
+		},
+		{
+			name: "empty output_paths when use_internal_logger is true (allowed)",
+			cfg: &Config{
+				UseInternalLogger: true,
+				OutputPaths:       []string{},
 			},
 		},
 	}
@@ -131,7 +184,7 @@ func TestValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
 			if tt.expectedErr != "" {
-				assert.EqualError(t, err, tt.expectedErr)
+				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}
