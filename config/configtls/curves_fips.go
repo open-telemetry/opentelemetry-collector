@@ -17,3 +17,11 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	//"X25519": tls.X25519,
 	//"X25519MLKEM768": tls.X25519MLKEM768,
 }
+
+// defaultCurvePreferences defines the default order of curve preferences for FIPS builds.
+// Only NIST P-curves are available in FIPS mode.
+var defaultCurvePreferences = []tls.CurveID{
+	tls.CurveP256, // FIPS approved, widely supported
+	tls.CurveP384, // FIPS approved, higher security
+	tls.CurveP521, // FIPS approved, highest security
+}
