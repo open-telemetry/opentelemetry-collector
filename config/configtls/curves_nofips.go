@@ -8,6 +8,8 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 import "crypto/tls"
 
 // For backward compatability with older versions before Go 1.24.0
+// This constant has the same value as tls.X25519MLKEM768 in Go 1.24.0+
+// Value: 0x11EC (verified against Go 1.24.0 source code)
 const (
 	X25519MLKEM768 tls.CurveID = 0x11EC
 )
