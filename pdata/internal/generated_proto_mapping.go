@@ -200,6 +200,7 @@ func (orig *Mapping) SizeProto() int {
 	if orig.FilenameStrindex != int32(0) {
 		n += 1 + proto.Sov(uint64(orig.FilenameStrindex))
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		l = 0
 		for _, e := range orig.AttributeIndices {

@@ -56,10 +56,10 @@ func DeleteHistogramDataPoint(orig *HistogramDataPoint, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	for i := range orig.Exemplars {
 		DeleteExemplar(&orig.Exemplars[i], false)
 	}

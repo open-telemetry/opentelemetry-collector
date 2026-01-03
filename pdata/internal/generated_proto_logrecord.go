@@ -60,6 +60,7 @@ func DeleteLogRecord(orig *LogRecord, nullable bool) {
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
 

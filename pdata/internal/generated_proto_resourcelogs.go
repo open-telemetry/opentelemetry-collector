@@ -46,15 +46,14 @@ func DeleteResourceLogs(orig *ResourceLogs, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeLogs {
 		DeleteScopeLogs(orig.ScopeLogs[i], true)
 	}
+
 	for i := range orig.DeprecatedScopeLogs {
 		DeleteScopeLogs(orig.DeprecatedScopeLogs[i], true)
 	}
-
 	orig.Reset()
 	if nullable {
 		protoPoolResourceLogs.Put(orig)

@@ -51,9 +51,9 @@ func DeleteSpanLink(orig *SpanLink, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
+
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}

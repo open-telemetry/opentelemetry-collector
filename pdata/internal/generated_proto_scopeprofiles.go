@@ -45,7 +45,6 @@ func DeleteScopeProfiles(orig *ScopeProfiles, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Profiles {
 		DeleteProfile(orig.Profiles[i], true)

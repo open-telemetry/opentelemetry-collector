@@ -44,7 +44,6 @@ func DeleteHistogram(orig *Histogram, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.DataPoints {
 		DeleteHistogramDataPoint(orig.DataPoints[i], true)
 	}

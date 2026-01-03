@@ -45,7 +45,6 @@ func DeleteMetricsRequest(orig *MetricsRequest, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteRequestContext(orig.RequestContext, true)
 	DeleteMetricsData(&orig.MetricsData, false)
 

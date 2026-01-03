@@ -167,6 +167,7 @@ func (orig *ExponentialHistogramDataPointBuckets) SizeProto() int {
 	if orig.Offset != int32(0) {
 		n += 1 + proto.Soz(uint64(orig.Offset))
 	}
+
 	if len(orig.BucketCounts) > 0 {
 		l = 0
 		for _, e := range orig.BucketCounts {

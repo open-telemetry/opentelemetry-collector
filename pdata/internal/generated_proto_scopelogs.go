@@ -45,7 +45,6 @@ func DeleteScopeLogs(orig *ScopeLogs, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.LogRecords {
 		DeleteLogRecord(orig.LogRecords[i], true)

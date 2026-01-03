@@ -46,15 +46,14 @@ func DeleteResourceMetrics(orig *ResourceMetrics, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeMetrics {
 		DeleteScopeMetrics(orig.ScopeMetrics[i], true)
 	}
+
 	for i := range orig.DeprecatedScopeMetrics {
 		DeleteScopeMetrics(orig.DeprecatedScopeMetrics[i], true)
 	}
-
 	orig.Reset()
 	if nullable {
 		protoPoolResourceMetrics.Put(orig)

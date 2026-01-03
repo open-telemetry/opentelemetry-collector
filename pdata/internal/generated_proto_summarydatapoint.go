@@ -51,10 +51,10 @@ func DeleteSummaryDataPoint(orig *SummaryDataPoint, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	for i := range orig.QuantileValues {
 		DeleteSummaryDataPointValueAtQuantile(orig.QuantileValues[i], true)
 	}
