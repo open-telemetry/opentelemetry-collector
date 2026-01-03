@@ -16,9 +16,9 @@ import (
 
 // ScopeSpans is a collection of spans from a LibraryInstrumentation.
 type ScopeSpans struct {
-	Scope     InstrumentationScope
-	Spans     []*Span
 	SchemaUrl string
+	Spans     []*Span
+	Scope     InstrumentationScope
 }
 
 var (

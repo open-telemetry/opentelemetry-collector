@@ -17,11 +17,11 @@ import (
 
 // Sample represents each record value encountered within a profiled program.
 type Sample struct {
-	StackIndex         int32
 	Values             []int64
 	AttributeIndices   []int32
-	LinkIndex          int32
 	TimestampsUnixNano []uint64
+	StackIndex         int32
+	LinkIndex          int32
 }
 
 var (
