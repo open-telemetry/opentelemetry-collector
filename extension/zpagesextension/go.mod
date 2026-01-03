@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
 	go.opentelemetry.io/collector/config/configauth v1.48.0
 	go.opentelemetry.io/collector/config/confighttp v0.142.0
+	go.opentelemetry.io/collector/config/confignet v1.48.0
 	go.opentelemetry.io/collector/config/configoptional v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/extension v1.48.0
@@ -102,6 +103,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../../config/configau
 replace go.opentelemetry.io/collector/extension/extensionauth => ../extensionauth
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/client => ../../client
 

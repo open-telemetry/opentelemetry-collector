@@ -123,12 +123,15 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "localhost:4318",
+							Transport: confignet.TransportTypeTCP,
+						},
 						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
 						}),
-						Endpoint: "localhost:4318",
 						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
@@ -168,7 +171,10 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint:          "/tmp/http_otlp.sock",
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "/tmp/http_otlp.sock",
+							Transport: confignet.TransportTypeUnix,
+						},
 						KeepAlivesEnabled: true,
 					},
 					TracesURLPath:  defaultTracesURLPath,
