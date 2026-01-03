@@ -921,7 +921,7 @@ func TestCurvePreferences(t *testing.T) {
 			testCase{
 				name:             "X25519MLKEM768",
 				preferences:      []string{"X25519MLKEM768"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+				expectedCurveIDs: []tls.CurveID{X25519MLKEM768}, // 0x11EC
 			},
 			testCase{
 				name:             "X25519",
@@ -945,6 +945,66 @@ func TestCurvePreferences(t *testing.T) {
 			} else {
 				require.ErrorContains(t, err, test.expectedErr)
 			}
+		})
+	}
+}
+
+func TestDefaultCurvePreferences(t *testing.T) {
+	type testCase struct {
+		name               string
+		isFIPS             bool
+		expectedCurveIDs   []tls.CurveID
+		expectedFirstCurve tls.CurveID
+	}
+
+	// Detect actual build type by checking defaultCurvePreferences length
+	// FIPS builds have 3 curves, non-FIPS builds have 5 curves
+	actualIsFIPS := len(defaultCurvePreferences) == 3
+
+	tests := []testCase{
+		{
+			name:               "non-FIPS-default",
+			isFIPS:             false,
+			expectedCurveIDs:   []tls.CurveID{X25519MLKEM768, tls.X25519, tls.CurveP256, tls.CurveP384, tls.CurveP521},
+			expectedFirstCurve: X25519MLKEM768,
+		},
+		{
+			name:               "FIPS-default",
+			isFIPS:             true,
+			expectedCurveIDs:   []tls.CurveID{tls.CurveP256, tls.CurveP384, tls.CurveP521},
+			expectedFirstCurve: tls.CurveP256,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Skip test case if it doesn't match the actual build type
+			if test.isFIPS != actualIsFIPS {
+				t.Skipf("Skipping %s test case: actual build is %s", test.name, map[bool]string{true: "FIPS", false: "non-FIPS"}[actualIsFIPS])
+			}
+
+			tlsSetting := ClientConfig{
+				Config: Config{
+					// CurvePreferences is intentionally not set
+				},
+			}
+			config, err := tlsSetting.LoadTLSConfig(context.Background())
+			require.NoError(t, err)
+			require.NotNil(t, config)
+
+			// Verify curve preferences match expected
+			require.Equal(t, len(test.expectedCurveIDs), len(config.CurvePreferences),
+				"Expected %d curves, got %d", len(test.expectedCurveIDs), len(config.CurvePreferences))
+
+			// Verify order is preserved
+			for i, expectedCurve := range test.expectedCurveIDs {
+				require.Equal(t, expectedCurve, config.CurvePreferences[i],
+					"Expected curve at position %d to be %v, got %v", i, expectedCurve, config.CurvePreferences[i])
+			}
+
+			// Verify first curve
+			require.Equal(t, test.expectedFirstCurve, config.CurvePreferences[0],
+				"Expected first curve to be %v, got %v", test.expectedFirstCurve, config.CurvePreferences[0])
 		})
 	}
 }
