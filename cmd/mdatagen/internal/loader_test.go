@@ -261,6 +261,18 @@ func TestLoadMetadata(t *testing.T) {
 							Mono:                   Mono{Monotonic: true},
 						},
 					},
+					"reaggregate.metric": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Metric for testing spacial reaggregation",
+							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Unit: strPtr("1"),
+						Gauge: &Gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+					},
 					"system.cpu.time": {
 						Signal: Signal{
 							Enabled:               true,
