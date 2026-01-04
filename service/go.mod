@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.142.0
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
 	go.opentelemetry.io/collector/config/confighttp v0.142.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.142.0
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0
 	go.opentelemetry.io/collector/connector v0.142.0

@@ -43,6 +43,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.48.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.48.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v1.48.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.48.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.142.0 // indirect
@@ -80,6 +81,8 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
