@@ -13,6 +13,8 @@ all_set:
       enabled: true
     system.cpu.time:
       enabled: true
+    system.cpu.utilization:
+      enabled: true
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -43,6 +45,8 @@ none_set:
     optional.metric.empty_unit:
       enabled: false
     system.cpu.time:
+      enabled: false
+    system.cpu.utilization:
       enabled: false
   resource_attributes:
     map.resource.attr:
