@@ -45,7 +45,6 @@ func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Metrics {
 		DeleteMetric(orig.Metrics[i], true)
@@ -184,6 +183,7 @@ func (orig *ScopeMetrics) SizeProto() int {
 		l = orig.Metrics[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.SchemaUrl)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l

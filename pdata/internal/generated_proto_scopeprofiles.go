@@ -45,7 +45,6 @@ func DeleteScopeProfiles(orig *ScopeProfiles, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Profiles {
 		DeleteProfile(orig.Profiles[i], true)
@@ -184,6 +183,7 @@ func (orig *ScopeProfiles) SizeProto() int {
 		l = orig.Profiles[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	l = len(orig.SchemaUrl)
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
