@@ -4,6 +4,7 @@ package {{ .Package }}
 
 import (
     "fmt"
+    "slices"
 
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
