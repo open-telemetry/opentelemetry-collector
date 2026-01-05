@@ -6,8 +6,8 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.0
 	go.opentelemetry.io/collector/extension v1.49.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.142.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.142.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.143.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.143.0
 	google.golang.org/grpc v1.78.0
 )
 

@@ -8,8 +8,8 @@ require (
 	github.com/google/go-tpm v0.9.8
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/config/configopaque v1.49.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0
-	go.opentelemetry.io/collector/internal/testutil v0.142.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
+	go.opentelemetry.io/collector/internal/testutil v0.143.0
 )
 
 require (
