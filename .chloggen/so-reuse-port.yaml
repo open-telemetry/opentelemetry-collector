@@ -4,11 +4,11 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pkg/config/confighttp
+component: pkg/config/confignet
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 # cspell:ignore REUSEPORT
-note: Added ReusePort option to confighttp.ServerConfig to enable SO_REUSEPORT on supported platforms.
+note: Added ReusePort option to confignet.AddrConfig to enable SO_REUSEPORT on supported platforms.
 
 # One or more tracking issues or pull requests related to the change
 issues: [14046]
