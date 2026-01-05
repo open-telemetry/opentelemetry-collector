@@ -4,18 +4,18 @@ go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.48.0
+	go.opentelemetry.io/collector/component v1.49.0
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
-	go.opentelemetry.io/collector/config/configoptional v1.48.0
+	go.opentelemetry.io/collector/config/configoptional v1.49.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.142.0
-	go.opentelemetry.io/collector/confmap v1.48.0
-	go.opentelemetry.io/collector/consumer v1.48.0
-	go.opentelemetry.io/collector/exporter v1.48.0
+	go.opentelemetry.io/collector/confmap v1.49.0
+	go.opentelemetry.io/collector/consumer v1.49.0
+	go.opentelemetry.io/collector/exporter v1.49.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.142.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.142.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.142.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.142.0
-	go.opentelemetry.io/collector/pdata v1.48.0
+	go.opentelemetry.io/collector/pdata v1.49.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.142.0
 	go.opentelemetry.io/collector/pdata/testdata v0.142.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.142.0
@@ -44,19 +44,19 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.48.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.48.0 // indirect
+	go.opentelemetry.io/collector/client v1.49.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.49.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.142.0 // indirect
-	go.opentelemetry.io/collector/extension v1.48.0 // indirect
+	go.opentelemetry.io/collector/extension v1.49.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.142.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.48.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.49.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.142.0 // indirect
-	go.opentelemetry.io/collector/receiver v1.48.0 // indirect
+	go.opentelemetry.io/collector/receiver v1.49.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.142.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.142.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
