@@ -35,6 +35,8 @@ type FieldInterface interface {
 
 	GenOneOfMessages() string
 
+	GenTest() string
+
 	GoType() string
 
 	DefaultValue() string
@@ -105,6 +107,17 @@ func (pf *Field) DefaultValue() string {
 	}
 }
 
+func (pf *Field) GenTest() string {
+	if pf.Repeated {
+		return "orig." + pf.GetName() + " = " + pf.TestValue()
+	}
+
+	if pf.Type != TypeMessage && pf.Nullable {
+		return "orig.Set" + pf.GetName() + "(" + pf.TestValue() + ")"
+	}
+	return "orig." + pf.GetName() + " = " + pf.TestValue()
+}
+
 func (pf *Field) TestValue() string {
 	if pf.Repeated {
 		return pf.MemberGoType() + "{" + pf.DefaultValue() + ", " + pf.rawTestValue() + "}"
@@ -171,7 +184,10 @@ func (pf *Field) MemberGoType() string {
 	if pf.Repeated {
 		return "[]" + ptrGoType()
 	}
-	return ptrGoType()
+	if pf.Type == TypeMessage {
+		return ptrGoType()
+	}
+	return pf.GoType()
 }
 
 func (pf *Field) GenMessageField() string {
