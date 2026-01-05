@@ -5,6 +5,9 @@ package metadata
 import (
 	"context"
 
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/otel/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
