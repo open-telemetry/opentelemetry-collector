@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -1145,71 +1144,4 @@ func TestServerMiddlewaresFieldCompatibility(t *testing.T) {
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
 	assert.Len(t, serverConfig.Middlewares, 1)
 	assert.Equal(t, component.MustNewID("server_middleware"), serverConfig.Middlewares[0].ID)
-}
-
-func TestServerReusePort(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		sc := &ServerConfig{
-			Endpoint:  "localhost:4318",
-			ReusePort: true,
-		}
-
-		_, err := sc.ToListener(t.Context())
-		require.Error(t, err, "ReusePort is not supported on Windows")
-		return
-	}
-
-	tests := []struct {
-		name          string
-		reusePort     bool
-		expectedError bool
-	}{
-		{
-			name:          "ReusePort enabled",
-			reusePort:     true,
-			expectedError: false,
-		},
-		{
-			name:          "ReusePort disabled",
-			reusePort:     false,
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sc := &ServerConfig{
-				Endpoint:  "localhost:4318",
-				ReusePort: tt.reusePort,
-			}
-
-			ln1, err := sc.ToListener(t.Context())
-			require.NoError(t, err)
-			defer ln1.Close()
-
-			ln2, err := sc.ToListener(t.Context())
-			if tt.expectedError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
-
-			if ln2 != nil {
-				ln2.Close()
-			}
-		})
-	}
-}
-
-func TestServerConfigValidate(t *testing.T) {
-	sc := &ServerConfig{
-		Endpoint:  "localhost:4318",
-		ReusePort: true,
-	}
-
-	if runtime.GOOS == "windows" {
-		require.Error(t, sc.Validate())
-	} else {
-		require.NoError(t, sc.Validate())
-	}
 }

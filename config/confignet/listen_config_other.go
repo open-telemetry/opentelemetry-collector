@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:build !windows
 
-package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
+package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
 	"net"
@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func (sc *ServerConfig) getListenConfig() (net.ListenConfig, error) {
+func (sc *AddrConfig) getListenConfig() (net.ListenConfig, error) {
 	cfg := net.ListenConfig{}
 	if sc.ReusePort {
 		cfg.Control = func(_, _ string, c syscall.RawConn) error {

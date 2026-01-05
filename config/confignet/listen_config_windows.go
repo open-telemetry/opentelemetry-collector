@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:build windows
 
-package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
+package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
 	"errors"
 	"net"
 )
 
-func (sc *ServerConfig) getListenConfig() (net.ListenConfig, error) {
+func (sc *AddrConfig) getListenConfig() (net.ListenConfig, error) {
 	if sc.ReusePort {
 		return net.ListenConfig{}, errors.New("ReusePort is not supported on this platform")
 	}

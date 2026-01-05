@@ -97,12 +97,6 @@ type ServerConfig struct {
 	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
-
-	// ReusePort enables the SO_REUSEPORT socket option on the listener.
-	// This allows multiple server instances to bind to the same address/port.
-	// This is useful for horizontal scaling and zero-downtime restarts.
-	// Note: This option is not supported on all operating systems.
-	ReusePort bool `mapstructure:"reuse_port,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -127,23 +121,9 @@ type AuthConfig struct {
 	_ struct{}
 }
 
-func (sc *ServerConfig) Validate() error {
-	_, err := sc.getListenConfig()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	cfg, err := sc.getListenConfig() // See listen_config_*.go for platform-specific implementations
-	if err != nil {
-		return nil, err
-	}
-
-	listener, err := cfg.Listen(ctx, "tcp", sc.Endpoint)
+	listener, err := net.Listen("tcp", sc.Endpoint)
 	if err != nil {
 		return nil, err
 	}
