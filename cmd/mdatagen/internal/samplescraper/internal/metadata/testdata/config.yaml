@@ -42,20 +42,26 @@ all_set:
 reaggregate_set:
   metrics:
     default.metric:
-      enabled: false
+      enabled: true
+      attributes: []
     default.metric.to_be_removed:
-      enabled: false
+      enabled: true
+      attributes: []
     metric.input_type:
-      enabled: false
+      enabled: true
+      attributes: []
     optional.metric:
-      enabled: false
+      enabled: true
+      attributes: []
     optional.metric.empty_unit:
-      enabled: false
+      enabled: true
+      attributes: []
     reaggregate.metric:
       enabled: true
       attributes: []
     system.cpu.time:
-      enabled: false
+      enabled: true
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true

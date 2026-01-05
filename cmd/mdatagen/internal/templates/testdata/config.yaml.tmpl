@@ -26,14 +26,9 @@ reaggregate_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}
-    {{- if eq $name "reaggregate.metric" }}
     {{ $name }}:
       enabled: true
       attributes: []
-    {{- else }}
-    {{ $name }}:
-      enabled: false
-    {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}
