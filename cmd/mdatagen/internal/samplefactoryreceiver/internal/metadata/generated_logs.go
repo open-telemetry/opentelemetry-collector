@@ -3,11 +3,12 @@
 package metadata
 
 import (
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations

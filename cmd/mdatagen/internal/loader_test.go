@@ -484,7 +484,7 @@ func TestLoadMetadata(t *testing.T) {
 `,
 					},
 				},
-				Tests:           Tests{Host: "newMdatagenNopHost()"},
+				Tests: Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
 		{
