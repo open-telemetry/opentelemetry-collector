@@ -151,6 +151,9 @@ metrics:
       level: <development|alpha|beta|stable|deprecated>
       # Optional: the version current stability was introduced
       from:
+    # Optional: the reference to a semantic convention
+    semantic_convention:
+      ref:
 
 # Optional: map of event names with the key being the event name and value
 # being described below.
@@ -246,7 +249,7 @@ feature_gates:
     stage: <alpha|beta|stable|deprecated>
     # Optional: version when the feature gate was introduced.
     from_version: string
-    # Optional: version when the feature gate reached stable stage (for stable/deprecated gates).
+    # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string
-    # Optional: URL with contextual information about the feature gate.
+    # Required: URL with contextual information about the feature gate.
     reference_url: string
