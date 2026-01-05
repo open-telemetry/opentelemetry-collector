@@ -99,7 +99,7 @@ func (es ResourceProfilesSlice) EnsureCapacity(newCap int) {
 func (es ResourceProfilesSlice) AppendEmpty() ResourceProfiles {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewResourceProfiles())
-	return es.At(es.Len() - 1)
+	return newResourceProfiles((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

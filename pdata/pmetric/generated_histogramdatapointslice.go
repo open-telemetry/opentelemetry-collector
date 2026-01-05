@@ -99,7 +99,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewHistogramDataPoint())
-	return es.At(es.Len() - 1)
+	return newHistogramDataPoint((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

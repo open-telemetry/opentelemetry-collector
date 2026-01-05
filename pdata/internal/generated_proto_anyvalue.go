@@ -12,6 +12,7 @@ import (
 	"math"
 	"sync"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -581,6 +582,10 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *AnyValue) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (orig *AnyValue) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -685,7 +690,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
 			}
 			ov.ArrayValue = NewArrayValue()
-			err = ov.ArrayValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.ArrayValue.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -708,7 +713,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
 			}
 			ov.KvlistValue = NewKeyValueList()
-			err = ov.KvlistValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.KvlistValue.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}

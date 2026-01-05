@@ -99,7 +99,7 @@ func (es LineSlice) EnsureCapacity(newCap int) {
 func (es LineSlice) AppendEmpty() Line {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewLine())
-	return es.At(es.Len() - 1)
+	return newLine((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

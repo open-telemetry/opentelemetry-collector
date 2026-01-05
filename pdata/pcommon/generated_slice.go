@@ -95,7 +95,7 @@ func (es Slice) EnsureCapacity(newCap int) {
 func (es Slice) AppendEmpty() Value {
 	es.getState().AssertMutable()
 	*es.getOrig() = append(*es.getOrig(), internal.AnyValue{})
-	return es.At(es.Len() - 1)
+	return newValue(&(*es.getOrig())[es.Len()-1], es.getState())
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

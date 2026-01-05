@@ -99,7 +99,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewSpanLink())
-	return es.At(es.Len() - 1)
+	return newSpanLink((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

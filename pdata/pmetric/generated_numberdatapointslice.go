@@ -99,7 +99,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewNumberDataPoint())
-	return es.At(es.Len() - 1)
+	return newNumberDataPoint((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
