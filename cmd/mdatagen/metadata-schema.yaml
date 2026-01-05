@@ -247,7 +247,7 @@ feature_gates:
     description: string
     # Required: lifecycle stage of the feature gate.
     stage: <alpha|beta|stable|deprecated>
-    # Optional: version when the feature gate was introduced.
+    # Required: version when the feature gate was introduced.
     from_version: string
     # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string

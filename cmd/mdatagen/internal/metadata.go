@@ -335,8 +335,10 @@ func (md *Metadata) validateFeatureGates() error {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": invalid stage "%v", must be one of: alpha, beta, stable, deprecated`, gate.ID, gate.Stage))
 		}
 
-		// Validate version formats if provided
-		if gate.FromVersion != "" && !strings.HasPrefix(gate.FromVersion, "v") {
+		// Validate from_version is required
+		if gate.FromVersion == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version is required`, gate.ID))
+		} else if !strings.HasPrefix(gate.FromVersion, "v") {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version "%v" must start with 'v'`, gate.ID, gate.FromVersion))
 		}
 		if gate.ToVersion != "" && !strings.HasPrefix(gate.ToVersion, "v") {
