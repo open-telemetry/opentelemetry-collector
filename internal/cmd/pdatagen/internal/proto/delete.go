@@ -12,15 +12,15 @@ const deleteOther = `{{ if ne .oneOfGroup "" -}}
 		ov.{{ .fieldName }} = {{ .defaultValue }}
 		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}
-{{ end }}`
+{{- end -}}`
 
 const deleteMessage = `{{ if .repeated -}}
 	for i := range orig.{{ .fieldName }} {
 	{{ if .nullable -}}
 		Delete{{ .messageName }}(orig.{{ .fieldName }}[i], true)
-	{{- else -}}
+	{{ else -}}
 		Delete{{ .messageName }}(&orig.{{ .fieldName }}[i], false)
-	{{- end }}
+	{{- end -}}
 	}
 {{- else if ne .oneOfGroup "" -}}
 	Delete{{ .messageName }}(ov.{{ .fieldName }}, true)
@@ -30,7 +30,7 @@ const deleteMessage = `{{ if .repeated -}}
 	Delete{{ .messageName }}(orig.{{ .fieldName }}, true)
 {{- else -}}
 	Delete{{ .messageName }}(&orig.{{ .fieldName }}, false)
-{{- end }}
+{{- end -}}
 `
 
 func (pf *Field) GenDelete() string {

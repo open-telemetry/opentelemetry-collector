@@ -134,6 +134,15 @@
         "toolchain"
       ],
       "enabled": false
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "indirect"
+      ],
+      "enabled": true
     }
   ],
   "ignoreDeps": [
