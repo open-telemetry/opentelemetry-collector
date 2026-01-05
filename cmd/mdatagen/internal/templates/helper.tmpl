@@ -29,5 +29,5 @@
 {{- end -}}
 
 {{- define "getAttributeValueTwo" -}}
-{{ if and (gt (len (attributeInfo .).Enum) 1) (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 1) | publicVar}}{{ else }}{{ (attributeInfo .).TestValueTwo }}{{ end }}
+{{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ if gt (len (attributeInfo .).Enum) 1}}{{ (index (attributeInfo .).Enum 1) | publicVar}}{{ else }}{{ (index (attributeInfo .).Enum 0) | publicVar}}{{ end }}{{ else }}{{ (attributeInfo .).TestValueTwo }}{{ end }}
 {{- end -}}
