@@ -11,9 +11,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func (sc *AddrConfig) getListenConfig() (net.ListenConfig, error) {
+func (na *AddrConfig) getListenConfig() (net.ListenConfig, error) {
 	cfg := net.ListenConfig{}
-	if sc.ReusePort {
+	if na.ReusePort {
 		cfg.Control = func(_, _ string, c syscall.RawConn) error {
 			var controlErr error
 			err := c.Control(func(fd uintptr) {

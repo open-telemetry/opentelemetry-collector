@@ -118,6 +118,11 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 }
 
 func (na *AddrConfig) Validate() error {
+	_, err := na.getListenConfig()
+	if err != nil {
+		return err
+	}
+
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,

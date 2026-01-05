@@ -9,8 +9,8 @@ import (
 	"net"
 )
 
-func (sc *AddrConfig) getListenConfig() (net.ListenConfig, error) {
-	if sc.ReusePort {
+func (na *AddrConfig) getListenConfig() (net.ListenConfig, error) {
+	if na.ReusePort {
 		return net.ListenConfig{}, errors.New("ReusePort is not supported on this platform")
 	}
 
