@@ -150,9 +150,16 @@ func (orig *LazyScopeMetrics) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarsh
 	if !opts.LazyDecoding {
 		return orig.ScopeMetrics.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipScopeMetricsProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ScopeMetrics.Reset()
 	return nil
+}
+
+func SkipLazyScopeMetricsProto(buf []byte) error {
+	return SkipScopeMetricsProto(buf)
 }
 
 func (orig *LazyScopeMetrics) FinishUnmarshal(buf *ScopeMetrics) (*ScopeMetrics, error) {

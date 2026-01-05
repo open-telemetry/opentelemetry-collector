@@ -151,9 +151,16 @@ func (orig *LazyProfile) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpt
 	if !opts.LazyDecoding {
 		return orig.Profile.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipProfileProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Profile.Reset()
 	return nil
+}
+
+func SkipLazyProfileProto(buf []byte) error {
+	return SkipProfileProto(buf)
 }
 
 func (orig *LazyProfile) FinishUnmarshal(buf *Profile) (*Profile, error) {

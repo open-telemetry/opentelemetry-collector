@@ -150,9 +150,16 @@ func (orig *LazyInstrumentationScope) UnmarshalProtoOpts(buf []byte, opts *pdata
 	if !opts.LazyDecoding {
 		return orig.InstrumentationScope.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipInstrumentationScopeProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.InstrumentationScope.Reset()
 	return nil
+}
+
+func SkipLazyInstrumentationScopeProto(buf []byte) error {
+	return SkipInstrumentationScopeProto(buf)
 }
 
 func (orig *LazyInstrumentationScope) FinishUnmarshal(buf *InstrumentationScope) (*InstrumentationScope, error) {

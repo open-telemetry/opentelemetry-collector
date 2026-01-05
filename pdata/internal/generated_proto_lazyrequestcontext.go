@@ -149,9 +149,16 @@ func (orig *LazyRequestContext) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmar
 	if !opts.LazyDecoding {
 		return orig.RequestContext.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipRequestContextProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.RequestContext.Reset()
 	return nil
+}
+
+func SkipLazyRequestContextProto(buf []byte) error {
+	return SkipRequestContextProto(buf)
 }
 
 func (orig *LazyRequestContext) FinishUnmarshal(buf *RequestContext) (*RequestContext, error) {

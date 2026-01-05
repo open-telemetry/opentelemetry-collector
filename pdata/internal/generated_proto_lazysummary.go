@@ -150,9 +150,16 @@ func (orig *LazySummary) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpt
 	if !opts.LazyDecoding {
 		return orig.Summary.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSummaryProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Summary.Reset()
 	return nil
+}
+
+func SkipLazySummaryProto(buf []byte) error {
+	return SkipSummaryProto(buf)
 }
 
 func (orig *LazySummary) FinishUnmarshal(buf *Summary) (*Summary, error) {

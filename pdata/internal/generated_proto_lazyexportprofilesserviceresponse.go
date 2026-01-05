@@ -150,9 +150,16 @@ func (orig *LazyExportProfilesServiceResponse) UnmarshalProtoOpts(buf []byte, op
 	if !opts.LazyDecoding {
 		return orig.ExportProfilesServiceResponse.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExportProfilesServiceResponseProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExportProfilesServiceResponse.Reset()
 	return nil
+}
+
+func SkipLazyExportProfilesServiceResponseProto(buf []byte) error {
+	return SkipExportProfilesServiceResponseProto(buf)
 }
 
 func (orig *LazyExportProfilesServiceResponse) FinishUnmarshal(buf *ExportProfilesServiceResponse) (*ExportProfilesServiceResponse, error) {

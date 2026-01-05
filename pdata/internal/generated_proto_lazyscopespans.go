@@ -150,9 +150,16 @@ func (orig *LazyScopeSpans) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarshal
 	if !opts.LazyDecoding {
 		return orig.ScopeSpans.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipScopeSpansProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ScopeSpans.Reset()
 	return nil
+}
+
+func SkipLazyScopeSpansProto(buf []byte) error {
+	return SkipScopeSpansProto(buf)
 }
 
 func (orig *LazyScopeSpans) FinishUnmarshal(buf *ScopeSpans) (*ScopeSpans, error) {

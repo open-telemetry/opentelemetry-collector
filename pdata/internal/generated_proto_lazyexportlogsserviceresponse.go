@@ -150,9 +150,16 @@ func (orig *LazyExportLogsServiceResponse) UnmarshalProtoOpts(buf []byte, opts *
 	if !opts.LazyDecoding {
 		return orig.ExportLogsServiceResponse.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExportLogsServiceResponseProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExportLogsServiceResponse.Reset()
 	return nil
+}
+
+func SkipLazyExportLogsServiceResponseProto(buf []byte) error {
+	return SkipExportLogsServiceResponseProto(buf)
 }
 
 func (orig *LazyExportLogsServiceResponse) FinishUnmarshal(buf *ExportLogsServiceResponse) (*ExportLogsServiceResponse, error) {

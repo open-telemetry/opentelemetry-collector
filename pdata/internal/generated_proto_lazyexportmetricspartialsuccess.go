@@ -150,9 +150,16 @@ func (orig *LazyExportMetricsPartialSuccess) UnmarshalProtoOpts(buf []byte, opts
 	if !opts.LazyDecoding {
 		return orig.ExportMetricsPartialSuccess.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExportMetricsPartialSuccessProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExportMetricsPartialSuccess.Reset()
 	return nil
+}
+
+func SkipLazyExportMetricsPartialSuccessProto(buf []byte) error {
+	return SkipExportMetricsPartialSuccessProto(buf)
 }
 
 func (orig *LazyExportMetricsPartialSuccess) FinishUnmarshal(buf *ExportMetricsPartialSuccess) (*ExportMetricsPartialSuccess, error) {

@@ -151,9 +151,16 @@ func (orig *LazySpan) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	if !opts.LazyDecoding {
 		return orig.Span.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSpanProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Span.Reset()
 	return nil
+}
+
+func SkipLazySpanProto(buf []byte) error {
+	return SkipSpanProto(buf)
 }
 
 func (orig *LazySpan) FinishUnmarshal(buf *Span) (*Span, error) {

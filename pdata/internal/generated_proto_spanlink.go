@@ -389,6 +389,109 @@ func (orig *SpanLink) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	return nil
 }
 
+func SkipSpanLinkProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipTraceIDProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipSpanIDProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceState", wireType)
+			}
+
+			pos, err = proto.SkipLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipKeyValueProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 5:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 6:
+			if wireType != proto.WireTypeI32 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+			}
+
+			pos, err = proto.SkipI32(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestSpanLink() *SpanLink {
 	orig := NewSpanLink()
 	orig.TraceId = *GenTestTraceID()

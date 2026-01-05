@@ -150,9 +150,16 @@ func (orig *LazySum) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions
 	if !opts.LazyDecoding {
 		return orig.Sum.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSumProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Sum.Reset()
 	return nil
+}
+
+func SkipLazySumProto(buf []byte) error {
+	return SkipSumProto(buf)
 }
 
 func (orig *LazySum) FinishUnmarshal(buf *Sum) (*Sum, error) {

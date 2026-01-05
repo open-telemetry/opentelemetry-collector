@@ -149,9 +149,16 @@ func (orig *LazyMetricsRequest) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmar
 	if !opts.LazyDecoding {
 		return orig.MetricsRequest.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipMetricsRequestProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.MetricsRequest.Reset()
 	return nil
+}
+
+func SkipLazyMetricsRequestProto(buf []byte) error {
+	return SkipMetricsRequestProto(buf)
 }
 
 func (orig *LazyMetricsRequest) FinishUnmarshal(buf *MetricsRequest) (*MetricsRequest, error) {

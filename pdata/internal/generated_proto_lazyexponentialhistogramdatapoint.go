@@ -153,9 +153,16 @@ func (orig *LazyExponentialHistogramDataPoint) UnmarshalProtoOpts(buf []byte, op
 	if !opts.LazyDecoding {
 		return orig.ExponentialHistogramDataPoint.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExponentialHistogramDataPointProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExponentialHistogramDataPoint.Reset()
 	return nil
+}
+
+func SkipLazyExponentialHistogramDataPointProto(buf []byte) error {
+	return SkipExponentialHistogramDataPointProto(buf)
 }
 
 func (orig *LazyExponentialHistogramDataPoint) FinishUnmarshal(buf *ExponentialHistogramDataPoint) (*ExponentialHistogramDataPoint, error) {

@@ -151,9 +151,16 @@ func (orig *LazyStatus) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpti
 	if !opts.LazyDecoding {
 		return orig.Status.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipStatusProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Status.Reset()
 	return nil
+}
+
+func SkipLazyStatusProto(buf []byte) error {
+	return SkipStatusProto(buf)
 }
 
 func (orig *LazyStatus) FinishUnmarshal(buf *Status) (*Status, error) {

@@ -149,9 +149,16 @@ func (orig *LazyEntityRef) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalO
 	if !opts.LazyDecoding {
 		return orig.EntityRef.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipEntityRefProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.EntityRef.Reset()
 	return nil
+}
+
+func SkipLazyEntityRefProto(buf []byte) error {
+	return SkipEntityRefProto(buf)
 }
 
 func (orig *LazyEntityRef) FinishUnmarshal(buf *EntityRef) (*EntityRef, error) {

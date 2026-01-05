@@ -150,9 +150,16 @@ func (orig *LazyResource) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.Resource.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipResourceProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Resource.Reset()
 	return nil
+}
+
+func SkipLazyResourceProto(buf []byte) error {
+	return SkipResourceProto(buf)
 }
 
 func (orig *LazyResource) FinishUnmarshal(buf *Resource) (*Resource, error) {

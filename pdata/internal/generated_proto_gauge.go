@@ -224,6 +224,46 @@ func (orig *Gauge) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) 
 	return nil
 }
 
+func SkipGaugeProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipNumberDataPointProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestGauge() *Gauge {
 	orig := NewGauge()
 	orig.DataPoints = []*NumberDataPoint{{}, GenTestNumberDataPoint()}

@@ -149,9 +149,16 @@ func (orig *LazyUnixAddr) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.UnixAddr.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipUnixAddrProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.UnixAddr.Reset()
 	return nil
+}
+
+func SkipLazyUnixAddrProto(buf []byte) error {
+	return SkipUnixAddrProto(buf)
 }
 
 func (orig *LazyUnixAddr) FinishUnmarshal(buf *UnixAddr) (*UnixAddr, error) {

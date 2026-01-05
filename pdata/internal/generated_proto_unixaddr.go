@@ -242,6 +242,51 @@ func (orig *UnixAddr) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	return nil
 }
 
+func SkipUnixAddrProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+
+			pos, err = proto.SkipLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Net", wireType)
+			}
+
+			pos, err = proto.SkipLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestUnixAddr() *UnixAddr {
 	orig := NewUnixAddr()
 	orig.Name = "test_name"

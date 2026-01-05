@@ -150,9 +150,16 @@ func (orig *LazyMapping) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpt
 	if !opts.LazyDecoding {
 		return orig.Mapping.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipMappingProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Mapping.Reset()
 	return nil
+}
+
+func SkipLazyMappingProto(buf []byte) error {
+	return SkipMappingProto(buf)
 }
 
 func (orig *LazyMapping) FinishUnmarshal(buf *Mapping) (*Mapping, error) {

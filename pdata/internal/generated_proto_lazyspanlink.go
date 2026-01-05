@@ -152,9 +152,16 @@ func (orig *LazySpanLink) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.SpanLink.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSpanLinkProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.SpanLink.Reset()
 	return nil
+}
+
+func SkipLazySpanLinkProto(buf []byte) error {
+	return SkipSpanLinkProto(buf)
 }
 
 func (orig *LazySpanLink) FinishUnmarshal(buf *SpanLink) (*SpanLink, error) {

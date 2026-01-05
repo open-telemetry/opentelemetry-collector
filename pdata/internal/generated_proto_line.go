@@ -258,6 +258,61 @@ func (orig *Line) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) e
 	return nil
 }
 
+func SkipLineProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionIndex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Line", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field Column", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestLine() *Line {
 	orig := NewLine()
 	orig.FunctionIndex = int32(13)

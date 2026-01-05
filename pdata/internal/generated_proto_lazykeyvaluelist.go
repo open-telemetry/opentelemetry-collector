@@ -150,9 +150,16 @@ func (orig *LazyKeyValueList) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarsh
 	if !opts.LazyDecoding {
 		return orig.KeyValueList.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipKeyValueListProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.KeyValueList.Reset()
 	return nil
+}
+
+func SkipLazyKeyValueListProto(buf []byte) error {
+	return SkipKeyValueListProto(buf)
 }
 
 func (orig *LazyKeyValueList) FinishUnmarshal(buf *KeyValueList) (*KeyValueList, error) {

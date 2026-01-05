@@ -150,9 +150,16 @@ func (orig *LazyNumberDataPoint) UnmarshalProtoOpts(buf []byte, opts *pdata.Unma
 	if !opts.LazyDecoding {
 		return orig.NumberDataPoint.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipNumberDataPointProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.NumberDataPoint.Reset()
 	return nil
+}
+
+func SkipLazyNumberDataPointProto(buf []byte) error {
+	return SkipNumberDataPointProto(buf)
 }
 
 func (orig *LazyNumberDataPoint) FinishUnmarshal(buf *NumberDataPoint) (*NumberDataPoint, error) {

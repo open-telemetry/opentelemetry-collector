@@ -150,9 +150,16 @@ func (orig *LazyArrayValue) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarshal
 	if !opts.LazyDecoding {
 		return orig.ArrayValue.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipArrayValueProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ArrayValue.Reset()
 	return nil
+}
+
+func SkipLazyArrayValueProto(buf []byte) error {
+	return SkipArrayValueProto(buf)
 }
 
 func (orig *LazyArrayValue) FinishUnmarshal(buf *ArrayValue) (*ArrayValue, error) {

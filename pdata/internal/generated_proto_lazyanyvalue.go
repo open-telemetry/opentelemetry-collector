@@ -149,9 +149,16 @@ func (orig *LazyAnyValue) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.AnyValue.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipAnyValueProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.AnyValue.Reset()
 	return nil
+}
+
+func SkipLazyAnyValueProto(buf []byte) error {
+	return SkipAnyValueProto(buf)
 }
 
 func (orig *LazyAnyValue) FinishUnmarshal(buf *AnyValue) (*AnyValue, error) {

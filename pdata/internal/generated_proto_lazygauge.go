@@ -150,9 +150,16 @@ func (orig *LazyGauge) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptio
 	if !opts.LazyDecoding {
 		return orig.Gauge.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipGaugeProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Gauge.Reset()
 	return nil
+}
+
+func SkipLazyGaugeProto(buf []byte) error {
+	return SkipGaugeProto(buf)
 }
 
 func (orig *LazyGauge) FinishUnmarshal(buf *Gauge) (*Gauge, error) {

@@ -149,9 +149,16 @@ func (orig *LazyTCPAddr) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpt
 	if !opts.LazyDecoding {
 		return orig.TCPAddr.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipTCPAddrProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.TCPAddr.Reset()
 	return nil
+}
+
+func SkipLazyTCPAddrProto(buf []byte) error {
+	return SkipTCPAddrProto(buf)
 }
 
 func (orig *LazyTCPAddr) FinishUnmarshal(buf *TCPAddr) (*TCPAddr, error) {

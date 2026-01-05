@@ -151,9 +151,16 @@ func (orig *LazyExportMetricsServiceRequest) UnmarshalProtoOpts(buf []byte, opts
 	if !opts.LazyDecoding {
 		return orig.ExportMetricsServiceRequest.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExportMetricsServiceRequestProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExportMetricsServiceRequest.Reset()
 	return nil
+}
+
+func SkipLazyExportMetricsServiceRequestProto(buf []byte) error {
+	return SkipExportMetricsServiceRequestProto(buf)
 }
 
 func (orig *LazyExportMetricsServiceRequest) FinishUnmarshal(buf *ExportMetricsServiceRequest) (*ExportMetricsServiceRequest, error) {

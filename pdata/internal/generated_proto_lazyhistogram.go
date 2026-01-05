@@ -150,9 +150,16 @@ func (orig *LazyHistogram) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalO
 	if !opts.LazyDecoding {
 		return orig.Histogram.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipHistogramProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Histogram.Reset()
 	return nil
+}
+
+func SkipLazyHistogramProto(buf []byte) error {
+	return SkipHistogramProto(buf)
 }
 
 func (orig *LazyHistogram) FinishUnmarshal(buf *Histogram) (*Histogram, error) {

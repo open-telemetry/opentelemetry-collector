@@ -150,9 +150,16 @@ func (orig *LazyScopeLogs) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalO
 	if !opts.LazyDecoding {
 		return orig.ScopeLogs.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipScopeLogsProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ScopeLogs.Reset()
 	return nil
+}
+
+func SkipLazyScopeLogsProto(buf []byte) error {
+	return SkipScopeLogsProto(buf)
 }
 
 func (orig *LazyScopeLogs) FinishUnmarshal(buf *ScopeLogs) (*ScopeLogs, error) {

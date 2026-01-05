@@ -150,9 +150,16 @@ func (orig *LazyLocation) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.Location.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipLocationProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Location.Reset()
 	return nil
+}
+
+func SkipLazyLocationProto(buf []byte) error {
+	return SkipLocationProto(buf)
 }
 
 func (orig *LazyLocation) FinishUnmarshal(buf *Location) (*Location, error) {

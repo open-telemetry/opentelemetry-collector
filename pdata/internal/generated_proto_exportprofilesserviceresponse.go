@@ -208,6 +208,46 @@ func (orig *ExportProfilesServiceResponse) UnmarshalProtoOpts(buf []byte, opts *
 	return nil
 }
 
+func SkipExportProfilesServiceResponseProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field PartialSuccess", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipExportProfilesPartialSuccessProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestExportProfilesServiceResponse() *ExportProfilesServiceResponse {
 	orig := NewExportProfilesServiceResponse()
 	orig.PartialSuccess = *GenTestExportProfilesPartialSuccess()

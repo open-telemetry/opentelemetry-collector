@@ -149,9 +149,16 @@ func (orig *LazyLogsRequest) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarsha
 	if !opts.LazyDecoding {
 		return orig.LogsRequest.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipLogsRequestProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.LogsRequest.Reset()
 	return nil
+}
+
+func SkipLazyLogsRequestProto(buf []byte) error {
+	return SkipLogsRequestProto(buf)
 }
 
 func (orig *LazyLogsRequest) FinishUnmarshal(buf *LogsRequest) (*LogsRequest, error) {

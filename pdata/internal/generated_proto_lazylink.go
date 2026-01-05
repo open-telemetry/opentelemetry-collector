@@ -150,9 +150,16 @@ func (orig *LazyLink) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	if !opts.LazyDecoding {
 		return orig.Link.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipLinkProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Link.Reset()
 	return nil
+}
+
+func SkipLazyLinkProto(buf []byte) error {
+	return SkipLinkProto(buf)
 }
 
 func (orig *LazyLink) FinishUnmarshal(buf *Link) (*Link, error) {

@@ -149,9 +149,16 @@ func (orig *LazyUDPAddr) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOpt
 	if !opts.LazyDecoding {
 		return orig.UDPAddr.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipUDPAddrProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.UDPAddr.Reset()
 	return nil
+}
+
+func SkipLazyUDPAddrProto(buf []byte) error {
+	return SkipUDPAddrProto(buf)
 }
 
 func (orig *LazyUDPAddr) FinishUnmarshal(buf *UDPAddr) (*UDPAddr, error) {

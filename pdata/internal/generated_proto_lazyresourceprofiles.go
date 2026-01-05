@@ -150,9 +150,16 @@ func (orig *LazyResourceProfiles) UnmarshalProtoOpts(buf []byte, opts *pdata.Unm
 	if !opts.LazyDecoding {
 		return orig.ResourceProfiles.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipResourceProfilesProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ResourceProfiles.Reset()
 	return nil
+}
+
+func SkipLazyResourceProfilesProto(buf []byte) error {
+	return SkipResourceProfilesProto(buf)
 }
 
 func (orig *LazyResourceProfiles) FinishUnmarshal(buf *ResourceProfiles) (*ResourceProfiles, error) {

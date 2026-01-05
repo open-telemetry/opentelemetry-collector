@@ -150,9 +150,16 @@ func (orig *LazyLine) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	if !opts.LazyDecoding {
 		return orig.Line.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipLineProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Line.Reset()
 	return nil
+}
+
+func SkipLazyLineProto(buf []byte) error {
+	return SkipLineProto(buf)
 }
 
 func (orig *LazyLine) FinishUnmarshal(buf *Line) (*Line, error) {

@@ -150,9 +150,16 @@ func (orig *LazyExportLogsPartialSuccess) UnmarshalProtoOpts(buf []byte, opts *p
 	if !opts.LazyDecoding {
 		return orig.ExportLogsPartialSuccess.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExportLogsPartialSuccessProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.ExportLogsPartialSuccess.Reset()
 	return nil
+}
+
+func SkipLazyExportLogsPartialSuccessProto(buf []byte) error {
+	return SkipExportLogsPartialSuccessProto(buf)
 }
 
 func (orig *LazyExportLogsPartialSuccess) FinishUnmarshal(buf *ExportLogsPartialSuccess) (*ExportLogsPartialSuccess, error) {

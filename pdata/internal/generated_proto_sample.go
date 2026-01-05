@@ -431,6 +431,137 @@ func (orig *Sample) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions)
 	return nil
 }
 
+func SkipSampleProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field StackIndex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+
+				for startPos < pos {
+					startPos, err = proto.SkipVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field Values", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+
+				pos, err = proto.SkipVarint(buf, pos)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+		case 3:
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+
+				for startPos < pos {
+					startPos, err = proto.SkipVarint(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
+				}
+			case proto.WireTypeVarint:
+
+				pos, err = proto.SkipVarint(buf, pos)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
+			}
+
+		case 4:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field LinkIndex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 5:
+			switch wireType {
+			case proto.WireTypeLen:
+				var length int
+				length, pos, err = proto.ConsumeLen(buf, pos)
+				if err != nil {
+					return err
+				}
+				startPos := pos - length
+				size := length / 8
+
+				for i := 0; i < size; i++ {
+					startPos, err = proto.SkipI64(buf[:pos], startPos)
+					if err != nil {
+						return err
+					}
+				}
+				if startPos != pos {
+					return fmt.Errorf("proto: invalid field len = %d for field TimestampsUnixNano", pos-startPos)
+				}
+			case proto.WireTypeI64:
+
+				pos, err = proto.SkipI64(buf, pos)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
+			}
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestSample() *Sample {
 	orig := NewSample()
 	orig.StackIndex = int32(13)

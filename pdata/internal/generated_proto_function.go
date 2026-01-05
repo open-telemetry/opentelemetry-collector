@@ -285,6 +285,71 @@ func (orig *Function) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOption
 	return nil
 }
 
+func SkipFunctionProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field NameStrindex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field SystemNameStrindex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field FilenameStrindex", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 4:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartLine", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestFunction() *Function {
 	orig := NewFunction()
 	orig.NameStrindex = int32(13)

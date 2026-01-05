@@ -237,6 +237,51 @@ func (orig *ExportMetricsPartialSuccess) UnmarshalProtoOpts(buf []byte, opts *pd
 	return nil
 }
 
+func SkipExportMetricsPartialSuccessProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field RejectedDataPoints", wireType)
+			}
+
+			pos, err = proto.SkipVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
+			}
+
+			pos, err = proto.SkipLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestExportMetricsPartialSuccess() *ExportMetricsPartialSuccess {
 	orig := NewExportMetricsPartialSuccess()
 	orig.RejectedDataPoints = int64(13)

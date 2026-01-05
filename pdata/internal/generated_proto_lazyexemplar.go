@@ -153,9 +153,16 @@ func (orig *LazyExemplar) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOp
 	if !opts.LazyDecoding {
 		return orig.Exemplar.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipExemplarProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.Exemplar.Reset()
 	return nil
+}
+
+func SkipLazyExemplarProto(buf []byte) error {
+	return SkipExemplarProto(buf)
 }
 
 func (orig *LazyExemplar) FinishUnmarshal(buf *Exemplar) (*Exemplar, error) {

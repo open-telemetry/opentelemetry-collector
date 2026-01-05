@@ -152,9 +152,16 @@ func (orig *LazyTracesData) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarshal
 	if !opts.LazyDecoding {
 		return orig.TracesData.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipTracesDataProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.TracesData.Reset()
 	return nil
+}
+
+func SkipLazyTracesDataProto(buf []byte) error {
+	return SkipTracesDataProto(buf)
 }
 
 func (orig *LazyTracesData) FinishUnmarshal(buf *TracesData) (*TracesData, error) {

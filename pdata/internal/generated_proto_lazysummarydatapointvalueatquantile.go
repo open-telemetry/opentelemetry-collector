@@ -150,9 +150,16 @@ func (orig *LazySummaryDataPointValueAtQuantile) UnmarshalProtoOpts(buf []byte, 
 	if !opts.LazyDecoding {
 		return orig.SummaryDataPointValueAtQuantile.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSummaryDataPointValueAtQuantileProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.SummaryDataPointValueAtQuantile.Reset()
 	return nil
+}
+
+func SkipLazySummaryDataPointValueAtQuantileProto(buf []byte) error {
+	return SkipSummaryDataPointValueAtQuantileProto(buf)
 }
 
 func (orig *LazySummaryDataPointValueAtQuantile) FinishUnmarshal(buf *SummaryDataPointValueAtQuantile) (*SummaryDataPointValueAtQuantile, error) {

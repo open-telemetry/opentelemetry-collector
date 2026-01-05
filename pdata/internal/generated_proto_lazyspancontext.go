@@ -149,9 +149,16 @@ func (orig *LazySpanContext) UnmarshalProtoOpts(buf []byte, opts *pdata.Unmarsha
 	if !opts.LazyDecoding {
 		return orig.SpanContext.UnmarshalProtoOpts(buf, opts)
 	}
+	if err := SkipSpanContextProto(buf); err != nil {
+		return err
+	}
 	orig.bytes = buf
 	orig.SpanContext.Reset()
 	return nil
+}
+
+func SkipLazySpanContextProto(buf []byte) error {
+	return SkipSpanContextProto(buf)
 }
 
 func (orig *LazySpanContext) FinishUnmarshal(buf *SpanContext) (*SpanContext, error) {
