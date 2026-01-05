@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.48.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.77.0
+	google.golang.org/grpc v1.78.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
