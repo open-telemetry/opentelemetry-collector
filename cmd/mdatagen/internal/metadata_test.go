@@ -371,6 +371,15 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `invalid stage "invalid"`,
 		},
 		{
+			name: "missing from_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+			wantErr: `from_version is required`,
+		},
+		{
 			name: "from_version without v prefix",
 			featureGate: FeatureGate{
 				ID:          "component.feature",
