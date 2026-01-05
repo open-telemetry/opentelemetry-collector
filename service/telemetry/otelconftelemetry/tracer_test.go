@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -198,3 +199,126 @@ func newOTLPSimpleSpanProcessor(srv *httptest.Server) config.SpanProcessor {
 		},
 	}
 }
+
+// TestCreateTracerProvider_EnvVarDoesNotOverrideConfig verifies that the OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+// environment variable does not override the endpoint configured in the config file.
+// This is a regression test for issue #14286.
+func TestCreateTracerProvider_EnvVarDoesNotOverrideConfig(t *testing.T) {
+	// Track which server receives requests
+	var configuredReceived []ptrace.Traces
+	var envVarReceived []ptrace.Traces
+
+	// Create server for the configured endpoint
+	configuredMux := http.NewServeMux()
+	configuredMux.HandleFunc("/v1/traces", func(_ http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+
+		exportRequest := ptraceotlp.NewExportRequest()
+		assert.NoError(t, exportRequest.UnmarshalProto(body))
+		configuredReceived = append(configuredReceived, exportRequest.Traces())
+	})
+	configuredSrv := httptest.NewServer(configuredMux)
+	defer configuredSrv.Close()
+
+	// Create server for the env var endpoint (should not receive requests)
+	envVarMux := http.NewServeMux()
+	envVarMux.HandleFunc("/v1/traces", func(_ http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+
+		exportRequest := ptraceotlp.NewExportRequest()
+		assert.NoError(t, exportRequest.UnmarshalProto(body))
+		envVarReceived = append(envVarReceived, exportRequest.Traces())
+	})
+	envVarSrv := httptest.NewServer(envVarMux)
+	defer envVarSrv.Close()
+
+	// Set the environment variable to the env var endpoint
+	t.Setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", envVarSrv.URL+"/v1/traces")
+
+	// Configure to use the configured endpoint (should not be overridden by env var)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Propagators = []string{"tracecontext"}
+	cfg.Traces.Processors = []config.SpanProcessor{
+		{
+			Simple: &config.SimpleSpanProcessor{
+				Exporter: config.SpanExporter{
+					OTLP: &config.OTLP{
+						Endpoint: ptr(configuredSrv.URL + "/v1/traces"),
+						Protocol: ptr("http/protobuf"),
+						Insecure: ptr(true),
+					},
+				},
+			},
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{
+		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+	}, cfg)
+	require.NoError(t, err)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
+		Settings: telemetry.Settings{
+			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+			Resource:  &resource,
+		},
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(t.Context()))
+	}()
+
+	tracer := provider.Tracer("test_tracer")
+	_, span := tracer.Start(context.Background(), "test_span")
+	span.End()
+
+	// Verify that spans were sent to the configured endpoint
+	// and NOT to the env var endpoint
+	require.Len(t, configuredReceived, 1, "spans should be sent to the configured endpoint")
+	require.Len(t, envVarReceived, 0, "spans should NOT be sent to the env var endpoint")
+
+	traces := configuredReceived[0]
+	require.Equal(t, 1, traces.SpanCount())
+	assert.Equal(t, "test_span", traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+}
+
+// TestUnsetAndRestoreEnvVars verifies that the environment variable
+// unset/restore functions work correctly.
+func TestUnsetAndRestoreEnvVars(t *testing.T) {
+	// Set up some test environment variables
+	os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://example.com")
+	os.Setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://traces.example.com")
+
+	// Verify they are set
+	_, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	require.True(t, exists)
+	_, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	require.True(t, exists)
+
+	// Unset them
+	saved := unsetOTLPEndpointEnvVars()
+
+	// Verify they are unset
+	_, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	require.False(t, exists)
+	_, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	require.False(t, exists)
+
+	// Restore them
+	restoreEnvVars(saved)
+
+	// Verify they are restored
+	val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	require.True(t, exists)
+	assert.Equal(t, "http://example.com", val)
+	val, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	require.True(t, exists)
+	assert.Equal(t, "http://traces.example.com", val)
+
+	// Clean up
+	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	os.Unsetenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+}
+
