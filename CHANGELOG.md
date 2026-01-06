@@ -7,6 +7,32 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.49.0/v0.143.0
+
+### 💡 Enhancements 💡
+
+- `all`: Update semconv import to 1.38.0 (#14305)
+- `exporter/nop`: Add profiles support to nop exporter (#14331)
+- `pkg/pdata`: Optimize the size and pointer bytes for pdata structs (#14339)
+- `pkg/pdata`: Avoid using interfaces/oneof like style for optional fields (#14333)
+
+<!-- previous-version -->
+
+## v1.48.0/v0.142.0
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Add logging of dropped attributes, events, and links counts in detailed verbosity (#14202)
+- `extension/memory_limiter`: The memorylimiter extension can be used as an HTTP/GRPC middleware. (#14081)
+- `pkg/config/configgrpc`: Statically validate gRPC endpoint (#10451)
+  This validation was already done in the OTLP exporter. It will now be applied to any gRPC client.
+  
+- `pkg/service`: Add support to disabling adding resource attributes as zap fields in internal logging (#13869)
+  Note that this does not affect logs exported through OTLP.
+  
+
+<!-- previous-version -->
+
 ## v1.47.0/v0.141.0
 
 ### 🛑 Breaking changes 🛑

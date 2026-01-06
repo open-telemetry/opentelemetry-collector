@@ -68,7 +68,7 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime) |
+| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
 
 ## Optional Metrics
 
