@@ -235,13 +235,17 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	}
 
 	// Only register process metrics on supported OSes.
-    // AIX is currently unsupported for process metrics, so we skip it to avoid crashing.
-    // For other OSes, we want to fail fast if registration fails.
-    if runtime.GOOS != "aix" {
-        if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-            return nil, err
-        }
-    }
+	const osAIX = "aix"
+	if runtime.GOOS == osAIX {
+		// AIX is currently unsupported for process metrics, so we skip it to avoid crashing.
+		// We log this so the user is aware that metrics are disabled.
+		srv.telemetrySettings.Logger.Info("Skipping process metrics registration on unsupported OS", zap.String("os", runtime.GOOS))
+	} else {
+		// For other OSes, we want to fail fast if registration fails.
+		if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+			return nil, err
+		}
+	}
 	return srv, nil
 }
 
