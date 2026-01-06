@@ -20,7 +20,11 @@ import (
 type {{ .messageName }} struct {
 {{- range .fields }}
     {{ .GenMessageField }}
-{{- end }}}
+{{- end }}
+{{ if gt .metadataSize 0 -}}
+    metadata [{{ .metadataSize }}]uint64
+{{ end -}}
+}
 
 var (
 	protoPool{{ .messageName }} = sync.Pool{
@@ -49,7 +53,9 @@ func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
         return
     }
 
-    {{ range .fields }}{{ .GenDelete }}{{ end }}
+    {{- range .fields }}
+        {{ .GenDelete }}
+    {{- end }}
     orig.Reset()
     if nullable {
         protoPool{{ .messageName }}.Put(orig)
@@ -199,10 +205,14 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+{{ if gt .metadataSize 0 -}}
+{{ call .GenerateMetadata }}
+{{ end -}}
+
 func GenTest{{ .messageName }}() *{{ .messageName }} {
     orig := New{{ .messageName }}()
     {{- range .fields }}
-    orig.{{ .GetName }} = {{ .TestValue }}
+    {{ .GenTest }}
     {{- end }}
     return orig
 }

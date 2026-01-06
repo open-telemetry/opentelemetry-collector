@@ -13,7 +13,7 @@ jobs:
       contents: write # for Git to git push
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
