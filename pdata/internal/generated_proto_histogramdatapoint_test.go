@@ -220,13 +220,25 @@ func genTestEncodingValuesHistogramDataPoint() map[string]*HistogramDataPoint {
 		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
-		"Count/test":             {Count: uint64(13)}, "Sum/default": {Sum_: &HistogramDataPoint_Sum{Sum: float64(0)}},
-		"Sum/test":            {Sum_: &HistogramDataPoint_Sum{Sum: float64(3.1415926)}},
+		"Count/test":             {Count: uint64(13)},
+		"Sum/test": func() *HistogramDataPoint {
+			ms := NewHistogramDataPoint()
+			ms.SetSum(float64(3.1415926))
+			return ms
+		}(),
 		"BucketCounts/test":   {BucketCounts: []uint64{uint64(0), uint64(13)}},
 		"ExplicitBounds/test": {ExplicitBounds: []float64{float64(0), float64(3.1415926)}},
 		"Exemplars/test":      {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
-		"Flags/test":          {Flags: uint32(13)}, "Min/default": {Min_: &HistogramDataPoint_Min{Min: float64(0)}},
-		"Min/test": {Min_: &HistogramDataPoint_Min{Min: float64(3.1415926)}}, "Max/default": {Max_: &HistogramDataPoint_Max{Max: float64(0)}},
-		"Max/test": {Max_: &HistogramDataPoint_Max{Max: float64(3.1415926)}},
+		"Flags/test":          {Flags: uint32(13)},
+		"Min/test": func() *HistogramDataPoint {
+			ms := NewHistogramDataPoint()
+			ms.SetMin(float64(3.1415926))
+			return ms
+		}(),
+		"Max/test": func() *HistogramDataPoint {
+			ms := NewHistogramDataPoint()
+			ms.SetMax(float64(3.1415926))
+			return ms
+		}(),
 	}
 }
