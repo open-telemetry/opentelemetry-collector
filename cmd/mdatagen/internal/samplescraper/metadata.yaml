@@ -3,6 +3,7 @@
 type: sample
 display_name: Sample Scraper
 description: This scraper is used for testing purposes to check the output of mdatagen.
+reaggregation_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0

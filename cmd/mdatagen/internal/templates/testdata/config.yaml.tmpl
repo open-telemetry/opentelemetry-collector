@@ -1,5 +1,7 @@
+{{- $reag := .ReaggregationEnabled -}}
 default:
 all_set:
+{{- if $reag }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
@@ -23,12 +25,15 @@ all_set:
     {{- end }}
   {{- end }}
 reaggregate_set:
+{{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}
     {{ $name }}:
       enabled: true
+      {{- if $reag }}
       attributes: []
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}
@@ -51,7 +56,9 @@ none_set:
     {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: false
-      attributes: [{{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}}]
+      {{- if $reag }}
+      attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}
