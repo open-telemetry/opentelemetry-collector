@@ -18,22 +18,22 @@ import (
 // Span represents a single operation within a trace.
 // See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
 type Span struct {
-	TraceId                TraceID
-	SpanId                 SpanID
 	TraceState             string
-	ParentSpanId           SpanID
-	Flags                  uint32
 	Name                   string
-	Kind                   SpanKind
+	Attributes             []KeyValue
+	Events                 []*SpanEvent
+	Links                  []*SpanLink
+	Status                 Status
 	StartTimeUnixNano      uint64
 	EndTimeUnixNano        uint64
-	Attributes             []KeyValue
+	Flags                  uint32
+	Kind                   SpanKind
 	DroppedAttributesCount uint32
-	Events                 []*SpanEvent
 	DroppedEventsCount     uint32
-	Links                  []*SpanLink
 	DroppedLinksCount      uint32
-	Status                 Status
+	TraceId                TraceID
+	SpanId                 SpanID
+	ParentSpanId           SpanID
 }
 
 var (
@@ -60,21 +60,24 @@ func DeleteSpan(orig *Span, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
+
 	DeleteSpanID(&orig.ParentSpanId, false)
+
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	for i := range orig.Events {
 		DeleteSpanEvent(orig.Events[i], true)
 	}
+
 	for i := range orig.Links {
 		DeleteSpanLink(orig.Links[i], true)
 	}
-	DeleteStatus(&orig.Status, false)
 
+	DeleteStatus(&orig.Status, false)
 	orig.Reset()
 	if nullable {
 		protoPoolSpan.Put(orig)

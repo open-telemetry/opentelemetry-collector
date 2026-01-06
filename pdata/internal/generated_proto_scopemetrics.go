@@ -16,9 +16,9 @@ import (
 
 // ScopeMetrics is a collection of metrics from a LibraryInstrumentation.
 type ScopeMetrics struct {
-	Scope     InstrumentationScope
-	Metrics   []*Metric
 	SchemaUrl string
+	Metrics   []*Metric
+	Scope     InstrumentationScope
 }
 
 var (
@@ -45,7 +45,6 @@ func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Metrics {
 		DeleteMetric(orig.Metrics[i], true)

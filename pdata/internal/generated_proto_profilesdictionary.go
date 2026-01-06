@@ -49,7 +49,6 @@ func DeleteProfilesDictionary(orig *ProfilesDictionary, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.MappingTable {
 		DeleteMapping(orig.MappingTable[i], true)
 	}
@@ -62,13 +61,13 @@ func DeleteProfilesDictionary(orig *ProfilesDictionary, nullable bool) {
 	for i := range orig.LinkTable {
 		DeleteLink(orig.LinkTable[i], true)
 	}
+
 	for i := range orig.AttributeTable {
 		DeleteKeyValueAndUnit(orig.AttributeTable[i], true)
 	}
 	for i := range orig.StackTable {
 		DeleteStack(orig.StackTable[i], true)
 	}
-
 	orig.Reset()
 	if nullable {
 		protoPoolProfilesDictionary.Put(orig)

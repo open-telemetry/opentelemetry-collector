@@ -18,17 +18,17 @@ import (
 // Profile are an implementation of the pprofextended data model.
 
 type Profile struct {
-	SampleType             ValueType
-	Samples                []*Sample
-	TimeUnixNano           uint64
-	DurationNano           uint64
-	PeriodType             ValueType
-	Period                 int64
-	ProfileId              ProfileID
-	DroppedAttributesCount uint32
 	OriginalPayloadFormat  string
+	Samples                []*Sample
 	OriginalPayload        []byte
 	AttributeIndices       []int32
+	TimeUnixNano           uint64
+	DurationNano           uint64
+	Period                 int64
+	SampleType             ValueType
+	PeriodType             ValueType
+	DroppedAttributesCount uint32
+	ProfileId              ProfileID
 }
 
 var (
@@ -55,12 +55,13 @@ func DeleteProfile(orig *Profile, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteValueType(&orig.SampleType, false)
 	for i := range orig.Samples {
 		DeleteSample(orig.Samples[i], true)
 	}
+
 	DeleteValueType(&orig.PeriodType, false)
+
 	DeleteProfileID(&orig.ProfileId, false)
 
 	orig.Reset()
@@ -291,6 +292,7 @@ func (orig *Profile) SizeProto() int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		l = 0
 		for _, e := range orig.AttributeIndices {

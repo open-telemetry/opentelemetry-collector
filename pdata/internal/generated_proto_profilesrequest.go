@@ -45,7 +45,6 @@ func DeleteProfilesRequest(orig *ProfilesRequest, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteRequestContext(orig.RequestContext, true)
 	DeleteProfilesData(&orig.ProfilesData, false)
 

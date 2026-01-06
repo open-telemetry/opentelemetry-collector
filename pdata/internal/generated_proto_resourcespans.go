@@ -46,15 +46,14 @@ func DeleteResourceSpans(orig *ResourceSpans, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeSpans {
 		DeleteScopeSpans(orig.ScopeSpans[i], true)
 	}
+
 	for i := range orig.DeprecatedScopeSpans {
 		DeleteScopeSpans(orig.DeprecatedScopeSpans[i], true)
 	}
-
 	orig.Reset()
 	if nullable {
 		protoPoolResourceSpans.Put(orig)

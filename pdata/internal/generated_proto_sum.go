@@ -45,7 +45,6 @@ func DeleteSum(orig *Sum, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.DataPoints {
 		DeleteNumberDataPoint(orig.DataPoints[i], true)
 	}

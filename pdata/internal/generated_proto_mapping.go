@@ -16,11 +16,11 @@ import (
 
 // Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID
 type Mapping struct {
+	AttributeIndices []int32
 	MemoryStart      uint64
 	MemoryLimit      uint64
 	FileOffset       uint64
 	FilenameStrindex int32
-	AttributeIndices []int32
 }
 
 var (
@@ -200,6 +200,7 @@ func (orig *Mapping) SizeProto() int {
 	if orig.FilenameStrindex != int32(0) {
 		n += 1 + proto.Sov(uint64(orig.FilenameStrindex))
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		l = 0
 		for _, e := range orig.AttributeIndices {

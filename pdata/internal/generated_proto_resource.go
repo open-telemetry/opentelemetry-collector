@@ -17,8 +17,8 @@ import (
 // Resource is a message representing the resource information.
 type Resource struct {
 	Attributes             []KeyValue
-	DroppedAttributesCount uint32
 	EntityRefs             []*EntityRef
+	DroppedAttributesCount uint32
 }
 
 var (
@@ -45,14 +45,13 @@ func DeleteResource(orig *Resource, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	for i := range orig.EntityRefs {
 		DeleteEntityRef(orig.EntityRefs[i], true)
 	}
-
 	orig.Reset()
 	if nullable {
 		protoPoolResource.Put(orig)

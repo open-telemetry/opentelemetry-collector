@@ -15,8 +15,8 @@ import (
 )
 
 type KeyValue struct {
-	Key   string
 	Value AnyValue
+	Key   string
 }
 
 var (
@@ -45,7 +45,6 @@ func DeleteKeyValue(orig *KeyValue, nullable bool) {
 	}
 
 	DeleteAnyValue(&orig.Value, false)
-
 	orig.Reset()
 	if nullable {
 		protoPoolKeyValue.Put(orig)

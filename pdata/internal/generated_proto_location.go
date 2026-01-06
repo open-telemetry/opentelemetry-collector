@@ -16,10 +16,10 @@ import (
 
 // Location describes function and line table debug information.
 type Location struct {
-	MappingIndex     int32
-	Address          uint64
 	Lines            []*Line
 	AttributeIndices []int32
+	Address          uint64
+	MappingIndex     int32
 }
 
 var (
@@ -205,6 +205,7 @@ func (orig *Location) SizeProto() int {
 		l = orig.Lines[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		l = 0
 		for _, e := range orig.AttributeIndices {

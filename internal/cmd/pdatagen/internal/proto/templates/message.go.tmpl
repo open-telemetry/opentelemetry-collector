@@ -53,7 +53,9 @@ func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
         return
     }
 
-    {{ range .fields }}{{ .GenDelete }}{{ end }}
+    {{- range .fields }}
+        {{ .GenDelete }}
+    {{- end }}
     orig.Reset()
     if nullable {
         protoPool{{ .messageName }}.Put(orig)

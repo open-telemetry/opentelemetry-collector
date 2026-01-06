@@ -16,10 +16,10 @@ import (
 )
 
 type SpanContext struct {
+	TraceState string
+	TraceFlags uint32
 	TraceID    TraceID
 	SpanID     SpanID
-	TraceFlags uint32
-	TraceState string
 	Remote     bool
 }
 
@@ -47,7 +47,6 @@ func DeleteSpanContext(orig *SpanContext, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteTraceID(&orig.TraceID, false)
 	DeleteSpanID(&orig.SpanID, false)
 

@@ -16,9 +16,9 @@ import (
 
 // ResourceProfiles is a collection of profiles from a Resource.
 type ResourceProfiles struct {
+	SchemaUrl     string
 	Resource      Resource
 	ScopeProfiles []*ScopeProfiles
-	SchemaUrl     string
 }
 
 var (
@@ -45,7 +45,6 @@ func DeleteResourceProfiles(orig *ResourceProfiles, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	DeleteResource(&orig.Resource, false)
 	for i := range orig.ScopeProfiles {
 		DeleteScopeProfiles(orig.ScopeProfiles[i], true)

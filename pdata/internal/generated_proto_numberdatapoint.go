@@ -47,11 +47,11 @@ func (m *NumberDataPoint) GetAsInt() int64 {
 
 // NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
 type NumberDataPoint struct {
+	Value             any
 	Attributes        []KeyValue
+	Exemplars         []Exemplar
 	StartTimeUnixNano uint64
 	TimeUnixNano      uint64
-	Value             any
-	Exemplars         []Exemplar
 	Flags             uint32
 }
 
@@ -91,10 +91,10 @@ func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
 		orig.Reset()
 		return
 	}
-
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	switch ov := orig.Value.(type) {
 	case *NumberDataPoint_AsDouble:
 		if UseProtoPooling.IsEnabled() {
@@ -106,7 +106,6 @@ func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
 			ov.AsInt = int64(0)
 			ProtoPoolNumberDataPoint_AsInt.Put(ov)
 		}
-
 	}
 	for i := range orig.Exemplars {
 		DeleteExemplar(&orig.Exemplars[i], false)
@@ -290,7 +289,6 @@ func (orig *NumberDataPoint) UnmarshalJSON(iter *json.Iterator) {
 				ov.AsDouble = iter.ReadFloat64()
 				orig.Value = ov
 			}
-
 		case "asInt", "as_int":
 			{
 				var ov *NumberDataPoint_AsInt
@@ -336,8 +334,10 @@ func (orig *NumberDataPoint) SizeProto() int {
 		_ = orig
 		break
 	case *NumberDataPoint_AsDouble:
+
 		n += 9
 	case *NumberDataPoint_AsInt:
+
 		n += 9
 	}
 	for i := range orig.Exemplars {

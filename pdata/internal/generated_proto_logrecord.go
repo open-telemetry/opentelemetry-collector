@@ -18,17 +18,17 @@ import (
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
 
 type LogRecord struct {
+	Body                   AnyValue
+	SeverityText           string
+	EventName              string
+	Attributes             []KeyValue
 	TimeUnixNano           uint64
 	ObservedTimeUnixNano   uint64
 	SeverityNumber         SeverityNumber
-	SeverityText           string
-	Body                   AnyValue
-	Attributes             []KeyValue
 	DroppedAttributesCount uint32
 	Flags                  uint32
 	TraceId                TraceID
 	SpanId                 SpanID
-	EventName              string
 }
 
 var (
@@ -60,6 +60,7 @@ func DeleteLogRecord(orig *LogRecord, nullable bool) {
 	for i := range orig.Attributes {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
+
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
 
