@@ -21,9 +21,9 @@ func (ms {{ .structName }}) {{ .typeFuncName }}() {{ .typeName }} {
 	return {{ .typeName }}Empty
 }
 
-{{ range .values }}
+{{ range .values -}}
 {{ .GenerateAccessors $.baseStruct $.OneOfField }}
-{{ end }}`
+{{- end }}`
 
 const oneOfAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncName }}(t *testing.T) {
 	tv := New{{ .structName }}()
@@ -32,21 +32,21 @@ const oneOfAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncName }
 
 {{ range .values -}}
 {{ .GenerateTests $.baseStruct $.OneOfField }}
-{{ end }}
+{{- end }}
 `
 
 const oneOfTestFailingUnmarshalProtoValuesTemplate = `
-	{{- range .fields }}
+	{{ range .fields -}}
 	{{ .GenTestFailingUnmarshalProtoValues }}
 	{{- end }}`
 
 const oneOfTestValuesTemplate = `
-	{{- range .fields }}
+	{{ range .fields -}}
 	{{ .GenTestEncodingValues }}
 	{{- end }}`
 
 const oneOfPoolOrigTemplate = `
-	{{- range .fields }}
+	{{ range .fields -}}
 	{{ .GenPool }}
 	{{- end }}`
 
@@ -58,36 +58,36 @@ func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
 	return nil
 }
 
-{{- range .fields }}
+{{ range .fields -}}
 {{ .GenOneOfMessages }}
 {{- end }}`
 
 const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
 	{{ range .fields -}}
 	case *{{ $.protoName }}_{{ .GetName }}:
-		{{ .GenDelete }}{{- end }}
-	}
-`
+		{{ .GenDelete }}
+	{{ end -}}
+}`
 
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
-{{- range .fields }}
+	{{ range .fields -}}
 	case *{{ $.protoName }}_{{ .GetName }}:
 		{{ .GenCopy }}
-{{- end }}
+	{{ end -}}
 	default:
 		dest.{{ .originFieldName }} = nil
 }`
 
 const oneOfMarshalJSONTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
-	{{- range .fields }}
+	{{ range .fields -}}
 	case *{{ $.protoName }}_{{ .GetName }}:
 		{{ .GenMarshalJSON }}
-	{{- end }}
+	{{ end -}}
 }`
 
 const oneOfUnmarshalJSONTemplate = `
-	{{- range .fields }}
-	{{ .GenUnmarshalJSON }}
+	{{ range .fields -}}
+		{{ .GenUnmarshalJSON }}
 	{{- end }}`
 
 const oneOfSizeProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
@@ -101,16 +101,16 @@ const oneOfSizeProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type
 }`
 
 const oneOfMarshalProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(type) {
-	{{- range .fields }}
+	{{ range .fields -}}
 	case *{{ $.protoName }}_{{ .GetName }}:
 		{{ .GenMarshalProto }}
-	{{- end }}
+	{{ end -}}
 }`
 
 const oneOfUnmarshalProtoTemplate = `
 	{{- range .fields }}
 		{{ .GenUnmarshalProto }}
-	{{- end }}`
+	{{ end }}`
 
 type OneOfField struct {
 	originFieldName            string
@@ -176,6 +176,10 @@ func (of *oneOfProtoField) GoType() string {
 
 func (of *oneOfProtoField) DefaultValue() string {
 	panic("implement me")
+}
+
+func (of *oneOfProtoField) GenTest() string {
+	return "orig." + of.GetName() + " = " + of.TestValue()
 }
 
 func (of *oneOfProtoField) TestValue() string {
