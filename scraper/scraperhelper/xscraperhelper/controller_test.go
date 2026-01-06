@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/multierr"
@@ -414,4 +415,78 @@ func addProfilesScraper(t component.Type, sc xscraper.Profiles) ControllerOption
 			return sc, nil
 		}, component.StabilityLevelDevelopment))
 	return AddFactoryWithConfig(f, nil)
+}
+
+// TestNewProfilesControllerCreateError tests that NewProfilesController returns an error
+// when the scraper factory's CreateProfiles method fails.
+func TestNewProfilesControllerCreateError(t *testing.T) {
+	expectedErr := errors.New("create profiles error")
+	f := xscraper.NewFactory(component.MustNewType("scraper"), nil,
+		xscraper.WithProfiles(func(context.Context, scraper.Settings, component.Config) (xscraper.Profiles, error) {
+			return nil, expectedErr
+		}, component.StabilityLevelDevelopment))
+
+	cfg := newTestNoDelaySettings()
+	_, err := NewProfilesController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.ProfilesSink),
+		AddFactoryWithConfig(f, nil),
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, expectedErr, err)
+}
+
+// errorMeter is a meter that returns errors when creating instruments.
+type errorMeter struct {
+	metric.Meter
+}
+
+func (errorMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errors.New("counter creation error")
+}
+
+// errorMeterProvider provides errorMeter instances.
+type errorMeterProvider struct {
+	metric.MeterProvider
+}
+
+func (errorMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	return errorMeter{}
+}
+
+// TestNewProfilesControllerTelemetryError tests that NewProfilesController returns an error
+// when telemetry builder creation fails.
+func TestNewProfilesControllerTelemetryError(t *testing.T) {
+	// Create a scraper that works
+	scp, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
+		return pprofile.NewProfiles(), nil
+	})
+	require.NoError(t, err)
+
+	f := xscraper.NewFactory(component.MustNewType("scraper"), nil,
+		xscraper.WithProfiles(func(context.Context, scraper.Settings, component.Config) (xscraper.Profiles, error) {
+			return scp, nil
+		}, component.StabilityLevelDevelopment))
+
+	// Create telemetry settings with a meter provider that fails
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = errorMeterProvider{}
+
+	cfg := newTestNoDelaySettings()
+	_, err = NewProfilesController(
+		cfg,
+		receiver.Settings{
+			ID:                component.MustNewID("receiver"),
+			TelemetrySettings: set,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
+		new(consumertest.ProfilesSink),
+		AddFactoryWithConfig(f, nil),
+	)
+
+	// The error should be from wrapObsProfiles failing due to telemetry builder creation
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "counter creation error")
 }
