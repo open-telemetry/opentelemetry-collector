@@ -88,7 +88,6 @@ func TestMetric_Gauge(t *testing.T) {
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyGauge() })
 }
-
 func TestMetric_Sum(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySum()
@@ -100,7 +99,6 @@ func TestMetric_Sum(t *testing.T) {
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptySum() })
 }
-
 func TestMetric_Histogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyHistogram()
@@ -112,7 +110,6 @@ func TestMetric_Histogram(t *testing.T) {
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyHistogram() })
 }
-
 func TestMetric_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptyExponentialHistogram()
@@ -124,7 +121,6 @@ func TestMetric_ExponentialHistogram(t *testing.T) {
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newMetric(internal.NewMetric(), sharedState).SetEmptyExponentialHistogram() })
 }
-
 func TestMetric_Summary(t *testing.T) {
 	ms := NewMetric()
 	ms.SetEmptySummary()

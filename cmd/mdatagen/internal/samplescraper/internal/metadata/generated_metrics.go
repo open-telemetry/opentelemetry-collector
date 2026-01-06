@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
