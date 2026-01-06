@@ -234,9 +234,13 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		return nil, err
 	}
 
-	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-        // Fix for #14307: Log error instead of failing on unsupported OSes (e.g. AIX)
-        srv.telemetrySettings.Logger.Warn("Failed to register process metrics", zap.Error(err))
+	// Only register process metrics on supported OSes.
+    // AIX is currently unsupported for process metrics, so we skip it to avoid crashing.
+    // For other OSes, we want to fail fast if registration fails.
+    if runtime.GOOS != "aix" {
+        if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+            return nil, err
+        }
     }
 	return srv, nil
 }
