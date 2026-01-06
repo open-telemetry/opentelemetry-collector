@@ -42,10 +42,11 @@ func createDefaultConfig() component.Config {
 	clientCfg.BalancerName = ""
 
 	return &Config{
-		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
-		RetryConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		ClientConfig:  clientCfg,
+		TimeoutConfig:      exporterhelper.NewDefaultTimeoutConfig(),
+		RetryConfig:        configretry.NewDefaultBackOffConfig(),
+		QueueConfig:        configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		ClientConfig:       clientCfg,
+		ConnectionPoolSize: 0, // 0 means use default (1) at runtime, allowing backward compatibility
 	}
 }
 
