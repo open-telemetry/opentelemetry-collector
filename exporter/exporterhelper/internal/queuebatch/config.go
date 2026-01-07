@@ -37,9 +37,10 @@ type Config struct {
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
-	// ConcurrencyControllerID references an extension that provides concurrency control.
-	// If set, the queue will delegate flow control to this extension.
-	ConcurrencyControllerID *component.ID `mapstructure:"concurrency_controller"`
+	// RequestMiddlewareID if not nil, enables a request middleware extension (e.g. adaptive concurrency)
+	// that intercepts export requests after they are pulled from the queue.
+	// Note: Config key remains "concurrency_controller" for consistency with initial design/docs.
+	RequestMiddlewareID *component.ID `mapstructure:"concurrency_controller"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).

@@ -7,7 +7,6 @@ package extensioncapabilities // import "go.opentelemetry.io/collector/extension
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -50,28 +49,37 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
-// ConcurrencyController governs how many requests can be in-flight simultaneously.
-type ConcurrencyController interface {
-	// Acquire attempts to acquire a permit. It blocks until a permit is available,
-	// the context is cancelled, or the controller shuts down.
-	// It returns nil if acquired, or an error if failed/cancelled.
-	Acquire(context.Context) error
+// RequestMiddleware allows an extension to intercept and modify the execution of
+// an exporter's request (e.g., for rate limiting, concurrency control, or circuit breaking).
+type RequestMiddleware interface {
+	// Handle is called by the exporter helper. It must call `next` to proceed with the export.
+	Handle(ctx context.Context, next func(context.Context) error) error
 
-	// Record reports the duration and result of a request to update the controller's
-	// internal state (e.g. modifying the limit based on backpressure).
-	// This method also releases the permit acquired by Acquire.
-	Record(context.Context, time.Duration, error)
-
-	// Shutdown cleans up any resources used by the controller.
-	Shutdown(context.Context) error
+	// Shutdown cleans up any resources used by the middleware.
+	Shutdown(ctx context.Context) error
 }
 
-// ConcurrencyControllerFactory is an interface for extensions that can create
-// concurrency controllers for specific components.
-type ConcurrencyControllerFactory interface {
+// RequestMiddlewareFactory is an interface for extensions that can create
+// request middlewares for specific components.
+type RequestMiddlewareFactory interface {
 	extension.Extension
 
-	// CreateConcurrencyController creates a controller for a specific exporter and signal.
+	// CreateRequestMiddleware creates a middleware for a specific exporter and signal.
 	// This allows the extension to maintain separate limits per exporter/signal if desired.
-	CreateConcurrencyController(component.ID, pipeline.Signal) (ConcurrencyController, error)
+	CreateRequestMiddleware(component.ID, pipeline.Signal) (RequestMiddleware, error)
+}
+
+// NoopRequestMiddleware returns a middleware that simply calls next.
+func NoopRequestMiddleware() RequestMiddleware {
+	return noopMiddleware{}
+}
+
+type noopMiddleware struct{}
+
+func (noopMiddleware) Handle(ctx context.Context, next func(context.Context) error) error {
+	return next(ctx)
+}
+
+func (noopMiddleware) Shutdown(context.Context) error {
+	return nil
 }
