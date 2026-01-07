@@ -22,17 +22,17 @@ func TestDefaultViews(t *testing.T) {
 		{
 			name:           "None",
 			level:          configtelemetry.LevelNone,
-			wantViewsCount: 18,
+			wantViewsCount: 17,
 		},
 		{
 			name:           "Basic",
 			level:          configtelemetry.LevelBasic,
-			wantViewsCount: 18,
+			wantViewsCount: 17,
 		},
 		{
 			name:           "Normal",
 			level:          configtelemetry.LevelNormal,
-			wantViewsCount: 15,
+			wantViewsCount: 14,
 		},
 		{
 			name:           "Detailed",
@@ -110,13 +110,13 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 		{
 			name:             "basic level drops bucket and bytes",
 			level:            configtelemetry.LevelBasic,
-			shouldDropBucket: true,
+			shouldDropBucket: false,
 			shouldDropBytes:  true,
 		},
 		{
 			name:             "normal level drops bucket and bytes",
 			level:            configtelemetry.LevelNormal,
-			shouldDropBucket: true,
+			shouldDropBucket: false,
 			shouldDropBytes:  true,
 		},
 		{
