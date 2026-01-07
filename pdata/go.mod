@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.48.0
-	go.opentelemetry.io/collector/internal/testutil v0.142.0
+	go.opentelemetry.io/collector/featuregate v1.49.0
+	go.opentelemetry.io/collector/internal/testutil v0.143.0
 	go.opentelemetry.io/proto/slim/otlp v1.9.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.2.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.2.0
@@ -25,7 +25,7 @@ require (
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
