@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
-	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -234,12 +233,11 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		return nil, err
 	}
 
-	// Only register process metrics on supported OSes.
-	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, err
-		}
+	// Register process metrics (build-tagged per OS).
+	if err := registerProcessMetrics(srv); err != nil {
+		return nil, err
 	}
+
 	return srv, nil
 }
 
