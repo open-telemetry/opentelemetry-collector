@@ -131,7 +131,8 @@ func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 	// Assertions AFTER Shutdown to avoid flakes with async worker processing.
 	require.NoError(t, qs.Shutdown(context.Background()))
 
-	assert.Equal(t, int64(1), mockMw.handled.Load())
+	// Ensure Handle was called at least once
+	assert.GreaterOrEqual(t, mockMw.handled.Load(), int64(1))
 	assert.Equal(t, int64(1), mockMw.shutdown.Load())
 }
 

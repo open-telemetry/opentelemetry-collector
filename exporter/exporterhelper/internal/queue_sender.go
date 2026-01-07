@@ -151,11 +151,10 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if err := qs.QueueBatch.Start(ctx, host); err != nil {
-		if qs.mw != nil {
-			_ = qs.mw.Shutdown(ctx)
-			// Reset to no-op on failure cleanup
-			qs.mw = extensioncapabilities.NoopRequestMiddleware()
-		}
+		// Ensure middleware is shut down if queue fails to start.
+		// No need to check for nil because we initialize with Noop.
+		_ = qs.mw.Shutdown(ctx)
+		qs.mw = extensioncapabilities.NoopRequestMiddleware()
 		return err
 	}
 	return nil
@@ -165,12 +164,12 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 func (qs *queueSender) Shutdown(ctx context.Context) error {
 	errQ := qs.QueueBatch.Shutdown(ctx)
 
-	if qs.mw != nil {
-		if err := qs.mw.Shutdown(ctx); err != nil && errQ == nil {
-			return err
-		}
-		// Reset to no-op after shutdown
-		qs.mw = extensioncapabilities.NoopRequestMiddleware()
+	// No need to check for nil because we initialize with Noop.
+	if err := qs.mw.Shutdown(ctx); err != nil && errQ == nil {
+		return err
 	}
+	// Reset to no-op after shutdown
+	qs.mw = extensioncapabilities.NoopRequestMiddleware()
+
 	return errQ
 }
