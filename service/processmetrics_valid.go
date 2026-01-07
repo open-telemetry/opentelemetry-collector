@@ -2,8 +2,15 @@
 
 package service
 
-import "go.opentelemetry.io/collector/service/internal/proctelemetry"
+import (
+	"fmt"
+
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+)
 
 func registerProcessMetrics(srv *Service) error {
-	return proctelemetry.RegisterProcessMetrics(srv.telemetrySettings)
+	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return fmt.Errorf("failed to register process metrics: %w", err)
+	}
+	return nil
 }
