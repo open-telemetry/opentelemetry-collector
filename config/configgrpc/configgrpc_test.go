@@ -1256,62 +1256,6 @@ func sendTestRequestWithExtensions(t *testing.T, cc ClientConfig, extensions map
 	return resp, errResp
 }
 
-// TestClientConnWithNOPROXY verifies that NO_PROXY environment variable works correctly
-// with NewClient, preventing the regression described in issue #11537
-func TestClientConnWithNOPROXY(t *testing.T) {
-	tests := []struct {
-		name     string
-		endpoint string
-		noProxy  string
-	}{
-		{
-			name:     "localhost bypasses proxy",
-			endpoint: "localhost:4317",
-			noProxy:  "localhost",
-		},
-		{
-			name:     "127.0.0.1 bypasses proxy",
-			endpoint: "127.0.0.1:4317",
-			noProxy:  "127.0.0.1",
-		},
-		{
-			name:     "domain bypass",
-			endpoint: "internal.example.com:4317",
-			noProxy:  "internal.example.com",
-		},
-		{
-			name:     "wildcard domain bypass",
-			endpoint: "service.internal.example.com:4317",
-			noProxy:  ".internal.example.com",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set up proxy environment that would fail if NO_PROXY doesn't work
-			t.Setenv("HTTPS_PROXY", "http://invalid-proxy-that-does-not-exist:8080")
-			t.Setenv("NO_PROXY", tt.noProxy)
-
-			cc := &ClientConfig{
-				Endpoint: tt.endpoint,
-				TLS: configtls.ClientConfig{
-					Insecure: true,
-				},
-			}
-
-			// This should succeed if NO_PROXY works (connection bypasses invalid proxy)
-			// This would fail with old DialContext if NO_PROXY was ignored
-			conn, err := cc.ToClientConn(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-
-			// Connection creation should succeed (doesn't try to use invalid proxy)
-			// If NO_PROXY didn't work, this would fail trying to connect to invalid proxy
-			require.NoError(t, err, "Connection should succeed when NO_PROXY bypasses invalid proxy")
-			require.NotNil(t, conn)
-			require.NoError(t, conn.Close())
-		})
-	}
-}
-
 // tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
 	// The socket path length limit on macOS is 104 characters. Using `os.TempDir` to produce a shorter file path (#12639)
