@@ -17,7 +17,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/exporter v1.49.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.143.0
-	go.opentelemetry.io/collector/extension/extensioncapabilities v1.143.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
 	go.opentelemetry.io/collector/extension/xextension v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
@@ -123,5 +122,3 @@ replace go.opentelemetry.io/collector/config/configoptional => ../../config/conf
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
-
-replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities

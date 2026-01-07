@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,7 +16,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+
+	// Import the new package (aliased to avoid confusion with existing extensionmiddleware)
+	requestmiddleware "go.opentelemetry.io/collector/extension/xextension/extensionmiddleware"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -43,8 +46,8 @@ func NewDefaultQueueConfig() queuebatch.Config {
 // queueSender wraps QueueBatch to add RequestMiddleware logic.
 type queueSender struct {
 	*queuebatch.QueueBatch
-	mwID *component.ID
-	mw   extensioncapabilities.RequestMiddleware
+	mwIDs []component.ID
+	mws   []requestmiddleware.RequestMiddleware
 
 	// Capture these fields during creation so we can use them in Start()
 	// because QueueBatch does not expose them publicly.
@@ -58,7 +61,7 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
-	if qCfg.RequestMiddlewareID == nil {
+	if len(qCfg.RequestMiddlewares) == 0 {
 		exportFunc := func(ctx context.Context, req request.Request) error {
 			// Have to read the number of items before sending the request since the request can
 			// be modified by the downstream components like the batcher.
@@ -77,10 +80,10 @@ func NewQueueSender(
 	warnIfNumConsumersMayCapMiddleware(&qCfg, qSet.Telemetry.Logger)
 
 	qs := &queueSender{
-		mwID:   qCfg.RequestMiddlewareID,
+		mwIDs:  qCfg.RequestMiddlewares,
 		id:     qSet.ID,
 		signal: qSet.Signal,
-		mw:     extensioncapabilities.NoopRequestMiddleware(), // Initialize with no-op to avoid nil checks
+		mws:    make([]requestmiddleware.RequestMiddleware, 0, len(qCfg.RequestMiddlewares)),
 	}
 
 	exportFunc := func(ctx context.Context, req request.Request) error {
@@ -88,8 +91,8 @@ func NewQueueSender(
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 
-		// Wrap the actual export call in a closure for the middleware
-		nextCall := func(ctx context.Context) error {
+		// 1. Define the base exporter call
+		baseSender := func(ctx context.Context) error {
 			if errSend := next.Send(ctx, req); errSend != nil {
 				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
@@ -98,8 +101,19 @@ func NewQueueSender(
 			return nil
 		}
 
-		// Use the middleware to execute the request
-		return qs.mw.Handle(ctx, nextCall)
+		// 2. Chain middlewares: m1(m2(base))
+		// We iterate in reverse so that the first middleware in the config is the outer-most wrapper.
+		nextCall := baseSender
+		for i := len(qs.mws) - 1; i >= 0; i-- {
+			mw := qs.mws[i]
+			currNext := nextCall
+			nextCall = func(ctx context.Context) error {
+				return mw.Handle(ctx, currNext)
+			}
+		}
+
+		// 3. Execute the chain
+		return nextCall(ctx)
 	}
 
 	qb, err := queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
@@ -111,9 +125,9 @@ func NewQueueSender(
 	return qs, nil
 }
 
-// warnIfNumConsumersMayCapMiddleware ensures sufficient worker headroom when a concurrency controller is configured.
+// warnIfNumConsumersMayCapMiddleware ensures sufficient worker headroom when request middleware is configured.
 func warnIfNumConsumersMayCapMiddleware(cfg *queuebatch.Config, logger *zap.Logger) {
-	if cfg.RequestMiddlewareID == nil {
+	if len(cfg.RequestMiddlewares) == 0 {
 		return
 	}
 
@@ -123,53 +137,65 @@ func warnIfNumConsumersMayCapMiddleware(cfg *queuebatch.Config, logger *zap.Logg
 	if cfg.NumConsumers == defaultConsumers && logger != nil {
 		logger.Warn("sending_queue.num_consumers is at the default; request middleware may be capped by worker pool",
 			zap.Int("num_consumers", cfg.NumConsumers),
-			zap.String("concurrency_controller", cfg.RequestMiddlewareID.String()),
+			zap.Strings("request_middlewares", func() []string {
+				ids := make([]string, len(cfg.RequestMiddlewares))
+				for i, id := range cfg.RequestMiddlewares {
+					ids[i] = id.String()
+				}
+				return ids
+			}()),
 		)
 	}
 }
 
-// Start overrides the default Start to resolve the extension.
+// Start overrides the default Start to resolve the extensions.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	if qs.mwID != nil {
-		ext, ok := host.GetExtensions()[*qs.mwID]
+	for _, id := range qs.mwIDs {
+		ext, ok := host.GetExtensions()[id]
 		if !ok {
-			return fmt.Errorf("request middleware extension %q not found", qs.mwID.String())
+			// Cleanup any middlewares successfully created before this failure
+			_ = qs.Shutdown(ctx)
+			return fmt.Errorf("request middleware extension %q not found", id.String())
 		}
-		factory, ok := ext.(extensioncapabilities.RequestMiddlewareFactory)
+		factory, ok := ext.(requestmiddleware.RequestMiddlewareFactory)
 		if !ok {
-			return fmt.Errorf("extension %q does not implement RequestMiddlewareFactory", qs.mwID.String())
+			// Cleanup any middlewares successfully created before this failure
+			_ = qs.Shutdown(ctx)
+			return fmt.Errorf("extension %q does not implement RequestMiddlewareFactory", id.String())
 		}
 		mw, err := factory.CreateRequestMiddleware(qs.id, qs.signal)
 		if err != nil {
-			return fmt.Errorf("failed to create request middleware: %w", err)
+			// Cleanup any middlewares successfully created before this failure
+			_ = qs.Shutdown(ctx)
+			return fmt.Errorf("failed to create request middleware for %q: %w", id.String(), err)
 		}
 
-		// Guard against nil return from factory to avoid panic in Handle()
 		if mw != nil {
-			qs.mw = mw
+			qs.mws = append(qs.mws, mw)
 		}
 	}
 
 	if err := qs.QueueBatch.Start(ctx, host); err != nil {
-		// Ensure middleware is shut down if queue fails to start.
-		// No need to check for nil because we initialize with Noop.
-		_ = qs.mw.Shutdown(ctx)
-		qs.mw = extensioncapabilities.NoopRequestMiddleware()
+		// Ensure middlewares are shut down if queue fails to start.
+		_ = qs.Shutdown(ctx)
 		return err
 	}
 	return nil
 }
 
-// Shutdown ensures the middleware is also shut down.
+// Shutdown ensures the middlewares are also shut down.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
-	errQ := qs.QueueBatch.Shutdown(ctx)
-
-	// No need to check for nil because we initialize with Noop.
-	if err := qs.mw.Shutdown(ctx); err != nil && errQ == nil {
-		return err
+	var errs error
+	if qs.QueueBatch != nil {
+		errs = multierr.Append(errs, qs.QueueBatch.Shutdown(ctx))
 	}
-	// Reset to no-op after shutdown
-	qs.mw = extensioncapabilities.NoopRequestMiddleware()
 
-	return errQ
+	// Shutdown middlewares in reverse order (LIFO)
+	for i := len(qs.mws) - 1; i >= 0; i-- {
+		errs = multierr.Append(errs, qs.mws[i].Shutdown(ctx))
+	}
+	// Clear middlewares after shutdown
+	qs.mws = nil
+
+	return errs
 }

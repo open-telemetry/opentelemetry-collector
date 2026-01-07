@@ -29,8 +29,6 @@ The following configuration options can be modified:
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
   - `batch`: see below.
-  - `concurrency_controller` (default = none): The ID of an extension implementing the `RequestMiddlewareFactory` interface (e.g., `adaptive_concurrency`). When configured, exporterhelper executes export requests through the middleware, enabling logic such as adaptive concurrency, rate limiting, or circuit breaking.
-
 
 #### Sending queue batch settings
 
@@ -142,48 +140,3 @@ service:
 ```
 
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
-
-
-### Request Middleware (e.g. Adaptive Concurrency)
-
-Traditionally, exporters use a static `num_consumers` to determine how many concurrent requests can be sent to a backend. A Request Middleware implementation allows extensions to replace or augment this behavior with dynamic logic.
-
-The middleware wraps the request execution, allowing it to:
-1. **Intercept:** Acquire permits or check conditions before the request starts (e.g., rate limiting).
-2. **Measure:** Track the duration and outcome of the request (e.g., adaptive concurrency).
-3. **Control:** Block or fail requests based on internal logic.
-
-#### Interaction with num_consumers
-
-When a middleware is configured (via `concurrency_controller`), it acts as a gatekeeper on top of the existing queue consumers. The effective concurrency is the minimum of the middleware's logic and the static `num_consumers`.
-
-`Effective_Concurrency = min(Middleware_Limit, sending_queue.num_consumers)`
-
-- **Warning:** If you leave `num_consumers` at the default value (10) while using middleware that requires high concurrency (like Adaptive Request Concurrency), the queue sender will log a warning.
-- **Recommendation:** Set `num_consumers` high enough to avoid capping the middleware’s maximum intended concurrency (for example, match the middleware’s configured max).
-
-#### Example Configuration
-
-In this example, an OTLP exporter is configured to use the `adaptive_concurrency` extension (which implements the Request Middleware interface).
-
-```yaml
-exporters:
-  otlp:
-    endpoint: https://my-backend:4317
-    sending_queue:
-      enabled: true
-      num_consumers: 100 # Provide headroom for the middleware
-      # Link to the middleware extension
-      concurrency_controller: adaptive_concurrency/otlp_limit
-
-extensions:
-  # The adaptive_concurrency extension implementation would be defined here
-  adaptive_concurrency/otlp_limit:
-    # ... extension specific config ...
-
-service:
-  extensions: [adaptive_concurrency/otlp_limit]
-  pipelines:
-    traces:
-      receivers: [otlp]
-      exporters: [otlp]

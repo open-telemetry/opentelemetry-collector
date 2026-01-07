@@ -6,6 +6,6 @@ note: >
 issues: [14080]
 subtext: |
   The `RequestMiddlewareFactory` interface has been added to the
-  `extension/extensioncapabilities` module. The `exporterhelper`'s sending queue
-  can now be configured with a `request_middleware` ID to delegate request execution logic to an extension.
+  `extension/xextension/extensionmiddleware` package. The `exporterhelper`'s sending queue
+  can now be configured with a list of `request_middlewares` to delegate request execution logic to extensions.
 change_logs: [user, api]
