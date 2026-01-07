@@ -36,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-const osAIX = "aix"
-
 // This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableHighCardinalityMetrics",
@@ -237,12 +235,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	}
 
 	// Only register process metrics on supported OSes.
-	if runtime.GOOS == osAIX {
-		// AIX is currently unsupported for process metrics, so we skip it to avoid crashing.
-		// We log this so the user is aware that metrics are disabled.
-		srv.telemetrySettings.Logger.Info("Skipping process metrics registration on unsupported OS", zap.String("os", runtime.GOOS))
-	} else {
-		// For other OSes, we want to fail fast if registration fails.
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, err
 		}
