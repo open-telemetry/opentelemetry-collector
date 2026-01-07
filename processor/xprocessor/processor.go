@@ -58,11 +58,11 @@ type factory struct {
 	profilesStabilityLevel component.StabilityLevel
 }
 
-func (f factory) ProfilesStability() component.StabilityLevel {
+func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
 }
 
-func (f factory) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
+func (f *factory) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
