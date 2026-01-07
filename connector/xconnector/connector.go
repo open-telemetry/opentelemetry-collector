@@ -268,12 +268,18 @@ func (f *factory) CreateTracesToProfiles(ctx context.Context, set connector.Sett
 	if f.createTracesToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
 	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
 	return f.createTracesToProfilesFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error) {
 	if f.createMetricsToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createMetricsToProfilesFunc(ctx, set, cfg, next)
 }
@@ -282,12 +288,18 @@ func (f *factory) CreateLogsToProfiles(ctx context.Context, set connector.Settin
 	if f.createLogsToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
 	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
 	return f.createLogsToProfilesFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createProfilesToProfilesFunc(ctx, set, cfg, next)
 }
@@ -296,6 +308,9 @@ func (f *factory) CreateProfilesToTraces(ctx context.Context, set connector.Sett
 	if f.createProfilesToTracesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
 	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
 	return f.createProfilesToTracesFunc(ctx, set, cfg, next)
 }
 
@@ -303,12 +318,18 @@ func (f *factory) CreateProfilesToMetrics(ctx context.Context, set connector.Set
 	if f.createProfilesToMetricsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
 	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
 	return f.createProfilesToMetricsFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error) {
 	if f.createProfilesToLogsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createProfilesToLogsFunc(ctx, set, cfg, next)
 }
