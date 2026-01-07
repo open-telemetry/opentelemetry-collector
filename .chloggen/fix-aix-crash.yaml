@@ -1,4 +1,4 @@
 change_type: bug_fix
 component: pkg/service
-note: "Fix panic in process metrics on unsupported OSes (e.g. AIX)"
+note: "Don't error on startup when process metrics are enabled on unsupported OSes (e.g. AIX)"
 issues: [14307]
