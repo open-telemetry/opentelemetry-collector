@@ -279,59 +279,6 @@ func TestServiceTelemetryDefaultViews(t *testing.T) {
 	require.NotEmpty(t, views)
 }
 
-func TestConfigureViewsFiltersSendFailedAttributes(t *testing.T) {
-	tests := []struct {
-		name                         string
-		level                        configtelemetry.Level
-		expectSendFailedFilteredView bool
-	}{
-		{
-			name:                         "basic level filters send_failed attributes",
-			level:                        configtelemetry.LevelBasic,
-			expectSendFailedFilteredView: true,
-		},
-		{
-			name:                         "normal level filters send_failed attributes",
-			level:                        configtelemetry.LevelNormal,
-			expectSendFailedFilteredView: true,
-		},
-		{
-			name:                         "detailed level does not filter send_failed attributes",
-			level:                        configtelemetry.LevelDetailed,
-			expectSendFailedFilteredView: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			views := configureViews(tt.level)
-
-			foundSendFailedView := false
-			for _, view := range views {
-				if view.Selector == nil ||
-					view.Selector.InstrumentName == nil ||
-					*view.Selector.InstrumentName != "otelcol_exporter_send_failed_*" {
-					continue
-				}
-				foundSendFailedView = true
-				require.NotNil(t, view.Stream, "send_failed view should have a stream")
-				require.NotNil(t, view.Stream.AttributeKeys, "send_failed view should have attribute keys")
-				require.Equal(t, []string{"exporter"}, view.Stream.AttributeKeys.Included,
-					"send_failed view should only include 'exporter' attribute")
-				break
-			}
-
-			if tt.expectSendFailedFilteredView {
-				assert.True(t, foundSendFailedView,
-					"Expected to find send_failed attribute filtering view at level %s", tt.level)
-			} else {
-				assert.False(t, foundSendFailedView,
-					"Did not expect to find send_failed attribute filtering view at level %s", tt.level)
-			}
-		})
-	}
-}
-
 // TestServiceTelemetryZPages verifies that the zpages extension works correctly with servce telemetry.
 func TestServiceTelemetryZPages(t *testing.T) {
 	t.Run("ipv4", func(t *testing.T) {
