@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.49.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.143.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.0
 	go.opentelemetry.io/collector/pdata/testdata v0.143.0
@@ -59,3 +60,5 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
