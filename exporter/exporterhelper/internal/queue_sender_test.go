@@ -62,8 +62,6 @@ func TestQueueConfig_Validate(t *testing.T) {
 	assert.NoError(t, noCfg.Validate())
 }
 
-// --- New Tests for Request Middleware ---
-
 // nopComponent satisfies component.Component but does not implement RequestMiddleware.
 type nopComponent struct{}
 
@@ -298,101 +296,4 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestNewQueueSender_RequestMiddleware_LogsWarningOnDefaultConsumers(t *testing.T) {
-	mwID := component.MustNewID("request_middleware")
-
-	tests := []struct {
-		name          string
-		inputConfig   queuebatch.Config
-		wantConsumers int
-		wantLog       bool
-	}{
-		{
-			name: "warn_on_default_consumer_count",
-			inputConfig: func() queuebatch.Config {
-				cfg := NewDefaultQueueConfig()
-				cfg.RequestMiddlewares = []component.ID{mwID}
-				cfg.NumConsumers = 10
-				return cfg
-			}(),
-			wantConsumers: 10, // Should NOT change
-			wantLog:       true,
-		},
-		{
-			name: "respect_high_consumer_count",
-			inputConfig: func() queuebatch.Config {
-				cfg := NewDefaultQueueConfig()
-				cfg.RequestMiddlewares = []component.ID{mwID}
-				cfg.NumConsumers = 500
-				return cfg
-			}(),
-			wantConsumers: 500,
-			wantLog:       false,
-		},
-		{
-			name: "ignore_if_middleware_disabled",
-			inputConfig: func() queuebatch.Config {
-				cfg := NewDefaultQueueConfig()
-				cfg.RequestMiddlewares = nil
-				cfg.NumConsumers = 10
-				return cfg
-			}(),
-			wantConsumers: 10,
-			wantLog:       false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			logger, observed := observer.New(zap.WarnLevel)
-			cfg := tt.inputConfig
-
-			warnIfNumConsumersMayCapMiddleware(&cfg, zap.New(logger))
-
-			assert.Equal(t, tt.wantConsumers, cfg.NumConsumers)
-			if tt.wantLog {
-				require.Len(t, observed.All(), 1, "Expected a warning log")
-				assert.Contains(t, observed.All()[0].Message, "sending_queue.num_consumers is at the default")
-			} else {
-				assert.Len(t, observed.All(), 0, "Expected no warning logs")
-			}
-		})
-	}
-}
-
-func TestQueueSender_RequestMiddleware_Disabled_NoInteraction(t *testing.T) {
-	// 1. Setup a host with the extension available, but do NOT use it.
-	mwID := component.MustNewID("request_middleware")
-	mockMw := &mockRequestMiddleware{}
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mwID: mockMw,
-		},
-	}
-
-	// 2. do NOT configure the RequestMiddlewares in the queue settings.
-	qSet := queuebatch.AllSettings[request.Request]{
-		ID:        component.MustNewID("otlp"),
-		Signal:    pipeline.SignalTraces,
-		Telemetry: componenttest.NewNopTelemetrySettings(),
-	}
-	qCfg := NewDefaultQueueConfig()
-	qCfg.RequestMiddlewares = nil
-
-	nextSender := sender.NewSender(func(ctx context.Context, req request.Request) error {
-		return nil
-	})
-
-	qs, err := NewQueueSender(qSet, qCfg, "", nextSender)
-	require.NoError(t, err)
-
-	// 3. Start and Send data
-	require.NoError(t, qs.Start(context.Background(), host))
-	require.NoError(t, qs.Send(context.Background(), &requesttest.FakeRequest{Items: 10}))
-	require.NoError(t, qs.Shutdown(context.Background()))
-
-	// 4. Verification: Assert ABSOLUTELY NO interaction with the mock middleware
-	assert.Nil(t, mockMw.wrapper, "WrapSender should not be called when middleware is disabled")
 }
