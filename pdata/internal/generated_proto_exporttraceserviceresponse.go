@@ -19,13 +19,11 @@ type ExportTraceServiceResponse struct {
 	PartialSuccess ExportTracePartialSuccess
 }
 
-var (
-	protoPoolExportTraceServiceResponse = sync.Pool{
-		New: func() any {
-			return &ExportTraceServiceResponse{}
-		},
-	}
-)
+var protoPoolExportTraceServiceResponse = sync.Pool{
+	New: func() any {
+		return &ExportTraceServiceResponse{}
+	},
+}
 
 func NewExportTraceServiceResponse() *ExportTraceServiceResponse {
 	if !UseProtoPooling.IsEnabled() {

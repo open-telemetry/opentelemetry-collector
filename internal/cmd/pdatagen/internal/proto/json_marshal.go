@@ -22,7 +22,7 @@ const marshalJSONPrimitive = `{{ if .repeated -}}
 	}
 {{ else if ne .oneOfGroup "" -}}
 		dest.WriteObjectField("{{ .jsonTag }}")
-		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }})
+		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }}())
 {{- else }}
 {{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
@@ -63,6 +63,9 @@ const marshalJSONMessage = `{{ if .repeated -}}
 		}
 		dest.WriteArrayEnd()
 	}
+{{ else if ne .oneOfGroup "" -}}
+	dest.WriteObjectField("{{ .jsonTag }}")
+	orig.{{ .fieldName }}().MarshalJSON(dest)
 {{- else }}
 {{- if .nullable -}}
 	if orig.{{ .fieldName }} != nil {
@@ -84,6 +87,9 @@ const marshalJSONBytes = `{{ if .repeated -}}
 		}
 		dest.WriteArrayEnd()
 	}
+{{ else if ne .oneOfGroup "" -}}
+		dest.WriteObjectField("{{ .jsonTag }}")
+		dest.WriteBytes(orig.{{ .fieldName }}())
 {{- else }}{{ if not .nullable }}
 	if len(orig.{{ .fieldName }}) > 0 {
 {{- end }}

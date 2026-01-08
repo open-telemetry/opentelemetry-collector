@@ -20,13 +20,11 @@ type Stack struct {
 	LocationIndices []int32
 }
 
-var (
-	protoPoolStack = sync.Pool{
-		New: func() any {
-			return &Stack{}
-		},
-	}
-)
+var protoPoolStack = sync.Pool{
+	New: func() any {
+		return &Stack{}
+	},
+}
 
 func NewStack() *Stack {
 	if !UseProtoPooling.IsEnabled() {

@@ -22,13 +22,11 @@ type Location struct {
 	MappingIndex     int32
 }
 
-var (
-	protoPoolLocation = sync.Pool{
-		New: func() any {
-			return &Location{}
-		},
-	}
-)
+var protoPoolLocation = sync.Pool{
+	New: func() any {
+		return &Location{}
+	},
+}
 
 func NewLocation() *Location {
 	if !UseProtoPooling.IsEnabled() {
@@ -152,6 +150,7 @@ func (orig *Location) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.AttributeIndices) > 0 {
 		dest.WriteObjectField("attributeIndices")
 		dest.WriteArrayStart()

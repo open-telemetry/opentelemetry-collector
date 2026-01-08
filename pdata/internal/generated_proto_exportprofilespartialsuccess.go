@@ -20,13 +20,11 @@ type ExportProfilesPartialSuccess struct {
 	RejectedProfiles int64
 }
 
-var (
-	protoPoolExportProfilesPartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportProfilesPartialSuccess{}
-		},
-	}
-)
+var protoPoolExportProfilesPartialSuccess = sync.Pool{
+	New: func() any {
+		return &ExportProfilesPartialSuccess{}
+	},
+}
 
 func NewExportProfilesPartialSuccess() *ExportProfilesPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

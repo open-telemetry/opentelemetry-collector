@@ -70,6 +70,16 @@ func TestNumberDataPoint_ValueType(t *testing.T) {
 	assert.Equal(t, NumberDataPointValueTypeEmpty, tv.ValueType())
 }
 
+func TestNumberDataPoint_IntValue(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.Equal(t, int64(0), ms.IntValue())
+	ms.SetIntValue(int64(13))
+	assert.Equal(t, int64(13), ms.IntValue())
+	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetIntValue(int64(13)) })
+}
 func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.InDelta(t, float64(0), ms.DoubleValue(), 0.01)
@@ -81,16 +91,6 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	assert.Panics(t, func() {
 		newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetDoubleValue(float64(3.1415926))
 	})
-}
-func TestNumberDataPoint_IntValue(t *testing.T) {
-	ms := NewNumberDataPoint()
-	assert.Equal(t, int64(0), ms.IntValue())
-	ms.SetIntValue(int64(13))
-	assert.Equal(t, int64(13), ms.IntValue())
-	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetIntValue(int64(13)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {

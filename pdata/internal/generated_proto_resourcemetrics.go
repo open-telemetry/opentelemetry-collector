@@ -22,13 +22,11 @@ type ResourceMetrics struct {
 	DeprecatedScopeMetrics []*ScopeMetrics
 }
 
-var (
-	protoPoolResourceMetrics = sync.Pool{
-		New: func() any {
-			return &ResourceMetrics{}
-		},
-	}
-)
+var protoPoolResourceMetrics = sync.Pool{
+	New: func() any {
+		return &ResourceMetrics{}
+	},
+}
 
 func NewResourceMetrics() *ResourceMetrics {
 	if !UseProtoPooling.IsEnabled() {
@@ -150,6 +148,7 @@ func (orig *ResourceMetrics) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)
@@ -164,6 +163,7 @@ func (orig *ResourceMetrics) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

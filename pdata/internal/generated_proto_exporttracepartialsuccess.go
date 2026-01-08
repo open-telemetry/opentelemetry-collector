@@ -20,13 +20,11 @@ type ExportTracePartialSuccess struct {
 	RejectedSpans int64
 }
 
-var (
-	protoPoolExportTracePartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportTracePartialSuccess{}
-		},
-	}
-)
+var protoPoolExportTracePartialSuccess = sync.Pool{
+	New: func() any {
+		return &ExportTracePartialSuccess{}
+	},
+}
 
 func NewExportTracePartialSuccess() *ExportTracePartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

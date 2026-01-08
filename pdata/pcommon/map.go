@@ -113,7 +113,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 func (m Map) PutEmpty(k string) Value {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
-		av.getOrig().Value = nil
+		av.getOrig().ResetValue()
 		return newValue(av.getOrig(), m.getState())
 	}
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
@@ -141,9 +141,9 @@ func (m Map) PutStr(k, v string) {
 		av.SetStr(v)
 		return
 	}
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	av.SetStringValue(v)
 }
 
 // PutInt performs the Insert or Update action. The int Value is
@@ -155,9 +155,9 @@ func (m Map) PutInt(k string, v int64) {
 		av.SetInt(v)
 		return
 	}
-	ov := internal.NewAnyValueIntValue()
-	ov.IntValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	av.SetIntValue(v)
 }
 
 // PutDouble performs the Insert or Update action. The double Value is
@@ -169,9 +169,9 @@ func (m Map) PutDouble(k string, v float64) {
 		av.SetDouble(v)
 		return
 	}
-	ov := internal.NewAnyValueDoubleValue()
-	ov.DoubleValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	av.SetDoubleValue(v)
 }
 
 // PutBool performs the Insert or Update action. The bool Value is
@@ -183,9 +183,9 @@ func (m Map) PutBool(k string, v bool) {
 		av.SetBool(v)
 		return
 	}
-	ov := internal.NewAnyValueBoolValue()
-	ov.BoolValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	av.SetBoolValue(v)
 }
 
 // PutEmptyBytes inserts or updates an empty byte slice under given key and returns it.
@@ -194,9 +194,10 @@ func (m Map) PutEmptyBytes(k string) ByteSlice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyBytes()
 	}
-	ov := internal.NewAnyValueBytesValue()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
-	return ByteSlice(internal.NewByteSliceWrapper(&ov.BytesValue, m.getState()))
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	av.SetBytesValue(nil)
+	return ByteSlice(internal.NewByteSliceWrapper(av.BytesValuePtr(), m.getState()))
 }
 
 // PutEmptyMap inserts or updates an empty map under given key and returns it.
@@ -205,10 +206,11 @@ func (m Map) PutEmptyMap(k string) Map {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyMap()
 	}
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
-	return Map(internal.NewMapWrapper(&ov.KvlistValue.Values, m.getState()))
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	kv := internal.NewKeyValueList()
+	av.SetKvlistValue(kv)
+	return Map(internal.NewMapWrapper(&kv.Values, m.getState()))
 }
 
 // PutEmptySlice inserts or updates an empty slice under given key and returns it.
@@ -217,10 +219,11 @@ func (m Map) PutEmptySlice(k string) Slice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptySlice()
 	}
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
-	return Slice(internal.NewSliceWrapper(&ov.ArrayValue.Values, m.getState()))
+	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	av := &(*m.getOrig())[len(*m.getOrig())-1].Value
+	arrV := internal.NewArrayValue()
+	av.SetArrayValue(arrV)
+	return Slice(internal.NewSliceWrapper(&arrV.Values, m.getState()))
 }
 
 // Len returns the length of this map.

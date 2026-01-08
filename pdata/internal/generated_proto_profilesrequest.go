@@ -21,13 +21,11 @@ type ProfilesRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolProfilesRequest = sync.Pool{
-		New: func() any {
-			return &ProfilesRequest{}
-		},
-	}
-)
+var protoPoolProfilesRequest = sync.Pool{
+	New: func() any {
+		return &ProfilesRequest{}
+	},
+}
 
 func NewProfilesRequest() *ProfilesRequest {
 	if !UseProtoPooling.IsEnabled() {

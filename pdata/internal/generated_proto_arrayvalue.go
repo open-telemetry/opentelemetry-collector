@@ -19,13 +19,11 @@ type ArrayValue struct {
 	Values []AnyValue
 }
 
-var (
-	protoPoolArrayValue = sync.Pool{
-		New: func() any {
-			return &ArrayValue{}
-		},
-	}
-)
+var protoPoolArrayValue = sync.Pool{
+	New: func() any {
+		return &ArrayValue{}
+	},
+}
 
 func NewArrayValue() *ArrayValue {
 	if !UseProtoPooling.IsEnabled() {
@@ -135,6 +133,7 @@ func (orig *ArrayValue) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

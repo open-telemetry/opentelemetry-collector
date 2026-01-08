@@ -19,13 +19,11 @@ type IPAddr struct {
 	IP   []byte
 }
 
-var (
-	protoPoolIPAddr = sync.Pool{
-		New: func() any {
-			return &IPAddr{}
-		},
-	}
-)
+var protoPoolIPAddr = sync.Pool{
+	New: func() any {
+		return &IPAddr{}
+	},
+}
 
 func NewIPAddr() *IPAddr {
 	if !UseProtoPooling.IsEnabled() {

@@ -22,13 +22,11 @@ type ProfilesData struct {
 	Dictionary       ProfilesDictionary
 }
 
-var (
-	protoPoolProfilesData = sync.Pool{
-		New: func() any {
-			return &ProfilesData{}
-		},
-	}
-)
+var protoPoolProfilesData = sync.Pool{
+	New: func() any {
+		return &ProfilesData{}
+	},
+}
 
 func NewProfilesData() *ProfilesData {
 	if !UseProtoPooling.IsEnabled() {
@@ -141,6 +139,7 @@ func (orig *ProfilesData) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectField("dictionary")
 	orig.Dictionary.MarshalJSON(dest)
 	dest.WriteObjectEnd()

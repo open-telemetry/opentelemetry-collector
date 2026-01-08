@@ -62,16 +62,6 @@ func TestExemplar_ValueType(t *testing.T) {
 	assert.Equal(t, ExemplarValueTypeEmpty, tv.ValueType())
 }
 
-func TestExemplar_DoubleValue(t *testing.T) {
-	ms := NewExemplar()
-	assert.InDelta(t, float64(0), ms.DoubleValue(), 0.01)
-	ms.SetDoubleValue(float64(3.1415926))
-	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
-	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
-	sharedState := internal.NewState()
-	sharedState.MarkReadOnly()
-	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).SetDoubleValue(float64(3.1415926)) })
-}
 func TestExemplar_IntValue(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, int64(0), ms.IntValue())
@@ -81,6 +71,16 @@ func TestExemplar_IntValue(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).SetIntValue(int64(13)) })
+}
+func TestExemplar_DoubleValue(t *testing.T) {
+	ms := NewExemplar()
+	assert.InDelta(t, float64(0), ms.DoubleValue(), 0.01)
+	ms.SetDoubleValue(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
+	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newExemplar(internal.NewExemplar(), sharedState).SetDoubleValue(float64(3.1415926)) })
 }
 
 func TestExemplar_TraceID(t *testing.T) {

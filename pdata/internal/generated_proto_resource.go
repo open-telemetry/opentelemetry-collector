@@ -21,13 +21,11 @@ type Resource struct {
 	DroppedAttributesCount uint32
 }
 
-var (
-	protoPoolResource = sync.Pool{
-		New: func() any {
-			return &Resource{}
-		},
-	}
-)
+var protoPoolResource = sync.Pool{
+	New: func() any {
+		return &Resource{}
+	},
+}
 
 func NewResource() *Resource {
 	if !UseProtoPooling.IsEnabled() {
@@ -144,6 +142,7 @@ func (orig *Resource) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)
@@ -158,6 +157,7 @@ func (orig *Resource) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

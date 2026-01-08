@@ -9,99 +9,24 @@ package internal
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func (m *RequestContext) GetClientAddress() any {
-	if m != nil {
-		return m.ClientAddress
-	}
-	return nil
-}
-
-type RequestContext_IP struct {
-	IP *IPAddr
-}
-
-func (m *RequestContext) GetIP() *IPAddr {
-	if v, ok := m.GetClientAddress().(*RequestContext_IP); ok {
-		return v.IP
-	}
-	return nil
-}
-
-type RequestContext_TCP struct {
-	TCP *TCPAddr
-}
-
-func (m *RequestContext) GetTCP() *TCPAddr {
-	if v, ok := m.GetClientAddress().(*RequestContext_TCP); ok {
-		return v.TCP
-	}
-	return nil
-}
-
-type RequestContext_UDP struct {
-	UDP *UDPAddr
-}
-
-func (m *RequestContext) GetUDP() *UDPAddr {
-	if v, ok := m.GetClientAddress().(*RequestContext_UDP); ok {
-		return v.UDP
-	}
-	return nil
-}
-
-type RequestContext_Unix struct {
-	Unix *UnixAddr
-}
-
-func (m *RequestContext) GetUnix() *UnixAddr {
-	if v, ok := m.GetClientAddress().(*RequestContext_Unix); ok {
-		return v.Unix
-	}
-	return nil
-}
-
 type RequestContext struct {
-	ClientAddress  any
+	ClientAddress  proto.OneOf
 	SpanContext    *SpanContext
 	ClientMetadata []KeyValue
+	metadata       uint64
 }
 
-var (
-	protoPoolRequestContext = sync.Pool{
-		New: func() any {
-			return &RequestContext{}
-		},
-	}
-
-	ProtoPoolRequestContext_IP = sync.Pool{
-		New: func() any {
-			return &RequestContext_IP{}
-		},
-	}
-
-	ProtoPoolRequestContext_TCP = sync.Pool{
-		New: func() any {
-			return &RequestContext_TCP{}
-		},
-	}
-
-	ProtoPoolRequestContext_UDP = sync.Pool{
-		New: func() any {
-			return &RequestContext_UDP{}
-		},
-	}
-
-	ProtoPoolRequestContext_Unix = sync.Pool{
-		New: func() any {
-			return &RequestContext_Unix{}
-		},
-	}
-)
+var protoPoolRequestContext = sync.Pool{
+	New: func() any {
+		return &RequestContext{}
+	},
+}
 
 func NewRequestContext() *RequestContext {
 	if !UseProtoPooling.IsEnabled() {
@@ -123,23 +48,19 @@ func DeleteRequestContext(orig *RequestContext, nullable bool) {
 	for i := range orig.ClientMetadata {
 		DeleteKeyValue(&orig.ClientMetadata[i], false)
 	}
-	switch ov := orig.ClientAddress.(type) {
-	case *RequestContext_IP:
-		DeleteIPAddr(ov.IP, true)
-		ov.IP = nil
-		ProtoPoolRequestContext_IP.Put(ov)
-	case *RequestContext_TCP:
-		DeleteTCPAddr(ov.TCP, true)
-		ov.TCP = nil
-		ProtoPoolRequestContext_TCP.Put(ov)
-	case *RequestContext_UDP:
-		DeleteUDPAddr(ov.UDP, true)
-		ov.UDP = nil
-		ProtoPoolRequestContext_UDP.Put(ov)
-	case *RequestContext_Unix:
-		DeleteUnixAddr(ov.Unix, true)
-		ov.Unix = nil
-		ProtoPoolRequestContext_Unix.Put(ov)
+	switch orig.ClientAddressType() {
+	case RequestContextClientAddressTypeIP:
+		DeleteIPAddr(orig.IP(), true)
+		orig.ResetClientAddress()
+	case RequestContextClientAddressTypeTCP:
+		DeleteTCPAddr(orig.TCP(), true)
+		orig.ResetClientAddress()
+	case RequestContextClientAddressTypeUDP:
+		DeleteUDPAddr(orig.UDP(), true)
+		orig.ResetClientAddress()
+	case RequestContextClientAddressTypeUnix:
+		DeleteUnixAddr(orig.Unix(), true)
+		orig.ResetClientAddress()
 	}
 	orig.Reset()
 	if nullable {
@@ -164,53 +85,29 @@ func CopyRequestContext(dest, src *RequestContext) *RequestContext {
 
 	dest.ClientMetadata = CopyKeyValueSlice(dest.ClientMetadata, src.ClientMetadata)
 
-	switch t := src.ClientAddress.(type) {
-	case *RequestContext_IP:
-		var ov *RequestContext_IP
-		if !UseProtoPooling.IsEnabled() {
-			ov = &RequestContext_IP{}
-		} else {
-			ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-		}
-		ov.IP = NewIPAddr()
-		CopyIPAddr(ov.IP, t.IP)
-		dest.ClientAddress = ov
+	switch src.ClientAddressType() {
+	case RequestContextClientAddressTypeEmpty:
+		dest.ResetClientAddress()
+	case RequestContextClientAddressTypeIP:
+		ov := NewIPAddr()
+		CopyIPAddr(ov, src.IP())
+		dest.SetIP(ov)
 
-	case *RequestContext_TCP:
-		var ov *RequestContext_TCP
-		if !UseProtoPooling.IsEnabled() {
-			ov = &RequestContext_TCP{}
-		} else {
-			ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-		}
-		ov.TCP = NewTCPAddr()
-		CopyTCPAddr(ov.TCP, t.TCP)
-		dest.ClientAddress = ov
+	case RequestContextClientAddressTypeTCP:
+		ov := NewTCPAddr()
+		CopyTCPAddr(ov, src.TCP())
+		dest.SetTCP(ov)
 
-	case *RequestContext_UDP:
-		var ov *RequestContext_UDP
-		if !UseProtoPooling.IsEnabled() {
-			ov = &RequestContext_UDP{}
-		} else {
-			ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-		}
-		ov.UDP = NewUDPAddr()
-		CopyUDPAddr(ov.UDP, t.UDP)
-		dest.ClientAddress = ov
+	case RequestContextClientAddressTypeUDP:
+		ov := NewUDPAddr()
+		CopyUDPAddr(ov, src.UDP())
+		dest.SetUDP(ov)
 
-	case *RequestContext_Unix:
-		var ov *RequestContext_Unix
-		if !UseProtoPooling.IsEnabled() {
-			ov = &RequestContext_Unix{}
-		} else {
-			ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-		}
-		ov.Unix = NewUnixAddr()
-		CopyUnixAddr(ov.Unix, t.Unix)
-		dest.ClientAddress = ov
+	case RequestContextClientAddressTypeUnix:
+		ov := NewUnixAddr()
+		CopyUnixAddr(ov, src.Unix())
+		dest.SetUnix(ov)
 
-	default:
-		dest.ClientAddress = nil
 	}
 
 	return dest
@@ -285,27 +182,20 @@ func (orig *RequestContext) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
-	switch orig := orig.ClientAddress.(type) {
-	case *RequestContext_IP:
-		if orig.IP != nil {
-			dest.WriteObjectField("iP")
-			orig.IP.MarshalJSON(dest)
-		}
-	case *RequestContext_TCP:
-		if orig.TCP != nil {
-			dest.WriteObjectField("tCP")
-			orig.TCP.MarshalJSON(dest)
-		}
-	case *RequestContext_UDP:
-		if orig.UDP != nil {
-			dest.WriteObjectField("uDP")
-			orig.UDP.MarshalJSON(dest)
-		}
-	case *RequestContext_Unix:
-		if orig.Unix != nil {
-			dest.WriteObjectField("unix")
-			orig.Unix.MarshalJSON(dest)
-		}
+
+	switch orig.ClientAddressType() {
+	case RequestContextClientAddressTypeIP:
+		dest.WriteObjectField("iP")
+		orig.IP().MarshalJSON(dest)
+	case RequestContextClientAddressTypeTCP:
+		dest.WriteObjectField("tCP")
+		orig.TCP().MarshalJSON(dest)
+	case RequestContextClientAddressTypeUDP:
+		dest.WriteObjectField("uDP")
+		orig.UDP().MarshalJSON(dest)
+	case RequestContextClientAddressTypeUnix:
+		dest.WriteObjectField("unix")
+		orig.Unix().MarshalJSON(dest)
 	}
 	dest.WriteObjectEnd()
 }
@@ -325,51 +215,27 @@ func (orig *RequestContext) UnmarshalJSON(iter *json.Iterator) {
 
 		case "iP":
 			{
-				var ov *RequestContext_IP
-				if !UseProtoPooling.IsEnabled() {
-					ov = &RequestContext_IP{}
-				} else {
-					ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-				}
-				ov.IP = NewIPAddr()
-				ov.IP.UnmarshalJSON(iter)
-				orig.ClientAddress = ov
+				ov := NewIPAddr()
+				ov.UnmarshalJSON(iter)
+				orig.SetIP(ov)
 			}
 		case "tCP":
 			{
-				var ov *RequestContext_TCP
-				if !UseProtoPooling.IsEnabled() {
-					ov = &RequestContext_TCP{}
-				} else {
-					ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-				}
-				ov.TCP = NewTCPAddr()
-				ov.TCP.UnmarshalJSON(iter)
-				orig.ClientAddress = ov
+				ov := NewTCPAddr()
+				ov.UnmarshalJSON(iter)
+				orig.SetTCP(ov)
 			}
 		case "uDP":
 			{
-				var ov *RequestContext_UDP
-				if !UseProtoPooling.IsEnabled() {
-					ov = &RequestContext_UDP{}
-				} else {
-					ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-				}
-				ov.UDP = NewUDPAddr()
-				ov.UDP.UnmarshalJSON(iter)
-				orig.ClientAddress = ov
+				ov := NewUDPAddr()
+				ov.UnmarshalJSON(iter)
+				orig.SetUDP(ov)
 			}
 		case "unix":
 			{
-				var ov *RequestContext_Unix
-				if !UseProtoPooling.IsEnabled() {
-					ov = &RequestContext_Unix{}
-				} else {
-					ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-				}
-				ov.Unix = NewUnixAddr()
-				ov.Unix.UnmarshalJSON(iter)
-				orig.ClientAddress = ov
+				ov := NewUnixAddr()
+				ov.UnmarshalJSON(iter)
+				orig.SetUnix(ov)
 			}
 
 		default:
@@ -390,30 +256,21 @@ func (orig *RequestContext) SizeProto() int {
 		l = orig.ClientMetadata[i].SizeProto()
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	switch orig := orig.ClientAddress.(type) {
-	case nil:
-		_ = orig
+	switch orig.ClientAddressType() {
+	case RequestContextClientAddressTypeEmpty:
 		break
-	case *RequestContext_IP:
-		if orig.IP != nil {
-			l = orig.IP.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *RequestContext_TCP:
-		if orig.TCP != nil {
-			l = orig.TCP.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *RequestContext_UDP:
-		if orig.UDP != nil {
-			l = orig.UDP.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *RequestContext_Unix:
-		if orig.Unix != nil {
-			l = orig.Unix.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
+	case RequestContextClientAddressTypeIP:
+		l = orig.IP().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case RequestContextClientAddressTypeTCP:
+		l = orig.TCP().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case RequestContextClientAddressTypeUDP:
+		l = orig.UDP().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case RequestContextClientAddressTypeUnix:
+		l = orig.Unix().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
@@ -436,39 +293,35 @@ func (orig *RequestContext) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x12
 	}
-	switch orig := orig.ClientAddress.(type) {
-	case *RequestContext_IP:
-		if orig.IP != nil {
-			l = orig.IP.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x1a
-		}
-	case *RequestContext_TCP:
-		if orig.TCP != nil {
-			l = orig.TCP.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x22
-		}
-	case *RequestContext_UDP:
-		if orig.UDP != nil {
-			l = orig.UDP.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x2a
-		}
-	case *RequestContext_Unix:
-		if orig.Unix != nil {
-			l = orig.Unix.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x32
-		}
+	switch orig.ClientAddressType() {
+	case RequestContextClientAddressTypeIP:
+		l = orig.IP().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+
+	case RequestContextClientAddressTypeTCP:
+		l = orig.TCP().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x22
+
+	case RequestContextClientAddressTypeUDP:
+		l = orig.UDP().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+
+	case RequestContextClientAddressTypeUnix:
+		l = orig.Unix().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
+
 	}
 	return len(buf) - pos
 }
@@ -531,18 +384,12 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_IP
-			if !UseProtoPooling.IsEnabled() {
-				ov = &RequestContext_IP{}
-			} else {
-				ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-			}
-			ov.IP = NewIPAddr()
-			err = ov.IP.UnmarshalProto(buf[startPos:pos])
+			ov := NewIPAddr()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.ClientAddress = ov
+			orig.SetIP(ov)
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -554,18 +401,12 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_TCP
-			if !UseProtoPooling.IsEnabled() {
-				ov = &RequestContext_TCP{}
-			} else {
-				ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-			}
-			ov.TCP = NewTCPAddr()
-			err = ov.TCP.UnmarshalProto(buf[startPos:pos])
+			ov := NewTCPAddr()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.ClientAddress = ov
+			orig.SetTCP(ov)
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -577,18 +418,12 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_UDP
-			if !UseProtoPooling.IsEnabled() {
-				ov = &RequestContext_UDP{}
-			} else {
-				ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-			}
-			ov.UDP = NewUDPAddr()
-			err = ov.UDP.UnmarshalProto(buf[startPos:pos])
+			ov := NewUDPAddr()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.ClientAddress = ov
+			orig.SetUDP(ov)
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -600,18 +435,12 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_Unix
-			if !UseProtoPooling.IsEnabled() {
-				ov = &RequestContext_Unix{}
-			} else {
-				ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-			}
-			ov.Unix = NewUnixAddr()
-			err = ov.Unix.UnmarshalProto(buf[startPos:pos])
+			ov := NewUnixAddr()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.ClientAddress = ov
+			orig.SetUnix(ov)
 
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
@@ -623,11 +452,92 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+type RequestContextClientAddressType int32
+
+const (
+	RequestContextClientAddressTypeEmpty RequestContextClientAddressType = iota
+	RequestContextClientAddressTypeIP
+	RequestContextClientAddressTypeTCP
+	RequestContextClientAddressTypeUDP
+	RequestContextClientAddressTypeUnix
+)
+
+const (
+	startBitRequestContextClientAddress      = uint64(0)
+	maskRequestContextClientAddress          = uint64(7)
+	reversedMaskRequestContextClientAddress  = ^maskRequestContextClientAddress
+	fieldMaskRequestContextClientAddressIP   = uint64(1 << startBitRequestContextClientAddress)
+	fieldMaskRequestContextClientAddressTCP  = uint64(2 << startBitRequestContextClientAddress)
+	fieldMaskRequestContextClientAddressUDP  = uint64(3 << startBitRequestContextClientAddress)
+	fieldMaskRequestContextClientAddressUnix = uint64(4 << startBitRequestContextClientAddress)
+)
+
+func (m *RequestContext) ClientAddressType() RequestContextClientAddressType {
+	val := (m.metadata & maskRequestContextClientAddress) >> startBitRequestContextClientAddress
+	return RequestContextClientAddressType(val)
+}
+
+func (m *RequestContext) ResetClientAddress() {
+	m.ClientAddress.Reset()
+	m.metadata &= reversedMaskRequestContextClientAddress
+}
+func (m *RequestContext) SetIP(value *IPAddr) {
+	m.ClientAddress.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskRequestContextClientAddress
+	m.metadata |= fieldMaskRequestContextClientAddressIP
+}
+
+func (m *RequestContext) IP() *IPAddr {
+	if m.ClientAddressType() != RequestContextClientAddressTypeIP {
+		return nil
+	}
+	return (*IPAddr)(m.ClientAddress.Message())
+}
+
+func (m *RequestContext) SetTCP(value *TCPAddr) {
+	m.ClientAddress.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskRequestContextClientAddress
+	m.metadata |= fieldMaskRequestContextClientAddressTCP
+}
+
+func (m *RequestContext) TCP() *TCPAddr {
+	if m.ClientAddressType() != RequestContextClientAddressTypeTCP {
+		return nil
+	}
+	return (*TCPAddr)(m.ClientAddress.Message())
+}
+
+func (m *RequestContext) SetUDP(value *UDPAddr) {
+	m.ClientAddress.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskRequestContextClientAddress
+	m.metadata |= fieldMaskRequestContextClientAddressUDP
+}
+
+func (m *RequestContext) UDP() *UDPAddr {
+	if m.ClientAddressType() != RequestContextClientAddressTypeUDP {
+		return nil
+	}
+	return (*UDPAddr)(m.ClientAddress.Message())
+}
+
+func (m *RequestContext) SetUnix(value *UnixAddr) {
+	m.ClientAddress.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskRequestContextClientAddress
+	m.metadata |= fieldMaskRequestContextClientAddressUnix
+}
+
+func (m *RequestContext) Unix() *UnixAddr {
+	if m.ClientAddressType() != RequestContextClientAddressTypeUnix {
+		return nil
+	}
+	return (*UnixAddr)(m.ClientAddress.Message())
+}
+
 func GenTestRequestContext() *RequestContext {
 	orig := NewRequestContext()
 	orig.SpanContext = GenTestSpanContext()
 	orig.ClientMetadata = []KeyValue{{}, *GenTestKeyValue()}
-	orig.ClientAddress = &RequestContext_IP{IP: GenTestIPAddr()}
+	orig.SetIP(GenTestIPAddr())
 	return orig
 }
 

@@ -16,66 +16,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func (m *Exemplar) GetValue() any {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-type Exemplar_AsDouble struct {
-	AsDouble float64
-}
-
-func (m *Exemplar) GetAsDouble() float64 {
-	if v, ok := m.GetValue().(*Exemplar_AsDouble); ok {
-		return v.AsDouble
-	}
-	return float64(0)
-}
-
-type Exemplar_AsInt struct {
-	AsInt int64
-}
-
-func (m *Exemplar) GetAsInt() int64 {
-	if v, ok := m.GetValue().(*Exemplar_AsInt); ok {
-		return v.AsInt
-	}
-	return int64(0)
-}
-
 // Exemplar is a sample input double measurement.
 //
 // Exemplars also hold information about the environment when the measurement was recorded,
 // for example the span and trace ID of the active span when the exemplar was recorded.
 type Exemplar struct {
-	Value              any
+	Value              proto.OneOf
 	FilteredAttributes []KeyValue
 	TimeUnixNano       uint64
+	metadata           uint64
 	TraceId            TraceID
 	SpanId             SpanID
 }
 
-var (
-	protoPoolExemplar = sync.Pool{
-		New: func() any {
-			return &Exemplar{}
-		},
-	}
-
-	ProtoPoolExemplar_AsDouble = sync.Pool{
-		New: func() any {
-			return &Exemplar_AsDouble{}
-		},
-	}
-
-	ProtoPoolExemplar_AsInt = sync.Pool{
-		New: func() any {
-			return &Exemplar_AsInt{}
-		},
-	}
-)
+var protoPoolExemplar = sync.Pool{
+	New: func() any {
+		return &Exemplar{}
+	},
+}
 
 func NewExemplar() *Exemplar {
 	if !UseProtoPooling.IsEnabled() {
@@ -97,17 +55,11 @@ func DeleteExemplar(orig *Exemplar, nullable bool) {
 		DeleteKeyValue(&orig.FilteredAttributes[i], false)
 	}
 
-	switch ov := orig.Value.(type) {
-	case *Exemplar_AsDouble:
-		if UseProtoPooling.IsEnabled() {
-			ov.AsDouble = float64(0)
-			ProtoPoolExemplar_AsDouble.Put(ov)
-		}
-	case *Exemplar_AsInt:
-		if UseProtoPooling.IsEnabled() {
-			ov.AsInt = int64(0)
-			ProtoPoolExemplar_AsInt.Put(ov)
-		}
+	switch orig.ValueType() {
+	case ExemplarValueTypeAsInt:
+
+	case ExemplarValueTypeAsDouble:
+
 	}
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
@@ -133,29 +85,15 @@ func CopyExemplar(dest, src *Exemplar) *Exemplar {
 	dest.FilteredAttributes = CopyKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 
 	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *Exemplar_AsDouble:
-		var ov *Exemplar_AsDouble
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Exemplar_AsDouble{}
-		} else {
-			ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-		}
-		ov.AsDouble = t.AsDouble
-		dest.Value = ov
+	switch src.ValueType() {
+	case ExemplarValueTypeEmpty:
+		dest.ResetValue()
+	case ExemplarValueTypeAsInt:
+		dest.SetAsInt(src.AsInt())
 
-	case *Exemplar_AsInt:
-		var ov *Exemplar_AsInt
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Exemplar_AsInt{}
-		} else {
-			ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
-		}
-		ov.AsInt = t.AsInt
-		dest.Value = ov
+	case ExemplarValueTypeAsDouble:
+		dest.SetAsDouble(src.AsDouble())
 
-	default:
-		dest.Value = nil
 	}
 	CopyTraceID(&dest.TraceId, &src.TraceId)
 
@@ -229,17 +167,18 @@ func (orig *Exemplar) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig := orig.Value.(type) {
-	case *Exemplar_AsDouble:
-		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.AsDouble)
-	case *Exemplar_AsInt:
+	switch orig.ValueType() {
+	case ExemplarValueTypeAsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.AsInt)
+		dest.WriteInt64(orig.AsInt())
+	case ExemplarValueTypeAsDouble:
+		dest.WriteObjectField("asDouble")
+		dest.WriteFloat64(orig.AsDouble())
 	}
 	if !orig.TraceId.IsEmpty() {
 		dest.WriteObjectField("traceId")
@@ -265,28 +204,10 @@ func (orig *Exemplar) UnmarshalJSON(iter *json.Iterator) {
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 
-		case "asDouble", "as_double":
-			{
-				var ov *Exemplar_AsDouble
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Exemplar_AsDouble{}
-				} else {
-					ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-				}
-				ov.AsDouble = iter.ReadFloat64()
-				orig.Value = ov
-			}
 		case "asInt", "as_int":
-			{
-				var ov *Exemplar_AsInt
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Exemplar_AsInt{}
-				} else {
-					ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
-				}
-				ov.AsInt = iter.ReadInt64()
-				orig.Value = ov
-			}
+			orig.SetAsInt(iter.ReadInt64())
+		case "asDouble", "as_double":
+			orig.SetAsDouble(iter.ReadFloat64())
 
 		case "traceId", "trace_id":
 
@@ -311,14 +232,13 @@ func (orig *Exemplar) SizeProto() int {
 	if orig.TimeUnixNano != uint64(0) {
 		n += 9
 	}
-	switch orig := orig.Value.(type) {
-	case nil:
-		_ = orig
+	switch orig.ValueType() {
+	case ExemplarValueTypeEmpty:
 		break
-	case *Exemplar_AsDouble:
+	case ExemplarValueTypeAsInt:
 
 		n += 9
-	case *Exemplar_AsInt:
+	case ExemplarValueTypeAsDouble:
 
 		n += 9
 	}
@@ -346,18 +266,18 @@ func (orig *Exemplar) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x11
 	}
-	switch orig := orig.Value.(type) {
-	case *Exemplar_AsDouble:
+	switch orig.ValueType() {
+	case ExemplarValueTypeAsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
-		pos--
-		buf[pos] = 0x19
-
-	case *Exemplar_AsInt:
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt()))
 		pos--
 		buf[pos] = 0x31
+
+	case ExemplarValueTypeAsDouble:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble()))
+		pos--
+		buf[pos] = 0x19
 
 	}
 	l = orig.TraceId.MarshalProto(buf[:pos])
@@ -418,24 +338,6 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 
 			orig.TimeUnixNano = uint64(num)
 
-		case 3:
-			if wireType != proto.WireTypeI64 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeI64(buf, pos)
-			if err != nil {
-				return err
-			}
-			var ov *Exemplar_AsDouble
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Exemplar_AsDouble{}
-			} else {
-				ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-			}
-			ov.AsDouble = math.Float64frombits(num)
-			orig.Value = ov
-
 		case 6:
 			if wireType != proto.WireTypeI64 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AsInt", wireType)
@@ -445,14 +347,18 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *Exemplar_AsInt
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Exemplar_AsInt{}
-			} else {
-				ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
+			orig.SetAsInt(int64(num))
+
+		case 3:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
 			}
-			ov.AsInt = int64(num)
-			orig.Value = ov
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SetAsDouble(math.Float64frombits(num))
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -495,11 +401,62 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+type ExemplarValueType int32
+
+const (
+	ExemplarValueTypeEmpty ExemplarValueType = iota
+	ExemplarValueTypeAsInt
+	ExemplarValueTypeAsDouble
+)
+
+const (
+	startBitExemplarValue          = uint64(0)
+	maskExemplarValue              = uint64(3)
+	reversedMaskExemplarValue      = ^maskExemplarValue
+	fieldMaskExemplarValueAsInt    = uint64(1 << startBitExemplarValue)
+	fieldMaskExemplarValueAsDouble = uint64(2 << startBitExemplarValue)
+)
+
+func (m *Exemplar) ValueType() ExemplarValueType {
+	val := (m.metadata & maskExemplarValue) >> startBitExemplarValue
+	return ExemplarValueType(val)
+}
+
+func (m *Exemplar) ResetValue() {
+	m.Value.Reset()
+	m.metadata &= reversedMaskExemplarValue
+}
+func (m *Exemplar) SetAsInt(value int64) {
+	m.Value.SetInt(uint64(value))
+	m.metadata &= reversedMaskExemplarValue
+	m.metadata |= fieldMaskExemplarValueAsInt
+}
+
+func (m *Exemplar) AsInt() int64 {
+	if m.ValueType() != ExemplarValueTypeAsInt {
+		return int64(0)
+	}
+	return (int64)(m.Value.Int())
+}
+
+func (m *Exemplar) SetAsDouble(value float64) {
+	m.Value.SetFloat(float64(value))
+	m.metadata &= reversedMaskExemplarValue
+	m.metadata |= fieldMaskExemplarValueAsDouble
+}
+
+func (m *Exemplar) AsDouble() float64 {
+	if m.ValueType() != ExemplarValueTypeAsDouble {
+		return float64(0)
+	}
+	return (float64)(m.Value.Float())
+}
+
 func GenTestExemplar() *Exemplar {
 	orig := NewExemplar()
 	orig.FilteredAttributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.TimeUnixNano = uint64(13)
-	orig.Value = &Exemplar_AsDouble{AsDouble: float64(3.1415926)}
+	orig.SetAsInt(int64(13))
 	orig.TraceId = *GenTestTraceID()
 	orig.SpanId = *GenTestSpanID()
 	return orig

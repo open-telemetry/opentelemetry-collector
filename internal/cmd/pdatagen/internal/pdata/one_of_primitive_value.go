@@ -12,20 +12,13 @@ import (
 
 const oneOfPrimitiveAccessorsTemplate = `// {{ .accessorFieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
-	return ms.orig.Get{{ .originFieldName }}()
+	return ms.orig.{{ .originFieldName }}()
 }
 
 // Set{{ .accessorFieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
-	var ov *internal.{{ .originStructType }}
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.{{ .originStructType }}{}
-	} else {
-		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})
-	}
-	ov.{{ .originFieldName }} = v
-	ms.orig.{{ .originOneOfFieldName }} = ov
+	ms.orig.Set{{ .originFieldName }}(v)
 }`
 
 const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .accessorFieldName }}(t *testing.T) {

@@ -21,13 +21,11 @@ type ExportProfilesServiceRequest struct {
 	Dictionary       ProfilesDictionary
 }
 
-var (
-	protoPoolExportProfilesServiceRequest = sync.Pool{
-		New: func() any {
-			return &ExportProfilesServiceRequest{}
-		},
-	}
-)
+var protoPoolExportProfilesServiceRequest = sync.Pool{
+	New: func() any {
+		return &ExportProfilesServiceRequest{}
+	},
+}
 
 func NewExportProfilesServiceRequest() *ExportProfilesServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
@@ -140,6 +138,7 @@ func (orig *ExportProfilesServiceRequest) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectField("dictionary")
 	orig.Dictionary.MarshalJSON(dest)
 	dest.WriteObjectEnd()

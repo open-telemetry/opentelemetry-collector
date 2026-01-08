@@ -24,13 +24,11 @@ type Sample struct {
 	LinkIndex          int32
 }
 
-var (
-	protoPoolSample = sync.Pool{
-		New: func() any {
-			return &Sample{}
-		},
-	}
-)
+var protoPoolSample = sync.Pool{
+	New: func() any {
+		return &Sample{}
+	},
+}
 
 func NewSample() *Sample {
 	if !UseProtoPooling.IsEnabled() {

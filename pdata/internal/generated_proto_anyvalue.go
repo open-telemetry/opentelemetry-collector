@@ -11,148 +11,22 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func (m *AnyValue) GetValue() any {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-type AnyValue_StringValue struct {
-	StringValue string
-}
-
-func (m *AnyValue) GetStringValue() string {
-	if v, ok := m.GetValue().(*AnyValue_StringValue); ok {
-		return v.StringValue
-	}
-	return ""
-}
-
-type AnyValue_BoolValue struct {
-	BoolValue bool
-}
-
-func (m *AnyValue) GetBoolValue() bool {
-	if v, ok := m.GetValue().(*AnyValue_BoolValue); ok {
-		return v.BoolValue
-	}
-	return false
-}
-
-type AnyValue_IntValue struct {
-	IntValue int64
-}
-
-func (m *AnyValue) GetIntValue() int64 {
-	if v, ok := m.GetValue().(*AnyValue_IntValue); ok {
-		return v.IntValue
-	}
-	return int64(0)
-}
-
-type AnyValue_DoubleValue struct {
-	DoubleValue float64
-}
-
-func (m *AnyValue) GetDoubleValue() float64 {
-	if v, ok := m.GetValue().(*AnyValue_DoubleValue); ok {
-		return v.DoubleValue
-	}
-	return float64(0)
-}
-
-type AnyValue_ArrayValue struct {
-	ArrayValue *ArrayValue
-}
-
-func (m *AnyValue) GetArrayValue() *ArrayValue {
-	if v, ok := m.GetValue().(*AnyValue_ArrayValue); ok {
-		return v.ArrayValue
-	}
-	return nil
-}
-
-type AnyValue_KvlistValue struct {
-	KvlistValue *KeyValueList
-}
-
-func (m *AnyValue) GetKvlistValue() *KeyValueList {
-	if v, ok := m.GetValue().(*AnyValue_KvlistValue); ok {
-		return v.KvlistValue
-	}
-	return nil
-}
-
-type AnyValue_BytesValue struct {
-	BytesValue []byte
-}
-
-func (m *AnyValue) GetBytesValue() []byte {
-	if v, ok := m.GetValue().(*AnyValue_BytesValue); ok {
-		return v.BytesValue
-	}
-	return nil
-}
-
 type AnyValue struct {
-	Value any
+	Value    proto.OneOf
+	metadata uint64
 }
 
-var (
-	protoPoolAnyValue = sync.Pool{
-		New: func() any {
-			return &AnyValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_StringValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_StringValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_BoolValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_BoolValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_IntValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_IntValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_DoubleValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_DoubleValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_ArrayValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_ArrayValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_KvlistValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_KvlistValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_BytesValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_BytesValue{}
-		},
-	}
-)
+var protoPoolAnyValue = sync.Pool{
+	New: func() any {
+		return &AnyValue{}
+	},
+}
 
 func NewAnyValue() *AnyValue {
 	if !UseProtoPooling.IsEnabled() {
@@ -170,40 +44,23 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 		orig.Reset()
 		return
 	}
-	switch ov := orig.Value.(type) {
-	case *AnyValue_StringValue:
-		if UseProtoPooling.IsEnabled() {
-			ov.StringValue = ""
-			ProtoPoolAnyValue_StringValue.Put(ov)
-		}
-	case *AnyValue_BoolValue:
-		if UseProtoPooling.IsEnabled() {
-			ov.BoolValue = false
-			ProtoPoolAnyValue_BoolValue.Put(ov)
-		}
-	case *AnyValue_IntValue:
-		if UseProtoPooling.IsEnabled() {
-			ov.IntValue = int64(0)
-			ProtoPoolAnyValue_IntValue.Put(ov)
-		}
-	case *AnyValue_DoubleValue:
-		if UseProtoPooling.IsEnabled() {
-			ov.DoubleValue = float64(0)
-			ProtoPoolAnyValue_DoubleValue.Put(ov)
-		}
-	case *AnyValue_ArrayValue:
-		DeleteArrayValue(ov.ArrayValue, true)
-		ov.ArrayValue = nil
-		ProtoPoolAnyValue_ArrayValue.Put(ov)
-	case *AnyValue_KvlistValue:
-		DeleteKeyValueList(ov.KvlistValue, true)
-		ov.KvlistValue = nil
-		ProtoPoolAnyValue_KvlistValue.Put(ov)
-	case *AnyValue_BytesValue:
-		if UseProtoPooling.IsEnabled() {
-			ov.BytesValue = nil
-			ProtoPoolAnyValue_BytesValue.Put(ov)
-		}
+	switch orig.ValueType() {
+	case AnyValueValueTypeStringValue:
+
+	case AnyValueValueTypeIntValue:
+
+	case AnyValueValueTypeDoubleValue:
+
+	case AnyValueValueTypeBoolValue:
+
+	case AnyValueValueTypeKvlistValue:
+		DeleteKeyValueList(orig.KvlistValue(), true)
+		orig.ResetValue()
+	case AnyValueValueTypeArrayValue:
+		DeleteArrayValue(orig.ArrayValue(), true)
+		orig.ResetValue()
+	case AnyValueValueTypeBytesValue:
+
 	}
 	orig.Reset()
 	if nullable {
@@ -224,81 +81,34 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 	if dest == nil {
 		dest = NewAnyValue()
 	}
-	switch t := src.Value.(type) {
-	case *AnyValue_StringValue:
-		var ov *AnyValue_StringValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_StringValue{}
-		} else {
-			ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-		}
-		ov.StringValue = t.StringValue
-		dest.Value = ov
+	switch src.ValueType() {
+	case AnyValueValueTypeEmpty:
+		dest.ResetValue()
+	case AnyValueValueTypeStringValue:
+		dest.SetStringValue(src.StringValue())
 
-	case *AnyValue_BoolValue:
-		var ov *AnyValue_BoolValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_BoolValue{}
-		} else {
-			ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-		}
-		ov.BoolValue = t.BoolValue
-		dest.Value = ov
+	case AnyValueValueTypeIntValue:
+		dest.SetIntValue(src.IntValue())
 
-	case *AnyValue_IntValue:
-		var ov *AnyValue_IntValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_IntValue{}
-		} else {
-			ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-		}
-		ov.IntValue = t.IntValue
-		dest.Value = ov
+	case AnyValueValueTypeDoubleValue:
+		dest.SetDoubleValue(src.DoubleValue())
 
-	case *AnyValue_DoubleValue:
-		var ov *AnyValue_DoubleValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_DoubleValue{}
-		} else {
-			ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-		}
-		ov.DoubleValue = t.DoubleValue
-		dest.Value = ov
+	case AnyValueValueTypeBoolValue:
+		dest.SetBoolValue(src.BoolValue())
 
-	case *AnyValue_ArrayValue:
-		var ov *AnyValue_ArrayValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_ArrayValue{}
-		} else {
-			ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-		}
-		ov.ArrayValue = NewArrayValue()
-		CopyArrayValue(ov.ArrayValue, t.ArrayValue)
-		dest.Value = ov
+	case AnyValueValueTypeKvlistValue:
+		ov := NewKeyValueList()
+		CopyKeyValueList(ov, src.KvlistValue())
+		dest.SetKvlistValue(ov)
 
-	case *AnyValue_KvlistValue:
-		var ov *AnyValue_KvlistValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_KvlistValue{}
-		} else {
-			ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-		}
-		ov.KvlistValue = NewKeyValueList()
-		CopyKeyValueList(ov.KvlistValue, t.KvlistValue)
-		dest.Value = ov
+	case AnyValueValueTypeArrayValue:
+		ov := NewArrayValue()
+		CopyArrayValue(ov, src.ArrayValue())
+		dest.SetArrayValue(ov)
 
-	case *AnyValue_BytesValue:
-		var ov *AnyValue_BytesValue
-		if !UseProtoPooling.IsEnabled() {
-			ov = &AnyValue_BytesValue{}
-		} else {
-			ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-		}
-		ov.BytesValue = t.BytesValue
-		dest.Value = ov
+	case AnyValueValueTypeBytesValue:
+		dest.SetBytesValue(src.BytesValue())
 
-	default:
-		dest.Value = nil
 	}
 
 	return dest
@@ -359,33 +169,28 @@ func (orig *AnyValue) Reset() {
 // MarshalJSON marshals all properties from the current struct to the destination stream.
 func (orig *AnyValue) MarshalJSON(dest *json.Stream) {
 	dest.WriteObjectStart()
-	switch orig := orig.Value.(type) {
-	case *AnyValue_StringValue:
+	switch orig.ValueType() {
+	case AnyValueValueTypeStringValue:
 		dest.WriteObjectField("stringValue")
-		dest.WriteString(orig.StringValue)
-	case *AnyValue_BoolValue:
-		dest.WriteObjectField("boolValue")
-		dest.WriteBool(orig.BoolValue)
-	case *AnyValue_IntValue:
+		dest.WriteString(orig.StringValue())
+	case AnyValueValueTypeIntValue:
 		dest.WriteObjectField("intValue")
-		dest.WriteInt64(orig.IntValue)
-	case *AnyValue_DoubleValue:
+		dest.WriteInt64(orig.IntValue())
+	case AnyValueValueTypeDoubleValue:
 		dest.WriteObjectField("doubleValue")
-		dest.WriteFloat64(orig.DoubleValue)
-	case *AnyValue_ArrayValue:
-		if orig.ArrayValue != nil {
-			dest.WriteObjectField("arrayValue")
-			orig.ArrayValue.MarshalJSON(dest)
-		}
-	case *AnyValue_KvlistValue:
-		if orig.KvlistValue != nil {
-			dest.WriteObjectField("kvlistValue")
-			orig.KvlistValue.MarshalJSON(dest)
-		}
-	case *AnyValue_BytesValue:
-
+		dest.WriteFloat64(orig.DoubleValue())
+	case AnyValueValueTypeBoolValue:
+		dest.WriteObjectField("boolValue")
+		dest.WriteBool(orig.BoolValue())
+	case AnyValueValueTypeKvlistValue:
+		dest.WriteObjectField("kvlistValue")
+		orig.KvlistValue().MarshalJSON(dest)
+	case AnyValueValueTypeArrayValue:
+		dest.WriteObjectField("arrayValue")
+		orig.ArrayValue().MarshalJSON(dest)
+	case AnyValueValueTypeBytesValue:
 		dest.WriteObjectField("bytesValue")
-		dest.WriteBytes(orig.BytesValue)
+		dest.WriteBytes(orig.BytesValue())
 	}
 	dest.WriteObjectEnd()
 }
@@ -396,83 +201,28 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		switch f {
 
 		case "stringValue", "string_value":
-			{
-				var ov *AnyValue_StringValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_StringValue{}
-				} else {
-					ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-				}
-				ov.StringValue = iter.ReadString()
-				orig.Value = ov
-			}
-		case "boolValue", "bool_value":
-			{
-				var ov *AnyValue_BoolValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_BoolValue{}
-				} else {
-					ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-				}
-				ov.BoolValue = iter.ReadBool()
-				orig.Value = ov
-			}
+			orig.SetStringValue(iter.ReadString())
 		case "intValue", "int_value":
-			{
-				var ov *AnyValue_IntValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_IntValue{}
-				} else {
-					ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-				}
-				ov.IntValue = iter.ReadInt64()
-				orig.Value = ov
-			}
+			orig.SetIntValue(iter.ReadInt64())
 		case "doubleValue", "double_value":
+			orig.SetDoubleValue(iter.ReadFloat64())
+		case "boolValue", "bool_value":
+			orig.SetBoolValue(iter.ReadBool())
+		case "kvlistValue", "kvlist_value":
 			{
-				var ov *AnyValue_DoubleValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_DoubleValue{}
-				} else {
-					ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-				}
-				ov.DoubleValue = iter.ReadFloat64()
-				orig.Value = ov
+				ov := NewKeyValueList()
+				ov.UnmarshalJSON(iter)
+				orig.SetKvlistValue(ov)
 			}
 		case "arrayValue", "array_value":
 			{
-				var ov *AnyValue_ArrayValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_ArrayValue{}
-				} else {
-					ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-				}
-				ov.ArrayValue = NewArrayValue()
-				ov.ArrayValue.UnmarshalJSON(iter)
-				orig.Value = ov
-			}
-		case "kvlistValue", "kvlist_value":
-			{
-				var ov *AnyValue_KvlistValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_KvlistValue{}
-				} else {
-					ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-				}
-				ov.KvlistValue = NewKeyValueList()
-				ov.KvlistValue.UnmarshalJSON(iter)
-				orig.Value = ov
+				ov := NewArrayValue()
+				ov.UnmarshalJSON(iter)
+				orig.SetArrayValue(ov)
 			}
 		case "bytesValue", "bytes_value":
 			{
-				var ov *AnyValue_BytesValue
-				if !UseProtoPooling.IsEnabled() {
-					ov = &AnyValue_BytesValue{}
-				} else {
-					ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-				}
-				ov.BytesValue = iter.ReadBytes()
-				orig.Value = ov
+				orig.SetBytesValue(iter.ReadBytes())
 			}
 
 		default:
@@ -485,34 +235,29 @@ func (orig *AnyValue) SizeProto() int {
 	var n int
 	var l int
 	_ = l
-	switch orig := orig.Value.(type) {
-	case nil:
-		_ = orig
+	switch orig.ValueType() {
+	case AnyValueValueTypeEmpty:
 		break
-	case *AnyValue_StringValue:
-		l = len(orig.StringValue)
+	case AnyValueValueTypeStringValue:
+		l = len(orig.StringValue())
 		n += 1 + proto.Sov(uint64(l)) + l
-	case *AnyValue_BoolValue:
+	case AnyValueValueTypeIntValue:
 
-		n += 2
-	case *AnyValue_IntValue:
-
-		n += 1 + proto.Sov(uint64(orig.IntValue))
-	case *AnyValue_DoubleValue:
+		n += 1 + proto.Sov(uint64(orig.IntValue()))
+	case AnyValueValueTypeDoubleValue:
 
 		n += 9
-	case *AnyValue_ArrayValue:
-		if orig.ArrayValue != nil {
-			l = orig.ArrayValue.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *AnyValue_KvlistValue:
-		if orig.KvlistValue != nil {
-			l = orig.KvlistValue.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *AnyValue_BytesValue:
-		l = len(orig.BytesValue)
+	case AnyValueValueTypeBoolValue:
+
+		n += 2
+	case AnyValueValueTypeKvlistValue:
+		l = orig.KvlistValue().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case AnyValueValueTypeArrayValue:
+		l = orig.ArrayValue().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case AnyValueValueTypeBytesValue:
+		l = len(orig.BytesValue())
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
@@ -522,18 +267,31 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 	pos := len(buf)
 	var l int
 	_ = l
-	switch orig := orig.Value.(type) {
-	case *AnyValue_StringValue:
-		l = len(orig.StringValue)
-		pos -= l
-		copy(buf[pos:], orig.StringValue)
-		pos = proto.EncodeVarint(buf, pos, uint64(l))
+	switch orig.ValueType() {
+	case AnyValueValueTypeStringValue:
+		{
+			val := orig.StringValue()
+			l = len(val)
+			pos -= l
+			copy(buf[pos:], val)
+			pos = proto.EncodeVarint(buf, pos, uint64(l))
+			pos--
+			buf[pos] = 0xa
+		}
+	case AnyValueValueTypeIntValue:
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.IntValue()))
 		pos--
-		buf[pos] = 0xa
+		buf[pos] = 0x18
 
-	case *AnyValue_BoolValue:
+	case AnyValueValueTypeDoubleValue:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.DoubleValue()))
 		pos--
-		if orig.BoolValue {
+		buf[pos] = 0x21
+
+	case AnyValueValueTypeBoolValue:
+		pos--
+		if orig.BoolValue() {
 			buf[pos] = 1
 		} else {
 			buf[pos] = 0
@@ -541,41 +299,30 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x10
 
-	case *AnyValue_IntValue:
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.IntValue))
-		pos--
-		buf[pos] = 0x18
-
-	case *AnyValue_DoubleValue:
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.DoubleValue))
-		pos--
-		buf[pos] = 0x21
-
-	case *AnyValue_ArrayValue:
-		if orig.ArrayValue != nil {
-			l = orig.ArrayValue.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x2a
-		}
-	case *AnyValue_KvlistValue:
-		if orig.KvlistValue != nil {
-			l = orig.KvlistValue.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x32
-		}
-	case *AnyValue_BytesValue:
-		l = len(orig.BytesValue)
+	case AnyValueValueTypeKvlistValue:
+		l = orig.KvlistValue().MarshalProto(buf[:pos])
 		pos -= l
-		copy(buf[pos:], orig.BytesValue)
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
-		buf[pos] = 0x3a
+		buf[pos] = 0x32
 
+	case AnyValueValueTypeArrayValue:
+		l = orig.ArrayValue().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+
+	case AnyValueValueTypeBytesValue:
+		{
+			val := orig.BytesValue()
+			l = len(val)
+			pos -= l
+			copy(buf[pos:], val)
+			pos = proto.EncodeVarint(buf, pos, uint64(l))
+			pos--
+			buf[pos] = 0x3a
+		}
 	}
 	return len(buf) - pos
 }
@@ -605,32 +352,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_StringValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_StringValue{}
-			} else {
-				ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-			}
-			ov.StringValue = string(buf[startPos:pos])
-			orig.Value = ov
-
-		case 2:
-			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field BoolValue", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeVarint(buf, pos)
-			if err != nil {
-				return err
-			}
-			var ov *AnyValue_BoolValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_BoolValue{}
-			} else {
-				ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-			}
-			ov.BoolValue = num != 0
-			orig.Value = ov
+			orig.SetStringValue(string(buf[startPos:pos]))
 
 		case 3:
 			if wireType != proto.WireTypeVarint {
@@ -641,14 +363,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_IntValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_IntValue{}
-			} else {
-				ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-			}
-			ov.IntValue = int64(num)
-			orig.Value = ov
+			orig.SetIntValue(int64(num))
 
 		case 4:
 			if wireType != proto.WireTypeI64 {
@@ -659,37 +374,18 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_DoubleValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_DoubleValue{}
-			} else {
-				ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-			}
-			ov.DoubleValue = math.Float64frombits(num)
-			orig.Value = ov
+			orig.SetDoubleValue(math.Float64frombits(num))
 
-		case 5:
-			if wireType != proto.WireTypeLen {
-				return fmt.Errorf("proto: wrong wireType = %d for field ArrayValue", wireType)
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field BoolValue", wireType)
 			}
-			var length int
-			length, pos, err = proto.ConsumeLen(buf, pos)
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
 			if err != nil {
 				return err
 			}
-			startPos := pos - length
-			var ov *AnyValue_ArrayValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_ArrayValue{}
-			} else {
-				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-			}
-			ov.ArrayValue = NewArrayValue()
-			err = ov.ArrayValue.UnmarshalProto(buf[startPos:pos])
-			if err != nil {
-				return err
-			}
-			orig.Value = ov
+			orig.SetBoolValue(num != 0)
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -701,18 +397,29 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_KvlistValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_KvlistValue{}
-			} else {
-				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-			}
-			ov.KvlistValue = NewKeyValueList()
-			err = ov.KvlistValue.UnmarshalProto(buf[startPos:pos])
+			ov := NewKeyValueList()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Value = ov
+			orig.SetKvlistValue(ov)
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArrayValue", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			ov := NewArrayValue()
+			err = ov.UnmarshalProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+			orig.SetArrayValue(ov)
 
 		case 7:
 			if wireType != proto.WireTypeLen {
@@ -724,17 +431,12 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_BytesValue
-			if !UseProtoPooling.IsEnabled() {
-				ov = &AnyValue_BytesValue{}
-			} else {
-				ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-			}
+			var copyBuf []byte
 			if length != 0 {
-				ov.BytesValue = make([]byte, length)
-				copy(ov.BytesValue, buf[startPos:pos])
+				copyBuf = make([]byte, length)
+				copy(copyBuf, buf[startPos:pos])
 			}
-			orig.Value = ov
+			orig.SetBytesValue(copyBuf)
 
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
@@ -746,9 +448,142 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+type AnyValueValueType int32
+
+const (
+	AnyValueValueTypeEmpty AnyValueValueType = iota
+	AnyValueValueTypeStringValue
+	AnyValueValueTypeIntValue
+	AnyValueValueTypeDoubleValue
+	AnyValueValueTypeBoolValue
+	AnyValueValueTypeKvlistValue
+	AnyValueValueTypeArrayValue
+	AnyValueValueTypeBytesValue
+)
+
+const (
+	startBitAnyValueValue             = uint64(0)
+	maskAnyValueValue                 = uint64(7)
+	reversedMaskAnyValueValue         = ^maskAnyValueValue
+	fieldMaskAnyValueValueStringValue = uint64(1 << startBitAnyValueValue)
+	fieldMaskAnyValueValueIntValue    = uint64(2 << startBitAnyValueValue)
+	fieldMaskAnyValueValueDoubleValue = uint64(3 << startBitAnyValueValue)
+	fieldMaskAnyValueValueBoolValue   = uint64(4 << startBitAnyValueValue)
+	fieldMaskAnyValueValueKvlistValue = uint64(5 << startBitAnyValueValue)
+	fieldMaskAnyValueValueArrayValue  = uint64(6 << startBitAnyValueValue)
+	fieldMaskAnyValueValueBytesValue  = uint64(7 << startBitAnyValueValue)
+)
+
+func (m *AnyValue) ValueType() AnyValueValueType {
+	val := (m.metadata & maskAnyValueValue) >> startBitAnyValueValue
+	return AnyValueValueType(val)
+}
+
+func (m *AnyValue) ResetValue() {
+	m.Value.Reset()
+	m.metadata &= reversedMaskAnyValueValue
+}
+func (m *AnyValue) SetStringValue(value string) {
+	m.Value.SetString(value)
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueStringValue
+}
+
+func (m *AnyValue) StringValue() string {
+	if m.ValueType() != AnyValueValueTypeStringValue {
+		return ""
+	}
+	return (string)(m.Value.String())
+}
+
+func (m *AnyValue) SetIntValue(value int64) {
+	m.Value.SetInt(uint64(value))
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueIntValue
+}
+
+func (m *AnyValue) IntValue() int64 {
+	if m.ValueType() != AnyValueValueTypeIntValue {
+		return int64(0)
+	}
+	return (int64)(m.Value.Int())
+}
+
+func (m *AnyValue) SetDoubleValue(value float64) {
+	m.Value.SetFloat(float64(value))
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueDoubleValue
+}
+
+func (m *AnyValue) DoubleValue() float64 {
+	if m.ValueType() != AnyValueValueTypeDoubleValue {
+		return float64(0)
+	}
+	return (float64)(m.Value.Float())
+}
+
+func (m *AnyValue) SetBoolValue(value bool) {
+	m.Value.SetBool(value)
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueBoolValue
+}
+
+func (m *AnyValue) BoolValue() bool {
+	if m.ValueType() != AnyValueValueTypeBoolValue {
+		return false
+	}
+	return (bool)(m.Value.Bool())
+}
+
+func (m *AnyValue) SetKvlistValue(value *KeyValueList) {
+	m.Value.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueKvlistValue
+}
+
+func (m *AnyValue) KvlistValue() *KeyValueList {
+	if m.ValueType() != AnyValueValueTypeKvlistValue {
+		return nil
+	}
+	return (*KeyValueList)(m.Value.Message())
+}
+
+func (m *AnyValue) SetArrayValue(value *ArrayValue) {
+	m.Value.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueArrayValue
+}
+
+func (m *AnyValue) ArrayValue() *ArrayValue {
+	if m.ValueType() != AnyValueValueTypeArrayValue {
+		return nil
+	}
+	return (*ArrayValue)(m.Value.Message())
+}
+
+func (m *AnyValue) SetBytesValue(value []byte) {
+	m.Value.SetBytes(&value)
+	m.metadata &= reversedMaskAnyValueValue
+	m.metadata |= fieldMaskAnyValueValueBytesValue
+}
+
+func (m *AnyValue) BytesValue() []byte {
+	if m.ValueType() != AnyValueValueTypeBytesValue {
+		return nil
+	}
+	return *m.Value.Bytes()
+}
+
+func (m *AnyValue) BytesValuePtr() *[]byte {
+	if m.ValueType() != AnyValueValueTypeBytesValue {
+		return nil
+	}
+	return m.Value.Bytes()
+}
+
 func GenTestAnyValue() *AnyValue {
 	orig := NewAnyValue()
-	orig.Value = &AnyValue_StringValue{StringValue: "test_stringvalue"}
+	orig.SetStringValue("test_stringvalue")
 	return orig
 }
 

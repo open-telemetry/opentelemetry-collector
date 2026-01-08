@@ -75,63 +75,50 @@ func NewValueEmpty() Value {
 
 // NewValueStr creates a new Value with the given string value.
 func NewValueStr(v string) Value {
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = v
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetStringValue(v)
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {
-	ov := internal.NewAnyValueIntValue()
-	ov.IntValue = v
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetIntValue(v)
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueDouble creates a new Value with the given float64 value.
 func NewValueDouble(v float64) Value {
-	ov := internal.NewAnyValueDoubleValue()
-	ov.DoubleValue = v
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetDoubleValue(v)
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueBool creates a new Value with the given bool value.
 func NewValueBool(v bool) Value {
-	ov := internal.NewAnyValueBoolValue()
-	ov.BoolValue = v
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetBoolValue(v)
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueMap creates a new Value of map type.
 func NewValueMap() Value {
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetKvlistValue(internal.NewKeyValueList())
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueSlice creates a new Value of array type.
 func NewValueSlice() Value {
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetArrayValue(internal.NewArrayValue())
 	return newValue(orig, internal.NewState())
 }
 
 // NewValueBytes creates a new empty Value of byte type.
 func NewValueBytes() Value {
-	ov := internal.NewAnyValueBytesValue()
 	orig := internal.NewAnyValue()
-	orig.Value = ov
+	orig.SetBytesValue(nil)
 	return newValue(orig, internal.NewState())
 }
 
@@ -152,7 +139,7 @@ func (v Value) getState() *internal.State {
 func (v Value) FromRaw(iv any) error {
 	switch tv := iv.(type) {
 	case nil:
-		v.getOrig().Value = nil
+		v.getOrig().ResetValue()
 	case string:
 		v.SetStr(tv)
 	case int:
@@ -196,55 +183,39 @@ func (v Value) FromRaw(iv any) error {
 // Type returns the type of the value for this Value.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) Type() ValueType {
-	switch v.getOrig().Value.(type) {
-	case *internal.AnyValue_StringValue:
-		return ValueTypeStr
-	case *internal.AnyValue_BoolValue:
-		return ValueTypeBool
-	case *internal.AnyValue_IntValue:
-		return ValueTypeInt
-	case *internal.AnyValue_DoubleValue:
-		return ValueTypeDouble
-	case *internal.AnyValue_KvlistValue:
-		return ValueTypeMap
-	case *internal.AnyValue_ArrayValue:
-		return ValueTypeSlice
-	case *internal.AnyValue_BytesValue:
-		return ValueTypeBytes
-	}
-	return ValueTypeEmpty
+	return ValueType(v.getOrig().ValueType())
 }
 
 // Str returns the string value associated with this Value.
 // The shorter name is used instead of String to avoid implementing fmt.Stringer interface.
 // If the Type() is not ValueTypeStr then returns empty string.
 func (v Value) Str() string {
-	return v.getOrig().GetStringValue()
+	return v.getOrig().StringValue()
 }
 
 // Int returns the int64 value associated with this Value.
 // If the Type() is not ValueTypeInt then returns int64(0).
 func (v Value) Int() int64 {
-	return v.getOrig().GetIntValue()
+	return v.getOrig().IntValue()
 }
 
 // Double returns the float64 value associated with this Value.
 // If the Type() is not ValueTypeDouble then returns float64(0).
 func (v Value) Double() float64 {
-	return v.getOrig().GetDoubleValue()
+	return v.getOrig().DoubleValue()
 }
 
 // Bool returns the bool value associated with this Value.
 // If the Type() is not ValueTypeBool then returns false.
 func (v Value) Bool() bool {
-	return v.getOrig().GetBoolValue()
+	return v.getOrig().BoolValue()
 }
 
 // Map returns the map value associated with this Value.
 // If the function is called on zero-initialized Value or if the Type() is not ValueTypeMap
 // then it returns an invalid map. Note that using such map can cause panic.
 func (v Value) Map() Map {
-	kvlist := v.getOrig().GetKvlistValue()
+	kvlist := v.getOrig().KvlistValue()
 	if kvlist == nil {
 		return Map{}
 	}
@@ -255,7 +226,7 @@ func (v Value) Map() Map {
 // If the function is called on zero-initialized Value or if the Type() is not ValueTypeSlice
 // then returns an invalid slice. Note that using such slice can cause panic.
 func (v Value) Slice() Slice {
-	arr := v.getOrig().GetArrayValue()
+	arr := v.getOrig().ArrayValue()
 	if arr == nil {
 		return Slice{}
 	}
@@ -266,11 +237,11 @@ func (v Value) Slice() Slice {
 // If the function is called on zero-initialized Value or if the Type() is not ValueTypeBytes
 // then returns an invalid ByteSlice object. Note that using such slice can cause panic.
 func (v Value) Bytes() ByteSlice {
-	bv, ok := v.getOrig().GetValue().(*internal.AnyValue_BytesValue)
-	if !ok {
+	bv := v.getOrig().BytesValuePtr()
+	if bv == nil {
 		return ByteSlice{}
 	}
-	return ByteSlice(internal.NewByteSliceWrapper(&bv.BytesValue, internal.GetValueState(internal.ValueWrapper(v))))
+	return ByteSlice(internal.NewByteSliceWrapper(bv, internal.GetValueState(internal.ValueWrapper(v))))
 }
 
 // SetStr replaces the string value associated with this Value,
@@ -282,9 +253,7 @@ func (v Value) SetStr(sv string) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = sv
-	v.getOrig().Value = ov
+	v.getOrig().SetStringValue(sv)
 }
 
 // SetInt replaces the int64 value associated with this Value,
@@ -294,9 +263,7 @@ func (v Value) SetInt(iv int64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueIntValue()
-	ov.IntValue = iv
-	v.getOrig().Value = ov
+	v.getOrig().SetIntValue(iv)
 }
 
 // SetDouble replaces the float64 value associated with this Value,
@@ -306,9 +273,7 @@ func (v Value) SetDouble(dv float64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueDoubleValue()
-	ov.DoubleValue = dv
-	v.getOrig().Value = ov
+	v.getOrig().SetDoubleValue(dv)
 }
 
 // SetBool replaces the bool value associated with this Value,
@@ -318,9 +283,7 @@ func (v Value) SetBool(bv bool) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueBoolValue()
-	ov.BoolValue = bv
-	v.getOrig().Value = ov
+	v.getOrig().SetBoolValue(bv)
 }
 
 // SetEmptyBytes sets value to an empty byte slice and returns it.
@@ -329,9 +292,8 @@ func (v Value) SetEmptyBytes() ByteSlice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	bv := internal.NewAnyValueBytesValue()
-	v.getOrig().Value = bv
-	return ByteSlice(internal.NewByteSliceWrapper(&bv.BytesValue, v.getState()))
+	v.getOrig().SetBytesValue(nil)
+	return ByteSlice(internal.NewByteSliceWrapper(v.getOrig().BytesValuePtr(), v.getState()))
 }
 
 // SetEmptyMap sets value to an empty map and returns it.
@@ -340,10 +302,9 @@ func (v Value) SetEmptyMap() Map {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
-	v.getOrig().Value = ov
-	return newMap(&ov.KvlistValue.Values, v.getState())
+	ov := internal.NewKeyValueList()
+	v.getOrig().SetKvlistValue(ov)
+	return newMap(&ov.Values, v.getState())
 }
 
 // SetEmptySlice sets value to an empty slice and returns it.
@@ -352,10 +313,9 @@ func (v Value) SetEmptySlice() Slice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
-	v.getOrig().Value = ov
-	return newSlice(&ov.ArrayValue.Values, v.getState())
+	ov := internal.NewArrayValue()
+	v.getOrig().SetArrayValue(ov)
+	return newSlice(&ov.Values, v.getState())
 }
 
 // MoveTo moves the Value from current overriding the destination and
@@ -369,7 +329,7 @@ func (v Value) MoveTo(dest Value) {
 		return
 	}
 	*dest.getOrig() = *v.getOrig()
-	v.getOrig().Value = nil
+	v.getOrig().ResetValue()
 }
 
 // CopyTo copies the Value instance overriding the destination.

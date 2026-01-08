@@ -21,13 +21,11 @@ type Status struct {
 	Code    StatusCode
 }
 
-var (
-	protoPoolStatus = sync.Pool{
-		New: func() any {
-			return &Status{}
-		},
-	}
-)
+var protoPoolStatus = sync.Pool{
+	New: func() any {
+		return &Status{}
+	},
+}
 
 func NewStatus() *Status {
 	if !UseProtoPooling.IsEnabled() {

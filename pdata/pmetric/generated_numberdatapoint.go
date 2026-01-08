@@ -78,47 +78,27 @@ func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
 func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
-	switch ms.orig.Value.(type) {
-	case *internal.NumberDataPoint_AsDouble:
-		return NumberDataPointValueTypeDouble
-	case *internal.NumberDataPoint_AsInt:
-		return NumberDataPointValueTypeInt
-	}
-	return NumberDataPointValueTypeEmpty
+	return NumberDataPointValueType(ms.orig.ValueType())
 }
 
-// DoubleValue returns the double associated with this NumberDataPoint.
-func (ms NumberDataPoint) DoubleValue() float64 {
-	return ms.orig.GetAsDouble()
-}
-
-// SetDoubleValue replaces the double associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleValue(v float64) {
-	ms.state.AssertMutable()
-	var ov *internal.NumberDataPoint_AsDouble
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.NumberDataPoint_AsDouble{}
-	} else {
-		ov = internal.ProtoPoolNumberDataPoint_AsDouble.Get().(*internal.NumberDataPoint_AsDouble)
-	}
-	ov.AsDouble = v
-	ms.orig.Value = ov
-} // IntValue returns the int associated with this NumberDataPoint.
+// IntValue returns the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) IntValue() int64 {
-	return ms.orig.GetAsInt()
+	return ms.orig.AsInt()
 }
 
 // SetIntValue replaces the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	var ov *internal.NumberDataPoint_AsInt
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.NumberDataPoint_AsInt{}
-	} else {
-		ov = internal.ProtoPoolNumberDataPoint_AsInt.Get().(*internal.NumberDataPoint_AsInt)
-	}
-	ov.AsInt = v
-	ms.orig.Value = ov
+	ms.orig.SetAsInt(v)
+} // DoubleValue returns the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) DoubleValue() float64 {
+	return ms.orig.AsDouble()
+}
+
+// SetDoubleValue replaces the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetDoubleValue(v float64) {
+	ms.state.AssertMutable()
+	ms.orig.SetAsDouble(v)
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.

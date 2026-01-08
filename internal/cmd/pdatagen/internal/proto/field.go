@@ -8,14 +8,12 @@ import (
 	"strings"
 )
 
-// FieldInterface temporary interface until we generate the proto fields with pdatagen.
+// FieldInterface temporary interface until we generate the proto Fields with pdatagen.
 // TODO: Remove when no more wrappers needed.
 type FieldInterface interface {
 	GenTestFailingUnmarshalProtoValues() string
 
 	GenTestEncodingValues() string
-
-	GenPool() string
 
 	GenDelete() string
 
@@ -32,8 +30,6 @@ type FieldInterface interface {
 	GenUnmarshalProto() string
 
 	GenMessageField() string
-
-	GenOneOfMessages() string
 
 	GenTest() string
 
@@ -188,6 +184,25 @@ func (pf *Field) MemberGoType() string {
 		return ptrGoType()
 	}
 	return pf.GoType()
+}
+
+func (pf *Field) OneOfType() string {
+	switch pf.Type {
+	case TypeDouble, TypeFloat:
+		return "Float"
+	case TypeInt32, TypeSInt32, TypeSFixed32, TypeInt64, TypeSInt64, TypeSFixed64, TypeUint32, TypeFixed32, TypeUint64, TypeFixed64:
+		return "Int"
+	case TypeBool:
+		return "Bool"
+	case TypeString:
+		return "String"
+	case TypeBytes:
+		return "Bytes"
+	case TypeMessage:
+		return "Message"
+	default:
+		panic("unsupported field type")
+	}
 }
 
 func (pf *Field) GenMessageField() string {

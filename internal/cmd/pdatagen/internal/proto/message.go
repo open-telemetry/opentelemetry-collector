@@ -50,19 +50,15 @@ func (ms *Message) templateFields(imports, testImports []string) map[string]any 
 		"imports":         imports,
 		"testImports":     testImports,
 		// 0 size means no metadata is needed
-		"metadataSize":     ms.metadataSize(),
+		"hasMetadata":      ms.hasMetadata(),
 		"GenerateMetadata": ms.GenerateMetadata,
 	}
 }
 
-func (ms *Message) metadataSize() uint {
-	if ms.metadata == nil {
-		return 0
+func (ms *Message) hasMetadata() bool {
+	if ms.metadata == nil || ms.metadata.Size() == 0 {
+		return false
 	}
 
-	if len(ms.metadata.OptionalFields) == 0 {
-		return 0
-	}
-
-	return uint(ms.metadata.OptionalFields[len(ms.metadata.OptionalFields)-1].Value/64 + 1)
+	return true
 }

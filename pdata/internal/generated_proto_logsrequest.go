@@ -21,13 +21,11 @@ type LogsRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolLogsRequest = sync.Pool{
-		New: func() any {
-			return &LogsRequest{}
-		},
-	}
-)
+var protoPoolLogsRequest = sync.Pool{
+	New: func() any {
+		return &LogsRequest{}
+	},
+}
 
 func NewLogsRequest() *LogsRequest {
 	if !UseProtoPooling.IsEnabled() {

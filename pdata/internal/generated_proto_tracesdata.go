@@ -21,13 +21,11 @@ type TracesData struct {
 	ResourceSpans []*ResourceSpans
 }
 
-var (
-	protoPoolTracesData = sync.Pool{
-		New: func() any {
-			return &TracesData{}
-		},
-	}
-)
+var protoPoolTracesData = sync.Pool{
+	New: func() any {
+		return &TracesData{}
+	},
+}
 
 func NewTracesData() *TracesData {
 	if !UseProtoPooling.IsEnabled() {
@@ -137,6 +135,7 @@ func (orig *TracesData) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

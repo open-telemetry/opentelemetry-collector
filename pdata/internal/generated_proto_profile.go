@@ -31,13 +31,11 @@ type Profile struct {
 	ProfileId              ProfileID
 }
 
-var (
-	protoPoolProfile = sync.Pool{
-		New: func() any {
-			return &Profile{}
-		},
-	}
-)
+var protoPoolProfile = sync.Pool{
+	New: func() any {
+		return &Profile{}
+	},
+}
 
 func NewProfile() *Profile {
 	if !UseProtoPooling.IsEnabled() {
@@ -169,6 +167,7 @@ func (orig *Profile) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)

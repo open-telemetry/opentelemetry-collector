@@ -194,10 +194,10 @@ func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 		"TimeUnixNano/wrong_wire_type":       {0x14},
 		"TimeUnixNano/missing_value":         {0x11},
 
-		"AsDouble/wrong_wire_type": {0x1c},
-		"AsDouble/missing_value":   {0x19},
 		"AsInt/wrong_wire_type":    {0x34},
 		"AsInt/missing_value":      {0x31},
+		"AsDouble/wrong_wire_type": {0x1c},
+		"AsDouble/missing_value":   {0x19},
 		"TraceId/wrong_wire_type":  {0x2c},
 		"TraceId/missing_value":    {0x2a},
 		"SpanId/wrong_wire_type":   {0x24},
@@ -210,9 +210,25 @@ func genTestEncodingValuesExemplar() map[string]*Exemplar {
 		"empty":                   NewExemplar(),
 		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"TimeUnixNano/test":       {TimeUnixNano: uint64(13)},
-		"AsDouble/default":        {Value: &Exemplar_AsDouble{AsDouble: float64(0)}},
-		"AsDouble/test":           {Value: &Exemplar_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &Exemplar_AsInt{AsInt: int64(0)}},
-		"AsInt/test":   {Value: &Exemplar_AsInt{AsInt: int64(13)}},
+		"AsInt/default": func() *Exemplar {
+			ms := NewExemplar()
+			ms.SetAsInt(int64(0))
+			return ms
+		}(),
+		"AsInt/test": func() *Exemplar {
+			ms := NewExemplar()
+			ms.SetAsInt(int64(13))
+			return ms
+		}(), "AsDouble/default": func() *Exemplar {
+			ms := NewExemplar()
+			ms.SetAsDouble(float64(0))
+			return ms
+		}(),
+		"AsDouble/test": func() *Exemplar {
+			ms := NewExemplar()
+			ms.SetAsDouble(float64(3.1415926))
+			return ms
+		}(),
 		"TraceId/test": {TraceId: *GenTestTraceID()},
 		"SpanId/test":  {SpanId: *GenTestSpanID()},
 	}

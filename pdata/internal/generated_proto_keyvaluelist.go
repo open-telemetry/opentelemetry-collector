@@ -19,13 +19,11 @@ type KeyValueList struct {
 	Values []KeyValue
 }
 
-var (
-	protoPoolKeyValueList = sync.Pool{
-		New: func() any {
-			return &KeyValueList{}
-		},
-	}
-)
+var protoPoolKeyValueList = sync.Pool{
+	New: func() any {
+		return &KeyValueList{}
+	},
+}
 
 func NewKeyValueList() *KeyValueList {
 	if !UseProtoPooling.IsEnabled() {
@@ -135,6 +133,7 @@ func (orig *KeyValueList) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

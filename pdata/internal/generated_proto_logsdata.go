@@ -21,13 +21,11 @@ type LogsData struct {
 	ResourceLogs []*ResourceLogs
 }
 
-var (
-	protoPoolLogsData = sync.Pool{
-		New: func() any {
-			return &LogsData{}
-		},
-	}
-)
+var protoPoolLogsData = sync.Pool{
+	New: func() any {
+		return &LogsData{}
+	},
+}
 
 func NewLogsData() *LogsData {
 	if !UseProtoPooling.IsEnabled() {
@@ -137,6 +135,7 @@ func (orig *LogsData) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

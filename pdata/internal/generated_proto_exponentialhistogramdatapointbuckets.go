@@ -20,13 +20,11 @@ type ExponentialHistogramDataPointBuckets struct {
 	Offset       int32
 }
 
-var (
-	protoPoolExponentialHistogramDataPointBuckets = sync.Pool{
-		New: func() any {
-			return &ExponentialHistogramDataPointBuckets{}
-		},
-	}
-)
+var protoPoolExponentialHistogramDataPointBuckets = sync.Pool{
+	New: func() any {
+		return &ExponentialHistogramDataPointBuckets{}
+	},
+}
 
 func NewExponentialHistogramDataPointBuckets() *ExponentialHistogramDataPointBuckets {
 	if !UseProtoPooling.IsEnabled() {

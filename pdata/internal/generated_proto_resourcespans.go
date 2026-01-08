@@ -22,13 +22,11 @@ type ResourceSpans struct {
 	DeprecatedScopeSpans []*ScopeSpans
 }
 
-var (
-	protoPoolResourceSpans = sync.Pool{
-		New: func() any {
-			return &ResourceSpans{}
-		},
-	}
-)
+var protoPoolResourceSpans = sync.Pool{
+	New: func() any {
+		return &ResourceSpans{}
+	},
+}
 
 func NewResourceSpans() *ResourceSpans {
 	if !UseProtoPooling.IsEnabled() {
@@ -150,6 +148,7 @@ func (orig *ResourceSpans) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)
@@ -164,6 +163,7 @@ func (orig *ResourceSpans) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

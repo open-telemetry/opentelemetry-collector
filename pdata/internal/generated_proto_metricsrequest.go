@@ -21,13 +21,11 @@ type MetricsRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolMetricsRequest = sync.Pool{
-		New: func() any {
-			return &MetricsRequest{}
-		},
-	}
-)
+var protoPoolMetricsRequest = sync.Pool{
+	New: func() any {
+		return &MetricsRequest{}
+	},
+}
 
 func NewMetricsRequest() *MetricsRequest {
 	if !UseProtoPooling.IsEnabled() {

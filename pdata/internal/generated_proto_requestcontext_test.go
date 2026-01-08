@@ -210,10 +210,42 @@ func genTestEncodingValuesRequestContext() map[string]*RequestContext {
 		"empty":               NewRequestContext(),
 		"SpanContext/test":    {SpanContext: GenTestSpanContext()},
 		"ClientMetadata/test": {ClientMetadata: []KeyValue{{}, *GenTestKeyValue()}},
-		"IP/default":          {ClientAddress: &RequestContext_IP{IP: &IPAddr{}}},
-		"IP/test":             {ClientAddress: &RequestContext_IP{IP: GenTestIPAddr()}}, "TCP/default": {ClientAddress: &RequestContext_TCP{TCP: &TCPAddr{}}},
-		"TCP/test": {ClientAddress: &RequestContext_TCP{TCP: GenTestTCPAddr()}}, "UDP/default": {ClientAddress: &RequestContext_UDP{UDP: &UDPAddr{}}},
-		"UDP/test": {ClientAddress: &RequestContext_UDP{UDP: GenTestUDPAddr()}}, "Unix/default": {ClientAddress: &RequestContext_Unix{Unix: &UnixAddr{}}},
-		"Unix/test": {ClientAddress: &RequestContext_Unix{Unix: GenTestUnixAddr()}},
+		"IP/default": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetIP(&IPAddr{})
+			return ms
+		}(),
+		"IP/test": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetIP(GenTestIPAddr())
+			return ms
+		}(), "TCP/default": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetTCP(&TCPAddr{})
+			return ms
+		}(),
+		"TCP/test": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetTCP(GenTestTCPAddr())
+			return ms
+		}(), "UDP/default": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetUDP(&UDPAddr{})
+			return ms
+		}(),
+		"UDP/test": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetUDP(GenTestUDPAddr())
+			return ms
+		}(), "Unix/default": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetUnix(&UnixAddr{})
+			return ms
+		}(),
+		"Unix/test": func() *RequestContext {
+			ms := NewRequestContext()
+			ms.SetUnix(GenTestUnixAddr())
+			return ms
+		}(),
 	}
 }

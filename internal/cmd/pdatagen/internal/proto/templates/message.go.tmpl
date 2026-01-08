@@ -12,29 +12,21 @@ import (
 	{{ end }}
 )
 
-{{- range .fields }}
-{{ .GenOneOfMessages }}
-{{- end }}
-
 {{ .description }}
 type {{ .messageName }} struct {
 {{- range .fields }}
     {{ .GenMessageField }}
 {{- end }}
-{{ if gt .metadataSize 0 -}}
-    metadata [{{ .metadataSize }}]uint64
+{{ if .hasMetadata -}}
+    metadata uint64
 {{ end -}}
 }
 
-var (
-	protoPool{{ .messageName }} = sync.Pool{
+var protoPool{{ .messageName }} = sync.Pool{
 	    New: func() any {
 		    return &{{ .messageName }}{}
 	    },
     }
-    {{- range .fields }}{{ .GenPool }}{{- end }}
-)
-
 
 func New{{ .messageName }}() *{{ .messageName }} {
     if !UseProtoPooling.IsEnabled() {
@@ -205,7 +197,7 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
-{{ if gt .metadataSize 0 -}}
+{{ if .hasMetadata }}
 {{ call .GenerateMetadata }}
 {{ end -}}
 

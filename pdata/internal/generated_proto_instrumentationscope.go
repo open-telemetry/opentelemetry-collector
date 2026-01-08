@@ -22,13 +22,11 @@ type InstrumentationScope struct {
 	DroppedAttributesCount uint32
 }
 
-var (
-	protoPoolInstrumentationScope = sync.Pool{
-		New: func() any {
-			return &InstrumentationScope{}
-		},
-	}
-)
+var protoPoolInstrumentationScope = sync.Pool{
+	New: func() any {
+		return &InstrumentationScope{}
+	},
+}
 
 func NewInstrumentationScope() *InstrumentationScope {
 	if !UseProtoPooling.IsEnabled() {
@@ -152,6 +150,7 @@ func (orig *InstrumentationScope) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)

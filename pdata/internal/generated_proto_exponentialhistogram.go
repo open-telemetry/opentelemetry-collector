@@ -21,13 +21,11 @@ type ExponentialHistogram struct {
 	AggregationTemporality AggregationTemporality
 }
 
-var (
-	protoPoolExponentialHistogram = sync.Pool{
-		New: func() any {
-			return &ExponentialHistogram{}
-		},
-	}
-)
+var protoPoolExponentialHistogram = sync.Pool{
+	New: func() any {
+		return &ExponentialHistogram{}
+	},
+}
 
 func NewExponentialHistogram() *ExponentialHistogram {
 	if !UseProtoPooling.IsEnabled() {

@@ -138,12 +138,6 @@ var anyValueStruct = &messageStruct{
 					protoType:       proto.TypeString,
 				},
 				&OneOfPrimitiveValue{
-					fieldName:       "BoolValue",
-					protoID:         2,
-					originFieldName: "BoolValue",
-					protoType:       proto.TypeBool,
-				},
-				&OneOfPrimitiveValue{
 					fieldName:       "IntValue",
 					protoID:         3,
 					originFieldName: "IntValue",
@@ -155,15 +149,21 @@ var anyValueStruct = &messageStruct{
 					originFieldName: "DoubleValue",
 					protoType:       proto.TypeDouble,
 				},
-				&OneOfMessageValue{
-					fieldName:     "ArrayValue",
-					protoID:       5,
-					returnMessage: arrayValueStruct,
+				&OneOfPrimitiveValue{
+					fieldName:       "BoolValue",
+					protoID:         2,
+					originFieldName: "BoolValue",
+					protoType:       proto.TypeBool,
 				},
 				&OneOfMessageValue{
 					fieldName:     "KvlistValue",
 					protoID:       6,
 					returnMessage: keyValueListStruct,
+				},
+				&OneOfMessageValue{
+					fieldName:     "ArrayValue",
+					protoID:       5,
+					returnMessage: arrayValueStruct,
 				},
 				&OneOfPrimitiveValue{
 					fieldName:       "BytesValue",

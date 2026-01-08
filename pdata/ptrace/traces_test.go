@@ -142,3 +142,29 @@ func BenchmarkTracesMarshalJSON(b *testing.B) {
 		require.NotNil(b, jsonBuf)
 	}
 }
+
+func BenchmarkTracesProto(b *testing.B) {
+	td := generateTestTraces()
+
+	pbm := &ProtoMarshaler{}
+	pbu := &ProtoUnmarshaler{}
+	buf, err := pbm.MarshalTraces(td)
+	if err != nil {
+		b.Fatal(err)
+	}
+	if len(buf) != 957 {
+		b.Fatal(len(buf))
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		ntd, err := pbu.UnmarshalTraces(buf)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if ntd.SpanCount() != td.SpanCount() {
+			b.Fatalf("expected %d spans, got %d", td.SpanCount(), ntd.SpanCount())
+		}
+	}
+}

@@ -22,13 +22,11 @@ type ResourceLogs struct {
 	DeprecatedScopeLogs []*ScopeLogs
 }
 
-var (
-	protoPoolResourceLogs = sync.Pool{
-		New: func() any {
-			return &ResourceLogs{}
-		},
-	}
-)
+var protoPoolResourceLogs = sync.Pool{
+	New: func() any {
+		return &ResourceLogs{}
+	},
+}
 
 func NewResourceLogs() *ResourceLogs {
 	if !UseProtoPooling.IsEnabled() {
@@ -150,6 +148,7 @@ func (orig *ResourceLogs) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)
@@ -164,6 +163,7 @@ func (orig *ResourceLogs) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

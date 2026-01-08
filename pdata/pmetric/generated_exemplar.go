@@ -70,47 +70,27 @@ func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) ValueType() ExemplarValueType {
-	switch ms.orig.Value.(type) {
-	case *internal.Exemplar_AsDouble:
-		return ExemplarValueTypeDouble
-	case *internal.Exemplar_AsInt:
-		return ExemplarValueTypeInt
-	}
-	return ExemplarValueTypeEmpty
+	return ExemplarValueType(ms.orig.ValueType())
 }
 
-// DoubleValue returns the double associated with this Exemplar.
-func (ms Exemplar) DoubleValue() float64 {
-	return ms.orig.GetAsDouble()
-}
-
-// SetDoubleValue replaces the double associated with this Exemplar.
-func (ms Exemplar) SetDoubleValue(v float64) {
-	ms.state.AssertMutable()
-	var ov *internal.Exemplar_AsDouble
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.Exemplar_AsDouble{}
-	} else {
-		ov = internal.ProtoPoolExemplar_AsDouble.Get().(*internal.Exemplar_AsDouble)
-	}
-	ov.AsDouble = v
-	ms.orig.Value = ov
-} // IntValue returns the int associated with this Exemplar.
+// IntValue returns the int associated with this Exemplar.
 func (ms Exemplar) IntValue() int64 {
-	return ms.orig.GetAsInt()
+	return ms.orig.AsInt()
 }
 
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	var ov *internal.Exemplar_AsInt
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.Exemplar_AsInt{}
-	} else {
-		ov = internal.ProtoPoolExemplar_AsInt.Get().(*internal.Exemplar_AsInt)
-	}
-	ov.AsInt = v
-	ms.orig.Value = ov
+	ms.orig.SetAsInt(v)
+} // DoubleValue returns the double associated with this Exemplar.
+func (ms Exemplar) DoubleValue() float64 {
+	return ms.orig.AsDouble()
+}
+
+// SetDoubleValue replaces the double associated with this Exemplar.
+func (ms Exemplar) SetDoubleValue(v float64) {
+	ms.state.AssertMutable()
+	ms.orig.SetAsDouble(v)
 }
 
 // TraceID returns the traceid associated with this Exemplar.

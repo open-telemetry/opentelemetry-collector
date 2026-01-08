@@ -21,13 +21,11 @@ type Sum struct {
 	IsMonotonic            bool
 }
 
-var (
-	protoPoolSum = sync.Pool{
-		New: func() any {
-			return &Sum{}
-		},
-	}
-)
+var protoPoolSum = sync.Pool{
+	New: func() any {
+		return &Sum{}
+	},
+}
 
 func NewSum() *Sum {
 	if !UseProtoPooling.IsEnabled() {

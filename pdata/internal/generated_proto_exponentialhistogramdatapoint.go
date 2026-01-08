@@ -33,18 +33,16 @@ type ExponentialHistogramDataPoint struct {
 	Min               float64
 	Max               float64
 	ZeroThreshold     float64
-	metadata          [1]uint64
+	metadata          uint64
 	Scale             int32
 	Flags             uint32
 }
 
-var (
-	protoPoolExponentialHistogramDataPoint = sync.Pool{
-		New: func() any {
-			return &ExponentialHistogramDataPoint{}
-		},
-	}
-)
+var protoPoolExponentialHistogramDataPoint = sync.Pool{
+	New: func() any {
+		return &ExponentialHistogramDataPoint{}
+	},
+}
 
 func NewExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -194,6 +192,7 @@ func (orig *ExponentialHistogramDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
@@ -236,6 +235,7 @@ func (orig *ExponentialHistogramDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.HasMin() {
 		dest.WriteObjectField("min")
 		dest.WriteFloat64(orig.Min)
@@ -644,55 +644,52 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
-const fieldBlockExponentialHistogramDataPointSum = uint64(0 >> 6)
-const fieldBitExponentialHistogramDataPointSum = uint64(1 << 0 & 0x3F)
+const fieldBitExponentialHistogramDataPointSum = uint64(1 << 0)
 
 func (m *ExponentialHistogramDataPoint) SetSum(value float64) {
 	m.Sum = value
-	m.metadata[fieldBlockExponentialHistogramDataPointSum] |= fieldBitExponentialHistogramDataPointSum
+	m.metadata |= fieldBitExponentialHistogramDataPointSum
 }
 
 func (m *ExponentialHistogramDataPoint) RemoveSum() {
 	m.Sum = float64(0)
-	m.metadata[fieldBlockExponentialHistogramDataPointSum] &^= fieldBitExponentialHistogramDataPointSum
+	m.metadata &^= fieldBitExponentialHistogramDataPointSum
 }
 
 func (m *ExponentialHistogramDataPoint) HasSum() bool {
-	return m.metadata[fieldBlockExponentialHistogramDataPointSum]&fieldBitExponentialHistogramDataPointSum != 0
+	return m.metadata&fieldBitExponentialHistogramDataPointSum != 0
 }
 
-const fieldBlockExponentialHistogramDataPointMin = uint64(1 >> 6)
-const fieldBitExponentialHistogramDataPointMin = uint64(1 << 1 & 0x3F)
+const fieldBitExponentialHistogramDataPointMin = uint64(1 << 1)
 
 func (m *ExponentialHistogramDataPoint) SetMin(value float64) {
 	m.Min = value
-	m.metadata[fieldBlockExponentialHistogramDataPointMin] |= fieldBitExponentialHistogramDataPointMin
+	m.metadata |= fieldBitExponentialHistogramDataPointMin
 }
 
 func (m *ExponentialHistogramDataPoint) RemoveMin() {
 	m.Min = float64(0)
-	m.metadata[fieldBlockExponentialHistogramDataPointMin] &^= fieldBitExponentialHistogramDataPointMin
+	m.metadata &^= fieldBitExponentialHistogramDataPointMin
 }
 
 func (m *ExponentialHistogramDataPoint) HasMin() bool {
-	return m.metadata[fieldBlockExponentialHistogramDataPointMin]&fieldBitExponentialHistogramDataPointMin != 0
+	return m.metadata&fieldBitExponentialHistogramDataPointMin != 0
 }
 
-const fieldBlockExponentialHistogramDataPointMax = uint64(2 >> 6)
-const fieldBitExponentialHistogramDataPointMax = uint64(1 << 2 & 0x3F)
+const fieldBitExponentialHistogramDataPointMax = uint64(1 << 2)
 
 func (m *ExponentialHistogramDataPoint) SetMax(value float64) {
 	m.Max = value
-	m.metadata[fieldBlockExponentialHistogramDataPointMax] |= fieldBitExponentialHistogramDataPointMax
+	m.metadata |= fieldBitExponentialHistogramDataPointMax
 }
 
 func (m *ExponentialHistogramDataPoint) RemoveMax() {
 	m.Max = float64(0)
-	m.metadata[fieldBlockExponentialHistogramDataPointMax] &^= fieldBitExponentialHistogramDataPointMax
+	m.metadata &^= fieldBitExponentialHistogramDataPointMax
 }
 
 func (m *ExponentialHistogramDataPoint) HasMax() bool {
-	return m.metadata[fieldBlockExponentialHistogramDataPointMax]&fieldBitExponentialHistogramDataPointMax != 0
+	return m.metadata&fieldBitExponentialHistogramDataPointMax != 0
 }
 
 func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {

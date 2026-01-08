@@ -20,13 +20,11 @@ type ExportMetricsPartialSuccess struct {
 	RejectedDataPoints int64
 }
 
-var (
-	protoPoolExportMetricsPartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportMetricsPartialSuccess{}
-		},
-	}
-)
+var protoPoolExportMetricsPartialSuccess = sync.Pool{
+	New: func() any {
+		return &ExportMetricsPartialSuccess{}
+	},
+}
 
 func NewExportMetricsPartialSuccess() *ExportMetricsPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

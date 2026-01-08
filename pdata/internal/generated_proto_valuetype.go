@@ -20,13 +20,11 @@ type ValueType struct {
 	UnitStrindex int32
 }
 
-var (
-	protoPoolValueType = sync.Pool{
-		New: func() any {
-			return &ValueType{}
-		},
-	}
-)
+var protoPoolValueType = sync.Pool{
+	New: func() any {
+		return &ValueType{}
+	},
+}
 
 func NewValueType() *ValueType {
 	if !UseProtoPooling.IsEnabled() {

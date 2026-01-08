@@ -16,64 +16,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-func (m *NumberDataPoint) GetValue() any {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-type NumberDataPoint_AsDouble struct {
-	AsDouble float64
-}
-
-func (m *NumberDataPoint) GetAsDouble() float64 {
-	if v, ok := m.GetValue().(*NumberDataPoint_AsDouble); ok {
-		return v.AsDouble
-	}
-	return float64(0)
-}
-
-type NumberDataPoint_AsInt struct {
-	AsInt int64
-}
-
-func (m *NumberDataPoint) GetAsInt() int64 {
-	if v, ok := m.GetValue().(*NumberDataPoint_AsInt); ok {
-		return v.AsInt
-	}
-	return int64(0)
-}
-
 // NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
 type NumberDataPoint struct {
-	Value             any
+	Value             proto.OneOf
 	Attributes        []KeyValue
 	Exemplars         []Exemplar
 	StartTimeUnixNano uint64
 	TimeUnixNano      uint64
+	metadata          uint64
 	Flags             uint32
 }
 
-var (
-	protoPoolNumberDataPoint = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint{}
-		},
-	}
-
-	ProtoPoolNumberDataPoint_AsDouble = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint_AsDouble{}
-		},
-	}
-
-	ProtoPoolNumberDataPoint_AsInt = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint_AsInt{}
-		},
-	}
-)
+var protoPoolNumberDataPoint = sync.Pool{
+	New: func() any {
+		return &NumberDataPoint{}
+	},
+}
 
 func NewNumberDataPoint() *NumberDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -95,17 +53,11 @@ func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
 		DeleteKeyValue(&orig.Attributes[i], false)
 	}
 
-	switch ov := orig.Value.(type) {
-	case *NumberDataPoint_AsDouble:
-		if UseProtoPooling.IsEnabled() {
-			ov.AsDouble = float64(0)
-			ProtoPoolNumberDataPoint_AsDouble.Put(ov)
-		}
-	case *NumberDataPoint_AsInt:
-		if UseProtoPooling.IsEnabled() {
-			ov.AsInt = int64(0)
-			ProtoPoolNumberDataPoint_AsInt.Put(ov)
-		}
+	switch orig.ValueType() {
+	case NumberDataPointValueTypeAsInt:
+
+	case NumberDataPointValueTypeAsDouble:
+
 	}
 	for i := range orig.Exemplars {
 		DeleteExemplar(&orig.Exemplars[i], false)
@@ -134,29 +86,15 @@ func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *NumberDataPoint_AsDouble:
-		var ov *NumberDataPoint_AsDouble
-		if !UseProtoPooling.IsEnabled() {
-			ov = &NumberDataPoint_AsDouble{}
-		} else {
-			ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-		}
-		ov.AsDouble = t.AsDouble
-		dest.Value = ov
+	switch src.ValueType() {
+	case NumberDataPointValueTypeEmpty:
+		dest.ResetValue()
+	case NumberDataPointValueTypeAsInt:
+		dest.SetAsInt(src.AsInt())
 
-	case *NumberDataPoint_AsInt:
-		var ov *NumberDataPoint_AsInt
-		if !UseProtoPooling.IsEnabled() {
-			ov = &NumberDataPoint_AsInt{}
-		} else {
-			ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
-		}
-		ov.AsInt = t.AsInt
-		dest.Value = ov
+	case NumberDataPointValueTypeAsDouble:
+		dest.SetAsDouble(src.AsDouble())
 
-	default:
-		dest.Value = nil
 	}
 	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
 
@@ -230,6 +168,7 @@ func (orig *NumberDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
@@ -238,13 +177,13 @@ func (orig *NumberDataPoint) MarshalJSON(dest *json.Stream) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch orig := orig.Value.(type) {
-	case *NumberDataPoint_AsDouble:
-		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(orig.AsDouble)
-	case *NumberDataPoint_AsInt:
+	switch orig.ValueType() {
+	case NumberDataPointValueTypeAsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(orig.AsInt)
+		dest.WriteInt64(orig.AsInt())
+	case NumberDataPointValueTypeAsDouble:
+		dest.WriteObjectField("asDouble")
+		dest.WriteFloat64(orig.AsDouble())
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
@@ -256,6 +195,7 @@ func (orig *NumberDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
@@ -278,28 +218,10 @@ func (orig *NumberDataPoint) UnmarshalJSON(iter *json.Iterator) {
 		case "timeUnixNano", "time_unix_nano":
 			orig.TimeUnixNano = iter.ReadUint64()
 
-		case "asDouble", "as_double":
-			{
-				var ov *NumberDataPoint_AsDouble
-				if !UseProtoPooling.IsEnabled() {
-					ov = &NumberDataPoint_AsDouble{}
-				} else {
-					ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-				}
-				ov.AsDouble = iter.ReadFloat64()
-				orig.Value = ov
-			}
 		case "asInt", "as_int":
-			{
-				var ov *NumberDataPoint_AsInt
-				if !UseProtoPooling.IsEnabled() {
-					ov = &NumberDataPoint_AsInt{}
-				} else {
-					ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
-				}
-				ov.AsInt = iter.ReadInt64()
-				orig.Value = ov
-			}
+			orig.SetAsInt(iter.ReadInt64())
+		case "asDouble", "as_double":
+			orig.SetAsDouble(iter.ReadFloat64())
 
 		case "exemplars":
 			for iter.ReadArray() {
@@ -329,14 +251,13 @@ func (orig *NumberDataPoint) SizeProto() int {
 	if orig.TimeUnixNano != uint64(0) {
 		n += 9
 	}
-	switch orig := orig.Value.(type) {
-	case nil:
-		_ = orig
+	switch orig.ValueType() {
+	case NumberDataPointValueTypeEmpty:
 		break
-	case *NumberDataPoint_AsDouble:
+	case NumberDataPointValueTypeAsInt:
 
 		n += 9
-	case *NumberDataPoint_AsInt:
+	case NumberDataPointValueTypeAsDouble:
 
 		n += 9
 	}
@@ -373,18 +294,18 @@ func (orig *NumberDataPoint) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x19
 	}
-	switch orig := orig.Value.(type) {
-	case *NumberDataPoint_AsDouble:
+	switch orig.ValueType() {
+	case NumberDataPointValueTypeAsInt:
 		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble))
-		pos--
-		buf[pos] = 0x21
-
-	case *NumberDataPoint_AsInt:
-		pos -= 8
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.AsInt()))
 		pos--
 		buf[pos] = 0x31
+
+	case NumberDataPointValueTypeAsDouble:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.AsDouble()))
+		pos--
+		buf[pos] = 0x21
 
 	}
 	for i := len(orig.Exemplars) - 1; i >= 0; i-- {
@@ -457,24 +378,6 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 
 			orig.TimeUnixNano = uint64(num)
 
-		case 4:
-			if wireType != proto.WireTypeI64 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
-			}
-			var num uint64
-			num, pos, err = proto.ConsumeI64(buf, pos)
-			if err != nil {
-				return err
-			}
-			var ov *NumberDataPoint_AsDouble
-			if !UseProtoPooling.IsEnabled() {
-				ov = &NumberDataPoint_AsDouble{}
-			} else {
-				ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-			}
-			ov.AsDouble = math.Float64frombits(num)
-			orig.Value = ov
-
 		case 6:
 			if wireType != proto.WireTypeI64 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AsInt", wireType)
@@ -484,14 +387,18 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *NumberDataPoint_AsInt
-			if !UseProtoPooling.IsEnabled() {
-				ov = &NumberDataPoint_AsInt{}
-			} else {
-				ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
+			orig.SetAsInt(int64(num))
+
+		case 4:
+			if wireType != proto.WireTypeI64 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AsDouble", wireType)
 			}
-			ov.AsInt = int64(num)
-			orig.Value = ov
+			var num uint64
+			num, pos, err = proto.ConsumeI64(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SetAsDouble(math.Float64frombits(num))
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -529,12 +436,63 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+type NumberDataPointValueType int32
+
+const (
+	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
+	NumberDataPointValueTypeAsInt
+	NumberDataPointValueTypeAsDouble
+)
+
+const (
+	startBitNumberDataPointValue          = uint64(0)
+	maskNumberDataPointValue              = uint64(3)
+	reversedMaskNumberDataPointValue      = ^maskNumberDataPointValue
+	fieldMaskNumberDataPointValueAsInt    = uint64(1 << startBitNumberDataPointValue)
+	fieldMaskNumberDataPointValueAsDouble = uint64(2 << startBitNumberDataPointValue)
+)
+
+func (m *NumberDataPoint) ValueType() NumberDataPointValueType {
+	val := (m.metadata & maskNumberDataPointValue) >> startBitNumberDataPointValue
+	return NumberDataPointValueType(val)
+}
+
+func (m *NumberDataPoint) ResetValue() {
+	m.Value.Reset()
+	m.metadata &= reversedMaskNumberDataPointValue
+}
+func (m *NumberDataPoint) SetAsInt(value int64) {
+	m.Value.SetInt(uint64(value))
+	m.metadata &= reversedMaskNumberDataPointValue
+	m.metadata |= fieldMaskNumberDataPointValueAsInt
+}
+
+func (m *NumberDataPoint) AsInt() int64 {
+	if m.ValueType() != NumberDataPointValueTypeAsInt {
+		return int64(0)
+	}
+	return (int64)(m.Value.Int())
+}
+
+func (m *NumberDataPoint) SetAsDouble(value float64) {
+	m.Value.SetFloat(float64(value))
+	m.metadata &= reversedMaskNumberDataPointValue
+	m.metadata |= fieldMaskNumberDataPointValueAsDouble
+}
+
+func (m *NumberDataPoint) AsDouble() float64 {
+	if m.ValueType() != NumberDataPointValueTypeAsDouble {
+		return float64(0)
+	}
+	return (float64)(m.Value.Float())
+}
+
 func GenTestNumberDataPoint() *NumberDataPoint {
 	orig := NewNumberDataPoint()
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
-	orig.Value = &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
+	orig.SetAsInt(int64(13))
 	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	return orig

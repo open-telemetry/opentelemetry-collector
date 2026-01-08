@@ -71,7 +71,7 @@ const sizeProtoVarint = `{{ if .repeated }}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
 {{- else if ne .oneOfGroup "" }}
-		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
+		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}()))
 {{- else }}
 	{{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
@@ -88,7 +88,7 @@ const sizeProtoBytesString = `{{ if .repeated -}}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
 {{- else if ne .oneOfGroup "" -}}
-		l = len(orig.{{ .fieldName }})
+		l = len(orig.{{ .fieldName }}())
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 {{- else }}
 	l = len(orig.{{ .fieldName }})
@@ -102,6 +102,9 @@ const sizeProtoMessage = `{{ if .repeated -}}
 		l = orig.{{ .fieldName }}[i].SizeProto()
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
+{{- else if ne .oneOfGroup "" -}}
+	l = orig.{{ .fieldName }}().SizeProto()
+	n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 {{- else if .nullable -}}
 	if orig.{{ .fieldName }} != nil {
 		l = orig.{{ .fieldName }}.SizeProto()
@@ -121,7 +124,7 @@ const sizeProtoSignedVarint = `{{ if .repeated -}}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
 {{- else if ne .oneOfGroup "" -}}
-	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
+	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}()))
 {{- else -}}
 	{{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {

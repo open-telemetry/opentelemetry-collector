@@ -22,13 +22,11 @@ type Function struct {
 	StartLine          int64
 }
 
-var (
-	protoPoolFunction = sync.Pool{
-		New: func() any {
-			return &Function{}
-		},
-	}
-)
+var protoPoolFunction = sync.Pool{
+	New: func() any {
+		return &Function{}
+	},
+}
 
 func NewFunction() *Function {
 	if !UseProtoPooling.IsEnabled() {
