@@ -131,10 +131,6 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 			_ = qs.Shutdown(ctx) // Clean up any previously started middlewares
 			return fmt.Errorf("failed to wrap sender for %q: %w", qs.mwIDs[i].String(), err)
 		}
-		if wrapped == nil {
-			_ = qs.Shutdown(ctx)
-			return fmt.Errorf("request middleware %q returned nil sender", qs.mwIDs[i].String())
-		}
 
 		// If the wrapper is a component, start it.
 		if err := wrapped.Start(ctx, host); err != nil {
