@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	itemsPerRequest     = 5_000
+	itemsPerRequest     = 10_000
 	protobufContentType = "application/x-protobuf"
 )
 
