@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -47,6 +47,7 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 type factoryOpts struct {
 	opts []exporter.FactoryOption
 	*factory
+	deprecatedAlias component.Type
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
@@ -81,8 +82,17 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// WithDeprecatedTypeAlias configures a deprecated type alias for the exporter. Only one alias is supported per exporter.
+// When the alias is used in configuration, a deprecation warning is automatically logged.
+func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.deprecatedAlias = alias
+	})
+}
+
 type factory struct {
 	exporter.Factory
+	componentalias.TypeAliasHolder
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
@@ -95,19 +105,21 @@ func (f *factory) CreateProfiles(ctx context.Context, set exporter.Settings, cfg
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
-
-	if set.ID.Type() != f.Type() {
-		return nil, experr.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
 	}
 	return f.createProfilesFunc(ctx, set, cfg)
 }
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
+	f := &factory{TypeAliasHolder: componentalias.NewTypeAliasHolder()}
+	opts := factoryOpts{factory: f}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
 	opts.Factory = exporter.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	opts.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(opts.deprecatedAlias)
+	f.SetDeprecatedAlias(opts.deprecatedAlias)
 	return opts.factory
 }

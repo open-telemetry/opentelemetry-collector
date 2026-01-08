@@ -47,6 +47,7 @@ func (b *ConnectorBuilder) CreateTracesToTraces(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.TracesToTracesStability())
 	return f.CreateTracesToTraces(ctx, set, cfg, next)
 }
@@ -66,6 +67,7 @@ func (b *ConnectorBuilder) CreateTracesToMetrics(ctx context.Context, set connec
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.TracesToMetricsStability())
 	return f.CreateTracesToMetrics(ctx, set, cfg, next)
 }
@@ -85,6 +87,7 @@ func (b *ConnectorBuilder) CreateTracesToLogs(ctx context.Context, set connector
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.TracesToLogsStability())
 	return f.CreateTracesToLogs(ctx, set, cfg, next)
 }
@@ -109,6 +112,7 @@ func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set conne
 		return nil, errDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.TracesToProfilesStability())
 	return f.CreateTracesToProfiles(ctx, set, cfg, next)
 }
@@ -128,6 +132,7 @@ func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connec
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.MetricsToTracesStability())
 	return f.CreateMetricsToTraces(ctx, set, cfg, next)
 }
@@ -147,6 +152,7 @@ func (b *ConnectorBuilder) CreateMetricsToMetrics(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.MetricsToMetricsStability())
 	return f.CreateMetricsToMetrics(ctx, set, cfg, next)
 }
@@ -166,6 +172,7 @@ func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connecto
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.MetricsToLogsStability())
 	return f.CreateMetricsToLogs(ctx, set, cfg, next)
 }
@@ -190,6 +197,7 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 		return nil, errDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
 	return f.CreateMetricsToProfiles(ctx, set, cfg, next)
 }
@@ -209,6 +217,7 @@ func (b *ConnectorBuilder) CreateLogsToTraces(ctx context.Context, set connector
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.LogsToTracesStability())
 	return f.CreateLogsToTraces(ctx, set, cfg, next)
 }
@@ -228,6 +237,7 @@ func (b *ConnectorBuilder) CreateLogsToMetrics(ctx context.Context, set connecto
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.LogsToMetricsStability())
 	return f.CreateLogsToMetrics(ctx, set, cfg, next)
 }
@@ -247,6 +257,7 @@ func (b *ConnectorBuilder) CreateLogsToLogs(ctx context.Context, set connector.S
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.LogsToLogsStability())
 	return f.CreateLogsToLogs(ctx, set, cfg, next)
 }
@@ -271,6 +282,7 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 		return nil, errDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
 	return f.CreateLogsToProfiles(ctx, set, cfg, next)
 }
@@ -295,6 +307,7 @@ func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set conne
 		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.ProfilesToTracesStability())
 	return f.CreateProfilesToTraces(ctx, set, cfg, next)
 }
@@ -319,6 +332,7 @@ func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set conn
 		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.ProfilesToMetricsStability())
 	return f.CreateProfilesToMetrics(ctx, set, cfg, next)
 }
@@ -343,6 +357,7 @@ func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connect
 		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.ProfilesToLogsStability())
 	return f.CreateProfilesToLogs(ctx, set, cfg, next)
 }
@@ -367,6 +382,7 @@ func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set con
 		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())
 	return f.CreateProfilesToProfiles(ctx, set, cfg, next)
 }

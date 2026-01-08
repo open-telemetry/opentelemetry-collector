@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -92,6 +93,7 @@ type factoryOpts struct {
 	opts []connector.FactoryOption
 
 	*factory
+	deprecatedAlias component.Type
 }
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
@@ -213,9 +215,18 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 	})
 }
 
+// WithDeprecatedTypeAlias configures a deprecated type alias for the connector. Only one alias is supported per connector.
+// When the alias is used in configuration, a deprecation warning is automatically logged.
+func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.deprecatedAlias = alias
+	})
+}
+
 // factory implements the Factory interface.
 type factory struct {
 	connector.Factory
+	componentalias.TypeAliasHolder
 
 	createTracesToProfilesFunc  CreateTracesToProfilesFunc
 	createMetricsToProfilesFunc CreateMetricsToProfilesFunc
@@ -268,12 +279,18 @@ func (f *factory) CreateTracesToProfiles(ctx context.Context, set connector.Sett
 	if f.createTracesToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
 	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
+	}
 	return f.createTracesToProfilesFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error) {
 	if f.createMetricsToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
+	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
 	}
 	return f.createMetricsToProfilesFunc(ctx, set, cfg, next)
 }
@@ -282,12 +299,18 @@ func (f *factory) CreateLogsToProfiles(ctx context.Context, set connector.Settin
 	if f.createLogsToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
 	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
+	}
 	return f.createLogsToProfilesFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesToProfilesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
+	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
 	}
 	return f.createProfilesToProfilesFunc(ctx, set, cfg, next)
 }
@@ -296,12 +319,18 @@ func (f *factory) CreateProfilesToTraces(ctx context.Context, set connector.Sett
 	if f.createProfilesToTracesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
 	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
+	}
 	return f.createProfilesToTracesFunc(ctx, set, cfg, next)
 }
 
 func (f *factory) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error) {
 	if f.createProfilesToMetricsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
+	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
 	}
 	return f.createProfilesToMetricsFunc(ctx, set, cfg, next)
 }
@@ -310,15 +339,21 @@ func (f *factory) CreateProfilesToLogs(ctx context.Context, set connector.Settin
 	if f.createProfilesToLogsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
 	}
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
+	}
 	return f.createProfilesToLogsFunc(ctx, set, cfg, next)
 }
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
+	f := &factory{TypeAliasHolder: componentalias.NewTypeAliasHolder()}
+	opts := factoryOpts{factory: f}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
 	opts.Factory = connector.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	opts.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(opts.deprecatedAlias)
+	f.SetDeprecatedAlias(opts.deprecatedAlias)
 	return opts.factory
 }
