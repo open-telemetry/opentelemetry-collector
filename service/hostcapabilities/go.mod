@@ -91,3 +91,5 @@ replace go.opentelemetry.io/collector/config/configoptional => ../../config/conf
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../telemetry/telemetrytest
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias

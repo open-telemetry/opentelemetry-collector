@@ -89,6 +89,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
+  - go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
   - go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
   - go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
   - go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry

@@ -176,3 +176,5 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../../compon
 replace go.opentelemetry.io/collector/component/componentstatus => ../../../component/componentstatus
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias

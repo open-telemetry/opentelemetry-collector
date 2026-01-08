@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.49.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.143.0
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.49.0
 	go.opentelemetry.io/collector/pipeline v1.49.0
 	go.uber.org/goleak v1.3.0
@@ -109,3 +110,5 @@ replace go.opentelemetry.io/collector/confmap/xconfmap => ../confmap/xconfmap
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ./exporterhelper
 
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
