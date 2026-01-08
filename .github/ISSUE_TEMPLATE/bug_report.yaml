@@ -41,7 +41,7 @@ body:
       - exporter/exporterhelper/xexporterhelper
       - exporter/nop
       - exporter/otlp
-      - exporter/otlphttp
+      - exporter/otlp_http
       - exporter/x
       - extension/memorylimiter
       - extension/x

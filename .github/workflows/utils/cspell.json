@@ -353,6 +353,7 @@
       "otelzap",
       "otlpexporter",
       "otlpgrpc",
+      "otlp_http",
       "otlphttp",
       "otlphttpexporter",
       "otlphttpexporter's",
