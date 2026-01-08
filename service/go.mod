@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.1
-	github.com/shirou/gopsutil/v4 v4.25.11
+	github.com/shirou/gopsutil/v4 v4.25.12
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.0
 	go.opentelemetry.io/collector/component/componentstatus v0.143.0
@@ -30,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.143.0
 	go.opentelemetry.io/collector/internal/telemetry v0.143.0
 	go.opentelemetry.io/collector/internal/testutil v0.143.0
@@ -79,8 +80,8 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
-	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
+	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.4 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -88,7 +89,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
-	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -102,7 +103,7 @@ require (
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
@@ -138,8 +139,8 @@ require (
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -254,3 +255,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporter/exp
 replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
 
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
