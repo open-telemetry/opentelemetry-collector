@@ -17,7 +17,7 @@ components:
     - exporter/debug
     - exporter/nop
     - exporter/otlp
-    - exporter/otlphttp
+    - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
     - extension/xextension
