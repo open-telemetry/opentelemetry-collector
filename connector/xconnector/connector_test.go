@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -163,4 +164,28 @@ func createProfilesToMetrics(context.Context, connector.Settings, component.Conf
 
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
+}
+
+func TestNewFactoryWithDeprecatedAlias(t *testing.T) {
+	testType := component.MustNewType("newname")
+	aliasType := component.MustNewType("oldname")
+	defaultCfg := struct{}{}
+
+	f := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+		WithProfilesToProfiles(createProfilesToProfiles, component.StabilityLevelAlpha),
+		WithDeprecatedTypeAlias(aliasType),
+	)
+
+	assert.Equal(t, testType, f.Type())
+	assert.Equal(t, aliasType, f.(*factory).Factory.(componentalias.TypeAliasHolder).DeprecatedAlias())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+
+	_, err := f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("newname")}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	_, err = f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("oldname")}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	_, err = f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("wrongname")}, &defaultCfg, consumertest.NewNop())
+	require.Error(t, err)
 }

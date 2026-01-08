@@ -88,6 +88,7 @@ var replaceModules = []string{
 	"/extension/zpagesextension",
 	"/extension/xextension",
 	"/featuregate",
+	"/internal/componentalias",
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
