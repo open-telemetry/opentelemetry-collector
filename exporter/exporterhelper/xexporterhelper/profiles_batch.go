@@ -33,18 +33,10 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
-		// req2.mergeTo(req, sz)
-
-		// If no limit we can simply merge the new request into the current and return.
-		if maxSize == 0 {
-			return []Request{req, req2}, nil
+		err := req2.mergeTo(req, sz)
+		if err != nil {
+			return nil, fmt.Errorf("failed merging profiles; %w", err)
 		}
-
-		sp1, err1 := req.split(maxSize, sz)
-		sp2, err2 := req2.split(maxSize, sz)
-
-		return append(sp1, sp2...), errors.Join(err1, err2)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
@@ -54,14 +46,13 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	return req.split(maxSize, sz)
 }
 
-// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
-/*func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) {
+func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) error {
 	if sz != nil {
 		dst.setCachedSize(dst.size(sz) + req.size(sz))
 		req.setCachedSize(0)
 	}
-	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
-}*/
+	return req.pd.MergeTo(dst.pd)
+}
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
 	var res []Request
@@ -83,6 +74,8 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 	destProfiles := pprofile.NewProfiles()
 	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
 	removedSize := 0
+
+	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
