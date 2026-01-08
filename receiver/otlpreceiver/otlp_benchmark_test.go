@@ -32,10 +32,10 @@ const (
 func startLogsReceiver(b *testing.B, cfg *Config, sink *consumertest.LogsSink) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	factory := NewFactory()
-	r, err := factory.CreateLogs(context.Background(), set, cfg, sink)
+	r, err := factory.CreateLogs(b.Context(), set, cfg, sink)
 	require.NoError(b, err)
 
-	require.NoError(b, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, r.Start(b.Context(), componenttest.NewNopHost()))
 	b.Cleanup(func() {
 		require.NoError(b, r.Shutdown(context.Background()))
 	})
@@ -48,8 +48,8 @@ func BenchmarkGRPCLogsSequential(b *testing.B) {
 	endpoint := testutil.GetAvailableLocalAddress(b)
 	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
-	sink := new(consumertest.LogsSink)
-	startLogsReceiver(b, cfg, sink)
+	var sink consumertest.LogsSink
+	startLogsReceiver(b, cfg, &sink)
 
 	cc, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(b, err)
@@ -57,9 +57,8 @@ func BenchmarkGRPCLogsSequential(b *testing.B) {
 	logClient := plogotlp.NewGRPCClient(cc)
 	req := plogotlp.NewExportRequestFromLogs(testdata.GenerateLogs(itemsPerRequest))
 
-	ctx := context.Background()
 	for b.Loop() {
-		_, err := logClient.Export(ctx, req)
+		_, err := logClient.Export(b.Context(), req)
 		require.NoError(b, err)
 	}
 
@@ -73,8 +72,8 @@ func BenchmarkHTTPProtoLogsSequential(b *testing.B) {
 	endpoint := testutil.GetAvailableLocalAddress(b)
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
-	sink := new(consumertest.LogsSink)
-	startLogsReceiver(b, cfg, sink)
+	var sink consumertest.LogsSink
+	startLogsReceiver(b, cfg, &sink)
 
 	marshaler := &plog.ProtoMarshaler{}
 	bodyBytes, err := marshaler.MarshalLogs(testdata.GenerateLogs(itemsPerRequest))
@@ -83,8 +82,10 @@ func BenchmarkHTTPProtoLogsSequential(b *testing.B) {
 	require.NoError(b, err)
 	req.Header.Set("Content-Type", protobufContentType)
 
+	reader := bytes.NewReader(bodyBytes)
 	for b.Loop() {
-		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		reader.Reset(bodyBytes)
+		req.Body = io.NopCloser(reader)
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(b, err)
