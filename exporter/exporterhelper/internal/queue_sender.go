@@ -15,20 +15,12 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requestmiddleware"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-
-	// Import the new package (aliased to avoid confusion with existing extensionmiddleware)
-	requestmiddleware "go.opentelemetry.io/collector/extension/xextension/extensionmiddleware"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
-// By default:
-//
-// - the queue stores 1000 requests of telemetry
-// - is non-blocking when full
-// - concurrent exports limited to 10
-// - emits batches of 8192 items, timeout 200ms
 func NewDefaultQueueConfig() queuebatch.Config {
 	return queuebatch.Config{
 		Sizer:           request.SizerTypeRequests,
@@ -47,12 +39,18 @@ func NewDefaultQueueConfig() queuebatch.Config {
 type queueSender struct {
 	*queuebatch.QueueBatch
 	mwIDs []component.ID
-	mws   []requestmiddleware.RequestMiddleware
 
-	// Capture these fields during creation so we can use them in Start()
-	// because QueueBatch does not expose them publicly.
-	id     component.ID
-	signal pipeline.Signal
+	// next is the sender that the queue consumers will call.
+	// It is initialized to the downstream sender, but can be wrapped by middlewares in Start.
+	next sender.Sender[request.Request]
+
+	// activeMiddlewares tracks the wrappers created during Start so they can be shutdown.
+	activeMiddlewares []component.Component
+
+	// Cached exporter settings for Start().
+	id        component.ID
+	signal    pipeline.Signal
+	telemetry component.TelemetrySettings
 }
 
 func NewQueueSender(
@@ -61,59 +59,28 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
-	if len(qCfg.RequestMiddlewares) == 0 {
-		exportFunc := func(ctx context.Context, req request.Request) error {
-			// Have to read the number of items before sending the request since the request can
-			// be modified by the downstream components like the batcher.
-			itemsCount := req.ItemsCount()
-			if errSend := next.Send(ctx, req); errSend != nil {
-				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
-				return errSend
-			}
-			return nil
-		}
-
-		return queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
-	}
-
-	warnIfNumConsumersMayCapMiddleware(&qCfg, qSet.Telemetry.Logger)
 
 	qs := &queueSender{
-		mwIDs:  qCfg.RequestMiddlewares,
-		id:     qSet.ID,
-		signal: qSet.Signal,
-		mws:    make([]requestmiddleware.RequestMiddleware, 0, len(qCfg.RequestMiddlewares)),
+		mwIDs:     qCfg.RequestMiddlewares,
+		id:        qSet.ID,
+		signal:    qSet.Signal,
+		telemetry: qSet.Telemetry,
+		next:      next,
 	}
 
+	// exportFunc is called by the queue consumers.
+	// It delegates to qs.next, which allows us to swap qs.next in Start() without recreating the queue.
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 
-		// 1. Define the base exporter call
-		baseSender := func(ctx context.Context) error {
-			if errSend := next.Send(ctx, req); errSend != nil {
-				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
-				return errSend
-			}
-			return nil
+		if errSend := qs.next.Send(ctx, req); errSend != nil {
+			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			return errSend
 		}
-
-		// 2. Chain middlewares: m1(m2(base))
-		// We iterate in reverse so that the first middleware in the config is the outer-most wrapper.
-		nextCall := baseSender
-		for i := len(qs.mws) - 1; i >= 0; i-- {
-			mw := qs.mws[i]
-			currNext := nextCall
-			nextCall = func(ctx context.Context) error {
-				return mw.Handle(ctx, currNext)
-			}
-		}
-
-		// 3. Execute the chain
-		return nextCall(ctx)
+		return nil
 	}
 
 	qb, err := queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
@@ -121,6 +88,10 @@ func NewQueueSender(
 		return nil, err
 	}
 	qs.QueueBatch = qb
+
+	if len(qCfg.RequestMiddlewares) > 0 {
+		warnIfNumConsumersMayCapMiddleware(&qCfg, qSet.Telemetry.Logger)
+	}
 
 	return qs, nil
 }
@@ -148,33 +119,57 @@ func warnIfNumConsumersMayCapMiddleware(cfg *queuebatch.Config, logger *zap.Logg
 	}
 }
 
-// Start overrides the default Start to resolve the extensions.
+// Start overrides the default Start to resolve the extensions and wrap the sender.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
+	mws := make([]requestmiddleware.RequestMiddleware, 0, len(qs.mwIDs))
+
+	// 1. Resolve all extensions first to ensure they exist and implement the interface
 	for _, id := range qs.mwIDs {
 		ext, ok := host.GetExtensions()[id]
 		if !ok {
-			// Cleanup any middlewares successfully created before this failure
-			_ = qs.Shutdown(ctx)
 			return fmt.Errorf("request middleware extension %q not found", id.String())
 		}
-		factory, ok := ext.(requestmiddleware.RequestMiddlewareFactory)
+		mw, ok := ext.(requestmiddleware.RequestMiddleware)
 		if !ok {
-			// Cleanup any middlewares successfully created before this failure
-			_ = qs.Shutdown(ctx)
-			return fmt.Errorf("extension %q does not implement RequestMiddlewareFactory", id.String())
+			return fmt.Errorf("extension %q does not implement RequestMiddleware", id.String())
 		}
-		mw, err := factory.CreateRequestMiddleware(qs.id, qs.signal)
-		if err != nil {
-			// Cleanup any middlewares successfully created before this failure
-			_ = qs.Shutdown(ctx)
-			return fmt.Errorf("failed to create request middleware for %q: %w", id.String(), err)
-		}
-
-		if mw != nil {
-			qs.mws = append(qs.mws, mw)
-		}
+		mws = append(mws, mw)
 	}
 
+	settings := requestmiddleware.RequestMiddlewareSettings{
+		ID:        qs.id,
+		Signal:    qs.signal,
+		Telemetry: qs.telemetry,
+	}
+
+	// 2. Wrap the sender.
+	// Wrap sender in reverse so first-configured middleware is outermost.
+	wrapped := qs.next
+	for i := len(mws) - 1; i >= 0; i-- {
+		var err error
+		wrapped, err = mws[i].WrapSender(settings, wrapped)
+		if err != nil {
+			_ = qs.Shutdown(ctx) // Clean up any previously started middlewares
+			return fmt.Errorf("failed to wrap sender for %q: %w", qs.mwIDs[i].String(), err)
+		}
+		if wrapped == nil {
+			_ = qs.Shutdown(ctx)
+			return fmt.Errorf("request middleware %q returned nil sender", qs.mwIDs[i].String())
+		}
+
+		// If the wrapper is a component, start it.
+		if err := wrapped.Start(ctx, host); err != nil {
+			_ = qs.Shutdown(ctx)
+			return err
+		}
+		qs.activeMiddlewares = append(qs.activeMiddlewares, wrapped)
+	}
+
+	// Update the next sender to point to the head of the chain
+	qs.next = wrapped
+
+	// 3. Start the queue (which starts the consumers).
+	// The consumers will use the updated qs.next.
 	if err := qs.QueueBatch.Start(ctx, host); err != nil {
 		// Ensure middlewares are shut down if queue fails to start.
 		_ = qs.Shutdown(ctx)
@@ -190,12 +185,12 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, qs.QueueBatch.Shutdown(ctx))
 	}
 
-	// Shutdown middlewares in reverse order (LIFO)
-	for i := len(qs.mws) - 1; i >= 0; i-- {
-		errs = multierr.Append(errs, qs.mws[i].Shutdown(ctx))
+	// Shutdown active middlewares in reverse order of creation (LIFO).
+	// Since we appended them as we wrapped (inner to outer), we simply iterate backwards.
+	for i := len(qs.activeMiddlewares) - 1; i >= 0; i-- {
+		errs = multierr.Append(errs, qs.activeMiddlewares[i].Shutdown(ctx))
 	}
-	// Clear middlewares after shutdown
-	qs.mws = nil
+	qs.activeMiddlewares = nil
 
 	return errs
 }

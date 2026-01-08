@@ -19,10 +19,10 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requestmiddleware"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/extension/xextension/extensionmiddleware"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -64,48 +64,55 @@ func TestQueueConfig_Validate(t *testing.T) {
 
 // --- New Tests for Request Middleware ---
 
-// nopComponent satisfies component.Component but does not implement RequestMiddlewareFactory.
-// Used for testing error cases where the extension exists but is the wrong type.
+// nopComponent satisfies component.Component but does not implement RequestMiddleware.
 type nopComponent struct{}
 
 func (nopComponent) Start(context.Context, component.Host) error { return nil }
 func (nopComponent) Shutdown(context.Context) error              { return nil }
 
 type mockRequestMiddleware struct {
-	extensionmiddleware.RequestMiddleware
-	handled    atomic.Int64
-	shutdown   atomic.Int64
-	onHandle   func()
-	onShutdown func()
+	component.StartFunc
+	component.ShutdownFunc
+	onWrap func() error
+	// Used for assertions
+	wrapper *mockWrapperSender
 }
 
-func (m *mockRequestMiddleware) Handle(ctx context.Context, next func(context.Context) error) error {
+// WrapSender creates a new wrapper that intercepts calls
+func (m *mockRequestMiddleware) WrapSender(set requestmiddleware.RequestMiddlewareSettings, next sender.Sender[request.Request]) (sender.Sender[request.Request], error) {
+	if m.onWrap != nil {
+		if err := m.onWrap(); err != nil {
+			return nil, err
+		}
+	}
+	m.wrapper = &mockWrapperSender{next: next}
+	return m.wrapper, nil
+}
+
+// mockWrapperSender intercepts Send calls to verify execution order
+type mockWrapperSender struct {
+	component.StartFunc // Implements Start (no-op)
+	next                sender.Sender[request.Request]
+	handled             atomic.Int64
+	shutdown            atomic.Int64
+	onHandle            func()
+	onShutdown          func()
+}
+
+func (m *mockWrapperSender) Send(ctx context.Context, req request.Request) error {
 	m.handled.Add(1)
 	if m.onHandle != nil {
 		m.onHandle()
 	}
-	return next(ctx)
+	return m.next.Send(ctx, req)
 }
 
-func (m *mockRequestMiddleware) Shutdown(ctx context.Context) error {
+func (m *mockWrapperSender) Shutdown(ctx context.Context) error {
 	m.shutdown.Add(1)
 	if m.onShutdown != nil {
 		m.onShutdown()
 	}
 	return nil
-}
-
-type mockRequestMiddlewareFactory struct {
-	component.Component
-	mw  *mockRequestMiddleware
-	err error
-}
-
-func (m *mockRequestMiddlewareFactory) CreateRequestMiddleware(id component.ID, sig pipeline.Signal) (extensionmiddleware.RequestMiddleware, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.mw, nil
 }
 
 type mockHost struct {
@@ -120,11 +127,10 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 	mwID := component.MustNewID("request_middleware")
 	mockMw := &mockRequestMiddleware{}
-	mockFact := &mockRequestMiddlewareFactory{mw: mockMw}
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mwID: mockFact,
+			mwID: mockMw,
 		},
 	}
 
@@ -135,7 +141,7 @@ func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 	}
 	qCfg := NewDefaultQueueConfig()
 	qCfg.RequestMiddlewares = []component.ID{mwID}
-	// Make test deterministic: wait for result ensures Send blocks until middleware runs
+	// Make test deterministic using WaitForResult.
 	qCfg.WaitForResult = true
 
 	nextSender := sender.NewSender(func(ctx context.Context, req request.Request) error {
@@ -151,9 +157,10 @@ func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 
 	require.NoError(t, qs.Shutdown(context.Background()))
 
-	// Ensure Handle was called at least once
-	assert.GreaterOrEqual(t, mockMw.handled.Load(), int64(1))
-	assert.Equal(t, int64(1), mockMw.shutdown.Load())
+	// Ensure the wrapper was created and called
+	require.NotNil(t, mockMw.wrapper)
+	assert.Equal(t, int64(1), mockMw.wrapper.handled.Load())
+	assert.Equal(t, int64(1), mockMw.wrapper.shutdown.Load())
 }
 
 func TestQueueSender_MultipleMiddlewares_Ordering(t *testing.T) {
@@ -161,23 +168,14 @@ func TestQueueSender_MultipleMiddlewares_Ordering(t *testing.T) {
 	var callOrder []string
 
 	mw1ID := component.MustNewIDWithName("request_middleware", "1")
-	mw1 := &mockRequestMiddleware{
-		onHandle:   func() { callOrder = append(callOrder, "mw1_handle") },
-		onShutdown: func() { callOrder = append(callOrder, "mw1_shutdown") },
-	}
-	fact1 := &mockRequestMiddlewareFactory{mw: mw1}
-
+	mw1 := &mockRequestMiddleware{}
 	mw2ID := component.MustNewIDWithName("request_middleware", "2")
-	mw2 := &mockRequestMiddleware{
-		onHandle:   func() { callOrder = append(callOrder, "mw2_handle") },
-		onShutdown: func() { callOrder = append(callOrder, "mw2_shutdown") },
-	}
-	fact2 := &mockRequestMiddlewareFactory{mw: mw2}
+	mw2 := &mockRequestMiddleware{}
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mw1ID: fact1,
-			mw2ID: fact2,
+			mw1ID: mw1,
+			mw2ID: mw2,
 		},
 	}
 
@@ -200,14 +198,24 @@ func TestQueueSender_MultipleMiddlewares_Ordering(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, qs.Start(context.Background(), host))
+
+	// Set hooks after Start, because wrappers are created in Start
+	require.NotNil(t, mw1.wrapper)
+	mw1.wrapper.onHandle = func() { callOrder = append(callOrder, "mw1_handle") }
+	mw1.wrapper.onShutdown = func() { callOrder = append(callOrder, "mw1_shutdown") }
+
+	require.NotNil(t, mw2.wrapper)
+	mw2.wrapper.onHandle = func() { callOrder = append(callOrder, "mw2_handle") }
+	mw2.wrapper.onShutdown = func() { callOrder = append(callOrder, "mw2_shutdown") }
+
 	require.NoError(t, qs.Send(context.Background(), &requesttest.FakeRequest{Items: 10}))
 	require.NoError(t, qs.Shutdown(context.Background()))
 
 	// Expected Execution order: mw1 -> mw2 -> base
-	// Expected Shutdown order: mw2 -> mw1 (Reverse/LIFO)
+	// Expected Shutdown order: mw1 -> mw2 (LIFO)
 	expected := []string{
 		"mw1_handle", "mw2_handle", "base",
-		"mw2_shutdown", "mw1_shutdown",
+		"mw1_shutdown", "mw2_shutdown",
 	}
 	require.Equal(t, expected, callOrder)
 }
@@ -220,7 +228,7 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 		name        string
 		setupHost   func() component.Host
 		expectError string
-		// Verification that mw1 was cleaned up if mw2 failed
+		// Verification that cleanup happened
 		verifyCleanup func(t *testing.T, host component.Host)
 	}{
 		{
@@ -231,34 +239,37 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 			expectError: `request middleware extension "request_middleware/1" not found`,
 		},
 		{
-			name: "extension_not_factory",
+			name: "extension_does_not_implement_interface",
 			setupHost: func() component.Host {
 				return &mockHost{ext: map[component.ID]component.Component{
-					mw1ID: &nopComponent{}, // Not a factory
+					mw1ID: &nopComponent{},
 				}}
 			},
-			expectError: `extension "request_middleware/1" does not implement RequestMiddlewareFactory`,
+			expectError: `extension "request_middleware/1" does not implement RequestMiddleware`,
 		},
 		{
-			name: "factory_creation_fails_cleanup_previous",
+			name: "wrap_sender_fails_cleanup_previous",
 			setupHost: func() component.Host {
-				mw1 := &mockRequestMiddleware{}
-				fact1 := &mockRequestMiddlewareFactory{mw: mw1}
-
-				// Fact2 returns error
-				fact2 := &mockRequestMiddlewareFactory{err: errors.New("factory failed")}
+				// mw1 (outer) fails on wrap
+				mw1 := &mockRequestMiddleware{
+					onWrap: func() error { return errors.New("wrap failed") },
+				}
+				// mw2 (inner, processed first) succeeds
+				mw2 := &mockRequestMiddleware{}
 
 				return &mockHost{ext: map[component.ID]component.Component{
-					mw1ID: fact1,
-					mw2ID: fact2,
+					mw1ID: mw1,
+					mw2ID: mw2,
 				}}
 			},
-			expectError: `failed to create request middleware for "request_middleware/2": factory failed`,
+			// Expect error from mw1 (index 0 in loop, but loop is reverse so it runs 2nd)
+			expectError: `failed to wrap sender for "request_middleware/1": wrap failed`,
 			verifyCleanup: func(t *testing.T, h component.Host) {
 				host := h.(*mockHost)
-				fact1 := host.ext[mw1ID].(*mockRequestMiddlewareFactory)
-				// Ensure mw1 was shut down even though Start() failed overall
-				assert.Equal(t, int64(1), fact1.mw.shutdown.Load(), "First middleware should be shutdown if second fails")
+				mw2 := host.ext[mw2ID].(*mockRequestMiddleware)
+				// Ensure mw2 wrapper was shut down even though Start() failed overall
+				require.NotNil(t, mw2.wrapper)
+				assert.Equal(t, int64(1), mw2.wrapper.shutdown.Load(), "Inner middleware wrapper should be shutdown if outer fails")
 			},
 		},
 	}
@@ -355,10 +366,9 @@ func TestQueueSender_RequestMiddleware_Disabled_NoInteraction(t *testing.T) {
 	// 1. Setup a host with the extension available, but do NOT use it.
 	mwID := component.MustNewID("request_middleware")
 	mockMw := &mockRequestMiddleware{}
-	mockFact := &mockRequestMiddlewareFactory{mw: mockMw}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mwID: mockFact,
+			mwID: mockMw,
 		},
 	}
 
@@ -384,6 +394,5 @@ func TestQueueSender_RequestMiddleware_Disabled_NoInteraction(t *testing.T) {
 	require.NoError(t, qs.Shutdown(context.Background()))
 
 	// 4. Verification: Assert ABSOLUTELY NO interaction with the mock middleware
-	assert.Equal(t, int64(0), mockMw.handled.Load(), "Handle should not be called when middleware is disabled")
-	assert.Equal(t, int64(0), mockMw.shutdown.Load(), "Shutdown should not be called on the middleware when disabled")
+	assert.Nil(t, mockMw.wrapper, "WrapSender should not be called when middleware is disabled")
 }
