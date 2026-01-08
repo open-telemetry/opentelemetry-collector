@@ -8,9 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/internal"
 )
 
 // Factory is a component.Factory interface for processors.
@@ -54,6 +54,7 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 
 type factory struct {
 	processor.Factory
+	componentalias.TypeAliasHolder
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
@@ -66,8 +67,8 @@ func (f *factory) CreateProfiles(ctx context.Context, set processor.Settings, cf
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f.Factory, set.ID); err != nil {
+		return nil, err
 	}
 	return f.createProfilesFunc(ctx, set, cfg, next)
 }
@@ -75,6 +76,7 @@ func (f *factory) CreateProfiles(ctx context.Context, set processor.Settings, cf
 type factoryOpts struct {
 	opts []processor.FactoryOption
 	*factory
+	deprecatedAlias component.Type
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
@@ -106,12 +108,23 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// WithDeprecatedTypeAlias configures a deprecated type alias for the processor. Only one alias is supported per processor.
+// When the alias is used in configuration, a deprecation warning is automatically logged.
+func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.deprecatedAlias = alias
+	})
+}
+
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
+	f := &factory{TypeAliasHolder: componentalias.NewTypeAliasHolder()}
+	opts := factoryOpts{factory: f}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
 	opts.Factory = processor.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	opts.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(opts.deprecatedAlias)
+	f.SetDeprecatedAlias(opts.deprecatedAlias)
 	return opts.factory
 }
