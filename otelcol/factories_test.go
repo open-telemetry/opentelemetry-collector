@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -83,6 +84,7 @@ func TestMakeFactoryMap(t *testing.T) {
 
 	fRec := receiver.NewFactory(component.MustNewType("rec"), nil)
 	fRec2 := receiver.NewFactory(component.MustNewType("rec"), nil)
+	fRec3 := xreceiver.NewFactory(component.MustNewType("new_rec"), nil, xreceiver.WithDeprecatedTypeAlias(component.MustNewType("rec")))
 	fPro := processor.NewFactory(component.MustNewType("pro"), nil)
 	fCon := connector.NewFactory(component.MustNewType("con"), nil)
 	fExp := exporter.NewFactory(component.MustNewType("exp"), nil)
@@ -102,6 +104,18 @@ func TestMakeFactoryMap(t *testing.T) {
 		{
 			name: "same name",
 			in:   []component.Factory{fRec, fPro, fCon, fExp, fExt, fRec2},
+		},
+		{
+			name: "with deprecated alias",
+			in:   []component.Factory{fRec3},
+			out: map[component.Type]component.Factory{
+				fRec3.Type():                 fRec3,
+				component.MustNewType("rec"): fRec3,
+			},
+		},
+		{
+			name: "conflicting alias name",
+			in:   []component.Factory{fRec, fRec3},
 		},
 	}
 
