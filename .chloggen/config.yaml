@@ -12,12 +12,13 @@ components:
     - cmd/mdatagen
     - connector/forward
     - connector/sample
+    - consumer/consumertest
     - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
     - exporter/nop
     - exporter/otlp
-    - exporter/otlphttp
+    - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
     - extension/xextension

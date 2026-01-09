@@ -116,6 +116,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.143.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.143.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.143.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.143.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.143.0 // indirect
@@ -278,6 +279,8 @@ replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xe
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 

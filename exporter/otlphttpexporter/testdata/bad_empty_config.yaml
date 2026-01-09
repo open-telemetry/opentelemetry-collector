@@ -5,11 +5,11 @@ processors:
   nop:
 
 exporters:
-  otlphttp:
+  otlp_http:
 
 service:
   pipelines:
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
