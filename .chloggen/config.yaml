@@ -13,12 +13,13 @@ components:
     - connector/forward
     - connector/sample
     - consumer/consumererror/xconsumererror
+    - consumer/consumertest
     - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
     - exporter/nop
     - exporter/otlp
-    - exporter/otlphttp
+    - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
     - extension/xextension
