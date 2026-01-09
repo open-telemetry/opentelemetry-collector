@@ -12,7 +12,6 @@ components:
     - cmd/mdatagen
     - connector/forward
     - connector/sample
-    - consumer/consumertest
     - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
@@ -37,6 +36,7 @@ components:
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confmap
+    - pkg/consumer/consumertest
     - pkg/exporterhelper
     - pkg/otelcol
     - pkg/pdata
