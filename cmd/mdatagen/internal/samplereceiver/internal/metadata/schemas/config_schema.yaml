@@ -1,0 +1,83 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: sample receiver configuration
+type: object
+properties:
+    api_key:
+        description: APIKey is a secret API key (opaque string).
+        type: string
+    batch_size:
+        description: BatchSize is the number of items to send in each batch.
+        type: integer
+    custom_string:
+        description: CustomString is a custom string.
+        type: string
+    enabled:
+        description: Enabled controls whether the exporter is active.
+        type: boolean
+    endpoint:
+        description: Endpoint is the target URL to send data to.
+        type: string
+    endpoints:
+        description: Endpoints is a list of endpoint configurations.
+        type: array
+        items:
+            type: object
+            properties:
+                priority:
+                    description: Priority is the endpoint priority.
+                    type: integer
+                url:
+                    description: URL is the endpoint URL.
+                    type: string
+    headers:
+        description: Headers are additional headers to include in requests.
+        type: object
+        additionalProperties:
+            type: string
+    host:
+        description: Host is the network host.
+        type: string
+    id:
+        description: ID is the component identifier.
+        type: string
+    optional_retry:
+        description: OptionalRetry is an optional retry configuration.
+        type: object
+        properties:
+            initial_interval:
+                description: InitialInterval is the initial retry interval.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            max_retries:
+                description: MaxRetries is the maximum number of retries.
+                type: integer
+    port:
+        description: Port is the network port.
+        type: integer
+    retry:
+        description: Retry contains retry configuration.
+        type: object
+        properties:
+            initial_interval:
+                description: InitialInterval is the initial retry interval.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            max_retries:
+                description: MaxRetries is the maximum number of retries.
+                type: integer
+    secrets:
+        description: Secrets is a list of secret key-value pairs.
+        type: object
+    start_time:
+        description: StartTime is the time when the receiver should start collecting data.
+        type: string
+        format: date-time
+    tags:
+        description: Tags are optional tags to attach.
+        type: array
+        items:
+            type: string
+    timeout:
+        description: Timeout is the maximum time to wait for a response.
+        type: string
+        pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$

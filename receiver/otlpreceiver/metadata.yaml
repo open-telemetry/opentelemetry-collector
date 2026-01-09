@@ -8,3 +8,6 @@ status:
     stable: [traces, metrics, logs]
     development: [profiles]
   distributions: [core, contrib, k8s, otlp]
+
+schema:
+  enabled: true

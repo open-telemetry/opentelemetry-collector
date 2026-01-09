@@ -1,0 +1,31 @@
+# Valid sample receiver configuration
+host: localhost
+port: 8080
+id: sample/myreceiver
+endpoint: https://api.example.com/v1/data
+custom_string: my-custom-value
+timeout: 30s
+start_time: "2024-01-15T10:30:00Z"
+enabled: true
+batch_size: 100
+headers:
+  Authorization: Bearer token123
+  Content-Type: application/json
+retry:
+  max_retries: 3
+  initial_interval: 1s
+tags:
+  - production
+  - critical
+api_key: secret-api-key-12345
+optional_retry:
+  max_retries: 5
+  initial_interval: 500ms
+secrets:
+  key1: value1
+  key2: value2
+endpoints:
+  - url: https://primary.example.com
+    priority: 1
+  - url: https://backup.example.com
+    priority: 2

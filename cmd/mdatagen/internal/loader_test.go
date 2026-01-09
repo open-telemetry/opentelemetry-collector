@@ -51,6 +51,9 @@ func TestLoadMetadata(t *testing.T) {
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.38.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
+				Schema: &SchemaConfig{
+					Enabled: true,
+				},
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",

@@ -1,0 +1,10 @@
+# Invalid sample receiver configuration - has type mismatches
+host: localhost
+port: "not-a-number"  # Should be integer, not string
+endpoint: https://api.example.com/v1/data
+timeout: 30s
+enabled: "yes"  # Should be boolean, not string
+batch_size: 100
+retry:
+  max_retries: "three"  # Should be integer, not string
+  initial_interval: 1s
