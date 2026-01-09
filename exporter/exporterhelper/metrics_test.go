@@ -351,7 +351,7 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 				{
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ExporterKey, id.String()),
-						attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+						attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 						attribute.Bool(internal.ErrorPermanentKey, false)),
 					Value: numPoints,
 				},
