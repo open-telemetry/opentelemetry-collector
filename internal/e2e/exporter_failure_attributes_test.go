@@ -51,7 +51,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 			if metric == nil {
 				return false
 			}
-			failurePermanent, ok := labelValue(metric, "failure_permanent")
+			failurePermanent, ok := labelValue(metric, "error_permanent")
 			return ok && failurePermanent == "true"
 		}, 5*time.Second, 200*time.Millisecond, "expected permanent failure metric")
 	})
@@ -96,7 +96,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 			if metric == nil {
 				return false
 			}
-			failurePermanent, ok := labelValue(metric, "failure_permanent")
+			failurePermanent, ok := labelValue(metric, "error_permanent")
 			return ok && failurePermanent == "false"
 		}, 5*time.Second, 200*time.Millisecond, "expected retry exhaustion metric")
 	})
@@ -213,8 +213,8 @@ func assertNoFailureMetric(t *testing.T, metricsPort, exporterName string) {
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
 		if metric := scrapeFailureMetric(t, metricsPort, exporterName); metric != nil {
-			failurePermanent, _ := labelValue(metric, "failure_permanent")
-			t.Fatalf("unexpected failure metric recorded, failure_permanent=%s", failurePermanent)
+			failurePermanent, _ := labelValue(metric, "error_permanent")
+			t.Fatalf("unexpected failure metric recorded, error_permanent=%s", failurePermanent)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

@@ -96,10 +96,6 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 		views = append(views,
 			dropViewOption(&config.ViewSelector{
 				MeterName:      scope,
-				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
 				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
 			}),
 			config.View{
