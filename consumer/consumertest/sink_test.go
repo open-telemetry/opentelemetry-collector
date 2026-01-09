@@ -78,10 +78,14 @@ func TestProfilesSink(t *testing.T) {
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllProfiles())
+	// Each Profile in Profiles holds a single sample.
+	// So SampleCount() equals ProfileCount() in this case.
 	assert.Equal(t, len(want), sink.SampleCount())
+	assert.Equal(t, len(want), sink.ProfileCount())
 	sink.Reset()
 	assert.Empty(t, sink.AllProfiles())
-	assert.Empty(t, sink.SampleCount())
+	assert.Equal(t, 0, sink.SampleCount())
+	assert.Equal(t, 0, sink.ProfileCount())
 }
 
 func TestTracesSinkWithContext(t *testing.T) {
