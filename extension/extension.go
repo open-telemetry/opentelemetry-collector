@@ -5,9 +5,9 @@ package extension // import "go.opentelemetry.io/collector/extension"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/componentalias"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -49,6 +49,7 @@ type Factory interface {
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
+	componentalias.TypeAliasHolder
 	createFunc         CreateFunc
 	extensionStability component.StabilityLevel
 }
@@ -64,8 +65,8 @@ func (f *factory) Stability() component.StabilityLevel {
 }
 
 func (f *factory) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
-	if set.ID.Type() != f.cfgType {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.cfgType)
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createFunc(ctx, set, cfg)
@@ -81,6 +82,7 @@ func NewFactory(
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
+		TypeAliasHolder:         componentalias.NewTypeAliasHolder(),
 		createFunc:              createServiceExtension,
 		extensionStability:      sl,
 	}
