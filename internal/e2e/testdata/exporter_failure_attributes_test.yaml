@@ -5,7 +5,7 @@ receivers:
         endpoint: localhost:${env:OTEL_PORT}
 
 exporters:
-  otlphttp/test:
+  otlp_http/test:
     endpoint: ${env:EXPORTER_ENDPOINT}
     timeout: 100ms
     retry_on_failure:
@@ -32,4 +32,4 @@ service:
   pipelines:
     metrics:
       receivers: [otlp]
-      exporters: [otlphttp/test]
+      exporters: [otlp_http/test]
