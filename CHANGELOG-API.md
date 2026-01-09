@@ -7,6 +7,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.49.0/v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xprocessor`: Use pointer receivers in xprocessor factory methods for consistency with other factories. (#14348)
+
+<!-- previous-version -->
+
 ## v1.48.0/v0.142.0
 
 ### 🛑 Breaking changes 🛑
