@@ -44,19 +44,20 @@ type CreateProfilesFunc func(context.Context, receiver.Settings, component.Confi
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factoryOpts)
+	applyOption(o *factory)
 }
 
 // factoryOptionFunc is a FactoryOption created through a function.
-type factoryOptionFunc func(*factoryOpts)
+type factoryOptionFunc func(*factory)
 
-func (f factoryOptionFunc) applyOption(o *factoryOpts) {
+func (f factoryOptionFunc) applyOption(o *factory) {
 	f(o)
 }
 
 type factory struct {
 	receiver.Factory
 	componentalias.TypeAliasHolder
+	opts                   []receiver.FactoryOption
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
@@ -75,36 +76,30 @@ func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg
 	return f.createProfilesFunc(ctx, set, cfg, next)
 }
 
-type factoryOpts struct {
-	opts []receiver.FactoryOption
-	*factory
-	deprecatedAlias component.Type
-}
-
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces receiver.CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, receiver.WithTraces(createTraces, sl))
 	})
 }
 
 // WithMetrics overrides the default "error not supported" implementation for Factory.CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics receiver.CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, receiver.WithMetrics(createMetrics, sl))
 	})
 }
 
 // WithLogs overrides the default "error not supported" implementation for Factory.CreateLogs and the default "undefined" stability level.
 func WithLogs(createLogs receiver.CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, receiver.WithLogs(createLogs, sl))
 	})
 }
 
 // WithProfiles overrides the default "error not supported" implementation for Factory.CreateProfiles and the default "undefined" stability level.
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.profilesStabilityLevel = sl
 		o.createProfilesFunc = createProfiles
 	})
@@ -113,20 +108,18 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 // WithDeprecatedTypeAlias configures a deprecated type alias for the receiver. Only one alias is supported per receiver.
 // When the alias is used in configuration, a deprecation warning is automatically logged.
 func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.deprecatedAlias = alias
+	return factoryOptionFunc(func(o *factory) {
+		o.SetDeprecatedAlias(alias)
 	})
 }
 
-// NewFactory returns a Factory.
+// NewFactory creates a wrapped receiver.Factory with experimental capabilities.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{TypeAliasHolder: componentalias.NewTypeAliasHolder()}
-	opts := factoryOpts{factory: f}
 	for _, opt := range options {
-		opt.applyOption(&opts)
+		opt.applyOption(f)
 	}
-	opts.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
-	opts.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(opts.deprecatedAlias)
-	f.SetDeprecatedAlias(opts.deprecatedAlias)
-	return opts.factory
+	f.Factory = receiver.NewFactory(cfgType, createDefaultConfig, f.opts...)
+	f.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(f.DeprecatedAlias())
+	return f
 }
