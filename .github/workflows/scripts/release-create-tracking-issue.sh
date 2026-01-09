@@ -18,15 +18,21 @@ if [ "${EXISTING_ISSUE}" != "" ]; then
     exit 0
 fi
 
-gh issue create -a "${GITHUB_ACTOR}" --repo "${REPO}" --label release --title "Release ${RELEASE_VERSION}" --body "Like #4522, but for ${RELEASE_VERSION}
+gh issue create -a "${GITHUB_ACTOR}" --repo "${REPO}" --label release --title "Release ${RELEASE_VERSION}" --body "Like #14236, but for ${RELEASE_VERSION}
 **Performed by collector release manager**
 
 - [ ] Prepare core release ${RELEASE_VERSION}
 - [ ] Tag and release core ${RELEASE_VERSION}
+
+**Performed by collector contrib release manager**
+
 - [ ] Prepare contrib release v${CANDIDATE_BETA}
 - [ ] Tag and release contrib v${CANDIDATE_BETA}
-- [ ] Prepare otelcol-releases v${CANDIDATE_BETA}
-- [ ] Release binaries and container images v${CANDIDATE_BETA}
+
+**Performed by collector releases release manager**
+
+- [ ] Prepare otelcol containers images release v${CANDIDATE_BETA}
+- [ ] Tag and otelcol containers images release v${CANDIDATE_BETA}
 
 **Performed by operator maintainers**
 
