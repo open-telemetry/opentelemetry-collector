@@ -9,6 +9,29 @@ interaction with a human (such as this Collector).
 
 ## Naming convention
 
+### Component naming
+
+Components (receivers, processors, exporters, extensions, and connectors) MUST use `lower_snake_case` naming convention. This ensures consistency and enhances readability for end users.
+
+This naming convention applies to the component identifier used in configuration files and component registration, not to Go package names which follow standard Go naming conventions (lowercase, no underscores).
+
+Examples of correct component names:
+- `memory_limiter` (not `memorylimiter`)
+- `otlp_http` (not `otlphttp`)
+
+For example, a component with identifier `memory_limiter` would typically have a Go package name like `memorylimiterprocessor`.
+
+#### Migration for existing components
+
+Components that currently use a different naming convention:
+- SHOULD add the `lower_snake_case` name as the primary identifier
+- MAY support the old name as a deprecated alias for backwards compatibility
+- MUST document the migration path in their README
+
+Only components following the `lower_snake_case` naming convention should be marked as stable.
+
+### Go API naming conventions
+
 To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
 
 - Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
@@ -38,7 +61,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
-### Configuration structs
+#### Configuration structs
 
 When naming configuration structs, use the following guidelines:
 

@@ -86,8 +86,8 @@
         "gomod"
       ],
       "groupName": "All google.golang.org packages",
-      "matchSourceUrls": [
-        "https://google.golang.org{/,}**"
+      "matchPackageNames": [
+        "google.golang.org{/,}**"
       ]
     },
     {
@@ -134,15 +134,6 @@
         "toolchain"
       ],
       "enabled": false
-    },
-    {
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchDepTypes": [
-        "indirect"
-      ],
-      "enabled": true
     }
   ],
   "ignoreDeps": [
@@ -153,6 +144,6 @@
     "prEditedNotification"
   ],
   "postUpdateOptions": [
-    "gomodTidy",
+    "gomodTidy"
   ]
 }
