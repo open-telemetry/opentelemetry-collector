@@ -92,6 +92,7 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/xreceiver
       - go.opentelemetry.io/collector/scraper
       - go.opentelemetry.io/collector/scraper/scraperhelper
+      - go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper
       - go.opentelemetry.io/collector/scraper/scrapertest
       - go.opentelemetry.io/collector/scraper/xscraper
       - go.opentelemetry.io/collector/service
