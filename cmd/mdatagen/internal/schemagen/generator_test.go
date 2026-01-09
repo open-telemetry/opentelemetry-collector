@@ -149,7 +149,7 @@ func TestSetSchemaType(t *testing.T) {
 func TestSchemaValidation(t *testing.T) {
 	// Load the YAML schema
 	schemaPath := filepath.Join("testdata", "config_schema.yaml")
-	schemaData, err := os.ReadFile(schemaPath)
+	schemaData, err := os.ReadFile(schemaPath) //#nosec G304 -- test file path
 	require.NoError(t, err, "failed to read schema file")
 
 	// Parse the schema YAML and convert to JSON-compatible format
@@ -192,7 +192,7 @@ func TestSchemaValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Load the YAML config
 			configPath := filepath.Join("testdata", tc.configFile)
-			configData, err := os.ReadFile(configPath)
+			configData, err := os.ReadFile(configPath) //#nosec G304 -- test file path
 			require.NoError(t, err, "failed to read config file")
 
 			// Parse YAML to interface{}
@@ -210,9 +210,9 @@ func TestSchemaValidation(t *testing.T) {
 			validationErr := schema.Validate(config)
 
 			if tc.expectValid {
-				assert.NoError(t, validationErr, "expected config to be valid")
+				require.NoError(t, validationErr, "expected config to be valid")
 			} else {
-				assert.Error(t, validationErr, "expected config to be invalid")
+				require.Error(t, validationErr, "expected config to be invalid")
 				t.Logf("Validation errors (expected): %v", validationErr)
 			}
 		})
