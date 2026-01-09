@@ -27,7 +27,7 @@ func TestSchemaGenerator_GenerateSchema(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that schema file was created
-	schemaPath := filepath.Join(outputDir, "config_schema.json")
+	schemaPath := filepath.Join(outputDir, "config_schema.yaml")
 	_, err = os.Stat(schemaPath)
 	require.NoError(t, err, "schema file was not created")
 
@@ -36,12 +36,21 @@ func TestSchemaGenerator_GenerateSchema(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read the expected schema from testdata
-	expectedPath := filepath.Join("testdata", "config_schema.json")
+	expectedPath := filepath.Join("testdata", "config_schema.yaml")
 	expectedData, err := os.ReadFile(expectedPath) //#nosec G304 -- test file path
 	require.NoError(t, err)
 
-	// Compare JSON content (ignoring formatting differences)
-	assert.JSONEq(t, string(expectedData), string(generatedData))
+	// Compare YAML content by parsing both and comparing as JSON
+	var generatedSchema, expectedSchema any
+	require.NoError(t, yaml.Unmarshal(generatedData, &generatedSchema))
+	require.NoError(t, yaml.Unmarshal(expectedData, &expectedSchema))
+
+	generatedJSON, err := json.Marshal(generatedSchema)
+	require.NoError(t, err)
+	expectedJSON, err := json.Marshal(expectedSchema)
+	require.NoError(t, err)
+
+	assert.JSONEq(t, string(expectedJSON), string(generatedJSON))
 }
 
 func TestParseTag(t *testing.T) {
@@ -138,14 +147,20 @@ func TestSetSchemaType(t *testing.T) {
 }
 
 func TestSchemaValidation(t *testing.T) {
-	// Load the JSON schema
-	schemaPath := filepath.Join("testdata", "config_schema.json")
+	// Load the YAML schema
+	schemaPath := filepath.Join("testdata", "config_schema.yaml")
 	schemaData, err := os.ReadFile(schemaPath)
 	require.NoError(t, err, "failed to read schema file")
 
-	// Parse the schema JSON
+	// Parse the schema YAML and convert to JSON-compatible format
 	var schemaDoc any
-	err = json.Unmarshal(schemaData, &schemaDoc)
+	err = yaml.Unmarshal(schemaData, &schemaDoc)
+	require.NoError(t, err, "failed to parse schema YAML")
+
+	// Convert to JSON and back to ensure JSON-compatible types
+	jsonBytes, err := json.Marshal(schemaDoc)
+	require.NoError(t, err, "failed to convert schema to JSON")
+	err = json.Unmarshal(jsonBytes, &schemaDoc)
 	require.NoError(t, err, "failed to parse schema JSON")
 
 	// Compile the schema

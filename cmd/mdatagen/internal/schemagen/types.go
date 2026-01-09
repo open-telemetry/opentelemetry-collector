@@ -5,30 +5,30 @@ package schemagen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal
 
 // Schema represents a JSON Schema document (draft-07).
 type Schema struct {
-	Schema               string             `json:"$schema,omitempty"`
-	ID                   string             `json:"$id,omitempty"`
-	Title                string             `json:"title,omitempty"`
-	Description          string             `json:"description,omitempty"`
-	Type                 string             `json:"type,omitempty"`
-	Properties           map[string]*Schema `json:"properties,omitempty"`
-	Required             []string           `json:"required,omitempty"`
-	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
-	Items                *Schema            `json:"items,omitempty"`
-	Enum                 []any              `json:"enum,omitempty"`
-	Default              any                `json:"default,omitempty"`
-	Ref                  string             `json:"$ref,omitempty"`
-	Definitions          map[string]*Schema `json:"definitions,omitempty"`
-	OneOf                []*Schema          `json:"oneOf,omitempty"`
-	AnyOf                []*Schema          `json:"anyOf,omitempty"`
-	AllOf                []*Schema          `json:"allOf,omitempty"`
-	Format               string             `json:"format,omitempty"`
-	Minimum              *float64           `json:"minimum,omitempty"`
-	Maximum              *float64           `json:"maximum,omitempty"`
-	MinLength            *int               `json:"minLength,omitempty"`
-	MaxLength            *int               `json:"maxLength,omitempty"`
-	Pattern              string             `json:"pattern,omitempty"`
-	MinItems             *int               `json:"minItems,omitempty"`
-	MaxItems             *int               `json:"maxItems,omitempty"`
+	Schema               string             `yaml:"$schema,omitempty"`
+	ID                   string             `yaml:"$id,omitempty"`
+	Title                string             `yaml:"title,omitempty"`
+	Description          string             `yaml:"description,omitempty"`
+	Type                 string             `yaml:"type,omitempty"`
+	Properties           map[string]*Schema `yaml:"properties,omitempty"`
+	Required             []string           `yaml:"required,omitempty"`
+	AdditionalProperties *Schema            `yaml:"additionalProperties,omitempty"`
+	Items                *Schema            `yaml:"items,omitempty"`
+	Enum                 []any              `yaml:"enum,omitempty"`
+	Default              any                `yaml:"default,omitempty"`
+	Ref                  string             `yaml:"$ref,omitempty"`
+	Definitions          map[string]*Schema `yaml:"definitions,omitempty"`
+	OneOf                []*Schema          `yaml:"oneOf,omitempty"`
+	AnyOf                []*Schema          `yaml:"anyOf,omitempty"`
+	AllOf                []*Schema          `yaml:"allOf,omitempty"`
+	Format               string             `yaml:"format,omitempty"`
+	Minimum              *float64           `yaml:"minimum,omitempty"`
+	Maximum              *float64           `yaml:"maximum,omitempty"`
+	MinLength            *int               `yaml:"minLength,omitempty"`
+	MaxLength            *int               `yaml:"maxLength,omitempty"`
+	Pattern              string             `yaml:"pattern,omitempty"`
+	MinItems             *int               `yaml:"minItems,omitempty"`
+	MaxItems             *int               `yaml:"maxItems,omitempty"`
 }
 
 // FieldInfo holds metadata about a struct field for schema generation.

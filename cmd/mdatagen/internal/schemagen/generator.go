@@ -4,12 +4,13 @@
 package schemagen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/schemagen"
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -37,7 +38,7 @@ func NewSchemaGenerator(outputDir string, analyzer *PackageAnalyzer) *SchemaGene
 	}
 }
 
-// GenerateSchema generates a JSON schema for the component's config.
+// GenerateSchema generates a YAML schema for the component's config.
 func (g *SchemaGenerator) GenerateSchema(componentKind, componentName, configTypeName string) error {
 	structInfo, err := g.analyzer.analyzeConfig(configTypeName)
 	if err != nil {
@@ -52,14 +53,11 @@ func (g *SchemaGenerator) GenerateSchema(componentKind, componentName, configTyp
 	}
 
 	// Write schema to file
-	outputPath := filepath.Join(g.outputDir, "config_schema.json")
-	data, err := json.MarshalIndent(schema, "", "  ")
+	outputPath := filepath.Join(g.outputDir, "config_schema.yaml")
+	data, err := yaml.Marshal(schema)
 	if err != nil {
 		return fmt.Errorf("failed to marshal schema: %w", err)
 	}
-
-	// Add trailing newline
-	data = append(data, '\n')
 
 	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write schema: %w", err)

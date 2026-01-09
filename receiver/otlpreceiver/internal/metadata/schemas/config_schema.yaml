@@ -1,0 +1,405 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: otlp receiver configuration
+type: object
+properties:
+    grpc:
+        type: object
+        properties:
+            auth:
+                description: Auth configuration for outgoing RPCs.
+                type: object
+                properties:
+                    authenticator:
+                        description: AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+                        type: string
+            dialer:
+                description: DialerConfig contains options for connecting to an address.
+                type: object
+                properties:
+                    timeout:
+                        description: |-
+                            Timeout is the maximum amount of time a dial will wait for
+                            a connect to complete. The default is no timeout.
+                        type: string
+                        pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            endpoint:
+                description: |-
+                    Endpoint configures the address for this network connection.
+                    For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
+                    or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
+                    If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
+                    "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
+                type: string
+            include_metadata:
+                description: Include propagates the incoming connection's metadata to downstream consumers.
+                type: boolean
+            keepalive:
+                description: |-
+                    The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
+                    (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+                type: object
+                properties:
+                    enforcement_policy:
+                        type: object
+                        properties:
+                            min_time:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                            permit_without_stream:
+                                type: boolean
+                    server_parameters:
+                        type: object
+                        properties:
+                            max_connection_age:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                            max_connection_age_grace:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                            max_connection_idle:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                            time:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                            timeout:
+                                type: string
+                                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            max_concurrent_streams:
+                description: |-
+                    MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
+                    It has effect only for streaming RPCs.
+                type: integer
+            max_recv_msg_size_mib:
+                description: MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
+                type: integer
+            middlewares:
+                description: Middlewares for the gRPC client.
+                type: array
+                items:
+                    type: object
+                    properties:
+                        id:
+                            description: ID specifies the name of the extension to use.
+                            type: string
+            read_buffer_size:
+                description: |-
+                    ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
+                    (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
+                type: integer
+            tls:
+                description: TLS struct exposes TLS client configuration.
+                type: object
+                properties:
+                    ca_file:
+                        description: |-
+                            Path to the CA cert. For a client this verifies the server certificate.
+                            For a server this verifies client certificates. If empty uses system root CA.
+                            (optional)
+                        type: string
+                    ca_pem:
+                        description: In memory PEM encoded cert. (optional)
+                        type: string
+                    cert_file:
+                        description: Path to the TLS cert to use for TLS required connections. (optional)
+                        type: string
+                    cert_pem:
+                        description: In memory PEM encoded TLS cert to use for TLS required connections. (optional)
+                        type: string
+                    cipher_suites:
+                        description: |-
+                            CipherSuites is a list of TLS cipher suites that the TLS transport can use.
+                            If left blank, a safe default list is used.
+                            See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+                        type: array
+                        items:
+                            type: string
+                    client_ca_file:
+                        description: |-
+                            Path to the TLS cert to use by the server to verify a client certificate. (optional)
+                            This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
+                            https://godoc.org/crypto/tls#Config for more information. (optional)
+                        type: string
+                    client_ca_file_reload:
+                        description: |-
+                            Reload the ClientCAs file when it is modified
+                            (optional, default false)
+                        type: boolean
+                    curve_preferences:
+                        description: |-
+                            contains the elliptic curves that will be used in
+                            an ECDHE handshake, in preference order
+                            Defaults to empty list and "crypto/tls" defaults are used, internally.
+                        type: array
+                        items:
+                            type: string
+                    include_system_ca_certs_pool:
+                        description: |-
+                            If true, load system CA certificates pool in addition to the certificates
+                            configured in this struct.
+                        type: boolean
+                    key_file:
+                        description: Path to the TLS key to use for TLS required connections. (optional)
+                        type: string
+                    key_pem:
+                        description: In memory PEM encoded TLS key to use for TLS required connections. (optional)
+                        type: string
+                    max_version:
+                        description: |-
+                            MaxVersion sets the maximum TLS version that is acceptable.
+                            If not set, refer to crypto/tls for defaults. (optional)
+                        type: string
+                    min_version:
+                        description: |-
+                            MinVersion sets the minimum TLS version that is acceptable.
+                            If not set, TLS 1.2 will be used. (optional)
+                        type: string
+                    reload_interval:
+                        description: |-
+                            ReloadInterval specifies the duration after which the certificate will be reloaded
+                            If not set, it will never be reloaded (optional)
+                        type: string
+                        pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                    tpm:
+                        description: Trusted platform module configuration
+                        type: object
+                        properties:
+                            auth:
+                                type: string
+                            enabled:
+                                type: boolean
+                            owner_auth:
+                                type: string
+                            path:
+                                description: |-
+                                    The path to the TPM device or Unix domain socket.
+                                    For instance /dev/tpm0 or /dev/tpmrm0.
+                                type: string
+            transport:
+                description: |-
+                    Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
+                    "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
+                type: string
+            write_buffer_size:
+                description: |-
+                    WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
+                    (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
+                type: integer
+    http:
+        type: object
+        properties:
+            auth:
+                description: Auth configuration for outgoing HTTP calls.
+                type: object
+                properties:
+                    authenticator:
+                        description: AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+                        type: string
+                    request_params:
+                        description: |-
+                            RequestParameters is a list of parameters that should be extracted from the request and added to the context.
+                            When a parameter is found in both the query string and the header, the value from the query string will be used.
+                        type: array
+                        items:
+                            type: string
+            compression_algorithms:
+                description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]'
+                type: array
+                items:
+                    type: string
+            cors:
+                description: CORS configures the server for HTTP cross-origin resource sharing (CORS).
+                type: object
+                properties:
+                    allowed_headers:
+                        description: |-
+                            AllowedHeaders sets what headers will be allowed in CORS requests.
+                            The Accept, Accept-Language, Content-Type, and Content-Language
+                            headers are implicitly allowed. If no headers are listed,
+                            X-Requested-With will also be accepted by default. Include "*" to
+                            allow any request header.
+                        type: array
+                        items:
+                            type: string
+                    allowed_origins:
+                        description: |-
+                            AllowedOrigins sets the allowed values of the Origin header for
+                            HTTP/JSON requests to an OTLP receiver. An origin may contain a
+                            wildcard (*) to replace 0 or more characters (e.g.,
+                            "http://*.domain.com", or "*" to allow any origin).
+                        type: array
+                        items:
+                            type: string
+                    max_age:
+                        description: |-
+                            MaxAge sets the value of the Access-Control-Max-Age response header.
+                            Set it to the number of seconds that browsers should cache a CORS
+                            preflight response for.
+                        type: integer
+            endpoint:
+                description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
+                type: string
+            idle_timeout:
+                description: |-
+                    IdleTimeout is the maximum amount of time to wait for the
+                    next request when keep-alives are enabled. If IdleTimeout
+                    is zero, the value of ReadTimeout is used. If both are
+                    zero, there is no timeout.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            include_metadata:
+                description: IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+                type: boolean
+            keep_alives_enabled:
+                description: |-
+                    KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+                    By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+                type: boolean
+            logs_url_path:
+                description: The URL path to receive logs on. If omitted "/v1/logs" will be used.
+                type: string
+            max_request_body_size:
+                description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.'
+                type: integer
+            metrics_url_path:
+                description: The URL path to receive metrics on. If omitted "/v1/metrics" will be used.
+                type: string
+            middlewares:
+                description: |-
+                    Middlewares are used to add custom functionality to the HTTP client.
+                    Middleware handlers are called in the order they appear in this list,
+                    with the first middleware becoming the outermost handler.
+                type: array
+                items:
+                    type: object
+                    properties:
+                        id:
+                            description: ID specifies the name of the extension to use.
+                            type: string
+            read_header_timeout:
+                description: |-
+                    ReadHeaderTimeout is the amount of time allowed to read
+                    request headers. The connection's read deadline is reset
+                    after reading the headers and the Handler can decide what
+                    is considered too slow for the body. If ReadHeaderTimeout
+                    is zero, the value of ReadTimeout is used. If both are
+                    zero, there is no timeout.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            read_timeout:
+                description: |-
+                    ReadTimeout is the maximum duration for reading the entire
+                    request, including the body. A zero or negative value means
+                    there will be no timeout.
+
+                    Because ReadTimeout does not let Handlers make per-request
+                    decisions on each request body's acceptable deadline or
+                    upload rate, most users will prefer to use
+                    ReadHeaderTimeout. It is valid to use them both.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+            response_headers:
+                description: |-
+                    Additional headers attached to each HTTP response sent to the client.
+                    Header values are opaque since they may be sensitive.
+                type: object
+            tls:
+                description: TLS struct exposes TLS client configuration.
+                type: object
+                properties:
+                    ca_file:
+                        description: |-
+                            Path to the CA cert. For a client this verifies the server certificate.
+                            For a server this verifies client certificates. If empty uses system root CA.
+                            (optional)
+                        type: string
+                    ca_pem:
+                        description: In memory PEM encoded cert. (optional)
+                        type: string
+                    cert_file:
+                        description: Path to the TLS cert to use for TLS required connections. (optional)
+                        type: string
+                    cert_pem:
+                        description: In memory PEM encoded TLS cert to use for TLS required connections. (optional)
+                        type: string
+                    cipher_suites:
+                        description: |-
+                            CipherSuites is a list of TLS cipher suites that the TLS transport can use.
+                            If left blank, a safe default list is used.
+                            See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+                        type: array
+                        items:
+                            type: string
+                    client_ca_file:
+                        description: |-
+                            Path to the TLS cert to use by the server to verify a client certificate. (optional)
+                            This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
+                            https://godoc.org/crypto/tls#Config for more information. (optional)
+                        type: string
+                    client_ca_file_reload:
+                        description: |-
+                            Reload the ClientCAs file when it is modified
+                            (optional, default false)
+                        type: boolean
+                    curve_preferences:
+                        description: |-
+                            contains the elliptic curves that will be used in
+                            an ECDHE handshake, in preference order
+                            Defaults to empty list and "crypto/tls" defaults are used, internally.
+                        type: array
+                        items:
+                            type: string
+                    include_system_ca_certs_pool:
+                        description: |-
+                            If true, load system CA certificates pool in addition to the certificates
+                            configured in this struct.
+                        type: boolean
+                    key_file:
+                        description: Path to the TLS key to use for TLS required connections. (optional)
+                        type: string
+                    key_pem:
+                        description: In memory PEM encoded TLS key to use for TLS required connections. (optional)
+                        type: string
+                    max_version:
+                        description: |-
+                            MaxVersion sets the maximum TLS version that is acceptable.
+                            If not set, refer to crypto/tls for defaults. (optional)
+                        type: string
+                    min_version:
+                        description: |-
+                            MinVersion sets the minimum TLS version that is acceptable.
+                            If not set, TLS 1.2 will be used. (optional)
+                        type: string
+                    reload_interval:
+                        description: |-
+                            ReloadInterval specifies the duration after which the certificate will be reloaded
+                            If not set, it will never be reloaded (optional)
+                        type: string
+                        pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                    tpm:
+                        description: Trusted platform module configuration
+                        type: object
+                        properties:
+                            auth:
+                                type: string
+                            enabled:
+                                type: boolean
+                            owner_auth:
+                                type: string
+                            path:
+                                description: |-
+                                    The path to the TPM device or Unix domain socket.
+                                    For instance /dev/tpm0 or /dev/tpmrm0.
+                                type: string
+            traces_url_path:
+                description: The URL path to receive traces on. If omitted "/v1/traces" will be used.
+                type: string
+            write_timeout:
+                description: |-
+                    WriteTimeout is the maximum duration before timing out
+                    writes of the response. It is reset whenever a new
+                    request's header is read. Like ReadTimeout, it does not
+                    let Handlers make decisions on a per-request basis.
+                    A zero or negative value means there will be no timeout.
+                type: string
+                pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
