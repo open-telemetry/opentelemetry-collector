@@ -192,6 +192,7 @@ func Test{{ .structName }}Equal(t *testing.T) {
 }
 
 func Benchmark{{ .structName }}Equal(b *testing.B) {
+	testutil.SkipMemoryBench(b)
 	ms := New{{ .structName }}()
 	ms.Append({{ .testOrigVal }})
 	cmp := New{{ .structName }}()

@@ -171,7 +171,7 @@ var (
 	addEnabledFieldFeatureGateID = "configoptional.AddEnabledField"
 	addEnabledFieldFeatureGate   = featuregate.GlobalRegistry().MustRegister(
 		addEnabledFieldFeatureGateID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterFromVersion("v0.138.0"),
 		featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
@@ -222,6 +222,9 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		o.flavor = someFlavor
 	} else {
 		o.flavor = noneFlavor
+		// override o.value with zero value.
+		var zero T
+		o.value = zero
 	}
 
 	return nil

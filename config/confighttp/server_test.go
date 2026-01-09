@@ -227,7 +227,7 @@ func TestHttpReception(t *testing.T) {
 
 			s, err := sc.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, errWrite := fmt.Fprint(w, "tt")
@@ -252,7 +252,7 @@ func TestHttpReception(t *testing.T) {
 				ForceAttemptHTTP2: true,
 			}
 
-			client, errClient := cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+			client, errClient := cc.ToClient(context.Background(), nil, nilProvidersSettings)
 			require.NoError(t, errClient)
 
 			if tt.forceHTTP1 {
@@ -341,7 +341,7 @@ func TestHttpCors(t *testing.T) {
 
 			s, err := sc.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
@@ -382,7 +382,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	// This effectively does not enable CORS but should also not cause an error
 	s, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
@@ -403,15 +403,13 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("Settings failed")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("Settings failed")
+		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
@@ -455,7 +453,7 @@ func TestHttpServerHeaders(t *testing.T) {
 
 			s, err := sc.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
@@ -539,13 +537,11 @@ func TestServerAuth(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				authCalled = true
-				return ctx, nil
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			authCalled = true
+			return ctx, nil
+		}),
 	}
 
 	handlerCalled := false
@@ -553,7 +549,7 @@ func TestServerAuth(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -573,7 +569,7 @@ func TestInvalidServerAuth(t *testing.T) {
 		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	srv, err := sc.ToServer(context.Background(), nil, componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
 }
@@ -588,15 +584,13 @@ func TestFailedServerAuth(t *testing.T) {
 			},
 		}),
 	}
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("invalid authorization")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("invalid authorization")
+		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// tt
@@ -618,12 +612,10 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 			},
 		}),
 	}
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("invalid authorization")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("invalid authorization")
+		}),
 	}
 
 	eh := func(w http.ResponseWriter, _ *http.Request, err string, statusCode int) {
@@ -634,7 +626,7 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 		http.Error(w, err, http.StatusInternalServerError)
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
 	require.NoError(t, err)
 
 	// tt
@@ -659,7 +651,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithErrorHandler(eh),
@@ -687,7 +679,7 @@ func TestServerWithDecoder(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithDecoder("something-else", decoder),
@@ -714,7 +706,7 @@ func TestServerWithDecompression(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 			actualBody, err := io.ReadAll(req.Body)
@@ -782,7 +774,7 @@ func TestDefaultMaxRequestBodySize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := tt.settings.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 			)
@@ -805,15 +797,13 @@ func TestAuthWithQueryParams(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
-				require.Len(t, sources, 1)
-				assert.Equal(t, "1", sources["auth"][0])
-				authCalled = true
-				return ctx, nil
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+			require.Len(t, sources, 1)
+			assert.Equal(t, "1", sources["auth"][0])
+			authCalled = true
+			return ctx, nil
+		}),
 	}
 
 	handlerCalled := false
@@ -821,7 +811,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -830,15 +820,6 @@ func TestAuthWithQueryParams(t *testing.T) {
 	// verify
 	assert.True(t, handlerCalled)
 	assert.True(t, authCalled)
-}
-
-type mockHost struct {
-	component.Host
-	ext map[component.ID]component.Component
-}
-
-func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.ext
 }
 
 func BenchmarkHttpRequest(b *testing.B) {
@@ -890,7 +871,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 	s, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, errWrite := fmt.Fprint(w, "tt")
@@ -916,12 +897,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+				c, err = cc.ToClient(context.Background(), nil, nilProvidersSettings)
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+					c, err = cc.ToClient(context.Background(), nil, nilProvidersSettings)
 					require.NoError(b, err)
 				}
 				if bb.forceHTTP1 {
@@ -982,7 +963,7 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 
 			server, err := sc.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
@@ -1043,7 +1024,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			srv, err := config.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				telemetry.NewTelemetrySettings(),
 				testcase.handler,
 			)

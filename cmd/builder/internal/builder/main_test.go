@@ -88,10 +88,12 @@ var replaceModules = []string{
 	"/extension/zpagesextension",
 	"/extension/xextension",
 	"/featuregate",
+	"/internal/componentalias",
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
 	"/internal/telemetry",
+	"/internal/testutil",
 	"/otelcol",
 	"/pdata",
 	"/pdata/testdata",
@@ -213,6 +215,13 @@ func TestVersioning(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// X25519 curves are not supported when GODEBUG=fips140=only is set, so we
+			// detect if it is and conditionally also add the tlsmklem=0 flag to disable
+			// these curves. See: https://pkg.go.dev/crypto/tls#Config.CurvePreferences
+			if strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
+				t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tlsmlkem=0")
+			}
+
 			cfg := tt.cfgBuilder()
 			require.NoError(t, cfg.Validate())
 			require.NoError(t, cfg.ParseModules())

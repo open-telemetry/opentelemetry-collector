@@ -49,11 +49,11 @@ func TestProfile_SampleType(t *testing.T) {
 	assert.Equal(t, generateTestValueType(), ms.SampleType())
 }
 
-func TestProfile_Sample(t *testing.T) {
+func TestProfile_Samples(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, NewSampleSlice(), ms.Sample())
-	ms.orig.Sample = internal.GenTestSamplePtrSlice()
-	assert.Equal(t, generateTestSampleSlice(), ms.Sample())
+	assert.Equal(t, NewSampleSlice(), ms.Samples())
+	ms.orig.Samples = internal.GenTestSamplePtrSlice()
+	assert.Equal(t, generateTestSampleSlice(), ms.Samples())
 }
 
 func TestProfile_Time(t *testing.T) {
@@ -64,12 +64,14 @@ func TestProfile_Time(t *testing.T) {
 	assert.Equal(t, testValTime, ms.Time())
 }
 
-func TestProfile_Duration(t *testing.T) {
+func TestProfile_DurationNano(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, pcommon.Timestamp(0), ms.Duration())
-	testValDuration := pcommon.Timestamp(1234567890)
-	ms.SetDuration(testValDuration)
-	assert.Equal(t, testValDuration, ms.Duration())
+	assert.Equal(t, uint64(0), ms.DurationNano())
+	ms.SetDurationNano(uint64(13))
+	assert.Equal(t, uint64(13), ms.DurationNano())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newProfile(internal.NewProfile(), sharedState).SetDurationNano(uint64(13)) })
 }
 
 func TestProfile_PeriodType(t *testing.T) {
@@ -87,13 +89,6 @@ func TestProfile_Period(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newProfile(internal.NewProfile(), sharedState).SetPeriod(int64(13)) })
-}
-
-func TestProfile_CommentStrindices(t *testing.T) {
-	ms := NewProfile()
-	assert.Equal(t, pcommon.NewInt32Slice(), ms.CommentStrindices())
-	ms.orig.CommentStrindices = internal.GenTestInt32Slice()
-	assert.Equal(t, pcommon.Int32Slice(internal.GenTestInt32SliceWrapper()), ms.CommentStrindices())
 }
 
 func TestProfile_ProfileID(t *testing.T) {

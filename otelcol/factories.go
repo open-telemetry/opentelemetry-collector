@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -34,10 +35,6 @@ type Factories struct {
 	Connectors map[component.Type]connector.Factory
 
 	// Telemetry is the factory to create the telemetry providers for the service.
-	//
-	// If Telemetry is nil, otelconftelemetry will be used by default.
-	// TODO remove the backwards compatibility and require a non-nil factory
-	// https://github.com/open-telemetry/opentelemetry-collector/issues/14003
 	Telemetry telemetry.Factory
 
 	// ReceiverModules maps receiver types to their respective go modules.
@@ -58,6 +55,7 @@ type Factories struct {
 
 // MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
 // It returns a non-nil error when there are factories with duplicate type.
+// If a factory has a deprecated alias, the map will also contain an entry for the alias.
 func MakeFactoryMap[T component.Factory](factories ...T) (map[component.Type]T, error) {
 	fMap := map[component.Type]T{}
 	for _, f := range factories {
@@ -65,6 +63,17 @@ func MakeFactoryMap[T component.Factory](factories ...T) (map[component.Type]T, 
 			return fMap, fmt.Errorf("duplicate component factory %q", f.Type())
 		}
 		fMap[f.Type()] = f
+
+		// If factory has a deprecated alias, add it to the map as well
+		if aliasHolder, ok := any(f).(componentalias.TypeAliasHolder); ok {
+			alias := aliasHolder.DeprecatedAlias()
+			if alias.String() != "" {
+				if _, exists := fMap[alias]; exists {
+					return fMap, fmt.Errorf("duplicate component factory %q (alias of %q)", alias, f.Type())
+				}
+				fMap[alias] = f
+			}
+		}
 	}
 	return fMap, nil
 }

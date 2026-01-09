@@ -1,10 +1,12 @@
 # Sample metadata file with all available configurations for a receiver.
 
 type: sample
+display_name: Sample Receiver
+description: This receiver is used for testing purposes to check the output of mdatagen.
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.9.0
+sem_conv_version: 1.38.0
 
 status:
   disable_codecov_badge: true
@@ -233,6 +235,20 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  system.cpu.time:
+    enabled: true
+    stability:
+      level: beta
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
 
 telemetry:
   metrics:

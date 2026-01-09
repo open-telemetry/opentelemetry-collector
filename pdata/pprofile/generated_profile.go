@@ -53,9 +53,9 @@ func (ms Profile) SampleType() ValueType {
 	return newValueType(&ms.orig.SampleType, ms.state)
 }
 
-// Sample returns the Sample associated with this Profile.
-func (ms Profile) Sample() SampleSlice {
-	return newSampleSlice(&ms.orig.Sample, ms.state)
+// Samples returns the Samples associated with this Profile.
+func (ms Profile) Samples() SampleSlice {
+	return newSampleSlice(&ms.orig.Samples, ms.state)
 }
 
 // Time returns the time associated with this Profile.
@@ -69,15 +69,15 @@ func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
-// Duration returns the duration associated with this Profile.
-func (ms Profile) Duration() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.DurationNano)
+// DurationNano returns the durationnano associated with this Profile.
+func (ms Profile) DurationNano() uint64 {
+	return ms.orig.DurationNano
 }
 
-// SetDuration replaces the duration associated with this Profile.
-func (ms Profile) SetDuration(v pcommon.Timestamp) {
+// SetDurationNano replaces the durationnano associated with this Profile.
+func (ms Profile) SetDurationNano(v uint64) {
 	ms.state.AssertMutable()
-	ms.orig.DurationNano = uint64(v)
+	ms.orig.DurationNano = v
 }
 
 // PeriodType returns the periodtype associated with this Profile.
@@ -94,11 +94,6 @@ func (ms Profile) Period() int64 {
 func (ms Profile) SetPeriod(v int64) {
 	ms.state.AssertMutable()
 	ms.orig.Period = v
-}
-
-// CommentStrindices returns the CommentStrindices associated with this Profile.
-func (ms Profile) CommentStrindices() pcommon.Int32Slice {
-	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.CommentStrindices, ms.state))
 }
 
 // ProfileID returns the profileid associated with this Profile.

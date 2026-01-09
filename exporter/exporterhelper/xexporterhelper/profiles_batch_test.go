@@ -22,9 +22,8 @@ func TestMergeProfiles(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
 	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
 	require.NoError(t, err)
-	assert.Len(t, res, 2)
-	assert.Equal(t, 2, res[0].ItemsCount())
-	assert.Equal(t, 3, res[1].ItemsCount())
+	assert.Len(t, res, 1)
+	assert.Equal(t, 5, res[0].ItemsCount())
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
@@ -34,8 +33,6 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 }
 
 func TestMergeSplitProfiles(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	tests := []struct {
 		name     string
 		szt      exporterhelper.RequestSizerType
@@ -53,12 +50,16 @@ func TestMergeSplitProfiles(t *testing.T) {
 			expected: []Request{newProfilesRequest(pprofile.NewProfiles())},
 		},
 		{
-			name:     "first_request_empty",
-			szt:      exporterhelper.RequestSizerTypeItems,
-			maxSize:  10,
-			pr1:      newProfilesRequest(pprofile.NewProfiles()),
-			pr2:      newProfilesRequest(testdata.GenerateProfiles(5)),
-			expected: []Request{newProfilesRequest(testdata.GenerateProfiles(5))},
+			name:    "first_request_empty",
+			szt:     exporterhelper.RequestSizerTypeItems,
+			maxSize: 10,
+			pr1:     newProfilesRequest(testdata.GenerateProfiles(0)),
+			pr2:     newProfilesRequest(testdata.GenerateProfiles(5)),
+			expected: []Request{newProfilesRequest(func() pprofile.Profiles {
+				profiles := testdata.GenerateProfiles(0)
+				_ = testdata.GenerateProfiles(5).MergeTo(profiles)
+				return profiles
+			}())},
 		},
 		{
 			name:     "first_empty_second_nil",
@@ -137,8 +138,6 @@ func TestMergeSplitProfiles(t *testing.T) {
 }
 
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	tests := []struct {
 		name     string
 		szt      exporterhelper.RequestSizerType
@@ -253,7 +252,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 		{
 			name:    "merge_only",
 			szt:     exporterhelper.RequestSizerTypeBytes,
-			maxSize: profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11)),
+			maxSize: profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(13)),
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(4)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(6)),
 			expected: []Request{newProfilesRequest(func() pprofile.Profiles {
@@ -266,12 +265,12 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			name:    "split_only",
 			szt:     exporterhelper.RequestSizerTypeBytes,
 			maxSize: profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(4)),
-			pr1:     newProfilesRequest(pprofile.NewProfiles()),
+			pr1:     newProfilesRequest(testdata.GenerateProfiles(0)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(10)),
 			expected: []Request{
 				newProfilesRequest(testdata.GenerateProfiles(4)),
-				newProfilesRequest(testdata.GenerateProfiles(4)),
-				newProfilesRequest(testdata.GenerateProfiles(2)),
+				newProfilesRequest(testdata.GenerateProfiles(5)),
+				newProfilesRequest(testdata.GenerateProfiles(1)),
 			},
 		},
 		{
@@ -283,11 +282,11 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			expected: []Request{
 				newProfilesRequest(func() pprofile.Profiles {
 					profiles := testdata.GenerateProfiles(7)
-					testdata.GenerateProfiles(2).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
+					testdata.GenerateProfiles(3).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 					return profiles
 				}()),
-				newProfilesRequest(testdata.GenerateProfiles(10)),
-				newProfilesRequest(testdata.GenerateProfiles(9)),
+				newProfilesRequest(testdata.GenerateProfiles(11)),
+				newProfilesRequest(testdata.GenerateProfiles(7)),
 			},
 		},
 	}
@@ -313,8 +312,6 @@ func TestExtractProfiles(t *testing.T) {
 }
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
-
 	// All requests merge into a single batch.
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for range 1000 {
@@ -340,7 +337,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 			)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
-		assert.Len(b, merged, 1)
+		assert.Len(b, merged, 2)
 	}
 }
 

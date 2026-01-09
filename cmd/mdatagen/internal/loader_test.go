@@ -47,7 +47,9 @@ func TestLoadMetadata(t *testing.T) {
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
-				SemConvVersion:       "1.9.0",
+				DisplayName:          "Sample Receiver",
+				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
+				SemConvVersion:       "1.38.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
@@ -253,6 +255,21 @@ func TestLoadMetadata(t *testing.T) {
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.cpu.time": {
+						Signal: Signal{
+							Enabled:               true,
+							Stability:             Stability{Level: component.StabilityLevelBeta},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -525,6 +542,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' decoding failed due to the following error(s):\n\n'level' unsupported stability level: \"development42\"",
 		},
 		{
+			name:    "testdata/invalid_metric_semconvref.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
+		},
+		{
 			name:    "testdata/no_metric_stability.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' missing required field: `stability.level`",
@@ -532,6 +554,61 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
+		},
+		{
+			name: "testdata/display_name.yaml",
+			want: Metadata{
+				Type:                 "test",
+				DisplayName:          "Test Receiver",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/no_display_name.yaml",
+			want: Metadata{
+				Type:                 "nodisplayname",
+				DisplayName:          "",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_description.yaml",
+			want: Metadata{
+				Type:                 "testdesc",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component with a description.",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

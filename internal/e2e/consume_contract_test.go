@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -23,7 +24,7 @@ func testExporterConfig(endpoint string) component.Config {
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &otlpexporter.Config{
-		QueueConfig: exporterhelper.QueueBatchConfig{Enabled: false},
+		QueueConfig: configoptional.None[exporterhelper.QueueBatchConfig](),
 		RetryConfig: retryConfig,
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: endpoint,

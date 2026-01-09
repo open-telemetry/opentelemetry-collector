@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	yaml "go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
@@ -397,17 +399,6 @@ func TestCollectorRun(t *testing.T) {
 			factories:  nopFactories,
 			configFile: "otelcol-nop.yaml",
 		},
-		"defaul_telemetry_factory": {
-			factories: func() (Factories, error) {
-				factories, err := nopFactories()
-				if err != nil {
-					return Factories{}, err
-				}
-				factories.Telemetry = nil
-				return factories, nil
-			},
-			configFile: "otelcol-otelconftelemetry.yaml",
-		},
 	}
 
 	for name, test := range tests {
@@ -476,6 +467,18 @@ func TestCollectorRun_Errors(t *testing.T) {
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-telemetry.yaml")}),
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
+		},
+		"missing_telemetry_factory": {
+			settings: CollectorSettings{
+				BuildInfo: component.NewDefaultBuildInfo(),
+				Factories: func() (Factories, error) {
+					factories, _ := nopFactories()
+					factories.Telemetry = nil
+					return factories, nil
+				},
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
+			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: otelcol.Factories.Telemetry must not be nil. For example, you can use otelconftelemetry.NewFactory to build a telemetry factory",
 		},
 	}
 
@@ -548,19 +551,17 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: "failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):\n\n'service.telemetry' has invalid keys: unknown",
 		},
-		"default_telemetry_factory": {
+		"missing_telemetry_factory": {
 			settings: CollectorSettings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Factories: func() (Factories, error) {
-					factories, err := nopFactories()
-					if err != nil {
-						return Factories{}, err
-					}
+					factories, _ := nopFactories()
 					factories.Telemetry = nil
 					return factories, nil
 				},
 				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-otelconftelemetry.yaml")}),
 			},
+			expectedErr: "failed to get config: cannot unmarshal the configuration: otelcol.Factories.Telemetry must not be nil. For example, you can use otelconftelemetry.NewFactory to build a telemetry factory",
 		},
 	}
 
@@ -722,4 +723,56 @@ func TestProviderAndConverterModules(t *testing.T) {
 	assert.Equal(t, converterModules, col.set.ConverterModules)
 	col.Shutdown()
 	wg.Wait()
+}
+
+func TestCollectorLoggingOptions(t *testing.T) {
+	// Use zap observer to verify that LoggingOptions are applied
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Create a custom telemetry factory that uses BuildZapLogger
+	// This ensures BuildZapLogger (which includes LoggingOptions) is used
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
+				*zap.Logger, component.ShutdownFunc, error,
+			) {
+				require.Empty(t, set.ZapOptions) // injected through BuidlZapLogger
+				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
+				return logger, nil, buildErr
+			},
+		),
+	)
+
+	set := CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t,
+			[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
+		),
+		LoggingOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core {
+				return observerCore
+			}),
+		},
+	}
+
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	// Start and stop the collector.
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState() && col.service != nil
+	}, 2*time.Second, 200*time.Millisecond)
+	col.Shutdown()
+	wg.Wait()
+
+	// Check that logs have been redirected to our observer core,
+	// which proves that LoggingOptions were applied.
+	entries := observedLogs.All()
+	require.NotEmpty(t, entries, "Logger should have logged messages")
 }

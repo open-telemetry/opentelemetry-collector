@@ -244,7 +244,7 @@ var profile = &messageStruct{
 			returnMessage: valueType,
 		},
 		&SliceField{
-			fieldName:   "Sample",
+			fieldName:   "Samples",
 			protoID:     2,
 			protoType:   proto.TypeMessage,
 			returnSlice: sampleSlice,
@@ -255,17 +255,10 @@ var profile = &messageStruct{
 			protoID:         3,
 			returnType:      timestampType,
 		},
-		&TypedField{
-			fieldName:       "Duration",
-			originFieldName: "DurationNano",
-			protoID:         4,
-			returnType: &TypedType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				protoType:   proto.TypeUint64,
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
+		&PrimitiveField{
+			fieldName: "DurationNano",
+			protoID:   4,
+			protoType: proto.TypeUint64,
 		},
 		&MessageField{
 			fieldName:     "PeriodType",
@@ -277,16 +270,10 @@ var profile = &messageStruct{
 			protoID:   6,
 			protoType: proto.TypeInt64,
 		},
-		&SliceField{
-			fieldName:   "CommentStrindices",
-			protoID:     7,
-			protoType:   proto.TypeInt32,
-			returnSlice: int32Slice,
-		},
 		&TypedField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			protoID:         8,
+			protoID:         7,
 			returnType: &TypedType{
 				structName:  "ProfileID",
 				protoType:   proto.TypeMessage,
@@ -297,23 +284,23 @@ var profile = &messageStruct{
 		},
 		&PrimitiveField{
 			fieldName: "DroppedAttributesCount",
-			protoID:   9,
+			protoID:   8,
 			protoType: proto.TypeUint32,
 		},
 		&PrimitiveField{
 			fieldName: "OriginalPayloadFormat",
-			protoID:   10,
+			protoID:   9,
 			protoType: proto.TypeString,
 		},
 		&SliceField{
 			fieldName:   "OriginalPayload",
-			protoID:     11,
+			protoID:     10,
 			protoType:   proto.TypeBytes,
 			returnSlice: byteSlice,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     12,
+			protoID:     11,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
@@ -387,7 +374,7 @@ var valueTypeSlice = &messageSlice{
 
 var valueType = &messageStruct{
 	structName:    "ValueType",
-	description:   "// ValueType describes the type and units of a value, with an optional aggregation temporality.",
+	description:   "// ValueType describes the type and units of a value.",
 	protoName:     "ValueType",
 	upstreamProto: "gootlpprofiles.ValueType",
 	fields: []Field{
@@ -400,17 +387,6 @@ var valueType = &messageStruct{
 			fieldName: "UnitStrindex",
 			protoID:   2,
 			protoType: proto.TypeInt32,
-		},
-		&TypedField{
-			fieldName: "AggregationTemporality",
-			protoID:   3,
-			returnType: &TypedType{
-				structName:  "AggregationTemporality",
-				protoType:   proto.TypeEnum,
-				messageName: "AggregationTemporality",
-				defaultVal:  "AggregationTemporality(0)",
-				testVal:     "AggregationTemporality(1)",
-			},
 		},
 	},
 }
@@ -522,7 +498,7 @@ var location = &messageStruct{
 			protoType: proto.TypeUint64,
 		},
 		&SliceField{
-			fieldName:   "Line",
+			fieldName:   "Lines",
 			protoID:     3,
 			protoType:   proto.TypeMessage,
 			returnSlice: lineSlice,

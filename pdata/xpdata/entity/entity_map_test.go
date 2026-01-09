@@ -35,20 +35,20 @@ func TestEntityMap_PutEmpty(t *testing.T) {
 func TestEntityMap_PutEmpty_Override(t *testing.T) {
 	em := NewEntityMap()
 	e1 := em.PutEmpty("service")
-	e1.IDAttributes().PutStr("service.name", "my-service")
+	e1.IdentifyingAttributes().PutStr("service.name", "my-service")
 	assert.Equal(t, 1, em.Len())
 
 	e2 := em.PutEmpty("service")
 	assert.Equal(t, 1, em.Len())
 
-	_, ok := e2.IDAttributes().Get("service.name")
+	_, ok := e2.IdentifyingAttributes().Get("service.name")
 	assert.False(t, ok)
 }
 
 func TestEntityMap_EnsureCapacity(t *testing.T) {
 	em := NewEntityMap()
 	em.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		em.PutEmpty(fmt.Sprintf("type%d", i))
 	}
 	assert.Equal(t, 5, em.Len())
@@ -61,39 +61,39 @@ func TestEntityMap_AttributesIsolation(t *testing.T) {
 	em := NewEntityMap()
 
 	e1 := em.PutEmpty("service")
-	e1.IDAttributes().PutStr("service.name", "my-service")
+	e1.IdentifyingAttributes().PutStr("service.name", "my-service")
 
 	e2 := em.PutEmpty("host")
-	e2.IDAttributes().PutStr("host.name", "my-host")
+	e2.IdentifyingAttributes().PutStr("host.name", "my-host")
 
 	service, ok := em.Get("service")
 	assert.True(t, ok)
-	val, ok := service.IDAttributes().Get("service.name")
+	val, ok := service.IdentifyingAttributes().Get("service.name")
 	assert.True(t, ok)
 	assert.Equal(t, "my-service", val.Str())
 
 	host, ok := em.Get("host")
 	assert.True(t, ok)
-	val, ok = host.IDAttributes().Get("host.name")
+	val, ok = host.IdentifyingAttributes().Get("host.name")
 	assert.True(t, ok)
 	assert.Equal(t, "my-host", val.Str())
 
-	_, ok = service.IDAttributes().Get("host.name")
+	_, ok = service.IdentifyingAttributes().Get("host.name")
 	assert.False(t, ok)
 
-	_, ok = host.IDAttributes().Get("service.name")
+	_, ok = host.IdentifyingAttributes().Get("service.name")
 	assert.False(t, ok)
 }
 
 func TestEntityMap_Get(t *testing.T) {
 	em := NewEntityMap()
 	e1 := em.PutEmpty("service")
-	e1.IDAttributes().PutStr("service.name", "my-service")
+	e1.IdentifyingAttributes().PutStr("service.name", "my-service")
 
 	e2, ok := em.Get("service")
 	assert.True(t, ok)
 	assert.Equal(t, "service", e2.Type())
-	val, ok := e2.IDAttributes().Get("service.name")
+	val, ok := e2.IdentifyingAttributes().Get("service.name")
 	assert.True(t, ok)
 	assert.Equal(t, "my-service", val.Str())
 
@@ -104,8 +104,8 @@ func TestEntityMap_Get(t *testing.T) {
 func TestEntityMap_Remove(t *testing.T) {
 	em := NewEntityMap()
 	e1 := em.PutEmpty("service")
-	e1.IDAttributes().PutStr("service.name", "my-service")
-	e1.DescriptionAttributes().PutStr("service.version", "1.0.0")
+	e1.IdentifyingAttributes().PutStr("service.name", "my-service")
+	e1.DescriptiveAttributes().PutStr("service.version", "1.0.0")
 
 	assert.Equal(t, 1, em.Len())
 	assert.Equal(t, 2, em.attributes.Len())
@@ -121,13 +121,13 @@ func TestEntityMap_Remove(t *testing.T) {
 func TestEntityMap_All(t *testing.T) {
 	em := NewEntityMap()
 	e1 := em.PutEmpty("service")
-	e1.IDAttributes().PutStr("service.name", "my-service")
+	e1.IdentifyingAttributes().PutStr("service.name", "my-service")
 
 	e2 := em.PutEmpty("host")
-	e2.IDAttributes().PutStr("host.name", "my-host")
+	e2.IdentifyingAttributes().PutStr("host.name", "my-host")
 
 	e3 := em.PutEmpty("process")
-	e3.IDAttributes().PutStr("process.pid", "1234")
+	e3.IdentifyingAttributes().PutStr("process.pid", "1234")
 
 	types := make(map[string]bool)
 	attributes := make(map[string]string)
@@ -136,15 +136,15 @@ func TestEntityMap_All(t *testing.T) {
 		types[entityType] = true
 		switch entityType {
 		case "service":
-			val, ok := entity.IDAttributes().Get("service.name")
+			val, ok := entity.IdentifyingAttributes().Get("service.name")
 			assert.True(t, ok)
 			attributes[entityType] = val.Str()
 		case "host":
-			val, ok := entity.IDAttributes().Get("host.name")
+			val, ok := entity.IdentifyingAttributes().Get("host.name")
 			assert.True(t, ok)
 			attributes[entityType] = val.Str()
 		case "process":
-			val, ok := entity.IDAttributes().Get("process.pid")
+			val, ok := entity.IdentifyingAttributes().Get("process.pid")
 			assert.True(t, ok)
 			attributes[entityType] = val.Str()
 		}

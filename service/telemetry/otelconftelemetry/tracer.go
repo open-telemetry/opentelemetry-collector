@@ -12,21 +12,15 @@ import (
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-var _ = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterFromVersion("v0.107.0"),
-	featuregate.WithRegisterToVersion("v0.109.0"),
-	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
 
 const (
 	// supported trace propagators
@@ -51,7 +45,8 @@ func createTracerProvider(
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	res := newResource(set.Settings, cfg)
+	attrs := pcommonAttrsToOTelAttrs(set.Resource)
+	res := sdkresource.NewWithAttributes("", attrs...)
 	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
 		TracerProvider: &cfg.Traces.TracerProvider,
 	})
