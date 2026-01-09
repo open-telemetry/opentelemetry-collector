@@ -166,19 +166,19 @@ func extractFailureAttributes(err error) attribute.Set {
 
 func determineErrorType(err error) string {
 	if experr.IsShutdownErr(err) {
-		return "shutdown"
+		return "Shutdown"
 	}
 
 	if errors.Is(err, context.Canceled) {
-		return "canceled"
+		return "Canceled"
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
-		return "deadline_exceeded"
+		return "Deadline_Exceeded"
 	}
 
 	if st, ok := status.FromError(err); ok && st.Code() != codes.OK {
 		return st.Code().String()
 	}
 
-	return "unknown"
+	return "Unknown"
 }

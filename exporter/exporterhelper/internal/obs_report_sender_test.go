@@ -51,21 +51,21 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "PermanentError",
 			err:          consumererror.NewPermanent(errors.New("bad data")),
 			numItems:     5,
-			expectedType: "unknown",
+			expectedType: "Unknown",
 			expectedPerm: true,
 		},
 		{
 			name:         "ShutdownError",
 			err:          experr.NewShutdownErr(errors.New("shutting down")),
 			numItems:     3,
-			expectedType: "shutdown",
+			expectedType: "Shutdown",
 			expectedPerm: false,
 		},
 		{
 			name:         "ContextCanceled",
 			err:          context.Canceled,
 			numItems:     2,
-			expectedType: "canceled",
+			expectedType: "Canceled",
 			expectedPerm: false,
 			useCustomCtx: true,
 			ctxSetup: func() context.Context {
@@ -78,14 +78,14 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "ContextDeadlineExceeded",
 			err:          context.DeadlineExceeded,
 			numItems:     4,
-			expectedType: "deadline_exceeded",
+			expectedType: "Deadline_Exceeded",
 			expectedPerm: false,
 		},
 		{
 			name:         "UnknownError",
 			err:          errFake,
 			numItems:     8,
-			expectedType: "unknown",
+			expectedType: "Unknown",
 			expectedPerm: false,
 		},
 	}
@@ -259,7 +259,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	if failedToSendSpans > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -333,7 +333,7 @@ func TestExportMetricsOp(t *testing.T) {
 	if failedToSendMetricPoints > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -407,7 +407,7 @@ func TestExportLogsOp(t *testing.T) {
 	if failedToSendLogRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -431,32 +431,32 @@ func TestDetermineErrorType(t *testing.T) {
 		{
 			name:              "shutdown error",
 			err:               experr.NewShutdownErr(errors.New("shutting down")),
-			expectedErrorType: "shutdown",
+			expectedErrorType: "Shutdown",
 		},
 		{
 			name:              "context canceled",
 			err:               context.Canceled,
-			expectedErrorType: "canceled",
+			expectedErrorType: "Canceled",
 		},
 		{
 			name:              "context deadline exceeded",
 			err:               context.DeadlineExceeded,
-			expectedErrorType: "deadline_exceeded",
+			expectedErrorType: "Deadline_Exceeded",
 		},
 		{
 			name:              "unknown error",
 			err:               errors.New("some error"),
-			expectedErrorType: "unknown",
+			expectedErrorType: "Unknown",
 		},
 		{
 			name:              "wrapped context canceled",
 			err:               fmt.Errorf("failed: %w", context.Canceled),
-			expectedErrorType: "canceled",
+			expectedErrorType: "Canceled",
 		},
 		{
 			name:              "wrapped context deadline exceeded",
 			err:               fmt.Errorf("timeout: %w", context.DeadlineExceeded),
-			expectedErrorType: "deadline_exceeded",
+			expectedErrorType: "Deadline_Exceeded",
 		},
 		{
 			name:              "gRPC Unavailable",
@@ -489,7 +489,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "permanent error",
 			err:  consumererror.NewPermanent(errors.New("bad data")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(ErrorPermanentKey, true),
 			),
 		},
@@ -497,7 +497,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "non-permanent error",
 			err:  errors.New("transient error"),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -505,7 +505,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "shutdown error",
 			err:  experr.NewShutdownErr(errors.New("shutdown")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "shutdown"),
+				attribute.String(string(semconv.ErrorTypeKey), "Shutdown"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -513,7 +513,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "context canceled",
 			err:  context.Canceled,
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "canceled"),
+				attribute.String(string(semconv.ErrorTypeKey), "Canceled"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -521,7 +521,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "context deadline exceeded",
 			err:  context.DeadlineExceeded,
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "deadline_exceeded"),
+				attribute.String(string(semconv.ErrorTypeKey), "Deadline_Exceeded"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},

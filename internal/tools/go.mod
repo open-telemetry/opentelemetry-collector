@@ -19,6 +19,7 @@ tool (
 	go.opentelemetry.io/build-tools/multimod
 	golang.org/x/exp/cmd/apidiff
 	golang.org/x/tools/cmd/goimports
+	golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize
 	golang.org/x/vuln/cmd/govulncheck
 	gotest.tools/gotestsum
 	mvdan.cc/gofumpt

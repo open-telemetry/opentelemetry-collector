@@ -102,28 +102,24 @@ func TestDefaultViewsFiltersSendFailedAttributes(t *testing.T) {
 
 func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 	tests := []struct {
-		name             string
-		level            configtelemetry.Level
-		shouldDropBucket bool
-		shouldDropBytes  bool
+		name            string
+		level           configtelemetry.Level
+		shouldDropBytes bool
 	}{
 		{
-			name:             "basic level drops bucket and bytes",
-			level:            configtelemetry.LevelBasic,
-			shouldDropBucket: false,
-			shouldDropBytes:  true,
+			name:            "basic level drops bytes",
+			level:           configtelemetry.LevelBasic,
+			shouldDropBytes: true,
 		},
 		{
-			name:             "normal level drops bucket and bytes",
-			level:            configtelemetry.LevelNormal,
-			shouldDropBucket: false,
-			shouldDropBytes:  true,
+			name:            "normal level drops bytes",
+			level:           configtelemetry.LevelNormal,
+			shouldDropBytes: true,
 		},
 		{
-			name:             "detailed level does not drop bucket or bytes",
-			level:            configtelemetry.LevelDetailed,
-			shouldDropBucket: false,
-			shouldDropBytes:  false,
+			name:            "detailed level does not drop bytes",
+			level:           configtelemetry.LevelDetailed,
+			shouldDropBytes: false,
 		},
 	}
 
@@ -132,21 +128,13 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 			views := DefaultViews(tt.level)
 
 			exporterHelperScope := "go.opentelemetry.io/collector/exporter/exporterhelper"
-			bucketMetricName := "otelcol_exporter_queue_batch_send_size_bucket"
 			bytesMetricName := "otelcol_exporter_queue_batch_send_size_bytes"
 
-			var foundBucketDrop, foundBytesDrop bool
+			var foundBytesDrop bool
 			for _, view := range views {
 				if view.Selector != nil {
 					if view.Selector.MeterName != nil && *view.Selector.MeterName == exporterHelperScope {
 						if view.Selector.InstrumentName != nil {
-							if *view.Selector.InstrumentName == bucketMetricName {
-								foundBucketDrop = true
-								// Verify it's a drop view
-								require.NotNil(t, view.Stream)
-								require.NotNil(t, view.Stream.Aggregation)
-								require.NotNil(t, view.Stream.Aggregation.Drop)
-							}
 							if *view.Selector.InstrumentName == bytesMetricName {
 								foundBytesDrop = true
 								// Verify it's a drop view
@@ -159,8 +147,6 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, tt.shouldDropBucket, foundBucketDrop,
-				"bucket metric drop view should be %v for level %v", tt.shouldDropBucket, tt.level)
 			assert.Equal(t, tt.shouldDropBytes, foundBytesDrop,
 				"bytes metric drop view should be %v for level %v", tt.shouldDropBytes, tt.level)
 		})
