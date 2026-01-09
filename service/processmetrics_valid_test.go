@@ -3,7 +3,7 @@
 
 //go:build linux || windows || darwin
 
-package service // import "go.opentelemetry.io/collector/service"
+package service
 
 import (
 	"testing"
