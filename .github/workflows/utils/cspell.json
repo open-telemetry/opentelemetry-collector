@@ -509,6 +509,7 @@
       "xprocessorhelper",
       "xreceiver",
       "xscraper",
+      "xscraperhelper",
       "yamlmapprovider",
       "yamlprovider",
       "yamls",

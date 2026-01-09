@@ -25,6 +25,17 @@ cmd/mdatagen/internal/samplefactoryreceiver/ @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleprocessor/       @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/        @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/         @open-telemetry/collector-approvers @dmitryax
+config/configauth/                           @open-telemetry/collector-approvers
+config/configcompression/                    @open-telemetry/collector-approvers
+config/configgrpc/                           @open-telemetry/collector-approvers
+config/confighttp/                           @open-telemetry/collector-approvers
+config/configmiddleware/                     @open-telemetry/collector-approvers
+config/confignet/                            @open-telemetry/collector-approvers
+config/configopaque/                         @open-telemetry/collector-approvers
+config/configoptional/                       @open-telemetry/collector-approvers
+config/configretry/                          @open-telemetry/collector-approvers
+config/configtelemetry/                      @open-telemetry/collector-approvers
+config/configtls/                            @open-telemetry/collector-approvers
 confmap/                                     @open-telemetry/collector-approvers @mx-psi @evan-bradley
 confmap/provider/envprovider/                @open-telemetry/collector-approvers
 confmap/provider/fileprovider/               @open-telemetry/collector-approvers
@@ -33,6 +44,7 @@ confmap/provider/httpsprovider/              @open-telemetry/collector-approvers
 confmap/provider/yamlprovider/               @open-telemetry/collector-approvers
 connector/forwardconnector/                  @open-telemetry/collector-approvers
 connector/xconnector/                        @open-telemetry/collector-approvers @mx-psi @dmathieu
+consumer/consumererror/xconsumererror/       @open-telemetry/collector-approvers
 consumer/xconsumer/                          @open-telemetry/collector-approvers @mx-psi @dmathieu
 docs/rfcs/                                   @open-telemetry/collector-approvers @codeboten @bogdandrutu @dmitryax @mx-psi
 exporter/debugexporter/                      @open-telemetry/collector-approvers @andrzej-stencel
@@ -62,6 +74,7 @@ receiver/xreceiver/                          @open-telemetry/collector-approvers
 scraper/                                     @open-telemetry/collector-approvers
 scraper/xscraper                             @open-telemetry/collector-approvers
 scraper/scraperhelper/                       @open-telemetry/collector-approvers
+scraper/scraperhelper/xscraperhelper         @open-telemetry/collector-approvers
 service/                                     @open-telemetry/collector-approvers
 service/internal/graph/                      @open-telemetry/collector-approvers
 
