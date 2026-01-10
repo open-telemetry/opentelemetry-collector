@@ -148,10 +148,17 @@ metrics:
     # Required: the metric stability
     stability:
       # Required: the level of stability
-      level: <development|alpha|beta|stable|deprecated>
-      # Optional: the version current stability was introduced
+      level: <development|alpha|beta|stable>
       from:
     # Optional: the reference to a semantic convention
+    # Optional: deprecation information for the metric
+    deprecated:
+      # Required: version when the metric was deprecated
+      since:
+      # Optional: migration note
+      note:
+      # Optional: the version current stability was introduced
+    
     semantic_convention:
       ref:
 
@@ -205,7 +212,13 @@ telemetry:
       # Required: metric description.
       description:
       # Optional: the stability level of the metric. Set to alpha by default.
-      stability: [alpha|stable|deprecated]
+      stability: [alpha|stable]
+      # Optional: deprecation information for the metric
+      deprecated:
+        # Required: version when the metric was deprecated
+        since:
+        # Optional: migration note
+        note:
       # Optional: extended documentation of the metric.
       extended_documentation:
       # Optional: whether or not this metric is optional. Optional metrics may only be initialized

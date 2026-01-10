@@ -59,6 +59,11 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 }
 
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
 func (md Metadata) GetCodeCovComponentID() string {
 	if md.Status.CodeCovComponentID != "" {
 		return md.Status.CodeCovComponentID

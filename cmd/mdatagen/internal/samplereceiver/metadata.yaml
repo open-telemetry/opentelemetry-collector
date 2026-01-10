@@ -177,7 +177,10 @@ metrics:
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     stability:
-      level: development
+      level: beta
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: int
@@ -202,7 +205,10 @@ metrics:
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
     stability:
-      level: deprecated
+      level: beta
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: double
@@ -229,7 +235,10 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     stability:
-      level: deprecated
+      level: beta
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: "1"
     gauge:
       value_type: double
@@ -241,7 +250,10 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     stability:
-      level: deprecated
+      level: beta
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: ""
     gauge:
       value_type: double
@@ -288,8 +300,11 @@ telemetry:
     batch_size_trigger_send:
       enabled: true
       stability:
-        level: deprecated
+        level: beta
         from: v0.110.0
+      deprecated:
+        since: "1.5.0"
+        note: "This metric will be removed in favor of batch_send_trigger_size"
       description: Number of times the batch was sent due to a size trigger
       unit: "{times}"
       sum:

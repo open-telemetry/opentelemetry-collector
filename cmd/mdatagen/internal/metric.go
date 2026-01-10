@@ -48,6 +48,9 @@ type Metric struct {
 
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
+
+	//NEW: metric deprecation info
+	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
 }
 
 type Stability struct {
@@ -59,9 +62,6 @@ func (s Stability) String() string {
 	if s.Level == component.StabilityLevelUndefined ||
 		s.Level == component.StabilityLevelStable {
 		return ""
-	}
-	if s.From != "" {
-		return fmt.Sprintf(" [%s since %s]", s.Level.String(), s.From)
 	}
 	return fmt.Sprintf(" [%s]", s.Level.String())
 }
@@ -75,6 +75,15 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
+
+	//deprecated is no longer a stability level
+	if m.Stability.Level == component.StabilityLevelDeprecated {
+		return errors.New("stability level 'deprecated' is not allowed")
+	}
+	//deprecated block validation
+	if m.Deprecated != nil && m.Deprecated.Since == "" {
+		return errors.New("deprecated.since is required when deprecated is set")
+	}
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))
