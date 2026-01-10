@@ -1,0 +1,24 @@
+name: "Rerun Failed Workflows"
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions: read-all
+
+jobs:
+  rerun-failed:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/rerun') && github.repository_owner == 'open-telemetry' }}
+    permissions:
+      actions: write
+      checks: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - name: Run rerun-failed-workflows.sh
+        run: ./.github/workflows/scripts/rerun-failed-workflows.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.comment.user.login }}
