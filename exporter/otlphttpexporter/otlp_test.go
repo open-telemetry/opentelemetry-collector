@@ -277,6 +277,140 @@ func TestErrorResponses(t *testing.T) {
 	}
 }
 
+func TestIsRetryableStatusCode(t *testing.T) {
+	tests := []struct {
+		name               string
+		statusCode         int
+		nonRetryableStatus []int
+		expectRetryable    bool
+	}{
+		{
+			name:               "429 retryable by default",
+			statusCode:         http.StatusTooManyRequests,
+			nonRetryableStatus: []int{},
+			expectRetryable:    true,
+		},
+		{
+			name:               "429 non-retryable when configured",
+			statusCode:         http.StatusTooManyRequests,
+			nonRetryableStatus: []int{429},
+			expectRetryable:    false,
+		},
+		{
+			name:               "502 retryable by default",
+			statusCode:         http.StatusBadGateway,
+			nonRetryableStatus: []int{},
+			expectRetryable:    true,
+		},
+		{
+			name:               "503 retryable with 429 in non-retryable list",
+			statusCode:         http.StatusServiceUnavailable,
+			nonRetryableStatus: []int{429},
+			expectRetryable:    true,
+		},
+		{
+			name:               "404 not retryable by default",
+			statusCode:         http.StatusNotFound,
+			nonRetryableStatus: []int{},
+			expectRetryable:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "http://test.com",
+				},
+				RetryConfig: RetryConfig{
+					NonRetryableStatus: tt.nonRetryableStatus,
+				},
+			}
+			exp := &baseExporter{
+				config: cfg,
+			}
+
+			result := exp.isRetryableStatusCode(tt.statusCode)
+			assert.Equal(t, tt.expectRetryable, result,
+				"For status %d with non_retryable_status=%v, expected retryable=%v but got %v",
+				tt.statusCode, tt.nonRetryableStatus, tt.expectRetryable, result)
+		})
+	}
+}
+
+func TestNonRetryableStatus(t *testing.T) {
+	// This test verifies that when a status code is configured in non_retryable_status,
+	// the error is marked as permanent (will not be retried by the retry queue).
+	tests := []struct {
+		name               string
+		responseStatus     int
+		nonRetryableStatus []int
+	}{
+		{
+			name:               "429 marked as permanent when configured",
+			responseStatus:     http.StatusTooManyRequests,
+			nonRetryableStatus: []int{429},
+		},
+		{
+			name:               "502 marked as permanent when configured",
+			responseStatus:     http.StatusBadGateway,
+			nonRetryableStatus: []int{502},
+		},
+		{
+			name:               "503 marked as permanent when configured",
+			responseStatus:     http.StatusServiceUnavailable,
+			nonRetryableStatus: []int{503},
+		},
+		{
+			name:               "504 marked as permanent when configured",
+			responseStatus:     http.StatusGatewayTimeout,
+			nonRetryableStatus: []int{504},
+		},
+		{
+			name:               "multiple status codes non-retryable",
+			responseStatus:     http.StatusServiceUnavailable,
+			nonRetryableStatus: []int{429, 503, 504},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(tt.responseStatus)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: srv.URL,
+				},
+				RetryConfig: RetryConfig{
+					NonRetryableStatus: tt.nonRetryableStatus,
+				},
+				// Disable QueueConfig and RetryConfig so that ConsumeTraces
+				// returns the errors that we want to check immediately.
+			}
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			require.NoError(t, err)
+
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			traces := ptrace.NewTraces()
+			err = exp.ConsumeTraces(context.Background(), traces)
+			require.Error(t, err)
+
+			// When a status code is in non_retryable_status, it should be marked as permanent
+			assert.True(t, consumererror.IsPermanent(err),
+				"Expected permanent error for status %d with non_retryable_status=%v",
+				tt.responseStatus, tt.nonRetryableStatus)
+		})
+	}
+}
+
 func TestErrorResponseInvalidResponseBody(t *testing.T) {
 	resp := &http.Response{
 		StatusCode:    http.StatusBadRequest,
