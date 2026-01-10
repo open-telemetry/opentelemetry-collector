@@ -27,13 +27,11 @@ type SummaryDataPoint struct {
 	Flags             uint32
 }
 
-var (
-	protoPoolSummaryDataPoint = sync.Pool{
-		New: func() any {
-			return &SummaryDataPoint{}
-		},
-	}
-)
+var protoPoolSummaryDataPoint = sync.Pool{
+	New: func() any {
+		return &SummaryDataPoint{}
+	},
+}
 
 func NewSummaryDataPoint() *SummaryDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -156,6 +154,7 @@ func (orig *SummaryDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
@@ -182,6 +181,7 @@ func (orig *SummaryDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)

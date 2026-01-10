@@ -24,13 +24,11 @@ type SpanEvent struct {
 	DroppedAttributesCount uint32
 }
 
-var (
-	protoPoolSpanEvent = sync.Pool{
-		New: func() any {
-			return &SpanEvent{}
-		},
-	}
-)
+var protoPoolSpanEvent = sync.Pool{
+	New: func() any {
+		return &SpanEvent{}
+	},
+}
 
 func NewSpanEvent() *SpanEvent {
 	if !UseProtoPooling.IsEnabled() {
@@ -154,6 +152,7 @@ func (orig *SpanEvent) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)

@@ -20,13 +20,11 @@ type ExportMetricsServiceRequest struct {
 	ResourceMetrics []*ResourceMetrics
 }
 
-var (
-	protoPoolExportMetricsServiceRequest = sync.Pool{
-		New: func() any {
-			return &ExportMetricsServiceRequest{}
-		},
-	}
-)
+var protoPoolExportMetricsServiceRequest = sync.Pool{
+	New: func() any {
+		return &ExportMetricsServiceRequest{}
+	},
+}
 
 func NewExportMetricsServiceRequest() *ExportMetricsServiceRequest {
 	if !UseProtoPooling.IsEnabled() {
@@ -136,6 +134,7 @@ func (orig *ExportMetricsServiceRequest) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

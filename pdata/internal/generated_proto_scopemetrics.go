@@ -21,13 +21,11 @@ type ScopeMetrics struct {
 	Scope     InstrumentationScope
 }
 
-var (
-	protoPoolScopeMetrics = sync.Pool{
-		New: func() any {
-			return &ScopeMetrics{}
-		},
-	}
-)
+var protoPoolScopeMetrics = sync.Pool{
+	New: func() any {
+		return &ScopeMetrics{}
+	},
+}
 
 func NewScopeMetrics() *ScopeMetrics {
 	if !UseProtoPooling.IsEnabled() {
@@ -145,6 +143,7 @@ func (orig *ScopeMetrics) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)

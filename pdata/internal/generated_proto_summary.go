@@ -19,13 +19,11 @@ type Summary struct {
 	DataPoints []*SummaryDataPoint
 }
 
-var (
-	protoPoolSummary = sync.Pool{
-		New: func() any {
-			return &Summary{}
-		},
-	}
-)
+var protoPoolSummary = sync.Pool{
+	New: func() any {
+		return &Summary{}
+	},
+}
 
 func NewSummary() *Summary {
 	if !UseProtoPooling.IsEnabled() {
@@ -135,6 +133,7 @@ func (orig *Summary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

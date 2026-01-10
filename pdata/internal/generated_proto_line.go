@@ -21,13 +21,11 @@ type Line struct {
 	Column        int64
 }
 
-var (
-	protoPoolLine = sync.Pool{
-		New: func() any {
-			return &Line{}
-		},
-	}
-)
+var protoPoolLine = sync.Pool{
+	New: func() any {
+		return &Line{}
+	},
+}
 
 func NewLine() *Line {
 	if !UseProtoPooling.IsEnabled() {

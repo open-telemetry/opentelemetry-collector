@@ -36,13 +36,11 @@ type Span struct {
 	ParentSpanId           SpanID
 }
 
-var (
-	protoPoolSpan = sync.Pool{
-		New: func() any {
-			return &Span{}
-		},
-	}
-)
+var protoPoolSpan = sync.Pool{
+	New: func() any {
+		return &Span{}
+	},
+}
 
 func NewSpan() *Span {
 	if !UseProtoPooling.IsEnabled() {
@@ -225,6 +223,7 @@ func (orig *Span) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)
@@ -239,6 +238,7 @@ func (orig *Span) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedEventsCount != uint32(0) {
 		dest.WriteObjectField("droppedEventsCount")
 		dest.WriteUint32(orig.DroppedEventsCount)
@@ -253,6 +253,7 @@ func (orig *Span) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedLinksCount != uint32(0) {
 		dest.WriteObjectField("droppedLinksCount")
 		dest.WriteUint32(orig.DroppedLinksCount)
