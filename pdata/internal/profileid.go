@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
@@ -49,6 +50,10 @@ func (pid ProfileID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this profile ID from binary representation. Called by Protobuf serialization.
 func (pid *ProfileID) UnmarshalProto(buf []byte) error {
+	return pid.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (pid *ProfileID) UnmarshalProtoOpts(buf []byte, _ *pdata.UnmarshalOptions) error {
 	if len(buf) == 0 {
 		*pid = [profileIDSize]byte{}
 		return nil
@@ -60,6 +65,13 @@ func (pid *ProfileID) UnmarshalProto(buf []byte) error {
 
 	copy(pid[:], buf)
 	return nil
+}
+
+func SkipProfileIDProto(data []byte) error {
+	if len(data) == 0 || len(data) == profileIDSize {
+		return nil
+	}
+	return errUnmarshalProfileID
 }
 
 // MarshalJSON converts ProfileID into a hex string.

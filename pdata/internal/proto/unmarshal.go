@@ -81,6 +81,15 @@ func ConsumeI64(buf []byte, pos int) (uint64, int, error) {
 	return binary.LittleEndian.Uint64(buf[pos-8:]), pos, nil
 }
 
+// SkipI64 parses buf starting at pos as a WireTypeI64 field.
+func SkipI64(buf []byte, pos int) (int, error) {
+	pos += 8
+	if pos < 0 || pos > len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return pos, nil
+}
+
 // ConsumeLen parses buf starting at pos as a WireTypeLen field, reporting the len and the new position.
 func ConsumeLen(buf []byte, pos int) (int, int, error) {
 	var num uint64
@@ -100,6 +109,26 @@ func ConsumeLen(buf []byte, pos int) (int, int, error) {
 	return length, pos, nil
 }
 
+// SkipLen parses buf starting at pos as a WireTypeLen field, reporting the len and the new position.
+func SkipLen(buf []byte, pos int) (int, error) {
+	var num uint64
+	var err error
+	num, pos, err = ConsumeVarint(buf, pos)
+	if err != nil {
+		return 0, err
+	}
+	//nolint:gosec
+	length := int(num)
+	if length < 0 {
+		return 0, ErrInvalidLength
+	}
+	pos += length
+	if pos < 0 || pos > len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return pos, nil
+}
+
 // ConsumeI32 parses buf starting at pos as a WireTypeI32 field, reporting the value and the new position.
 func ConsumeI32(buf []byte, pos int) (uint32, int, error) {
 	pos += 4
@@ -107,6 +136,15 @@ func ConsumeI32(buf []byte, pos int) (uint32, int, error) {
 		return 0, 0, io.ErrUnexpectedEOF
 	}
 	return binary.LittleEndian.Uint32(buf[pos-4:]), pos, nil
+}
+
+// SkipI32 parses buf starting at pos as a WireTypeI32 field, reporting the value and the new position.
+func SkipI32(buf []byte, pos int) (int, error) {
+	pos += 4
+	if pos < 0 || pos > len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return pos, nil
 }
 
 // ConsumeTag parses buf starting at pos as a varint-encoded tag, reporting the new position.
@@ -142,4 +180,23 @@ func ConsumeVarint(buf []byte, pos int) (uint64, int, error) {
 		}
 	}
 	return num, pos, nil
+}
+
+// SkipVarint parses buf starting at pos as a varint-encoded uint64, reporting the new position.
+func SkipVarint(buf []byte, pos int) (int, error) {
+	l := len(buf)
+	for shift := uint(0); ; shift += 7 {
+		if shift >= 64 {
+			return 0, ErrIntOverflow
+		}
+		if pos >= l {
+			return 0, io.ErrUnexpectedEOF
+		}
+		b := buf[pos]
+		pos++
+		if b < 0x80 {
+			break
+		}
+	}
+	return pos, nil
 }
