@@ -4,7 +4,10 @@
 package otelgrpc // import "go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 
 import (
+	"fmt"
+
 	"google.golang.org/grpc/encoding"
+	_ "google.golang.org/grpc/encoding/proto" // Ensure proto codec is registered before our init
 	"google.golang.org/grpc/mem"
 )
 
@@ -58,6 +61,13 @@ func (c *codecV2) Marshal(v any) (mem.BufferSlice, error) {
 		return []mem.Buffer{mem.NewBuffer(buf, otelBufferPool)}, nil
 	}
 
+	// If delegate is nil (e.g., V1 codec is registered), we cannot delegate.
+	// This should not happen if google.golang.org/grpc/encoding/proto is imported,
+	// but we handle it gracefully to avoid panics.
+	if c.delegate == nil {
+		return nil, fmt.Errorf("proto codec not registered or is V1 codec (V2 codec required)")
+	}
+
 	return c.delegate.Marshal(v)
 }
 
@@ -67,6 +77,13 @@ func (c *codecV2) Unmarshal(data mem.BufferSlice, v any) (err error) {
 		buf := data.MaterializeToBuffer(otelBufferPool)
 		defer buf.Free()
 		return m.UnmarshalProto(buf.ReadOnlyData())
+	}
+
+	// If delegate is nil (e.g., V1 codec is registered), we cannot delegate.
+	// This should not happen if google.golang.org/grpc/encoding/proto is imported,
+	// but we handle it gracefully to avoid panics.
+	if c.delegate == nil {
+		return fmt.Errorf("proto codec not registered or is V1 codec (V2 codec required)")
 	}
 
 	return c.delegate.Unmarshal(data, v)
