@@ -34,6 +34,9 @@ type Config struct {
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
+	// OutputPaths holds the list of destinations for the exporter's output when UseInternalLogger is false.
+	OutputPaths []string `mapstructure:"output_paths"`
+
 	QueueConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// prevent unkeyed literal initialization
@@ -46,6 +49,17 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if _, ok := supportedLevels[cfg.Verbosity]; !ok {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
+	}
+
+	if len(cfg.OutputPaths) > 0 {
+		if cfg.UseInternalLogger {
+			return fmt.Errorf("output_paths requires use_internal_logger to be false")
+		}
+		for _, path := range cfg.OutputPaths {
+			if path == "" {
+				return fmt.Errorf("output_paths cannot contain empty values")
+			}
+		}
 	}
 
 	return nil
