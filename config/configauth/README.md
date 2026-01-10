@@ -59,7 +59,7 @@ receivers:
           ## oidc is the extension name to use as the authenticator for this receiver
           authenticator: oidc
 
-  otlphttp/withauth:
+  otlp_http/withauth:
     endpoint: http://localhost:9000
     auth:
       authenticator: oauth2client

@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
+{{ $reag := .ReaggregationEnabled }}
+
 {{ if .Metrics }}
 func TestMetricsBuilderConfig(t *testing.T) {
 	tests := []struct {
@@ -28,10 +30,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: true},
+        {{- if $reag }}
+					{{- range $name, $metric := .Metrics }}
+					{{ $name.Render }}: MetricConfig{
+            Enabled: true,
+            {{- if eq $metric.Data.Type "Sum" }}
+            AggregationStrategy: AggregationStrategySum,
+            {{- else }}
+            AggregationStrategy: AggregationStrategyAvg,
+            {{- end }}
+            EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+            },
 					{{- end }}
 				},
+        {{- else }}
+          {{- range $name, $_ := .Metrics }}
+          {{ $name.Render }}: MetricConfig{Enabled: true},
+          {{- end }}
+        },
+        {{- end }}
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
@@ -45,10 +62,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: false},
+          {{- if $reag }}
+					{{- range $name, $metric := .Metrics }}
+					{{ $name.Render }}: MetricConfig{
+            Enabled: false,
+            {{- if eq $metric.Data.Type "Sum" }}
+            AggregationStrategy: AggregationStrategySum,
+            {{- else }}
+            AggregationStrategy: AggregationStrategyAvg,
+            {{- end }}
+            EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+            },
 					{{- end }}
 				},
+        {{- else }}
+          {{- range $name, $_ := .Metrics }}
+          {{ $name.Render }}: MetricConfig{Enabled: false},
+          {{- end }}
+        },
+        {{- end }}
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
@@ -56,7 +88,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					{{- end }}
 				},
 				{{- end }}
-			},
+      },
 		},
 	}
 	for _, tt := range tests {

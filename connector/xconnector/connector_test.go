@@ -16,13 +16,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
 	testType = component.MustNewType("test")
-	testID   = component.MustNewIDWithName("type", "name")
+	testID   = component.MustNewIDWithName(testType.String(), "name")
 )
 
 func TestNewFactoryNoOptions(t *testing.T) {
@@ -53,10 +54,14 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	)
 	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToProfilesStability())
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalTraces))
@@ -79,6 +84,8 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	)
 	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
 
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, xpipeline.SignalProfiles))
@@ -86,26 +93,38 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	assert.Equal(t, component.StabilityLevelBeta, factory.TracesToProfilesStability())
 	_, err = factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.MetricsToProfilesStability())
 	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.LogsToProfilesStability())
 	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.ProfilesToTracesStability())
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesToMetricsStability())
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToLogsStability())
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 }
 
 var nopInstance = &nopConnector{
@@ -145,4 +164,28 @@ func createProfilesToMetrics(context.Context, connector.Settings, component.Conf
 
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
+}
+
+func TestNewFactoryWithDeprecatedAlias(t *testing.T) {
+	testType := component.MustNewType("newname")
+	aliasType := component.MustNewType("oldname")
+	defaultCfg := struct{}{}
+
+	f := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+		WithProfilesToProfiles(createProfilesToProfiles, component.StabilityLevelAlpha),
+		WithDeprecatedTypeAlias(aliasType),
+	)
+
+	assert.Equal(t, testType, f.Type())
+	assert.Equal(t, aliasType, f.(*factory).Factory.(componentalias.TypeAliasHolder).DeprecatedAlias())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+
+	_, err := f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("newname")}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	_, err = f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("oldname")}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	_, err = f.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: component.MustNewID("wrongname")}, &defaultCfg, consumertest.NewNop())
+	require.Error(t, err)
 }

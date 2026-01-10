@@ -25,14 +25,20 @@ type Message struct {
 	OriginFullName  string
 	UpstreamMessage string
 	Fields          []FieldInterface
+	metadata        *Metadata
 }
 
 func (ms *Message) GenerateMessage(imports, testImports []string) []byte {
+	ms.metadata = newMetadata(ms)
 	return []byte(template.Execute(messageTemplate, ms.templateFields(imports, testImports)))
 }
 
 func (ms *Message) GenerateMessageTests(imports, testImports []string) []byte {
 	return []byte(template.Execute(messageTestTemplate, ms.templateFields(imports, testImports)))
+}
+
+func (ms *Message) GenerateMetadata() string {
+	return string(ms.metadata.Generate())
 }
 
 func (ms *Message) templateFields(imports, testImports []string) map[string]any {
@@ -43,5 +49,20 @@ func (ms *Message) templateFields(imports, testImports []string) map[string]any 
 		"description":     ms.Description,
 		"imports":         imports,
 		"testImports":     testImports,
+		// 0 size means no metadata is needed
+		"metadataSize":     ms.metadataSize(),
+		"GenerateMetadata": ms.GenerateMetadata,
 	}
+}
+
+func (ms *Message) metadataSize() uint {
+	if ms.metadata == nil {
+		return 0
+	}
+
+	if len(ms.metadata.OptionalFields) == 0 {
+		return 0
+	}
+
+	return uint(ms.metadata.OptionalFields[len(ms.metadata.OptionalFields)-1].Value/64 + 1)
 }

@@ -4,6 +4,6 @@ maintainers: []
 components:
     exporter:
         - otlp
-        - otlphttp
+        - otlp_http
     receiver:
         - otlp

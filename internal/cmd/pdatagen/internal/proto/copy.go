@@ -9,9 +9,7 @@ import (
 
 const copyOther = `{{ if .repeated -}}
 	dest.{{ .fieldName }} = append(dest.{{ .fieldName }}[:0], src.{{ .fieldName }}...)
-{{- else if not .nullable -}}
-	dest.{{ .fieldName }} = src.{{ .fieldName }}
-{{ else -}}
+{{ else if ne .oneOfGroup "" -}}
 	var ov *{{ .oneOfMessageName }}
 	if !UseProtoPooling.IsEnabled() {
 		ov = &{{ .oneOfMessageName }}{}
@@ -20,6 +18,14 @@ const copyOther = `{{ if .repeated -}}
 	}
 	ov.{{ .fieldName }} = t.{{ .fieldName }}
 	dest.{{ .oneOfGroup }} = ov
+{{ else if .nullable -}}
+	if src.Has{{ .fieldName }}() {
+		dest.Set{{ .fieldName }}(src.{{ .fieldName }})
+	} else {
+		dest.Remove{{ .fieldName }}()
+	}
+{{ else -}}
+	dest.{{ .fieldName }} = src.{{ .fieldName }}
 {{- end }}`
 
 const copyMessage = `{{ if .repeated -}}

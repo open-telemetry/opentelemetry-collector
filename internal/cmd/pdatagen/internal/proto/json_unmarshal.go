@@ -17,7 +17,7 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 	for iter.ReadArray() {
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, iter.Read{{ upperFirst .goType }}())
 	}
-{{ else if .nullable -}}
+{{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
 		if !UseProtoPooling.IsEnabled() {
@@ -28,6 +28,8 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 		orig.{{ .oneOfGroup }} = ov
 	}
+{{ else if .nullable -}}
+	orig.Set{{ .fieldName }}(iter.Read{{ upperFirst .goType }}())
 {{ else -}}
 	orig.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 {{- end }}`

@@ -3,16 +3,65 @@ all_set:
   metrics:
     default.metric:
       enabled: true
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: true
+      attributes: []
     metric.input_type:
       enabled: true
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     optional.metric:
       enabled: true
+      attributes: ["string_attr","boolean_attr","boolean_attr2"]
     optional.metric.empty_unit:
       enabled: true
+      attributes: ["string_attr","boolean_attr"]
+    reaggregate.metric:
+      enabled: true
+      attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
+      attributes: []
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+    slice.resource.attr:
+      enabled: true
+    string.enum.resource.attr:
+      enabled: true
+    string.resource.attr:
+      enabled: true
+    string.resource.attr_disable_warning:
+      enabled: true
+    string.resource.attr_remove_warning:
+      enabled: true
+    string.resource.attr_to_be_removed:
+      enabled: true
+reaggregate_set:
+  metrics:
+    default.metric:
+      enabled: true
+      attributes: []
+    default.metric.to_be_removed:
+      enabled: true
+      attributes: []
+    metric.input_type:
+      enabled: true
+      attributes: []
+    optional.metric:
+      enabled: true
+      attributes: []
+    optional.metric.empty_unit:
+      enabled: true
+      attributes: []
+    reaggregate.metric:
+      enabled: true
+      attributes: []
+    system.cpu.time:
+      enabled: true
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -34,16 +83,25 @@ none_set:
   metrics:
     default.metric:
       enabled: false
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: false
+      attributes: []
     metric.input_type:
       enabled: false
+      attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     optional.metric:
       enabled: false
+      attributes: ["string_attr","boolean_attr","boolean_attr2"]
     optional.metric.empty_unit:
       enabled: false
+      attributes: ["string_attr","boolean_attr"]
+    reaggregate.metric:
+      enabled: false
+      attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: false

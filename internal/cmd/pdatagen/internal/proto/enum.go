@@ -53,13 +53,3 @@ type EnumField struct {
 func (ms *Enum) GenerateEnum() []byte {
 	return []byte(template.Execute(template.Parse("enumMessageTemplate", []byte(enumMessageTemplate)), ms))
 }
-
-func (ms *Enum) templateFields(imports, testImports []string) map[string]any {
-	return map[string]any{
-		"fields":      ms.Fields,
-		"messageName": ms.Name,
-		"description": ms.Description,
-		"imports":     imports,
-		"testImports": testImports,
-	}
-}

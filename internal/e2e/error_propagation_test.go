@@ -208,7 +208,7 @@ func createHTTPExporter(t *testing.T, code int) consumer.Logs {
 	cfg.RetryConfig.Enabled = false
 	cfg.Encoding = otlphttpexporter.EncodingProto
 	cfg.LogsEndpoint = srv.URL + "/v1/logs"
-	e, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(component.MustNewType("otlphttp")), cfg)
+	e, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(component.MustNewType("otlp_http")), cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

@@ -61,7 +61,9 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 		}
 		ov.{{ .fieldName }} = math.Float{{ .bitSize }}frombits(num)
 		orig.{{ .oneOfGroup }} = ov
-{{- else }}
+{{- else if .nullable -}}
+		orig.Set{{ .fieldName }}(math.Float{{ .bitSize }}frombits(num))
+{{- else -}}
 		orig.{{ .fieldName }} = math.Float{{ .bitSize }}frombits(num)
 {{- end }}{{- end }}`
 
@@ -173,7 +175,9 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 		}
 		ov.{{ .fieldName }} = num != 0
 		orig.{{ .oneOfGroup }} = ov
-{{- else }}
+{{- else if .nullable -}}
+		orig.Set{{ .fieldName }}(num != 0)
+{{- else -}}
 		orig.{{ .fieldName }} = num != 0
 {{- end }}{{- end }}`
 
@@ -227,7 +231,9 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 		}
 		ov.{{ .fieldName }} = {{ .goType }}(num)
 		orig.{{ .oneOfGroup }} = ov
-{{- else }}
+{{- else if .nullable -}}
+		orig.Set{{ .fieldName }}({{ .goType }}(num))
+{{- else -}}
 		orig.{{ .fieldName }} = {{ .goType }}(num)
 {{- end }}{{- end }}`
 
@@ -385,7 +391,9 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 		}
 		ov.{{ .fieldName }} = int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }}))
 		orig.{{ .oneOfGroup }} = ov
-{{- else }}
+{{- else if .nullable -}}
+		orig.Set{{ .fieldName }}(int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
+{{- else -}}
 		orig.{{ .fieldName }} = int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }}))
 {{- end }}{{- end }}`
 

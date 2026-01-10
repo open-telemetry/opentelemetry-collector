@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -27,28 +26,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
 )
-
-type testInitialize struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testInitialize) start(context.Context, component.Host) error {
-	ts.ch <- true
-	return ts.err
-}
-
-type testClose struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testClose) shutdown(context.Context) error {
-	ts.ch <- true
-	return ts.err
-}
 
 type testScrape struct {
 	ch                chan int
@@ -167,7 +148,7 @@ func TestLogsScrapeController(t *testing.T) {
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
 			} else if test.initialize {
-				assertChannelsCalled(t, initializeChs, "start was not called")
+				testhelper.AssertChannelsCalled(t, initializeChs, "start was not called")
 			}
 
 			const iterations = 5
@@ -199,7 +180,7 @@ func TestLogsScrapeController(t *testing.T) {
 
 				spans := tel.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
-				assertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeLogs")
+				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeLogs")
 				assertLogsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
 
@@ -208,7 +189,7 @@ func TestLogsScrapeController(t *testing.T) {
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
 			} else if test.close {
-				assertChannelsCalled(t, closeChs, "shutdown was not called")
+				testhelper.AssertChannelsCalled(t, closeChs, "shutdown was not called")
 			}
 		})
 	}
@@ -278,7 +259,7 @@ func TestMetricsScrapeController(t *testing.T) {
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
 			} else if test.initialize {
-				assertChannelsCalled(t, initializeChs, "start was not called")
+				testhelper.AssertChannelsCalled(t, initializeChs, "start was not called")
 			}
 
 			const iterations = 5
@@ -310,7 +291,7 @@ func TestMetricsScrapeController(t *testing.T) {
 
 				spans := tel.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
-				assertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeMetrics")
+				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeMetrics")
 				assertMetricsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
 
@@ -319,7 +300,7 @@ func TestMetricsScrapeController(t *testing.T) {
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
 			} else if test.close {
-				assertChannelsCalled(t, closeChs, "shutdown was not called")
+				testhelper.AssertChannelsCalled(t, closeChs, "shutdown was not called")
 			}
 		})
 	}
@@ -332,13 +313,13 @@ func configureLogOptions(t *testing.T, test scraperTestCase, initializeChs []cha
 		var scraperOptions []scraper.Option
 		if test.initialize {
 			initializeChs[i] = make(chan bool, 1)
-			ti := &testInitialize{ch: initializeChs[i], err: test.initializeErr}
-			scraperOptions = append(scraperOptions, scraper.WithStart(ti.start))
+			ti := testhelper.NewTestInitialize(initializeChs[i], test.initializeErr)
+			scraperOptions = append(scraperOptions, scraper.WithStart(ti.Start))
 		}
 		if test.close {
 			closeChs[i] = make(chan bool, 1)
-			tc := &testClose{ch: closeChs[i], err: test.closeErr}
-			scraperOptions = append(scraperOptions, scraper.WithShutdown(tc.shutdown))
+			tc := testhelper.NewTestClose(closeChs[i], test.closeErr)
+			scraperOptions = append(scraperOptions, scraper.WithShutdown(tc.Shutdown))
 		}
 
 		scrapeLogsChs[i] = make(chan int)
@@ -359,13 +340,13 @@ func configureMetricOptions(t *testing.T, test scraperTestCase, initializeChs []
 		var scraperOptions []scraper.Option
 		if test.initialize {
 			initializeChs[i] = make(chan bool, 1)
-			ti := &testInitialize{ch: initializeChs[i], err: test.initializeErr}
-			scraperOptions = append(scraperOptions, scraper.WithStart(ti.start))
+			ti := testhelper.NewTestInitialize(initializeChs[i], test.initializeErr)
+			scraperOptions = append(scraperOptions, scraper.WithStart(ti.Start))
 		}
 		if test.close {
 			closeChs[i] = make(chan bool, 1)
-			tc := &testClose{ch: closeChs[i], err: test.closeErr}
-			scraperOptions = append(scraperOptions, scraper.WithShutdown(tc.shutdown))
+			tc := testhelper.NewTestClose(closeChs[i], test.closeErr)
+			scraperOptions = append(scraperOptions, scraper.WithShutdown(tc.Shutdown))
 		}
 
 		scrapeMetricsChs[i] = make(chan int)
@@ -395,20 +376,6 @@ func getExpectedShutdownErr(test scraperTestCase) error {
 	return errs
 }
 
-func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
-	for _, ic := range chs {
-		assertChannelCalled(t, ic, message)
-	}
-}
-
-func assertChannelCalled(t *testing.T, ch chan bool, message string) {
-	select {
-	case <-ch:
-	default:
-		assert.Fail(t, message)
-	}
-}
-
 func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	receiverSpan := false
 	for _, span := range spans {
@@ -418,26 +385,6 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 		}
 	}
 	assert.True(t, receiverSpan)
-}
-
-func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan, expectedSpanName string) {
-	expectedStatusCode := codes.Unset
-	expectedStatusMessage := ""
-	if expectedErr != nil {
-		expectedStatusCode = codes.Error
-		expectedStatusMessage = expectedErr.Error()
-	}
-
-	scraperSpan := false
-	for _, span := range spans {
-		if span.Name() == expectedSpanName {
-			scraperSpan = true
-			assert.Equal(t, expectedStatusCode, span.Status().Code)
-			assert.Equal(t, expectedStatusMessage, span.Status().Description)
-			break
-		}
-	}
-	assert.True(t, scraperSpan)
 }
 
 func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, expectedErr error, sink *consumertest.LogsSink) {
@@ -809,4 +756,10 @@ func addLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
 			return sc, nil
 		}, component.StabilityLevelAlpha))
 	return AddFactoryWithConfig(f, nil)
+}
+
+func TestNewDefaultControllerConfig(t *testing.T) {
+	controllerConfig := NewDefaultControllerConfig()
+	intControllerConfig := controller.NewDefaultControllerConfig()
+	require.Equal(t, intControllerConfig, controllerConfig)
 }

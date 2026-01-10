@@ -1,4 +1,4 @@
-type: otlphttp
+type: otlp_http
 github_project: open-telemetry/opentelemetry-collector
 
 status:

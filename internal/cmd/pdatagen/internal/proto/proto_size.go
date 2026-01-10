@@ -15,12 +15,16 @@ const sizeProtoI8 = `{{ if .repeated -}}
 		l *= 8
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 8 }}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 8 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 8 }}
 {{- end }}`
 
 const sizeProtoI4 = `{{ if .repeated -}}
@@ -29,12 +33,16 @@ const sizeProtoI4 = `{{ if .repeated -}}
 		l *= 4
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 4 }}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 4 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 4 }}
 {{- end }}`
 
 const sizeProtoBool = `{{ if .repeated -}}
@@ -42,15 +50,19 @@ const sizeProtoBool = `{{ if .repeated -}}
 	if l > 0 {
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 1 }}
+{{- else -}}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 1 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 1 }}
 {{- end }}`
 
-const sizeProtoVarint = `{{ if .repeated -}}
+const sizeProtoVarint = `{{ if .repeated }}
 	if len(orig.{{ .fieldName }}) > 0 {
 		l = 0
 		for _, e := range orig.{{ .fieldName }} {
@@ -58,12 +70,16 @@ const sizeProtoVarint = `{{ if .repeated -}}
 		}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
 	}
-{{- else -}}
-	n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
 {{- end }}`
 
 const sizeProtoBytesString = `{{ if .repeated -}}
@@ -71,14 +87,14 @@ const sizeProtoBytesString = `{{ if .repeated -}}
 		l = len(s)
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
+{{- else if ne .oneOfGroup "" -}}
+		l = len(orig.{{ .fieldName }})
+		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
+{{- else }}
 	l = len(orig.{{ .fieldName }})
 	if l > 0 {
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else -}}
-	l = len(orig.{{ .fieldName }})
-	n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 {{- end }}`
 
 const sizeProtoMessage = `{{ if .repeated -}}
@@ -104,12 +120,16 @@ const sizeProtoSignedVarint = `{{ if .repeated -}}
 		}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" -}}
+	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
+{{- else -}}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
 	}
-{{- else -}}
-	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
 {{- end }}`
 
 func (pf *Field) GenSizeProto() string {

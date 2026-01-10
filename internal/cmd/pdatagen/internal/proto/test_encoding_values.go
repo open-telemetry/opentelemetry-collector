@@ -13,6 +13,12 @@ import (
 const encodingTestValuesScalar = `{{ if ne .oneOfGroup "" -}}
 "{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .defaultValue }}} },
 "{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
+{{- else if .nullable }}
+"{{ .fieldName }}/test": func () *{{ .parentMessageName }} { 
+	ms := New{{ .parentMessageName }}() 
+	ms.Set{{ .fieldName }}({{ .testValue }})
+	return ms
+}(),
 {{- else }}
 "{{ .fieldName }}/test": { {{ .fieldName }}: {{ .testValue }} },
 {{- end }}`

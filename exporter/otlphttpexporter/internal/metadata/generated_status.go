@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("otlphttp")
+	Type      = component.MustNewType("otlp_http")
 	ScopeName = "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 

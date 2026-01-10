@@ -82,7 +82,6 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 		newNumberDataPoint(internal.NewNumberDataPoint(), sharedState).SetDoubleValue(float64(3.1415926))
 	})
 }
-
 func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, int64(0), ms.IntValue())

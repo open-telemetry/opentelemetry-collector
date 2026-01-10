@@ -20,15 +20,19 @@ const marshalJSONPrimitive = `{{ if .repeated -}}
 		}
 		dest.WriteArrayEnd()
 	}
+{{ else if ne .oneOfGroup "" -}}
+		dest.WriteObjectField("{{ .jsonTag }}")
+		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }})
 {{- else }}
 {{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+{{- else -}}
+	if orig.Has{{ .fieldName }} () {
 {{ end -}}
 		dest.WriteObjectField("{{ .jsonTag }}")
 		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }})
-{{- if not .nullable -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalJSONEnum = `{{ if .repeated -}}
 	if len(orig.{{ .fieldName }}) > 0 {
