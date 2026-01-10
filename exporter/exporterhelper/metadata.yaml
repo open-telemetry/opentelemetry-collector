@@ -13,6 +13,36 @@ status:
 
 telemetry:
   metrics:
+    exporter_dropped_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records dropped due to incompatibility or specification requirements.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points dropped due to incompatibility or specification requirements.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_spans:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of spans dropped due to incompatibility or specification requirements.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_enqueue_failed_log_records:
       enabled: true
       stability:
