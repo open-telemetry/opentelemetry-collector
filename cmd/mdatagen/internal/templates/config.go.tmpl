@@ -2,7 +2,14 @@
 
 package {{ .Package }}
 
+{{ $reag := .ReaggregationEnabled }}
+
 import (
+    {{- if $reag -}}
+    "fmt"
+    "slices"
+    {{- end }}
+
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
     "go.opentelemetry.io/collector/filter"
@@ -10,24 +17,60 @@ import (
 )
 {{ if .Metrics -}}
 
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled             bool     `mapstructure:"enabled"`
 	enabledSetByUser bool
+  {{ if $reag }}
+  AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+  EnabledAttributes   []string `mapstructure:"attributes"` 
+  definedAttributes   []string   
+  requiredAttributes  []string                             
+  {{- end }}
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
+  {{- if $reag }}
+  for _, val := range ms.EnabledAttributes {
+    if !slices.Contains(ms.definedAttributes, val) {
+      return fmt.Errorf("%v is not defined in metadata.yaml", val)
+    }
+  }
+
+  for _, val := range ms.requiredAttributes {
+    if !slices.Contains(ms.EnabledAttributes, val) {
+      return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+    }
+  }
+
+  if ms.AggregationStrategy != AggregationStrategySum && 
+     ms.AggregationStrategy != AggregationStrategyAvg && 
+     ms.AggregationStrategy != AggregationStrategyMin && 
+     ms.AggregationStrategy != AggregationStrategyMax {
+    return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+  }
+  {{- end }}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
+
+{{- if $reag }}
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+  Enabled bool `mapstructure:"enabled"`
+}
+{{- end }}
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
@@ -41,6 +84,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+    {{ if $reag }}
+    {{ if eq $metric.Data.Type "Sum" -}}
+      AggregationStrategy: AggregationStrategySum,
+    {{- end }}
+    {{- if eq $metric.Data.Type "Gauge" -}}
+      AggregationStrategy: AggregationStrategyAvg,
+    {{- end }}
+      requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
+      definedAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+      EnabledAttributes: []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
+    {{- end }}
 		},
 		{{- end }}
 	}
