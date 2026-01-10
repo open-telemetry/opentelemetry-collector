@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -67,29 +69,9 @@ type ClientConfig struct {
 	// Advanced configuration options for the Compression
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
 
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// By default, it is set to 100. Zero means no limit.
-	MaxIdleConns int `mapstructure:"max_idle_conns"`
-
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states. Default is 0 (unlimited).
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
-
-	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// By default, it is set to 90 seconds.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
-
-	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
-	// for a single HTTP request.
-	//
-	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
-	// connection for every request. Before enabling this option please consider whether changes
-	// to idle connection settings can achieve your goal.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// This is needed in case you run into
 	// https://github.com/golang/go/issues/59690
@@ -112,11 +94,114 @@ type ClientConfig struct {
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// Keepalive configuration.
+	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
+
+	warnings []renamedField
+}
+
+type renamedField struct {
+	old string
+	new string
+}
+
+func (f *renamedField) Log(logger *zap.Logger) {
+	logger.Warn("Use of deprecated configuration option",
+		zap.String("old name", f.old),
+		zap.String("new name", f.new),
+	)
+}
+
+func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
+	type oldFields struct {
+		IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+		MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+		MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host,omitempty"`
+		DisableKeepAlives   bool          `mapstructure:"disable_keep_alives,omitempty"`
+	}
+
+	type clientConfigFields ClientConfig
+
+	type legacyConfig struct {
+		clientConfigFields `mapstructure:",squash"`
+		oldFields          `mapstructure:",squash"`
+	}
+
+	var cfg legacyConfig
+	cfg.clientConfigFields = clientConfigFields(*cc)
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+	cfg.oldFields = oldFields{
+		MaxIdleConns:      defaultTransport.MaxIdleConns,
+		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		DisableKeepAlives: false,
+	}
+	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	deprecatedFields := []renamedField{
+		{"idle_conn_timeout", "keepalive::idle_conn_timeout"},
+		{"max_idle_conns", "keepalive::max_idle_conns"},
+		{"disable_keep_alives", "keepalive::enabled"},
+		{"max_idle_conns_per_host", "keepalive::max_idle_conns_per_host"},
+	}
+
+	var warnings []renamedField
+	for _, field := range deprecatedFields {
+		if conf.IsSet(field.old) {
+			warnings = append(warnings, field)
+		}
+	}
+
+	if len(warnings) > 0 && conf.IsSet("keepalive") {
+		return errors.New("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
+	}
+
+	if cfg.DisableKeepAlives {
+		cfg.Keepalive = configoptional.None[KeepaliveClientConfig]()
+	} else {
+		// should never happen with default values
+		if !cfg.Keepalive.HasValue() {
+			cfg.Keepalive = configoptional.Some(KeepaliveClientConfig{})
+		}
+
+		if conf.IsSet("idle_conn_timeout") {
+			cfg.Keepalive.Get().IdleConnTimeout = cfg.IdleConnTimeout
+		}
+		if conf.IsSet("max_idle_conns") {
+			cfg.Keepalive.Get().MaxIdleConns = cfg.MaxIdleConns
+		}
+		if conf.IsSet("max_idle_conns_per_host") {
+			cfg.Keepalive.Get().MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
+		}
+	}
+
+	*cc = ClientConfig(cfg.clientConfigFields)
+	cc.warnings = warnings
+	return nil
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
 	_ struct{}
+}
+
+// KeepaliveClientConfig describes the keepalive configuration.
+type KeepaliveClientConfig struct {
+	_ struct{}
+
+	// IdleConnTimeout is the maximum amount of time an iddle (keep-alive) connection will remain open before closing itself.
+	// By default, it is set to 90 seconds.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
+
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// By default, it is set to 100. Zero means no limit.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
+	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -128,8 +213,10 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		MaxIdleConns:      defaultTransport.MaxIdleConns,
-		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		Keepalive: configoptional.Some(KeepaliveClientConfig{
+			MaxIdleConns:    defaultTransport.MaxIdleConns,
+			IdleConnTimeout: defaultTransport.IdleConnTimeout,
+		}),
 		ForceAttemptHTTP2: true,
 	}
 }
@@ -156,6 +243,10 @@ type ToClientOption interface {
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+	for _, field := range cc.warnings {
+		field.Log(settings.Logger)
+	}
+
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -171,12 +262,13 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		transport.WriteBufferSize = cc.WriteBufferSize
 	}
 
-	transport.MaxIdleConns = cc.MaxIdleConns
-	transport.MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+	if kaCfg := cc.Keepalive.Get(); cc.Keepalive.HasValue() {
+		transport.MaxIdleConns = kaCfg.MaxIdleConns
+		transport.MaxIdleConnsPerHost = kaCfg.MaxIdleConnsPerHost
+		transport.IdleConnTimeout = kaCfg.IdleConnTimeout
+	}
 	transport.MaxConnsPerHost = cc.MaxConnsPerHost
-	transport.IdleConnTimeout = cc.IdleConnTimeout
 	transport.ForceAttemptHTTP2 = cc.ForceAttemptHTTP2
-
 	// Setting the Proxy URL
 	if cc.ProxyURL != "" {
 		proxyURL, parseErr := url.ParseRequestURI(cc.ProxyURL)
@@ -186,7 +278,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
-	transport.DisableKeepAlives = cc.DisableKeepAlives
+	transport.DisableKeepAlives = !cc.Keepalive.HasValue()
 
 	if cc.HTTP2ReadIdleTimeout > 0 {
 		transport2, transportErr := http2.ConfigureTransports(transport)
