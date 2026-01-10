@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 	grpcCfg.ReadBufferSize = 512 * 1024
 
 	httpCfg := confighttp.NewDefaultServerConfig()
-	httpCfg.Endpoint = "localhost:4318"
+	httpCfg.NetAddr.Endpoint = "localhost:4318"
 	// For backward compatibility:
 	httpCfg.TLS = configoptional.None[configtls.ServerConfig]()
 	httpCfg.WriteTimeout = 0

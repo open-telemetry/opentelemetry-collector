@@ -37,7 +37,7 @@ func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopSettings(factory.Type())
 	var droppedAttrs []string
@@ -76,7 +76,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	})
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	defaultServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := configoptional.Some(HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
@@ -124,7 +124,10 @@ func TestCreateTraces(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:112233",
+							NetAddr: confignet.AddrConfig{
+								Endpoint:  "localhost:112233",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						TracesURLPath: defaultTracesURLPath,
 					}),
@@ -170,7 +173,7 @@ func TestCreateMetric(t *testing.T) {
 		},
 	})
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	defaultServerConfig.Endpoint = "127.0.0.1:0"
+	defaultServerConfig.NetAddr.Endpoint = "127.0.0.1:0"
 	defaultHTTPSettings := configoptional.Some(HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
@@ -218,7 +221,10 @@ func TestCreateMetric(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "327.0.0.1:1122",
+							NetAddr: confignet.AddrConfig{
+								Endpoint:  "327.0.0.1:1122",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						MetricsURLPath: defaultMetricsURLPath,
 					}),
@@ -264,7 +270,7 @@ func TestCreateLogs(t *testing.T) {
 		},
 	})
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	defaultServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := configoptional.Some(HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
@@ -312,7 +318,10 @@ func TestCreateLogs(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "327.0.0.1:1122",
+							NetAddr: confignet.AddrConfig{
+								Endpoint:  "327.0.0.1:1122",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 						LogsURLPath: defaultLogsURLPath,
 					}),
@@ -358,7 +367,7 @@ func TestCreateProfiles(t *testing.T) {
 		},
 	})
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	defaultServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := configoptional.Some(HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
@@ -406,7 +415,10 @@ func TestCreateProfiles(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:112233",
+							NetAddr: confignet.AddrConfig{
+								Endpoint:  "localhost:112233",
+								Transport: confignet.TransportTypeTCP,
+							},
 						},
 					}),
 				},
