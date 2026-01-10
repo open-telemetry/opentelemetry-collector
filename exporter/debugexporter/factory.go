@@ -143,3 +143,4 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 	}
 	return zap.Must(zapConfig.Build())
 }
+
