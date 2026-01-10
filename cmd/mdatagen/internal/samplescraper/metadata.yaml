@@ -8,6 +8,13 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0
 
+example_configs:
+  - name: Default Configuration
+    description: Basic configuration for the sample scraper with default metrics enabled.
+    config: |
+      sample:
+        collection_interval: 30s
+
 status:
   disable_codecov_badge: true
   class: scraper
@@ -121,7 +128,7 @@ metrics:
 
   default.metric.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    description: '[DEPRECATED] Non-monotonic delta sum double metric enabled by default.'
     extended_documentation: The metric will be removed soon.
     stability:
       level: deprecated
@@ -149,10 +156,10 @@ metrics:
 
   optional.metric:
     enabled: false
-    description: "[DEPRECATED] Gauge double metric disabled by default."
+    description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: "1"
+    unit: '1'
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
@@ -161,10 +168,10 @@ metrics:
 
   optional.metric.empty_unit:
     enabled: false
-    description: "[DEPRECATED] Gauge double metric disabled by default."
+    description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: ""
+    unit: ''
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
