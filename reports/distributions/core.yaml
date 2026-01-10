@@ -7,7 +7,7 @@ components:
     exporter:
         - debug
         - nop
-        - otlp
+        - otlp_grpc
         - otlp_http
     extension:
         - zpages

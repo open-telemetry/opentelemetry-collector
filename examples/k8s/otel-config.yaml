@@ -16,7 +16,7 @@ data:
           http:
             endpoint: ${env:MY_POD_IP}:4318
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: "otel-collector.default:4317"
         tls:
           insecure: true
@@ -122,7 +122,7 @@ data:
     extensions:
       zpages: {}
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
         tls:
           insecure: true
