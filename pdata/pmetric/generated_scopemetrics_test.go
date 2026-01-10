@@ -52,7 +52,7 @@ func TestScopeMetrics_Scope(t *testing.T) {
 func TestScopeMetrics_Metrics(t *testing.T) {
 	ms := NewScopeMetrics()
 	assert.Equal(t, NewMetricSlice(), ms.Metrics())
-	ms.orig.Metrics = internal.GenTestMetricPtrSlice()
+	ms.orig.Metrics = internal.GenTestLazyMetricPtrSlice()
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
 

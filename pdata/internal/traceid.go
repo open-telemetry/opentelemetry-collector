@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
@@ -49,6 +50,10 @@ func (tid TraceID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this trace ID from binary representation. Called by Protobuf serialization.
 func (tid *TraceID) UnmarshalProto(buf []byte) error {
+	return tid.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (tid *TraceID) UnmarshalProtoOpts(buf []byte, _ *pdata.UnmarshalOptions) error {
 	if len(buf) == 0 {
 		*tid = [traceIDSize]byte{}
 		return nil

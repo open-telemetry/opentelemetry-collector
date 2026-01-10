@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -254,6 +255,10 @@ func (orig *ResourceLogs) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (orig *ResourceLogs) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -279,7 +284,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -295,7 +300,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
-			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -323,7 +328,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.DeprecatedScopeLogs = append(orig.DeprecatedScopeLogs, NewScopeLogs())
-			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}

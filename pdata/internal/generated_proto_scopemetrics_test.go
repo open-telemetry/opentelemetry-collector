@@ -202,7 +202,7 @@ func genTestEncodingValuesScopeMetrics() map[string]*ScopeMetrics {
 	return map[string]*ScopeMetrics{
 		"empty":          NewScopeMetrics(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Metrics/test":   {Metrics: []*Metric{{}, GenTestMetric()}},
+		"Metrics/test":   {Metrics: []*LazyMetric{{}, GenTestLazyMetric()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }
