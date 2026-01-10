@@ -38,6 +38,7 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
+- `output_paths` (default = `[stdout]` when `use_internal_logger` is `false`): list of destinations for the exporter's output when bypassing the collector logger. Accepts `stdout`, `stderr`, or filesystem paths supported by Zap.
 - `sending_queue` (disabled by default): see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example configuration:
@@ -138,7 +139,7 @@ This comes with the following consequences:
 
 When `use_internal_logger` is set to `false`, the exporter does not use the collector's internal logger.
 Changing the values in `service::telemetry::logs` has no effect on the exporter's output.
-The exporter's output is sent to `stdout`.
+The exporter's output is sent to `stdout` by default and can be redirected via `output_paths`.
 
 [internal_telemetry]: https://opentelemetry.io/docs/collector/internal-telemetry/
 [internal_logs_config]: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs
