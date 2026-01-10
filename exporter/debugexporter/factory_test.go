@@ -30,8 +30,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Verify default config
 	config := cfg.(*Config)
 	assert.True(t, config.UseInternalLogger)
-	// When UseInternalLogger is true, OutputPaths has default value of []string{"stdout"}
-	assert.Equal(t, []string{"stdout"}, config.OutputPaths)
+	// OutputPaths is nil by default (only used when UseInternalLogger is false,
+	// where it defaults to ["stdout"] in createCustomLogger if not set)
+	assert.Nil(t, config.OutputPaths)
 }
 
 func TestCreateMetrics(t *testing.T) {

@@ -54,7 +54,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:    "config_output_paths_empty.yaml",
-			expectedErr: "output_paths must be specified and non-empty when use_internal_logger is false",
+			expectedErr: "output_paths must not be empty when use_internal_logger is false",
 		},
 		{
 			filename:    "config_verbosity_typo.yaml",
@@ -162,7 +162,7 @@ func TestValidate(t *testing.T) {
 				UseInternalLogger: false,
 				OutputPaths:       []string{},
 			},
-			expectedErr: "output_paths must be specified and non-empty when use_internal_logger is false",
+			expectedErr: "output_paths must not be empty when use_internal_logger is false",
 		},
 		{
 			name: "valid output_paths when use_internal_logger is false",
@@ -172,10 +172,25 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "empty output_paths when use_internal_logger is true (allowed)",
+			name: "nil output_paths when use_internal_logger is false (defaults to stdout)",
+			cfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       nil,
+			},
+		},
+		{
+			name: "output_paths set when use_internal_logger is true (not allowed)",
 			cfg: &Config{
 				UseInternalLogger: true,
-				OutputPaths:       []string{},
+				OutputPaths:       []string{"stderr"},
+			},
+			expectedErr: "output_paths is not supported when use_internal_logger is true",
+		},
+		{
+			name: "nil output_paths when use_internal_logger is true (allowed)",
+			cfg: &Config{
+				UseInternalLogger: true,
+				OutputPaths:       nil,
 			},
 		},
 	}

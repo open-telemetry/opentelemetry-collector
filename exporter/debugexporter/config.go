@@ -36,11 +36,10 @@ type Config struct {
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
 	// OutputPaths is a list of file paths to write logging output to.
-	// This option is only used when use_internal_logger is false.
+	// This option can only be used when use_internal_logger is false.
 	// Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively.
 	// All other values are treated as file paths.
-	// (default = ["stdout"])
-	// OutputPaths will be ignored when UseInternalLogger is true
+	// If not set, defaults to ["stdout"].
 	OutputPaths []string `mapstructure:"output_paths"`
 
 	QueueConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
@@ -57,9 +56,16 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
 	}
 
-	// If use_internal_logger is false, output_paths must be specified and non-empty
-	if !cfg.UseInternalLogger && len(cfg.OutputPaths) == 0 {
-		return errors.New("output_paths must be specified and non-empty when use_internal_logger is false")
+	// output_paths is only used when use_internal_logger is false
+	// If set when use_internal_logger is true, it would be ignored, which is confusing
+	if cfg.UseInternalLogger && cfg.OutputPaths != nil {
+		return errors.New("output_paths is not supported when use_internal_logger is true")
+	}
+
+	// If use_internal_logger is false and output_paths is explicitly set to empty, error
+	// (nil output_paths will default to ["stdout"] in createCustomLogger)
+	if !cfg.UseInternalLogger && cfg.OutputPaths != nil && len(cfg.OutputPaths) == 0 {
+		return errors.New("output_paths must not be empty when use_internal_logger is false")
 	}
 
 	return nil

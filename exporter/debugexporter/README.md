@@ -38,7 +38,7 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
-- `output_paths` (default = `["stdout"]`): a list of file paths to write logging output to. This option is only used when `use_internal_logger` is `false`. Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively. All other values are treated as file paths.
+- `output_paths` (default = `["stdout"]`): a list of file paths to write logging output to. This option can only be used when `use_internal_logger` is `false`. Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively. All other values are treated as file paths. Setting `output_paths` when `use_internal_logger` is `true` results in a configuration error.
 - `sending_queue` (disabled by default): see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example configuration:
