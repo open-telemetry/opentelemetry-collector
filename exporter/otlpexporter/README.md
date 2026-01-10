@@ -33,6 +33,14 @@ If a scheme of `https` is used then client transport security is enabled and ove
 - `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend.
 
+The following settings are optional:
+
+- `connection_pool_size` (default = 0, uses 1 connection): Number of gRPC connections to maintain in the connection pool.
+  Useful for high-throughput scenarios (10K+ spans/sec) or high-latency network connections.
+  The exporter distributes requests across connections using round-robin load balancing.
+  Recommended value for high-throughput deployments: 4-8 connections.
+  Maximum allowed value: 256. Setting to 0 or omitting uses the default of 1 connection.
+
 Example:
 
 ```yaml
@@ -46,6 +54,14 @@ exporters:
     endpoint: otelcol2:4317
     tls:
       insecure: true
+  # High-throughput configuration with connection pooling
+  otlp/high-throughput:
+    endpoint: otelcol-gateway:4317
+    connection_pool_size: 5
+    compression: snappy
+    sending_queue:
+      num_consumers: 100
+      queue_size: 2000
 ```
 
 By default, `gzip` compression is enabled. See [compression comparison](../../config/configgrpc/README.md#compression-comparison) for details benchmark information. To disable, configure as follows:
