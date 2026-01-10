@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -30,11 +31,11 @@ func TestCreateResource(t *testing.T) {
 	})
 	t.Run("with resource attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Resource = map[string]*string{
-			"extra.attr":          ptr("value"),
-			"service.name":        ptr("custom-service"),
-			"service.version":     ptr("0.1.0"),
-			"service.instance.id": nil, // removes the attribute
+		cfg.Resource.Attributes = []resource.Attribute{
+			{Name: "extra.attr", Value: "value"},
+			{Name: "service.name", Value: "custom-service"},
+			{Name: "service.version", Value: "0.1.0"},
+			{Name: "service.instance.id", Value: nil},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 		res, err := createResource(t.Context(), set, cfg)
@@ -46,5 +47,30 @@ func TestCreateResource(t *testing.T) {
 			"service.name":    "custom-service",
 			"service.version": "0.1.0",
 		}, raw)
+	})
+	t.Run("with detectors", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Detection = &resource.DetectionConfig{
+			Detectors: []any{"env", "host"},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Contains(t, raw, "service.instance.id")
+		assert.Contains(t, raw, "service.name")
+		assert.Contains(t, raw, "service.version")
+	})
+	t.Run("with invalid detector returns error", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Detection = &resource.DetectionConfig{
+			Detectors: []any{"invalid-detector"},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		_, err := createResource(t.Context(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to create resource")
+		assert.Contains(t, err.Error(), "unknown detector")
 	})
 }
