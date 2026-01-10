@@ -56,6 +56,11 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 }
 
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
 func (md Metadata) GetCodeCovComponentID() string {
 	if md.Status.CodeCovComponentID != "" {
 		return md.Status.CodeCovComponentID
