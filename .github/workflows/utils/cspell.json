@@ -402,6 +402,7 @@
       "protos",
       "ptraceotlp",
       "queuebatch",
+      "reaggregate",
       "receiverhelper",
       "receiverprofiles",
       "receivertest",

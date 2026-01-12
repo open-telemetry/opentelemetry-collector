@@ -51,6 +51,7 @@ func TestLoadMetadata(t *testing.T) {
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.38.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
+				ReaggregationEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -261,6 +262,18 @@ func TestLoadMetadata(t *testing.T) {
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"reaggregate.metric": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Metric for testing spacial reaggregation",
+							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Unit: strPtr("1"),
+						Gauge: &Gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 					},
 					"system.cpu.time": {
