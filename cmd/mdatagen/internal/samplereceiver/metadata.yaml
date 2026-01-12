@@ -165,7 +165,7 @@ metrics:
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     stability:
-      level: beta
+      level: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -193,7 +193,7 @@ metrics:
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
     stability:
-      level: beta
+      level: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -223,7 +223,7 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     stability:
-      level: beta
+      level: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -238,7 +238,7 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     stability:
-      level: beta
+      level: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -278,7 +278,7 @@ telemetry:
     batch_size_trigger_send:
       enabled: true
       stability:
-        level: beta
+        level: deprecated
         from: v0.110.0
       deprecated:
         since: "1.5.0"
