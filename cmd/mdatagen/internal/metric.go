@@ -49,7 +49,7 @@ type Metric struct {
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
 
-	//NEW: metric deprecation info
+	// Deprecation metadata for deprecated metrics
 	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
 }
 
@@ -75,14 +75,18 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
-
-	//deprecated is no longer a stability level
-	if m.Stability.Level == component.StabilityLevelDeprecated {
-		return errors.New("stability level 'deprecated' is not allowed")
+	// Deprecation metadata validation
+	if m.Deprecated != nil && m.Stability.Level != component.StabilityLevelDeprecated {
+		errs = errors.Join(errs,
+			errors.New("deprecation data is only allowed when stability level is 'deprecated'"))
 	}
-	//deprecated block validation
+	if m.Stability.Level == component.StabilityLevelDeprecated && m.Deprecated == nil {
+		errs = errors.Join(errs,
+			errors.New("deprecated metrics must include deprecation metadata"))
+	}
 	if m.Deprecated != nil && m.Deprecated.Since == "" {
-		return errors.New("deprecated.since is required when deprecated is set")
+		errs = errors.Join(errs,
+			errors.New("deprecated.since is required when deprecated is set"))
 	}
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
