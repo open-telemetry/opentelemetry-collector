@@ -149,16 +149,16 @@ metrics:
     stability:
       # Required: the level of stability
       level: <development|alpha|beta|stable|deprecated>
+      # Optional: the version current stability was introduced
+      from:
     # Deprecation information for the metric. Required when stability is `deprecated`.
     deprecated:
       # Required: version when the metric was deprecated
       since:
-      # Optional: migration note
+      # Required: migration note
       note:
-      # Optional: the version current stability was introduced
-    
-# Optional: the reference to a semantic convention
-semantic_convention:
+    # Optional: the reference to a semantic convention
+    semantic_convention:
       ref:
 
 # Optional: map of event names with the key being the event name and value
@@ -210,13 +210,17 @@ telemetry:
       enabled: bool
       # Required: metric description.
       description:
-      # Optional: the stability level of the metric. Set to alpha by default.
-      stability: [alpha|stable|deprecated]
+      # Optional: the stability of the metric. Set to alpha by default.
+      stability:
+        # Optional: the stability level of the metric. Set to alpha by default.
+        level: [alpha|stable|deprecated]
+        # Optional: the version current stability was introduced
+        from:
       # Deprecation information for the metric. Required when stability is `deprecated`.
       deprecated:
         # Required: version when the metric was deprecated
         since:
-        # Optional: migration note
+        # Required: migration note
         note:
       # Optional: extended documentation of the metric.
       extended_documentation:
