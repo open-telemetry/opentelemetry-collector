@@ -12,6 +12,7 @@ properties:
                     authenticator:
                         description: AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
                         type: string
+                additionalProperties: false
             dialer:
                 description: DialerConfig contains options for connecting to an address.
                 type: object
@@ -22,6 +23,7 @@ properties:
                             a connect to complete. The default is no timeout.
                         type: string
                         pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                additionalProperties: false
             endpoint:
                 description: |-
                     Endpoint configures the address for this network connection.
@@ -47,6 +49,7 @@ properties:
                                 pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
                             permit_without_stream:
                                 type: boolean
+                        additionalProperties: false
                     server_parameters:
                         type: object
                         properties:
@@ -65,6 +68,8 @@ properties:
                             timeout:
                                 type: string
                                 pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+                        additionalProperties: false
+                additionalProperties: false
             max_concurrent_streams:
                 description: |-
                     MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
@@ -82,6 +87,7 @@ properties:
                         id:
                             description: ID specifies the name of the extension to use.
                             type: string
+                    additionalProperties: false
             read_buffer_size:
                 description: |-
                     ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
@@ -175,6 +181,8 @@ properties:
                                     The path to the TPM device or Unix domain socket.
                                     For instance /dev/tpm0 or /dev/tpmrm0.
                                 type: string
+                        additionalProperties: false
+                additionalProperties: false
             transport:
                 description: |-
                     Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
@@ -185,6 +193,7 @@ properties:
                     WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
                     (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
                 type: integer
+        additionalProperties: false
     http:
         type: object
         properties:
@@ -202,6 +211,7 @@ properties:
                         type: array
                         items:
                             type: string
+                additionalProperties: false
             compression_algorithms:
                 description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]'
                 type: array
@@ -236,6 +246,7 @@ properties:
                             Set it to the number of seconds that browsers should cache a CORS
                             preflight response for.
                         type: integer
+                additionalProperties: false
             endpoint:
                 description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
                 type: string
@@ -276,6 +287,7 @@ properties:
                         id:
                             description: ID specifies the name of the extension to use.
                             type: string
+                    additionalProperties: false
             read_header_timeout:
                 description: |-
                     ReadHeaderTimeout is the amount of time allowed to read
@@ -391,6 +403,8 @@ properties:
                                     The path to the TPM device or Unix domain socket.
                                     For instance /dev/tpm0 or /dev/tpmrm0.
                                 type: string
+                        additionalProperties: false
+                additionalProperties: false
             traces_url_path:
                 description: The URL path to receive traces on. If omitted "/v1/traces" will be used.
                 type: string
@@ -403,3 +417,5 @@ properties:
                     A zero or negative value means there will be no timeout.
                 type: string
                 pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+        additionalProperties: false
+additionalProperties: false

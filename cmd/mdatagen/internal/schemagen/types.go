@@ -12,7 +12,7 @@ type Schema struct {
 	Type                 string             `yaml:"type,omitempty"`
 	Properties           map[string]*Schema `yaml:"properties,omitempty"`
 	Required             []string           `yaml:"required,omitempty"`
-	AdditionalProperties *Schema            `yaml:"additionalProperties,omitempty"`
+	AdditionalProperties any                 `yaml:"additionalProperties,omitempty"`
 	Items                *Schema            `yaml:"items,omitempty"`
 	Enum                 []any              `yaml:"enum,omitempty"`
 	Default              any                `yaml:"default,omitempty"`

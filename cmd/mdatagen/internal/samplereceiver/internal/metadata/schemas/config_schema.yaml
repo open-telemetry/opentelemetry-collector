@@ -29,6 +29,7 @@ properties:
                 url:
                     description: URL is the endpoint URL.
                     type: string
+            additionalProperties: false
     headers:
         description: Headers are additional headers to include in requests.
         type: object
@@ -51,6 +52,7 @@ properties:
             max_retries:
                 description: MaxRetries is the maximum number of retries.
                 type: integer
+        additionalProperties: false
     port:
         description: Port is the network port.
         type: integer
@@ -65,6 +67,7 @@ properties:
             max_retries:
                 description: MaxRetries is the maximum number of retries.
                 type: integer
+        additionalProperties: false
     secrets:
         description: Secrets is a list of secret key-value pairs.
         type: object
@@ -81,3 +84,4 @@ properties:
         description: Timeout is the maximum time to wait for a response.
         type: string
         pattern: ^(0|[-+]?((\d+(\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h))+)$
+additionalProperties: false

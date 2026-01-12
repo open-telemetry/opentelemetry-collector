@@ -71,11 +71,12 @@ func (g *SchemaGenerator) GenerateSchema(componentKind, componentName, configTyp
 // structToSchema converts a StructInfo to a JSON Schema.
 func (g *SchemaGenerator) structToSchema(info *StructInfo, componentKind, componentName string) *Schema {
 	schema := &Schema{
-		Schema:      jsonSchemaVersion,
-		Title:       fmt.Sprintf("%s %s configuration", componentName, componentKind),
-		Description: info.Description,
-		Type:        "object",
-		Properties:  make(map[string]*Schema),
+		Schema:               jsonSchemaVersion,
+		Title:                fmt.Sprintf("%s %s configuration", componentName, componentKind),
+		Description:          info.Description,
+		Type:                 "object",
+		Properties:           make(map[string]*Schema),
+		AdditionalProperties: false,
 	}
 
 	for _, field := range info.Fields {
@@ -103,6 +104,7 @@ func (g *SchemaGenerator) fieldToSchema(field *FieldInfo) *Schema {
 	if field.Embedded && len(field.Fields) > 0 {
 		schema.Type = "object"
 		schema.Properties = make(map[string]*Schema)
+		schema.AdditionalProperties = false
 		for _, f := range field.Fields {
 			propSchema := g.fieldToSchema(&f)
 			if propSchema != nil {
@@ -124,6 +126,7 @@ func (g *SchemaGenerator) fieldToSchema(field *FieldInfo) *Schema {
 	if len(field.Fields) > 0 {
 		if schema.Type == "object" {
 			schema.Properties = make(map[string]*Schema)
+			schema.AdditionalProperties = false
 			for _, f := range field.Fields {
 				propSchema := g.fieldToSchema(&f)
 				if propSchema != nil {
@@ -138,6 +141,7 @@ func (g *SchemaGenerator) fieldToSchema(field *FieldInfo) *Schema {
 		} else if schema.Type == "array" && schema.Items != nil && schema.Items.Type == "object" {
 			// For arrays of structs, populate items properties
 			schema.Items.Properties = make(map[string]*Schema)
+			schema.Items.AdditionalProperties = false
 			for _, f := range field.Fields {
 				propSchema := g.fieldToSchema(&f)
 				if propSchema != nil {
