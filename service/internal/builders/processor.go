@@ -43,6 +43,7 @@ func (b *ProcessorBuilder) CreateTraces(ctx context.Context, set processor.Setti
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.TracesStability())
 	return f.CreateTraces(ctx, set, cfg, next)
 }
@@ -62,6 +63,7 @@ func (b *ProcessorBuilder) CreateMetrics(ctx context.Context, set processor.Sett
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.MetricsStability())
 	return f.CreateMetrics(ctx, set, cfg, next)
 }
@@ -81,6 +83,7 @@ func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Setting
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.LogsStability())
 	return f.CreateLogs(ctx, set, cfg, next)
 }
@@ -104,6 +107,7 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 	if !ok {
 		return nil, pipeline.ErrSignalNotSupported
 	}
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.ProfilesStability())
 	return f.CreateProfiles(ctx, set, cfg, next)
 }

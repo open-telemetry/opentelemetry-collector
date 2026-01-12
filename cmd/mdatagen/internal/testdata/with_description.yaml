@@ -1,0 +1,8 @@
+type: testdesc
+display_name: Test Component
+description: This is a test component with a description.
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
