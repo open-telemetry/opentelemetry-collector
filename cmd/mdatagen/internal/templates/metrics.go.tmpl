@@ -195,6 +195,29 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	{{- if eq $metric.Data.Type "Histogram" }}
+	{{- range $metric.Attributes }}
+    {{- if not (attributeInfo .).IsConditional -}}
+	{{- template "putAttribute" . -}}
+	{{- end }}
+	{{- end }}
+
+	{{- if $metric.HasConditionalAttributes $.Attributes }}
+    for _, op := range options {
+        // Note: Histogram data points don't support conditional attributes the same way as NumberDataPoint
+        _ = op
+    }
+    {{- end }}
+	// Record the value in the histogram
+	dp.SetCount(1)
+	dp.SetSum(val)
+	{{- if $metric.Data.Boundaries }}
+	if dp.ExplicitBounds().Len() == 0 {
+		dp.ExplicitBounds().FromRaw([]float64{ {{- range $idx, $boundary := $metric.Data.Boundaries }}{{if $idx}}, {{end}}{{ $boundary }}{{- end -}} })
+		dp.BucketCounts().FromRaw(make([]uint64, {{ len $metric.Data.Boundaries }} + 1))
+	}
+	{{- end }}
+	{{- else }}
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{- range $metric.Attributes }}
     {{- if not (attributeInfo .).IsConditional -}}
@@ -207,6 +230,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
         op.apply(dp)
     }
     {{- end }}
+	{{- end }}
 }
 {{- end }}
 
