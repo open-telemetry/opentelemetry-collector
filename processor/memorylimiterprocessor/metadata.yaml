@@ -24,6 +24,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{records}"
       sum:
         value_type: int
@@ -35,6 +38,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -46,6 +52,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{spans}"
       sum:
         value_type: int
@@ -57,6 +66,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{records}"
       sum:
         value_type: int
@@ -68,6 +80,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -79,6 +94,9 @@ telemetry:
       stability:
         level: deprecated
         from: v0.110.0
+      deprecated:
+        since: "0.0.0"
+        note: "This metric is deprecated"
       unit: "{spans}"
       sum:
         value_type: int
