@@ -137,7 +137,7 @@ processors:
    - memory_limiter
 exporters:
    - otlp
-   - otlphttp
+   - otlp_http
    - debug
 extensions:
    - zpages

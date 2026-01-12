@@ -11,39 +11,28 @@ import (
 	"fmt"
 	"runtime"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
+	"go.opentelemetry.io/collector/service/internal/metricviews"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-// This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.disableHighCardinalityMetrics",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterToVersion("0.133.0"),
-	featuregate.WithRegisterDescription(
-		"Controls whether the collector should enable potentially high "+
-			"cardinality metrics. Deprecated, configure service::telemetry::metrics::views instead."))
 
 // ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
@@ -182,7 +171,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	meterSettings := telemetry.MeterSettings{
 		Settings:     telemetrySettings,
 		Logger:       logger,
-		DefaultViews: configureViews,
+		DefaultViews: metricviews.DefaultViews,
 	}
 	meterProvider, err := set.TelemetryFactory.CreateMeterProvider(ctx, meterSettings, cfg.Telemetry)
 	if err != nil {
@@ -351,140 +340,6 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 // This is a temporary API that may be removed soon after investigating how the collector should record different events.
 func (srv *Service) Logger() *zap.Logger {
 	return srv.telemetrySettings.Logger
-}
-
-func dropViewOption(selector *config.ViewSelector) config.View {
-	return config.View{
-		Selector: selector,
-		Stream: &config.ViewStream{
-			Aggregation: &config.ViewStreamAggregation{
-				Drop: config.ViewStreamAggregationDrop{},
-			},
-		},
-	}
-}
-
-func configureViews(level configtelemetry.Level) []config.View {
-	views := []config.View{}
-
-	if level < configtelemetry.LevelDetailed {
-		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
-			}),
-			// Drop duration metric if the level is not detailed
-			dropViewOption(&config.ViewSelector{
-				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
-				InstrumentName: ptr("otelcol_processor_internal_duration"),
-			}),
-		)
-	}
-
-	// otel-arrow library metrics
-	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
-	if level < configtelemetry.LevelNormal {
-		scope := ptr("otel-arrow/pkg/otel/arrow_record")
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("arrow_batch_records"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("arrow_schema_resets"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("arrow_memory_inuse"),
-			}),
-		)
-	}
-
-	// contrib's internal/otelarrow/netstats metrics
-	// See
-	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
-	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
-	if level < configtelemetry.LevelDetailed {
-		scope := ptr("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats")
-
-		views = append(views,
-			// Compressed size metrics.
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_*_compressed_size"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_*_compressed_size"),
-			}),
-
-			// makeRecvMetrics for exporters.
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_exporter_recv"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_exporter_recv_wire"),
-			}),
-
-			// makeSentMetrics for receivers.
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_receiver_sent"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      scope,
-				InstrumentName: ptr("otelcol_receiver_sent_wire"),
-			}),
-		)
-	}
-
-	// Batch exporter metrics
-	if level < configtelemetry.LevelDetailed {
-		scope := ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      scope,
-			InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
-		}))
-	}
-
-	// Batch processor metrics
-	scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
-	if level < configtelemetry.LevelNormal {
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName: scope,
-		}))
-	} else if level < configtelemetry.LevelDetailed {
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      scope,
-			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
-		}))
-	}
-
-	// Internal graph metrics
-	graphScope := ptr("go.opentelemetry.io/collector/service")
-	if level < configtelemetry.LevelDetailed {
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName:      graphScope,
-				InstrumentName: ptr("otelcol.*.consumed.size"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      graphScope,
-				InstrumentName: ptr("otelcol.*.produced.size"),
-			}))
-	}
-
-	return views
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
 
 // Validate verifies the graph by calling the internal graph.Build.
