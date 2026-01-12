@@ -79,89 +79,82 @@ type CreateProfilesToLogsFunc func(context.Context, connector.Settings, componen
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factoryOpts)
+	applyOption(o *factory)
 }
 
 // factoryOptionFunc is an ReceiverFactoryOption created through a function.
-type factoryOptionFunc func(*factoryOpts)
+type factoryOptionFunc func(*factory)
 
-func (f factoryOptionFunc) applyOption(o *factoryOpts) {
+func (f factoryOptionFunc) applyOption(o *factory) {
 	f(o)
-}
-
-type factoryOpts struct {
-	opts []connector.FactoryOption
-
-	*factory
-	deprecatedAlias component.Type
 }
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
 func WithTracesToTraces(createTracesToTraces connector.CreateTracesToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithTracesToTraces(createTracesToTraces, sl))
 	})
 }
 
 // WithTracesToMetrics overrides the default "error not supported" implementation for WithTracesToMetrics and the default "undefined" stability level.
 func WithTracesToMetrics(createTracesToMetrics connector.CreateTracesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithTracesToMetrics(createTracesToMetrics, sl))
 	})
 }
 
 // WithTracesToLogs overrides the default "error not supported" implementation for WithTracesToLogs and the default "undefined" stability level.
 func WithTracesToLogs(createTracesToLogs connector.CreateTracesToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithTracesToLogs(createTracesToLogs, sl))
 	})
 }
 
 // WithMetricsToTraces overrides the default "error not supported" implementation for WithMetricsToTraces and the default "undefined" stability level.
 func WithMetricsToTraces(createMetricsToTraces connector.CreateMetricsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithMetricsToTraces(createMetricsToTraces, sl))
 	})
 }
 
 // WithMetricsToMetrics overrides the default "error not supported" implementation for WithMetricsToMetrics and the default "undefined" stability level.
 func WithMetricsToMetrics(createMetricsToMetrics connector.CreateMetricsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithMetricsToMetrics(createMetricsToMetrics, sl))
 	})
 }
 
 // WithMetricsToLogs overrides the default "error not supported" implementation for WithMetricsToLogs and the default "undefined" stability level.
 func WithMetricsToLogs(createMetricsToLogs connector.CreateMetricsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithMetricsToLogs(createMetricsToLogs, sl))
 	})
 }
 
 // WithLogsToTraces overrides the default "error not supported" implementation for WithLogsToTraces and the default "undefined" stability level.
 func WithLogsToTraces(createLogsToTraces connector.CreateLogsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithLogsToTraces(createLogsToTraces, sl))
 	})
 }
 
 // WithLogsToMetrics overrides the default "error not supported" implementation for WithLogsToMetrics and the default "undefined" stability level.
 func WithLogsToMetrics(createLogsToMetrics connector.CreateLogsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithLogsToMetrics(createLogsToMetrics, sl))
 	})
 }
 
 // WithLogsToLogs overrides the default "error not supported" implementation for WithLogsToLogs and the default "undefined" stability level.
 func WithLogsToLogs(createLogsToLogs connector.CreateLogsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.opts = append(o.opts, connector.WithLogsToLogs(createLogsToLogs, sl))
 	})
 }
 
 // WithTracesToProfiles overrides the default "error not supported" implementation for WithTracesToProfiles and the default "undefined" stability level.
 func WithTracesToProfiles(createTracesToProfiles CreateTracesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.tracesToProfilesStabilityLevel = sl
 		o.createTracesToProfilesFunc = createTracesToProfiles
 	})
@@ -169,7 +162,7 @@ func WithTracesToProfiles(createTracesToProfiles CreateTracesToProfilesFunc, sl 
 
 // WithMetricsToProfiles overrides the default "error not supported" implementation for WithMetricsToProfiles and the default "undefined" stability level.
 func WithMetricsToProfiles(createMetricsToProfiles CreateMetricsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.metricsToProfilesStabilityLevel = sl
 		o.createMetricsToProfilesFunc = createMetricsToProfiles
 	})
@@ -177,7 +170,7 @@ func WithMetricsToProfiles(createMetricsToProfiles CreateMetricsToProfilesFunc, 
 
 // WithLogsToProfiles overrides the default "error not supported" implementation for WithLogsToProfiles and the default "undefined" stability level.
 func WithLogsToProfiles(createLogsToProfiles CreateLogsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.logsToProfilesStabilityLevel = sl
 		o.createLogsToProfilesFunc = createLogsToProfiles
 	})
@@ -185,7 +178,7 @@ func WithLogsToProfiles(createLogsToProfiles CreateLogsToProfilesFunc, sl compon
 
 // WithProfilesToProfiles overrides the default "error not supported" implementation for WithProfilesToProfiles and the default "undefined" stability level.
 func WithProfilesToProfiles(createProfilesToProfiles CreateProfilesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.profilesToProfilesStabilityLevel = sl
 		o.createProfilesToProfilesFunc = createProfilesToProfiles
 	})
@@ -193,7 +186,7 @@ func WithProfilesToProfiles(createProfilesToProfiles CreateProfilesToProfilesFun
 
 // WithProfilesToTraces overrides the default "error not supported" implementation for WithProfilesToTraces and the default "undefined" stability level.
 func WithProfilesToTraces(createProfilesToTraces CreateProfilesToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.profilesToTracesStabilityLevel = sl
 		o.createProfilesToTracesFunc = createProfilesToTraces
 	})
@@ -201,7 +194,7 @@ func WithProfilesToTraces(createProfilesToTraces CreateProfilesToTracesFunc, sl 
 
 // WithProfilesToMetrics overrides the default "error not supported" implementation for WithProfilesToMetrics and the default "undefined" stability level.
 func WithProfilesToMetrics(createProfilesToMetrics CreateProfilesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.profilesToMetricsStabilityLevel = sl
 		o.createProfilesToMetricsFunc = createProfilesToMetrics
 	})
@@ -209,7 +202,7 @@ func WithProfilesToMetrics(createProfilesToMetrics CreateProfilesToMetricsFunc, 
 
 // WithProfilesToLogs overrides the default "error not supported" implementation for WithProfilesToLogs and the default "undefined" stability level.
 func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factory) {
 		o.profilesToLogsStabilityLevel = sl
 		o.createProfilesToLogsFunc = createProfilesToLogs
 	})
@@ -218,8 +211,8 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 // WithDeprecatedTypeAlias configures a deprecated type alias for the connector. Only one alias is supported per connector.
 // When the alias is used in configuration, a deprecation warning is automatically logged.
 func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.deprecatedAlias = alias
+	return factoryOptionFunc(func(o *factory) {
+		o.SetDeprecatedAlias(alias)
 	})
 }
 
@@ -227,6 +220,7 @@ func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
 type factory struct {
 	connector.Factory
 	componentalias.TypeAliasHolder
+	opts []connector.FactoryOption
 
 	createTracesToProfilesFunc  CreateTracesToProfilesFunc
 	createMetricsToProfilesFunc CreateMetricsToProfilesFunc
@@ -345,15 +339,13 @@ func (f *factory) CreateProfilesToLogs(ctx context.Context, set connector.Settin
 	return f.createProfilesToLogsFunc(ctx, set, cfg, next)
 }
 
-// NewFactory returns a Factory.
+// NewFactory creates a wrapped connector.Factory with experimental capabilities
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{TypeAliasHolder: componentalias.NewTypeAliasHolder()}
-	opts := factoryOpts{factory: f}
 	for _, opt := range options {
-		opt.applyOption(&opts)
+		opt.applyOption(f)
 	}
-	opts.Factory = connector.NewFactory(cfgType, createDefaultConfig, opts.opts...)
-	opts.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(opts.deprecatedAlias)
-	f.SetDeprecatedAlias(opts.deprecatedAlias)
-	return opts.factory
+	f.Factory = connector.NewFactory(cfgType, createDefaultConfig, f.opts...)
+	f.Factory.(componentalias.TypeAliasHolder).SetDeprecatedAlias(f.DeprecatedAlias())
+	return f
 }
