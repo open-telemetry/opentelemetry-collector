@@ -212,7 +212,7 @@ telemetry:
       # Required: metric description.
       description:
       # Optional: the stability level of the metric. Set to alpha by default.
-      stability: [alpha|stable]
+      stability: [alpha|stable|deprecated]
       # Optional: deprecation information for the metric
       deprecated:
         # Required: version when the metric was deprecated
