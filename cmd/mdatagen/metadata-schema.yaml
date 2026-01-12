@@ -148,10 +148,8 @@ metrics:
     # Required: the metric stability
     stability:
       # Required: the level of stability
-      level: <development|alpha|beta|stable>
-      from:
-    # Optional: the reference to a semantic convention
-    # Optional: deprecation information for the metric
+      level: <development|alpha|beta|stable|deprecated>
+    # Deprecation information for the metric. Required when stability is `deprecated`.
     deprecated:
       # Required: version when the metric was deprecated
       since:
@@ -159,7 +157,8 @@ metrics:
       note:
       # Optional: the version current stability was introduced
     
-    semantic_convention:
+# Optional: the reference to a semantic convention
+semantic_convention:
       ref:
 
 # Optional: map of event names with the key being the event name and value
