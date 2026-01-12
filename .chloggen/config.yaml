@@ -12,12 +12,13 @@ components:
     - cmd/mdatagen
     - connector/forward
     - connector/sample
+    - consumer/consumererror/xconsumererror
     - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
     - exporter/nop
     - exporter/otlp
-    - exporter/otlphttp
+    - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
     - extension/xextension
@@ -36,6 +37,7 @@ components:
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confmap
+    - pkg/consumer/consumertest
     - pkg/exporterhelper
     - pkg/otelcol
     - pkg/pdata
@@ -51,6 +53,7 @@ components:
     - pkg/xprocessor
     - pkg/xreceiver
     - pkg/xscraper
+    - pkg/xscraperhelper
     - processor/batch
     - processor/memory_limiter
     - processor/sample

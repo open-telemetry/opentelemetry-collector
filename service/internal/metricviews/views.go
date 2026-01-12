@@ -93,10 +93,15 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 	// Batch exporter metrics
 	if level < configtelemetry.LevelDetailed {
 		scope := ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      scope,
-			InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
-		}))
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size"),
+			}))
 	}
 
 	// Batch processor metrics
