@@ -47,7 +47,7 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSkip                  bool
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
-		wantDocumentationGenerated      bool
+		wantFeatureGatesGenerated       bool
 		wantErr                         bool
 		wantOrderErr                    bool
 		wantAttributes                  []string
@@ -198,7 +198,7 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
-			wantDocumentationGenerated: true,
+			wantFeatureGatesGenerated:  true,
 		},
 		{
 			yml:                        "with_conditional_attribute.yaml",
@@ -253,6 +253,9 @@ foo
 				return
 			}
 			require.NoError(t, err)
+
+			// Documentation is generated when any of these features are present
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -309,9 +312,9 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 			}
 
-			if tt.wantDocumentationGenerated {
+			if wantDocumentationGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-			} else if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated && !tt.wantEventsGenerated {
+			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 

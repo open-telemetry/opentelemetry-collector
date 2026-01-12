@@ -56,7 +56,6 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
-	// FeatureGates that are managed by the component.
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
