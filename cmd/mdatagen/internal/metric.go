@@ -70,7 +70,28 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("level") {
 		return errors.New("missing required field: `stability.level`")
 	}
-	return parser.Unmarshal(s)
+
+	var level component.StabilityLevel
+	if err := parser.Unmarshal(&struct {
+		Level *component.StabilityLevel `mapstructure:"level"`
+	}{
+		Level: &level,
+	}); err != nil {
+		return err
+	}
+
+	s.Level = level
+
+	// Optional "from"
+	if parser.IsSet("from") {
+		if err := parser.Unmarshal(&struct {
+			From *string `mapstructure:"from"`
+		}{From: &s.From}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
@@ -84,9 +105,13 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 		errs = errors.Join(errs,
 			errors.New("deprecated metrics must include deprecation metadata"))
 	}
-	if m.Deprecated != nil && m.Deprecated.Since == "" {
-		errs = errors.Join(errs,
-			errors.New("deprecated.since is required when deprecated is set"))
+	if m.Deprecated != nil {
+		if m.Deprecated.Since == "" {
+			errs = errors.Join(errs, errors.New("deprecated.since is required"))
+		}
+		if m.Deprecated.Note == "" {
+			errs = errors.Join(errs, errors.New("deprecated.note is required"))
+		}
 	}
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+

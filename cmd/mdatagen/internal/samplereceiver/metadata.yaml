@@ -301,7 +301,6 @@ telemetry:
       enabled: true
       stability:
         level: deprecated
-        from: v0.110.0
       deprecated:
         since: "1.5.0"
         note: "This metric will be removed in favor of batch_send_trigger_size"

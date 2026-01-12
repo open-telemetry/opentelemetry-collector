@@ -259,7 +259,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
-							Stability:             Stability{Level: component.StabilityLevelBeta},
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
@@ -319,7 +319,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -338,7 +338,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Stability:   Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
@@ -359,7 +359,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
 							ExtendedDocumentation: "The metric will be removed soon.",
-							Stability:             Stability{Level: component.StabilityLevelBeta},
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
 							},
@@ -431,7 +431,7 @@ func TestLoadMetadata(t *testing.T) {
 							Signal: Signal{
 								Enabled: true,
 								Stability: Stability{
-									Level: component.StabilityLevelBeta, From: "v0.110.0",
+									Level: component.StabilityLevelDeprecated,
 								},
 								Description: "Number of times the batch was sent due to a size trigger",
 							},
