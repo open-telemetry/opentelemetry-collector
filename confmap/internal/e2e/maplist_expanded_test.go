@@ -52,8 +52,8 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 			map[string]any{
 				"name": "X-Port",
 				"value": internal.ExpandedValue{
-					Value:    8080,    // Value is parsed as int
-					Original: "8080",  // Original is string
+					Value:    8080,   // Value is parsed as int
+					Original: "8080", // Original is string
 				},
 			},
 		},
