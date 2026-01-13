@@ -76,7 +76,7 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 		Level *component.StabilityLevel `mapstructure:"level"`
 	}{
 		Level: &level,
-	}); err != nil {
+	}, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 	if parser.IsSet("from") {
 		if err := parser.Unmarshal(&struct {
 			From *string `mapstructure:"from"`
-		}{From: &s.From}); err != nil {
+		}{From: &s.From}, confmap.WithIgnoreUnused()); err != nil {
 			return err
 		}
 	}
