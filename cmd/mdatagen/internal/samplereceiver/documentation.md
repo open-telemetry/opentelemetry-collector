@@ -18,9 +18,9 @@ Monotonic cumulative sum int metric enabled by default.
 
 The metric will be become optional soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Deprecation |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ----------- |
+| s | Sum | Int | Cumulative | true | Deprecated | since 1.0.0 (This metric will be removed) |
 
 #### Attributes
 
@@ -41,9 +41,9 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Deprecated |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Deprecation |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ----------- |
+| s | Sum | Double | Delta | false | Deprecated | since 1.0.0 (This metric will be removed) |
 
 ### metric.input_type
 
@@ -118,9 +118,9 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Deprecated |
+| Unit | Metric Type | Value Type | Stability | Deprecation |
+| ---- | ----------- | ---------- | --------- | ----------- |
+| 1 | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
 
 #### Attributes
 
@@ -135,9 +135,9 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Deprecated |
+| Unit | Metric Type | Value Type | Stability | Deprecation |
+| ---- | ----------- | ---------- | --------- | ----------- |
+|  | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
 
 #### Attributes
 
@@ -233,11 +233,14 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]
+Number of times the batch was sent due to a size trigger
 
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Deprecated |
+> **Deprecated since 1.5.0**
+> This metric will be removed in favor of batch_send_trigger_size
+
+| Unit | Metric Type | Value Type | Monotonic | Stability | Deprecation |
+| ---- | ----------- | ---------- | --------- | --------- | ----------- |
+| {times} | Sum | Int | true | Deprecated | since 1.5.0, note: This metric will be removed in favor of batch_send_trigger_size |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
@@ -249,7 +252,7 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 ### otelcol_queue_capacity
 
-Queue capacity - sync gauge example. [Development]
+Queue capacity - sync gauge example.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -257,7 +260,7 @@ Queue capacity - sync gauge example. [Development]
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]
+This metric is optional and therefore not initialized in NewTelemetryBuilder.
 
 For example this metric only exists if feature A is enabled.
 
@@ -267,7 +270,7 @@ For example this metric only exists if feature A is enabled.
 
 ### otelcol_request_duration
 
-Duration of request [Alpha]
+Duration of request
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
