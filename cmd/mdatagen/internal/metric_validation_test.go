@@ -160,38 +160,16 @@ func TestStability_String(t *testing.T) {
 }
 
 func TestStability_Unmarshal_WithFrom(t *testing.T) {
-	// The Unmarshal method has an issue: when it unmarshals "level" first,
-	// confmap sees "from" as unused and fails. However, the method is designed
-	// to handle "from" separately. Since we can't modify the Unmarshal method
-	// (it's the code under test), we'll test the logic by verifying:
-	// 1. IsSet works correctly for both fields
-	// 2. The unmarshaling logic would work if WithIgnoreUnused was used
-	parser := confmap.NewFromStringMap(map[string]any{
-		"level": "beta",
-		"from":  "1.0.0",
-	})
-
-	// Verify IsSet works (this is what the Unmarshal method uses)
-	assert.True(t, parser.IsSet("level"))
-	assert.True(t, parser.IsSet("from"))
-
-	// Test the unmarshaling logic directly by unmarshaling into temp structs
-	// This verifies the logic works even if the full Unmarshal fails due to validation
-	var level component.StabilityLevel
-	err := parser.Unmarshal(&struct {
-		Level *component.StabilityLevel `mapstructure:"level"`
-	}{
-		Level: &level,
-	}, confmap.WithIgnoreUnused())
+	// Test through the loader with a YAML file that includes the "from" field
+	// This exercises the actual Unmarshal path with the "from" field
+	md, err := LoadMetadata("testdata/with_stability_from.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, component.StabilityLevelBeta, level)
 
-	var from string
-	err = parser.Unmarshal(&struct {
-		From *string `mapstructure:"from"`
-	}{From: &from}, confmap.WithIgnoreUnused())
-	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", from)
+	// Verify the metric was loaded and has the stability with "from" field
+	testMetric, ok := md.Metrics["test.metric"]
+	require.True(t, ok, "test.metric should exist")
+	assert.Equal(t, component.StabilityLevelBeta, testMetric.Stability.Level)
+	assert.Equal(t, "1.0.0", testMetric.Stability.From)
 }
 
 func TestStability_Unmarshal_WithoutFrom(t *testing.T) {
