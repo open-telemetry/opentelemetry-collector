@@ -100,9 +100,13 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 }
 
 {{ range getMetricConditionalAttributes .Attributes }}
-func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
+func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		{{- if (attributeInfo .).Enum }}
+		dp.Attributes().PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue.String())
+		{{- else }}
 		{{- template "putAttribute" . }}
+		{{- end }}
 	})
 }
 {{ end }}
