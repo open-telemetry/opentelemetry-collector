@@ -22,6 +22,8 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/schemagen"
 )
 
 const (
@@ -214,6 +216,11 @@ func run(ymlPath string) error {
 		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
+	}
+
+	// Generate JSON schema if enabled
+	if err := generateSchema(md, ymlDir); err != nil {
+		return fmt.Errorf("failed to generate schema: %w", err)
 	}
 
 	return nil
@@ -491,4 +498,61 @@ func validateYAMLKeyOrder(raw []byte) error {
 		}
 	}
 	return nil
+}
+
+// generateSchema generates a JSON schema for the component's config if enabled.
+func generateSchema(md Metadata, ymlDir string) error {
+	// Skip if schema generation is not enabled
+	if md.Schema == nil || !md.Schema.Enabled {
+		return nil
+	}
+
+	// Skip non-component types
+	if md.Status == nil || slices.Contains(nonComponents, md.Status.Class) {
+		return nil
+	}
+
+	// Create schemas directory
+	outputDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName, "schemas")
+	if err := os.MkdirAll(outputDir, 0o700); err != nil {
+		return fmt.Errorf("failed to create schemas directory: %w", err)
+	}
+
+	// Parse config type specification
+	pkgPath, typeName := parseConfigType(md.Schema.ConfigType)
+
+	// Create analyzer and generator
+	analyzer := schemagen.NewPackageAnalyzer(ymlDir)
+	generator := schemagen.NewSchemaGenerator(outputDir, analyzer)
+
+	// Generate schema
+	return generator.GenerateSchema(md.Status.Class, md.Type, typeName, pkgPath)
+}
+
+// parseConfigType parses a config type specification into package path and type name.
+// Examples:
+//   - "Config" -> ("", "Config")
+//   - "go.opentelemetry.io/collector/pkg.Config" -> ("go.opentelemetry.io/collector/pkg", "Config")
+func parseConfigType(configType string) (pkgPath, typeName string) {
+	if configType == "" {
+		return "", ""
+	}
+
+	// Find the last dot that separates package path from type name
+	lastDot := strings.LastIndex(configType, ".")
+	if lastDot == -1 {
+		// No dot means it's just a type name in the local package
+		return "", configType
+	}
+
+	// Check if this looks like a package path (contains "/" before the last dot)
+	potentialPkg := configType[:lastDot]
+	if strings.Contains(potentialPkg, "/") {
+		// It's a fully qualified type: pkg/path.TypeName
+		return potentialPkg, configType[lastDot+1:]
+	}
+
+	// No slash means it's just a type name (e.g., "Config" or possibly "pkg.Config" for local)
+	// Treat as local type name
+	return "", configType
 }

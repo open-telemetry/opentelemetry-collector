@@ -9,6 +9,9 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0
 
+schema:
+  enabled: true
+
 status:
   disable_codecov_badge: true
   class: receiver

@@ -54,6 +54,8 @@ type Metadata struct {
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
+	// Schema holds configuration for JSON schema generation.
+	Schema *SchemaConfig `mapstructure:"schema"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
