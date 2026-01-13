@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix invalid generated tests for conditionally_required enum attributes in metrics.
+issues: [14196, 14230]
