@@ -4,7 +4,7 @@
 change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: exporter/otlp
+component: exporter/otlp_grpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Rename `otlp` exporter to `otlp_grpc` exporter and add deprecated alias `otlp`.
