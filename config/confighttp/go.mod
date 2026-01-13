@@ -31,7 +31,10 @@ require (
 	golang.org/x/net v0.48.0
 )
 
-require github.com/cespare/xxhash/v2 v2.3.0 // indirect
+require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000 // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -112,3 +115,5 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
