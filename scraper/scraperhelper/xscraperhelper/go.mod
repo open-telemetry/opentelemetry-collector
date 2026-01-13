@@ -10,13 +10,13 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.0
 	go.opentelemetry.io/collector/pdata/testdata v0.143.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.141.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.0
 	go.opentelemetry.io/collector/receiver v1.49.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.143.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.143.0
 	go.opentelemetry.io/collector/scraper v0.143.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.141.0
-	go.opentelemetry.io/collector/scraper/xscraper v0.0.0-20251128160438-7012862e3615
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.143.0
+	go.opentelemetry.io/collector/scraper/xscraper v0.143.0
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
 	go.opentelemetry.io/otel/sdk/metric v1.39.0
