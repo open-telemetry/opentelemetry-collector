@@ -21,7 +21,10 @@ func createResource(
 	set telemetry.Settings,
 	componentConfig component.Config,
 ) (pcommon.Resource, error) {
-	res := newResource(set, componentConfig.(*Config))
+	res, err := newResource(set, componentConfig.(*Config))
+	if err != nil {
+		return pcommon.Resource{}, fmt.Errorf("failed to create resource: %w", err)
+	}
 	pcommonRes := pcommon.NewResource()
 	for _, keyValue := range res.Attributes() {
 		key := string(keyValue.Key)
@@ -30,8 +33,8 @@ func createResource(
 	return pcommonRes, nil
 }
 
-func newResource(set telemetry.Settings, cfg *Config) *sdkresource.Resource {
-	return resource.New(set.BuildInfo, cfg.Resource)
+func newResource(set telemetry.Settings, cfg *Config) (*sdkresource.Resource, error) {
+	return resource.New(set.BuildInfo, &cfg.Resource)
 }
 
 func mustAttributeValueString(k string, v attribute.Value) string {
