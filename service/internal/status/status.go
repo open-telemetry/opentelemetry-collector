@@ -43,6 +43,7 @@ func (m *fsm) transition(ev *componentstatus.Event) error {
 
 // newFSM creates a state machine with all valid transitions for componentstatus.Status.
 // The initial state is set to componentstatus.StatusNone.
+// Transitions between the same status value are always allowed, as the new event may come with updated metadata.
 func newFSM(onTransition onTransitionFunc) *fsm {
 	return &fsm{
 		current:      componentstatus.NewEvent(componentstatus.StatusNone),
@@ -59,21 +60,25 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 				componentstatus.StatusStopping:         {},
 			},
 			componentstatus.StatusOK: {
+				componentstatus.StatusOK:               {},
 				componentstatus.StatusRecoverableError: {},
 				componentstatus.StatusPermanentError:   {},
 				componentstatus.StatusFatalError:       {},
 				componentstatus.StatusStopping:         {},
 			},
 			componentstatus.StatusRecoverableError: {
-				componentstatus.StatusOK:             {},
-				componentstatus.StatusPermanentError: {},
-				componentstatus.StatusFatalError:     {},
-				componentstatus.StatusStopping:       {},
+				componentstatus.StatusRecoverableError: {},
+				componentstatus.StatusOK:               {},
+				componentstatus.StatusPermanentError:   {},
+				componentstatus.StatusFatalError:       {},
+				componentstatus.StatusStopping:         {},
 			},
 			componentstatus.StatusPermanentError: {
 				componentstatus.StatusStopping: {},
 			},
-			componentstatus.StatusFatalError: {},
+			componentstatus.StatusFatalError: {
+				componentstatus.StatusFatalError: {},
+			},
 			componentstatus.StatusStopping: {
 				componentstatus.StatusRecoverableError: {},
 				componentstatus.StatusPermanentError:   {},
