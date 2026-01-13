@@ -18,10 +18,16 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DisplayName is a human-readable display name for the component.
+	DisplayName string `mapstructure:"display_name"`
+	// Description is a brief description of the component.
+	Description string `mapstructure:"description"`
 	// Type of the parent component (applicable to subcomponents).
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// Spatial Re-aggregation featuregate.
+	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// The name of the package that will be generated.
 	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.
@@ -408,6 +414,17 @@ func (a Attribute) IsConditional() bool {
 	return a.RequirementLevel == AttributeRequirementLevelConditionallyRequired
 }
 
+// IsRequired returns true if the attribute is required.
+func (a Attribute) IsRequired() bool {
+	return a.RequirementLevel == AttributeRequirementLevelRequired
+}
+
+// IsNotOptIn returns true if the attribute is any requirement_level above
+// opt_in
+func (a Attribute) IsNotOptIn() bool {
+	return a.RequirementLevel != AttributeRequirementLevelOptIn
+}
+
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (rl *AttributeRequirementLevel) UnmarshalText(text []byte) error {
 	switch string(text) {
@@ -468,6 +485,31 @@ func (a Attribute) TestValue() string {
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
 		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
+	}
+	return ""
+}
+
+func (a Attribute) TestValueTwo() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
 	}
 	return ""
 }

@@ -310,8 +310,16 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	//nolint:staticcheck // SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
-	return grpc.DialContext(ctx, cc.sanitizedEndpoint(), grpcOpts...)
+	conn, err := grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initiate connection to match the previous behavior of DialContext
+	// This ensures the connection is established eagerly rather than lazily
+	conn.Connect()
+
+	return conn, nil
 }
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {

@@ -236,6 +236,7 @@ func TestNewType(t *testing.T) {
 		{name: "oteltestbedcol"},
 		{name: "otlp"},
 		{name: "otlp_encoding"},
+		{name: "otlp_http"},
 		{name: "otlphttp"},
 		{name: "otlpjsonfile"},
 		{name: "ottl"},

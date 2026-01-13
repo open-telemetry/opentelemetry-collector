@@ -1,6 +1,9 @@
-# Sample metadata file with all available configurations for a receiver.
+# Sample metadata file with all available configurations for a processor.
 
 type: sample
+display_name: Sample Processor
+description: This processor is used for testing purposes to check the output of mdatagen.
+reaggregation_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
