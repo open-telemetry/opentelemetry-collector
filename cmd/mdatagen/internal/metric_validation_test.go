@@ -203,7 +203,7 @@ func TestStability_Unmarshal_WithoutFrom(t *testing.T) {
 	err := s.Unmarshal(parser)
 	require.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelBeta, s.Level)
-	assert.Equal(t, "", s.From)
+	assert.Empty(t, s.From)
 }
 
 func TestMetricValidate_MissingMetricType(t *testing.T) {
