@@ -1,0 +1,19 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+feature_gates:
+  - id: sample.feature.gate
+    description: 'This is a sample feature gate for testing purposes'
+    stage: alpha
+    from_version: 'v0.100.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
+
+  - id: stable.feature.gate
+    description: 'This is a stable feature gate'
+    stage: stable
+    from_version: 'v0.90.0'
+    to_version: 'v0.95.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/11111'

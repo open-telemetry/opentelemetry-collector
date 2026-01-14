@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -35,6 +36,7 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 		"keep_alives_enabled": true,
 		"read_header_timeout": 60 * time.Second,
 		"tls":                 nil,
+		"transport":           confignet.TransportTypeTCP,
 		"write_timeout":       30 * time.Second,
 	}, conf.ToStringMap())
 
