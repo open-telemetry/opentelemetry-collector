@@ -116,3 +116,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporterhelp
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
