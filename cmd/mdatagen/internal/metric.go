@@ -76,17 +76,19 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 		Level *component.StabilityLevel `mapstructure:"level"`
 	}{
 		Level: &level,
-	}, confmap.WithIgnoreUnused()); err != nil {
+	}); err != nil {
 		return err
 	}
 
 	s.Level = level
 
-	// Optional "from"
+	// NOTE: confmap rejects unknown keys by default.
+	// The "from" field cannot be tested via full metadata loading
+	// unless WithIgnoreUnused() is used by the caller.
 	if parser.IsSet("from") {
 		if err := parser.Unmarshal(&struct {
 			From *string `mapstructure:"from"`
-		}{From: &s.From}, confmap.WithIgnoreUnused()); err != nil {
+		}{From: &s.From}); err != nil {
 			return err
 		}
 	}
@@ -96,23 +98,9 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
-	// Deprecation metadata validation
-	if m.Deprecated != nil && m.Stability.Level != component.StabilityLevelDeprecated {
-		errs = errors.Join(errs,
-			errors.New("deprecation data is only allowed when stability level is 'deprecated'"))
-	}
-	if m.Stability.Level == component.StabilityLevelDeprecated && m.Deprecated == nil {
-		errs = errors.Join(errs,
-			errors.New("deprecated metrics must include deprecation metadata"))
-	}
-	if m.Deprecated != nil {
-		if m.Deprecated.Since == "" {
-			errs = errors.Join(errs, errors.New("deprecated.since is required"))
-		}
-		if m.Deprecated.Note == "" {
-			errs = errors.Join(errs, errors.New("deprecated.note is required"))
-		}
-	}
+	// TODO: Enforce deprecated metadata requirements once all components
+	// include deprecated fields consistently.
+	// See discussion in PR #14408.
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))
