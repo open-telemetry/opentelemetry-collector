@@ -25,7 +25,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_batch_size_trigger_send",
-		Description: "Number of times the batch was sent due to a size triggerDeprecated",
+		Description: "Number of times the batch was sent due to a size trigger [Deprecated]",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -41,7 +41,7 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
-		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')Stable",
+		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Stable]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -57,7 +57,7 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Te
 func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_capacity",
-		Description: "Queue capacity - sync gauge example.Development",
+		Description: "Queue capacity - sync gauge example. [Development]",
 		Unit:        "{items}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -71,7 +71,7 @@ func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []m
 func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_length",
-		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder.Alpha",
+		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]",
 		Unit:        "{items}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -85,7 +85,7 @@ func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []met
 func AssertEqualRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_request_duration",
-		Description: "Duration of requestAlpha",
+		Description: "Duration of request [Alpha]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,

@@ -15,7 +15,7 @@ import (
 func AssertEqualScraperErroredProfileRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_profile_records",
-		Description: "Number of profile records that were unable to be scraped.Alpha",
+		Description: "Number of profile records that were unable to be scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -31,7 +31,7 @@ func AssertEqualScraperErroredProfileRecords(t *testing.T, tt *componenttest.Tel
 func AssertEqualScraperScrapedProfileRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_profile_records",
-		Description: "Number of profile records successfully scraped.Alpha",
+		Description: "Number of profile records successfully scraped. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
