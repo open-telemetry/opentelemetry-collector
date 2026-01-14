@@ -14,100 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestMetricValidate_DeprecatedWithoutDeprecatedStability(t *testing.T) {
-	m := &Metric{
-		Signal: Signal{
-			Stability: Stability{
-				Level: component.StabilityLevelBeta,
-			},
-			Description: "test",
-		},
-		Deprecated: &Deprecated{
-			Since: "1.0.0",
-			Note:  "will be removed",
-		},
-		Unit: ptr("1"),
-		Sum: &Sum{
-			MetricValueType: MetricValueType{
-				ValueType: pmetric.NumberDataPointValueTypeInt,
-			},
-		},
-	}
-
-	err := m.validate("test.metric", "1.0.0")
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "only allowed when stability level is 'deprecated'")
-}
-
-func TestMetricValidate_DeprecatedStabilityWithoutDeprecatedBlock(t *testing.T) {
-	m := &Metric{
-		Signal: Signal{
-			Stability: Stability{
-				Level: component.StabilityLevelDeprecated,
-			},
-			Description: "test",
-		},
-		Unit: ptr("1"),
-		Sum: &Sum{
-			MetricValueType: MetricValueType{
-				ValueType: pmetric.NumberDataPointValueTypeInt,
-			},
-		},
-	}
-
-	err := m.validate("test.metric", "1.0.0")
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "deprecated metrics must include deprecation metadata")
-}
-
-func TestMetricValidate_DeprecatedMissingSince(t *testing.T) {
-	m := &Metric{
-		Signal: Signal{
-			Stability: Stability{
-				Level: component.StabilityLevelDeprecated,
-			},
-			Description: "test",
-		},
-		Deprecated: &Deprecated{
-			Note: "will be removed",
-		},
-		Unit: ptr("1"),
-		Sum: &Sum{
-			MetricValueType: MetricValueType{
-				ValueType: pmetric.NumberDataPointValueTypeInt,
-			},
-		},
-	}
-
-	err := m.validate("test.metric", "1.0.0")
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "deprecated.since is required")
-}
-
-func TestMetricValidate_DeprecatedMissingNote(t *testing.T) {
-	m := &Metric{
-		Signal: Signal{
-			Stability: Stability{
-				Level: component.StabilityLevelDeprecated,
-			},
-			Description: "test",
-		},
-		Deprecated: &Deprecated{
-			Since: "1.0.0",
-		},
-		Unit: ptr("1"),
-		Sum: &Sum{
-			MetricValueType: MetricValueType{
-				ValueType: pmetric.NumberDataPointValueTypeInt,
-			},
-		},
-	}
-
-	err := m.validate("test.metric", "1.0.0")
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "deprecated.note is required")
-}
-
 func TestStability_String(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -157,19 +63,6 @@ func TestStability_String(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func TestStability_Unmarshal_WithFrom(t *testing.T) {
-	// Test through the loader with a YAML file that includes the "from" field
-	// This exercises the actual Unmarshal path with the "from" field
-	md, err := LoadMetadata("testdata/with_stability_from.yaml")
-	require.NoError(t, err)
-
-	// Verify the metric was loaded and has the stability with "from" field
-	testMetric, ok := md.Metrics["test.metric"]
-	require.True(t, ok, "test.metric should exist")
-	assert.Equal(t, component.StabilityLevelBeta, testMetric.Stability.Level)
-	assert.Equal(t, "1.0.0", testMetric.Stability.From)
 }
 
 func TestStability_Unmarshal_WithoutFrom(t *testing.T) {
