@@ -234,7 +234,7 @@ func AssertEqualExporterSentProfileSamples(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_profile_samples",
 		Description: "Number of profile samples successfully sent to destination. [Development]",
-		Unit:        "{development}",
+		Unit:        "{samples}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

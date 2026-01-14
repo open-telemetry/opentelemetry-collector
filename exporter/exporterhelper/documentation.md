@@ -124,7 +124,7 @@ Number of profile samples successfully sent to destination. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {development} | Sum | Int | true | Development |
+| {samples} | Sum | Int | true | Development |
 
 ### otelcol_exporter_sent_spans
 

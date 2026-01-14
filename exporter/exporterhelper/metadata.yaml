@@ -198,7 +198,7 @@ telemetry:
       stability:
         level: development
       description: Number of profile samples successfully sent to destination.
-      unit: "{development}"
+      unit: "{samples}"
       sum:
         value_type: int
         monotonic: true

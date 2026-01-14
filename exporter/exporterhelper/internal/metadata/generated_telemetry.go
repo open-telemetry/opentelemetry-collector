@@ -204,7 +204,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterSentProfileSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_profile_samples",
 		metric.WithDescription("Number of profile samples successfully sent to destination. [Development]"),
-		metric.WithUnit("{development}"),
+		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
