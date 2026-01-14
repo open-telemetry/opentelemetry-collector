@@ -28,7 +28,7 @@ The migration mechanism should have the following characteristics:
 
 ### Setup
 
-We want to write guidance for when we have a component or module that emits telemetry from a common
+We want to write guidance for when we have a component that emits telemetry from a common
 `area` that is undergoing a migration mandated by the Semantic Conventions SIG. In the rest of this
 document we refer to the **old** conventions and the **new** conventions, which are the conventions
 in this area before and after the migration.
@@ -45,8 +45,8 @@ The semantic conventions specification defines an environment variable named
 2. Once mature enough, a second value ending in `/dup` that emits both the old conventions and the
    new ones.
 
-This is a consistent pattern across all semantic conventions areas that are being actively worked
-on:
+This is not specified in a generic way, but it is a consistent pattern across all semantic
+conventions areas that are being actively worked on:
 
 <details>
 
@@ -112,11 +112,51 @@ From [semconv v1.38.0][3]:
 
 </details>
 
+<details>
+
+<summary> Example 3: K8s compatibility warning </summary>
+
+> From [semconv v1.38.0][3]:
+
+> When existing K8s instrumentations published by OpenTelemetry are
+> updated to the stable K8s semantic conventions, they:
+> 
+> - SHOULD introduce an environment variable `OTEL_SEMCONV_STABILITY_OPT_IN` in
+>   their existing major version, which accepts:
+>   - `k8s` - emit the stable k8s conventions, and stop emitting
+>     the old k8s conventions that the instrumentation emitted previously.
+>   - `k8s/dup` - emit both the old and the stable k8s conventions,
+>     allowing for a phased rollout of the stable semantic conventions.
+>   - The default behavior (in the absence of one of these values) is to continue
+>     emitting whatever version of the old k8s conventions the
+>     instrumentation was emitting previously.
+> - Need to maintain (security patching at a minimum) their existing major version
+>   for at least six months after it starts emitting both sets of conventions.
+> - May drop the environment variable in their next major version and emit only
+>   the stable k8s conventions.
+
+> Specifically for the Opentelemetry Collector:
+
+> The transition will happen through two different feature gates.
+> One for enabling the new schema called `semconv.k8s.enableStable`,
+> and one for disabling the old schema called `semconv.k8s.disableLegacy`. Then:
+
+> - On alpha the old schema is enabled by default (`semconv.k8s.disableLegacy` defaults to false),
+>   while the new schema is disabled by default (`semconv.k8s.enableStable` defaults to false).
+> - On beta/stable the old schema is disabled by default (`semconv.k8s.disableLegacy` defaults to true),
+>   while the new is enabled by default (`semconv.k8s.enableStable` defaults to true).
+> - It is an error to disable both schemas
+> - Both schemas can be enabled with `--feature-gates=-semconv.k8s.disableLegacy,+semconv.k8s.enableStable`.
+
+</details>
+
 ## Proposed mechanism
 
-Support the `<id>` (e.g. `hostmetrics`) `kind` (e.g. `receiver`) component is migrating from old to new
-semantic conventions on the area `area` (e.g. `process`). To support this, it defines two semantic
-conventions: `<kind>.<id>.EmitNew<Area>Conventions` (e.g.
+Suppose the `<id>` (e.g. `hostmetrics`) `kind` (e.g. `receiver`) component is migrating from old to
+new semantic conventions on the area `area` (e.g. `process`). The semantic conventions specification
+defines the set of conventions that are in scope for a particular migration.
+
+To support this migration, the component defines two feature gates: `<kind>.<id>.EmitNew<Area>Conventions` (e.g.
 `receiver.hostmetrics.EmitNewProcessConventions`) and `<kind>.<id>.DontEmitOld<Area>Conventions`
 (e.g. `receiver.hostmetrics.DontEmitOldProcessConventions`). These feature gates work as follows:
 
@@ -131,20 +171,16 @@ Both feature gates evolve at the same pace through the feature gate stages, so t
 is as follows:
 1. Initially both are at **alpha** stage (disabled by default). This means that the default behavior
    is to emit only the 'old' conventions. Users can opt-in to emit the new conventions alongside the
-   old conventions or to emit only the new conventions.
-2. Whenever the semantic conventions are mature enough, the feature gates are promoted to the
-   **beta** stage on the same release. This means that the default behavior is to emit only the
+   old conventions or to emit only the new conventions. A warning message must be logged by the component at startup indicating the upcoming change.
+2. Whenever there is a semantic conventions release that marks these as stable, the feature gates are promoted to the
+   **beta** stage on the same Collector release. The new default behavior is therefore to emit only the
    'new' conventions. Users can opt-out to emit the new conventions alongside the old conventions or
    to emit only the old conventions.
-3. At some poin the features are promoted to the **stable** stage. At this point users can only use
-   the new conventions.
+3. After at least 3 releases, the features are promoted to the **stable** stage. At this point users
+   can only use the new conventions..
 
-This mechanism is applicable also at the module level. For example we could have a pair of feature
-gates for `configgrpc`: `configgrpc.EmitNewRPCConventions` and
-`configgrpc.DontEmitOldRPCConventions`.
-
-This mechanism does not cover experimental semantic conventions. These pressumably would be covered
-by separate feature gates or some other mechanism.
+This mechanism does not cover any sort of transition for experimental semantic conventions. These
+presumably would be covered by separate feature gates or some other mechanism.
 
 ## Alternative mechanisms
 
