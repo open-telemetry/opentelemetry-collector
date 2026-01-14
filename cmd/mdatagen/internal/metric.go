@@ -66,6 +66,7 @@ func (s Stability) String() string {
 	return fmt.Sprintf(" [%s]", s.Level.String())
 }
 
+// Unmarshal decodes the stability configuration.
 // NOTE: confmap rejects unknown keys by default.
 // The "from" field cannot be tested via full metadata loading
 // unless WithIgnoreUnused() is used by the caller.
