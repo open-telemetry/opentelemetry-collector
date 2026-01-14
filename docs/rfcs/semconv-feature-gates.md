@@ -190,7 +190,7 @@ There are some other possibilities:
 
 We could just use the `OTEL_SEMCONV_STABILITY_OPT_IN` mechanism. However, this does not feel
 "Collector native": Collector users expect experimental features to be controlled via feature gates
-and as such this could be a suprising mechanism. In particular, users would expect that they are
+and as such this could be a surprising mechanism. In particular, users would expect that they are
 able to 'roll back' to the previous behavior even after a Collector upgrade, something that the
 environment variable mechanism explicitly does not support.
 
@@ -202,7 +202,7 @@ simplicity and flexibility:
 - per convention would lead to dozens of feature gates on some of the areas we want to stabilize. It
   would also be unclear how these interact on edge cases (semantic conventions may only make sense
   holistically)
-- a single pair of feature gates would effectively be perma-unstable and would not be flexible
+- a single pair of feature gates would effectively be forever unstable and would not be flexible
   enough to allow people to migrate on a per dashboard basis
 
 ### Meta feature gate
