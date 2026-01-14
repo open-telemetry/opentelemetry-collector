@@ -66,6 +66,9 @@ func (s Stability) String() string {
 	return fmt.Sprintf(" [%s]", s.Level.String())
 }
 
+	// NOTE: confmap rejects unknown keys by default.
+	// The "from" field cannot be tested via full metadata loading
+	// unless WithIgnoreUnused() is used by the caller.
 func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("level") {
 		return errors.New("missing required field: `stability.level`")
@@ -82,9 +85,6 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 
 	s.Level = level
 
-	// NOTE: confmap rejects unknown keys by default.
-	// The "from" field cannot be tested via full metadata loading
-	// unless WithIgnoreUnused() is used by the caller.
 	if parser.IsSet("from") {
 		if err := parser.Unmarshal(&struct {
 			From *string `mapstructure:"from"`
