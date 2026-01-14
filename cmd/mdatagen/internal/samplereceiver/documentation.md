@@ -2,6 +2,51 @@
 
 # sample
 
+## Example Configurations
+
+### Basic Configuration
+
+This example demonstrates the most basic configuration for the sample receiver with default settings.
+
+```yaml
+sample:
+  metrics:
+    default.metric:
+      enabled: true
+
+```
+
+### Advanced Configuration
+
+This example shows an advanced configuration with custom metrics enabled and resource attributes configured.
+
+```yaml
+sample:
+  metrics:
+    default.metric:
+      enabled: true
+    optional.metric:
+      enabled: true
+  resource_attributes:
+    string.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+
+```
+
+### Minimal Configuration
+
+A minimal configuration suitable for testing environments with only essential metrics.
+
+```yaml
+sample:
+  metrics:
+    metric.input_type:
+      enabled: true
+
+```
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
