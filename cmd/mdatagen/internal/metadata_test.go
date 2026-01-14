@@ -140,6 +140,10 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/entity_duplicate_types.yaml",
 			wantErr: `duplicate entity type: host`,
 		},
+		{
+			name:    "testdata/invalid_entity_stability.yaml",
+			wantErr: `unsupported stability level: "stable42"`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
