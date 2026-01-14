@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/otelcol
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix mdatagen metadata loading to correctly handle deprecated metric fields and align generated output with the updated metadata schema."
+note: "Introduce additional metadata (the version since the deprecation started, and the deprecation reason) for deprecated metrics."
 
 # One or more tracking issues or pull requests related to the change
 issues: [14113]
