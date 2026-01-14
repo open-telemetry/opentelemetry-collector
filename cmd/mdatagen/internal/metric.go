@@ -50,29 +50,6 @@ type Metric struct {
 	Prefix string `mapstructure:"prefix"`
 }
 
-type Stability struct {
-	Level component.StabilityLevel `mapstructure:"level"`
-	From  string                   `mapstructure:"from"`
-}
-
-func (s Stability) String() string {
-	if s.Level == component.StabilityLevelUndefined ||
-		s.Level == component.StabilityLevelStable {
-		return ""
-	}
-	if s.From != "" {
-		return fmt.Sprintf(" [%s since %s]", s.Level.String(), s.From)
-	}
-	return fmt.Sprintf(" [%s]", s.Level.String())
-}
-
-func (s *Stability) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("level") {
-		return errors.New("missing required field: `stability.level`")
-	}
-	return parser.Unmarshal(s)
-}
-
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
@@ -82,6 +59,9 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
 		errs = errors.Join(errs, errors.New("more than one metric type keys, "+
 			"only one of the following has to be specified: sum, gauge, histogram"))
+	}
+	if m.Stability == component.StabilityLevelUndefined {
+		errs = errors.Join(errs, errors.New("missing required field: `stability.level`"))
 	}
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))

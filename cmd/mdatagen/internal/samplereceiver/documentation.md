@@ -217,7 +217,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]
+Number of times the batch was sent due to a size trigger [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -225,7 +225,7 @@ Number of times the batch was sent due to a size trigger [Deprecated since v0.11
 
 ### otelcol_process_runtime_total_alloc_bytes
 
-Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Stable]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

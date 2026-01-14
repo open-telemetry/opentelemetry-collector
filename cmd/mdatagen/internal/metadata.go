@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -528,7 +529,7 @@ type Signal struct {
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
-	Stability Stability `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 
 	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
