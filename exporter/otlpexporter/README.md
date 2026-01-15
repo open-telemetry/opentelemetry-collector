@@ -36,7 +36,7 @@ Example:
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otelcol2:4317
     tls:
       cert_file: file.cert
@@ -51,7 +51,7 @@ By default, `gzip` compression is enabled. See [compression comparison](../../co
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     ...
     compression: none
 ```
