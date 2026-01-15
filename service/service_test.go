@@ -882,3 +882,22 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.ErrorIs(t, err, wantErr)
 	require.Contains(t, err.Error(), "failed to register process metrics")
 }
+
+func TestNew_ProcessMetricsRegistrationFailure(t *testing.T) {
+	originalRegisterFunc := registerProcessMetrics
+	defer func() {
+		registerProcessMetrics = originalRegisterFunc
+	}()
+
+	registerProcessMetrics = func(srv *Service, goos string, register func(component.TelemetrySettings, ...proctelemetry.RegisterOption) error) error {
+		return errors.New("forced process metrics registration error")
+	}
+
+	set := newNopSettings()
+	cfg := newNopConfig()
+
+	_, err := New(context.Background(), set, cfg)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forced process metrics registration error")
+}

@@ -372,7 +372,9 @@ func Validate(ctx context.Context, set Settings, cfg Config) error {
 // Historically, attempting to register process metrics on unsupported platforms
 // (e.g. AIX) caused the Collector to fail at startup.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/12098
-func registerProcessMetrics(
+//
+// It is defined as a variable to allow overriding in tests.
+var registerProcessMetrics = func(
 	srv *Service,
 	goos string,
 	register func(component.TelemetrySettings, ...proctelemetry.RegisterOption) error,
