@@ -19,7 +19,7 @@ The migration mechanism should have the following characteristics:
    migrate to a new set of conventions.
 3. **Easy to understand**: It should be easy to understand how to migrate a particular set of
    conventions.
-5. **Flexible (double publish)**: The mechanism should allow you to 'double publish' old and new
+5. **Flexible (double publish)**: The mechanism should allow you to 'double publish' v0 and v1
    conventions
 6. **Flexible (other conventions)**: The mechanism should still allow for evolution of other
    semantic conventions that are not being migrated.
@@ -30,7 +30,7 @@ The migration mechanism should have the following characteristics:
 
 We want to write guidance for when we have a component that emits telemetry from a common
 `area` that is undergoing a migration mandated by the Semantic Conventions SIG. In the rest of this
-document we refer to the **old** conventions and the **new** conventions, which are the conventions
+document we refer to the **v0** conventions and the **v1** conventions, which are the conventions
 in this area before and after the migration.
 
 When the semantic conventions are specific to a component we use 
@@ -152,32 +152,32 @@ From [semconv v1.38.0][3]:
 
 ## Proposed mechanism
 
-Suppose the `<id>` (e.g. `hostmetrics`) `kind` (e.g. `receiver`) component is migrating from old to
-new semantic conventions on the area `area` (e.g. `process`). The semantic conventions specification
+Suppose the `<id>` (e.g. `hostmetrics`) `kind` (e.g. `receiver`) component is migrating from v0 to
+v1 semantic conventions on the area `area` (e.g. `process`). The semantic conventions specification
 defines the set of conventions that are in scope for a particular migration.
 
-To support this migration, the component defines two feature gates: `<kind>.<id>.EmitNew<Area>Conventions` (e.g.
-`receiver.hostmetrics.EmitNewProcessConventions`) and `<kind>.<id>.DontEmitOld<Area>Conventions`
-(e.g. `receiver.hostmetrics.DontEmitOldProcessConventions`). These feature gates work as follows:
+To support this migration, the component defines two feature gates: `<kind>.<id>.EmitV1<Area>Conventions` (e.g.
+`receiver.hostmetrics.EmitV1ProcessConventions`) and `<kind>.<id>.DontEmitV0<Area>Conventions`
+(e.g. `receiver.hostmetrics.DontEmitV0ProcessConventions`). These feature gates work as follows:
 
-| `<kind>.<id>.EmitNew<Area>Conventions` status | `<kind>.<id>.DontEmitOld<Area>Conventions` status    | Resulting behavior                                        |
+| `<kind>.<id>.EmitV1<Area>Conventions` status | `<kind>.<id>.DontEmitV0<Area>Conventions` status    | Resulting behavior                                        |
 |-----------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------|
-| Disabled                                      | Disabled                                              | Emit telemetry under the 'old' conventions                |
+| Disabled                                      | Disabled                                              | Emit telemetry under the 'v0' conventions                |
 | Disabled                                      | Enabled                                               | Error at startup since this would not emit any telemetry  |
-| Enabled                                       | Disabled                                              | Emit telemetry under both the old and the new conventions |
-| Enabled                                       | Enabled                                               | Emit telemetry under the new conventions                  |
+| Enabled                                       | Disabled                                              | Emit telemetry under both the v0 and the v1 conventions |
+| Enabled                                       | Enabled                                               | Emit telemetry under the v1 conventions                  |
 
 Both feature gates evolve at the same pace through the feature gate stages, so that the progression
 is as follows:
 1. Initially both are at **alpha** stage (disabled by default). This means that the default behavior
-   is to emit only the 'old' conventions. Users can opt-in to emit the new conventions alongside the
-   old conventions or to emit only the new conventions. A warning message must be logged by the component at startup indicating the upcoming change.
+   is to emit only the 'v0' conventions. Users can opt-in to emit the v1 conventions alongside the
+   v0 conventions or to emit only the v1 conventions. A warning message must be logged by the component at startup indicating the upcoming change.
 2. Whenever there is a semantic conventions release that marks these as stable, the feature gates are promoted to the
    **beta** stage on the same Collector release. The new default behavior is therefore to emit only the
-   'new' conventions. Users can opt-out to emit the new conventions alongside the old conventions or
-   to emit only the old conventions.
+   'v1' conventions. Users can opt-out to emit the v1 conventions alongside the v0 conventions or
+   to emit only the v0 conventions.
 3. After at least 3 releases, the features are promoted to the **stable** stage. At this point users
-   can only use the new conventions..
+   can only use the v1 conventions..
 
 This mechanism does not cover any sort of transition for experimental semantic conventions. These
 presumably would be covered by separate feature gates or some other mechanism.
@@ -208,7 +208,7 @@ simplicity and flexibility:
 ### Meta feature gate
 
 We could have both a feature gate pair per component and a meta target feature gate pair that allows
-you to enable/disable all new conventions at the same time. This is effectively a superset of the
+you to enable/disable all v1 conventions at the same time. This is effectively a superset of the
 proposed mechanism, so I argue we can postpone this for later: if users ask for it, we can always
 add it in the future.
 
