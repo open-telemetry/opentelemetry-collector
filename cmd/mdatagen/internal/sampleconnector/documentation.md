@@ -38,9 +38,11 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Deprecation |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ----------- |
-| s | Sum | Double | Delta | false | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Delta | false | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 ### metric.input_type
 
@@ -89,9 +91,11 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability | Deprecation |
-| ---- | ----------- | ---------- | --------- | ----------- |
-| 1 | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -105,9 +109,11 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability | Deprecation |
-| ---- | ----------- | ---------- | --------- | ----------- |
-|  | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
