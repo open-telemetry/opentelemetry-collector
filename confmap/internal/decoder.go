@@ -95,21 +95,12 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 
 		if !DeferExpandedValueSanitizationOnStructCollection.IsEnabled() {
 			switch to.Kind() {
-			case reflect.Array, reflect.Slice:
-				elemType := to.Elem()
-				// If the element type is a struct, don't sanitize at the collection level.
-				// Let mapstructure decode field-by-field so each ExpandedValue can be
-				// converted based on its target field type.
-				if elemType.Kind() == reflect.Struct {
-					return data, nil
-				}
-				fallthrough
-
-			case reflect.Map:
+			case reflect.Array, reflect.Slice, reflect.Map:
 				if isStringyStructure(to) {
 					// If the target field is a stringy structure, sanitize to use the original string value everywhere.
 					return sanitizeToStr(data), nil
 				}
+
 				// Otherwise, sanitize to use the parsed value everywhere.
 				return sanitize(data), nil
 			}
