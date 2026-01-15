@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var exporterID = component.NewID(exportertest.NopType)
@@ -203,6 +204,58 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
+func TestObsQueueProfiles(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    xpipeline.SignalProfiles,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](nil, 27, 29))
+	require.NoError(t, err)
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
+	metadatatest.AssertEqualExporterQueueSize(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String())),
+				Value: int64(27),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualExporterQueueCapacity(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String())),
+				Value: int64(29),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestObsQueueProfilesFailure(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    xpipeline.SignalProfiles,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
+	require.NoError(t, err)
+	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
+	metadatatest.AssertEqualExporterEnqueueFailedProfileSamples(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String())),
+				Value: int64(22),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
 func TestObsQueueLogsBatchSize(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -261,6 +314,32 @@ func TestObsQueueMetricsBatchSize(t *testing.T) {
 
 	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, newFakeQueue[request.Request](nil, 27, 29))
+	require.NoError(t, err)
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22, Bytes: 300}))
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(exporterKey, exporterID.String())),
+				Count:        1,
+				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Min:          metricdata.NewExtrema[int64](22),
+				Max:          metricdata.NewExtrema[int64](22),
+				Sum:          22,
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestObsQueueProfilesBatchSize(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    xpipeline.SignalProfiles,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](nil, 27, 29))
