@@ -29,6 +29,8 @@ The OpenTelemetry Collector ecosystem lacks a unified approach to configuration 
 
 - [PR #27003](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/27003): Failed due to trying to cover all corner-cases in the design phase instead of quickly iterating from a simpler approach.
 
+- [PR #10694](https://github.com/open-telemetry/opentelemetry-collector/pull/10694): An attempt to generate config structs from the schema defined in metadata.yaml using github.com/atombender/go-jsonschema. It faced some limitations of the library. However, it was abandoned mostly due to a lack of involvement from the reviewers.
+
 ### Current initiatives
 
 - [opentelemetry-collector-contrib/cmd/schemagen/](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/cmd/schemagen): Generates JSON schemas from Go structs with limited support for validation and default values. It uses AST parsing with module-aware loading of dependencies to handle shared libraries.
@@ -83,6 +85,7 @@ config:
           ping_interval:
             type: string
             format: duration
+            x-customType: "time.Duration"
             description: "Interval between pings"
             default: "1s"
         required: ["host"]
