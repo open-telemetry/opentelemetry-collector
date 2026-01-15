@@ -25,7 +25,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_batch_size_trigger_send",
-		Description: "Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]",
+		Description: "Number of times the batch was sent due to a size trigger [Deprecated]",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -41,7 +41,7 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
-		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Stable]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

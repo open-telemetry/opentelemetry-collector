@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_accepted_log_records
 
-Number of log records successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]
+Number of log records successfully pushed into the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of log records successfully pushed into the next component in the pipelin
 
 ### otelcol_processor_accepted_metric_points
 
-Number of metric points successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]
+Number of metric points successfully pushed into the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of metric points successfully pushed into the next component in the pipel
 
 ### otelcol_processor_accepted_spans
 
-Number of spans successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]
+Number of spans successfully pushed into the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of spans successfully pushed into the next component in the pipeline. [De
 
 ### otelcol_processor_refused_log_records
 
-Number of log records that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]
+Number of log records that were rejected by the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Number of log records that were rejected by the next component in the pipeline. 
 
 ### otelcol_processor_refused_metric_points
 
-Number of metric points that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]
+Number of metric points that were rejected by the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,7 +48,7 @@ Number of metric points that were rejected by the next component in the pipeline
 
 ### otelcol_processor_refused_spans
 
-Number of spans that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]
+Number of spans that were rejected by the next component in the pipeline. [Deprecated]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
