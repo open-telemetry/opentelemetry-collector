@@ -15,7 +15,7 @@ import (
 )
 
 // NewFactory returns a connector.Factory.
-func NewFactory() connector.Factory {
+func NewFactory() xconnector.Factory {
 	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
