@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_incoming_items
 
-Number of items passed to the processor.
+Number of items passed to the processor. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of items passed to the processor.
 
 ### otelcol_processor_internal_duration
 
-Duration of time taken to process a batch of telemetry data through the processor.
+Duration of time taken to process a batch of telemetry data through the processor. [Alpha]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -24,7 +24,7 @@ Duration of time taken to process a batch of telemetry data through the processo
 
 ### otelcol_processor_outgoing_items
 
-Number of items emitted from the processor.
+Number of items emitted from the processor. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

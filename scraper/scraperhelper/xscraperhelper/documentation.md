@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_scraper_errored_profile_records
 
-Number of profile records that were unable to be scraped.
+Number of profile records that were unable to be scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of profile records that were unable to be scraped.
 
 ### otelcol_scraper_scraped_profile_records
 
-Number of profile records successfully scraped.
+Number of profile records successfully scraped. [Alpha]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

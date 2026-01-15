@@ -14,7 +14,7 @@ metrics:
 
 ### default.metric
 
-Monotonic cumulative sum int metric enabled by default.
+Monotonic cumulative sum int metric enabled by default. [Development]
 
 The metric will be become optional soon.
 
@@ -34,7 +34,7 @@ The metric will be become optional soon.
 
 ### default.metric.to_be_removed
 
-[DEPRECATED] Non-monotonic delta sum double metric enabled by default.
+[DEPRECATED] Non-monotonic delta sum double metric enabled by default. [Deprecated]
 
 The metric will be removed soon.
 
@@ -44,7 +44,7 @@ The metric will be removed soon.
 
 ### metric.input_type
 
-Monotonic cumulative sum int metric with string input_type enabled by default.
+Monotonic cumulative sum int metric with string input_type enabled by default. [Development]
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -62,7 +62,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 ### reaggregate.metric
 
-Metric for testing spacial reaggregation
+Metric for testing spacial reaggregation [Beta]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -87,7 +87,7 @@ metrics:
 
 ### optional.metric
 
-[DEPRECATED] Gauge double metric disabled by default.
+[DEPRECATED] Gauge double metric disabled by default. [Deprecated]
 
 | Unit | Metric Type | Value Type | Stability | Deprecation |
 | ---- | ----------- | ---------- | --------- | ----------- |
@@ -103,7 +103,7 @@ metrics:
 
 ### optional.metric.empty_unit
 
-[DEPRECATED] Gauge double metric disabled by default.
+[DEPRECATED] Gauge double metric disabled by default. [Deprecated]
 
 | Unit | Metric Type | Value Type | Stability | Deprecation |
 | ---- | ----------- | ---------- | --------- | ----------- |

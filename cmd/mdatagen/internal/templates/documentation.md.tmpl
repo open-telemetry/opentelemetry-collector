@@ -4,7 +4,7 @@
 
 ### {{ $metricName }}
 
-{{ $metric.Description }}
+{{ $metric.Description }}{{ $metric.Stability }}
 
 {{- if $metric.ExtendedDocumentation }}
 
@@ -73,7 +73,7 @@
 
 ### {{ if $metric.Prefix -}}{{ $metric.Prefix }}{{- else -}}otelcol_{{- end -}}{{ $metricName }}
 
-{{ $metric.Description }}
+{{ $metric.Description }}{{ $metric.Stability }}
 {{- if $metric.Deprecated }}
 
 > **Deprecated since {{ $metric.Deprecated.Since}}**
