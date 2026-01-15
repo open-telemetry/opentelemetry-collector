@@ -63,6 +63,7 @@ require (
 	go.opentelemetry.io/collector/client v1.49.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.49.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.49.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.49.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.143.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0 // indirect
@@ -86,10 +87,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -183,3 +184,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporterhelp
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
