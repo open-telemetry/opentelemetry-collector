@@ -93,14 +93,13 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 	t.Run("with MetadataKeys - configures partitioner and merge function", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
 		qCfg.MetadataKeys = []string{"key1", "key2"}
-		qCfg.Enabled = true
 
 		be, err := NewBaseExporter(
 			exportertest.NewNopSettings(exportertest.NopType),
 			pipeline.SignalMetrics,
 			noopExport,
 			WithQueueBatchSettings(newFakeQueueBatch()),
-			WithQueue(qCfg),
+			WithQueue(configoptional.Some(qCfg)),
 		)
 		require.NoError(t, err)
 		assert.NotNil(t, be)
@@ -123,14 +122,13 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				qCfg := NewDefaultQueueConfig()
 				qCfg.MetadataKeys = tt.metadataKeys
-				qCfg.Enabled = true
 
 				be, err := NewBaseExporter(
 					exportertest.NewNopSettings(exportertest.NopType),
 					pipeline.SignalMetrics,
 					noopExport,
 					WithQueueBatchSettings(newFakeQueueBatch()),
-					WithQueue(qCfg),
+					WithQueue(configoptional.Some(qCfg)),
 				)
 				require.NoError(t, err)
 				assert.NotNil(t, be)
@@ -145,7 +143,6 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 	t.Run("error when custom partitioner already set and metadata_keys used", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
 		qCfg.MetadataKeys = []string{"key1", "key2"}
-		qCfg.Enabled = true
 
 		// Set up queue batch settings with a custom partitioner already configured
 		customSettings := newFakeQueueBatch()
@@ -161,7 +158,7 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 			pipeline.SignalMetrics,
 			noopExport,
 			WithQueueBatchSettings(customSettings),
-			WithQueue(qCfg),
+			WithQueue(configoptional.Some(qCfg)),
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom partitioner is already configured")
@@ -170,7 +167,6 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 	t.Run("error when custom merge function already set and metadata_keys used", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
 		qCfg.MetadataKeys = []string{"key1", "key2"}
-		qCfg.Enabled = true
 
 		// Set up queue batch settings with a custom merge function already configured
 		customSettings := newFakeQueueBatch()
@@ -183,7 +179,7 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 			pipeline.SignalMetrics,
 			noopExport,
 			WithQueueBatchSettings(customSettings),
-			WithQueue(qCfg),
+			WithQueue(configoptional.Some(qCfg)),
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom merge function is already configured")

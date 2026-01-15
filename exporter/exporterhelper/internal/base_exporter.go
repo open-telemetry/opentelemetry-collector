@@ -217,15 +217,15 @@ func WithQueueBatch(cfg configoptional.Optional[queuebatch.Config], set queuebat
 			return errors.New("`Settings.Encoding` must not be nil when persistent queue is enabled")
 		}
 		// Automatically configure partitioner if MetadataKeys is set
-		if len(cfg.MetadataKeys) > 0 {
+		if len(cfg.Get().MetadataKeys) > 0 {
 			if set.Partitioner != nil {
 				return errors.New("cannot use metadata_keys when a custom partitioner is already configured")
 			}
 			if set.MergeCtx != nil {
 				return errors.New("cannot use metadata_keys when a custom merge function is already configured")
 			}
-			set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.MetadataKeys)
-			set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.MetadataKeys)
+			set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.Get().MetadataKeys)
+			set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.Get().MetadataKeys)
 		}
 		o.queueBatchSettings = set
 		o.queueCfg = cfg
