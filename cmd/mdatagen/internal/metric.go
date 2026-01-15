@@ -56,7 +56,7 @@ type Metric struct {
 type Stability struct {
 	Level component.StabilityLevel `mapstructure:"level"`
 	// Deprecated: [0.144.0] Replaced with `deprecated.since`.
-	From  string                   `mapstructure:"from"`
+	From string `mapstructure:"from"`
 }
 
 func (s Stability) String() string {
