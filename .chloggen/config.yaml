@@ -17,7 +17,7 @@ components:
     - docs/rfcs
     - exporter/debug
     - exporter/nop
-    - exporter/otlp
+    - exporter/otlp_grpc
     - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
