@@ -67,7 +67,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "profiles_to_profiles",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := xconnector.NewProfilesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
-				return factory.CreateProfilesToProfiles(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateProfilesToProfiles(ctx, set, cfg, router)
 			},
 		},
 	}

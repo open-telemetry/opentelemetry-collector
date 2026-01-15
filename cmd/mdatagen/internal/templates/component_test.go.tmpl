@@ -501,7 +501,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "logs_to_profiles",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
-				return factory.CreateLogsToProfiles(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateLogsToProfiles(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -537,7 +537,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "metrics_to_profiles",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
-				return factory.CreateMetricsToTraces(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateMetricsToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -573,7 +573,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "traces_to_profiles",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
-				return factory.CreateTracesToProfiles(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateTracesToProfiles(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -582,7 +582,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "profiles_to_logs",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{pipeline.NewID(pipeline.SignalLogs): consumertest.NewNop()})
-				return factory.CreateProfilesToLogs(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateProfilesToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -591,7 +591,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "profiles_to_metrics",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{pipeline.NewID(pipeline.SignalMetrics): consumertest.NewNop()})
-				return factory.CreateProfilesToMetrics(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateProfilesToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -600,7 +600,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "profiles_to_traces",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
-				return factory.CreateProfilesToTraces(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateProfilesToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -609,7 +609,7 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "profiles_to_profiles",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := xconnector.NewProfilesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
-				return factory.CreateProfilesToProfiles(ctx, set, cfg, router)
+				return factory.(xconnector.Factory).CreateProfilesToProfiles(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
