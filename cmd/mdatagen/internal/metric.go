@@ -99,9 +99,13 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
-	// TODO: Enforce deprecated metadata requirements once all components
-	// include deprecated fields consistently.
-	// See discussion in PR #14408.
+
+	if m.Deprecated != nil {
+		if err := m.Deprecated.Validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))

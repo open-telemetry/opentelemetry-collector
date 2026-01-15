@@ -18,9 +18,11 @@ Monotonic cumulative sum int metric enabled by default.
 
 The metric will be become optional soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Deprecation |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ----------- |
-| s | Sum | Int | Cumulative | true | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -41,9 +43,11 @@ The metric will be become optional soon.
 
 The metric will be removed soon.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Deprecation |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ----------- |
-| s | Sum | Double | Delta | false | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Delta | false | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 ### metric.input_type
 
@@ -118,9 +122,11 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability | Deprecation |
-| ---- | ----------- | ---------- | --------- | ----------- |
-| 1 | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -135,9 +141,11 @@ metrics:
 
 [DEPRECATED] Gauge double metric disabled by default.
 
-| Unit | Metric Type | Value Type | Stability | Deprecation |
-| ---- | ----------- | ---------- | --------- | ----------- |
-|  | Gauge | Double | Deprecated | since 1.0.0 (This metric will be removed) |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -238,9 +246,11 @@ Number of times the batch was sent due to a size trigger
 > **Deprecated since 1.5.0**
 > This metric will be removed in favor of batch_send_trigger_size
 
-| Unit | Metric Type | Value Type | Monotonic | Stability | Deprecation |
-| ---- | ----------- | ---------- | --------- | --------- | ----------- |
-| {times} | Sum | Int | true | Deprecated | since 1.5.0, note: This metric will be removed in favor of batch_send_trigger_size |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {times} | Sum | Int | true | Deprecated - Deprecated since 1.5.0 |
+
+**Deprecation note**: This metric will be removed in favor of batch_send_trigger_size
 
 ### otelcol_process_runtime_total_alloc_bytes
 
