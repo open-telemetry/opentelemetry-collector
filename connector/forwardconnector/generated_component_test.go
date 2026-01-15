@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var typ = component.MustNewType("forward")
@@ -57,6 +58,14 @@ func TestComponentLifecycle(t *testing.T) {
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
 				return factory.CreateTracesToTraces(ctx, set, cfg, router)
+			},
+		},
+
+		{
+			name: "profiles_to_profiles",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
+				return factory.CreateProfilesToProfiles(ctx, set, cfg, router)
 			},
 		},
 	}
