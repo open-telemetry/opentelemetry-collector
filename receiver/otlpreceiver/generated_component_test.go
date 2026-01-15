@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var typ = component.MustNewType("otlp")
@@ -58,7 +59,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "profiles",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+				return factory.(xreceiver.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}

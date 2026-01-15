@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 var typ = component.MustNewType("memory_limiter")
@@ -63,7 +64,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "profiles",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+				return factory.(xprocessor.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}

@@ -69,6 +69,10 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
+go.opentelemetry.io/collector/receiver v1.49.0 h1:kT/qmquWrTDB4VnEy6O2fYPDeodNm8/kckoorgH9wL4=
+go.opentelemetry.io/collector/receiver v1.49.0/go.mod h1:i4ecxdFUNPcfgWQPqM6wr6HFBo+ZEI87jEre3UYtwqc=
+go.opentelemetry.io/collector/receiver/xreceiver v0.143.0 h1:+1ZDl5V/OXhOBBMnkAgjE8PeLvvJFu47+LGBVOvb/lg=
+go.opentelemetry.io/collector/receiver/xreceiver v0.143.0/go.mod h1:Oc5jtKLz3cPEVcNrr3QGCvXPvSrKvajTNpVBi4FnL/0=
 go.opentelemetry.io/otel v1.39.0 h1:8yPrr/S0ND9QEfTfdP9V+SiwT4E0G7Y5MO7p85nis48=
 go.opentelemetry.io/otel v1.39.0/go.mod h1:kLlFTywNWrFyEdH0oj2xK0bFYZtHRYUdv1NklR/tgc8=
 go.opentelemetry.io/otel/metric v1.39.0 h1:d1UzonvEZriVfpNKEVmHXbdf909uGTOQjA0HF0Ls5Q0=

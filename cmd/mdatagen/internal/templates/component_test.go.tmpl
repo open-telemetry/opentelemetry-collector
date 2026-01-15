@@ -204,7 +204,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "profiles",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+				return factory.(xprocessor.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 {{ end }}
@@ -307,7 +307,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "profiles",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+				return factory.(xreceiver.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 {{ end }}
@@ -384,7 +384,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "profiles",
 			createFn: func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateProfiles(ctx, set, cfg)
+				return factory.(xscraper.Factory).CreateProfiles(ctx, set, cfg)
 			},
 		},
 {{ end }}
