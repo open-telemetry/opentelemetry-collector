@@ -18,10 +18,16 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DisplayName is a human-readable display name for the component.
+	DisplayName string `mapstructure:"display_name"`
+	// Description is a brief description of the component.
+	Description string `mapstructure:"description"`
 	// Type of the parent component (applicable to subcomponents).
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// Spatial Re-aggregation featuregate.
+	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// The name of the package that will be generated.
 	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.
@@ -48,6 +54,8 @@ type Metadata struct {
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
+	// FeatureGates that are managed by the component.
+	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -86,6 +94,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateMetricsAndEvents(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateFeatureGates(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -270,6 +282,76 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 	return errs
 }
 
+func (md *Metadata) validateFeatureGates() error {
+	var errs error
+	seen := make(map[FeatureGateID]bool)
+	idRegexp := regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+
+	// Validate that feature gates are sorted by ID
+	if !slices.IsSortedFunc(md.FeatureGates, func(a, b FeatureGate) int {
+		return strings.Compare(string(a.ID), string(b.ID))
+	}) {
+		errs = errors.Join(errs, errors.New("feature gates must be sorted by ID"))
+	}
+
+	for i, gate := range md.FeatureGates {
+		// Validate gate ID is not empty
+		if string(gate.ID) == "" {
+			errs = errors.Join(errs, fmt.Errorf("feature gate at index %d: ID cannot be empty", i))
+			continue
+		}
+
+		// Validate ID follows the allowed character pattern
+		if !idRegexp.MatchString(string(gate.ID)) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+		}
+
+		// Check for duplicate IDs
+		if seen[gate.ID] {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": duplicate ID`, gate.ID))
+			continue
+		}
+		seen[gate.ID] = true
+
+		// Validate gate has required fields
+		if gate.Description == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": description is required`, gate.ID))
+		}
+
+		// Validate that each feature gate has a reference link
+		if gate.ReferenceURL == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
+		}
+
+		// Validate stage is one of the allowed values
+		validStages := map[FeatureGateStage]bool{
+			FeatureGateStageAlpha:      true,
+			FeatureGateStageBeta:       true,
+			FeatureGateStageStable:     true,
+			FeatureGateStageDeprecated: true,
+		}
+		if !validStages[gate.Stage] {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": invalid stage "%v", must be one of: alpha, beta, stable, deprecated`, gate.ID, gate.Stage))
+		}
+
+		// Validate from_version is required
+		if gate.FromVersion == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version is required`, gate.ID))
+		} else if !strings.HasPrefix(gate.FromVersion, "v") {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": from_version "%v" must start with 'v'`, gate.ID, gate.FromVersion))
+		}
+		if gate.ToVersion != "" && !strings.HasPrefix(gate.ToVersion, "v") {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version "%v" must start with 'v'`, gate.ID, gate.ToVersion))
+		}
+
+		// Validate that stable/deprecated gates should have to_version
+		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
+		}
+	}
+	return errs
+}
+
 type AttributeName string
 
 // AttributeRequirementLevel defines the requirement level of an attribute.
@@ -408,6 +490,17 @@ func (a Attribute) IsConditional() bool {
 	return a.RequirementLevel == AttributeRequirementLevelConditionallyRequired
 }
 
+// IsRequired returns true if the attribute is required.
+func (a Attribute) IsRequired() bool {
+	return a.RequirementLevel == AttributeRequirementLevelRequired
+}
+
+// IsNotOptIn returns true if the attribute is any requirement_level above
+// opt_in
+func (a Attribute) IsNotOptIn() bool {
+	return a.RequirementLevel != AttributeRequirementLevelOptIn
+}
+
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (rl *AttributeRequirementLevel) UnmarshalText(text []byte) error {
 	switch string(text) {
@@ -472,6 +565,31 @@ func (a Attribute) TestValue() string {
 	return ""
 }
 
+func (a Attribute) TestValueTwo() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val-2"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return strconv.Itoa(len(a.FullName) + 1)
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 1.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(len(a.FullName)%2 == 1)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key3": "%s-val3", "key4": "%s-val4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item3", "%s-item4"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val-2")`, a.FullName)
+	}
+	return ""
+}
+
 type Signal struct {
 	// Enabled defines whether the signal is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
@@ -520,4 +638,33 @@ type Entity struct {
 type EntityAttributeRef struct {
 	// Ref is the reference to a resource attribute.
 	Ref AttributeName `mapstructure:"ref"`
+}
+
+// FeatureGateID represents the identifier for a feature gate.
+type FeatureGateID string
+
+// FeatureGateStage represents the lifecycle stage of a feature gate.
+type FeatureGateStage string
+
+const (
+	FeatureGateStageAlpha      FeatureGateStage = "alpha"
+	FeatureGateStageBeta       FeatureGateStage = "beta"
+	FeatureGateStageStable     FeatureGateStage = "stable"
+	FeatureGateStageDeprecated FeatureGateStage = "deprecated"
+)
+
+// FeatureGate represents a feature gate definition in metadata.
+type FeatureGate struct {
+	// ID is the unique identifier for the feature gate.
+	ID FeatureGateID `mapstructure:"id"`
+	// Description of the feature gate.
+	Description string `mapstructure:"description"`
+	// Stage is the lifecycle stage of the feature gate.
+	Stage FeatureGateStage `mapstructure:"stage"`
+	// FromVersion is the version when the feature gate was introduced.
+	FromVersion string `mapstructure:"from_version"`
+	// ToVersion is the version when the feature gate reached stable stage.
+	ToVersion string `mapstructure:"to_version"`
+	// ReferenceURL is the URL with contextual information about the feature gate.
+	ReferenceURL string `mapstructure:"reference_url"`
 }

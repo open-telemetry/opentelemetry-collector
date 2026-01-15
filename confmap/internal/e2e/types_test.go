@@ -568,7 +568,7 @@ func TestIndirectSliceEnvVar(t *testing.T) {
 		Exporters struct {
 			OTLP struct {
 				Endpoint string `mapstructure:"endpoint"`
-			} `mapstructure:"otlp"`
+			} `mapstructure:"otlp_grpc"`
 			Nop struct{} `mapstructure:"nop"`
 		} `mapstructure:"exporters"`
 		Receivers struct {

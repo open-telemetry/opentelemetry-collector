@@ -3,7 +3,7 @@ url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/mai
 maintainers: []
 components:
     exporter:
-        - otlp
-        - otlphttp
+        - otlp_grpc
+        - otlp_http
     receiver:
         - otlp

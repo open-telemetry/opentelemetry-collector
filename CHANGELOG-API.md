@@ -7,6 +7,72 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.49.0/v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xprocessor`: Use pointer receivers in xprocessor factory methods for consistency with other factories. (#14348)
+
+<!-- previous-version -->
+
+## v1.48.0/v0.142.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/xpdata`: Rename `Entity.IDAttributes()` to `Entity.IdentifyingAttributes()` and `Entity.DescriptionAttributes()` to `Entity.DescriptiveAttributes()` to align with OpenTelemetry specification terminology for attributes. (#14275)
+- `pkg/exporterhelper`: Use `configoptional.Optional` for the `exporterhelper.QueueBatchConfig` (#14155)
+  It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/service`: Deprecate Settings.LoggingOptions and telemetry.LoggerSettings.ZapOptions, add telemetry.LoggerSettings.BuildZapLogger (#14002)
+  BuildZapLogger provides a more flexible way to build the Zap logger,
+  since the function will have access to the zap.Config. This is used
+  in otelcol to install a Windows Event Log output when the zap config
+  does not specify any file output.
+  
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: add ProfileCount() (#14239)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/confmap`: Ensure that embedded structs are not overwritten after Unmarshal is called (#14213)
+  This allows embedding structs which implement Unmarshal and contain a configopaque.String.
+  
+
+<!-- previous-version -->
+
+## v1.47.0/v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/configgrpc`: Replace `component.Host` parameter of ToServer/ToClientConn by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+- `pkg/config/confighttp`: Replace `component.Host` parameter of ToServer/ToClient by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/pdata`: Deprecate profile.Duration() and profile.SetDuration() (#14188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `MergeTo` method (#14091)
+- `pkg/pdata`: Add profile.DurationNano() and profile.SetDurationNano() (#14188)
+
+<!-- previous-version -->
+
 ## v1.46.0/v0.140.0
 
 ### 🛑 Breaking changes 🛑

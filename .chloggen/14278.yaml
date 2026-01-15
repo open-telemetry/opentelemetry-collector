@@ -3,27 +3,23 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: breaking
 
-# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pkg/config/confighttp
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Replace `component.Host` parameter of ToServer/ToClient by map of extensions
+note: Change verbosity level for otelcol_exporter_queue_batch_send_size metric to detailed.
 
 # One or more tracking issues or pull requests related to the change
-issues: [13640]
+issues: [14278]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Components must now pass the map obtained from the host's `GetExtensions` method
-  instead of the host itself.
-  
-  Nil may be used in tests where no middleware or authentication extensions are used.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [api]
+change_logs: []

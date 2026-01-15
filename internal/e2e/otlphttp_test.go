@@ -29,9 +29,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -389,7 +391,7 @@ func startLogs(t *testing.T, baseURL, overrideURL string) exporter.Logs {
 func createConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter.Config {
 	cfg := defaultCfg.(*otlphttpexporter.Config)
 	cfg.ClientConfig.Endpoint = baseURL
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.RetryConfig.Enabled = false
 	return cfg
 }
@@ -420,7 +422,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = addr
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = addr
 	return cfg
 }
 

@@ -6,6 +6,7 @@ package xexporterhelper // import "go.opentelemetry.io/collector/exporter/export
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -85,6 +86,6 @@ func NewTracesQueueBatchSettings() QueueBatchSettings {
 // to partition batches based on the specified metadata keys.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg exporterhelper.QueueBatchConfig, set QueueBatchSettings) exporterhelper.Option {
+func WithQueueBatch(cfg configoptional.Optional[exporterhelper.QueueBatchConfig], set QueueBatchSettings) exporterhelper.Option {
 	return internal.WithQueueBatch(cfg, set)
 }

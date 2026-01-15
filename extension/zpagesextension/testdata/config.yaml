@@ -1,1 +1,2 @@
 endpoint: "localhost:56888"
+transport: tcp

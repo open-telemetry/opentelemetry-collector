@@ -24,6 +24,7 @@ func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		xexporter.WithDeprecatedTypeAlias(component.MustNewType("otlp")),
 		xexporter.WithTraces(createTraces, metadata.TracesStability),
 		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
 		xexporter.WithLogs(createLogs, metadata.LogsStability),
@@ -44,7 +45,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
+		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:  clientCfg,
 	}
 }

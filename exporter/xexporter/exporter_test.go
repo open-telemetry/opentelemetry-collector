@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/internal/componentalias"
 )
 
 var testID = component.MustNewID("test")
@@ -52,4 +53,28 @@ type nop struct {
 
 func createProfiles(context.Context, exporter.Settings, component.Config) (Profiles, error) {
 	return nopInstance, nil
+}
+
+func TestNewFactoryWithDeprecatedAlias(t *testing.T) {
+	testType := component.MustNewType("newname")
+	aliasType := component.MustNewType("oldname")
+	defaultCfg := struct{}{}
+
+	f := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+		WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		WithDeprecatedTypeAlias(aliasType),
+	)
+
+	assert.Equal(t, testType, f.Type())
+	assert.Equal(t, aliasType, f.(*factory).Factory.(componentalias.TypeAliasHolder).DeprecatedAlias())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+
+	_, err := f.CreateProfiles(context.Background(), exporter.Settings{ID: component.MustNewID("newname")}, &defaultCfg)
+	require.NoError(t, err)
+	_, err = f.CreateProfiles(context.Background(), exporter.Settings{ID: component.MustNewID("oldname")}, &defaultCfg)
+	require.NoError(t, err)
+	_, err = f.CreateProfiles(context.Background(), exporter.Settings{ID: component.MustNewID("wrongname")}, &defaultCfg)
+	require.Error(t, err)
 }

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -27,6 +28,7 @@ func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		xexporter.WithDeprecatedTypeAlias(component.MustNewType("otlphttp")),
 		xexporter.WithTraces(createTraces, metadata.TracesStability),
 		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
 		xexporter.WithLogs(createLogs, metadata.LogsStability),
@@ -44,7 +46,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),
-		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+		QueueConfig:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
 	}

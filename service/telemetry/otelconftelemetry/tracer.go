@@ -19,15 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-var _ = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterFromVersion("v0.107.0"),
-	featuregate.WithRegisterToVersion("v0.109.0"),
-	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
 
 const (
 	// supported trace propagators
