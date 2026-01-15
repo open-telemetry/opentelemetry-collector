@@ -1,6 +1,6 @@
 - name: merge-mode-default
   configs:
-    -
+    -  |
         receivers:
             nop:
             nop/myreceiver:
@@ -24,7 +24,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    -  |
         receivers:
             nop2:
 
@@ -35,12 +35,12 @@
             nop2:
 
         service:
-            extensions: [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: [nop2]
-                    processors: [nop2]
-                    exporters: [nop2]
+                    receivers: !mode=append [nop2]
+                    processors: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop2:
@@ -66,11 +66,11 @@
         pipelines:
             traces:
                 receivers: [nop, nop2]
-                processors: [nop2]
+                processors: [nop, nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append
   configs:
-    -
+    - |
         receivers:
             nop:
                 key: val
@@ -92,7 +92,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -105,12 +105,12 @@
             nop2:
 
         service:
-            extensions: [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: [nop2]
-                    processors: [nop2]
-                    exporters: [nop2]
+                    receivers: !mode=append [nop2]
+                    processors: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop2:
@@ -134,11 +134,11 @@
         pipelines:
             traces:
                 receivers: [nop, nop2]
-                processors: [nop2]
+                processors: [nop, nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append-override-old-values
   configs:
-    -
+    -  |
         receivers:
             nop:
                 key1: "value"
@@ -162,7 +162,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -174,11 +174,11 @@
                 key: 2
 
         service:
-            extensions: [ext]
+            extensions: !mode=append [ext]
             pipelines:
                 traces:
-                    receivers: [nop2]
-                    exporters: [nop2]
+                    receivers: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop:
@@ -207,7 +207,7 @@
                 exporters: [nop, nop2]
 - name: merge-mode-append-name-aware
   configs:
-    -
+    -  |
         receivers:
             nop:
 
@@ -225,7 +225,7 @@
                 traces:
                     receivers: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop:
 
@@ -238,11 +238,11 @@
             ext3:
 
         service:
-            extensions: [nop, ext3]
+            extensions: !mode=append [nop, ext3]
             pipelines:
                 traces:
-                    receivers: [nop]
-                    exporters: [nop]
+                    receivers: !mode=append [nop]
+                    exporters: !mode=append [nop]
   expected: 
     receivers:
         nop:
@@ -265,7 +265,7 @@
                 exporters: [nop]
 - name: merge-mode-append-multiple
   configs:
-    -
+    -  |
         receivers:
             nop:
 
@@ -281,7 +281,7 @@
                 traces:
                     receivers: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -292,12 +292,12 @@
             nop2:
 
         service:
-            extensions: [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: [nop2]
-                    exporters: [nop2]
-    -
+                    receivers: !mode=append [nop2]
+                    exporters: !mode=append [nop2]
+    - |
         receivers:
             nop3:
 
@@ -308,11 +308,11 @@
             nop3:
 
         service:
-            extensions: [nop3]
+            extensions: !mode=append [nop3]
             pipelines:
                 traces:
-                    receivers: [nop3]
-                    exporters: [nop3]
+                    receivers: !mode=append [nop3]
+                    exporters: !mode=append [nop3]
   expected: 
     receivers:
         nop:
@@ -337,7 +337,7 @@
                 exporters: [nop, nop2, nop3]
 - name: merge-mode-append-processor-service
   configs:
-    -
+    -  |
         receivers:
             nop:
 
@@ -356,7 +356,7 @@
                     receivers: [nop]
                     processors: [processor]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -367,15 +367,15 @@
             nop2:
         processors:
             processor:
-                path: [path2]
+                path: !mode=append [path2]
 
         service:
-            extensions: [nop2]
+            extensions: !mode=append [nop2]
             pipelines:
                 traces:
-                    receivers: [nop2]
+                    receivers: !mode=append [nop2]
                     processors: [processor]
-                    exporters: [nop2]
+                    exporters: !mode=append [nop2]
   expected: 
     receivers:
         nop:
@@ -390,7 +390,7 @@
         nop2:
     processors:
         processor:
-            path: [path2]
+            path: [path, path2]
 
     service:
         extensions: [nop, nop2]
@@ -399,99 +399,9 @@
                 receivers: [nop, nop2]
                 processors: [processor]
                 exporters: [nop, nop2]
-- name: merge-mode-append-entire-config
-  configs:
-    -
-        receivers:
-            nop:
-
-        exporters:
-            nop:
-
-        extensions:
-            nop:
-        processors:
-            processor:
-                path: [path]
-        service:
-            extensions: [nop]
-            pipelines:
-                traces:
-                    receivers: [nop]
-                    processors: [processor]
-                    exporters: [nop]
-    -
-        receivers:
-            nop2:
-
-        exporters:
-            nop2:
-
-        extensions:
-            nop2:
-        processors:
-            processor:
-                path: [path2]
-
-        service:
-            extensions: [nop2]
-            pipelines:
-                traces:
-                    receivers: [nop2]
-                    processors: [processor]
-                    exporters: [nop2]
-    -
-        receivers:
-            nop3:
-
-        exporters:
-            nop3:
-
-        extensions:
-            nop3:
-        processors:
-            processor:
-                path: [path3]
-            processor2:
-
-        service:
-            extensions: [nop3]
-            pipelines:
-                traces:
-                    receivers: [nop3]
-                    processors: [processor, processor2]
-                    exporters: [nop3]
-  expected: 
-    receivers:
-        nop:
-        nop2:
-        nop3:
-
-    exporters:
-        nop:
-        nop2:
-        nop3:
-
-    extensions:
-        nop:
-        nop2:
-        nop3:
-
-    processors:
-        processor:
-            path: [path3]
-        processor2:
-
-    service:
-        extensions: [nop, nop2, nop3]
-        pipelines:
-            traces:
-                receivers: [nop, nop2, nop3]
-                processors: [processor, processor2]
-                exporters: [nop, nop2, nop3]
 - name: merge-mode-append-different-kinds
   configs:
-    -
+    -  |
         receivers:
             nop:
                 key: val
@@ -513,7 +423,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop:
                 key: 1.2
@@ -541,7 +451,7 @@
                 exporters: [nop]
 - name: merge-mode-multiple-pipelines
   configs:
-    -
+    -  |
         receivers:
             nop:
                 key: val
@@ -568,7 +478,7 @@
                     receivers: [nop]
                     processors: [attributes/example]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop1:
                 key: val
@@ -585,16 +495,16 @@
             nop1:
 
         service:
-            extensions: [nop1]
+            extensions: !mode=append [nop1]
             pipelines:
                 traces:
-                    receivers: [nop1]
-                    processors: [nop1]
-                    exporters: [nop1]
+                    receivers: !mode=append [nop1]
+                    processors: !mode=append [nop1]
+                    exporters: !mode=append [nop1]
                 logs:
-                    receivers: [nop1]
+                    receivers: !mode=append [nop1]
                     processors: [nop1]
-                    exporters: [nop1]
+                    exporters: !mode=append [nop1]
   expected: 
     receivers:
         nop:
@@ -623,7 +533,7 @@
         pipelines:
             traces:
                 receivers: [nop, nop1]
-                processors: [nop1]
+                processors: [attributes/example, nop1]
                 exporters: [nop, nop1]
             logs:
                 receivers: [nop, nop1]
@@ -631,14 +541,14 @@
                 exporters: [nop, nop1]
 - name: merge-mode-map
   configs:
-    -
+    -  |
         processors:
             resource:
                 attributes:
                 - key: deployment.region
                   value: "nl"
                   action: upsert
-    -
+    - |
         processors:
             resource:
                 attributes:

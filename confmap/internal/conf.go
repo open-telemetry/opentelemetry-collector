@@ -32,6 +32,8 @@ type Conf struct {
 	// isNil is true if this Conf was created from a nil field, as opposed to an empty map.
 	// AllKeys must return an empty slice if this is true.
 	isNil bool
+
+	mergeOpts map[string]*MergeOptions
 }
 
 // New creates a new empty confmap.Conf instance.
@@ -49,6 +51,11 @@ func NewFromStringMap(data map[string]any) *Conf {
 		_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
 	}
 	return p
+}
+
+func (l *Conf) WithMergeOptions(opt map[string]*MergeOptions) *Conf {
+	l.mergeOpts = opt
+	return l
 }
 
 // Unmarshal unmarshalls the config into a struct using the given options.
@@ -122,7 +129,7 @@ func (l *Conf) Delete(key string) bool {
 // For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
 // the resulting list will be [extension1, extension2, extension3].
 func (l *Conf) mergeAppend(in *Conf) error {
-	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend))
+	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend(in.mergeOpts)))
 	if err != nil {
 		return err
 	}

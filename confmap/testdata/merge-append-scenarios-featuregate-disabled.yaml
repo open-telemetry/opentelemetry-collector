@@ -1,6 +1,6 @@
 - name: merge-mode-default
   configs:
-    -
+    - |
         receivers:
             nop:
             nop/myreceiver:
@@ -24,7 +24,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -71,7 +71,7 @@
 - name: merge-mode-append
   append_paths: ["service"]
   configs:
-    -
+    - |
         receivers:
             nop:
                 key: val
@@ -93,7 +93,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
@@ -140,7 +140,7 @@
 - name: merge-mode-append-override-old-values
   append_paths: ["service"]
   configs:
-    -
+    - |
         receivers:
             nop:
                 key1: "value"
@@ -164,7 +164,7 @@
                     receivers: [nop]
                     processors: [nop]
                     exporters: [nop]
-    -
+    - |
         receivers:
             nop2:
 
