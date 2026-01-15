@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.143.0
 	go.opentelemetry.io/collector/pdata v1.49.0
 	go.opentelemetry.io/collector/pdata/testdata v0.143.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.64.0
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.78.0
