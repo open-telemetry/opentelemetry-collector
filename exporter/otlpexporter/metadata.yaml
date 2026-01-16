@@ -1,3 +1,4 @@
+display_name: OTLP gRPC Exporter
 type: otlp_grpc
 github_project: open-telemetry/opentelemetry-collector
 

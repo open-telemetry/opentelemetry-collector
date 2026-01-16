@@ -9,18 +9,23 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
+
+const dataFormatProtobuf = "protobuf"
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
 	nextConsumer xconsumer.Profiles
+	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer xconsumer.Profiles) *Receiver {
+func New(nextConsumer xconsumer.Profiles, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
+		obsreport:    obsreport,
 	}
 }
 
@@ -28,12 +33,15 @@ func New(nextConsumer xconsumer.Profiles) *Receiver {
 func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
 	td := req.Profiles()
 	// We need to ensure that it propagates the receiver name as a tag
-	numProfiles := td.SampleCount()
-	if numProfiles == 0 {
+	numSamples := td.SampleCount()
+	if numSamples == 0 {
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
+	ctx = r.obsreport.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)
+	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, numSamples, err)
+
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
 	// Refer: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
