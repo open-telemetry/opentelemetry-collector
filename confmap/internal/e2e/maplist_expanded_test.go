@@ -60,12 +60,12 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 		},
 	}
 
-	originalState := internal.DeferExpandedValueSanitizationOnStructCollection.IsEnabled()
+	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.DeferExpandedValueSanitizationOnStructCollection.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.DeferExpandedValueSanitizationOnStructCollection.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), true))
 
 	conf := confmap.NewFromStringMap(data)
 	var tc testHeadersConfig
@@ -76,7 +76,7 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, configopaque.String("8080"), val)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.DeferExpandedValueSanitizationOnStructCollection.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
 
 	// This will fail because when reverting to old behavior, ExpandedValues get decoded at collection time and doesn't
 	// take struct collections into account.
@@ -104,4 +104,34 @@ func TestDirectConfigopaqueStringWithExpandedValueIntValue(t *testing.T) {
 	// This should work because useExpandValue detects the target is a string
 	require.NoError(t, err)
 	require.Equal(t, configopaque.String("8080"), tc.Value)
+}
+
+// TestStringyStructureWithExpandedValue tests the isStringyStructure path in useExpandValue
+func TestStringyStructureWithExpandedValue(t *testing.T) {
+	type testConfig struct {
+		Tags []string `mapstructure:"tags"`
+	}
+
+	data := map[string]any{
+		"tags": []any{
+			internal.ExpandedValue{
+				Value:    8080,
+				Original: "8080",
+			},
+		},
+	}
+
+	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
+	}()
+
+	// With feature gate disabled, useExpandValue should detect []string as stringy
+	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
+
+	conf := confmap.NewFromStringMap(data)
+	var tc testConfig
+	err := conf.Unmarshal(&tc)
+	require.NoError(t, err)
+	require.Equal(t, []string{"8080"}, tc.Tags)
 }

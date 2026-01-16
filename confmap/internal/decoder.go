@@ -93,7 +93,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 			return v, nil
 		}
 
-		if !DeferExpandedValueSanitizationOnStructCollection.IsEnabled() {
+		if !NewExpandedValueSanitizer.IsEnabled() {
 			switch to.Kind() {
 			case reflect.Array, reflect.Slice, reflect.Map:
 				if isStringyStructure(to) {
