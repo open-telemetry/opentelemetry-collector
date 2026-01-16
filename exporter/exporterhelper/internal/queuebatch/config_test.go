@@ -180,3 +180,14 @@ func TestUnmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalBatchSizerDefaultsToItemsWithoutParentSizer(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "batch_set_nonempty_no_parent_sizer.yaml"))
+	require.NoError(t, err)
+
+	var cfg Config
+	require.NoError(t, cfg.Unmarshal(cm))
+	require.NotNil(t, cfg.Batch.Get())
+	assert.Equal(t, request.SizerTypeItems, cfg.Batch.Get().Sizer)
+	require.NoError(t, xconfmap.Validate(cfg))
+}

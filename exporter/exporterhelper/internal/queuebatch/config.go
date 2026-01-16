@@ -51,12 +51,15 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// If all of the following hold:
-	// 1. the sizer is set,
-	// 2. the batch sizer is not set and
-	// 3. the batch section is nonempty,
-	// then use the same value as the queue sizer.
-	if conf.IsSet("sizer") && !conf.IsSet("batch::sizer") && conf.IsSet("batch") && conf.Get("batch") != nil {
-		cfg.Batch.Get().Sizer = cfg.Sizer
+	// 1. the batch sizer is not set and
+	// 2. the batch section is nonempty,
+	// then use the same value as the queue sizer if set, otherwise default to items.
+	if !conf.IsSet("batch::sizer") && conf.IsSet("batch") && conf.Get("batch") != nil {
+		if conf.IsSet("sizer") {
+			cfg.Batch.Get().Sizer = cfg.Sizer
+		} else {
+			cfg.Batch.Get().Sizer = request.SizerTypeItems
+		}
 	}
 	return nil
 }
