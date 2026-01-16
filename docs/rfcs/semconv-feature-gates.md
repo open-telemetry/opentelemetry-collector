@@ -176,8 +176,9 @@ is as follows:
    **beta** stage on the same Collector release. The new default behavior is therefore to emit only the
    'v1' conventions. Users can opt-out to emit the v1 conventions alongside the v0 conventions or
    to emit only the v0 conventions.
-3. After at least 3 releases, the features are promoted to the **stable** stage. At this point users
-   can only use the v1 conventions..
+3. After 3 releases, the feature gates are promoted to the **stable** stage. At this point users
+   can only use the v1 conventions.
+4. After 3 releases, the feature gates are removed.
 
 This mechanism does not cover any sort of transition for experimental semantic conventions. These
 presumably would be covered by separate feature gates or some other mechanism.
