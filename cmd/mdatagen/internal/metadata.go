@@ -64,7 +64,7 @@ type Deprecated struct {
 	Note  string `mapstructure:"note"`
 }
 
-func (d *Deprecated) Validate() error {
+func (d *Deprecated) validate() error {
 	if strings.TrimSpace(d.Since) == "" {
 		return errors.New("deprecated.since must be set")
 	}
