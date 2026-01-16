@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -628,7 +629,7 @@ type Entity struct {
 	// Brief is a brief description of the entity.
 	Brief string `mapstructure:"brief"`
 	// Stability is the stability level of the entity.
-	Stability string `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 	// Identity contains references to resource attributes that uniquely identify the entity.
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.
