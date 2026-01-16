@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	apimetric "go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -881,4 +883,82 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.Error(t, err)
 	require.ErrorIs(t, err, wantErr)
 	require.Contains(t, err.Error(), "failed to register process metrics")
+}
+
+func TestNew_ProcessMetricsRegistrationFailure_PoisonInject(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on Windows: Process metrics might not be registered on this OS.")
+	}
+
+	baseSettings := newNopSettings()
+	baseFactory := baseSettings.TelemetryFactory
+
+	poisonMP := &poisonMeterProvider{
+		MeterProvider: noopmetric.NewMeterProvider(),
+	}
+
+	mockFactory := &mockTelemetryFactory{
+		Factory: baseFactory,
+		mp:      poisonMP,
+	}
+
+	set := newNopSettings()
+	set.TelemetryFactory = mockFactory
+	cfg := newNopConfig()
+
+	_, err := New(context.Background(), set, cfg)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forced metric error")
+}
+
+var errForcedMetric = errors.New("forced metric error")
+
+type mockTelemetryFactory struct {
+	telemetry.Factory
+	mp telemetry.MeterProvider
+}
+
+func (f *mockTelemetryFactory) CreateMeterProvider(ctx context.Context, set telemetry.MeterSettings, cfg component.Config) (telemetry.MeterProvider, error) {
+	return f.mp, nil
+}
+
+type poisonMeterProvider struct {
+	apimetric.MeterProvider
+}
+
+func (p *poisonMeterProvider) Shutdown(context.Context) error {
+	return nil
+}
+
+func (p *poisonMeterProvider) Meter(name string, opts ...apimetric.MeterOption) apimetric.Meter {
+	return &poisonMeter{Meter: p.MeterProvider.Meter(name, opts...)}
+}
+
+type poisonMeter struct {
+	apimetric.Meter
+}
+
+func (m *poisonMeter) Int64ObservableGauge(name string, opts ...apimetric.Int64ObservableGaugeOption) (apimetric.Int64ObservableGauge, error) {
+	return nil, errForcedMetric
+}
+
+func (m *poisonMeter) Float64ObservableGauge(name string, opts ...apimetric.Float64ObservableGaugeOption) (apimetric.Float64ObservableGauge, error) {
+	return nil, errForcedMetric
+}
+
+func (m *poisonMeter) Int64ObservableCounter(name string, opts ...apimetric.Int64ObservableCounterOption) (apimetric.Int64ObservableCounter, error) {
+	return nil, errForcedMetric
+}
+
+func (m *poisonMeter) Float64ObservableCounter(name string, opts ...apimetric.Float64ObservableCounterOption) (apimetric.Float64ObservableCounter, error) {
+	return nil, errForcedMetric
+}
+
+func (m *poisonMeter) Int64Counter(name string, opts ...apimetric.Int64CounterOption) (apimetric.Int64Counter, error) {
+	return nil, errForcedMetric
+}
+
+func (m *poisonMeter) Float64Counter(name string, opts ...apimetric.Float64CounterOption) (apimetric.Float64Counter, error) {
+	return nil, errForcedMetric
 }
