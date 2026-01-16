@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.0
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
 	go.uber.org/goleak v1.3.0
 )
 
@@ -31,5 +32,7 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
 
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil

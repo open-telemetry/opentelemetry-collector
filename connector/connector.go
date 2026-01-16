@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -234,6 +235,7 @@ func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.Stabilit
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
+	componentalias.TypeAliasHolder
 
 	createTracesToTracesFunc  CreateTracesToTracesFunc
 	createTracesToMetricsFunc CreateTracesToMetricsFunc
@@ -308,8 +310,8 @@ func (f *factory) CreateTracesToTraces(ctx context.Context, set Settings, cfg co
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalTraces)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createTracesToTracesFunc(ctx, set, cfg, next)
@@ -320,8 +322,8 @@ func (f *factory) CreateTracesToMetrics(ctx context.Context, set Settings, cfg c
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalMetrics)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createTracesToMetricsFunc(ctx, set, cfg, next)
@@ -332,8 +334,8 @@ func (f *factory) CreateTracesToLogs(ctx context.Context, set Settings, cfg comp
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalLogs)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createTracesToLogsFunc(ctx, set, cfg, next)
@@ -344,8 +346,8 @@ func (f *factory) CreateMetricsToTraces(ctx context.Context, set Settings, cfg c
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalTraces)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createMetricsToTracesFunc(ctx, set, cfg, next)
@@ -356,8 +358,8 @@ func (f *factory) CreateMetricsToMetrics(ctx context.Context, set Settings, cfg 
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalMetrics)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createMetricsToMetricsFunc(ctx, set, cfg, next)
@@ -368,8 +370,8 @@ func (f *factory) CreateMetricsToLogs(ctx context.Context, set Settings, cfg com
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalLogs)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createMetricsToLogsFunc(ctx, set, cfg, next)
@@ -380,8 +382,8 @@ func (f *factory) CreateLogsToTraces(ctx context.Context, set Settings, cfg comp
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalTraces)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createLogsToTracesFunc(ctx, set, cfg, next)
@@ -392,8 +394,8 @@ func (f *factory) CreateLogsToMetrics(ctx context.Context, set Settings, cfg com
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalMetrics)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createLogsToMetricsFunc(ctx, set, cfg, next)
@@ -404,8 +406,8 @@ func (f *factory) CreateLogsToLogs(ctx context.Context, set Settings, cfg compon
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createLogsToLogsFunc(ctx, set, cfg, next)
@@ -416,6 +418,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
+		TypeAliasHolder:         componentalias.NewTypeAliasHolder(),
 	}
 	for _, opt := range options {
 		opt.apply(f)
