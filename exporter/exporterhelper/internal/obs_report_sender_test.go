@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -230,6 +231,74 @@ func TestExportLogsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("exporter", exporterID.String())),
 					Value: int64(failedToSendLogRecords),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
+}
+
+func TestExportProfilesOp(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	var exporterErr error
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		xpipeline.SignalProfiles,
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+	)
+	require.NoError(t, err)
+
+	params := []testParams{
+		{items: 17, err: nil},
+		{items: 23, err: errFake},
+	}
+	for i := range params {
+		exporterErr = params[i].err
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
+	}
+
+	spans := tt.SpanRecorder.Ended()
+	require.Len(t, spans, len(params))
+
+	var sentProfileRecords, failedToSendProfileRecords int
+	for i, span := range spans {
+		assert.Equal(t, "exporter/"+exporterID.String()+"/profiles", span.Name())
+		switch {
+		case params[i].err == nil:
+			sentProfileRecords += params[i].items
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
+		case errors.Is(params[i].err, errFake):
+			failedToSendProfileRecords += params[i].items
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
+		default:
+			t.Fatalf("unexpected error: %v", params[i].err)
+		}
+	}
+
+	metadatatest.AssertEqualExporterSentProfileSamples(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentProfileRecords),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	if failedToSendProfileRecords > 0 {
+		metadatatest.AssertEqualExporterSendFailedProfileSamples(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendProfileRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
