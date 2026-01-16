@@ -102,7 +102,7 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
 
 	if m.Deprecated != nil {
-		if err := m.Deprecated.Validate(); err != nil {
+		if err := m.Deprecated.validate(); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}
