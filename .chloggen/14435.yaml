@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: exporter/exporterhelper
+component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Default `sending_queue::batch::sizer` to `items` when `sending_queue::sizer` is unset to avoid validation errors."
