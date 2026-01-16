@@ -17,7 +17,7 @@
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
-{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }}{{ if $metric.Deprecated }} - Deprecated since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }}{{ if $metric.Deprecated }} since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
 {{- if $metric.SemanticConvention }} [{{ $metricName }}]({{ $metric.SemanticConvention.SemanticConventionRef }}) |{{ end }}
 {{- if $metric.Deprecated }}{{ if $metric.Deprecated.Note }}
 
