@@ -464,6 +464,15 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
 				Tests:           Tests{Host: "newMdatagenNopHost()"},
+				FeatureGates: []FeatureGate{
+					{
+						ID:           "receiver.sample.featuregate.example",
+						Description:  "This is an example feature gate for testing mdatagen code generation.",
+						Stage:        "alpha",
+						FromVersion:  "v0.100.0",
+						ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+					},
+				},
 			},
 		},
 		{
