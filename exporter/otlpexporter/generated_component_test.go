@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var typ = component.MustNewType("otlp")
+var typ = component.MustNewType("otlp_grpc")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

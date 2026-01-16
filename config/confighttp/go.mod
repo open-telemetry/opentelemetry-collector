@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v1.49.0
 	go.opentelemetry.io/collector/config/configcompression v1.49.0
 	go.opentelemetry.io/collector/config/configmiddleware v1.49.0
+	go.opentelemetry.io/collector/config/confignet v1.49.0
 	go.opentelemetry.io/collector/config/configopaque v1.49.0
 	go.opentelemetry.io/collector/config/configoptional v1.49.0
 	go.opentelemetry.io/collector/config/configtls v1.49.0
@@ -43,7 +44,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -81,6 +82,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../configauth
 replace go.opentelemetry.io/collector/config/configcompression => ../configcompression
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
+
+replace go.opentelemetry.io/collector/config/confignet => ../confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 

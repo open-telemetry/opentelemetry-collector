@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.143.0
 	go.opentelemetry.io/collector/component/componenttest v0.143.0
 	go.opentelemetry.io/collector/config/confighttp v0.143.0
+	go.opentelemetry.io/collector/config/confignet v1.49.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.143.0
 	go.opentelemetry.io/collector/confmap v1.49.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
@@ -61,7 +62,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
-	gonum.org/v1/gonum v0.16.0
+	gonum.org/v1/gonum v0.17.0
 )
 
 require (
@@ -76,7 +77,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
@@ -257,3 +258,5 @@ replace go.opentelemetry.io/collector/config/configoptional => ../config/configo
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
+
+replace go.opentelemetry.io/collector/config/confignet => ../config/confignet

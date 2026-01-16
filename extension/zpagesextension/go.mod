@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.143.0
 	go.opentelemetry.io/collector/config/configauth v1.49.0
 	go.opentelemetry.io/collector/config/confighttp v0.143.0
+	go.opentelemetry.io/collector/config/confignet v1.49.0
 	go.opentelemetry.io/collector/config/configoptional v1.49.0
 	go.opentelemetry.io/collector/confmap v1.49.0
 	go.opentelemetry.io/collector/extension v1.49.0
@@ -29,7 +30,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
@@ -103,6 +104,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../../config/configau
 replace go.opentelemetry.io/collector/extension/extensionauth => ../extensionauth
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/client => ../../client
 
