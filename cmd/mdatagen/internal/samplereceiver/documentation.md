@@ -20,7 +20,7 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Deprecated - Deprecated since 1.0.0 |
+| s | Sum | Int | Cumulative | true | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -45,7 +45,7 @@ The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Deprecated - Deprecated since 1.0.0 |
+| s | Sum | Double | Delta | false | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -124,7 +124,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+| 1 | Gauge | Double | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -143,7 +143,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+|  | Gauge | Double | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -248,7 +248,7 @@ Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Deprecated - Deprecated since 1.5.0 |
+| {times} | Sum | Int | true | Deprecated since 1.5.0 |
 
 **Deprecation note**: This metric will be removed in favor of batch_send_trigger_size
 

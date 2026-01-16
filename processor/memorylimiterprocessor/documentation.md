@@ -15,7 +15,7 @@ Number of log records successfully pushed into the next component in the pipelin
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {records} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -28,7 +28,7 @@ Number of metric points successfully pushed into the next component in the pipel
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {datapoints} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -41,7 +41,7 @@ Number of spans successfully pushed into the next component in the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {spans} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -54,7 +54,7 @@ Number of log records that were rejected by the next component in the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {records} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -67,7 +67,7 @@ Number of metric points that were rejected by the next component in the pipeline
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {datapoints} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -80,6 +80,6 @@ Number of spans that were rejected by the next component in the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Deprecated - Deprecated since 0.0.0 |
+| {spans} | Sum | Int | true | Deprecated since 0.0.0 |
 
 **Deprecation note**: This metric is deprecated

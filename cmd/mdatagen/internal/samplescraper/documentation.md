@@ -40,7 +40,7 @@ The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Deprecated - Deprecated since 1.0.0 |
+| s | Sum | Double | Delta | false | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -103,7 +103,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+| 1 | Gauge | Double | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
@@ -121,7 +121,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Deprecated - Deprecated since 1.0.0 |
+|  | Gauge | Double | Deprecated since 1.0.0 |
 
 **Deprecation note**: This metric will be removed
 
