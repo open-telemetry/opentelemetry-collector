@@ -196,10 +196,10 @@ func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
 		"TimeUnixNano/wrong_wire_type":      {0x1c},
 		"TimeUnixNano/missing_value":        {0x19},
 
-		"AsDouble/wrong_wire_type":  {0x24},
-		"AsDouble/missing_value":    {0x21},
 		"AsInt/wrong_wire_type":     {0x34},
 		"AsInt/missing_value":       {0x31},
+		"AsDouble/wrong_wire_type":  {0x24},
+		"AsDouble/missing_value":    {0x21},
 		"Exemplars/wrong_wire_type": {0x2c},
 		"Exemplars/missing_value":   {0x2a},
 		"Flags/wrong_wire_type":     {0x44},
@@ -213,9 +213,25 @@ func genTestEncodingValuesNumberDataPoint() map[string]*NumberDataPoint {
 		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
-		"AsDouble/default":       {Value: &NumberDataPoint_AsDouble{AsDouble: float64(0)}},
-		"AsDouble/test":          {Value: &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &NumberDataPoint_AsInt{AsInt: int64(0)}},
-		"AsInt/test":     {Value: &NumberDataPoint_AsInt{AsInt: int64(13)}},
+		"AsInt/default": func() *NumberDataPoint {
+			ms := NewNumberDataPoint()
+			ms.SetAsInt(int64(0))
+			return ms
+		}(),
+		"AsInt/test": func() *NumberDataPoint {
+			ms := NewNumberDataPoint()
+			ms.SetAsInt(int64(13))
+			return ms
+		}(), "AsDouble/default": func() *NumberDataPoint {
+			ms := NewNumberDataPoint()
+			ms.SetAsDouble(float64(0))
+			return ms
+		}(),
+		"AsDouble/test": func() *NumberDataPoint {
+			ms := NewNumberDataPoint()
+			ms.SetAsDouble(float64(3.1415926))
+			return ms
+		}(),
 		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
 		"Flags/test":     {Flags: uint32(13)},
 	}

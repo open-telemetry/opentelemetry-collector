@@ -20,13 +20,11 @@ type Link struct {
 	SpanId  SpanID
 }
 
-var (
-	protoPoolLink = sync.Pool{
-		New: func() any {
-			return &Link{}
-		},
-	}
-)
+var protoPoolLink = sync.Pool{
+	New: func() any {
+		return &Link{}
+	},
+}
 
 func NewLink() *Link {
 	if !UseProtoPooling.IsEnabled() {

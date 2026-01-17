@@ -20,13 +20,11 @@ type Histogram struct {
 	AggregationTemporality AggregationTemporality
 }
 
-var (
-	protoPoolHistogram = sync.Pool{
-		New: func() any {
-			return &Histogram{}
-		},
-	}
-)
+var protoPoolHistogram = sync.Pool{
+	New: func() any {
+		return &Histogram{}
+	},
+}
 
 func NewHistogram() *Histogram {
 	if !UseProtoPooling.IsEnabled() {

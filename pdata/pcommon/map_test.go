@@ -56,9 +56,11 @@ func TestMap(t *testing.T) {
 func TestMapReadOnly(t *testing.T) {
 	state := internal.NewState()
 	state.MarkReadOnly()
-	m := newMap(&[]internal.KeyValue{
-		{Key: "k1", Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "v1"}}},
-	}, state)
+	kv := []internal.KeyValue{
+		{Key: "k1"},
+	}
+	kv[0].Value.SetStringValue("v1")
+	m := newMap(&kv, state)
 
 	assert.Equal(t, 1, m.Len())
 
@@ -200,14 +202,14 @@ func TestMapWithEmpty(t *testing.T) {
 	origWithNil := []internal.KeyValue{
 		{},
 		{
-			Key:   "test_key",
-			Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "test_value"}},
+			Key: "test_key",
 		},
 		{
-			Key:   "test_key2",
-			Value: internal.AnyValue{Value: nil},
+			Key: "test_key2",
 		},
 	}
+	origWithNil[1].Value.SetStringValue("test_value")
+	origWithNil[2].Value.ResetValue()
 	sm := newMap(&origWithNil, internal.NewState())
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)

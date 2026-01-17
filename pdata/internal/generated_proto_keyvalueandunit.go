@@ -23,13 +23,11 @@ type KeyValueAndUnit struct {
 	UnitStrindex int32
 }
 
-var (
-	protoPoolKeyValueAndUnit = sync.Pool{
-		New: func() any {
-			return &KeyValueAndUnit{}
-		},
-	}
-)
+var protoPoolKeyValueAndUnit = sync.Pool{
+	New: func() any {
+		return &KeyValueAndUnit{}
+	},
+}
 
 func NewKeyValueAndUnit() *KeyValueAndUnit {
 	if !UseProtoPooling.IsEnabled() {

@@ -192,16 +192,16 @@ func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
 
 		"StringValue/wrong_wire_type": {0xc},
 		"StringValue/missing_value":   {0xa},
-		"BoolValue/wrong_wire_type":   {0x14},
-		"BoolValue/missing_value":     {0x10},
 		"IntValue/wrong_wire_type":    {0x1c},
 		"IntValue/missing_value":      {0x18},
 		"DoubleValue/wrong_wire_type": {0x24},
 		"DoubleValue/missing_value":   {0x21},
-		"ArrayValue/wrong_wire_type":  {0x2c},
-		"ArrayValue/missing_value":    {0x2a},
+		"BoolValue/wrong_wire_type":   {0x14},
+		"BoolValue/missing_value":     {0x10},
 		"KvlistValue/wrong_wire_type": {0x34},
 		"KvlistValue/missing_value":   {0x32},
+		"ArrayValue/wrong_wire_type":  {0x2c},
+		"ArrayValue/missing_value":    {0x2a},
 		"BytesValue/wrong_wire_type":  {0x3c},
 		"BytesValue/missing_value":    {0x3a},
 	}
@@ -209,14 +209,70 @@ func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
 
 func genTestEncodingValuesAnyValue() map[string]*AnyValue {
 	return map[string]*AnyValue{
-		"empty":               NewAnyValue(),
-		"StringValue/default": {Value: &AnyValue_StringValue{StringValue: ""}},
-		"StringValue/test":    {Value: &AnyValue_StringValue{StringValue: "test_stringvalue"}}, "BoolValue/default": {Value: &AnyValue_BoolValue{BoolValue: false}},
-		"BoolValue/test": {Value: &AnyValue_BoolValue{BoolValue: true}}, "IntValue/default": {Value: &AnyValue_IntValue{IntValue: int64(0)}},
-		"IntValue/test": {Value: &AnyValue_IntValue{IntValue: int64(13)}}, "DoubleValue/default": {Value: &AnyValue_DoubleValue{DoubleValue: float64(0)}},
-		"DoubleValue/test": {Value: &AnyValue_DoubleValue{DoubleValue: float64(3.1415926)}}, "ArrayValue/default": {Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{}}},
-		"ArrayValue/test": {Value: &AnyValue_ArrayValue{ArrayValue: GenTestArrayValue()}}, "KvlistValue/default": {Value: &AnyValue_KvlistValue{KvlistValue: &KeyValueList{}}},
-		"KvlistValue/test": {Value: &AnyValue_KvlistValue{KvlistValue: GenTestKeyValueList()}}, "BytesValue/default": {Value: &AnyValue_BytesValue{BytesValue: nil}},
-		"BytesValue/test": {Value: &AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}},
+		"empty": NewAnyValue(),
+		"StringValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetStringValue("")
+			return ms
+		}(),
+		"StringValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetStringValue("test_stringvalue")
+			return ms
+		}(), "IntValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetIntValue(int64(0))
+			return ms
+		}(),
+		"IntValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetIntValue(int64(13))
+			return ms
+		}(), "DoubleValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetDoubleValue(float64(0))
+			return ms
+		}(),
+		"DoubleValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetDoubleValue(float64(3.1415926))
+			return ms
+		}(), "BoolValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetBoolValue(false)
+			return ms
+		}(),
+		"BoolValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetBoolValue(true)
+			return ms
+		}(), "KvlistValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetKvlistValue(&KeyValueList{})
+			return ms
+		}(),
+		"KvlistValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetKvlistValue(GenTestKeyValueList())
+			return ms
+		}(), "ArrayValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetArrayValue(&ArrayValue{})
+			return ms
+		}(),
+		"ArrayValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetArrayValue(GenTestArrayValue())
+			return ms
+		}(), "BytesValue/default": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetBytesValue(nil)
+			return ms
+		}(),
+		"BytesValue/test": func() *AnyValue {
+			ms := NewAnyValue()
+			ms.SetBytesValue([]byte{1, 2, 3})
+			return ms
+		}(),
 	}
 }

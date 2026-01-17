@@ -23,13 +23,11 @@ type Mapping struct {
 	FilenameStrindex int32
 }
 
-var (
-	protoPoolMapping = sync.Pool{
-		New: func() any {
-			return &Mapping{}
-		},
-	}
-)
+var protoPoolMapping = sync.Pool{
+	New: func() any {
+		return &Mapping{}
+	},
+}
 
 func NewMapping() *Mapping {
 	if !UseProtoPooling.IsEnabled() {
