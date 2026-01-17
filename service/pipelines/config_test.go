@@ -38,6 +38,26 @@ func TestConfigValidate(t *testing.T) {
 			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
+			name: "duplicate-receiver-reference",
+			cfgFn: func(*testing.T) Config {
+				cfg := generateConfig(t)
+				pipe := cfg[pipeline.NewID(pipeline.SignalTraces)]
+				pipe.Receivers = append(pipe.Receivers, pipe.Receivers...)
+				return cfg
+			},
+			expected: errors.New(`references receiver "nop" multiple times`),
+		},
+		{
+			name: "duplicate-exporter-reference",
+			cfgFn: func(*testing.T) Config {
+				cfg := generateConfig(t)
+				pipe := cfg[pipeline.NewID(pipeline.SignalTraces)]
+				pipe.Exporters = append(pipe.Exporters, pipe.Exporters...)
+				return cfg
+			},
+			expected: errors.New(`references exporter "nop" multiple times`),
+		},
+		{
 			name: "missing-pipeline-receivers",
 			cfgFn: func(*testing.T) Config {
 				cfg := generateConfig(t)

@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: service
+note: Reject configuration with duplicate component IDs in extensions, receivers, and exporters lists.
+issues: [13912]
