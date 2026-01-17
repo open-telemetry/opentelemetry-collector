@@ -93,14 +93,17 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 			return v, nil
 		}
 
-		switch to.Kind() {
-		case reflect.Array, reflect.Slice, reflect.Map:
-			if isStringyStructure(to) {
-				// If the target field is a stringy structure, sanitize to use the original string value everywhere.
-				return sanitizeToStr(data), nil
+		if !NewExpandedValueSanitizer.IsEnabled() {
+			switch to.Kind() {
+			case reflect.Array, reflect.Slice, reflect.Map:
+				if isStringyStructure(to) {
+					// If the target field is a stringy structure, sanitize to use the original string value everywhere.
+					return sanitizeToStr(data), nil
+				}
+
+				// Otherwise, sanitize to use the parsed value everywhere.
+				return sanitize(data), nil
 			}
-			// Otherwise, sanitize to use the parsed value everywhere.
-			return sanitize(data), nil
 		}
 		return data, nil
 	}
