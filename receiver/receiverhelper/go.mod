@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
 	go.opentelemetry.io/collector/pipeline v1.49.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/receiver v1.49.0
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
@@ -68,5 +69,7 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
