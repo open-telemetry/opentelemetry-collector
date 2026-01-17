@@ -65,7 +65,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 ### reaggregate.metric
 
-Metric for testing spacial reaggregation
+Metric for testing spatial reaggregation
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -75,6 +75,22 @@ Metric for testing spacial reaggregation
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
+### reaggregate.metric.with_required
+
+Metric for testing spatial reaggregation with required attributes
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| required_string_attr | A required attribute with a string value | Any Str | Required |
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 
