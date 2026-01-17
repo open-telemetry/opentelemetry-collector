@@ -2,3 +2,5 @@ verbosity: detailed
 sampling_initial: 10
 sampling_thereafter: 50
 use_internal_logger: false
+output_paths:
+  - stdout
