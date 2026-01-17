@@ -77,6 +77,16 @@ func (cfg *PipelineConfig) Validate() error {
 		return errMissingServicePipelineExporters
 	}
 
+	// Validate no receivers are duplicated within a pipeline.
+	recvSet := make(map[component.ID]struct{}, len(cfg.Receivers))
+	for _, ref := range cfg.Receivers {
+		// Ensure no receivers are duplicated within the pipeline
+		if _, exists := recvSet[ref]; exists {
+			return fmt.Errorf("references receiver %q multiple times", ref)
+		}
+		recvSet[ref] = struct{}{}
+	}
+
 	// Validate no processors are duplicated within a pipeline.
 	procSet := make(map[component.ID]struct{}, len(cfg.Processors))
 	for _, ref := range cfg.Processors {
@@ -85,6 +95,16 @@ func (cfg *PipelineConfig) Validate() error {
 			return fmt.Errorf("references processor %q multiple times", ref)
 		}
 		procSet[ref] = struct{}{}
+	}
+
+	// Validate no exporters are duplicated within a pipeline.
+	expSet := make(map[component.ID]struct{}, len(cfg.Exporters))
+	for _, ref := range cfg.Exporters {
+		// Ensure no exporters are duplicated within the pipeline
+		if _, exists := expSet[ref]; exists {
+			return fmt.Errorf("references exporter %q multiple times", ref)
+		}
+		expSet[ref] = struct{}{}
 	}
 
 	return nil
