@@ -1,0 +1,4 @@
+change_type: enhancement
+component: docs
+note: Add security policy for logging sensitive telemetry data.
+issues: [14431]
