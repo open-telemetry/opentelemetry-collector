@@ -182,17 +182,31 @@ func (rec *ObsReport) endOp(
 	numRefused := 0
 	numFailedErrors := 0
 	if err != nil {
-		numAccepted = 0
+		// Check if this is a partial error with a specific failed count.
+		// This allows receivers to report partial success when some items
+		// were processed successfully while others failed.
+		failedCount := numReceivedItems // default: all items failed
+		if pe := consumererror.GetPartialError(err); pe != nil {
+			failedCount = pe.FailedCount()
+			// Sanity check: failed count cannot exceed received items
+			if failedCount > numReceivedItems {
+				failedCount = numReceivedItems
+			}
+		}
+
+		// Calculate accepted items (supports partial success)
+		numAccepted = numReceivedItems - failedCount
+
 		// If gate is enabled, we distinguish between refused and failed.
 		if NewReceiverMetricsGate.IsEnabled() {
 			if consumererror.IsDownstream(err) {
-				numRefused = numReceivedItems
+				numRefused = failedCount
 			} else {
-				numFailedErrors = numReceivedItems
+				numFailedErrors = failedCount
 			}
 		} else {
 			// When the gate is disabled, all errors are considered "refused".
-			numRefused = numReceivedItems
+			numRefused = failedCount
 		}
 	}
 

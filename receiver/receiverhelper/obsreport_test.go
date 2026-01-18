@@ -772,6 +772,262 @@ func TestCheckReceiverProfilesViews(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
+func TestReceivePartialSuccess(t *testing.T) {
+	originalState := NewReceiverMetricsGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+	})
+
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{{"gate_enabled", true}, {"gate_disabled", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+
+			t.Run("partial_failure_internal", func(t *testing.T) {
+				testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+					rec, err := newReceiver(ObsReportSettings{
+						ReceiverID:             receiverID,
+						Transport:              transport,
+						ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+					})
+					require.NoError(t, err)
+
+					ctx := rec.StartMetricsOp(context.Background())
+					// 100 items received, 20 failed internally (not downstream)
+					partialErr := consumererror.NewPartialError(errors.New("parse error"), 20)
+					rec.EndMetricsOp(ctx, format, 100, partialErr)
+
+					// Verify metrics: 80 accepted, 20 failed (or refused if gate disabled)
+					metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(80),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+					if tc.enabled {
+						// Gate enabled: internal errors go to failed
+						metadatatest.AssertEqualReceiverFailedMetricPoints(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(20),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+						metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(0),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					} else {
+						// Gate disabled: all errors go to refused
+						metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(20),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+						metadatatest.AssertEqualReceiverFailedMetricPoints(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(0),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					}
+
+					// Verify span attributes
+					spans := tt.SpanRecorder.Ended()
+					require.Len(t, spans, 1)
+					span := spans[0]
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(80)})
+					if tc.enabled {
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(20)})
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
+					} else {
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(20)})
+						require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedMetricPointsKey, Value: attribute.Int64Value(0)})
+					}
+					assert.Equal(t, codes.Error, span.Status().Code)
+				})
+			})
+
+			t.Run("partial_failure_downstream", func(t *testing.T) {
+				testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+					rec, err := newReceiver(ObsReportSettings{
+						ReceiverID:             receiverID,
+						Transport:              transport,
+						ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+					})
+					require.NoError(t, err)
+
+					ctx := rec.StartTracesOp(context.Background())
+					// 100 items received, 30 refused by downstream
+					partialErr := consumererror.NewDownstream(
+						consumererror.NewPartialError(errors.New("queue full"), 30),
+					)
+					rec.EndTracesOp(ctx, format, 100, partialErr)
+
+					// Verify metrics: 70 accepted, 30 refused
+					metadatatest.AssertEqualReceiverAcceptedSpans(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(70),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					metadatatest.AssertEqualReceiverRefusedSpans(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(30),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					metadatatest.AssertEqualReceiverFailedSpans(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(0),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+					// Verify span attributes
+					spans := tt.SpanRecorder.Ended()
+					require.Len(t, spans, 1)
+					span := spans[0]
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(70)})
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(30)})
+					require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
+					assert.Equal(t, codes.Error, span.Status().Code)
+				})
+			})
+
+			t.Run("partial_failure_exceeds_total", func(t *testing.T) {
+				// Test that failed count is capped at received items
+				testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+					rec, err := newReceiver(ObsReportSettings{
+						ReceiverID:             receiverID,
+						Transport:              transport,
+						ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+					})
+					require.NoError(t, err)
+
+					ctx := rec.StartLogsOp(context.Background())
+					// 50 items received, but error claims 100 failed (should be capped to 50)
+					partialErr := consumererror.NewPartialError(errors.New("bad count"), 100)
+					rec.EndLogsOp(ctx, format, 50, partialErr)
+
+					// Verify metrics: 0 accepted (capped), all to failed/refused
+					metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(0),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+					if tc.enabled {
+						metadatatest.AssertEqualReceiverFailedLogRecords(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(50),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					} else {
+						metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
+							[]metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String(internal.ReceiverKey, receiverID.String()),
+										attribute.String(internal.TransportKey, transport)),
+									Value: int64(50),
+								},
+							}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					}
+				})
+			})
+
+			t.Run("zero_partial_failure", func(t *testing.T) {
+				// Test partial error with zero failed count (edge case)
+				testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+					rec, err := newReceiver(ObsReportSettings{
+						ReceiverID:             receiverID,
+						Transport:              transport,
+						ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+					})
+					require.NoError(t, err)
+
+					ctx := rec.StartMetricsOp(context.Background())
+					// 100 items received, 0 failed (all accepted, but still an error)
+					partialErr := consumererror.NewPartialError(errors.New("warning only"), 0)
+					rec.EndMetricsOp(ctx, format, 100, partialErr)
+
+					// Verify metrics: all 100 accepted
+					metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(100),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(0),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+					metadatatest.AssertEqualReceiverFailedMetricPoints(t, tt,
+						[]metricdata.DataPoint[int64]{
+							{
+								Attributes: attribute.NewSet(
+									attribute.String(internal.ReceiverKey, receiverID.String()),
+									attribute.String(internal.TransportKey, transport)),
+								Value: int64(0),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+					// Span should still show error status
+					spans := tt.SpanRecorder.Ended()
+					require.Len(t, spans, 1)
+					assert.Equal(t, codes.Error, spans[0].Status().Code)
+				})
+			})
+		})
+	}
+}
+
 func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt *componenttest.Telemetry)) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
