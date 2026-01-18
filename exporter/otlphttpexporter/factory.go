@@ -45,7 +45,10 @@ func createDefaultConfig() component.Config {
 	clientConfig.WriteBufferSize = 512 * 1024
 
 	return &Config{
-		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		RetryConfig: RetryConfig{
+			BackOffConfig:      configretry.NewDefaultBackOffConfig(),
+			NonRetryableStatus: nil, // Empty by default - preserves existing retry behavior for 429, 502, 503, 504
+		},
 		QueueConfig:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
@@ -97,7 +100,7 @@ func createTraces(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -123,7 +126,7 @@ func createMetrics(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -148,7 +151,7 @@ func createLogs(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -174,6 +177,6 @@ func createProfiles(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
