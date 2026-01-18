@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -474,6 +475,10 @@ func (orig *RequestContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *RequestContext) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (orig *RequestContext) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -500,7 +505,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 			startPos := pos - length
 
 			orig.SpanContext = NewSpanContext()
-			err = orig.SpanContext.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanContext.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -516,7 +521,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.ClientMetadata = append(orig.ClientMetadata, KeyValue{})
-			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -538,7 +543,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
 			}
 			ov.IP = NewIPAddr()
-			err = ov.IP.UnmarshalProto(buf[startPos:pos])
+			err = ov.IP.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -561,7 +566,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
 			}
 			ov.TCP = NewTCPAddr()
-			err = ov.TCP.UnmarshalProto(buf[startPos:pos])
+			err = ov.TCP.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -584,7 +589,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
 			}
 			ov.UDP = NewUDPAddr()
-			err = ov.UDP.UnmarshalProto(buf[startPos:pos])
+			err = ov.UDP.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -607,7 +612,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
 			}
 			ov.Unix = NewUnixAddr()
-			err = ov.Unix.UnmarshalProto(buf[startPos:pos])
+			err = ov.Unix.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}

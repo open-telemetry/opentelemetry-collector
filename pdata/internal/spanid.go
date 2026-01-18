@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
@@ -48,6 +49,10 @@ func (sid SpanID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this span ID from binary representation. Called by Protobuf serialization.
 func (sid *SpanID) UnmarshalProto(data []byte) error {
+	return sid.UnmarshalProtoOpts(data, &pdata.DefaultUnmarshalOptions)
+}
+
+func (sid *SpanID) UnmarshalProtoOpts(data []byte, _ *pdata.UnmarshalOptions) error {
 	if len(data) == 0 {
 		*sid = [spanIDSize]byte{}
 		return nil

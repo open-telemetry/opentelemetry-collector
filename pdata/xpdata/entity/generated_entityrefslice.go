@@ -96,7 +96,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 func (es EntityRefSlice) AppendEmpty() EntityRef {
 	es.getState().AssertMutable()
 	*es.getOrig() = append(*es.getOrig(), internal.NewEntityRef())
-	return es.At(es.Len() - 1)
+	return newEntityRef((*es.getOrig())[es.Len()-1], es.getState())
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

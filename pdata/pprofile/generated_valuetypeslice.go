@@ -99,7 +99,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewValueType())
-	return es.At(es.Len() - 1)
+	return newValueType((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
