@@ -179,6 +179,10 @@ func (orig *{{ .messageName }}) MarshalProto(buf []byte) int {
 }
 
 func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
+    return orig.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (orig *{{ .messageName }}) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -208,6 +212,33 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 {{ if gt .metadataSize 0 -}}
 {{ call .GenerateMetadata }}
 {{ end -}}
+
+func Skip{{ .messageName }}Proto(buf []byte) error {
+    var err error
+    var fieldNum int32
+    var wireType proto.WireType
+
+    l := len(buf)
+    pos := 0
+    for pos < l {
+        // If in a group parsing, move to the next tag.
+        fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+        if err != nil {
+            return err
+        }
+        switch fieldNum {
+            {{ range .fields -}}
+            {{ .GenSkipProto }}
+            {{ end -}}
+            default:
+                pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+                if err != nil {
+                    return err
+                }
+        }
+    }
+    return nil
+}
 
 func GenTest{{ .messageName }}() *{{ .messageName }} {
     orig := New{{ .messageName }}()
