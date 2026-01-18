@@ -26,3 +26,6 @@ type RequestConverterFunc[T any] = request.RequestConverterFunc[T]
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = request.RequestConsumeFunc
+
+// SizerType is an alias for the internal SizerType, required to implement the Request interface.
+type SizerType = request.SizerType
