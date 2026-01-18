@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivererror"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
@@ -182,17 +183,32 @@ func (rec *ObsReport) endOp(
 	numRefused := 0
 	numFailedErrors := 0
 	if err != nil {
-		numAccepted = 0
-		// If gate is enabled, we distinguish between refused and failed.
-		if NewReceiverMetricsGate.IsEnabled() {
-			if consumererror.IsDownstream(err) {
-				numRefused = numReceivedItems
-			} else {
-				numFailedErrors = numReceivedItems
+		// Check for partial receive error first - this allows receivers to
+		// report exactly how many items failed during processing.
+		if failedCount, ok := receivererror.FailedItemsFromError(err); ok {
+			// Partial success: some items were accepted, some failed.
+			// Ensure failed count doesn't exceed received items.
+			if failedCount > numReceivedItems {
+				failedCount = numReceivedItems
 			}
+			numAccepted = numReceivedItems - failedCount
+			// Partial receive errors are internal receiver errors (translation,
+			// validation), so they count as "failed" not "refused".
+			numFailedErrors = failedCount
 		} else {
-			// When the gate is disabled, all errors are considered "refused".
-			numRefused = numReceivedItems
+			// Full failure: all items failed.
+			numAccepted = 0
+			// If gate is enabled, we distinguish between refused and failed.
+			if NewReceiverMetricsGate.IsEnabled() {
+				if consumererror.IsDownstream(err) {
+					numRefused = numReceivedItems
+				} else {
+					numFailedErrors = numReceivedItems
+				}
+			} else {
+				// When the gate is disabled, all errors are considered "refused".
+				numRefused = numReceivedItems
+			}
 		}
 	}
 
@@ -205,6 +221,10 @@ func (rec *ObsReport) endOp(
 		var outcome string
 		switch {
 		case err == nil:
+			outcome = "success"
+		case receivererror.IsPartialReceiveError(err):
+			// Partial success is still considered a "success" for the request,
+			// since some data was successfully processed.
 			outcome = "success"
 		case consumererror.IsDownstream(err):
 			outcome = "refused"
