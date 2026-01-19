@@ -48,7 +48,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
@@ -74,8 +74,9 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.49.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.143.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119102301-ba2b601a7080 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20260119102301-ba2b601a7080 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
@@ -168,5 +169,7 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias

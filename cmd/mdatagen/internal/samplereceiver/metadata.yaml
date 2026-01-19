@@ -9,6 +9,13 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0
 
+feature_gates:
+  - id: receiver.sample.featuregate.example
+    description: This is an example feature gate for testing mdatagen code generation.
+    stage: alpha
+    from_version: v0.100.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/12345
+
 status:
   disable_codecov_badge: true
   class: receiver
@@ -115,6 +122,11 @@ attributes:
     name_override: state
     description: Integer attribute with overridden name.
     type: int
+
+  required_string_attr:
+    description: A required attribute with a string value
+    type: string
+    requirement_level: required
 
   slice_attr:
     description: Attribute with a slice value.
@@ -239,13 +251,23 @@ metrics:
 
   reaggregate.metric:
     enabled: true
-    description: Metric for testing spacial reaggregation
+    description: Metric for testing spatial reaggregation
     unit: "1"
     stability:
       level: beta
     gauge:
       value_type: double 
     attributes: [string_attr, boolean_attr]
+
+  reaggregate.metric.with_required:
+    enabled: true
+    description: Metric for testing spatial reaggregation with required attributes
+    unit: "1"
+    stability:
+      level: beta
+    gauge:
+      value_type: double 
+    attributes: [required_string_attr, string_attr, boolean_attr]
 
   system.cpu.time:
     enabled: true

@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.49.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119102301-ba2b601a7080
 	go.opentelemetry.io/collector/pipeline v1.49.0
 	go.opentelemetry.io/collector/processor v1.49.0
 	go.opentelemetry.io/collector/processor/processortest v0.143.0
@@ -47,7 +47,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
