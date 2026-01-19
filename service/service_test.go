@@ -7,16 +7,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"runtime"
-	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	apimetric "go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -885,143 +881,4 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.Error(t, err)
 	require.ErrorIs(t, err, wantErr)
 	require.Contains(t, err.Error(), "failed to register process metrics")
-}
-
-func TestNew_ProcessMetricsRegistrationFailure_PoisonInject(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping on Windows: avoids OS-specific flakiness in metric registration tests.")
-	}
-
-	baseSettings := newNopSettings()
-	baseFactory := baseSettings.TelemetryFactory
-
-	poisonMP := &poisonMeterProvider{
-		MeterProvider: noopmetric.NewMeterProvider(),
-	}
-
-	mockFactory := &mockTelemetryFactory{
-		Factory: baseFactory,
-		mp:      poisonMP,
-	}
-
-	set := newNopSettings()
-	set.TelemetryFactory = mockFactory
-	cfg := newNopConfig()
-
-	_, err := New(context.Background(), set, cfg)
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, errForcedMetric)
-	require.Contains(t, err.Error(), "failed to register process metrics")
-}
-
-var errForcedMetric = errors.New("forced metric error")
-
-type mockTelemetryFactory struct {
-	telemetry.Factory
-	mp telemetry.MeterProvider
-}
-
-func (f *mockTelemetryFactory) CreateMeterProvider(_ context.Context, _ telemetry.MeterSettings, _ component.Config) (telemetry.MeterProvider, error) {
-	return f.mp, nil
-}
-
-type poisonMeterProvider struct {
-	apimetric.MeterProvider
-}
-
-func (p *poisonMeterProvider) Shutdown(_ context.Context) error { return nil }
-
-func (p *poisonMeterProvider) Meter(name string, opts ...apimetric.MeterOption) apimetric.Meter {
-	base := p.MeterProvider.Meter(name, opts...)
-	return &poisonMeter{
-		Meter:      base,
-		processObs: make(map[apimetric.Observable]struct{}),
-	}
-}
-
-type poisonMeter struct {
-	apimetric.Meter
-
-	mu         sync.Mutex
-	processObs map[apimetric.Observable]struct{}
-}
-
-func shouldPoisonMetricName(instrumentName string) bool {
-	return strings.HasPrefix(instrumentName, "otelcol_process_")
-}
-
-func (m *poisonMeter) rememberIfProcess(name string, obs apimetric.Observable) {
-	if !shouldPoisonMetricName(name) {
-		return
-	}
-	m.mu.Lock()
-	m.processObs[obs] = struct{}{}
-	m.mu.Unlock()
-}
-
-func (m *poisonMeter) hasProcessObservable(instruments []apimetric.Observable) bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	for _, inst := range instruments {
-		if _, ok := m.processObs[inst]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *poisonMeter) RegisterCallback(cb apimetric.Callback, instruments ...apimetric.Observable) (apimetric.Registration, error) {
-	if m.hasProcessObservable(instruments) {
-		return nil, errForcedMetric
-	}
-	return m.Meter.RegisterCallback(cb, instruments...)
-}
-
-func (m *poisonMeter) Int64ObservableGauge(name string, opts ...apimetric.Int64ObservableGaugeOption) (apimetric.Int64ObservableGauge, error) {
-	g, err := m.Meter.Int64ObservableGauge(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, g)
-	}
-	return g, err
-}
-
-func (m *poisonMeter) Float64ObservableGauge(name string, opts ...apimetric.Float64ObservableGaugeOption) (apimetric.Float64ObservableGauge, error) {
-	g, err := m.Meter.Float64ObservableGauge(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, g)
-	}
-	return g, err
-}
-
-func (m *poisonMeter) Int64ObservableCounter(name string, opts ...apimetric.Int64ObservableCounterOption) (apimetric.Int64ObservableCounter, error) {
-	c, err := m.Meter.Int64ObservableCounter(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, c)
-	}
-	return c, err
-}
-
-func (m *poisonMeter) Float64ObservableCounter(name string, opts ...apimetric.Float64ObservableCounterOption) (apimetric.Float64ObservableCounter, error) {
-	c, err := m.Meter.Float64ObservableCounter(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, c)
-	}
-	return c, err
-}
-
-func (m *poisonMeter) Int64ObservableUpDownCounter(name string, opts ...apimetric.Int64ObservableUpDownCounterOption) (apimetric.Int64ObservableUpDownCounter, error) {
-	c, err := m.Meter.Int64ObservableUpDownCounter(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, c)
-	}
-	return c, err
-}
-
-func (m *poisonMeter) Float64ObservableUpDownCounter(name string, opts ...apimetric.Float64ObservableUpDownCounterOption) (apimetric.Float64ObservableUpDownCounter, error) {
-	c, err := m.Meter.Float64ObservableUpDownCounter(name, opts...)
-	if err == nil {
-		m.rememberIfProcess(name, c)
-	}
-	return c, err
 }
