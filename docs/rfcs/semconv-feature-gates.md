@@ -178,7 +178,7 @@ is as follows:
    to emit only the v0 conventions.
 3. After 4 minor releases, the feature gates are promoted to the **stable** stage. At this point users
    can only use the v1 conventions.
-4. After 4 minor releases, the feature gates are removed.
+4. After additional 4 minor releases, the feature gates are removed.
 
 This mechanism does not cover any sort of transition for experimental semantic conventions. These
 presumably would be covered by separate feature gates or some other mechanism.
