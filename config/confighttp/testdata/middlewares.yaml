@@ -8,6 +8,7 @@ client:
 
 server:
   endpoint: "0.0.0.0:4318"
+  transport: tcp
   middlewares:
     - id: "careful_middleware"
     - id: "support_middleware"

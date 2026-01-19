@@ -1,10 +1,39 @@
+{{- $reag := .ReaggregationEnabled -}}
 default:
 all_set:
+{{- if $reag }}
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: true
+      attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
+    {{- end }}
+  {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+reaggregate_set:
+{{- end }}
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $metric := .Metrics }}
+    {{ $name }}:
+      enabled: true
+      {{- if $reag }}
+      attributes: [{{- range $index, $attr := requiredAttributes $metric.Attributes -}}{{ if $index }},{{ end }}"{{ $attr }}"{{- end -}}]
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}
@@ -24,9 +53,12 @@ all_set:
 none_set:
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: false
+      {{- if $reag }}
+      attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}

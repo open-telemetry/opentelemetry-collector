@@ -172,7 +172,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 { // if there's metrics or internal metrics or events, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
@@ -203,6 +203,10 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "logs_test.go.tmpl")] = filepath.Join(codeDir, "generated_logs_test.go")
 	}
 
+	if len(md.FeatureGates) > 0 { // only generate feature gates if feature gates are present
+		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
+	}
+
 	// If at least one file to generate, will need the codeDir
 	if len(toGenerate) > 0 {
 		if err = os.MkdirAll(codeDir, 0o700); err != nil {
@@ -230,6 +234,24 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				},
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
+				},
+				"defaultAttributes": func(ans []AttributeName) []string {
+					var atts []string
+					for _, an := range ans {
+						if md.Attributes[an].IsNotOptIn() {
+							atts = append(atts, string(md.Attributes[an].Name()))
+						}
+					}
+					return atts
+				},
+				"requiredAttributes": func(ans []AttributeName) []string {
+					var atts []string
+					for _, an := range ans {
+						if md.Attributes[an].IsRequired() {
+							atts = append(atts, string(md.Attributes[an].Name()))
+						}
+					}
+					return atts
 				},
 				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)

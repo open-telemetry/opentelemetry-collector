@@ -1,3 +1,4 @@
+display_name: Debug Exporter
 type: debug
 github_project: open-telemetry/opentelemetry-collector
 
