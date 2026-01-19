@@ -32,7 +32,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
+	if cfg.NetAddr.Endpoint == "" {
 		return errors.New("\"endpoint\" is required when using the \"zpages\" extension")
 	}
 	return nil

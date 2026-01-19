@@ -1,3 +1,4 @@
+display_name: Batch Processor
 type: batch
 github_project: open-telemetry/opentelemetry-collector
 

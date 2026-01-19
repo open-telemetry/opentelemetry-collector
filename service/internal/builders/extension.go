@@ -43,6 +43,7 @@ func (b *ExtensionBuilder) Create(ctx context.Context, set extension.Settings) (
 		return nil, fmt.Errorf("extension factory not available for: %q", set.ID)
 	}
 
+	logDeprecatedTypeAlias(set.Logger, f, set.ID.Type())
 	logStabilityLevel(set.Logger, f.Stability())
 	return f.Create(ctx, set, cfg)
 }

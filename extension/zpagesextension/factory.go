@@ -22,10 +22,10 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
-		},
+		ServerConfig: serverConfig,
 	}
 }
 

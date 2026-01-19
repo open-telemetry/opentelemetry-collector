@@ -38,7 +38,15 @@ const (
 	// FailedLogRecordsKey used to identify log records failed to be processed by the Collector.
 	FailedLogRecordsKey = "failed_log_records"
 
+	// AcceptedProfileSamplesKey used to identify profile samples accepted by the Collector.
+	AcceptedProfileSamplesKey = "accepted_profile_samples"
+	// RefusedProfileSamplesKey used to identify profile samples refused (ie.: not ingested) by the Collector.
+	RefusedProfileSamplesKey = "refused_profile_samples"
+	// FailedProfileSamplesKey used to identify profile samples failed to be processed by the Collector.
+	FailedProfileSamplesKey = "failed_profile_samples"
+
 	ReceiveTraceDataOperationSuffix = SpanNameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = SpanNameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = SpanNameSep + "LogsReceived"
+	ReceiverProfilesOperationSuffix = SpanNameSep + "ProfilesReceived"
 )
