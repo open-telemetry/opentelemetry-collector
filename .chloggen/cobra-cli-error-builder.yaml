@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/builder
+note: Fix duplicate error output when CLI command execution fails.
+issues: [14436]
