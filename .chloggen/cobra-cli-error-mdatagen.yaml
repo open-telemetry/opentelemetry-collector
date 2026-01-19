@@ -1,4 +1,4 @@
 change_type: bug_fix
-component: cmd
+component: cmd/mdatagen
 note: Fix duplicate error output when CLI command execution fails.
-issues: []
+issues: [14436]
