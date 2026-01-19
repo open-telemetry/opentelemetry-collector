@@ -1,0 +1,15 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  fatalonshutdown:
+
+service:
+  extensions: [fatalonshutdown]
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [nop]

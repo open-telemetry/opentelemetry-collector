@@ -212,6 +212,7 @@
       "extensionz",
       "fanout",
       "fanoutconsumer",
+      "fatalonshutdown",
       "featureflags",
       "featuregate",
       "featuregates",
