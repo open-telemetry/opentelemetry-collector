@@ -7,15 +7,16 @@ change_type: 'bug_fix'
 component: pkg/confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: 'fix ExpandedValue sanitization when parsed as non-string but assigned to string fields'
+note: 'Use string representation when mapping to string fields in arbitrary data structures'
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [14413]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+   For example, a header can be set via an environment variable to a string that is parseable as a number, e.g. `1234`
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
