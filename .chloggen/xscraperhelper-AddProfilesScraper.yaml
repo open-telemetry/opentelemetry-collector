@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/xscraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add AddProfilesScraper similar to scraperhelper.AddScraper
+note: Add AddProfilesScraper similar to scraperhelper.AddMetricsScraper
 
 # One or more tracking issues or pull requests related to the change
 issues: [14427]
