@@ -11,9 +11,10 @@ semantic conventions that migrate to a stable version, in a Collector-native way
 
 ## Scope and goals
 
-This RFC centers around semantic conventions mandated migrations of telemetry emitted by Collector
-components. It explicitly does not attempt to cover telemetry not emitted by Collector components,
-such as internal telemetry, or the migration of individual semantic conventions.
+This RFC provides general guidelines for semantic convention-mandated migrations of telemetry created by Collector components (usually receivers) and output into the Collector's pipeline. It explicitly does not attempt to cover:
+- telemetry created by an application and forwarded by a Collector receiver;
+- internal telemetry of Collector components;
+- guidelines for the migration of specific semantic conventions.
 
 The migration mechanism should have the following characteristics:
 
