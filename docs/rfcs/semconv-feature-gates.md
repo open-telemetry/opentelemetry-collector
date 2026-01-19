@@ -2,14 +2,18 @@
 
 ## Overview
 
-The OpenTelemetry Collector internal telemetry as well as its components emit telemetry that often
-conforms to semantic conventions. Semantic conventions have [varying levels of stability][1] and
-often have an SDK-focused migration guide.
+The OpenTelemetry Collector components emit telemetry that often conforms to semantic conventions.
+Semantic conventions have [varying levels of stability][1] and often have an SDK-focused migration
+guide.
 
-This RFC defines how migration should be handled in components or areas of the Collector that have
+This RFC defines how migration should be handled in Collector components that have
 semantic conventions that migrate to a stable version, in a Collector-native way.
 
-## Goals
+## Scope and goals
+
+This RFC centers around semantic conventions mandated migrations of telemetry emitted by Collector
+components. It explicitly does not attempt to cover telemetry not emitted by Collector components,
+such as internal telemetry, or the migration of individual semantic conventions.
 
 The migration mechanism should have the following characteristics:
 
