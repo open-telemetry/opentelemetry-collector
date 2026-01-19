@@ -1,0 +1,12 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: go.opentelemetry.io/collector/config/configauth
+title: configauth package
+$defs:
+  Config:
+    description: Config defines the auth settings for the receiver.
+    type: object
+    properties:
+      authenticator:
+        description: AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+        type: string
+        x-customType: component.ID

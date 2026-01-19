@@ -1,0 +1,12 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: go.opentelemetry.io/collector/filter
+title: filter package
+$defs:
+  Config:
+    description: Config configures the matching behavior of a Filter.
+    type: object
+    properties:
+      regexp:
+        type: string
+      strict:
+        type: string

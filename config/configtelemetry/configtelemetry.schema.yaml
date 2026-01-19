@@ -1,0 +1,8 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: go.opentelemetry.io/collector/config/configtelemetry
+title: configtelemetry package
+$defs:
+  Level:
+    description: Level is the level of internal telemetry (metrics, logs, traces about the component itself) that every component should generate.
+    type: integer
+    x-customType: int32

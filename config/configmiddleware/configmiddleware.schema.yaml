@@ -1,0 +1,12 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: go.opentelemetry.io/collector/config/configmiddleware
+title: configmiddleware package
+$defs:
+  Config:
+    description: Middleware defines the extension ID for a middleware component.
+    type: object
+    properties:
+      id:
+        description: ID specifies the name of the extension to use.
+        type: string
+        x-customType: component.ID

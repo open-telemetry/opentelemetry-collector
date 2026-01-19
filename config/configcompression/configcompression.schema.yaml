@@ -1,0 +1,14 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: go.opentelemetry.io/collector/config/configcompression
+title: configcompression package
+$defs:
+  CompressionParams:
+    type: object
+    properties:
+      level:
+        $ref: '#/$defs/Level'
+  Level:
+    type: integer
+  Type:
+    description: Type represents a compression method
+    type: string
