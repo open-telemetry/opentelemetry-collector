@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0
 	go.opentelemetry.io/collector/exporter v1.49.0
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119102301-ba2b601a7080
 	go.opentelemetry.io/collector/pipeline v1.49.0
 )
 
@@ -87,3 +87,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporterhelp
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline

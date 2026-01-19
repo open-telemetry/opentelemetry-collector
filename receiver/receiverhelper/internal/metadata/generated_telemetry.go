@@ -23,19 +23,22 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	mu                           sync.Mutex
-	registrations                []metric.Registration
-	ReceiverAcceptedLogRecords   metric.Int64Counter
-	ReceiverAcceptedMetricPoints metric.Int64Counter
-	ReceiverAcceptedSpans        metric.Int64Counter
-	ReceiverFailedLogRecords     metric.Int64Counter
-	ReceiverFailedMetricPoints   metric.Int64Counter
-	ReceiverFailedSpans          metric.Int64Counter
-	ReceiverRefusedLogRecords    metric.Int64Counter
-	ReceiverRefusedMetricPoints  metric.Int64Counter
-	ReceiverRefusedSpans         metric.Int64Counter
-	ReceiverRequests             metric.Int64Counter
+	meter                          metric.Meter
+	mu                             sync.Mutex
+	registrations                  []metric.Registration
+	ReceiverAcceptedLogRecords     metric.Int64Counter
+	ReceiverAcceptedMetricPoints   metric.Int64Counter
+	ReceiverAcceptedProfileSamples metric.Int64Counter
+	ReceiverAcceptedSpans          metric.Int64Counter
+	ReceiverFailedLogRecords       metric.Int64Counter
+	ReceiverFailedMetricPoints     metric.Int64Counter
+	ReceiverFailedProfileSamples   metric.Int64Counter
+	ReceiverFailedSpans            metric.Int64Counter
+	ReceiverRefusedLogRecords      metric.Int64Counter
+	ReceiverRefusedMetricPoints    metric.Int64Counter
+	ReceiverRefusedProfileSamples  metric.Int64Counter
+	ReceiverRefusedSpans           metric.Int64Counter
+	ReceiverRequests               metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -79,6 +82,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ReceiverAcceptedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_receiver_accepted_profile_samples",
+		metric.WithDescription("Number of profile samples successfully pushed into the pipeline. [Alpha]"),
+		metric.WithUnit("{samples}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the pipeline. [Alpha]"),
@@ -97,6 +106,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ReceiverFailedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_receiver_failed_profile_samples",
+		metric.WithDescription("The number of profile samples that failed to be processed by the receiver due to internal errors. [Alpha]"),
+		metric.WithUnit("{samples}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_failed_spans",
 		metric.WithDescription("The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]"),
@@ -113,6 +128,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_receiver_refused_metric_points",
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverRefusedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_receiver_refused_profile_samples",
+		metric.WithDescription("Number of profile samples that could not be pushed into the pipeline. [Alpha]"),
+		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
