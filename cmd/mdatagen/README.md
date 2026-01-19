@@ -14,10 +14,10 @@ Every component's documentation should include a brief description of the compon
 There is also some information about the component (or metadata) that should be included to help end-users understand the current state of the component and whether it is right for their use case.
 Examples of this metadata about a component are:
 
-* its stability level
-* the distributions containing it
-* the types of pipelines it supports
-* metrics emitted in the case of a scraping receiver, a scraper, or a connector
+- its stability level
+- the distributions containing it
+- the types of pipelines it supports
+- metrics emitted in the case of a scraping receiver, a scraper, or a connector
 
 The metadata generator defines a schema for specifying this information to ensure it is complete and well-formed.
 The metadata generator is then able to ingest the metadata, validate it against the schema and produce documentation in a standardized format.
@@ -26,10 +26,12 @@ An example of how this generated documentation looks can be found in [documentat
 ## Using the Metadata Generator
 
 In order for a component to benefit from the metadata generator (`mdatagen`) these requirements need to be met:
+
 1. A yaml file containing the metadata that needs to be included in the component
 2. The component should declare a `go:generate mdatagen` directive which tells `mdatagen` what to generate
 
 As an example, here is a minimal `metadata.yaml` for the [OTLP receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver):
+
 ```yaml
 type: otlp
 status:
@@ -42,6 +44,7 @@ status:
 Detailed information about the schema of `metadata.yaml` can be found in [metadata-schema.yaml](./metadata-schema.yaml).
 
 The `go:generate mdatagen` directive is usually defined in a `doc.go` file in the same package as the component, for example:
+
 ```go
 //go:generate mdatagen metadata.yaml
 
@@ -50,10 +53,47 @@ package main
 
 Below are some more examples that can be used for reference:
 
-* The ElasticSearch receiver has an extensive [metadata.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/elasticsearchreceiver/metadata.yaml)
-* The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
+- The ElasticSearch receiver has an extensive [metadata.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/elasticsearchreceiver/metadata.yaml)
+- The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
+
+### Feature Gates Documentation
+
+The metadata generator supports automatic documentation generation for feature gates used by components. Feature gates are documented by adding a `feature_gates` section to your `metadata.yaml`:
+
+```yaml
+type: mycomponent
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+
+feature_gates:
+  - id: mycomponent.newFeature
+    description: 'Enables new feature functionality that improves performance'
+    stage: alpha
+    from_version: 'v0.100.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
+
+  - id: mycomponent.stableFeature
+    description: 'A feature that has reached stability'
+    stage: stable
+    from_version: 'v0.90.0'
+    to_version: 'v0.95.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/11111'
+```
+
+This will generate a "Feature Gates" section in the component's `documentation.md` file with a table containing:
+
+- **Feature Gate**: The gate identifier
+- **Stage**: The lifecycle stage (alpha, beta, stable, deprecated)
+- **Description**: Brief description of what the gate controls
+- **From Version**: Version when the gate was introduced
+- **To Version**: Version when stable/deprecated gates will be removed (if applicable)
+- **Reference**: Link to additional contextual information
+
+The feature gate definitions should correspond to actual gates registered in your component code using the [Feature Gates API](../../featuregate/README.md).
 
 ### Generate multiple metadata packages
 

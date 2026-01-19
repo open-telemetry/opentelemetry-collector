@@ -22,6 +22,14 @@ Number of metric points successfully pushed into the pipeline. [Alpha]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
 
+### otelcol_receiver_accepted_profile_samples
+
+Number of profile samples successfully pushed into the pipeline. [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Alpha |
+
 ### otelcol_receiver_accepted_spans
 
 Number of spans successfully pushed into the pipeline. [Alpha]
@@ -46,6 +54,14 @@ The number of metric points that failed to be processed by the receiver due to i
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
 
+### otelcol_receiver_failed_profile_samples
+
+The number of profile samples that failed to be processed by the receiver due to internal errors. [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Alpha |
+
 ### otelcol_receiver_failed_spans
 
 The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]
@@ -69,6 +85,14 @@ Number of metric points that could not be pushed into the pipeline. [Alpha]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
+
+### otelcol_receiver_refused_profile_samples
+
+Number of profile samples that could not be pushed into the pipeline. [Alpha]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_spans
 

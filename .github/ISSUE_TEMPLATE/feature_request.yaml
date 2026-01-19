@@ -46,7 +46,7 @@ body:
       - exporter/exporterhelper/internal/queuebatch
       - exporter/exporterhelper/xexporterhelper
       - exporter/nop
-      - exporter/otlp
+      - exporter/otlp_grpc
       - exporter/otlp_http
       - exporter/x
       - extension/memorylimiter

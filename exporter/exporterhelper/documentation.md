@@ -22,6 +22,14 @@ Number of metric points failed to be added to the sending queue. [Alpha]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_enqueue_failed_profile_samples
+
+Number of profile samples failed to be added to the sending queue. [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Development |
+
 ### otelcol_exporter_enqueue_failed_spans
 
 Number of spans failed to be added to the sending queue. [Alpha]
@@ -78,6 +86,14 @@ Number of metric points in failed attempts to send to destination. [Alpha]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_send_failed_profile_samples
+
+Number of profile samples in failed attempts to send to destination. [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Development |
+
 ### otelcol_exporter_send_failed_spans
 
 Number of spans in failed attempts to send to destination. [Alpha]
@@ -101,6 +117,14 @@ Number of metric points successfully sent to destination. [Alpha]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoints} | Sum | Int | true | Alpha |
+
+### otelcol_exporter_sent_profile_samples
+
+Number of profile samples successfully sent to destination. [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {samples} | Sum | Int | true | Development |
 
 ### otelcol_exporter_sent_spans
 

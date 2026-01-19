@@ -137,7 +137,7 @@ The following entities are defined for this component:
 
 A test entity.
 
-**Stability:** stable
+**Stability:** Stable
 
 **Identifying Attributes:**
 - `string.resource.attr`

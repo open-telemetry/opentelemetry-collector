@@ -1,3 +1,4 @@
+display_name: OTLP HTTP Exporter
 type: otlp_http
 github_project: open-telemetry/opentelemetry-collector
 

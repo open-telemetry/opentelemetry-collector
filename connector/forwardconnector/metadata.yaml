@@ -1,3 +1,4 @@
+display_name: Forward Connector
 type: forward
 github_project: open-telemetry/opentelemetry-collector
 

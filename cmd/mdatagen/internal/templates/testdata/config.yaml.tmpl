@@ -28,11 +28,11 @@ reaggregate_set:
 {{- end }}
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $metric := .Metrics }}
     {{ $name }}:
       enabled: true
       {{- if $reag }}
-      attributes: []
+      attributes: [{{- range $index, $attr := requiredAttributes $metric.Attributes -}}{{ if $index }},{{ end }}"{{ $attr }}"{{- end -}}]
       {{- end }}
     {{- end }}
   {{- end }}

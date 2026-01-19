@@ -35,7 +35,7 @@ Example:
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otelcol2:55690
     auth:
       authenticator: some-authenticator-extension

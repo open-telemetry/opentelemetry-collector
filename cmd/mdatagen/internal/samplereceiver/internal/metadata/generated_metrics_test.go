@@ -74,6 +74,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
 			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
+			aggMap["ReaggregateMetricWithRequired"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
 			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -150,6 +151,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
+			}
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 1, "required_string_attr-val", "string_attr-val", true)
+			if tt.name == "reaggregate_set" {
+				mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 3, "required_string_attr-val", "string_attr-val-2", false)
 			}
 
 			defaultMetricsCount++
@@ -469,7 +477,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["reaggregate.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
 						assert.Equal(t, "1", ms.At(i).Unit())
 						dp := ms.At(i).Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -487,7 +495,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["reaggregate.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
 						assert.Equal(t, "1", ms.At(i).Unit())
 						dp := ms.At(i).Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -504,6 +512,56 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
 						_, ok := dp.Attributes().Get("string_attr")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("boolean_attr")
+						assert.False(t, ok)
+					}
+				case "reaggregate.metric.with_required":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["reaggregate.metric.with_required"], "Found a duplicate in the metrics slice: reaggregate.metric.with_required")
+						validatedMetrics["reaggregate.metric.with_required"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("required_string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "required_string_attr-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					} else {
+						assert.False(t, validatedMetrics["reaggregate.metric.with_required"], "Found a duplicate in the metrics slice: reaggregate.metric.with_required")
+						validatedMetrics["reaggregate.metric.with_required"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["reaggregate.metric.with_required"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("required_string_attr")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("boolean_attr")
 						assert.False(t, ok)

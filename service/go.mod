@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.143.0
 	go.opentelemetry.io/collector/component/componenttest v0.143.0
 	go.opentelemetry.io/collector/config/confighttp v0.143.0
+	go.opentelemetry.io/collector/config/confignet v1.49.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.143.0
 	go.opentelemetry.io/collector/confmap v1.49.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
@@ -30,7 +31,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119102301-ba2b601a7080
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.143.0
 	go.opentelemetry.io/collector/internal/telemetry v0.143.0
 	go.opentelemetry.io/collector/internal/testutil v0.143.0
@@ -67,7 +68,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
-	gonum.org/v1/gonum v0.16.0
+	gonum.org/v1/gonum v0.17.0
 )
 
 require (
@@ -101,8 +102,8 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-openapi/jsonpointer v0.22.3 // indirect
-	github.com/go-openapi/jsonreference v0.21.3 // indirect
+	github.com/go-openapi/jsonpointer v0.22.4 // indirect
+	github.com/go-openapi/jsonreference v0.21.4 // indirect
 	github.com/go-openapi/swag v0.25.4 // indirect
 	github.com/go-openapi/swag/cmdutils v0.25.4 // indirect
 	github.com/go-openapi/swag/conv v0.25.4 // indirect
@@ -115,7 +116,7 @@ require (
 	github.com/go-openapi/swag/stringutils v0.25.4 // indirect
 	github.com/go-openapi/swag/typeutils v0.25.4 // indirect
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
@@ -314,3 +315,5 @@ replace go.opentelemetry.io/collector/config/configoptional => ../config/configo
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
+
+replace go.opentelemetry.io/collector/config/confignet => ../config/confignet

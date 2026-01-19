@@ -48,7 +48,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 		"unknown_section": nil,
 	})
 	_, err = unmarshal(conf, factories)
-	assert.ErrorContains(t, err, "'' has invalid keys: unknown_section")
+	assert.ErrorContains(t, err, "has invalid keys: unknown_section")
 }
 
 func TestPipelineConfigUnmarshalError(t *testing.T) {
@@ -156,7 +156,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 			conf: confmap.NewFromStringMap(map[string]any{
 				"unknown_section": "string",
 			}),
-			expectError: "'' has invalid keys: unknown_section",
+			expectError: "has invalid keys: unknown_section",
 		},
 		{
 			name: "invalid-pipelines-config",

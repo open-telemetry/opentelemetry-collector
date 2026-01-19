@@ -1,5 +1,5 @@
 processors:
   testprocessor:
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: "localhost:4317"

@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.49.0
 	go.opentelemetry.io/collector/consumer v1.49.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119102301-ba2b601a7080
 	go.opentelemetry.io/collector/pipeline v1.49.0
 	go.uber.org/goleak v1.3.0
 )
