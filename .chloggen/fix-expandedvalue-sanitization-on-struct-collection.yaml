@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: pkg/confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: 'Use string representation when mapping to string fields in arbitrary data structures'
+note: 'Fix an issue where configs could fail to decode when using interpolated values in string fields.'
 
 # One or more tracking issues or pull requests related to the change
 issues: [14413]
