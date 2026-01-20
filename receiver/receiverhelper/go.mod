@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.143.0
 	go.opentelemetry.io/collector/featuregate v1.49.0
 	go.opentelemetry.io/collector/pipeline v1.49.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20260119102301-ba2b601a7080
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.0
 	go.opentelemetry.io/collector/receiver v1.49.0
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
