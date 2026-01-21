@@ -30,6 +30,9 @@ import (
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
 var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
 
+// errShuttingDown is returned when data is received while the processor is shutting down.
+var errShuttingDown = errors.New("batch processor is shutting down")
+
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
@@ -290,9 +293,15 @@ func (sb *singleShardBatcher[T]) start(context.Context) error {
 	return nil
 }
 
-func (sb *singleShardBatcher[T]) consume(_ context.Context, data T) error {
-	sb.single.newItem <- data
-	return nil
+func (sb *singleShardBatcher[T]) consume(ctx context.Context, data T) error {
+	select {
+	case sb.single.newItem <- data:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-sb.processor.shutdownC:
+		return errShuttingDown
+	}
 }
 
 func (sb *singleShardBatcher[T]) currentMetadataCardinality() int {
@@ -362,8 +371,14 @@ func (mb *multiShardBatcher[T]) consume(ctx context.Context, data T) error {
 		}
 		mb.lock.Unlock()
 	}
-	b.(*shard[T]).newItem <- data
-	return nil
+	select {
+	case b.(*shard[T]).newItem <- data:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-mb.processor.shutdownC:
+		return errShuttingDown
+	}
 }
 
 func (mb *multiShardBatcher[T]) currentMetadataCardinality() int {
