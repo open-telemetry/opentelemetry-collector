@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -37,6 +38,23 @@ func TestCommandNoArgs(t *testing.T) {
 	err = cmd.Execute()
 
 	require.Error(t, err)
+}
+
+func TestCommandErrorOutputOnce(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"/nonexistent/path/metadata.yaml"})
+
+	err = cmd.Execute()
+	require.Error(t, err)
+	out := stderr.String()
+	require.NotEmpty(t, out)
+
+	msg := err.Error()
+	assert.Equal(t, 1, strings.Count(out, msg), out)
 }
 
 func TestRunContents(t *testing.T) {
