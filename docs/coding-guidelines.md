@@ -102,6 +102,19 @@ type ExporterConfig struct {
 
 This practice ensures better maintainability and prevents subtle bugs related to struct composition and configuration unmarshaling.
 
+**Preserving Flat YAML Structure with the `squash` Tag:**
+
+In some cases, you may need to maintain backward compatibility with an existing flat YAML configuration structure while still using named fields in Go. The `mapstructure:",squash"` tag achieves this by flattening the nested struct's fields into the parent configuration:
+
+```go
+// Using named fields with squash tag for flat YAML structure
+type Config struct {
+    ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+}
+```
+
+This allows the YAML configuration to remain flat (fields at the top level) while the Go code uses a named field. However, prefer explicitly nested configurations (without `squash`) for new components, as the nested structure is clearer and avoids the issues mentioned above.
+
 ## Module organization
 
 As usual in Go projects, organize your code into packages grouping related functionality. To ensure
