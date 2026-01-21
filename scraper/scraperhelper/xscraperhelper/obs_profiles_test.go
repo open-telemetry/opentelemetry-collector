@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -110,6 +112,30 @@ func TestCheckScraperProfiles(t *testing.T) {
 	require.NoError(t, err)
 
 	checkScraperProfiles(t, tel, receiverID, scraperID, 7, 0)
+}
+
+func TestScrapeProfilesDataOp_LogsScraperID(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	set := tel.NewTelemetrySettings()
+	set.Logger = zap.New(core)
+
+	sm, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
+		return pprofile.NewProfiles(), errFake
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsProfiles(sm, receiverID, scraperID, set)
+	require.NoError(t, err)
+	_, err = sf.ScrapeProfiles(context.Background())
+	require.ErrorIs(t, err, errFake)
+
+	errorLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+	assert.Equal(t, "Error scraping profiles", errorLogs[0].Message)
+	assert.Equal(t, scraperID.String(), errorLogs[0].ContextMap()["scraper"])
+	assert.Equal(t, errFake.Error(), errorLogs[0].ContextMap()["error"])
 }
 
 func checkScraperProfiles(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, scrapedProfileRecords, erroredProfileRecords int64) {

@@ -50,7 +50,7 @@ func wrapObsLogs(sc scraper.Logs, receiverID, scraperID component.ID, set compon
 		numScrapedLogs := 0
 		numErroredLogs := 0
 		if err != nil {
-			set.Logger.Error("Error scraping logs", zap.Error(err))
+			set.Logger.Error("Error scraping logs", zap.String("scraper", scraperID.String()), zap.Error(err))
 			var partialErr scrapererror.PartialScrapeError
 			if errors.As(err, &partialErr) {
 				numErroredLogs = partialErr.Failed
