@@ -10,4 +10,4 @@ component: scraper/scraperhelper
 note: ScraperID has been added to the error logs for metrics, logs, and profiler
 
 # One or more tracking issues or pull requests related to the change
-issues: [https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35814]
+issues: [35814]
