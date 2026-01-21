@@ -136,7 +136,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		numRefs++
 	}
 	if numRefs > 1 {
-		done = newRefCountDone(done, int64(len(reqList)))
+		done = newRefCountDone(done, int64(numRefs))
 		if mergeSplitErr != nil {
 			done.OnDone(mergeSplitErr)
 		}

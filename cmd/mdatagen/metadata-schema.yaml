@@ -238,3 +238,18 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+# Optional: list of feature gate definitions.
+feature_gates:
+  - # Required: unique identifier for the feature gate.
+    id: <gate.id>
+    # Required: description of the feature gate.
+    description: string
+    # Required: lifecycle stage of the feature gate.
+    stage: <alpha|beta|stable|deprecated>
+    # Required: version when the feature gate was introduced.
+    from_version: string
+    # Required for stable/deprecated gates: version when the feature gate reached stable stage.
+    to_version: string
+    # Required: URL with contextual information about the feature gate.
+    reference_url: string
