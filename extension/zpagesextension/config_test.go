@@ -32,10 +32,9 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.Equal(t,
-		&Config{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:56888",
-			},
-		}, cfg)
+
+	expectedServerConfig := confighttp.NewDefaultServerConfig()
+	expectedServerConfig.NetAddr.Endpoint = "localhost:56888"
+
+	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
 }

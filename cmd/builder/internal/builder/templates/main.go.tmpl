@@ -4,7 +4,7 @@
 package main
 
 import (
-	"log"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -59,14 +59,16 @@ func main() {
 	}
 
 	if err := run(set); err != nil {
-		log.Fatal(err)
+	 // The error message is logged by cobra, so we intentionally
+    // avoid logging it again here to prevent duplicate output.
+		os.Exit(1)
 	}
 }
 
 func runInteractive(params otelcol.CollectorSettings) error {
 	cmd := otelcol.NewCommand(params)
 	if err := cmd.Execute(); err != nil {
-		log.Fatalf("collector server run finished with error: %v", err)
+		return err
 	}
 
 	return nil

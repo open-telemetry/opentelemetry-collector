@@ -1,3 +1,4 @@
+display_name: No-op Receiver
 type: nop
 github_project: open-telemetry/opentelemetry-collector
 
@@ -9,4 +10,5 @@ status:
   class: receiver
   stability:
     beta: [traces, metrics, logs]
+    development: [profiles]
   distributions: [core, contrib]
