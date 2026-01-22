@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: ScraperID has been added to the error logs for metrics, logs, and profiles
+note: ScraperID has been added to the logs for metrics, logs, and profiles
 
 # One or more tracking issues or pull requests related to the change
 issues: [14461]
