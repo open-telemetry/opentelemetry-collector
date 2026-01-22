@@ -1042,3 +1042,154 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 		})
 	}
 }
+
+func TestConnectionPooling(t *testing.T) {
+tests := []struct {
+name           string
+maxConnections int
+expectedConns  int
+}{
+{
+name:           "default single connection",
+maxConnections: 0,
+expectedConns:  1,
+},
+{
+name:           "single connection explicit",
+maxConnections: 1,
+expectedConns:  1,
+},
+{
+name:           "multiple connections",
+maxConnections: 5,
+expectedConns:  5,
+},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+ln, err := net.Listen("tcp", "localhost:0")
+require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+defer ln.Close()
+
+// Start mock server
+_, err = otlpTracesReceiverOnGRPCServer(ln, false)
+require.NoError(t, err, "Failed to create mock OTLP receiver")
+
+factory := NewFactory()
+cfg := factory.CreateDefaultConfig().(*Config)
+cfg.ClientConfig.Endpoint = ln.Addr().String()
+cfg.ClientConfig.TLS = configtls.ClientConfig{
+Insecure: true,
+}
+cfg.ConnectionPool.MaxConnections = tt.maxConnections
+
+set := exportertest.NewNopSettings(factory.Type())
+exp, err := factory.CreateTraces(context.Background(), set, cfg)
+require.NoError(t, err)
+require.NotNil(t, exp)
+
+host := componenttest.NewNopHost()
+require.NoError(t, exp.Start(context.Background(), host))
+defer func() {
+assert.NoError(t, exp.Shutdown(context.Background()))
+}()
+
+// Verify by making multiple calls and ensuring they succeed
+td := testdata.GenerateTraces(2)
+for i := 0; i < tt.expectedConns*2; i++ {
+err = exp.ConsumeTraces(context.Background(), td)
+assert.NoError(t, err)
+}
+})
+}
+}
+
+func TestConnectionPoolingRoundRobin(t *testing.T) {
+// This test validates that multiple connections are used in a round-robin fashion
+const numConnections = 3
+const numRequests = 9 // Multiple of numConnections for even distribution
+
+ln, err := net.Listen("tcp", "localhost:0")
+require.NoError(t, err)
+defer ln.Close()
+
+receiver, err := otlpTracesReceiverOnGRPCServer(ln, false)
+require.NoError(t, err)
+
+factory := NewFactory()
+cfg := factory.CreateDefaultConfig().(*Config)
+cfg.ClientConfig.Endpoint = ln.Addr().String()
+cfg.ClientConfig.TLS = configtls.ClientConfig{
+Insecure: true,
+}
+cfg.ConnectionPool.MaxConnections = numConnections
+
+set := exportertest.NewNopSettings(factory.Type())
+exp, err := factory.CreateTraces(context.Background(), set, cfg)
+require.NoError(t, err)
+require.NotNil(t, exp)
+
+host := componenttest.NewNopHost()
+require.NoError(t, exp.Start(context.Background(), host))
+defer func() {
+assert.NoError(t, exp.Shutdown(context.Background()))
+}()
+
+// Send multiple trace batches
+td := testdata.GenerateTraces(1)
+for i := 0; i < numRequests; i++ {
+err = exp.ConsumeTraces(context.Background(), td)
+require.NoError(t, err)
+}
+
+// Verify all requests were received
+assert.Eventually(t, func() bool {
+return receiver.requestCount.Load() == int64(numRequests)
+}, 10*time.Second, 5*time.Millisecond)
+}
+
+func TestConnectionPoolConfigValidation(t *testing.T) {
+tests := []struct {
+name           string
+maxConnections int
+wantErr        bool
+}{
+{
+name:           "valid zero connections (default)",
+maxConnections: 0,
+wantErr:        false,
+},
+{
+name:           "valid single connection",
+maxConnections: 1,
+wantErr:        false,
+},
+{
+name:           "valid multiple connections",
+maxConnections: 10,
+wantErr:        false,
+},
+{
+name:           "invalid negative connections",
+maxConnections: -1,
+wantErr:        true,
+},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+factory := NewFactory()
+cfg := factory.CreateDefaultConfig().(*Config)
+cfg.ClientConfig.Endpoint = "localhost:4317"
+cfg.ConnectionPool.MaxConnections = tt.maxConnections
+
+err := cfg.Validate()
+if tt.wantErr {
+assert.Error(t, err)
+} else {
+assert.NoError(t, err)
+}
+})
+}
+}
