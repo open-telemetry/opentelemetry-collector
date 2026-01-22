@@ -86,7 +86,9 @@ func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 	}
 
 	s.Level = level
-
+	// NOTE: This package does not have access to a logger.
+	// Any invalid or disabled internal metric configuration is currently handled silently.
+	// This should be revisited once logging is available at this layer.
 	if parser.IsSet("from") {
 		if err := parser.Unmarshal(&struct {
 			From *string `mapstructure:"from"`
