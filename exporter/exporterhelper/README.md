@@ -116,7 +116,7 @@ receivers:
     protocols:
       grpc:
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: <ENDPOINT>
     sending_queue:
       storage: file_storage/otc

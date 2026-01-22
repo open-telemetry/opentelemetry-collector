@@ -6,7 +6,7 @@ receivers:
 
 exporters:
   nop:
-  otlp:
+  otlp_grpc:
     endpoint: localhost:4317
 
 service:
