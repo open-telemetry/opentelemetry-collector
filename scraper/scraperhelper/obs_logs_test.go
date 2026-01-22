@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
@@ -104,14 +106,20 @@ func TestScrapeLogsDataOp_LogsScraperID(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
 	core, observedLogs := observer.New(zap.ErrorLevel)
-	set := tel.NewTelemetrySettings()
-	set.Logger = zap.New(core).With(zap.String("scraper", scraperID.String()))
+	telset := tel.NewTelemetrySettings()
+	telset.Logger = zap.New(core)
+
+	rSet := receiver.Settings{
+		ID:                receiverID,
+		TelemetrySettings: telset,
+	}
+	set := controller.GetSettings(scraperID.Type(), rSet)
 
 	sm, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
 		return plog.NewLogs(), errFake
 	})
 	require.NoError(t, err)
-	sf, err := wrapObsLogs(sm, receiverID, scraperID, set)
+	sf, err := wrapObsLogs(sm, receiverID, scraperID, set.TelemetrySettings)
 	require.NoError(t, err)
 	_, err = sf.ScrapeLogs(context.Background())
 	require.ErrorIs(t, err, errFake)

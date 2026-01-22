@@ -22,7 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
@@ -119,14 +121,20 @@ func TestScrapeProfilesDataOp_LogsScraperID(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
 	core, observedLogs := observer.New(zap.ErrorLevel)
-	set := tel.NewTelemetrySettings()
-	set.Logger = zap.New(core).With(zap.String("scraper", scraperID.String()))
+	telset := tel.NewTelemetrySettings()
+	telset.Logger = zap.New(core)
+
+	rSet := receiver.Settings{
+		ID:                receiverID,
+		TelemetrySettings: telset,
+	}
+	set := controller.GetSettings(scraperID.Type(), rSet)
 
 	sm, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
 		return pprofile.NewProfiles(), errFake
 	})
 	require.NoError(t, err)
-	sf, err := wrapObsProfiles(sm, receiverID, scraperID, set)
+	sf, err := wrapObsProfiles(sm, receiverID, scraperID, set.TelemetrySettings)
 	require.NoError(t, err)
 	_, err = sf.ScrapeProfiles(context.Background())
 	require.ErrorIs(t, err, errFake)
