@@ -24,7 +24,7 @@ const validYAML = `
 processors:
   testprocessor:
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: "localhost:4317"
 `
 
@@ -68,8 +68,8 @@ func TestEnv(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{
-		"processors::testprocessor": nil,
-		"exporters::otlp::endpoint": "localhost:4317",
+		"processors::testprocessor":      nil,
+		"exporters::otlp_grpc::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
@@ -88,8 +88,8 @@ func TestEnvWithLogger(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{
-		"processors::testprocessor": nil,
-		"exporters::otlp::endpoint": "localhost:4317",
+		"processors::testprocessor":      nil,
+		"exporters::otlp_grpc::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 

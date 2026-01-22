@@ -159,7 +159,11 @@ func TestMetricsBuilder(t *testing.T) {
           mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
           {{- range $metric.Attributes -}}
           {{- if not (attributeInfo .).IsConditional -}}
+            {{- if (attributeInfo .).IsRequired -}}
+            , {{- template "getAttributeValue" . -}}
+            {{- else -}}
             , {{- template "getAttributeValueTwo" . -}}
+            {{- end -}}
           {{- end -}}
           {{- end -}}
           {{- range $metric.Attributes -}}

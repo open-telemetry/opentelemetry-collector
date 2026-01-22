@@ -60,13 +60,14 @@ type AttributeConfig struct {
 
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
-	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
-	MetricInputType          MetricConfig `mapstructure:"metric.input_type"`
-	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
-	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
-	ReaggregateMetric        MetricConfig `mapstructure:"reaggregate.metric"`
-	SystemCPUTime            MetricConfig `mapstructure:"system.cpu.time"`
+	DefaultMetric                 MetricConfig `mapstructure:"default.metric"`
+	DefaultMetricToBeRemoved      MetricConfig `mapstructure:"default.metric.to_be_removed"`
+	MetricInputType               MetricConfig `mapstructure:"metric.input_type"`
+	OptionalMetric                MetricConfig `mapstructure:"optional.metric"`
+	OptionalMetricEmptyUnit       MetricConfig `mapstructure:"optional.metric.empty_unit"`
+	ReaggregateMetric             MetricConfig `mapstructure:"reaggregate.metric"`
+	ReaggregateMetricWithRequired MetricConfig `mapstructure:"reaggregate.metric.with_required"`
+	SystemCPUTime                 MetricConfig `mapstructure:"system.cpu.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -118,6 +119,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "boolean_attr"},
 			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+		},
+		ReaggregateMetricWithRequired: MetricConfig{
+			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"required_string_attr"},
+			definedAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
+			EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 		},
 		SystemCPUTime: MetricConfig{
 			Enabled: true,

@@ -21,18 +21,24 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ReceiverAcceptedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverAcceptedMetricPoints.Add(context.Background(), 1)
+	tb.ReceiverAcceptedProfileSamples.Add(context.Background(), 1)
 	tb.ReceiverAcceptedSpans.Add(context.Background(), 1)
 	tb.ReceiverFailedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverFailedMetricPoints.Add(context.Background(), 1)
+	tb.ReceiverFailedProfileSamples.Add(context.Background(), 1)
 	tb.ReceiverFailedSpans.Add(context.Background(), 1)
 	tb.ReceiverRefusedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverRefusedMetricPoints.Add(context.Background(), 1)
+	tb.ReceiverRefusedProfileSamples.Add(context.Background(), 1)
 	tb.ReceiverRefusedSpans.Add(context.Background(), 1)
 	tb.ReceiverRequests.Add(context.Background(), 1)
 	AssertEqualReceiverAcceptedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverAcceptedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverAcceptedProfileSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverAcceptedSpans(t, testTel,
@@ -44,6 +50,9 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualReceiverFailedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverFailedProfileSamples(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverFailedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -51,6 +60,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverRefusedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverRefusedProfileSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverRefusedSpans(t, testTel,

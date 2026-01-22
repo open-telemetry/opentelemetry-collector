@@ -1,3 +1,4 @@
+display_name: Service
 type: service
 github_project: open-telemetry/opentelemetry-collector
 
@@ -5,7 +6,7 @@ status:
   disable_codecov_badge: true
   class: pkg
   stability:
-    development: [traces, metrics, logs]
+    development: [traces, metrics, logs, profiles]
   distributions: [core, contrib]
 
 telemetry:

@@ -828,7 +828,10 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		Protocols: Protocols{
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+						Transport: confignet.TransportTypeTCP,
+					},
 					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
@@ -861,7 +864,10 @@ func testHTTPMaxRequestBodySize(t *testing.T, path, contentType string, payload 
 		Protocols: Protocols{
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint:           addr,
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  addr,
+						Transport: confignet.TransportTypeTCP,
+					},
 					MaxRequestBodySize: int64(size),
 				},
 				TracesURLPath:  defaultTracesURLPath,
@@ -904,7 +910,7 @@ func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
@@ -1085,7 +1091,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpointHTTP
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(

@@ -248,7 +248,7 @@ receivers:
   otlp:
 
 exporters:
-  otlp:
+  otlp_grpc:
 
 processors:
   transform:

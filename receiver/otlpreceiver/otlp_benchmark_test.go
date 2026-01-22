@@ -71,7 +71,7 @@ func BenchmarkGRPCLogsSequential(b *testing.B) {
 func BenchmarkHTTPProtoLogsSequential(b *testing.B) {
 	endpoint := testutil.GetAvailableLocalAddress(b)
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpoint
 	var sink consumertest.LogsSink
 	startLogsReceiver(b, cfg, &sink)
 

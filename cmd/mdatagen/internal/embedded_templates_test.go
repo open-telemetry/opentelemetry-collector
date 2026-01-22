@@ -40,6 +40,8 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "telemetrytest.go.tmpl"):        {},
 			path.Join(rootDir, "telemetrytest_test.go.tmpl"):   {},
 			path.Join(rootDir, "helper.tmpl"):                  {},
+			path.Join(rootDir, "feature_gates.md.tmpl"):        {},
+			path.Join(rootDir, "feature_gates.go.tmpl"):        {},
 		}
 		count = 0
 	)

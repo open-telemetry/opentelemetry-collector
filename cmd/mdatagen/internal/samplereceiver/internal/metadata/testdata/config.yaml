@@ -19,6 +19,9 @@ all_set:
     reaggregate.metric:
       enabled: true
       attributes: ["string_attr","boolean_attr"]
+    reaggregate.metric.with_required:
+      enabled: true
+      attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
       attributes: []
@@ -66,6 +69,9 @@ reaggregate_set:
     reaggregate.metric:
       enabled: true
       attributes: []
+    reaggregate.metric.with_required:
+      enabled: true
+      attributes: ["required_string_attr"]
     system.cpu.time:
       enabled: true
       attributes: []
@@ -113,6 +119,9 @@ none_set:
     reaggregate.metric:
       enabled: false
       attributes: ["string_attr","boolean_attr"]
+    reaggregate.metric.with_required:
+      enabled: false
+      attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
       attributes: []

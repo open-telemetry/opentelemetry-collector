@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
@@ -126,6 +127,24 @@ func (rec *ObsReport) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, pipeline.SignalMetrics)
 }
 
+// StartProfilesOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *ObsReport) StartProfilesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, internal.ReceiverProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the receive operation that was started with
+// StartProfilesOp.
+func (rec *ObsReport) EndProfilesOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedProfileSamples int,
+	err error,
+) {
+	rec.endOp(receiverCtx, format, numReceivedProfileSamples, err, xpipeline.SignalProfiles)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
@@ -211,6 +230,10 @@ func (rec *ObsReport) endOp(
 			acceptedItemsKey = internal.AcceptedLogRecordsKey
 			refusedItemsKey = internal.RefusedLogRecordsKey
 			failedItemsKey = internal.FailedLogRecordsKey
+		case xpipeline.SignalProfiles:
+			acceptedItemsKey = internal.AcceptedProfileSamplesKey
+			refusedItemsKey = internal.RefusedProfileSamplesKey
+			failedItemsKey = internal.FailedProfileSamplesKey
 		}
 
 		span.SetAttributes(
@@ -241,6 +264,10 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
 		failedMeasure = rec.telemetryBuilder.ReceiverFailedLogRecords
+	case xpipeline.SignalProfiles:
+		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedProfileSamples
+		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedProfileSamples
+		failedMeasure = rec.telemetryBuilder.ReceiverFailedProfileSamples
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)

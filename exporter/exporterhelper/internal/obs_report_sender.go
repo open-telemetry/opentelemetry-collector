@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 const (
@@ -78,6 +79,9 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+	case xpipeline.SignalProfiles:
+		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
+		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
 	}
 
 	return or, nil
@@ -105,14 +109,13 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 }
 
 // EndOp completes the export operation that was started with StartOp.
-func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err error) {
-	numSent, numFailedToSend := toNumItems(numLogRecords, err)
+func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	numSent, numFailedToSend := toNumItems(numRecords, err)
 
-	// No metrics recorded for profiles.
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
-	// No metrics recorded for profiles.
+
 	if ors.itemsFailedInst != nil {
 		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr)
 	}
