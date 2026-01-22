@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+<<<<<<< HEAD
+=======
+	"go.opentelemetry.io/collector/confmap"
+>>>>>>> db222d477 (mdatagen: add stability tests)
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -41,6 +45,7 @@ func TestMetricData(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 func TestMetricValidate(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -88,11 +93,54 @@ func TestMetricValidate(t *testing.T) {
 				},
 			},
 			wantErr: "",
+=======
+func TestStability_String(t *testing.T) {
+	tests := []struct {
+		name      string
+		stability Stability
+		want      string
+	}{
+		{
+			name: "undefined level",
+			stability: Stability{
+				Level: component.StabilityLevelUndefined,
+			},
+			want: "",
+		},
+		{
+			name: "stable level",
+			stability: Stability{
+				Level: component.StabilityLevelStable,
+			},
+			want: "",
+		},
+		{
+			name: "beta level",
+			stability: Stability{
+				Level: component.StabilityLevelBeta,
+			},
+			want: " [Beta]",
+		},
+		{
+			name: "alpha level",
+			stability: Stability{
+				Level: component.StabilityLevelAlpha,
+			},
+			want: " [Alpha]",
+		},
+		{
+			name: "deprecated level",
+			stability: Stability{
+				Level: component.StabilityLevelDeprecated,
+			},
+			want: " [Deprecated]",
+>>>>>>> db222d477 (mdatagen: add stability tests)
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+<<<<<<< HEAD
 			err := tt.metric.validate("test.metric", "1.0.0")
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -100,10 +148,27 @@ func TestMetricValidate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+=======
+			got := tt.stability.String()
+			assert.Equal(t, tt.want, got)
+>>>>>>> db222d477 (mdatagen: add stability tests)
 		})
 	}
 }
 
+<<<<<<< HEAD
 func ptr[T any](v T) *T {
 	return &v
+=======
+func TestStability_Unmarshal_WithoutFrom(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"level": "beta",
+	})
+
+	var s Stability
+	err := s.Unmarshal(parser)
+	require.NoError(t, err)
+	assert.Equal(t, component.StabilityLevelBeta, s.Level)
+	assert.Empty(t, s.From)
+>>>>>>> db222d477 (mdatagen: add stability tests)
 }
