@@ -105,7 +105,7 @@ func TestScrapeLogsDataOp_LogsScraperID(t *testing.T) {
 
 	core, observedLogs := observer.New(zap.ErrorLevel)
 	set := tel.NewTelemetrySettings()
-	set.Logger = zap.New(core)
+	set.Logger = zap.New(core).With(zap.String("scraper", scraperID.String()))
 
 	sm, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
 		return plog.NewLogs(), errFake

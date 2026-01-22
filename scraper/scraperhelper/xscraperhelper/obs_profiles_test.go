@@ -120,7 +120,7 @@ func TestScrapeProfilesDataOp_LogsScraperID(t *testing.T) {
 
 	core, observedLogs := observer.New(zap.ErrorLevel)
 	set := tel.NewTelemetrySettings()
-	set.Logger = zap.New(core)
+	set.Logger = zap.New(core).With(zap.String("scraper", scraperID.String()))
 
 	sm, err := xscraper.NewProfiles(func(context.Context) (pprofile.Profiles, error) {
 		return pprofile.NewProfiles(), errFake

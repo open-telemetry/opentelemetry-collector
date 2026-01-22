@@ -58,7 +58,7 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set 
 		numScrapedMetrics := 0
 		numErroredMetrics := 0
 		if err != nil {
-			set.Logger.Error("Error scraping metrics", zap.String("scraper", scraperID.String()), zap.Error(err))
+			set.Logger.Error("Error scraping metrics", zap.Error(err))
 			var partialErr scrapererror.PartialScrapeError
 			if errors.As(err, &partialErr) {
 				numErroredMetrics = partialErr.Failed
