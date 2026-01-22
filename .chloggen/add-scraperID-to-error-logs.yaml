@@ -10,4 +10,4 @@ component: pkg/scraperhelper
 note: ScraperID has been added to the error logs for metrics, logs, and profiles
 
 # One or more tracking issues or pull requests related to the change
-issues: [35814]
+issues: [14461]
