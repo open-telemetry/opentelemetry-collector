@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -472,7 +473,10 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 
 			// Create ServerConfig with the specified CompressionAlgorithms
 			serverConfig := &ServerConfig{
-				Endpoint:              "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				CompressionAlgorithms: tt.compressionAlgorithms,
 			}
 

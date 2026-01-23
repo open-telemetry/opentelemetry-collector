@@ -51,6 +51,7 @@ func TestLoadMetadata(t *testing.T) {
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.38.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
+				ReaggregationEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -243,6 +244,14 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "opt_in_bool_attr",
 						RequirementLevel: AttributeRequirementLevelOptIn,
 					},
+					"required_string_attr": {
+						Description: "A required attribute with a string value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "required_string_attr",
+						RequirementLevel: AttributeRequirementLevelRequired,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -261,6 +270,30 @@ func TestLoadMetadata(t *testing.T) {
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"reaggregate.metric": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Metric for testing spatial reaggregation",
+							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Unit: strPtr("1"),
+						Gauge: &Gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+					},
+					"reaggregate.metric.with_required": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Metric for testing spatial reaggregation with required attributes",
+							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
+						},
+						Unit: strPtr("1"),
+						Gauge: &Gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 					},
 					"system.cpu.time": {
@@ -451,6 +484,15 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
 				Tests:           Tests{Host: "newMdatagenNopHost()"},
+				FeatureGates: []FeatureGate{
+					{
+						ID:           "receiver.sample.featuregate.example",
+						Description:  "This is an example feature gate for testing mdatagen code generation.",
+						Stage:        "alpha",
+						FromVersion:  "v0.100.0",
+						ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+					},
+				},
 			},
 		},
 		{
