@@ -158,7 +158,9 @@ func GetModules(cfg *Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.24"); err != nil {
+	// Use -compat=1.23 to ensure generated collectors are compatible with Go 1.23.x
+	// and prevent resolving dependencies that require newer Go versions.
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.23"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
