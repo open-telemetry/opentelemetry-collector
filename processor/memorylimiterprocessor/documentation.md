@@ -13,9 +13,9 @@ Number of log records successfully pushed into the next component in the pipelin
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit      | Metric Type | Value Type | Monotonic | Stability                |
-| --------- | ----------- | ---------- | --------- | ------------------------ |
-| {records} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {records} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -26,9 +26,9 @@ Number of metric points successfully pushed into the next component in the pipel
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit         | Metric Type | Value Type | Monotonic | Stability                |
-| ------------ | ----------- | ---------- | --------- | ------------------------ |
-| {datapoints} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {datapoints} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -39,9 +39,9 @@ Number of spans successfully pushed into the next component in the pipeline.
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit    | Metric Type | Value Type | Monotonic | Stability                |
-| ------- | ----------- | ---------- | --------- | ------------------------ |
-| {spans} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -52,9 +52,9 @@ Number of log records that were rejected by the next component in the pipeline.
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit      | Metric Type | Value Type | Monotonic | Stability                |
-| --------- | ----------- | ---------- | --------- | ------------------------ |
-| {records} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {records} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -65,9 +65,9 @@ Number of metric points that were rejected by the next component in the pipeline
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit         | Metric Type | Value Type | Monotonic | Stability                |
-| ------------ | ----------- | ---------- | --------- | ------------------------ |
-| {datapoints} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {datapoints} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
 
@@ -78,8 +78,8 @@ Number of spans that were rejected by the next component in the pipeline.
 > **Deprecated since 0.110.0**
 > This metric is deprecated
 
-| Unit    | Metric Type | Value Type | Monotonic | Stability                |
-| ------- | ----------- | ---------- | --------- | ------------------------ |
-| {spans} | Sum         | Int        | true      | Deprecated since 0.110.0 |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Deprecated since 0.110.0 |
 
 **Deprecation note**: This metric is deprecated
