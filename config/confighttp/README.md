@@ -107,6 +107,7 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+- `transport`: The transport protocol to use. Defaults to `tcp`. See the [confignet README](../confignet/README.md) for more information.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 - `include_metadata`: propagates the client metadata from the incoming requests to the downstream consumers. Default: `false`
 - `response_headers`: Additional headers attached to each HTTP response sent to the client. Header values are opaque since they may be sensitive
