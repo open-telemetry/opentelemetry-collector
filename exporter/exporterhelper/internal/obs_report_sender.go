@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
@@ -136,6 +137,11 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 
 func toNumItems(numExportedItems int, err error) (int64, int64) {
 	if err != nil {
+		// Check if this is a partial error (some items sent, some dropped)
+		if dropped, ok := consumererror.AsPartialError(err); ok {
+			return int64(numExportedItems - dropped), int64(dropped)
+		}
+		// For other errors, all items are considered failed
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0

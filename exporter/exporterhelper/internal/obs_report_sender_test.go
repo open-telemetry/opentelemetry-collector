@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -307,4 +308,101 @@ func TestExportProfilesOp(t *testing.T) {
 type testParams struct {
 	items int
 	err   error
+}
+
+func TestExportMetricsOpWithPartialError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	var exporterErr error
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalMetrics,
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+	)
+	require.NoError(t, err)
+
+	// Test partial error: 20 total items, 5 dropped
+	totalItems := 20
+	droppedItems := 5
+	exporterErr = consumererror.NewPartialError(errors.New("some items dropped"), droppedItems)
+	require.Error(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: totalItems}))
+
+	spans := tt.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+
+	span := spans[0]
+	assert.Equal(t, "exporter/"+exporterID.String()+"/metrics", span.Name())
+	// Verify that sent count is (total - dropped) and failed count is dropped
+	require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(totalItems - droppedItems))})
+	require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(int64(droppedItems))})
+	assert.Equal(t, codes.Error, span.Status().Code)
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(totalItems - droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestToNumItems(t *testing.T) {
+	tests := []struct {
+		name       string
+		items      int
+		err        error
+		wantSent   int64
+		wantFailed int64
+	}{
+		{
+			name:       "no error - all sent",
+			items:      10,
+			err:        nil,
+			wantSent:   10,
+			wantFailed: 0,
+		},
+		{
+			name:       "error - all failed",
+			items:      10,
+			err:        errors.New("export failed"),
+			wantSent:   0,
+			wantFailed: 10,
+		},
+		{
+			name:       "partial error - some sent, some failed",
+			items:      20,
+			err:        consumererror.NewPartialError(errors.New("partial failure"), 5),
+			wantSent:   15,
+			wantFailed: 5,
+		},
+		{
+			name:       "partial error - all dropped",
+			items:      10,
+			err:        consumererror.NewPartialError(errors.New("all dropped"), 10),
+			wantSent:   0,
+			wantFailed: 10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sent, failed := toNumItems(tt.items, tt.err)
+			assert.Equal(t, tt.wantSent, sent)
+			assert.Equal(t, tt.wantFailed, failed)
+		})
+	}
 }
