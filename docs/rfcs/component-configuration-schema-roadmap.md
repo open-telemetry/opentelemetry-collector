@@ -60,7 +60,7 @@ Use of the `schemagen` tool is dictated by the modularity of the Collector compo
 **Why YAML schema format for the source of truth?**
 - **Human-readable**: Easier for component developers to author and maintain than JSON
 - **Integration with existing infrastructure**: Natural extension of `metadata.yaml` approach used by `mdatagen` given that it already uses YAML to generate metrics builder configs
-- **Extensibility**: YAML allows for custom tags and types to capture domain-specific configuration
+- **Extensibility**: YAML allows for custom fields to capture domain-specific configuration and provide escape-hatches to generate config fields that still require custom implementation, validation or default value setters.
 
 ### Example schema format
 
@@ -97,7 +97,7 @@ config:
 
 #### Extensibility
 
-The YAML schema specification can be extended with custom tags (e.g., `x-customType`) to capture domain-specific types and validation rules that are not natively supported in JSON schema. Additionally, we may introduce custom tags that generate fields that will produce references to structs or validation functions that require more complex logic and manual implementation.
+The YAML schema specification can be extended with custom fields (e.g., `x-customType`) to capture domain-specific types and validation rules that are not natively supported in JSON schema. Additionally, we may introduce custom fields that generate fields that will produce references to structs or validation functions that require more complex logic and manual implementation.
 
 ### Roadmap
 
