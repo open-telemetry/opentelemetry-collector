@@ -30,6 +30,9 @@ import (
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
 var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
 
+// errShuttingDown is returned when the processor is shutting down and cannot accept new data.
+var errShuttingDown = errors.New("batch processor is shutting down")
+
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
@@ -200,16 +203,29 @@ func (b *shard[T]) startLoop() {
 	for {
 		select {
 		case <-b.processor.shutdownC:
-		DONE:
+			// Drain remaining items from the channel. Use a short timeout to catch
+			// any items from producers that were in the middle of sending when
+			// shutdown was signaled.
+			drainTimer := time.NewTimer(50 * time.Millisecond)
+			defer drainTimer.Stop()
+		DRAIN:
 			for {
 				select {
 				case item := <-b.newItem:
 					b.processItem(item)
-				default:
-					break DONE
+				case <-drainTimer.C:
+					// Final non-blocking drain after timeout
+					for {
+						select {
+						case item := <-b.newItem:
+							b.processItem(item)
+						default:
+							break DRAIN
+						}
+					}
 				}
 			}
-			// This is the close of the channel
+			// Flush any remaining items in the batch
 			if b.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
@@ -290,9 +306,15 @@ func (sb *singleShardBatcher[T]) start(context.Context) error {
 	return nil
 }
 
-func (sb *singleShardBatcher[T]) consume(_ context.Context, data T) error {
-	sb.single.newItem <- data
-	return nil
+func (sb *singleShardBatcher[T]) consume(ctx context.Context, data T) error {
+	select {
+	case <-sb.processor.shutdownC:
+		return errShuttingDown
+	case <-ctx.Done():
+		return ctx.Err()
+	case sb.single.newItem <- data:
+		return nil
+	}
 }
 
 func (sb *singleShardBatcher[T]) currentMetadataCardinality() int {
@@ -362,8 +384,14 @@ func (mb *multiShardBatcher[T]) consume(ctx context.Context, data T) error {
 		}
 		mb.lock.Unlock()
 	}
-	b.(*shard[T]).newItem <- data
-	return nil
+	select {
+	case <-mb.processor.shutdownC:
+		return errShuttingDown
+	case <-ctx.Done():
+		return ctx.Err()
+	case b.(*shard[T]).newItem <- data:
+		return nil
+	}
 }
 
 func (mb *multiShardBatcher[T]) currentMetadataCardinality() int {
