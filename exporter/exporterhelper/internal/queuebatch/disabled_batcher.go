@@ -20,6 +20,14 @@ type disabledBatcher[T any] struct {
 }
 
 func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done queue.Done) {
+	// Check if the producer's context was cancelled before processing.
+	// This prevents exporting data when the caller already received a timeout error,
+	// which would cause confusing observability results and potential duplicate data
+	// if the caller retries.
+	if ctx.Err() != nil {
+		done.OnDone(ctx.Err())
+		return
+	}
 	done.OnDone(db.consumeFunc(ctx, req))
 }
 
