@@ -44,8 +44,8 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				}
 				buf.logEntry("Body: %s", valueToString(lr.Body()))
 				buf.logAttributes("Attributes", lr.Attributes())
-				buf.logEntry("Trace ID: %s", lr.TraceID())
-				buf.logEntry("Span ID: %s", lr.SpanID())
+				buf.logAttr("Trace ID", lr.TraceID())
+				buf.logAttr("Span ID", lr.SpanID())
 				buf.logEntry("Flags: %d", lr.Flags())
 			}
 		}

@@ -98,6 +98,37 @@ func TestLogsText(t *testing.T) {
 	}
 }
 
+// TestLogRecordTraceSpanIDs specifically tests that TraceID and SpanID are rendered correctly
+// when present in log records, ensuring proper formatting that matches trace output.
+func TestLogRecordTraceSpanIDs(t *testing.T) {
+	ls := plog.NewLogs()
+	lr := ls.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	
+	// Set non-empty TraceID and SpanID
+	traceID := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
+	spanID := [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18}
+	lr.SetTraceID(traceID)
+	lr.SetSpanID(spanID)
+	
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 0, time.UTC)))
+	lr.SetSeverityNumber(plog.SeverityNumberInfo)
+	lr.Body().SetStr("Log with trace context")
+	
+	got, err := NewTextLogsMarshaler().MarshalLogs(ls)
+	require.NoError(t, err)
+	
+	output := string(got)
+	
+	// Verify TraceID is present and properly formatted with indentation
+	assert.Contains(t, output, "    Trace ID       : 0102030405060708090a0b0c0d0e0f10")
+	
+	// Verify SpanID is present and properly formatted with indentation
+	assert.Contains(t, output, "    Span ID        : 1112131415161718")
+	
+	// Ensure the output uses lowercase hex as per OTLP convention
+	assert.NotContains(t, output, "0102030405060708090A0B0C0D0E0F10") // uppercase should not appear
+}
+
 func generateLogsWithEntityRefs() plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
