@@ -14,13 +14,17 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
@@ -108,6 +112,36 @@ func TestCheckScraperMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	checkScraperMetrics(t, tel, receiverID, scraperID, 7, 0)
+}
+
+func TestScrapeMetricsDataOp_LogsScraperID(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	telset := tel.NewTelemetrySettings()
+	telset.Logger = zap.New(core)
+
+	rSet := receiver.Settings{
+		ID:                receiverID,
+		TelemetrySettings: telset,
+	}
+	set := controller.GetSettings(scraperID.Type(), rSet)
+
+	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), errFake
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsMetrics(sm, receiverID, scraperID, set.TelemetrySettings)
+	require.NoError(t, err)
+	_, err = sf.ScrapeMetrics(context.Background())
+	require.ErrorIs(t, err, errFake)
+
+	errorLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+	assert.Equal(t, "Error scraping metrics", errorLogs[0].Message)
+	assert.Equal(t, scraperID.String(), errorLogs[0].ContextMap()["scraper"])
+	assert.Equal(t, errFake.Error(), errorLogs[0].ContextMap()["error"])
 }
 
 func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) {
