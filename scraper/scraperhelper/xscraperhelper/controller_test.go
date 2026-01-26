@@ -221,7 +221,7 @@ func configureProfilesOptions(t *testing.T, test scraperTestCase, initializeChs 
 		scp, err := xscraper.NewProfiles(ts.scrapeProfiles, xscraperOptions...)
 		require.NoError(t, err)
 
-		profilesOptions = append(profilesOptions, addProfilesScraper(component.MustNewType("scraper"), scp))
+		profilesOptions = append(profilesOptions, AddProfilesScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return profilesOptions
@@ -242,7 +242,7 @@ func TestSingleProfilesScraperPerInterval(t *testing.T) {
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.ProfilesSink),
-		addProfilesScraper(component.MustNewType("scraper"), scp),
+		AddProfilesScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestProfilesScraperControllerStartsOnInit(t *testing.T) {
 		},
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.ProfilesSink),
-		addProfilesScraper(component.MustNewType("scraper"), scp),
+		AddProfilesScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -323,7 +323,7 @@ func TestProfilesScraperControllerInitialDelay(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.ProfilesSink),
-		addProfilesScraper(component.MustNewType("scraper"), scp),
+		AddProfilesScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -353,7 +353,7 @@ func TestProfilesScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.ProfilesSink),
-		addProfilesScraper(component.MustNewType("scraper"), scp),
+		AddProfilesScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -407,14 +407,6 @@ func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry,
 				Value: expectedErrored,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func addProfilesScraper(t component.Type, sc xscraper.Profiles) ControllerOption {
-	f := xscraper.NewFactory(t, nil,
-		xscraper.WithProfiles(func(context.Context, scraper.Settings, component.Config) (xscraper.Profiles, error) {
-			return sc, nil
-		}, component.StabilityLevelDevelopment))
-	return AddFactoryWithConfig(f, nil)
 }
 
 // TestNewProfilesControllerCreateError tests that NewProfilesController returns an error
