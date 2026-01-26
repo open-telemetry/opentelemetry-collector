@@ -1,3 +1,4 @@
+display_name: No-op Receiver
 type: nop
 github_project: open-telemetry/opentelemetry-collector
 
