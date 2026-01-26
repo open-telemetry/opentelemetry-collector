@@ -5,6 +5,8 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 
 	"github.com/spf13/cobra"
@@ -118,18 +120,8 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			}
 			components.BuildInfo = set.BuildInfo
 
-			for providerScheme, providerModuleModule := range set.ProviderModules {
-				components.Providers = append(components.Providers, componentWithoutStability{
-					Scheme: providerScheme,
-					Module: providerModuleModule,
-				})
-			}
-
-			for _, converterModule := range set.ConverterModules {
-				components.Converters = append(components.Converters, componentWithoutStability{
-					Module: converterModule,
-				})
-			}
+			components.Providers = append(components.Providers, sortProvidersByScheme(set.ProviderModules)...)
+			components.Converters = append(components.Converters, sortConverterModules(set.ConverterModules)...)
 
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
@@ -162,6 +154,34 @@ func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []
 	}
 
 	return sortedFactories
+}
+
+func sortProvidersByScheme(providers map[string]string) []componentWithoutStability {
+	providerSchemes := slices.Collect(maps.Keys(providers))
+	sort.Strings(providerSchemes)
+
+	providerComponents := make([]componentWithoutStability, 0, len(providers))
+	for _, providerScheme := range providerSchemes {
+		providerComponents = append(providerComponents, componentWithoutStability{
+			Scheme: providerScheme,
+			Module: providers[providerScheme],
+		})
+	}
+	return providerComponents
+}
+
+func sortConverterModules(modules []string) []componentWithoutStability {
+	sortedModulesCopy := make([]string, len(modules))
+	copy(sortedModulesCopy, modules)
+	sort.Strings(sortedModulesCopy)
+
+	sortedModules := make([]componentWithoutStability, 0, len(modules))
+	for _, mod := range sortedModulesCopy {
+		sortedModules = append(sortedModules, componentWithoutStability{
+			Module: mod,
+		})
+	}
+	return sortedModules
 }
 
 func isComponentAlias[T component.Factory](component T) bool {
