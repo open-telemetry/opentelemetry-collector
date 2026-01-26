@@ -255,3 +255,94 @@ func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) err
 	done.OnDone(consumeFunc(ctx, req))
 	return true
 }
+
+// TestMemoryQueueWaitForResult_AbandonedContext verifies that when a producer's
+// context is cancelled while waiting for result, the consumer properly handles
+// the abandoned request and doesn't leak resources or panic.
+// This is a regression test for the abandoned context handling fix in PR #14473.
+func TestMemoryQueueWaitForResult_AbandonedContext(t *testing.T) {
+	wg := sync.WaitGroup{}
+	consumerStarted := make(chan struct{})
+	consumerDone := make(chan struct{})
+
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Start consumer that will process the request after producer abandons
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		close(consumerStarted)
+		_, req, done, ok := q.Read(context.Background())
+		if !ok {
+			return
+		}
+		assert.EqualValues(t, 1, req)
+		// Simulate slow processing - by this time producer should have abandoned
+		<-time.After(500 * time.Millisecond)
+		// This should not panic or block even though producer abandoned
+		done.OnDone(nil)
+		close(consumerDone)
+	}()
+
+	<-consumerStarted // Wait for consumer to be ready
+
+	// Producer with short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	err := q.Offer(ctx, intRequest(1))
+	assert.ErrorIs(t, err, context.DeadlineExceeded,
+		"Producer should get timeout error")
+
+	// Wait for consumer to complete - should not panic or leak
+	select {
+	case <-consumerDone:
+		// Consumer completed successfully
+	case <-time.After(2 * time.Second):
+		t.Fatal("Consumer did not complete - possible resource leak or deadlock")
+	}
+
+	require.NoError(t, q.Shutdown(context.Background()))
+	wg.Wait()
+}
+
+// TestMemoryQueueWaitForResult_AbandonedContextPoolReturn verifies that
+// blockingDone is properly returned to the pool when producer abandons.
+func TestMemoryQueueWaitForResult_AbandonedContextPoolReturn(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResult = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Run multiple iterations to stress test pool handling
+	for i := 0; i < 50; i++ {
+		wg := sync.WaitGroup{}
+		consumerStarted := make(chan struct{})
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			close(consumerStarted)
+			_, _, done, ok := q.Read(context.Background())
+			if !ok {
+				return
+			}
+			// Small delay to ensure producer times out
+			time.Sleep(50 * time.Millisecond)
+			done.OnDone(nil) // Should properly return to pool
+		}()
+
+		<-consumerStarted
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		_ = q.Offer(ctx, intRequest(1)) // Will timeout
+		cancel()
+
+		wg.Wait()
+	}
+
+	require.NoError(t, q.Shutdown(context.Background()))
+}

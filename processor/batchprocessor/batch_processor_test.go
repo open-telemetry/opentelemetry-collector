@@ -1237,3 +1237,187 @@ func TestBatchSplitOnly(t *testing.T) {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
 }
+
+// TestBatchProcessor_ShutdownRaceCondition verifies that the batch processor
+// handles concurrent shutdown and consume operations without deadlocking or
+// leaking goroutines. This is a regression test for issue #14444.
+func TestBatchProcessor_ShutdownRaceCondition(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 100
+	cfg.Timeout = 1 * time.Second
+
+	factory := NewFactory()
+	traces, err := factory.CreateTraces(
+		context.Background(),
+		processortest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Start multiple goroutines that continuously send data
+	var wg sync.WaitGroup
+	stopCh := make(chan struct{})
+	producerCount := 10
+
+	for i := 0; i < producerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stopCh:
+					return
+				default:
+					td := testdata.GenerateTraces(5)
+					// Ignore errors during shutdown - we expect some to fail
+					_ = traces.ConsumeTraces(context.Background(), td)
+				}
+			}
+		}()
+	}
+
+	// Let producers run for a bit
+	time.Sleep(100 * time.Millisecond)
+
+	// Trigger shutdown while producers are still running
+	// This should not deadlock or panic
+	shutdownDone := make(chan struct{})
+	go func() {
+		err := traces.Shutdown(context.Background())
+		assert.NoError(t, err)
+		close(shutdownDone)
+	}()
+
+	// Wait for shutdown to complete with a timeout
+	select {
+	case <-shutdownDone:
+		// Shutdown completed successfully
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown timed out - possible deadlock")
+	}
+
+	// Signal producers to stop and wait for them
+	close(stopCh)
+	wg.Wait()
+
+	// Verify we received at least some data
+	assert.Greater(t, sink.SpanCount(), 0, "Expected some spans to be delivered")
+}
+
+// TestBatchProcessor_ShutdownDrainsChannel verifies that pending items in the
+// channel are properly drained during shutdown.
+func TestBatchProcessor_ShutdownDrainsChannel(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 1000 // Large batch size so items stay pending
+	cfg.Timeout = 1 * time.Hour // Long timeout so timeout doesn't trigger
+
+	factory := NewFactory()
+	traces, err := factory.CreateTraces(
+		context.Background(),
+		processortest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send some traces that won't trigger a batch (less than SendBatchSize)
+	expectedSpans := 50
+	for i := 0; i < 10; i++ {
+		td := testdata.GenerateTraces(5)
+		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
+	}
+
+	// Shutdown should flush pending items
+	require.NoError(t, traces.Shutdown(context.Background()))
+
+	// All spans should have been flushed during shutdown
+	assert.Equal(t, expectedSpans, sink.SpanCount(),
+		"All pending spans should be flushed during shutdown")
+}
+
+// TestBatchProcessor_ConsumeAfterShutdown verifies that consume calls after
+// shutdown don't block forever. The call should complete quickly (either
+// successfully sending to the buffered channel or returning a shutdown error).
+func TestBatchProcessor_ConsumeAfterShutdown(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 100
+	cfg.Timeout = 1 * time.Second
+
+	factory := NewFactory()
+	traces, err := factory.CreateTraces(
+		context.Background(),
+		processortest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, traces.Shutdown(context.Background()))
+
+	// Attempt to consume after shutdown should not block forever.
+	// Due to the buffered channel and Go's non-deterministic select,
+	// the call might either succeed (send to buffer) or return errShuttingDown.
+	// The critical behavior is that it doesn't block.
+	td := testdata.GenerateTraces(5)
+	done := make(chan error, 1)
+	go func() {
+		done <- traces.ConsumeTraces(context.Background(), td)
+	}()
+
+	select {
+	case <-done:
+		// ConsumeTraces completed (either with nil or error) - this is the expected behavior
+		// The important thing is that it didn't block
+	case <-time.After(1 * time.Second):
+		t.Fatal("ConsumeTraces blocked after shutdown - should complete immediately")
+	}
+}
+
+// TestBatchProcessor_ContextCancellation verifies that consume with a
+// cancelled context doesn't block indefinitely. Due to the buffered channel
+// and Go's non-deterministic select, the call might either succeed or return
+// context.Canceled. The critical behavior is that it doesn't block.
+func TestBatchProcessor_ContextCancellation(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 100
+	cfg.Timeout = 1 * time.Second
+
+	factory := NewFactory()
+	traces, err := factory.CreateTraces(
+		context.Background(),
+		processortest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, traces.Shutdown(context.Background()))
+	}()
+
+	// Create a context that's already cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	td := testdata.GenerateTraces(5)
+	done := make(chan error, 1)
+	go func() {
+		done <- traces.ConsumeTraces(ctx, td)
+	}()
+
+	select {
+	case <-done:
+		// ConsumeTraces completed - this is the expected behavior
+		// Due to buffered channel and non-deterministic select, it may or may not
+		// return context.Canceled, but critically it should not block
+	case <-time.After(1 * time.Second):
+		t.Fatal("ConsumeTraces blocked with cancelled context")
+	}
+}
