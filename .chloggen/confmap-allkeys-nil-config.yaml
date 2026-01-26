@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/confmap
+note: Fix AllKeys to return empty keys for nil config
+issues: [14483]

@@ -82,6 +82,9 @@ func (l *Conf) Marshal(rawVal any, opts ...MarshalOption) error {
 // AllKeys returns all keys holding a value, regardless of where they are set.
 // Nested keys are returned with a KeyDelimiter separator.
 func (l *Conf) AllKeys() []string {
+	if l.isNil {
+		return nil
+	}
 	return l.k.Keys()
 }
 

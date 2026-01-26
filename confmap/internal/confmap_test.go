@@ -1292,6 +1292,14 @@ func TestConfIsNil(t *testing.T) {
 	}
 }
 
+func TestConfAllKeysNil(t *testing.T) {
+	conf := NewFromStringMap(nil)
+	require.True(t, conf.isNil)
+
+	require.NoError(t, conf.k.Set("a.b", 1))
+	require.Empty(t, conf.AllKeys())
+}
+
 func TestConfmapNilMerge(t *testing.T) {
 	tests := []struct {
 		name     string
