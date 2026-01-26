@@ -7,6 +7,63 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.50.0/v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/confighttp`: Replace `ServerConfig.Endpoint` with `NetAddr confignet.AddrConfig`, enabling more flexible transport configuration. (#14187, #8752)
+  This change adds "transport" as a configuration option, allowing users to specify
+  different transport protocols (e.g., "tcp", "unix").
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/scraperhelper`: Deprecate the `AddScraper` method. (#14428)
+
+### 🚀 New components 🚀
+
+- `pkg/xscraperhelper`: Add xscraperhelper for the experimental OTel profiling signal. (#14235)
+
+### 💡 Enhancements 💡
+
+- `all`: Add support for deprecated component type aliases (#14208)
+  To add a deprecated type alias to a component factory, use the `WithDeprecatedTypeAlias` option.
+  ```go
+  return xexporter.NewFactory(
+      metadata.Type,
+      createDefaultConfig,
+      xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+      xexporter.WithDeprecatedTypeAlias("old_component_name"),
+  )
+  ```
+  When the alias is used in configuration, a deprecation warning will be automatically logged, and the component will function normally using the original implementation.
+  
+- `cmd/mdatagen`: Add the ability to disable attributes at the metric level and re-aggregate data points based off of these new dimensions (#10726)
+- `extension/xextension`: Add deprecated type alias support for extensions via `xextension` module (#14208)
+  Extensions can now register deprecated type aliases using the experimental `xextension.WithDeprecatedTypeAlias` option.
+  ```go
+  return xextension.NewFactory(
+      metadata.Type,
+      createDefaultConfig,
+      createExtension,
+      metadata.Stability,
+      xextension.WithDeprecatedTypeAlias("old_extension_name"),
+  )
+  ```
+  When the alias is used in configuration, a deprecation warning will be automatically logged, and the extension will function normally using the original implementation.
+  
+- `pkg/consumer/consumertest`: Add ProfileCount() (#14251)
+- `pkg/exporterhelper`: Add support for profile samples metrics (#14423)
+- `pkg/receiverhelper`: Add support for profile samples metrics (#14226)
+- `pkg/scraperhelper`: Introduce `AddMetricsScraper` to be more explicit than `AddScraper`. (#14428)
+- `receiver/otlp`: Add metrics tracking the number of receiver, refused and failed profile samples (#14226)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/xconnector`: Add component ID type validation to all xconnector Create methods (#14357)
+
+<!-- previous-version -->
+
 ## v1.49.0/v0.143.0
 
 ### 🛑 Breaking changes 🛑

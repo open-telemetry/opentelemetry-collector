@@ -22,14 +22,14 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@0700edb451d0e9f2426f99bd6977027e550fb2a6 # v4.7.0
+        uses: CodSpeedHQ/action@94b88560ad3ed11ed5e92a321518a47c35a1fed5 # v4.8.0
         with:
           mode: walltime
           run: make for-all-target TARGET="timebenchmark"

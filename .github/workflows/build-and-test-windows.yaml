@@ -30,7 +30,7 @@ jobs:
           go-version: oldstable
           cache: false
       - name: Cache Go
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         env:
           cache-name: cache-go-modules
         with:
@@ -59,7 +59,7 @@ jobs:
           go-version: oldstable
           cache: false
       - name: Cache Go
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         env:
           cache-name: cache-go-modules
         with:
