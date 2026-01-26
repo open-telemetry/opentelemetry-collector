@@ -280,7 +280,7 @@ func TestMemoryQueueWaitForResult_AbandonedContext(t *testing.T) {
 	defer cancel()
 
 	err := q.Offer(ctx, intRequest(1))
-	assert.ErrorIs(t, err, context.DeadlineExceeded,
+	require.ErrorIs(t, err, context.DeadlineExceeded,
 		"Producer should get timeout error")
 
 	// Wait for consumer to complete - should not panic or leak
@@ -304,7 +304,7 @@ func TestMemoryQueueWaitForResult_AbandonedContextPoolReturn(t *testing.T) {
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Run multiple iterations to stress test pool handling
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		wg := sync.WaitGroup{}
 		consumerStarted := make(chan struct{})
 
