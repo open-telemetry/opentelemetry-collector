@@ -15,7 +15,7 @@ const oneOfMessageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lower
 // Calling this function when {{ .originOneOfTypeFuncName }}() != {{ .typeName }} returns an invalid
 // zero-initialized instance of {{ .returnType }}. Note that using such {{ .returnType }} instance can cause panic.
 //
-// Calling this function on zero-initialized {{ .structName }} will cause a panic.
+// Calling this function on zero-initialized {{ .structName }} is invalid and will cause a panic.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 	v, ok := ms.orig.Get{{ .originOneOfFieldName }}().(*internal.{{ .originStructType }})
 	if !ok {
@@ -28,7 +28,7 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 //
 // After this, {{ .originOneOfTypeFuncName }}() function will return {{ .typeName }}".
 //
-// Calling this function on zero-initialized {{ .structName }} will cause a panic.
+// Calling this function on zero-initialized {{ .structName }} is invalid and will cause a panic.
 func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	ms.state.AssertMutable()
 	var ov *internal.{{ .originStructType }}
