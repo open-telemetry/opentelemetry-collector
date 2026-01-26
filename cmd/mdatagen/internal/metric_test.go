@@ -97,9 +97,9 @@ func TestMetricValidate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.metric.validate("test.metric", "1.0.0")
-			if tt.wantErr {
+			if tt.wantErr != nil {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.errContains)
+				assert.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 			}
