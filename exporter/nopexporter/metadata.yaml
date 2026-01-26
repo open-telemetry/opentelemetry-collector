@@ -1,3 +1,4 @@
+display_name: No-op Exporter
 type: nop
 github_project: open-telemetry/opentelemetry-collector
 
@@ -9,4 +10,5 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
+    development: [profiles]
   distributions: [core, contrib, k8s]

@@ -50,12 +50,13 @@ func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 
 	loc := pprofile.NewLocation()
 	loc.SetAddress(1)
-	id, _ := pprofile.SetLocation(dic.LocationTable(), loc)
-	stack := dic.StackTable().AppendEmpty()
-	stack.LocationIndices().Append(id)
+	locID, _ := pprofile.SetLocation(dic.LocationTable(), loc)
+	stack := pprofile.NewStack()
+	stack.LocationIndices().Append(locID)
+	stackID, _ := pprofile.SetStack(dic.StackTable(), stack)
 
 	sample := profile.Samples().AppendEmpty()
-	sample.SetStackIndex(1)
+	sample.SetStackIndex(stackID)
 	sample.Values().Append(4)
 	sample.AttributeIndices().Append(0)
 }
@@ -67,12 +68,13 @@ func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 
 	loc := pprofile.NewLocation()
 	loc.SetAddress(2)
-	id, _ := pprofile.SetLocation(dic.LocationTable(), loc)
-	stack := dic.StackTable().AppendEmpty()
-	stack.LocationIndices().Append(id)
+	locID, _ := pprofile.SetLocation(dic.LocationTable(), loc)
+	stack := pprofile.NewStack()
+	stack.LocationIndices().Append(locID)
+	stackID, _ := pprofile.SetStack(dic.StackTable(), stack)
 
 	sample := profile.Samples().AppendEmpty()
-	sample.SetStackIndex(1)
+	sample.SetStackIndex(stackID)
 	sample.Values().Append(9)
 	sample.AttributeIndices().Append(0)
 }

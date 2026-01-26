@@ -22,5 +22,5 @@ The YAML Provider takes a literal YAML string as Collector configuration.
 The scheme for this provider is `yaml`. Usage looks like the following passed to the Collector's command line invocation:
 
 ```text
---config="yaml:exporters::otlphttp::sending_queue::batch::flush_timeout: 2s"
+--config="yaml:exporters::otlp_http::sending_queue::batch::flush_timeout: 2s"
 ```

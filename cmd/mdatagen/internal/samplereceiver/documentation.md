@@ -63,6 +63,37 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
+### reaggregate.metric
+
+Metric for testing spatial reaggregation
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
+### reaggregate.metric.with_required
+
+Metric for testing spatial reaggregation with required attributes
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| required_string_attr | A required attribute with a string value | Any Str | Required |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
 ### system.cpu.time
 
 Monotonic cumulative sum int metric enabled by default.
@@ -71,7 +102,7 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime) |
+| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
 
 ## Optional Metrics
 
@@ -241,3 +272,13 @@ Duration of request [Alpha]
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Double | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.sample.featuregate.example` | alpha | This is an example feature gate for testing mdatagen code generation. | v0.100.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/12345) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

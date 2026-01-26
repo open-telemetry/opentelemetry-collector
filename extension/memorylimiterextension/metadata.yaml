@@ -1,3 +1,4 @@
+display_name: Memory Limiter Extension
 type: memory_limiter
 github_project: open-telemetry/opentelemetry-collector
 
