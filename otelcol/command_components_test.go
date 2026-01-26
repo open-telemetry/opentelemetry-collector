@@ -45,6 +45,40 @@ func TestNewBuildSubCommand(t *testing.T) {
 	assert.Equal(t, strings.ReplaceAll(strings.ReplaceAll(string(ExpectedOutput), "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(b.String(), "\n", ""), "\r", ""))
 }
 
+func TestComponentsStableOutput(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		ProviderModules: map[string]string{
+			"bar": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"foo": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"baz": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+		},
+		ConverterModules: []string{
+			"go.opentelemetry.io/collector/converter/baz v1.2.3",
+			"go.opentelemetry.io/collector/converter/foo v1.2.3",
+			"go.opentelemetry.io/collector/converter/bar v1.2.3",
+		},
+	}
+	cmd := NewCommand(set)
+	cmd.SetArgs([]string{"components"})
+
+	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output-sorted.yaml"))
+	require.NoError(t, err)
+
+	// ensure output is reasonably consistent
+	for range 5 {
+		b := bytes.NewBufferString("")
+		cmd.SetOut(b)
+		err = cmd.Execute()
+		require.NoError(t, err)
+		// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
+		// line that makes the test fail.
+		assert.Equal(t, strings.ReplaceAll(strings.ReplaceAll(string(ExpectedOutput), "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(b.String(), "\n", ""), "\r", ""))
+	}
+}
+
 type mockFactory struct {
 	componentalias.TypeAliasHolder
 	name string
