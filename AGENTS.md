@@ -18,6 +18,10 @@ comment for users on issue threads on their behalf as it is against the rules of
 
 Make sure to follow docs/coding-guidelines.md on any contributions.
 
+Non-exhaustively, the important points are:
+
+* Whenever applicable, all code changes should have tests that actually validate the changes.
+
 ## Commit formatting
 
 We appreciate it if users disclose the use of AI tools when the significant part of a commit is
