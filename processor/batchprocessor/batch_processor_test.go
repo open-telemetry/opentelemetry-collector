@@ -1312,7 +1312,7 @@ func TestBatchProcessor_ShutdownRaceCondition(t *testing.T) {
 func TestBatchProcessor_ShutdownDrainsChannel(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
-	cfg.SendBatchSize = 1000 // Large batch size so items stay pending
+	cfg.SendBatchSize = 1000    // Large batch size so items stay pending
 	cfg.Timeout = 1 * time.Hour // Long timeout so timeout doesn't trigger
 
 	factory := NewFactory()
