@@ -1,8 +1,5 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: go.opentelemetry.io/collector/config/configtls
-title: configtls package
 $defs:
-  ClientConfig:
+  client_config:
     description: ClientConfig contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.
     type: object
     properties:
@@ -16,8 +13,8 @@ $defs:
         description: ServerName requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
         type: string
     allOf:
-      - $ref: '#/$defs/Config'
-  Config:
+      - $ref: config
+  config:
     description: 'Config exposes the common client and server TLS configurations. Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.'
     type: object
     properties:
@@ -26,13 +23,13 @@ $defs:
         type: string
       ca_pem:
         description: In memory PEM encoded cert. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque#/$defs/String
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       cert_file:
         description: Path to the TLS cert to use for TLS required connections. (optional)
         type: string
       cert_pem:
         description: In memory PEM encoded TLS cert to use for TLS required connections. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque#/$defs/String
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       cipher_suites:
         description: CipherSuites is a list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
         type: array
@@ -51,7 +48,7 @@ $defs:
         type: string
       key_pem:
         description: In memory PEM encoded TLS key to use for TLS required connections. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque#/$defs/String
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       max_version:
         description: MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)
         type: string
@@ -65,8 +62,8 @@ $defs:
         format: duration
       tpm:
         description: Trusted platform module configuration
-        $ref: '#/$defs/TPMConfig'
-  ServerConfig:
+        $ref: tpm_config
+  server_config:
     description: ServerConfig contains TLS configurations that are specific to server connections in addition to the common configurations. This should be used by components configuring TLS server connections.
     type: object
     properties:
@@ -77,8 +74,8 @@ $defs:
         description: Reload the ClientCAs file when it is modified (optional, default false)
         type: boolean
     allOf:
-      - $ref: '#/$defs/Config'
-  TPMConfig:
+      - $ref: config
+  tpm_config:
     description: TPMConfig defines trusted platform module configuration for storing TLS keys.
     type: object
     properties:

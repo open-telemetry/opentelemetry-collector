@@ -1,10 +1,5 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: go.opentelemetry.io/collector/scraper/scraperhelper
-title: scraperhelper package
 $defs:
-  ControllerConfig:
-    $ref: '#/$defs/controller.ControllerConfig'
-  controller.ControllerConfig:
+  controller_config:
     description: ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
     type: object
     properties:

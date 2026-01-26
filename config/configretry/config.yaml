@@ -1,8 +1,5 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: go.opentelemetry.io/collector/config/configretry
-title: configretry package
 $defs:
-  BackOffConfig:
+  back_off_config:
     description: BackOffConfig defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff.
     type: object
     properties:
