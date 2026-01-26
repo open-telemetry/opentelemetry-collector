@@ -1,5 +1,27 @@
 # Stability Levels and versioning
 
+## Table of Contents
+
+- [Stability levels](#stability-levels)
+  - [Development](#development)
+  - [Alpha](#alpha)
+  - [Beta](#beta)
+  - [Stable](#stable)
+  - [Deprecated](#deprecated)
+  - [Unmaintained](#unmaintained)
+- [Moving between stability levels](#moving-between-stability-levels)
+- [Graduation criteria](#graduation-criteria)
+  - [In development to alpha](#in-development-to-alpha)
+  - [Alpha to beta](#alpha-to-beta)
+  - [Beta to stable](#beta-to-stable)
+- [Deprecation Information](#deprecation-information)
+- [Versioning](#versioning)
+- [Component Graduation to Stable](#component-graduation-to-stable)
+  - [Difference between signal and component graduation](#difference-between-signal-and-component-graduation)
+  - [Requirements for component graduation](#requirements-for-component-graduation)
+  - [Adoption evidence](#adoption-evidence)
+  - [Graduation process](#graduation-process)
+
 ## Stability levels
 
 The Collector components and implementation are in different stages of stability, and usually split between
@@ -325,3 +347,96 @@ Even if a component has a 1.x or greater version, its behavior for specific sign
 However, components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
 The versioning of a component, and the Go API stability guarantees that come with it, apply to ALL signals simultaneously, regardless of their stability level.
 This means that, once a component is marked as 1.x, signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.
+
+## Component Graduation to Stable
+
+This section describes the process for graduating a component as a whole from beta to stable. This
+is distinct from signal-level graduation, which is covered in the [Graduation criteria](#graduation-criteria)
+section above.
+
+### Difference between signal and component graduation
+
+A component can support multiple telemetry signals (traces, metrics, logs and profiles), and each signal has its own stability level. The sections above describe the requirements and process for graduating
+individual signals within a component.
+
+**Component graduation** refers to declaring the component as a whole as stable. This is a higher
+bar than having individual signals stable, as it represents a commitment that the component is
+production-ready, well-maintained, and has demonstrated real-world adoption.
+
+A component MAY have some signals at stable while the component itself is not yet graduated. 
+Component graduation is optional but signals a stronger commitment to the end-user community.
+
+### Requirements for component graduation
+
+Before opening a PR to graduate a component to stable, the code owners MUST gather evidence that the
+following requirements are met.
+
+#### Signal requirements
+
+1. All supported signals MUST be at beta stability or higher.
+2. At least one signal MUST be at stable stability.
+
+#### Code owner requirements
+
+1. The component MUST have at least three active code owners.
+2. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates).
+
+#### Technical requirements
+
+1. The component MUST meet all [testing requirements](#testing-requirements) for stable components.
+2. The component MUST meet all [documentation requirements](#documentation-requirements) for stable
+   components.
+3. The component MUST meet all [observability requirements](#observability-requirements) for stable
+   components.
+4. The component MUST follow the [coding guidelines](coding-guidelines.md), including the naming
+   conventions for components.
+5. The component MUST have evidence of real-world adoption. See [Adoption evidence](#adoption-evidence)
+   for details on what constitutes acceptable evidence.
+
+### Adoption evidence
+
+Adoption evidence demonstrates that the component has been validated in real-world environments and
+that there is a community invested in its continued success. Code owners MUST provide at least one
+of the following forms of evidence:
+
+1. **Public adopter testimonials**: At least two organizations have publicly stated (in blog posts,
+   conference talks, GitHub issues, or other public forums) that they use the component in
+   production.
+
+2. **Private attestation**: If adopters cannot be named publicly, code owners MAY provide private
+   attestation to the reviewing maintainer. The attestation MUST include a general description of the
+   scale of usage (e.g., "processing millions of spans per day"). The maintainer verifying the
+   attestation MUST confirm they find it credible, but is not required to disclose the details.
+
+The adoption evidence MUST be documented in the graduation request issue.
+
+### Graduation process
+
+The process for graduating a component to stable is as follows:
+
+1. **Code owners prepare the request**: One of the code owners files an issue using the 'Component
+   Graduation' issue template. The issue MUST include:
+   - Evidence that all [requirements](#requirements-for-component-graduation) are met.
+   - Links to documentation, test coverage reports, and benchmark results.
+   - [Adoption evidence](#adoption-evidence).
+
+2. **Maintainer assignment**: A maintainer is assigned on a rotating basis to verify the graduation
+   request. For vendor-specific components, the assigned maintainer SHOULD be from a different
+   employer than the one owning the component.
+
+3. **Maintainer verification**: The assigned maintainer reviews the evidence provided by the code
+   owners and verifies that all requirements are met. The maintainer is verifying the evidence, not
+   generating it. If requirements are not met, the maintainer provides feedback on what is missing.
+
+4. **PR submission**: Once the maintainer confirms the requirements are met, the code owners open a
+   PR to update the component's stability level. The PR MUST be approved by:
+   - The assigned maintainer.
+   - All listed code owners.
+
+5. **Merge**: After all approvals are obtained, the PR can be merged.
+
+If there are disputes about whether the requirements are met, the issue should be escalated to the
+maintainers for discussion in a Collector SIG meeting.
