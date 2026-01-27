@@ -118,6 +118,10 @@ type Collector struct {
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
+
+	// currentCfg holds the last successfully applied configuration.
+	// Only populated when the service.receiverPartialReload feature gate is enabled.
+	currentCfg *Config
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -258,12 +262,32 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
+	if receiverPartialReloadGate.IsEnabled() {
+		col.currentCfg = cfg
+	}
 	col.setCollectorState(StateRunning)
 
 	return nil
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	if receiverPartialReloadGate.IsEnabled() && col.currentCfg != nil {
+		reloaded, err := col.tryPartialReceiverReload(ctx)
+		if reloaded {
+			// Partial reload was attempted (the change was receiver-only).
+			// Return the result directly — on success err is nil; on failure
+			// we cannot safely fall back to a full reload because the graph
+			// may be in a partially modified state (some receivers shut down,
+			// nodes removed, new nodes without components). Calling ShutdownAll
+			// on such a graph risks double-shutdowns on already-stopped
+			// receivers and nil-pointer panics on nodes whose components were
+			// never built. This is consistent with how full reload failures are
+			// handled: the error propagates to Run(), which exits the collector.
+			return err
+		}
+		// The config change was not receiver-only. Fall through to full reload.
+	}
+
 	col.service.Logger().Warn("Config updated, restart service")
 	col.setCollectorState(StateClosing)
 
@@ -276,6 +300,43 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// tryPartialReceiverReload attempts to reload only the receiver components if
+// the configuration change is limited to receivers. The bool return indicates
+// whether a partial reload was attempted (true) or the change requires a full
+// reload (false). When true, the error indicates whether the reload succeeded.
+func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error) {
+	factories, err := col.set.Factories()
+	if err != nil {
+		return false, err
+	}
+
+	newCfg, err := col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return false, err
+	}
+
+	if err = xconfmap.Validate(newCfg); err != nil {
+		return false, err
+	}
+
+	if !receiversOnlyChange(col.currentCfg, newCfg, isConnectorID(col.currentCfg.Connectors)) {
+		return false, nil
+	}
+
+	col.service.Logger().Info("Config updated, performing partial receiver reload")
+	if err = col.service.UpdateReceivers(ctx,
+		col.currentCfg.Receivers,
+		newCfg.Receivers,
+		factories.Receivers,
+		newCfg.Service.Pipelines,
+	); err != nil {
+		return true, fmt.Errorf("partial receiver reload failed: %w", err)
+	}
+
+	col.currentCfg = newCfg
+	return true, nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
