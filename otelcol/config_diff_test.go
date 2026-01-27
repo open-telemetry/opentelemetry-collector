@@ -148,7 +148,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "processor_list_changed",
+			name: "processor_config_map_changed",
 			oldCfg:  baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
@@ -163,8 +163,46 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "exporter_list_changed",
+			name: "pipeline_processors_list_changed",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
+				return c
+			}(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Processors = []component.ID{
+					component.MustNewID("batch"),
+					component.MustNewIDWithName("batch", "2"),
+				}
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        false,
+		},
+		{
+			name: "exporter_config_map_changed",
 			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Exporters = []component.ID{
+					component.MustNewID("otlp"),
+					component.MustNewIDWithName("otlp", "2"),
+				}
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        false,
+		},
+		{
+			name: "pipeline_exporters_list_changed",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
+				return c
+			}(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
@@ -263,6 +301,40 @@ func TestReceiversOnlyChange(t *testing.T) {
 			isConnector: neverConnector,
 			want:        true,
 		},
+		{
+			name:   "telemetry_changed",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Service.Telemetry = "changed"
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        false,
+		},
+		{
+			name: "pipeline_id_replaced",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("otlp")},
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalLogs)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("otlp")},
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -271,4 +343,17 @@ func TestReceiversOnlyChange(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestIsConnectorID(t *testing.T) {
+	connID := component.MustNewID("forward")
+	receiverID := component.MustNewID("otlp")
+
+	connectors := map[component.ID]component.Config{
+		connID: struct{}{},
+	}
+	pred := isConnectorID(connectors)
+
+	assert.True(t, pred(connID))
+	assert.False(t, pred(receiverID))
 }
