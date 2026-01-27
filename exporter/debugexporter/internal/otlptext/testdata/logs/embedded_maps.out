@@ -12,6 +12,6 @@ Body: Map({"key1":"val1","key2":{"key21":"val21","key22":"val22"}})
 Attributes:
      -> key1: Map({"key11":"val11","key12":"val12","key13":{"key131":"val131"}})
      -> key2: Str(val2)
-Trace ID: 
-Span ID: 
+    Trace ID       : 
+    Span ID        : 
 Flags: 0

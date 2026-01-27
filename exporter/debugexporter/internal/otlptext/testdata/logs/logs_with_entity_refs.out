@@ -27,6 +27,6 @@ SeverityNumber: Info(9)
 Body: Str(This is a test log message)
 Attributes:
      -> test.attribute: Str(test-value)
-Trace ID: 
-Span ID: 
+    Trace ID       : 
+    Span ID        : 
 Flags: 0
