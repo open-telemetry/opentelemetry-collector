@@ -16,4 +16,5 @@ var receiverPartialReloadGate = featuregate.GlobalRegistry().MustRegister(
 			"will trigger a partial reload that restarts only the receivers "+
 			"instead of the entire service.",
 	),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
