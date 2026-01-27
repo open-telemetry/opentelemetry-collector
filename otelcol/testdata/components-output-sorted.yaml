@@ -3,41 +3,109 @@ buildinfo:
     description: OpenTelemetry Collector
     version: latest
 receivers:
-    - name: nop
+    - name: bar
       module: go.opentelemetry.io/collector/receiver/receivertest v1.2.3
       stability:
-        logs: Stable
-        metrics: Stable
-        traces: Stable
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: baz
+      module: go.opentelemetry.io/collector/receiver/receivertest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: foo
+      module: go.opentelemetry.io/collector/receiver/receivertest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
 processors:
-    - name: nop
+    - name: bar
       module: go.opentelemetry.io/collector/processor/processortest v1.2.3
       stability:
-        logs: Stable
-        metrics: Stable
-        traces: Stable
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: baz
+      module: go.opentelemetry.io/collector/processor/processortest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: foo
+      module: go.opentelemetry.io/collector/processor/processortest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
 exporters:
-    - name: nop
+    - name: bar
       module: go.opentelemetry.io/collector/exporter/exportertest v1.2.3
       stability:
-        logs: Stable
-        metrics: Stable
-        traces: Stable
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: baz
+      module: go.opentelemetry.io/collector/exporter/exportertest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
+    - name: foo
+      module: go.opentelemetry.io/collector/exporter/exportertest v1.2.3
+      stability:
+        logs: Undefined
+        metrics: Undefined
+        traces: Undefined
 connectors:
-    - name: nop
+    - name: bar
       module: go.opentelemetry.io/collector/connector/connectortest v1.2.3
       stability:
-        logs-to-logs: Development
-        logs-to-metrics: Development
-        logs-to-traces: Development
-        metrics-to-logs: Development
-        metrics-to-metrics: Development
-        metrics-to-traces: Development
-        traces-to-logs: Development
-        traces-to-metrics: Development
-        traces-to-traces: Development
+        logs-to-logs: Undefined
+        logs-to-metrics: Undefined
+        logs-to-traces: Undefined
+        metrics-to-logs: Undefined
+        metrics-to-metrics: Undefined
+        metrics-to-traces: Undefined
+        traces-to-logs: Undefined
+        traces-to-metrics: Undefined
+        traces-to-traces: Undefined
+    - name: baz
+      module: go.opentelemetry.io/collector/connector/connectortest v1.2.3
+      stability:
+        logs-to-logs: Undefined
+        logs-to-metrics: Undefined
+        logs-to-traces: Undefined
+        metrics-to-logs: Undefined
+        metrics-to-metrics: Undefined
+        metrics-to-traces: Undefined
+        traces-to-logs: Undefined
+        traces-to-metrics: Undefined
+        traces-to-traces: Undefined
+    - name: foo
+      module: go.opentelemetry.io/collector/connector/connectortest v1.2.3
+      stability:
+        logs-to-logs: Undefined
+        logs-to-metrics: Undefined
+        logs-to-traces: Undefined
+        metrics-to-logs: Undefined
+        metrics-to-metrics: Undefined
+        metrics-to-traces: Undefined
+        traces-to-logs: Undefined
+        traces-to-metrics: Undefined
+        traces-to-traces: Undefined
 extensions:
-    - name: nop
+    - name: bar
+      module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
+      stability:
+        extension: Stable
+    - name: baz
+      module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
+      stability:
+        extension: Stable
+    - name: foo
       module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
       stability:
         extension: Stable
