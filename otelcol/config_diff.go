@@ -118,4 +118,3 @@ func isConnectorID(connectors map[component.ID]component.Config) func(component.
 		return ok
 	}
 }
-
