@@ -37,6 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				OutputPaths:        []string{"stderr"},
 				QueueConfig:        configoptional.Default(queueCfg),
 			},
 		},
@@ -81,6 +82,16 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 				Verbosity: configtelemetry.LevelDetailed,
 			},
 		},
+		"OutputPathsSpecified": {
+			inCfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{"stderr"},
+			},
+			expectedConfig: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{"stderr"},
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			conf := confmap.New()
@@ -123,6 +134,29 @@ func TestValidate(t *testing.T) {
 			name: "verbosity detailed",
 			cfg: &Config{
 				Verbosity: configtelemetry.LevelDetailed,
+			},
+		},
+		{
+			name: "output paths with internal logger",
+			cfg: &Config{
+				UseInternalLogger: true,
+				OutputPaths:       []string{"stderr"},
+			},
+			expectedErr: "output_paths requires use_internal_logger to be false",
+		},
+		{
+			name: "output paths empty entry",
+			cfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{""},
+			},
+			expectedErr: "output_paths cannot contain empty values",
+		},
+		{
+			name: "output paths valid",
+			cfg: &Config{
+				UseInternalLogger: false,
+				OutputPaths:       []string{"stderr"},
 			},
 		},
 	}
