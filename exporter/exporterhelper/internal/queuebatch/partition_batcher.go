@@ -206,7 +206,9 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 			case <-qb.shutdownCh:
 				return
 			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
+				// Use background context for timer-triggered flushes since this is normal operation,
+				// not shutdown. We want to wait for workers to become available.
+				qb.flushCurrentBatchIfNecessary(context.Background())
 			}
 		}
 	}()
@@ -214,16 +216,18 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) Shutdown(context.Context) error {
+func (qb *partitionBatcher) Shutdown(ctx context.Context) error {
 	close(qb.shutdownCh)
-	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNecessary()
+	// Make sure execute one last flush if necessary, respecting shutdown context.
+	qb.flushCurrentBatchIfNecessary(ctx)
 	qb.stopWG.Wait()
 	return nil
 }
 
-// flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
+// flushCurrentBatchIfNecessary sends out the current request batch if it is not nil.
+// The shutdownCtx is used to respect shutdown deadlines when acquiring workers.
+// If shutdownCtx is nil, the function will block indefinitely waiting for a worker.
+func (qb *partitionBatcher) flushCurrentBatchIfNecessary(shutdownCtx context.Context) {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()
@@ -233,8 +237,12 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatch = nil
 	qb.currentBatchMu.Unlock()
 
-	// flush() blocks until successfully started a goroutine for flushing.
-	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
+	// flush() blocks until successfully started a goroutine for flushing or context is cancelled.
+	if err := qb.flushWithContext(shutdownCtx, batchToFlush.ctx, batchToFlush.req, batchToFlush.done); err != nil {
+		qb.logger.Warn("Failed to flush batch during shutdown, data may be lost", zap.Error(err))
+		// Signal done with the error so callers aren't left hanging
+		batchToFlush.done.OnDone(err)
+	}
 	qb.resetTimer()
 }
 
@@ -245,6 +253,20 @@ func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
 	})
+}
+
+// flushWithContext is like flush but respects the shutdownCtx deadline when waiting for a worker.
+// Returns an error if the shutdown context is cancelled before a worker becomes available.
+func (qb *partitionBatcher) flushWithContext(shutdownCtx context.Context, reqCtx context.Context, req request.Request, done queue.Done) error {
+	qb.stopWG.Add(1)
+	if err := qb.wp.executeWithContext(shutdownCtx, func() {
+		defer qb.stopWG.Done()
+		done.OnDone(qb.consumeFunc(reqCtx, req))
+	}); err != nil {
+		qb.stopWG.Done()
+		return err
+	}
+	return nil
 }
 
 type workerPool struct {
@@ -267,6 +289,23 @@ func (wp *workerPool) execute(f func()) {
 		}()
 		f()
 	}()
+}
+
+// executeWithContext is like execute but respects the context deadline when waiting for a worker.
+// Returns an error if the context is cancelled before a worker becomes available.
+func (wp *workerPool) executeWithContext(ctx context.Context, f func()) error {
+	select {
+	case <-wp.workers:
+		go func() {
+			defer func() {
+				wp.workers <- struct{}{}
+			}()
+			f()
+		}()
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 type multiDone []queue.Done
