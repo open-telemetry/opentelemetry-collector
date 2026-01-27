@@ -23,6 +23,11 @@ type Config struct {
 	RetryConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 	ClientConfig  configgrpc.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
+	// ConnectionPoolSize configures the number of gRPC connections to create and maintain.
+	// A larger pool size helps with high-throughput scenarios by distributing load across multiple connections.
+	// Default is 1 (single connection). Recommended for high-throughput: 4-8 connections.
+	ConnectionPoolSize int `mapstructure:"connection_pool_size"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -35,6 +40,12 @@ var (
 func (c *Config) Validate() error {
 	if endpoint := c.sanitizedEndpoint(); endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
+	}
+	if c.ConnectionPoolSize < 0 {
+		return errors.New("connection_pool_size must be >= 0")
+	}
+	if c.ConnectionPoolSize > 256 {
+		return errors.New("connection_pool_size must be <= 256")
 	}
 	return nil
 }
