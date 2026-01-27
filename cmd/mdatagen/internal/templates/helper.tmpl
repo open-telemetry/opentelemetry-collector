@@ -24,6 +24,10 @@
   }
 {{- end -}}
 
+{{- define "putAttributeEnum" -}}
+	dp.Attributes().PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue.String())
+{{- end -}}
+
 {{- define "getAttributeValue" -}}
 {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 {{- end -}}
