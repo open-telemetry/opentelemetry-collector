@@ -1,0 +1,7 @@
+change_type: bug_fix
+
+component: exporter/exporterhelper
+
+note: Fix data race in partition_batcher where resetTimer() was called outside mutex, which could cause concurrent timer.Reset() calls and unpredictable batch flush timing under load.
+
+issues: []
