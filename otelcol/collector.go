@@ -317,7 +317,7 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, err
 	}
 
-	if err = xconfmap.Validate(newCfg); err != nil {
+	if err := xconfmap.Validate(newCfg); err != nil {
 		return false, err
 	}
 
