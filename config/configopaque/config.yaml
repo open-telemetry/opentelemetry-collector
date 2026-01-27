@@ -1,0 +1,17 @@
+$defs:
+  map_list:
+    description: MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value pairs. Pairs are assumed to have distinct names. This is checked during config validation.
+    type: array
+    items:
+      $ref: pair
+  pair:
+    description: Pair is an element of a MapList, and consists of a name and an opaque value.
+    type: object
+    properties:
+      name:
+        type: string
+      value:
+        $ref: string
+  string:
+    description: String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.
+    type: string
