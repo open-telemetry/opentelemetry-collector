@@ -1,0 +1,9 @@
+$defs:
+  config:
+    description: Config defines the auth settings for the receiver.
+    type: object
+    properties:
+      authenticator:
+        description: AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID

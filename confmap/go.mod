@@ -7,7 +7,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/knadh/koanf/maps v0.1.2
 	github.com/knadh/koanf/providers/confmap v1.0.0
-	github.com/knadh/koanf/v2 v2.3.0
+	github.com/knadh/koanf/v2 v2.3.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.50.0
 	go.opentelemetry.io/collector/internal/testutil v0.144.0

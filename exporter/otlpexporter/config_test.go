@@ -113,6 +113,7 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 			}),
 			ClientConfig: configgrpc.ClientConfig{
 				Endpoint:        "1.2.3.4:1234",
+				BalancerName:    "round_robin",
 				Compression:     "gzip",
 				WriteBufferSize: 512 * 1024,
 			},
