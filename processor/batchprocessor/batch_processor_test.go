@@ -1262,7 +1262,7 @@ func TestBatchProcessor_ShutdownRaceCondition(t *testing.T) {
 	stopCh := make(chan struct{})
 	producerCount := 10
 
-	for i := 0; i < producerCount; i++ {
+	for range producerCount {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -1304,7 +1304,7 @@ func TestBatchProcessor_ShutdownRaceCondition(t *testing.T) {
 	wg.Wait()
 
 	// Verify we received at least some data
-	assert.Greater(t, sink.SpanCount(), 0, "Expected some spans to be delivered")
+	assert.Positive(t, sink.SpanCount(), "Expected some spans to be delivered")
 }
 
 // TestBatchProcessor_ShutdownDrainsChannel verifies that pending items in the
@@ -1327,7 +1327,7 @@ func TestBatchProcessor_ShutdownDrainsChannel(t *testing.T) {
 
 	// Send some traces that won't trigger a batch (less than SendBatchSize)
 	expectedSpans := 50
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		td := testdata.GenerateTraces(5)
 		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
 	}
