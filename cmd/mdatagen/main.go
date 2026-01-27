@@ -6,6 +6,8 @@ package main
 //go:generate mdatagen metadata.yaml
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal"
@@ -14,5 +16,8 @@ import (
 func main() {
 	cmd, err := internal.NewCommand()
 	cobra.CheckErr(err)
-	cobra.CheckErr(cmd.Execute())
+
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -4,6 +4,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal"
@@ -12,5 +14,8 @@ import (
 func main() {
 	cmd, err := internal.Command()
 	cobra.CheckErr(err)
-	cobra.CheckErr(cmd.Execute())
+
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
