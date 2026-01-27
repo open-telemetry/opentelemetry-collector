@@ -31,13 +31,11 @@ type LogRecord struct {
 	SpanId                 SpanID
 }
 
-var (
-	protoPoolLogRecord = sync.Pool{
-		New: func() any {
-			return &LogRecord{}
-		},
-	}
-)
+var protoPoolLogRecord = sync.Pool{
+	New: func() any {
+		return &LogRecord{}
+	},
+}
 
 func NewLogRecord() *LogRecord {
 	if !UseProtoPooling.IsEnabled() {
@@ -186,6 +184,7 @@ func (orig *LogRecord) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)

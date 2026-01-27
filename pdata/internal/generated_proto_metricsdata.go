@@ -21,13 +21,11 @@ type MetricsData struct {
 	ResourceMetrics []*ResourceMetrics
 }
 
-var (
-	protoPoolMetricsData = sync.Pool{
-		New: func() any {
-			return &MetricsData{}
-		},
-	}
-)
+var protoPoolMetricsData = sync.Pool{
+	New: func() any {
+		return &MetricsData{}
+	},
+}
 
 func NewMetricsData() *MetricsData {
 	if !UseProtoPooling.IsEnabled() {
@@ -137,6 +135,7 @@ func (orig *MetricsData) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

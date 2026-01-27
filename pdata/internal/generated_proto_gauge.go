@@ -19,13 +19,11 @@ type Gauge struct {
 	DataPoints []*NumberDataPoint
 }
 
-var (
-	protoPoolGauge = sync.Pool{
-		New: func() any {
-			return &Gauge{}
-		},
-	}
-)
+var protoPoolGauge = sync.Pool{
+	New: func() any {
+		return &Gauge{}
+	},
+}
 
 func NewGauge() *Gauge {
 	if !UseProtoPooling.IsEnabled() {
@@ -135,6 +133,7 @@ func (orig *Gauge) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

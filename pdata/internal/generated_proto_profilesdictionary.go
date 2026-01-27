@@ -25,13 +25,11 @@ type ProfilesDictionary struct {
 	StackTable     []*Stack
 }
 
-var (
-	protoPoolProfilesDictionary = sync.Pool{
-		New: func() any {
-			return &ProfilesDictionary{}
-		},
-	}
-)
+var protoPoolProfilesDictionary = sync.Pool{
+	New: func() any {
+		return &ProfilesDictionary{}
+	},
+}
 
 func NewProfilesDictionary() *ProfilesDictionary {
 	if !UseProtoPooling.IsEnabled() {
@@ -169,6 +167,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.LocationTable) > 0 {
 		dest.WriteObjectField("locationTable")
 		dest.WriteArrayStart()
@@ -179,6 +178,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.FunctionTable) > 0 {
 		dest.WriteObjectField("functionTable")
 		dest.WriteArrayStart()
@@ -189,6 +189,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.LinkTable) > 0 {
 		dest.WriteObjectField("linkTable")
 		dest.WriteArrayStart()
@@ -199,6 +200,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.StringTable) > 0 {
 		dest.WriteObjectField("stringTable")
 		dest.WriteArrayStart()
@@ -220,6 +222,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if len(orig.StackTable) > 0 {
 		dest.WriteObjectField("stackTable")
 		dest.WriteArrayStart()
@@ -230,6 +233,7 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 

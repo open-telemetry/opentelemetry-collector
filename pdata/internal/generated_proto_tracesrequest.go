@@ -21,13 +21,11 @@ type TracesRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolTracesRequest = sync.Pool{
-		New: func() any {
-			return &TracesRequest{}
-		},
-	}
-)
+var protoPoolTracesRequest = sync.Pool{
+	New: func() any {
+		return &TracesRequest{}
+	},
+}
 
 func NewTracesRequest() *TracesRequest {
 	if !UseProtoPooling.IsEnabled() {

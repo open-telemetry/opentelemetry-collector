@@ -16,7 +16,8 @@ func TestAnyValueBytes(t *testing.T) {
 	buf, err := goproto.Marshal(av)
 	require.NoError(t, err)
 
-	pav := &AnyValue{Value: &AnyValue_BytesValue{BytesValue: nil}}
+	pav := NewAnyValue()
+	pav.SetBytesValue(nil)
 	pbuf := make([]byte, pav.SizeProto())
 	n := pav.MarshalProto(pbuf)
 	pbuf = pbuf[:n]

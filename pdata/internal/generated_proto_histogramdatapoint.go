@@ -28,17 +28,15 @@ type HistogramDataPoint struct {
 	Sum               float64
 	Min               float64
 	Max               float64
-	metadata          [1]uint64
+	metadata          uint64
 	Flags             uint32
 }
 
-var (
-	protoPoolHistogramDataPoint = sync.Pool{
-		New: func() any {
-			return &HistogramDataPoint{}
-		},
-	}
-)
+var protoPoolHistogramDataPoint = sync.Pool{
+	New: func() any {
+		return &HistogramDataPoint{}
+	},
+}
 
 func NewHistogramDataPoint() *HistogramDataPoint {
 	if !UseProtoPooling.IsEnabled() {
@@ -181,6 +179,7 @@ func (orig *HistogramDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
@@ -229,6 +228,7 @@ func (orig *HistogramDataPoint) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
@@ -621,55 +621,52 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
-const fieldBlockHistogramDataPointSum = uint64(0 >> 6)
-const fieldBitHistogramDataPointSum = uint64(1 << 0 & 0x3F)
+const fieldBitHistogramDataPointSum = uint64(1 << 0)
 
 func (m *HistogramDataPoint) SetSum(value float64) {
 	m.Sum = value
-	m.metadata[fieldBlockHistogramDataPointSum] |= fieldBitHistogramDataPointSum
+	m.metadata |= fieldBitHistogramDataPointSum
 }
 
 func (m *HistogramDataPoint) RemoveSum() {
 	m.Sum = float64(0)
-	m.metadata[fieldBlockHistogramDataPointSum] &^= fieldBitHistogramDataPointSum
+	m.metadata &^= fieldBitHistogramDataPointSum
 }
 
 func (m *HistogramDataPoint) HasSum() bool {
-	return m.metadata[fieldBlockHistogramDataPointSum]&fieldBitHistogramDataPointSum != 0
+	return m.metadata&fieldBitHistogramDataPointSum != 0
 }
 
-const fieldBlockHistogramDataPointMin = uint64(1 >> 6)
-const fieldBitHistogramDataPointMin = uint64(1 << 1 & 0x3F)
+const fieldBitHistogramDataPointMin = uint64(1 << 1)
 
 func (m *HistogramDataPoint) SetMin(value float64) {
 	m.Min = value
-	m.metadata[fieldBlockHistogramDataPointMin] |= fieldBitHistogramDataPointMin
+	m.metadata |= fieldBitHistogramDataPointMin
 }
 
 func (m *HistogramDataPoint) RemoveMin() {
 	m.Min = float64(0)
-	m.metadata[fieldBlockHistogramDataPointMin] &^= fieldBitHistogramDataPointMin
+	m.metadata &^= fieldBitHistogramDataPointMin
 }
 
 func (m *HistogramDataPoint) HasMin() bool {
-	return m.metadata[fieldBlockHistogramDataPointMin]&fieldBitHistogramDataPointMin != 0
+	return m.metadata&fieldBitHistogramDataPointMin != 0
 }
 
-const fieldBlockHistogramDataPointMax = uint64(2 >> 6)
-const fieldBitHistogramDataPointMax = uint64(1 << 2 & 0x3F)
+const fieldBitHistogramDataPointMax = uint64(1 << 2)
 
 func (m *HistogramDataPoint) SetMax(value float64) {
 	m.Max = value
-	m.metadata[fieldBlockHistogramDataPointMax] |= fieldBitHistogramDataPointMax
+	m.metadata |= fieldBitHistogramDataPointMax
 }
 
 func (m *HistogramDataPoint) RemoveMax() {
 	m.Max = float64(0)
-	m.metadata[fieldBlockHistogramDataPointMax] &^= fieldBitHistogramDataPointMax
+	m.metadata &^= fieldBitHistogramDataPointMax
 }
 
 func (m *HistogramDataPoint) HasMax() bool {
-	return m.metadata[fieldBlockHistogramDataPointMax]&fieldBitHistogramDataPointMax != 0
+	return m.metadata&fieldBitHistogramDataPointMax != 0
 }
 
 func GenTestHistogramDataPoint() *HistogramDataPoint {
