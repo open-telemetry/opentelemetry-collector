@@ -46,22 +46,22 @@ func TestReceiversOnlyChange(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		old         *Config
-		new         *Config
+		oldCfg      *Config
+		newCfg      *Config
 		isConnector func(component.ID) bool
 		want        bool
 	}{
 		{
 			name:        "identical_configs",
-			old:         baseConfig(),
-			new:         baseConfig(),
+			oldCfg:      baseConfig(),
+			newCfg:      baseConfig(),
 			isConnector: neverConnector,
 			want:        true,
 		},
 		{
 			name: "receiver_config_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("otlp")] = "changed"
 				return c
@@ -71,8 +71,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "receiver_added_to_config_map",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
 				return c
@@ -82,8 +82,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "receiver_added_to_pipeline",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers = append(
@@ -97,8 +97,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "processor_config_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewID("batch")] = "changed"
 				return c
@@ -108,8 +108,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "exporter_config_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewID("otlp")] = "changed"
 				return c
@@ -119,8 +119,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "pipeline_added",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("otlp")},
@@ -134,7 +134,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "pipeline_removed",
-			old: func() *Config {
+			oldCfg: func() *Config {
 				c := baseConfig()
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("otlp")},
@@ -143,14 +143,14 @@ func TestReceiversOnlyChange(t *testing.T) {
 				}
 				return c
 			}(),
-			new:         baseConfig(),
+			newCfg:      baseConfig(),
 			isConnector: neverConnector,
 			want:        false,
 		},
 		{
 			name: "processor_list_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Processors = []component.ID{
@@ -164,8 +164,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "exporter_list_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Exporters = []component.ID{
@@ -179,14 +179,14 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "connector_config_changed",
-			old: func() *Config {
+			oldCfg: func() *Config {
 				c := baseConfig()
 				c.Connectors = map[component.ID]component.Config{
 					connectorID: struct{}{},
 				}
 				return c
 			}(),
-			new: func() *Config {
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Connectors = map[component.ID]component.Config{
 					connectorID: "changed",
@@ -198,14 +198,14 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "connector_as_receiver_changed",
-			old: func() *Config {
+			oldCfg: func() *Config {
 				c := baseConfig()
 				c.Connectors = map[component.ID]component.Config{
 					connectorID: struct{}{},
 				}
 				return c
 			}(),
-			new: func() *Config {
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Connectors = map[component.ID]component.Config{
 					connectorID: struct{}{},
@@ -221,14 +221,14 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "extension_config_changed",
-			old: func() *Config {
+			oldCfg: func() *Config {
 				c := baseConfig()
 				c.Extensions = map[component.ID]component.Config{
 					component.MustNewID("health"): struct{}{},
 				}
 				return c
 			}(),
-			new: func() *Config {
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Extensions = map[component.ID]component.Config{
 					component.MustNewID("health"): "changed",
@@ -240,8 +240,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "extensions_list_changed",
-			old:  baseConfig(),
-			new: func() *Config {
+			oldCfg:  baseConfig(),
+			newCfg: func() *Config {
 				c := baseConfig()
 				c.Extensions = map[component.ID]component.Config{
 					component.MustNewID("health"): struct{}{},
@@ -254,12 +254,12 @@ func TestReceiversOnlyChange(t *testing.T) {
 		},
 		{
 			name: "receiver_removed_from_config_map",
-			old: func() *Config {
+			oldCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
 				return c
 			}(),
-			new:         baseConfig(),
+			newCfg:      baseConfig(),
 			isConnector: neverConnector,
 			want:        true,
 		},
@@ -267,7 +267,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := receiversOnlyChange(tt.old, tt.new, tt.isConnector)
+			got := receiversOnlyChange(tt.oldCfg, tt.newCfg, tt.isConnector)
 			assert.Equal(t, tt.want, got)
 		})
 	}

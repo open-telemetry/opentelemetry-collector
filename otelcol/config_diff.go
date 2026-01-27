@@ -28,51 +28,51 @@ import (
 // isConnector reports whether a given component.ID refers to a connector
 // (as opposed to a regular receiver). Changes to connector-as-receiver
 // entries require a full reload.
-func receiversOnlyChange(old, new *Config, isConnector func(component.ID) bool) bool {
+func receiversOnlyChange(oldCfg, newCfg *Config, isConnector func(component.ID) bool) bool {
 	// Service telemetry must be identical.
-	if !reflect.DeepEqual(old.Service.Telemetry, new.Service.Telemetry) {
+	if !reflect.DeepEqual(oldCfg.Service.Telemetry, newCfg.Service.Telemetry) {
 		return false
 	}
 
 	// Extensions list must be identical.
-	if !slices.Equal(old.Service.Extensions, new.Service.Extensions) {
+	if !slices.Equal(oldCfg.Service.Extensions, newCfg.Service.Extensions) {
 		return false
 	}
 
 	// Extension configs must be identical.
-	if !reflect.DeepEqual(old.Extensions, new.Extensions) {
+	if !reflect.DeepEqual(oldCfg.Extensions, newCfg.Extensions) {
 		return false
 	}
 
 	// Processor configs must be identical.
-	if !reflect.DeepEqual(old.Processors, new.Processors) {
+	if !reflect.DeepEqual(oldCfg.Processors, newCfg.Processors) {
 		return false
 	}
 
 	// Exporter configs must be identical.
-	if !reflect.DeepEqual(old.Exporters, new.Exporters) {
+	if !reflect.DeepEqual(oldCfg.Exporters, newCfg.Exporters) {
 		return false
 	}
 
 	// Connector configs must be identical.
-	if !reflect.DeepEqual(old.Connectors, new.Connectors) {
+	if !reflect.DeepEqual(oldCfg.Connectors, newCfg.Connectors) {
 		return false
 	}
 
 	// Must have the same set of pipeline IDs.
-	if len(old.Service.Pipelines) != len(new.Service.Pipelines) {
+	if len(oldCfg.Service.Pipelines) != len(newCfg.Service.Pipelines) {
 		return false
 	}
-	for pid := range old.Service.Pipelines {
-		if _, ok := new.Service.Pipelines[pid]; !ok {
+	for pid := range oldCfg.Service.Pipelines {
+		if _, ok := newCfg.Service.Pipelines[pid]; !ok {
 			return false
 		}
 	}
 
 	// Per-pipeline: processors, exporters, and connector-as-receiver entries
 	// must be identical. Only pure-receiver entries may differ.
-	for pid, oldPipe := range old.Service.Pipelines {
-		newPipe := new.Service.Pipelines[pid]
+	for pid, oldPipe := range oldCfg.Service.Pipelines {
+		newPipe := newCfg.Service.Pipelines[pid]
 
 		// Processors must be identical.
 		if !slices.Equal(oldPipe.Processors, newPipe.Processors) {
