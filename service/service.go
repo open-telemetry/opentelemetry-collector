@@ -223,9 +223,11 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		return nil, err
 	}
 
-	if err := proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-		return nil, fmt.Errorf("failed to register process metrics: %w", err)
+	// Register process metrics on supported OSes.
+	if err := registerProcessMetrics(srv, runtime.GOOS, proctelemetry.RegisterProcessMetrics); err != nil {
+		return nil, err
 	}
+
 	return srv, nil
 }
 
@@ -361,6 +363,33 @@ func Validate(ctx context.Context, set Settings, cfg Config) error {
 	})
 	if err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
+	}
+	return nil
+}
+
+// registerProcessMetrics registers process metrics on supported operating systems.
+//
+// Historically, attempting to register process metrics on unsupported platforms
+// (e.g. AIX) caused the Collector to fail at startup.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/12098
+func registerProcessMetrics(
+	srv *Service,
+	goos string,
+	register func(component.TelemetrySettings, ...proctelemetry.RegisterOption) error,
+) error {
+	switch goos {
+	// Only support the OSes that we explicitly test and build for,
+	// plus others that are known to have some support in gopsutil.
+	case "linux", "darwin", "windows", "freebsd", "openbsd", "solaris", "plan9":
+		if err := register(srv.telemetrySettings); err != nil {
+			return fmt.Errorf("failed to register process metrics: %w", err)
+		}
+	default:
+		// On unsupported OSes, log a warning and continue startup.
+		srv.telemetrySettings.Logger.Warn(
+			"Process metrics are disabled on this operating system",
+			zap.String("os", goos),
+		)
 	}
 	return nil
 }
