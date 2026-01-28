@@ -272,3 +272,13 @@ Duration of request [Alpha]
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Double | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.sample.featuregate.example` | alpha | This is an example feature gate for testing mdatagen code generation. | v0.100.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/12345) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
