@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"runtime"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -46,6 +47,9 @@ type baseExporter struct {
 	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
+
+	// stopped indicates whether the exporter has been permanently disabled.
+	stopped atomic.Bool
 }
 
 const (
@@ -91,6 +95,11 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) error {
 }
 
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	// If the exporter is disabled, return a permanent error immediately to bypass retries.
+	if e.stopped.Load() {
+		return consumererror.NewPermanent(errors.New("exporter is permanently disabled"))
+	}
+
 	tr := ptraceotlp.NewExportRequestFromTraces(td)
 
 	var err error
@@ -112,6 +121,11 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 }
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	// If the exporter is disabled, return a permanent error immediately to bypass retries.
+	if e.stopped.Load() {
+		return consumererror.NewPermanent(errors.New("exporter is permanently disabled"))
+	}
+
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	var err error
@@ -132,6 +146,11 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	// If the exporter is disabled, return a permanent error immediately to bypass retries.
+	if e.stopped.Load() {
+		return consumererror.NewPermanent(errors.New("exporter is permanently disabled"))
+	}
+
 	tr := plogotlp.NewExportRequestFromLogs(ld)
 
 	var err error
@@ -153,6 +172,11 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
+	// If the exporter is disabled, return a permanent error immediately to bypass retries.
+	if e.stopped.Load() {
+		return consumererror.NewPermanent(errors.New("exporter is permanently disabled"))
+	}
+
 	tr := pprofileotlp.NewExportRequestFromProfiles(td)
 
 	var err error
@@ -171,6 +195,30 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	}
 
 	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
+}
+
+// handleResponse checks if the provided status code is in the DisableOnHTTPStatusCodes list.
+// If matched, it atomically disables the exporter and returns a permanent error.
+func (e *baseExporter) handleResponse(statusCode int) error {
+	shouldDisable := false
+	for _, code := range e.config.DisableOnHTTPStatusCodes {
+		if code == statusCode {
+			shouldDisable = true
+			break
+		}
+	}
+
+	if shouldDisable {
+		if e.stopped.CompareAndSwap(false, true) {
+			e.logger.Error(
+				"Received fatal HTTP status code, disabling exporter permanently",
+				zap.Int("status_code", statusCode),
+			)
+		}
+		return consumererror.NewPermanent(fmt.Errorf("exporter is disabled due to fatal HTTP status code: %d", statusCode))
+	}
+
+	return nil
 }
 
 func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
@@ -201,6 +249,11 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
 		resp.Body.Close()
 	}()
+
+	// Check if the status code requires disabling the exporter.
+	if err := e.handleResponse(resp.StatusCode); err != nil {
+		return err
+	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		return handlePartialSuccessResponse(resp, partialSuccessHandler)
