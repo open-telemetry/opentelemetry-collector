@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: exporter/exporterhelper
+
+note: Add documentation analyzing memory queue silent data loss during graceful shutdown
+
+issues: [14447]
+
+subtext: |
+  Documents the behavior difference between memory queue and persistent queue
+  when handling export failures during shutdown. Memory queue silently drops
+  data when waitForResult=false (default), while persistent queue preserves it.
