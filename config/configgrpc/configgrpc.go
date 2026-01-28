@@ -113,6 +113,12 @@ type ClientConfig struct {
 
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// Options are extensions that can be used to pass additional options to the grpc.Server.
+	Options []ClientOptionExtensionConfig `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -209,6 +215,9 @@ type ServerConfig struct {
 	// Middlewares for the gRPC server.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	// Options are extensions that can be used to pass additional options to the grpc.Server.
+	Options []ServerOptionExtensionConfig `mapstructure:"middlewares,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -280,6 +289,19 @@ func (cc *ClientConfig) isSchemeHTTPS() bool {
 // ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConn].
 type ToClientConnOption interface {
 	isToClientConnOption()
+}
+
+// ClientOptionExtension is an optional interface that a [extension.Extension] can implement to pass [ToClientConnOption] for [ClientConfig.ToClientConn].
+type ClientOptionExtension interface {
+	GetToClientConnOption(context.Context) (ToClientConnOption, error)
+}
+
+// ClientOptionExtensionConfig configures the extensions to be used for the ClientOptionExtension.
+type ClientOptionExtensionConfig struct {
+	ID component.ID `mapstructure:"id"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type grpcDialOptionWrapper struct {
@@ -441,6 +463,20 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		}
 	}
 
+	// Resolve extension options last so that can override any config.
+	for _, key := range cc.Options {
+		ext := extensions[key.ID]
+		if extW, extOk := ext.(ClientOptionExtension); extOk {
+			opt, err := extW.GetToClientConnOption(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+				opts = append(opts, wrapper.opt)
+			}
+		}
+	}
+
 	return opts, nil
 }
 
@@ -463,6 +499,19 @@ func (sc *ServerConfig) Validate() error {
 // ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServer].
 type ToServerOption interface {
 	isToServerOption()
+}
+
+// ServerOptionExtension is an optional interface that an [extension.Extension] can implement to pass [ToServerOption] for [ServerConfig.ToServer].
+type ServerOptionExtension interface {
+	GetToServerOption(context.Context) (ToServerOption, error)
+}
+
+// ServerOptionExtensionConfig configures the extensions to be used for the ServerOptionExtension.
+type ServerOptionExtensionConfig struct {
+	ID component.ID `mapstructure:"id"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type grpcServerOptionWrapper struct {
@@ -592,6 +641,20 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
+		}
+	}
+
+	// Resolve extension options last so that can override any config.
+	for _, key := range sc.Options {
+		ext := extensions[key.ID]
+		if extW, extOk := ext.(ServerOptionExtension); extOk {
+			opt, err := extW.GetToServerOption(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+				opts = append(opts, wrapper.opt)
+			}
 		}
 	}
 
