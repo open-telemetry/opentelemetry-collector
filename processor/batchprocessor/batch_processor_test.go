@@ -253,7 +253,7 @@ func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterH
 	// batches, which is OK!
 	assert.Greater(
 		t,
-		haveSizes[int(cfg.SendBatchMaxSize)], 
+		haveSizes[int(cfg.SendBatchMaxSize)],
 		((requestCount*spansPerRequest)/int(cfg.SendBatchMaxSize))-3)
 }
 
