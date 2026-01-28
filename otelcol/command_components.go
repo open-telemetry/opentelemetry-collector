@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -155,8 +156,17 @@ func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []
 	// Build and return list of factories, sorted by component types
 	sortedFactories := make([]T, 0, len(factories))
 	for _, componentType := range componentTypes {
-		sortedFactories = append(sortedFactories, factories[componentType])
+		if !isComponentAlias(factories[componentType]) {
+			sortedFactories = append(sortedFactories, factories[componentType])
+		}
 	}
 
 	return sortedFactories
+}
+
+func isComponentAlias[T component.Factory](component T) bool {
+	if al, ok := any(component).(componentalias.TypeAliasHolder); ok {
+		return al.DeprecatedAlias().String() != ""
+	}
+	return false
 }
