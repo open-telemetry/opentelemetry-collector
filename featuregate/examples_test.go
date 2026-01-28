@@ -42,10 +42,10 @@ func ExampleRegistry_RegisterFlags() {
 		return
 	}
 
-	fmt.Printf("alpha=%v\n", alphaGate.IsEnabled())
-	fmt.Printf("beta=%v\n", betaGate.IsEnabled())
+	fmt.Printf("featuregate.example.alpha=%v\n", alphaGate.IsEnabled())
+	fmt.Printf("featuregate.example.beta=%v\n", betaGate.IsEnabled())
 
 	// Output:
-	// alpha=true
-	// beta=false
+	// featuregate.example.alpha=true
+	// featuregate.example.beta=false
 }
