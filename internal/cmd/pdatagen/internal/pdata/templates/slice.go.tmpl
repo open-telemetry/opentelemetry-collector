@@ -57,9 +57,29 @@ func (es {{ .structName }}) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
+{{ if not .lazy -}}
 func (es {{ .structName }}) At(i int) {{ .elementName }} {
 	return new{{ .elementName }}({{ if not .elementNullable }}&{{ end }}(*es.{{ .origAccessor }})[i], es.{{ .stateAccessor }})
 }
+{{- else -}}
+func (es {{ .structName }}) At(i int) {{ .elementName }} {
+	res, err := (*es.{{ .origAccessor }})[i].FinishUnmarshal(&(*es.{{ .origAccessor }})[i].{{ .elementName }})
+	if err != nil {
+		return New{{ .elementName }}()
+	}
+	return new{{ .elementName }}(res, es.{{ .stateAccessor }})
+}
+
+func (es {{ .structName }}) Unmarshal(i int, m *{{ .elementName }}) error {
+	var buf internal.{{ .elementOriginName }}
+	res, err := (*es.{{ .origAccessor }})[i].FinishUnmarshal(&buf.{{ .elementName }})
+	if err != nil {
+		return err
+	}
+	*m = new{{ .elementName }}(res, es.{{ .stateAccessor }})
+	return nil
+}
+{{- end }}
 
 // All returns an iterator over index-value pairs in the slice.
 //
@@ -104,7 +124,11 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 	es.{{ .stateAccessor }}.AssertMutable()
 	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.New{{ .elementOriginName }}(){{ else }}internal.{{ .elementOriginName }}{}{{ end }})
-	return es.At(es.Len() - 1)
+{{ if not .lazy -}}
+	return new{{ .elementName }}({{ if not .elementNullable }}&{{ end }}(*es.{{ .origAccessor }})[es.Len() - 1], es.{{ .stateAccessor }})
+{{- else -}}
+	return new{{ .elementName }}(&(*es.{{ .origAccessor }})[es.Len() - 1].{{ .elementName }}, es.{{ .stateAccessor }})
+{{- end }}
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

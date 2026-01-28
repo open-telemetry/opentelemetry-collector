@@ -112,6 +112,11 @@ const oneOfUnmarshalProtoTemplate = `
 		{{ .GenUnmarshalProto }}
 	{{ end }}`
 
+const oneOfSkipProtoTemplate = `
+	{{- range .fields }}
+		{{ .GenSkipProto }}
+	{{- end }}`
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -226,6 +231,11 @@ func (of *oneOfProtoField) GenMarshalProto() string {
 
 func (of *oneOfProtoField) GenUnmarshalProto() string {
 	t := template.Parse("oneOfUnmarshalProtoTemplate", []byte(oneOfUnmarshalProtoTemplate))
+	return template.Execute(t, of.templateFields())
+}
+
+func (of *oneOfProtoField) GenSkipProto() string {
+	t := template.Parse("oneOfSkipProtoTemplate", []byte(oneOfSkipProtoTemplate))
 	return template.Execute(t, of.templateFields())
 }
 

@@ -99,7 +99,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewScopeSpans())
-	return es.At(es.Len() - 1)
+	return newScopeSpans((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

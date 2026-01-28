@@ -14,6 +14,7 @@ import (
 )
 
 var nonInternalDeps = []string{
+	`"go.opentelemetry.io/collector/pdata"`,
 	`"go.opentelemetry.io/collector/pdata/internal"`,
 	`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	`"go.opentelemetry.io/collector/pdata/plog"`,
@@ -134,6 +135,10 @@ func (p *Package) GenerateProtoMessageFiles() error {
 		})
 		path := filepath.Join("pdata", "internal", "generated_proto_"+strings.ToLower(s.getOriginName())+".go")
 		if err := os.WriteFile(path, pm.GenerateMessage(p.info.imports, p.info.testImports), 0o600); err != nil {
+			return err
+		}
+		path = filepath.Join("pdata", "internal", "generated_proto_lazy"+strings.ToLower(s.getOriginName())+".go")
+		if err := os.WriteFile(path, pm.GenerateLazyMessage(p.info.imports, p.info.testImports), 0o600); err != nil {
 			return err
 		}
 		p.info.testImports = saveTestImports

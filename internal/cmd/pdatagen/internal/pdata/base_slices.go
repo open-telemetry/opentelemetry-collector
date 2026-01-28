@@ -22,6 +22,7 @@ type messageSlice struct {
 	structName      string
 	packageName     string
 	elementNullable bool
+	lazy            bool
 	element         *messageStruct
 }
 
@@ -57,6 +58,7 @@ func (ss *messageSlice) templateFields(packageInfo *PackageInfo) map[string]any 
 		"elementName":       ss.element.getName(),
 		"elementOriginName": ss.getElementOriginName(),
 		"elementNullable":   ss.elementNullable,
+		"lazy":              ss.lazy,
 		"origAccessor":      origAccessor(hasWrapper),
 		"stateAccessor":     stateAccessor(hasWrapper),
 		"packageName":       packageInfo.name,
@@ -82,6 +84,9 @@ func (ss *messageSlice) getHasOnlyInternal() bool {
 }
 
 func (ss *messageSlice) getElementOriginName() string {
+	if ss.lazy {
+		return "Lazy"+ss.element.getOriginName()
+	}
 	return ss.element.getOriginName()
 }
 

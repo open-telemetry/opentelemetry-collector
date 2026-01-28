@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync"
 
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
@@ -17,7 +18,7 @@ import (
 // ScopeMetrics is a collection of metrics from a LibraryInstrumentation.
 type ScopeMetrics struct {
 	SchemaUrl string
-	Metrics   []*Metric
+	Metrics   []*LazyMetric
 	Scope     InstrumentationScope
 }
 
@@ -47,7 +48,7 @@ func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
 	}
 	DeleteInstrumentationScope(&orig.Scope, false)
 	for i := range orig.Metrics {
-		DeleteMetric(orig.Metrics[i], true)
+		DeleteLazyMetric(orig.Metrics[i], true)
 	}
 
 	orig.Reset()
@@ -71,7 +72,7 @@ func CopyScopeMetrics(dest, src *ScopeMetrics) *ScopeMetrics {
 	}
 	CopyInstrumentationScope(&dest.Scope, &src.Scope)
 
-	dest.Metrics = CopyMetricPtrSlice(dest.Metrics, src.Metrics)
+	dest.Metrics = CopyLazyMetricPtrSlice(dest.Metrics, src.Metrics)
 
 	dest.SchemaUrl = src.SchemaUrl
 
@@ -161,7 +162,7 @@ func (orig *ScopeMetrics) UnmarshalJSON(iter *json.Iterator) {
 			orig.Scope.UnmarshalJSON(iter)
 		case "metrics":
 			for iter.ReadArray() {
-				orig.Metrics = append(orig.Metrics, NewMetric())
+				orig.Metrics = append(orig.Metrics, NewLazyMetric())
 				orig.Metrics[len(orig.Metrics)-1].UnmarshalJSON(iter)
 			}
 
@@ -220,6 +221,10 @@ func (orig *ScopeMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoOpts(buf, &pdata.DefaultUnmarshalOptions)
+}
+
+func (orig *ScopeMetrics) UnmarshalProtoOpts(buf []byte, opts *pdata.UnmarshalOptions) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -245,7 +250,7 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -260,8 +265,8 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metrics = append(orig.Metrics, NewMetric())
-			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Metrics = append(orig.Metrics, NewLazyMetric())
+			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProtoOpts(buf[startPos:pos], opts)
 			if err != nil {
 				return err
 			}
@@ -287,10 +292,77 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+func SkipScopeMetricsProto(buf []byte) error {
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipInstrumentationScopeProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metrics", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = SkipLazyMetricProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+
+			pos, err = proto.SkipLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GenTestScopeMetrics() *ScopeMetrics {
 	orig := NewScopeMetrics()
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Metrics = []*Metric{{}, GenTestMetric()}
+	orig.Metrics = []*LazyMetric{{}, GenTestLazyMetric()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
