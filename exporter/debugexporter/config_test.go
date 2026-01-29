@@ -39,7 +39,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 50,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stdout"},
-				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
+				QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 			},
 		},
 		{
@@ -50,7 +50,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 1,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stderr"},
-				QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
+				QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 			},
 		},
 		{
