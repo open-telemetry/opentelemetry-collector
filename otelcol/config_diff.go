@@ -32,9 +32,9 @@ const (
 // and returns whether a partial reload can handle the change.
 //
 // The function checks configuration sections that require a full reload:
-// 1. Service telemetry, extensions
-// 2. Pipeline structure changes (adding/removing pipelines, changing exporter
-//    or connector-as-receiver lists within a pipeline)
+//  1. Service telemetry, extensions
+//  2. Pipeline structure changes (adding/removing pipelines, changing exporter
+//     or connector-as-receiver lists within a pipeline)
 //
 // Changes to component configs (receivers, processors, exporters, connectors)
 // can be handled by partial reload as long as the pipeline structure is unchanged.

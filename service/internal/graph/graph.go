@@ -1042,19 +1042,19 @@ func (g *Graph) rebuildCapabilitiesNode(pipe *pipelineNodes) {
 	case pipeline.SignalTraces:
 		cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
 		pipe.capabilitiesNode.baseConsumer = cc
-		pipe.capabilitiesNode.ConsumeTracesFunc = cc.ConsumeTraces
+		pipe.ConsumeTracesFunc = cc.ConsumeTraces
 	case pipeline.SignalMetrics:
 		cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
 		pipe.capabilitiesNode.baseConsumer = cc
-		pipe.capabilitiesNode.ConsumeMetricsFunc = cc.ConsumeMetrics
+		pipe.ConsumeMetricsFunc = cc.ConsumeMetrics
 	case pipeline.SignalLogs:
 		cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 		pipe.capabilitiesNode.baseConsumer = cc
-		pipe.capabilitiesNode.ConsumeLogsFunc = cc.ConsumeLogs
+		pipe.ConsumeLogsFunc = cc.ConsumeLogs
 	case xpipeline.SignalProfiles:
 		cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
 		pipe.capabilitiesNode.baseConsumer = cc
-		pipe.capabilitiesNode.ConsumeProfilesFunc = cc.ConsumeProfiles
+		pipe.ConsumeProfilesFunc = cc.ConsumeProfiles
 	}
 }
 
