@@ -39,6 +39,13 @@ func WithIgnoreUnused() UnmarshalOption {
 	return internal.WithIgnoreUnused()
 }
 
+// WithForceUnmarshaler sets an option to run a potential top-level Unmarshal method
+// even if the provided config is already a parameter from an Unmarshal hook.
+// If used on the wrong config type, this may cause infinite recursion!
+func WithForceUnmarshaler() UnmarshalOption {
+	return internal.WithForceUnmarshaler()
+}
+
 type MarshalOption = internal.MarshalOption
 
 // Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.

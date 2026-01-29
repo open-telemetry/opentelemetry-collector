@@ -31,6 +31,15 @@ func WithIgnoreUnused() UnmarshalOption {
 	})
 }
 
+// WithForceUnmarshaler sets an option to run a potential top-level Unmarshal method
+// even if the provided config is already a parameter from an Unmarshal hook.
+// If used on the wrong config type, this may cause infinite recursion!
+func WithForceUnmarshaler() UnmarshalOption {
+	return UnmarshalOptionFunc(func(uo *UnmarshalOptions) {
+		uo.ForceUnmarshaler = true
+	})
+}
+
 // Decode decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
@@ -53,7 +62,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(settings),
