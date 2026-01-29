@@ -287,7 +287,7 @@ func (srv *Service) Reload(ctx context.Context,
 ) (bool, error) {
 	srv.graphSettings.PipelineConfigs = pipelineConfigs
 
-	return srv.host.Pipelines.Reload(ctx, srv.graphSettings,
+	return srv.host.Pipelines.Reload(ctx, &srv.graphSettings,
 		oldReceiverConfigs, newReceiverConfigs, receiverFactories,
 		oldProcessorConfigs, newProcessorConfigs, processorFactories,
 		oldExporterConfigs, newExporterConfigs, exporterFactories,

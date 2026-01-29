@@ -230,6 +230,76 @@ func TestCollectorPartialReload(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorPartialReloadFallbackToFull(t *testing.T) {
+	// Enable the partial reload feature gate for this test.
+	require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), false))
+	}()
+
+	// Set up an observer logger to detect log messages.
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	// Track which config to return (original or modified).
+	configIndex := 0
+	var watcher confmap.WatcherFunc
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		if configIndex == 0 {
+			return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
+		}
+		// Return a config with a new pipeline added (requires full reload).
+		return confmap.NewRetrieved(newConfFromFile(t, filepath.Join("testdata", "otelcol-nop-extra-pipeline.yaml")))
+	})
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Custom telemetry factory that uses an observer logger.
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileProvider,
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Switch to config with new pipeline and trigger reload.
+	configIndex = 1
+	watcher(&confmap.ChangeEvent{})
+
+	// Wait for the full reload log message, confirming that the partial reload
+	// detected the need for a full reload and fell back to it.
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, restart service" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 func TestCollectorReportError(t *testing.T) {
 	col, err := NewCollector(CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),

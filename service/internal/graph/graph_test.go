@@ -2709,7 +2709,7 @@ func testReloadNoChange(t *testing.T) {
 		processorStoppedBefore := originalProcessor.(*testcomponents.ExampleProcessor).Stopped()
 
 		// Perform the update with unchanged configs.
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, procCfgs,
@@ -2819,14 +2819,8 @@ func testReloadProcessorChange(t *testing.T) {
 		newProcCfgs := map[component.ID]component.Config{
 			component.MustNewID("exampleprocessor"): &namedCfg{Name: "changed"},
 		}
-		set.ProcessorBuilder = builders.NewProcessor(
-			newProcCfgs,
-			map[component.Type]processor.Factory{
-				testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
-			},
-		)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, newProcCfgs,
@@ -2877,7 +2871,7 @@ func testReloadNilHost(t *testing.T) {
 			instanceIDs:    make(map[int64]*componentstatus.InstanceID),
 			telemetry:      componenttest.NewNopTelemetrySettings(),
 		}
-		_, err := pg.Reload(context.Background(), Settings{}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := pg.Reload(context.Background(), &Settings{}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.EqualError(t, err, "host cannot be nil")
 	})
 }
@@ -2954,14 +2948,8 @@ func testReloadReceiverOnlyChange(t *testing.T) {
 		newRcvrCfgs := map[component.ID]component.Config{
 			component.MustNewID("examplereceiver"): &namedCfg{Name: "changed"},
 		}
-		set.ReceiverBuilder = builders.NewReceiver(
-			newRcvrCfgs,
-			map[component.Type]receiver.Factory{
-				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
-			},
-		)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, newRcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, procCfgs, // processors unchanged
@@ -3075,14 +3063,8 @@ func testReloadExporterChange(t *testing.T) {
 		newExpCfgs := map[component.ID]component.Config{
 			component.MustNewID("exampleexporter"): &namedCfg{Name: "changed"},
 		}
-		set.ExporterBuilder = builders.NewExporter(
-			newExpCfgs,
-			map[component.Type]exporter.Factory{
-				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
-			},
-		)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, procCfgs,
@@ -3226,9 +3208,8 @@ func testReloadConnectorChange(t *testing.T) {
 		newConnCfgs := map[component.ID]component.Config{
 			connID: &namedCfg{Name: "changed"},
 		}
-		set.ConnectorBuilder = builders.NewConnector(newConnCfgs, connFactories)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, procCfgs,
@@ -3370,14 +3351,8 @@ func testReloadMultiPipelineOnlyOneAffected(t *testing.T) {
 			component.MustNewID("exampleprocessor"):                    &namedCfg{Name: "traces-changed"},
 			component.MustNewIDWithName("exampleprocessor", "metrics"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 		}
-		set.ProcessorBuilder = builders.NewProcessor(
-			newProcCfgs,
-			map[component.Type]processor.Factory{
-				testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
-			},
-		)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, newProcCfgs,
@@ -3534,9 +3509,8 @@ func testReloadWithConnectorBetweenPipelines(t *testing.T) {
 		newConnCfgs := map[component.ID]component.Config{
 			connID: &namedCfg{Name: "changed"},
 		}
-		set.ConnectorBuilder = builders.NewConnector(newConnCfgs, connFactories)
 
-		reloaded, err := pg.Reload(context.Background(), set,
+		reloaded, err := pg.Reload(context.Background(), &set,
 			rcvrCfgs, rcvrCfgs,
 			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
 			procCfgs, procCfgs,
@@ -3585,6 +3559,636 @@ func testReloadWithConnectorBetweenPipelines(t *testing.T) {
 		// The connector converts traces to metrics, so check metrics exporter.
 		for _, e := range pg.GetExporters()[pipeline.SignalMetrics] {
 			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Metrics, "metrics should flow through connector")
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadMetricsPipeline(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadMetricsPipeline(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadMetricsPipeline(t)
+	})
+}
+
+func testReloadMetricsPipeline(t *testing.T) {
+	t.Run("processor_change_rebuilds_metrics_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "original"},
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalMetrics): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(pipeline.SignalMetrics)]
+		originalProcessor := pipe.processors[0].(*processorNode).Component
+
+		// Change the processor config.
+		newProcCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, newProcCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, expCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "processor change should trigger reload")
+
+		// Processor should be a new instance.
+		newProcessor := pipe.processors[0].(*processorNode).Component
+		assert.NotSame(t, originalProcessor, newProcessor, "processor should be new instance after config change")
+		assert.True(t, originalProcessor.(*testcomponents.ExampleProcessor).Stopped(), "old processor should be stopped")
+		assert.True(t, newProcessor.(*testcomponents.ExampleProcessor).Started(), "new processor should be started")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalMetrics] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalMetrics] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Metrics)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadLogsPipeline(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadLogsPipeline(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadLogsPipeline(t)
+	})
+}
+
+func testReloadLogsPipeline(t *testing.T) {
+	t.Run("processor_change_rebuilds_logs_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "original"},
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalLogs): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(pipeline.SignalLogs)]
+		originalProcessor := pipe.processors[0].(*processorNode).Component
+
+		// Change the processor config.
+		newProcCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, newProcCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, expCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "processor change should trigger reload")
+
+		// Processor should be a new instance.
+		newProcessor := pipe.processors[0].(*processorNode).Component
+		assert.NotSame(t, originalProcessor, newProcessor, "processor should be new instance after config change")
+		assert.True(t, originalProcessor.(*testcomponents.ExampleProcessor).Stopped(), "old processor should be stopped")
+		assert.True(t, newProcessor.(*testcomponents.ExampleProcessor).Started(), "new processor should be started")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalLogs] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalLogs] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Logs)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadProfilesPipeline(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadProfilesPipeline(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadProfilesPipeline(t)
+	})
+}
+
+func testReloadProfilesPipeline(t *testing.T) {
+	t.Run("processor_change_rebuilds_profiles_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "original"},
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(xpipeline.SignalProfiles): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(xpipeline.SignalProfiles)]
+		originalProcessor := pipe.processors[0].(*processorNode).Component
+
+		// Change the processor config.
+		newProcCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, newProcCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, expCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "processor change should trigger reload")
+
+		// Processor should be a new instance.
+		newProcessor := pipe.processors[0].(*processorNode).Component
+		assert.NotSame(t, originalProcessor, newProcessor, "processor should be new instance after config change")
+		assert.True(t, originalProcessor.(*testcomponents.ExampleProcessor).Stopped(), "old processor should be stopped")
+		assert.True(t, newProcessor.(*testcomponents.ExampleProcessor).Started(), "new processor should be started")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[xpipeline.SignalProfiles] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
+		}
+		for _, e := range pg.GetExporters()[xpipeline.SignalProfiles] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Profiles)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadExporterChangeMetrics(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadExporterChangeMetrics(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadExporterChangeMetrics(t)
+	})
+}
+
+func testReloadExporterChangeMetrics(t *testing.T) {
+	t.Run("exporter_change_rebuilds_metrics_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "original"},
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalMetrics): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(pipeline.SignalMetrics)]
+		originalExporter := pipe.exporters[newExporterNode(pipeline.SignalMetrics, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+
+		// Change the exporter config.
+		newExpCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, procCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, newExpCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "exporter change should trigger reload")
+
+		// Exporter should be a new instance.
+		newExporter := pipe.exporters[newExporterNode(pipeline.SignalMetrics, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+		assert.NotSame(t, originalExporter, newExporter, "exporter should be new instance after config change")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalMetrics] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalMetrics] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Metrics)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadExporterChangeLogs(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadExporterChangeLogs(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadExporterChangeLogs(t)
+	})
+}
+
+func testReloadExporterChangeLogs(t *testing.T) {
+	t.Run("exporter_change_rebuilds_logs_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "original"},
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalLogs): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(pipeline.SignalLogs)]
+		originalExporter := pipe.exporters[newExporterNode(pipeline.SignalLogs, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+
+		// Change the exporter config.
+		newExpCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, procCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, newExpCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "exporter change should trigger reload")
+
+		// Exporter should be a new instance.
+		newExporter := pipe.exporters[newExporterNode(pipeline.SignalLogs, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+		assert.NotSame(t, originalExporter, newExporter, "exporter should be new instance after config change")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalLogs] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalLogs] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Logs)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+func TestReloadExporterChangeProfiles(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testReloadExporterChangeProfiles(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testReloadExporterChangeProfiles(t)
+	})
+}
+
+func testReloadExporterChangeProfiles(t *testing.T) {
+	t.Run("exporter_change_rebuilds_profiles_pipeline", func(t *testing.T) {
+		type namedCfg struct{ Name string }
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		procCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		}
+		expCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "original"},
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(xpipeline.SignalProfiles): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				rcvrCfgs,
+				map[component.Type]receiver.Factory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+			),
+			ProcessorBuilder: builders.NewProcessor(
+				procCfgs,
+				map[component.Type]processor.Factory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+			),
+			ExporterBuilder: builders.NewExporter(
+				expCfgs,
+				map[component.Type]exporter.Factory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs:  pipelineCfgs,
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		host := &Host{
+			Reporter: status.NewReporter(
+				func(*componentstatus.InstanceID, *componentstatus.Event) {},
+				func(error) {},
+			),
+		}
+		require.NoError(t, pg.StartAll(context.Background(), host))
+
+		pipe := pg.pipelines[pipeline.NewID(xpipeline.SignalProfiles)]
+		originalExporter := pipe.exporters[newExporterNode(xpipeline.SignalProfiles, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+
+		// Change the exporter config.
+		newExpCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleexporter"): &namedCfg{Name: "changed"},
+		}
+
+		reloaded, err := pg.Reload(context.Background(), &set,
+			rcvrCfgs, rcvrCfgs,
+			map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+			procCfgs, procCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+			expCfgs, newExpCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+			nil, nil, nil,
+			host)
+		require.NoError(t, err)
+		assert.True(t, reloaded, "exporter change should trigger reload")
+
+		// Exporter should be a new instance.
+		newExporter := pipe.exporters[newExporterNode(xpipeline.SignalProfiles, component.MustNewID("exampleexporter")).ID()].(*exporterNode).Component
+		assert.NotSame(t, originalExporter, newExporter, "exporter should be new instance after config change")
+
+		// Data still flows through the pipeline.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[xpipeline.SignalProfiles] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
+		}
+		for _, e := range pg.GetExporters()[xpipeline.SignalProfiles] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Profiles)
 		}
 
 		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))

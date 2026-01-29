@@ -79,9 +79,9 @@ Each component stores a reference to its **next consumer** when it is built. Thi
 - **Processor changes**: Processors are recreated. The capabilitiesNode is rebuilt, and receivers must be recreated.
 - **Receiver changes**: Only the changed receivers are recreated.
 
-##### The Five Phases of Partial Reload
+##### The Six Phases of Partial Reload
 
-The `Graph.Reload` method performs partial reload in five phases:
+The `Graph.Reload` method performs partial reload in six phases:
 
 1. **Identify Changes**: Analyze old vs new configs to determine:
    - Which receivers need to be added, removed, or rebuilt
@@ -94,13 +94,19 @@ The `Graph.Reload` method performs partial reload in five phases:
    - Shutdown processors in affected pipelines
    - Shutdown exporters/connectors being rebuilt
 
-3. **Update Graph**: Modify the graph structure:
+3. **Update Builders**: Create new builders for components that will be rebuilt:
+   - Update ExporterBuilder if exporters changed
+   - Update ConnectorBuilder if connectors changed
+   - Update ProcessorBuilder if pipelines are affected
+   - Update ReceiverBuilder if receivers changed
+
+4. **Update Graph**: Modify the graph structure:
    - Remove old receiver and processor nodes from the graph
    - Create new processor nodes for affected pipelines
    - Create new receiver nodes for added/rebuilt receivers
    - Wire edges between nodes
 
-4. **Build**: Create new component instances in downstream-to-upstream order:
+5. **Build**: Create new component instances in downstream-to-upstream order:
    - Build exporters (in-place rebuild on existing nodes)
    - Build connectors (in-place rebuild on existing nodes)
    - Rebuild fanOutNode to reference new exporters/connectors
@@ -108,7 +114,7 @@ The `Graph.Reload` method performs partial reload in five phases:
    - Rebuild capabilitiesNode to reference first processor
    - Build receivers
 
-5. **Start**: Start components in downstream-to-upstream order:
+6. **Start**: Start components in downstream-to-upstream order:
    - Start exporters
    - Start connectors
    - Start processors (reverse order)
@@ -198,12 +204,13 @@ flowchart TD
     D --> E{"`Change type?`"}
     E -->|Partial reload| F("`**Graph.Reload**`")
     E -->|Full reload| H
-    F --> G("`Five phases:
+    F --> G("`Six phases:
     1. Identify changes
     2. Shutdown affected
-    3. Update graph
-    4. Build components
-    5. Start components`")
+    3. Update builders
+    4. Update graph
+    5. Build components
+    6. Start components`")
     G --> I("`Service running
     (partial update complete)`")
     H --> I

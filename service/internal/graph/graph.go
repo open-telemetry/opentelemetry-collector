@@ -550,16 +550,17 @@ type reloadState struct {
 //   - The capabilitiesNode must be rebuilt to reference the new first processor
 //   - All receivers must be recreated to get new references to the rebuilt capabilitiesNode
 //
-// The reload process has five phases:
+// The reload process has six phases:
 //  1. Identify changes: Determine which components changed and which pipelines are affected
 //  2. Shutdown: Stop all components that need to be recreated (receivers first, then downstream)
-//  3. Update graph: Remove old nodes, create new nodes, wire edges
-//  4. Build: Create new component instances (downstream first, then upstream)
-//  5. Start: Start all recreated components (downstream first, then receivers last)
+//  3. Update builders: Create new builders for components that will be rebuilt
+//  4. Update graph: Remove old nodes, create new nodes, wire edges
+//  5. Build: Create new component instances (downstream first, then upstream)
+//  6. Start: Start all recreated components (downstream first, then receivers last)
 //
 // Returns true if changes were detected and a partial reload was performed,
 // false if no changes were detected. An error is returned if the reload fails.
-func (g *Graph) Reload(ctx context.Context, set Settings,
+func (g *Graph) Reload(ctx context.Context, set *Settings,
 	oldReceiverCfgs, newReceiverCfgs map[component.ID]component.Config,
 	receiverFactories map[component.Type]receiver.Factory,
 	oldProcessorCfgs, newProcessorCfgs map[component.ID]component.Config,
@@ -575,7 +576,7 @@ func (g *Graph) Reload(ctx context.Context, set Settings,
 	}
 
 	// Phase 1: Identify all changes.
-	state := g.identifyChanges(set,
+	state := g.identifyChanges(*set,
 		oldReceiverCfgs, newReceiverCfgs,
 		oldProcessorCfgs, newProcessorCfgs,
 		oldExporterCfgs, newExporterCfgs,
@@ -594,19 +595,29 @@ func (g *Graph) Reload(ctx context.Context, set Settings,
 		return false, err
 	}
 
-	// Phase 3: Update graph (remove old nodes, create new nodes, wire edges).
-	g.reloadUpdateGraph(set, state)
+	// Phase 3: Update builders for components that will be rebuilt.
+	if len(state.exporterNodesToRebuild) > 0 {
+		set.ExporterBuilder = builders.NewExporter(newExporterCfgs, exporterFactories)
+	}
+	if len(state.connectorNodesToRebuild) > 0 {
+		set.ConnectorBuilder = builders.NewConnector(newConnectorCfgs, connectorFactories)
+	}
+	if len(state.affectedPipelines) > 0 {
+		set.ProcessorBuilder = builders.NewProcessor(newProcessorCfgs, processorFactories)
+	}
+	if len(state.receiversToAdd) > 0 || len(state.receiversToRebuild) > 0 {
+		set.ReceiverBuilder = builders.NewReceiver(newReceiverCfgs, receiverFactories)
+	}
 
-	// Phase 4: Build components.
-	if err := g.reloadBuild(ctx, set, state,
-		newReceiverCfgs, receiverFactories,
-		newProcessorCfgs, processorFactories,
-		newExporterCfgs, exporterFactories,
-		newConnectorCfgs, connectorFactories); err != nil {
+	// Phase 4: Update graph (remove old nodes, create new nodes, wire edges).
+	g.reloadUpdateGraph(*set, state)
+
+	// Phase 5: Build components.
+	if err := g.reloadBuild(ctx, *set, state); err != nil {
 		return false, err
 	}
 
-	// Phase 5: Start components.
+	// Phase 6: Start components.
 	if err := g.reloadStart(ctx, state, host); err != nil {
 		return false, err
 	}
@@ -914,33 +925,19 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 }
 
 // reloadBuild builds all components that need to be built.
-func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadState,
-	newReceiverCfgs map[component.ID]component.Config,
-	receiverFactories map[component.Type]receiver.Factory,
-	newProcessorCfgs map[component.ID]component.Config,
-	processorFactories map[component.Type]processor.Factory,
-	newExporterCfgs map[component.ID]component.Config,
-	exporterFactories map[component.Type]exporter.Factory,
-	newConnectorCfgs map[component.ID]component.Config,
-	connectorFactories map[component.Type]connector.Factory,
-) error {
+// It uses the builders from set which were updated before this phase.
+func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadState) error {
 	// Build exporters.
-	if len(state.exporterNodesToRebuild) > 0 {
-		exporterBuilder := builders.NewExporter(newExporterCfgs, exporterFactories)
-		for _, en := range state.exporterNodesToRebuild {
-			if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, exporterBuilder); err != nil {
-				return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
-			}
+	for _, en := range state.exporterNodesToRebuild {
+		if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
+			return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
 		}
 	}
 
 	// Build connectors.
-	if len(state.connectorNodesToRebuild) > 0 {
-		connectorBuilder := builders.NewConnector(newConnectorCfgs, connectorFactories)
-		for nodeID, cn := range state.connectorNodesToRebuild {
-			if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, connectorBuilder, g.nextConsumers(nodeID)); err != nil {
-				return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
-			}
+	for nodeID, cn := range state.connectorNodesToRebuild {
+		if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
+			return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
 		}
 	}
 
@@ -951,16 +948,13 @@ func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadStat
 	}
 
 	// Build processors (reverse order).
-	if len(state.affectedPipelines) > 0 {
-		processorBuilder := builders.NewProcessor(newProcessorCfgs, processorFactories)
-		for pipelineID := range state.affectedPipelines {
-			pipe := g.pipelines[pipelineID]
-			for i := len(pipe.processors) - 1; i >= 0; i-- {
-				pn := pipe.processors[i].(*processorNode)
-				next := g.nextConsumers(pn.ID())[0]
-				if err := pn.buildComponent(ctx, set.Telemetry, set.BuildInfo, processorBuilder, next); err != nil {
-					return fmt.Errorf("failed to build processor %q: %w", pn.componentID, err)
-				}
+	for pipelineID := range state.affectedPipelines {
+		pipe := g.pipelines[pipelineID]
+		for i := len(pipe.processors) - 1; i >= 0; i-- {
+			pn := pipe.processors[i].(*processorNode)
+			next := g.nextConsumers(pn.ID())[0]
+			if err := pn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, next); err != nil {
+				return fmt.Errorf("failed to build processor %q: %w", pn.componentID, err)
 			}
 		}
 	}
@@ -972,25 +966,22 @@ func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadStat
 	}
 
 	// Build receivers.
-	if len(state.receiversToAdd) > 0 || len(state.receiversToRebuild) > 0 {
-		receiverBuilder := builders.NewReceiver(newReceiverCfgs, receiverFactories)
-		for _, pipe := range g.pipelines {
-			for _, node := range pipe.receivers {
-				rn, ok := node.(*receiverNode)
-				if !ok {
-					continue
-				}
-				nodeID := rn.ID()
-				if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
-					continue
-				}
-				if state.builtReceivers[nodeID] {
-					continue
-				}
-				state.builtReceivers[nodeID] = true
-				if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, receiverBuilder, g.nextConsumers(nodeID)); err != nil {
-					return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
-				}
+	for _, pipe := range g.pipelines {
+		for _, node := range pipe.receivers {
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
+			nodeID := rn.ID()
+			if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
+				continue
+			}
+			if state.builtReceivers[nodeID] {
+				continue
+			}
+			state.builtReceivers[nodeID] = true
+			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
+				return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
 			}
 		}
 	}
