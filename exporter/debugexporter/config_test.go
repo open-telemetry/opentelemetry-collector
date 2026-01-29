@@ -59,7 +59,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:             "config_verbosity_typo.yaml",
-			expectedUnmarshalErr: "'' has invalid keys: verBosity",
+			expectedUnmarshalErr: "has invalid keys: verBosity",
 		},
 	}
 

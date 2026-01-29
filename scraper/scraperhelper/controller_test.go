@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -354,7 +356,7 @@ func configureMetricOptions(t *testing.T, test scraperTestCase, initializeChs []
 		scp, err := scraper.NewMetrics(ts.scrapeMetrics, scraperOptions...)
 		require.NoError(t, err)
 
-		metricOptions = append(metricOptions, AddScraper(component.MustNewType("scraper"), scp))
+		metricOptions = append(metricOptions, AddMetricsScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return metricOptions
@@ -522,7 +524,7 @@ func TestSingleMetricsScraperPerInterval(t *testing.T) {
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scraper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -594,7 +596,7 @@ func TestMetricsScraperControllerStartsOnInit(t *testing.T) {
 		},
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scraper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -669,7 +671,7 @@ func TestMetricsScraperControllerInitialDelay(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scraper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -733,7 +735,7 @@ func TestMetricsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scraper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -762,4 +764,60 @@ func TestNewDefaultControllerConfig(t *testing.T) {
 	controllerConfig := NewDefaultControllerConfig()
 	intControllerConfig := controller.NewDefaultControllerConfig()
 	require.Equal(t, intControllerConfig, controllerConfig)
+}
+
+func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
+	t.Parallel()
+
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telset := tel.NewTelemetrySettings()
+	telset.Logger = zap.New(core)
+
+	receiverID := component.MustNewID("fakeReceiver")
+	scraperType := component.MustNewType("fakeScraper")
+	scrapeErr := errors.New("scrape error")
+
+	scrapeCh := make(chan int, 1)
+	ts := &testScrape{ch: scrapeCh, err: scrapeErr}
+	scp, err := scraper.NewMetrics(ts.scrapeMetrics)
+	require.NoError(t, err)
+
+	cfg := newTestNoDelaySettings()
+	tickerCh := make(chan time.Time)
+
+	recv, err := NewMetricsController(
+		cfg,
+		receiver.Settings{ID: receiverID, TelemetrySettings: telset, BuildInfo: component.NewDefaultBuildInfo()},
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(scraperType, scp),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, recv.Shutdown(context.Background())) }()
+
+	<-scrapeCh
+
+	require.Eventually(t, func() bool {
+		return observedLogs.Len() >= 1
+	}, time.Second, 10*time.Millisecond)
+	errorLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+
+	assert.Equal(t, "Error scraping metrics", errorLogs[0].Message)
+	assert.Equal(t, scraperType.String(), errorLogs[0].ContextMap()["scraper"])
+	assert.Equal(t, scrapeErr.Error(), errorLogs[0].ContextMap()["error"])
+
+	// Verify the original receiver telemetry settings logger was NOT mutated
+	// by logging something and checking it doesn't have the scraper field
+	telset.Logger.Error("test log from receiver")
+
+	allLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, allLogs, 2)
+
+	receiverLog := allLogs[1]
+	assert.Equal(t, "test log from receiver", receiverLog.Message)
+	assert.NotContains(t, receiverLog.ContextMap(), "scraper")
 }

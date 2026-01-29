@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -45,81 +46,7 @@ const (
 	otelCommand = "otelcoltest"
 )
 
-var (
-	nopType   = component.MustNewType("nop")
-	wrongType = component.MustNewType("wrong")
-)
-
-func TestServiceGetFactory(t *testing.T) {
-	set := newNopSettings()
-	srv, err := New(context.Background(), set, newNopConfig())
-	require.NoError(t, err)
-
-	assert.NoError(t, srv.Start(context.Background()))
-	t.Cleanup(func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
-
-	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, wrongType))
-	assert.Equal(t, srv.host.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
-
-	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, wrongType))
-	assert.Equal(t, srv.host.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
-
-	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
-	assert.Equal(t, srv.host.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
-
-	assert.Nil(t, srv.host.GetFactory(component.KindConnector, wrongType))
-	assert.Equal(t, srv.host.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
-
-	assert.Nil(t, srv.host.GetFactory(component.KindExtension, wrongType))
-	assert.Equal(t, srv.host.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
-
-	// Try retrieve non existing component.Kind.
-	assert.Nil(t, srv.host.GetFactory(component.Kind{}, nopType))
-}
-
-func TestServiceGetExtensions(t *testing.T) {
-	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
-	require.NoError(t, err)
-
-	assert.NoError(t, srv.Start(context.Background()))
-	t.Cleanup(func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
-
-	extMap := srv.host.GetExtensions()
-
-	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, component.NewID(nopType))
-}
-
-func TestServiceGetExporters(t *testing.T) {
-	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
-	require.NoError(t, err)
-
-	assert.NoError(t, srv.Start(context.Background()))
-	t.Cleanup(func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
-
-	//nolint:staticcheck
-	expMap := srv.host.GetExporters()
-
-	v, ok := expMap[pipeline.SignalTraces]
-	assert.True(t, ok)
-	assert.NotNil(t, v)
-
-	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[pipeline.SignalTraces], 1)
-	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
-	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
-	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[pipeline.SignalLogs], 1)
-	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
-	assert.Len(t, expMap[xpipeline.SignalProfiles], 1)
-	assert.Contains(t, expMap[xpipeline.SignalProfiles], component.NewID(nopType))
-}
+var nopType = component.MustNewType("nop")
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
@@ -294,7 +221,12 @@ func testZPages(t *testing.T, zpagesAddr string) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.ExtensionsConfigs = map[component.ID]component.Config{
 		component.MustNewID("zpages"): &zpagesextension.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  zpagesAddr,
+					Transport: confignet.TransportTypeTCP,
+				},
+			},
 		},
 	}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{
@@ -486,28 +418,6 @@ func TestServiceTelemetryLogger(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 	assert.NotNil(t, srv.telemetrySettings.Logger)
-}
-
-func TestServiceFatalError(t *testing.T) {
-	set := newNopSettings()
-	set.AsyncErrorChannel = make(chan error)
-
-	srv, err := New(context.Background(), set, newNopConfig())
-	require.NoError(t, err)
-
-	assert.NoError(t, srv.Start(context.Background()))
-	t.Cleanup(func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
-
-	go func() {
-		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
-		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
-	}()
-
-	err = <-srv.host.AsyncErrorChannel
-
-	require.ErrorIs(t, err, assert.AnError)
 }
 
 func TestServiceTelemetryCreateProvidersError(t *testing.T) {
@@ -915,4 +825,60 @@ func TestValidateGraph(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRegisterProcessMetrics_UnsupportedOS_Warns(t *testing.T) {
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		t.Fatalf("should not be called on unsupported OS")
+		return nil
+	}
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	logger := zap.New(core)
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: logger},
+	}
+
+	err := registerProcessMetrics(srv, "aix", mockRegister)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.Len(), "Expected exactly one warning log")
+	entry := logs.All()[0]
+	require.Equal(t, "Process metrics are disabled on this operating system", entry.Message)
+	require.Equal(t, "aix", entry.ContextMap()["os"], "Log should contain the OS field")
+}
+
+func TestRegisterProcessMetrics_SupportedOS_CallsRegister(t *testing.T) {
+	called := false
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		called = true
+		return nil
+	}
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
+
+	err := registerProcessMetrics(srv, "linux", mockRegister)
+
+	require.NoError(t, err)
+	require.True(t, called, "Registration function should be called on supported OS")
+}
+
+func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testing.T) {
+	wantErr := errors.New("boom")
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		return wantErr
+	}
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
+
+	err := registerProcessMetrics(srv, "linux", mockRegister)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, wantErr)
+	require.Contains(t, err.Error(), "failed to register process metrics")
 }
