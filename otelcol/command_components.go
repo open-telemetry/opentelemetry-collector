@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	yaml "go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
