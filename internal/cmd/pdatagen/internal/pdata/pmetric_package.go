@@ -178,6 +178,7 @@ var scopeMetrics = &messageStruct{
 var metricSlice = &messageSlice{
 	structName:      "MetricSlice",
 	elementNullable: true,
+	lazy:            true,
 	element:         metric,
 }
 

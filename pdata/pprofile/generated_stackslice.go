@@ -99,7 +99,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 func (es StackSlice) AppendEmpty() Stack {
 	es.state.AssertMutable()
 	*es.orig = append(*es.orig, internal.NewStack())
-	return es.At(es.Len() - 1)
+	return newStack((*es.orig)[es.Len()-1], es.state)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
