@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -64,4 +65,73 @@ func TestDisabledBatcher(t *testing.T) {
 			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
+}
+
+// TestDisabledBatcher_ContextCancelled verifies that the disabled batcher
+// checks for context cancellation before processing and returns early.
+// This prevents exporting data when the caller already received a timeout error,
+// which would cause confusing observability results and potential duplicate data
+// if the caller retries.
+// This is a regression test for the context check fix in PR #14473.
+func TestDisabledBatcher_ContextCancelled(t *testing.T) {
+	exported := atomic.Int64{}
+
+	exportFunc := func(_ context.Context, req request.Request) error {
+		exported.Add(int64(req.(*requesttest.FakeRequest).Items))
+		return nil
+	}
+
+	ba := newDisabledBatcher(exportFunc)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	// Create already cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	done := newFakeDone()
+	ba.Consume(ctx, &requesttest.FakeRequest{Items: 10}, done)
+
+	// Should have error from context cancellation
+	assert.Eventually(t, func() bool {
+		return done.errors.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// Data should NOT have been exported
+	assert.EqualValues(t, 0, exported.Load(),
+		"Request with cancelled context should not be exported")
+	assert.EqualValues(t, 0, done.success.Load(),
+		"Should not have success callback for cancelled context")
+}
+
+// TestDisabledBatcher_ContextValid verifies normal operation when context is valid.
+func TestDisabledBatcher_ContextValid(t *testing.T) {
+	exported := atomic.Int64{}
+
+	exportFunc := func(_ context.Context, req request.Request) error {
+		exported.Add(int64(req.(*requesttest.FakeRequest).Items))
+		return nil
+	}
+
+	ba := newDisabledBatcher(exportFunc)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 10}, done)
+
+	// Should have success
+	assert.Eventually(t, func() bool {
+		return done.success.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// Data should have been exported
+	assert.EqualValues(t, 10, exported.Load(),
+		"Request with valid context should be exported")
+	assert.EqualValues(t, 0, done.errors.Load(),
+		"Should not have error callback for valid context")
 }
