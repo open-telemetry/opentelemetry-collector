@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/otelcol
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Ignore alias components in the `otelcol components` command
+note: Ignore component aliases in the `otelcol components` command
 
 # One or more tracking issues or pull requests related to the change
 issues: [14492]
