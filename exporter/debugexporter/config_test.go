@@ -26,9 +26,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 
 func TestUnmarshalConfig(t *testing.T) {
 	tests := []struct {
-		filename    string
-		cfg         *Config
-		expectedErr string
+		filename             string
+		cfg                  *Config
+		expectedUnmarshalErr string
+		expectedValidateErr  string
 	}{
 		{
 			filename: "config_verbosity.yaml",
@@ -53,12 +54,12 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 		},
 		{
-			filename:    "config_output_paths_empty.yaml",
-			expectedErr: "output_paths must not be empty when use_internal_logger is false",
+			filename:            "config_output_paths_empty.yaml",
+			expectedValidateErr: "output_paths must not be empty when use_internal_logger is false",
 		},
 		{
-			filename:    "config_verbosity_typo.yaml",
-			expectedErr: "'' has invalid keys: verBosity",
+			filename:             "config_verbosity_typo.yaml",
+			expectedUnmarshalErr: "'' has invalid keys: verBosity",
 		},
 	}
 
@@ -69,26 +70,20 @@ func TestUnmarshalConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			err = cm.Unmarshal(&cfg)
-			if err != nil {
-				if tt.expectedErr != "" {
-					require.ErrorContains(t, err, tt.expectedErr)
-				} else {
-					require.NoError(t, err)
-				}
+			if tt.expectedUnmarshalErr != "" {
+				require.ErrorContains(t, err, tt.expectedUnmarshalErr)
 				return
 			}
-			// Validate the config (validation errors are separate from unmarshal errors)
-			if cfgCasted, ok := cfg.(*Config); ok {
-				err = cfgCasted.Validate()
-				if tt.expectedErr != "" {
-					assert.ErrorContains(t, err, tt.expectedErr)
-					return
-				}
-				require.NoError(t, err)
+			require.NoError(t, err)
+
+			cfgCasted := cfg.(*Config)
+			err = cfgCasted.Validate()
+			if tt.expectedValidateErr != "" {
+				require.ErrorContains(t, err, tt.expectedValidateErr)
+				return
 			}
-			if tt.expectedErr == "" {
-				assert.Equal(t, tt.cfg, cfg)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.cfg, cfg)
 		})
 	}
 }
