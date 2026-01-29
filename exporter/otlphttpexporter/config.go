@@ -50,6 +50,10 @@ type Config struct {
 	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
+	// DisableOnHTTPStatusCodes is a list of HTTP status codes that, if received,
+	// will cause the exporter to permanently disable itself.
+	DisableOnHTTPStatusCodes []int `mapstructure:"disable_on_http_status_codes"`
+
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
 

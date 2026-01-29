@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1173,4 +1174,94 @@ type badReader struct{}
 
 func (b badReader) Read([]byte) (int, error) {
 	return 0, errors.New("Bad read")
+}
+
+func TestDisableOnHTTPStatusCodes(t *testing.T) {
+	// 1. Setup Mock Server that always returns 410 Gone
+	serverRequests := atomic.Int32{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverRequests.Add(1)
+		w.WriteHeader(http.StatusGone)
+	}))
+	defer server.Close()
+
+	// 2. Configure exporter
+	cfg := &Config{
+		Encoding:       EncodingProto,
+		TracesEndpoint: server.URL,
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: server.URL,
+		},
+		DisableOnHTTPStatusCodes: []int{http.StatusGone},
+	}
+
+	// 3. Create and start exporter
+	exp, err := newExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	// Manually set URL since we bypassed the factory creation logic
+	exp.tracesURL = server.URL
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// 4. First push: Should fail with 410 and trigger the disable mechanism
+	td := ptrace.NewTraces()
+	err = exp.pushTraces(context.Background(), td)
+	assert.Error(t, err, "Expected error on first push (410)")
+
+	// Verify server received the request
+	assert.Equal(t, int32(1), serverRequests.Load(), "Server should have received 1 request")
+
+	// Verify internal state
+	assert.True(t, exp.stopped.Load(), "Exporter should be stopped after receiving 410")
+
+	// 5. Second push: Should return Permanent error immediately without network request
+	err = exp.pushTraces(context.Background(), td)
+	assert.Error(t, err, "Expected error on second push")
+
+	// Verify the specific error message to ensure the circuit breaker logic is active
+	assert.Contains(t, err.Error(), "exporter is permanently disabled", "Error message should indicate disabled state")
+
+	// Verify server did NOT receive a second request
+	assert.Equal(t, int32(1), serverRequests.Load(), "Server should NOT have received a second request")
+}
+
+func TestDisableOnHTTPStatusCodes_NoMatch(t *testing.T) {
+	// Verify that non-matching status codes (e.g. 500) do NOT disable the exporter
+	serverRequests := atomic.Int32{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverRequests.Add(1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		Encoding:       EncodingProto, // Encoding must be set to avoid invalid encoding errors
+		TracesEndpoint: server.URL,
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: server.URL,
+		},
+		DisableOnHTTPStatusCodes: []int{http.StatusGone}, // Only 410 is configured
+	}
+
+	exp, err := newExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	// Manually set tracesURL since newExporter does not populate it
+	exp.tracesURL = server.URL
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	td := ptrace.NewTraces()
+
+	// First push: returns 500 (Internal Server Error)
+	_ = exp.pushTraces(context.Background(), td)
+	assert.Equal(t, int32(1), serverRequests.Load())
+	assert.False(t, exp.stopped.Load(), "Exporter should NOT stop on 500")
+
+	// Second push: Should still attempt to send because it wasn't disabled
+	_ = exp.pushTraces(context.Background(), td)
+	assert.Equal(t, int32(2), serverRequests.Load())
 }
