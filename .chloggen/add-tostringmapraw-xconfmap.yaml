@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: added experimental method to decode confmap into a string map without losing internal types
+note: added experimental method to decode `confmap.Conf` into a string map without losing internal types
 
 # One or more tracking issues or pull requests related to the change
 issues: [14480]
@@ -16,6 +16,7 @@ issues: [14480]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+  | This method exposes the internal structure of a `confmap.Conf` which may change at any time without prior notice
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
