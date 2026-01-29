@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,6 +109,10 @@ func TestCreateCustomLogger(t *testing.T) {
 }
 
 func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on Windows due to file locking issues with t.TempDir() cleanup")
+	}
+
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "debug.log")
 
@@ -124,7 +129,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, logger.Sync())
 
 	// Verify file was created and contains content
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filePath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "test message to file")
 }
