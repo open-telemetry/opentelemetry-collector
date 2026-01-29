@@ -426,6 +426,7 @@
       "sampleentity",
       "sampleentityreceiver",
       "samplefactoryreceiver",
+      "sampleprocessor",
       "samplereceiver",
       "samplingdecision",
       "samplingprocessor",
