@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix panic when mdatagen is run without arguments.
+issues: [14506]
