@@ -54,34 +54,140 @@ flowchart TD
 
 When the `service.partialReload` feature gate is enabled (`--feature-gates=service.partialReload`), the Collector analyzes what changed in the configuration and performs the minimum necessary reload:
 
-| Change Type | Components Restarted | Components Unchanged |
-|-------------|---------------------|----------------------|
-| Receivers only | Changed receivers only | Processors, Exporters, Connectors, Extensions, unchanged receivers |
-| Processors (±receivers) | Changed processors, changed receivers | Exporters, Connectors, Extensions, unchanged receivers in unaffected pipelines |
-| Exporters, Connectors, Extensions, Pipeline structure, Telemetry | Full reload | — |
+| Change Type | Requires Full Reload? | What Gets Rebuilt |
+|-------------|----------------------|-------------------|
+| Receiver config | No | Changed receivers only |
+| Processor config | No | Processors + receivers in affected pipelines |
+| Exporter config | No | Exporters + processors + receivers in affected pipelines |
+| Connector config | No | Connectors + processors + receivers in affected pipelines |
+| Extension config | Yes | Everything |
+| Pipeline structure (add/remove pipeline, change exporter list, change connector-as-receiver) | Yes | Everything |
+| Telemetry config | Yes | Everything |
 
-The partial reload path (`Collector.tryPartialReload`) categorizes the config change using `categorizeConfigChange`, then delegates to **`Graph.Reload`** for both receiver-only and processor changes. This method performs differential updates:
+##### Pipeline Structure and Consumer References
 
-**For receiver-only changes:**
-  1. **Identify** receivers that need to be added, removed, or rebuilt (config or pipeline membership changed)
-  2. **Shutdown** only receivers being removed or rebuilt
-  3. **Remove** old receiver nodes from the graph
-  4. **Create** new receiver nodes for added/rebuilt receivers
-  5. **Wire** edges to existing capabilities nodes
-  6. **Build** and **Start** new receivers
+The pipeline graph has this structure:
 
-**For processor changes (affects entire pipelines):**
-  1. **Identify** pipelines where processors changed (added, removed, config modified, order changed)
-  2. **Identify** receivers that changed independently
-  3. **Shutdown** changed receivers and all processors in affected pipelines
-  4. **Remove** old nodes from the graph
-  5. **Create** new processor and receiver nodes
-  6. **Wire** edges (receivers→capabilities→processors→fanout)
-  7. **Build** processors in reverse order, then rebuild capabilitiesNode
-  8. **Build** changed receivers
-  9. **Start** processors (reverse order), then start receivers
+```
+receiver -> capabilitiesNode -> processor(s) -> fanOutNode -> exporter(s)
+                                                          \-> connector(s)
+```
 
-Exporters, connectors, and extensions remain running and untouched, preserving in-flight data and exporter queue state. Unchanged receivers continue operating without interruption. If the config change affects exporters, connectors, extensions, telemetry, or pipeline structure, the partial reload is skipped and the standard full reload executes.
+Each component stores a reference to its **next consumer** when it is built. This means that when a downstream component is recreated, all upstream components must also be recreated to get fresh consumer references:
+
+- **Exporter changes**: The exporter is rebuilt in-place (same node, new component). The fanOutNode is rebuilt to reference the new exporter. Processors must be recreated to get the new fanOutNode reference. The capabilitiesNode is rebuilt, and receivers must be recreated to get the new capabilitiesNode reference.
+- **Processor changes**: Processors are recreated. The capabilitiesNode is rebuilt, and receivers must be recreated.
+- **Receiver changes**: Only the changed receivers are recreated.
+
+##### The Five Phases of Partial Reload
+
+The `Graph.Reload` method performs partial reload in five phases:
+
+1. **Identify Changes**: Analyze old vs new configs to determine:
+   - Which receivers need to be added, removed, or rebuilt
+   - Which pipelines are affected (processor config changed)
+   - Which exporters/connectors need to be rebuilt (config changed)
+   - Mark all upstream components in affected pipelines for rebuild
+
+2. **Shutdown**: Stop components in upstream-to-downstream order:
+   - Shutdown receivers being removed or rebuilt (stops data flow first)
+   - Shutdown processors in affected pipelines
+   - Shutdown exporters/connectors being rebuilt
+
+3. **Update Graph**: Modify the graph structure:
+   - Remove old receiver and processor nodes from the graph
+   - Create new processor nodes for affected pipelines
+   - Create new receiver nodes for added/rebuilt receivers
+   - Wire edges between nodes
+
+4. **Build**: Create new component instances in downstream-to-upstream order:
+   - Build exporters (in-place rebuild on existing nodes)
+   - Build connectors (in-place rebuild on existing nodes)
+   - Rebuild fanOutNode to reference new exporters/connectors
+   - Build processors in reverse order (last processor first)
+   - Rebuild capabilitiesNode to reference first processor
+   - Build receivers
+
+5. **Start**: Start components in downstream-to-upstream order:
+   - Start exporters
+   - Start connectors
+   - Start processors (reverse order)
+   - Start receivers (last, to begin data flow)
+
+##### Examples
+
+**Example 1: Receiver Config Change**
+
+Configuration change: Modify the `otlp` receiver's endpoint.
+
+```
+Before: receivers.otlp.protocols.grpc.endpoint = "0.0.0.0:4317"
+After:  receivers.otlp.protocols.grpc.endpoint = "0.0.0.0:4318"
+```
+
+What happens:
+- Only the `otlp` receiver is shut down, rebuilt, and started
+- Processors, exporters, and other receivers continue running uninterrupted
+
+**Example 2: Processor Config Change**
+
+Configuration change: Modify the `batch` processor's timeout in the `traces` pipeline.
+
+```
+Before: processors.batch.timeout = "200ms"
+After:  processors.batch.timeout = "500ms"
+```
+
+What happens:
+1. All receivers in the `traces` pipeline are shut down
+2. The `batch` processor is shut down
+3. New processor node is created with new config
+4. capabilitiesNode is rebuilt
+5. Processor is built and started
+6. Receivers are rebuilt and started
+7. Exporters continue running—queue state preserved
+
+**Example 3: Exporter Config Change**
+
+Configuration change: Modify the `otlp` exporter's endpoint.
+
+```
+Before: exporters.otlp.endpoint = "backend:4317"
+After:  exporters.otlp.endpoint = "new-backend:4317"
+```
+
+What happens:
+1. All receivers in pipelines using this exporter are shut down
+2. All processors in those pipelines are shut down
+3. The exporter is shut down
+4. Exporter is rebuilt (new component on same node)
+5. fanOutNode is rebuilt to reference new exporter
+6. Processors are rebuilt and started
+7. capabilitiesNode is rebuilt
+8. Receivers are rebuilt and started
+
+**Example 4: Multi-Pipeline with Isolated Change**
+
+Configuration: Two pipelines share an exporter but have different processors.
+
+```yaml
+pipelines:
+  traces/frontend:
+    receivers: [otlp/frontend]
+    processors: [batch/frontend]
+    exporters: [otlp]
+  traces/backend:
+    receivers: [otlp/backend]
+    processors: [batch/backend]
+    exporters: [otlp]
+```
+
+Configuration change: Modify `batch/frontend` processor config.
+
+What happens:
+- `traces/frontend` pipeline: receiver and processor are rebuilt
+- `traces/backend` pipeline: **completely unaffected**—continues running
+- `otlp` exporter: continues running (shared, but no config change)
 
 ```mermaid
 flowchart TD
@@ -92,7 +198,13 @@ flowchart TD
     D --> E{"`Change type?`"}
     E -->|Partial reload| F("`**Graph.Reload**`")
     E -->|Full reload| H
-    F --> I("`Service running
+    F --> G("`Five phases:
+    1. Identify changes
+    2. Shutdown affected
+    3. Update graph
+    4. Build components
+    5. Start components`")
+    G --> I("`Service running
     (partial update complete)`")
     H --> I
 ```
