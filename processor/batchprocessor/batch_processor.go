@@ -412,7 +412,13 @@ func newTracesBatchProcessor(set processor.Settings, next consumer.Traces, cfg *
 
 func (t *tracesBatchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	pref.RefTraces(td)
-	return t.batcher.consume(ctx, td)
+	err := t.batcher.consume(ctx, td)
+	if err != nil {
+		// If consume fails, the data will never reach add() where UnrefTraces is called,
+		// so we must unref here to prevent memory leaks.
+		pref.UnrefTraces(td)
+	}
+	return err
 }
 
 type metricsBatchProcessor struct {
@@ -431,7 +437,13 @@ func newMetricsBatchProcessor(set processor.Settings, next consumer.Metrics, cfg
 // ConsumeMetrics implements processor.Metrics
 func (m *metricsBatchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	pref.RefMetrics(md)
-	return m.batcher.consume(ctx, md)
+	err := m.batcher.consume(ctx, md)
+	if err != nil {
+		// If consume fails, the data will never reach add() where UnrefMetrics is called,
+		// so we must unref here to prevent memory leaks.
+		pref.UnrefMetrics(md)
+	}
+	return err
 }
 
 type logsBatchProcessor struct {
@@ -450,7 +462,13 @@ func newLogsBatchProcessor(set processor.Settings, next consumer.Logs, cfg *Conf
 // ConsumeLogs implements processor.Logs
 func (l *logsBatchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	pref.RefLogs(ld)
-	return l.batcher.consume(ctx, ld)
+	err := l.batcher.consume(ctx, ld)
+	if err != nil {
+		// If consume fails, the data will never reach add() where UnrefLogs is called,
+		// so we must unref here to prevent memory leaks.
+		pref.UnrefLogs(ld)
+	}
+	return err
 }
 
 type batchTraces struct {
