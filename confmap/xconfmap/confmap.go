@@ -9,6 +9,7 @@ import (
 )
 
 type ExpandedValue = internal.ExpandedValue
+
 // ToStringMapRaw returns the raw configuration map without sanitization.
 // This is an experimental API and may change or be removed in future versions.
 // The returned map may change at any time without prior notice.
