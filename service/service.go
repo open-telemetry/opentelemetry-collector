@@ -267,18 +267,32 @@ func (srv *Service) Start(ctx context.Context) error {
 	return nil
 }
 
-// UpdateReceivers performs a partial reload of receiver components.
-// Only receivers that have been added, removed, or whose configuration or
-// pipeline membership changed are restarted. All other components remain
-// running without interruption.
-func (srv *Service) UpdateReceivers(ctx context.Context,
+// Reload performs a partial reload of the collector.
+// Only components that have changed are restarted. When a component changes,
+// only the pipelines that reference it are affected. Unchanged pipelines
+// continue running without interruption.
+//
+// Returns true if changes were detected and a partial reload was performed,
+// false if no changes were detected.
+func (srv *Service) Reload(ctx context.Context,
 	oldReceiverConfigs, newReceiverConfigs map[component.ID]component.Config,
 	receiverFactories map[component.Type]receiver.Factory,
+	oldProcessorConfigs, newProcessorConfigs map[component.ID]component.Config,
+	processorFactories map[component.Type]processor.Factory,
+	oldExporterConfigs, newExporterConfigs map[component.ID]component.Config,
+	exporterFactories map[component.Type]exporter.Factory,
+	oldConnectorConfigs, newConnectorConfigs map[component.ID]component.Config,
+	connectorFactories map[component.Type]connector.Factory,
 	pipelineConfigs pipelines.Config,
-) error {
-	srv.telemetrySettings.Logger.Info("Performing partial receiver reload")
+) (bool, error) {
 	srv.graphSettings.PipelineConfigs = pipelineConfigs
-	return srv.host.Pipelines.UpdateReceivers(ctx, srv.graphSettings, oldReceiverConfigs, newReceiverConfigs, receiverFactories, srv.host)
+
+	return srv.host.Pipelines.Reload(ctx, srv.graphSettings,
+		oldReceiverConfigs, newReceiverConfigs, receiverFactories,
+		oldProcessorConfigs, newProcessorConfigs, processorFactories,
+		oldExporterConfigs, newExporterConfigs, exporterFactories,
+		oldConnectorConfigs, newConnectorConfigs, connectorFactories,
+		srv.host)
 }
 
 // Shutdown the service. Shutdown will do the following steps in order:

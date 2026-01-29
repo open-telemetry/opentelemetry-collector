@@ -262,7 +262,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
-	if receiverPartialReloadGate.IsEnabled() {
+	if partialReloadGate.IsEnabled() {
 		col.currentCfg = cfg
 	}
 	col.setCollectorState(StateRunning)
@@ -271,21 +271,21 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
-	if receiverPartialReloadGate.IsEnabled() && col.currentCfg != nil {
-		reloaded, err := col.tryPartialReceiverReload(ctx)
+	if partialReloadGate.IsEnabled() && col.currentCfg != nil {
+		reloaded, err := col.tryPartialReload(ctx)
 		if reloaded {
-			// Partial reload was attempted (the change was receiver-only).
+			// Partial reload was attempted.
 			// Return the result directly — on success err is nil; on failure
 			// we cannot safely fall back to a full reload because the graph
-			// may be in a partially modified state (some receivers shut down,
+			// may be in a partially modified state (some components shut down,
 			// nodes removed, new nodes without components). Calling ShutdownAll
 			// on such a graph risks double-shutdowns on already-stopped
-			// receivers and nil-pointer panics on nodes whose components were
+			// components and nil-pointer panics on nodes whose components were
 			// never built. This is consistent with how full reload failures are
 			// handled: the error propagates to Run(), which exits the collector.
 			return err
 		}
-		// The config change was not receiver-only. Fall through to full reload.
+		// The config change requires a full reload. Fall through.
 	}
 
 	col.service.Logger().Warn("Config updated, restart service")
@@ -302,11 +302,11 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	return nil
 }
 
-// tryPartialReceiverReload attempts to reload only the receiver components if
-// the configuration change is limited to receivers. The bool return indicates
-// whether a partial reload was attempted (true) or the change requires a full
-// reload (false). When true, the error indicates whether the reload succeeded.
-func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error) {
+// tryPartialReload attempts to perform a partial reload based on what changed.
+// The bool return indicates whether a partial reload was attempted (true) or
+// the change requires a full reload (false). When true, the error indicates
+// whether the reload succeeded.
+func (col *Collector) tryPartialReload(ctx context.Context) (bool, error) {
 	factories, err := col.set.Factories()
 	if err != nil {
 		return false, err
@@ -317,24 +317,38 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, err
 	}
 
-	if err := xconfmap.Validate(newCfg); err != nil {
-		return false, err
+	if validateErr := xconfmap.Validate(newCfg); validateErr != nil {
+		return false, validateErr
 	}
 
-	if !receiversOnlyChange(col.currentCfg, newCfg, isConnectorID(col.currentCfg.Connectors)) {
+	changeType := categorizeConfigChange(col.currentCfg, newCfg, isConnectorID(col.currentCfg.Connectors))
+
+	if changeType == ConfigChangeFullReload {
 		return false, nil
 	}
 
-	col.service.Logger().Info("Config updated, performing partial receiver reload")
-	if err = col.service.UpdateReceivers(ctx,
+	// Attempt partial reload. It will detect if there are actual changes.
+	reloaded, err := col.service.Reload(ctx,
 		col.currentCfg.Receivers,
 		newCfg.Receivers,
 		factories.Receivers,
+		col.currentCfg.Processors,
+		newCfg.Processors,
+		factories.Processors,
+		col.currentCfg.Exporters,
+		newCfg.Exporters,
+		factories.Exporters,
+		col.currentCfg.Connectors,
+		newCfg.Connectors,
+		factories.Connectors,
 		newCfg.Service.Pipelines,
-	); err != nil {
-		return true, fmt.Errorf("partial receiver reload failed: %w", err)
+	)
+	if err != nil {
+		return true, fmt.Errorf("partial reload failed: %w", err)
 	}
-
+	if !reloaded {
+		col.service.Logger().Info("Config updated but no changes detected, skipping reload")
+	}
 	col.currentCfg = newCfg
 	return true, nil
 }

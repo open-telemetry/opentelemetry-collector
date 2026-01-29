@@ -156,11 +156,11 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
-func TestCollectorPartialReceiverReload(t *testing.T) {
-	// Enable the partial receiver reload feature gate for this test.
-	require.NoError(t, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), true))
+func TestCollectorPartialReload(t *testing.T) {
+	// Enable the partial reload feature gate for this test.
+	require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), false))
 	}()
 
 	// Set up an observer logger to detect log messages.
@@ -202,15 +202,14 @@ func TestCollectorPartialReceiverReload(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	// Trigger a config change. The config file hasn't changed, so
-	// receiversOnlyChange returns true and partial reload executes
-	// instead of a full service restart.
+	// Graph.Reload detects no changes and returns false.
 	watcher(&confmap.ChangeEvent{})
 
-	// Wait for the partial reload log message, confirming the
-	// partial reload path was taken instead of a full restart.
+	// Wait for the no-change log message, confirming the
+	// adaptive reload path was taken instead of a full restart.
 	assert.Eventually(t, func() bool {
 		for _, entry := range observedLogs.All() {
-			if entry.Message == "Config updated, performing partial receiver reload" {
+			if entry.Message == "Config updated but no changes detected, skipping reload" {
 				return true
 			}
 		}

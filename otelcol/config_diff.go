@@ -10,91 +10,91 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// receiversOnlyChange returns true when the only differences between old and
-// new are in receiver configurations and/or the set of pure-receiver entries
-// in pipeline receiver lists. Everything else (processors, exporters,
-// connectors, extensions, telemetry, pipeline structure) must be identical.
+// ConfigChangeType categorizes the type of configuration change to determine
+// the minimum reload scope required.
+type ConfigChangeType int
+
+const (
+	// ConfigChangeNone indicates no configuration change.
+	ConfigChangeNone ConfigChangeType = iota
+
+	// ConfigChangePartialReload indicates receiver and/or processor
+	// configurations changed, but exporters, connectors, extensions,
+	// and pipeline structure are unchanged. A partial reload can handle this.
+	ConfigChangePartialReload
+
+	// ConfigChangeFullReload indicates changes to exporters, connectors,
+	// extensions, telemetry, or pipeline structure that require a full reload.
+	ConfigChangeFullReload
+)
+
+// categorizeConfigChange analyzes the differences between old and new configs
+// and returns whether a partial reload can handle the change.
+//
+// The function checks configuration sections that require a full reload:
+// 1. Service telemetry, extensions
+// 2. Pipeline structure changes (adding/removing pipelines, changing exporter
+//    or connector-as-receiver lists within a pipeline)
+//
+// Changes to component configs (receivers, processors, exporters, connectors)
+// can be handled by partial reload as long as the pipeline structure is unchanged.
+// Graph.Reload handles the actual diff detection and only rebuilds affected
+// pipelines.
 //
 // Configuration sections are compared using reflect.DeepEqual because
 // component.Config is an empty interface with no hash or fingerprint contract.
-// Serialization-based comparison (JSON, gob, etc.) is unsafe here because
-// configopaque.String implements MarshalText by returning "[REDACTED]",
-// which would treat configs with different secret values as identical and
-// silently skip necessary reloads. reflect.DeepEqual compares raw field
-// values without invoking marshal interfaces, so it correctly distinguishes
-// configs that differ only in opaque fields. A false negative (reporting
-// equal configs as different) is safe — it simply falls back to a full reload.
 //
 // isConnector reports whether a given component.ID refers to a connector
 // (as opposed to a regular receiver). Changes to connector-as-receiver
-// entries require a full reload.
-func receiversOnlyChange(oldCfg, newCfg *Config, isConnector func(component.ID) bool) bool {
+// entries in pipelines require a full reload.
+func categorizeConfigChange(oldCfg, newCfg *Config, isConnector func(component.ID) bool) ConfigChangeType {
 	// Service telemetry must be identical.
 	if !reflect.DeepEqual(oldCfg.Service.Telemetry, newCfg.Service.Telemetry) {
-		return false
+		return ConfigChangeFullReload
 	}
 
 	// Extensions list must be identical.
 	if !slices.Equal(oldCfg.Service.Extensions, newCfg.Service.Extensions) {
-		return false
+		return ConfigChangeFullReload
 	}
 
 	// Extension configs must be identical.
 	if !reflect.DeepEqual(oldCfg.Extensions, newCfg.Extensions) {
-		return false
-	}
-
-	// Processor configs must be identical.
-	if !reflect.DeepEqual(oldCfg.Processors, newCfg.Processors) {
-		return false
-	}
-
-	// Exporter configs must be identical.
-	if !reflect.DeepEqual(oldCfg.Exporters, newCfg.Exporters) {
-		return false
-	}
-
-	// Connector configs must be identical.
-	if !reflect.DeepEqual(oldCfg.Connectors, newCfg.Connectors) {
-		return false
+		return ConfigChangeFullReload
 	}
 
 	// Must have the same set of pipeline IDs.
 	if len(oldCfg.Service.Pipelines) != len(newCfg.Service.Pipelines) {
-		return false
+		return ConfigChangeFullReload
 	}
 	for pid := range oldCfg.Service.Pipelines {
 		if _, ok := newCfg.Service.Pipelines[pid]; !ok {
-			return false
+			return ConfigChangeFullReload
 		}
 	}
 
-	// Per-pipeline: processors, exporters, and connector-as-receiver entries
-	// must be identical. Only pure-receiver entries may differ.
+	// Per-pipeline: exporter lists and connector-as-receiver entries must be identical.
+	// Config changes to exporters/connectors are OK (handled by partial reload),
+	// but structural changes (adding/removing from pipeline) require full reload.
 	for pid, oldPipe := range oldCfg.Service.Pipelines {
 		newPipe := newCfg.Service.Pipelines[pid]
 
-		// Processors must be identical.
-		if !slices.Equal(oldPipe.Processors, newPipe.Processors) {
-			return false
-		}
-
-		// Exporters must be identical.
+		// Exporter list must be identical (can't add/remove exporters from pipeline).
 		if !slices.Equal(oldPipe.Exporters, newPipe.Exporters) {
-			return false
+			return ConfigChangeFullReload
 		}
 
-		// For receivers, connector entries must match.
-		// Extract connector-as-receiver entries from each pipeline.
+		// Connector-as-receiver entries must match.
 		oldConnReceivers := filterIDs(oldPipe.Receivers, isConnector)
 		newConnReceivers := filterIDs(newPipe.Receivers, isConnector)
 		if !slices.Equal(oldConnReceivers, newConnReceivers) {
-			return false
+			return ConfigChangeFullReload
 		}
 	}
 
-	// All non-receiver aspects are identical.
-	return true
+	// Partial reload can handle component config changes.
+	// Graph.Reload detects what changed and only rebuilds affected pipelines.
+	return ConfigChangePartialReload
 }
 
 // filterIDs returns only the IDs for which the predicate returns true,

@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `service.receiverPartialReload` feature gate (Alpha) that restarts only receivers on config reload when non-receiver config sections are unchanged, avoiding unnecessary disruption to processors, exporters, and extensions. Enable with `--feature-gates=service.receiverPartialReload`."
+note: "Add `service.partialReload` feature gate (Alpha) that performs partial reloads based on what changed in the configuration. Receiver-only changes restart receivers; processor changes restart processors and receivers; exporter, connector, extension, or pipeline structure changes trigger a full reload. Enable with `--feature-gates=service.partialReload`."
 
 # One or more tracking issues or pull requests related to the change
 issues: [5966]

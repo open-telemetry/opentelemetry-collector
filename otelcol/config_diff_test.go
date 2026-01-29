@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
-func TestReceiversOnlyChange(t *testing.T) {
+func TestCategorizeConfigChange(t *testing.T) {
 	connectorID := component.MustNewID("forward")
 	neverConnector := func(component.ID) bool { return false }
 	isForwardConnector := func(id component.ID) bool { return id == connectorID }
@@ -49,40 +49,42 @@ func TestReceiversOnlyChange(t *testing.T) {
 		oldCfg      *Config
 		newCfg      *Config
 		isConnector func(component.ID) bool
-		want        bool
+		want        ConfigChangeType
 	}{
 		{
 			name:        "identical_configs",
 			oldCfg:      baseConfig(),
 			newCfg:      baseConfig(),
 			isConnector: neverConnector,
-			want:        true,
+			// categorizeConfigChange returns PartialReload when full reload isn't needed.
+			// Graph.Reload handles detecting that no actual changes occurred.
+			want: ConfigChangePartialReload,
 		},
 		{
-			name: "receiver_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "receiver_config_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("otlp")] = "changed"
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        true,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "receiver_added_to_config_map",
-			oldCfg:  baseConfig(),
+			name:   "receiver_added_to_config_map",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        true,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "receiver_added_to_pipeline",
-			oldCfg:  baseConfig(),
+			name:   "receiver_added_to_pipeline",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
@@ -93,63 +95,33 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        true,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "processor_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "processor_config_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewID("batch")] = "changed"
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "exporter_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "processor_added_to_config_map",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
-				c.Exporters[component.MustNewID("otlp")] = "changed"
+				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "pipeline_added",
-			oldCfg:  baseConfig(),
-			newCfg: func() *Config {
-				c := baseConfig()
-				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
-					Receivers:  []component.ID{component.MustNewID("otlp")},
-					Processors: []component.ID{component.MustNewID("batch")},
-					Exporters:  []component.ID{component.MustNewID("otlp")},
-				}
-				return c
-			}(),
-			isConnector: neverConnector,
-			want:        false,
-		},
-		{
-			name: "pipeline_removed",
-			oldCfg: func() *Config {
-				c := baseConfig()
-				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
-					Receivers:  []component.ID{component.MustNewID("otlp")},
-					Processors: []component.ID{component.MustNewID("batch")},
-					Exporters:  []component.ID{component.MustNewID("otlp")},
-				}
-				return c
-			}(),
-			newCfg:      baseConfig(),
-			isConnector: neverConnector,
-			want:        false,
-		},
-		{
-			name: "processor_config_map_changed",
-			oldCfg:  baseConfig(),
+			name:   "processor_added_to_pipeline",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
@@ -160,7 +132,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangePartialReload,
 		},
 		{
 			name: "pipeline_processors_list_changed",
@@ -179,11 +151,53 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangePartialReload,
 		},
 		{
-			name: "exporter_config_map_changed",
-			oldCfg:  baseConfig(),
+			name:   "exporter_config_changed",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Exporters[component.MustNewID("otlp")] = "changed"
+				return c
+			}(),
+			isConnector: neverConnector,
+			// Exporter config changes can be handled by partial reload.
+			want: ConfigChangePartialReload,
+		},
+		{
+			name:   "pipeline_added",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("otlp")},
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        ConfigChangeFullReload,
+		},
+		{
+			name: "pipeline_removed",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("otlp")},
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			newCfg:      baseConfig(),
+			isConnector: neverConnector,
+			want:        ConfigChangeFullReload,
+		},
+		{
+			name:   "exporter_config_map_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
@@ -194,7 +208,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
 			name: "pipeline_exporters_list_changed",
@@ -213,7 +227,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
 			name: "connector_config_changed",
@@ -232,7 +246,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: isForwardConnector,
-			want:        false,
+			// Connector config changes can be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name: "connector_as_receiver_changed",
@@ -255,7 +270,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: isForwardConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
 			name: "extension_config_changed",
@@ -274,11 +289,11 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
-			name: "extensions_list_changed",
-			oldCfg:  baseConfig(),
+			name:   "extensions_list_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Extensions = map[component.ID]component.Config{
@@ -288,7 +303,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
 			name: "receiver_removed_from_config_map",
@@ -299,7 +314,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 			}(),
 			newCfg:      baseConfig(),
 			isConnector: neverConnector,
-			want:        true,
+			want:        ConfigChangePartialReload,
 		},
 		{
 			name:   "telemetry_changed",
@@ -310,7 +325,7 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
 		},
 		{
 			name: "pipeline_id_replaced",
@@ -333,13 +348,48 @@ func TestReceiversOnlyChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        false,
+			want:        ConfigChangeFullReload,
+		},
+		{
+			name:   "receiver_and_processor_both_changed",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Receivers[component.MustNewID("otlp")] = "changed"
+				c.Processors[component.MustNewID("batch")] = "changed"
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        ConfigChangePartialReload,
+		},
+		{
+			// Test case where receiver config map is unchanged but pipeline receiver list changed.
+			// This covers the inner loop in receiver detection.
+			name: "receiver_list_changed_config_unchanged",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				// Add a second receiver to the config map but not to the pipeline.
+				c.Receivers[component.MustNewIDWithName("otlp", "2")] = struct{}{}
+				return c
+			}(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				// Same config map, but now the second receiver is in the pipeline.
+				c.Receivers[component.MustNewIDWithName("otlp", "2")] = struct{}{}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers = []component.ID{
+					component.MustNewID("otlp"),
+					component.MustNewIDWithName("otlp", "2"),
+				}
+				return c
+			}(),
+			isConnector: neverConnector,
+			want:        ConfigChangePartialReload,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := receiversOnlyChange(tt.oldCfg, tt.newCfg, tt.isConnector)
+			got := categorizeConfigChange(tt.oldCfg, tt.newCfg, tt.isConnector)
 			assert.Equal(t, tt.want, got)
 		})
 	}

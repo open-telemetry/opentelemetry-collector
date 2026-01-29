@@ -50,39 +50,51 @@ flowchart TD
     D --> E("`Service running with new config`")
 ```
 
-#### Partial Receiver Reload (Alpha)
+#### Partial Reload (Alpha)
 
-When the `service.receiverPartialReload` feature gate is enabled (`--feature-gates=service.receiverPartialReload`), the Collector first checks whether the config change is limited to receivers. If only receiver configurations and/or pure-receiver entries in pipeline receiver lists have changed — and all other sections (processors, exporters, connectors, extensions, telemetry, pipeline structure) are identical — a partial reload is performed instead.
+When the `service.partialReload` feature gate is enabled (`--feature-gates=service.partialReload`), the Collector analyzes what changed in the configuration and performs the minimum necessary reload:
 
-The partial reload path (`Collector.tryPartialReceiverReload`) delegates to `Graph.UpdateReceivers`, which runs a 9-phase algorithm:
+| Change Type | Components Restarted | Components Unchanged |
+|-------------|---------------------|----------------------|
+| Receivers only | Changed receivers only | Processors, Exporters, Connectors, Extensions, unchanged receivers |
+| Processors (±receivers) | Changed processors, changed receivers | Exporters, Connectors, Extensions, unchanged receivers in unaffected pipelines |
+| Exporters, Connectors, Extensions, Pipeline structure, Telemetry | Full reload | — |
 
-1. **Collect** all current receiver nodes from pipelines (skipping connectors-as-receivers)
-2. **Determine** the desired receiver set from the new pipeline configs
-3. **Categorize** receivers into add, remove, and rebuild sets
-4. **Shutdown** receivers that are being removed or rebuilt
-5. **Remove** old receiver nodes and edges from the graph
-6. **Create** new receiver nodes for added and rebuilt receivers
-7. **Wire** edges from new receiver nodes to existing downstream capabilities nodes
-8. **Build** new receiver components via their factories
-9. **Start** new receivers
+The partial reload path (`Collector.tryPartialReload`) categorizes the config change using `categorizeConfigChange`, then delegates to **`Graph.Reload`** for both receiver-only and processor changes. This method performs differential updates:
 
-Processors, exporters, connectors, and extensions remain running and untouched throughout. If the config change affects anything beyond receivers, the partial reload is skipped and the standard full reload executes.
+**For receiver-only changes:**
+  1. **Identify** receivers that need to be added, removed, or rebuilt (config or pipeline membership changed)
+  2. **Shutdown** only receivers being removed or rebuilt
+  3. **Remove** old receiver nodes from the graph
+  4. **Create** new receiver nodes for added/rebuilt receivers
+  5. **Wire** edges to existing capabilities nodes
+  6. **Build** and **Start** new receivers
+
+**For processor changes (affects entire pipelines):**
+  1. **Identify** pipelines where processors changed (added, removed, config modified, order changed)
+  2. **Identify** receivers that changed independently
+  3. **Shutdown** changed receivers and all processors in affected pipelines
+  4. **Remove** old nodes from the graph
+  5. **Create** new processor and receiver nodes
+  6. **Wire** edges (receivers→capabilities→processors→fanout)
+  7. **Build** processors in reverse order, then rebuild capabilitiesNode
+  8. **Build** changed receivers
+  9. **Start** processors (reverse order), then start receivers
+
+Exporters, connectors, and extensions remain running and untouched, preserving in-flight data and exporter queue state. Unchanged receivers continue operating without interruption. If the config change affects exporters, connectors, extensions, telemetry, or pipeline structure, the partial reload is skipped and the standard full reload executes.
 
 ```mermaid
 flowchart TD
     A("`Config change or SIGHUP`") --> B("`**Collector.reloadConfiguration**`")
-    B --> C{"`Feature gate enabled
-    AND receiver-only change?`"}
-    C -->|Yes| D("`**tryPartialReceiverReload**
-    Diff old/new config`")
-    D --> E("`**Graph.UpdateReceivers**
-    Shutdown old receivers,
-    build and start new ones`")
-    E --> F("`Service running with updated receivers
-    (all other components unchanged)`")
-    C -->|No| G("`Full reload
-    (shutdown and rebuild everything)`")
-    G --> F
+    B --> C{"`Feature gate enabled?`"}
+    C -->|No| H("`Full reload`")
+    C -->|Yes| D("`**categorizeConfigChange**`")
+    D --> E{"`Change type?`"}
+    E -->|Partial reload| F("`**Graph.Reload**`")
+    E -->|Full reload| H
+    F --> I("`Service running
+    (partial update complete)`")
+    H --> I
 ```
 
 ### Where to start to read the code
