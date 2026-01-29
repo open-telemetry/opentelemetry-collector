@@ -11,7 +11,7 @@ var ServiceAllowNoPipelinesFeatureGate = featuregate.GlobalRegistry().MustRegist
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Allow starting the Collector without starting any pipelines."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/12613"),
-	featuregate.WithRegisterFromVersion("v0.112.0"),
+	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
 
 var ServiceProfilesSupportFeatureGate = featuregate.GlobalRegistry().MustRegister(
