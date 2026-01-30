@@ -68,7 +68,7 @@ func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
 }
 
 // ValueType returns the type of the value for this Exemplar.
-// Calling this function on zero-initialized Exemplar will cause a panic.
+// Calling this function on zero-initialized Exemplar is invalid and will cause a panic.
 func (ms Exemplar) ValueType() ExemplarValueType {
 	switch ms.orig.Value.(type) {
 	case *internal.Exemplar_AsDouble:
