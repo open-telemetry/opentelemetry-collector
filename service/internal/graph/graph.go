@@ -500,42 +500,74 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 
 func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *receiverNode, host *Host) error {
 	instanceID := g.instanceIDs[nodeID]
-	host.Reporter.ReportStatus(
-		instanceID,
-		componentstatus.NewEvent(componentstatus.StatusStopping),
-	)
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
 	if err := rn.Shutdown(ctx); err != nil {
-		host.Reporter.ReportStatus(
-			instanceID,
-			componentstatus.NewPermanentErrorEvent(err),
-		)
+		host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
 		return fmt.Errorf("failed to shutdown receiver %q: %w", rn.componentID, err)
 	}
-	host.Reporter.ReportStatus(
-		instanceID,
-		componentstatus.NewEvent(componentstatus.StatusStopped),
-	)
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+	return nil
+}
+
+func (g *Graph) shutdownProcessorNode(ctx context.Context, pn *processorNode, host *Host) error {
+	instanceID := g.instanceIDs[pn.ID()]
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
+	if err := pn.Shutdown(ctx); err != nil {
+		host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
+		return fmt.Errorf("failed to shutdown processor %q: %w", pn.componentID, err)
+	}
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+	return nil
+}
+
+func (g *Graph) shutdownExporterNode(ctx context.Context, nodeID int64, en *exporterNode, host *Host) error {
+	instanceID := g.instanceIDs[nodeID]
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
+	if err := en.Shutdown(ctx); err != nil {
+		host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
+		return fmt.Errorf("failed to shutdown exporter %q: %w", en.componentID, err)
+	}
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+	return nil
+}
+
+func (g *Graph) shutdownConnectorNode(ctx context.Context, nodeID int64, cn *connectorNode, host *Host) error {
+	instanceID := g.instanceIDs[nodeID]
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
+	if err := cn.Shutdown(ctx); err != nil {
+		host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
+		return fmt.Errorf("failed to shutdown connector %q: %w", cn.componentID, err)
+	}
+	host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
 	return nil
 }
 
 // reloadState holds all the state needed during a partial reload operation.
 type reloadState struct {
-	// Pipelines affected by processor changes.
-	affectedPipelines map[pipeline.ID]bool
-	// Pipelines needing fanOutNode rebuild due to exporter/connector changes.
-	pipelinesNeedingFanOutRebuild map[pipeline.ID]bool
+	// Pipelines
+	pipelinesToAdd                 map[pipeline.ID]bool // New pipelines in config.
+	pipelinesToRemove              map[pipeline.ID]bool // Pipelines no longer in config.
+	pipelinesAffected              map[pipeline.ID]bool // Pipelines affected by processor changes.
+	pipelinesNeedingFanOutRebuild  map[pipeline.ID]bool // Pipelines needing fanOutNode rebuild due to exporter/connector changes.
 
-	// Receiver changes.
-	receiversToRemove  map[int64]*receiverNode
-	receiversToRebuild map[int64]*receiverNode
-	receiversToAdd     map[int64]bool
+	// Receivers
+	receiversToRemove  map[int64]*receiverNode // Receivers to shut down and remove.
+	receiversToRebuild map[int64]*receiverNode // Receivers to shut down and rebuild.
+	receiversToAdd     map[int64]bool          // Receivers to create (new pipelines or new receiver IDs).
 
-	// Exporter/connector nodes to rebuild.
-	exporterNodesToRebuild  map[int64]*exporterNode
-	connectorNodesToRebuild map[int64]*connectorNode
+	// Exporters
+	exportersToAdd     map[int64]bool         // Exporters to create (for new pipelines).
+	exportersToRebuild map[int64]*exporterNode // Exporters to shut down and rebuild.
 
-	// Receivers that were built (for starting).
-	builtReceivers map[int64]bool
+	// Connectors
+	connectorsToAdd     map[int64]bool           // Connectors to create (new connectors or new exporter/receiver combinations).
+	connectorsToRebuild map[int64]*connectorNode // Connectors to shut down and rebuild.
+	connectorsToRemove  map[int64]*connectorNode // Connectors to shut down and remove.
+
+	// Built (for starting)
+	builtReceiver  map[int64]bool // Receivers that were built.
+	builtExporter  map[int64]bool // Exporters that were built.
+	builtConnector map[int64]bool // Connectors that were built.
 }
 
 // Reload performs a partial reload of the graph.
@@ -583,9 +615,12 @@ func (g *Graph) Reload(ctx context.Context, set *Settings,
 		oldConnectorCfgs, newConnectorCfgs)
 
 	// Check if there's anything to do.
-	if len(state.affectedPipelines) == 0 && len(state.receiversToRemove) == 0 &&
+	if len(state.pipelinesToAdd) == 0 && len(state.pipelinesToRemove) == 0 &&
+		len(state.pipelinesAffected) == 0 && len(state.receiversToRemove) == 0 &&
 		len(state.receiversToRebuild) == 0 && len(state.receiversToAdd) == 0 &&
-		len(state.exporterNodesToRebuild) == 0 && len(state.connectorNodesToRebuild) == 0 {
+		len(state.exportersToRebuild) == 0 && len(state.connectorsToRebuild) == 0 &&
+		len(state.exportersToAdd) == 0 && len(state.connectorsToAdd) == 0 &&
+		len(state.connectorsToRemove) == 0 {
 		g.telemetry.Logger.Info("Partial reload: no changes detected")
 		return false, nil
 	}
@@ -596,16 +631,18 @@ func (g *Graph) Reload(ctx context.Context, set *Settings,
 	}
 
 	// Phase 3: Update builders for components that will be rebuilt.
-	if len(state.exporterNodesToRebuild) > 0 {
+	// Note: pipelinesToAdd are added to pipelinesAffected in reloadUpdateGraph, but we need
+	// to ensure builders are created before that.
+	if len(state.exportersToRebuild) > 0 || len(state.exportersToAdd) > 0 || len(state.pipelinesToAdd) > 0 {
 		set.ExporterBuilder = builders.NewExporter(newExporterCfgs, exporterFactories)
 	}
-	if len(state.connectorNodesToRebuild) > 0 {
+	if len(state.connectorsToRebuild) > 0 || len(state.connectorsToAdd) > 0 {
 		set.ConnectorBuilder = builders.NewConnector(newConnectorCfgs, connectorFactories)
 	}
-	if len(state.affectedPipelines) > 0 {
+	if len(state.pipelinesAffected) > 0 || len(state.pipelinesToAdd) > 0 {
 		set.ProcessorBuilder = builders.NewProcessor(newProcessorCfgs, processorFactories)
 	}
-	if len(state.receiversToAdd) > 0 || len(state.receiversToRebuild) > 0 {
+	if len(state.receiversToAdd) > 0 || len(state.receiversToRebuild) > 0 || len(state.pipelinesToAdd) > 0 {
 		set.ReceiverBuilder = builders.NewReceiver(newReceiverCfgs, receiverFactories)
 	}
 
@@ -623,13 +660,38 @@ func (g *Graph) Reload(ctx context.Context, set *Settings,
 	}
 
 	g.telemetry.Logger.Info("Partial reload completed successfully",
-		zap.Int("affected_pipelines", len(state.affectedPipelines)),
+		zap.Int("pipelines_added", len(state.pipelinesToAdd)),
+		zap.Int("pipelines_removed", len(state.pipelinesToRemove)),
+		zap.Int("affected_pipelines", len(state.pipelinesAffected)),
 		zap.Int("receivers_added", len(state.receiversToAdd)),
 		zap.Int("receivers_rebuilt", len(state.receiversToRebuild)),
 		zap.Int("receivers_removed", len(state.receiversToRemove)),
-		zap.Int("exporters_rebuilt", len(state.exporterNodesToRebuild)),
-		zap.Int("connectors_rebuilt", len(state.connectorNodesToRebuild)))
+		zap.Int("exporters_added", len(state.exportersToAdd)),
+		zap.Int("exporters_rebuilt", len(state.exportersToRebuild)),
+		zap.Int("connectors_added", len(state.connectorsToAdd)),
+		zap.Int("connectors_rebuilt", len(state.connectorsToRebuild)),
+		zap.Int("connectors_removed", len(state.connectorsToRemove)))
 	return true, nil
+}
+
+func newReloadState() *reloadState {
+	return &reloadState{
+		pipelinesToAdd:                make(map[pipeline.ID]bool),
+		pipelinesToRemove:             make(map[pipeline.ID]bool),
+		pipelinesAffected:             make(map[pipeline.ID]bool),
+		pipelinesNeedingFanOutRebuild: make(map[pipeline.ID]bool),
+		receiversToRemove:             make(map[int64]*receiverNode),
+		receiversToRebuild:            make(map[int64]*receiverNode),
+		receiversToAdd:                make(map[int64]bool),
+		exportersToAdd:                make(map[int64]bool),
+		exportersToRebuild:            make(map[int64]*exporterNode),
+		connectorsToRebuild:           make(map[int64]*connectorNode),
+		connectorsToAdd:               make(map[int64]bool),
+		connectorsToRemove:            make(map[int64]*connectorNode),
+		builtReceiver:                 make(map[int64]bool),
+		builtExporter:                 make(map[int64]bool),
+		builtConnector:                make(map[int64]bool),
+	}
 }
 
 // identifyChanges analyzes config differences and returns the reload state.
@@ -639,37 +701,63 @@ func (g *Graph) identifyChanges(set Settings,
 	oldExporterCfgs, newExporterCfgs map[component.ID]component.Config,
 	oldConnectorCfgs, newConnectorCfgs map[component.ID]component.Config,
 ) *reloadState {
-	state := &reloadState{
-		affectedPipelines:             make(map[pipeline.ID]bool),
-		pipelinesNeedingFanOutRebuild: make(map[pipeline.ID]bool),
-		receiversToRemove:             make(map[int64]*receiverNode),
-		receiversToRebuild:            make(map[int64]*receiverNode),
-		receiversToAdd:                make(map[int64]bool),
-		exporterNodesToRebuild:        make(map[int64]*exporterNode),
-		connectorNodesToRebuild:       make(map[int64]*connectorNode),
-		builtReceivers:                make(map[int64]bool),
-	}
+	state := newReloadState()
 
-	// Identify pipelines with processor changes.
+	g.identifyPipelineChanges(set, state)
+	g.identifyProcessorChanges(set, state, oldProcessorCfgs, newProcessorCfgs)
+	g.identifyReceiverChanges(set, state, oldReceiverCfgs, newReceiverCfgs)
+	g.identifyExporterConnectorChanges(set, state, oldExporterCfgs, newExporterCfgs, oldConnectorCfgs, newConnectorCfgs)
+	g.markReceiversInAffectedPipelines(state)
+
+	return state
+}
+
+// identifyPipelineChanges identifies pipelines to add and remove.
+func (g *Graph) identifyPipelineChanges(set Settings, state *reloadState) {
+	for pipelineID := range set.PipelineConfigs {
+		if _, exists := g.pipelines[pipelineID]; !exists {
+			state.pipelinesToAdd[pipelineID] = true
+		}
+	}
+	for pipelineID := range g.pipelines {
+		if _, exists := set.PipelineConfigs[pipelineID]; !exists {
+			state.pipelinesToRemove[pipelineID] = true
+		}
+	}
+}
+
+// identifyProcessorChanges identifies pipelines with processor changes.
+// Note: exporter/connector changes also add to pipelinesAffected.
+func (g *Graph) identifyProcessorChanges(set Settings, state *reloadState,
+	oldProcessorCfgs, newProcessorCfgs map[component.ID]component.Config,
+) {
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		if state.pipelinesToAdd[pipelineID] {
+			continue
+		}
 		oldPipe := g.pipelines[pipelineID]
 		oldProcIDs := make([]component.ID, 0, len(oldPipe.processors))
 		for _, node := range oldPipe.processors {
 			oldProcIDs = append(oldProcIDs, node.(*processorNode).componentID)
 		}
 		if !slices.Equal(oldProcIDs, pipelineCfg.Processors) {
-			state.affectedPipelines[pipelineID] = true
+			state.pipelinesAffected[pipelineID] = true
 			continue
 		}
 		for _, procID := range pipelineCfg.Processors {
 			if !reflect.DeepEqual(oldProcessorCfgs[procID], newProcessorCfgs[procID]) {
-				state.affectedPipelines[pipelineID] = true
+				state.pipelinesAffected[pipelineID] = true
 				break
 			}
 		}
 	}
+}
 
-	// Categorize receiver changes.
+// identifyReceiverChanges categorizes receiver changes into add/remove/rebuild.
+func (g *Graph) identifyReceiverChanges(set Settings, state *reloadState,
+	oldReceiverCfgs, newReceiverCfgs map[component.ID]component.Config,
+) {
+	// Collect current receivers from all pipelines (including those being removed).
 	currentReceivers := make(map[int64]*receiverNode)
 	currentReceiverPipelines := make(map[int64]map[pipeline.ID]bool)
 	for pipelineID, pipe := range g.pipelines {
@@ -684,6 +772,7 @@ func (g *Graph) identifyChanges(set Settings,
 		}
 	}
 
+	// Collect desired receivers from all pipelines (including new ones).
 	desiredReceiverPipelines := make(map[int64]map[pipeline.ID]bool)
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		for _, recvID := range pipelineCfg.Receivers {
@@ -698,6 +787,7 @@ func (g *Graph) identifyChanges(set Settings,
 		}
 	}
 
+	// Categorize each receiver.
 	for nodeID, rn := range currentReceivers {
 		if _, desired := desiredReceiverPipelines[nodeID]; !desired {
 			state.receiversToRemove[nodeID] = rn
@@ -711,14 +801,28 @@ func (g *Graph) identifyChanges(set Settings,
 			state.receiversToAdd[nodeID] = true
 		}
 	}
+}
 
-	// Identify exporter/connector changes.
+// identifyExporterConnectorChanges identifies exporter/connector config and list changes.
+func (g *Graph) identifyExporterConnectorChanges(set Settings, state *reloadState,
+	oldExporterCfgs, newExporterCfgs map[component.ID]component.Config,
+	oldConnectorCfgs, newConnectorCfgs map[component.ID]component.Config,
+) {
+	// Helper to check if a component is a connector in the NEW config.
+	isNewConnector := func(id component.ID) bool {
+		_, ok := newConnectorCfgs[id]
+		return ok
+	}
+
+	// Find exporters with config changes.
 	exportersToRebuild := make(map[component.ID]bool)
 	for expID := range newExporterCfgs {
 		if !reflect.DeepEqual(oldExporterCfgs[expID], newExporterCfgs[expID]) {
 			exportersToRebuild[expID] = true
 		}
 	}
+
+	// Find connectors with config changes.
 	connectorsToRebuild := make(map[component.ID]bool)
 	for connID := range newConnectorCfgs {
 		if !reflect.DeepEqual(oldConnectorCfgs[connID], newConnectorCfgs[connID]) {
@@ -726,43 +830,176 @@ func (g *Graph) identifyChanges(set Settings,
 		}
 	}
 
+	// Mark exporter/connector nodes for rebuild based on config changes.
 	for pipelineID, pipe := range g.pipelines {
+		if state.pipelinesToRemove[pipelineID] {
+			continue
+		}
 		for _, node := range pipe.exporters {
 			if en, ok := node.(*exporterNode); ok && exportersToRebuild[en.componentID] {
-				state.exporterNodesToRebuild[en.ID()] = en
+				state.exportersToRebuild[en.ID()] = en
 				state.pipelinesNeedingFanOutRebuild[pipelineID] = true
-				// Mark pipeline as affected so processors get rebuilt with the new consumer reference.
-				// Processors store a reference to their next consumer (the fanOutNode), so when
-				// the fanOutNode is rebuilt, processors need to be rebuilt to get the new reference.
-				state.affectedPipelines[pipelineID] = true
+				state.pipelinesAffected[pipelineID] = true
 			}
 			if cn, ok := node.(*connectorNode); ok && connectorsToRebuild[cn.componentID] {
-				state.connectorNodesToRebuild[cn.ID()] = cn
+				state.connectorsToRebuild[cn.ID()] = cn
 				state.pipelinesNeedingFanOutRebuild[pipelineID] = true
-				// Mark pipeline as affected so processors get rebuilt with the new consumer reference.
-				state.affectedPipelines[pipelineID] = true
+				state.pipelinesAffected[pipelineID] = true
 			}
 		}
 	}
 
-	// Receivers in affected pipelines must be rebuilt (not just restarted) because they
-	// store consumer references from when they were built. When downstream components
-	// (processors, exporters, connectors) are rebuilt, receivers need new consumer references.
-	for pipelineID := range state.affectedPipelines {
-		pipe := g.pipelines[pipelineID]
-		for nodeID, node := range pipe.receivers {
-			rn, ok := node.(*receiverNode)
-			if !ok {
-				continue
+	// Build maps of current connector usage from existing graph.
+	currentConnAsExporter := make(map[component.ID]map[pipeline.ID]bool)
+	currentConnAsReceiver := make(map[component.ID]map[pipeline.ID]bool)
+	for pipelineID, pipe := range g.pipelines {
+		if state.pipelinesToRemove[pipelineID] {
+			continue
+		}
+		for _, node := range pipe.exporters {
+			if cn, ok := node.(*connectorNode); ok {
+				if currentConnAsExporter[cn.componentID] == nil {
+					currentConnAsExporter[cn.componentID] = make(map[pipeline.ID]bool)
+				}
+				currentConnAsExporter[cn.componentID][pipelineID] = true
 			}
-			if state.receiversToRebuild[nodeID] != nil || state.receiversToRemove[nodeID] != nil {
-				continue
+		}
+		for _, node := range pipe.receivers {
+			if cn, ok := node.(*connectorNode); ok {
+				if currentConnAsReceiver[cn.componentID] == nil {
+					currentConnAsReceiver[cn.componentID] = make(map[pipeline.ID]bool)
+				}
+				currentConnAsReceiver[cn.componentID][pipelineID] = true
 			}
-			state.receiversToRebuild[nodeID] = rn
 		}
 	}
-	for pipelineID := range state.pipelinesNeedingFanOutRebuild {
-		if state.affectedPipelines[pipelineID] {
+
+	// Build maps of desired connector usage from new config.
+	desiredConnAsExporter := make(map[component.ID]map[pipeline.ID]bool)
+	desiredConnAsReceiver := make(map[component.ID]map[pipeline.ID]bool)
+	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		if state.pipelinesToAdd[pipelineID] {
+			continue
+		}
+		for _, exprID := range pipelineCfg.Exporters {
+			if isNewConnector(exprID) {
+				if desiredConnAsExporter[exprID] == nil {
+					desiredConnAsExporter[exprID] = make(map[pipeline.ID]bool)
+				}
+				desiredConnAsExporter[exprID][pipelineID] = true
+			}
+		}
+		for _, recvID := range pipelineCfg.Receivers {
+			if isNewConnector(recvID) {
+				if desiredConnAsReceiver[recvID] == nil {
+					desiredConnAsReceiver[recvID] = make(map[pipeline.ID]bool)
+				}
+				desiredConnAsReceiver[recvID][pipelineID] = true
+			}
+		}
+	}
+
+	// Detect changes in exporter lists (regular exporters).
+	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		if state.pipelinesToAdd[pipelineID] || state.pipelinesToRemove[pipelineID] {
+			continue
+		}
+		pipe := g.pipelines[pipelineID]
+
+		currentExpIDs := make(map[component.ID]bool)
+		for _, node := range pipe.exporters {
+			if en, ok := node.(*exporterNode); ok {
+				currentExpIDs[en.componentID] = true
+			}
+		}
+
+		desiredExpIDs := make(map[component.ID]bool)
+		for _, exprID := range pipelineCfg.Exporters {
+			if !isNewConnector(exprID) {
+				desiredExpIDs[exprID] = true
+			}
+		}
+
+		if !maps.Equal(currentExpIDs, desiredExpIDs) {
+			state.pipelinesNeedingFanOutRebuild[pipelineID] = true
+			state.pipelinesAffected[pipelineID] = true
+			for exprID := range desiredExpIDs {
+				if !currentExpIDs[exprID] {
+					expNode := newExporterNode(pipelineID.Signal(), exprID)
+					state.exportersToAdd[expNode.ID()] = true
+				}
+			}
+		}
+	}
+
+	// Detect connector node additions and removals.
+	allConnectors := make(map[component.ID]bool)
+	for connID := range newConnectorCfgs {
+		allConnectors[connID] = true
+	}
+	for connID := range currentConnAsExporter {
+		allConnectors[connID] = true
+	}
+	for connID := range currentConnAsReceiver {
+		allConnectors[connID] = true
+	}
+
+	for connID := range allConnectors {
+		currentExpPipes := currentConnAsExporter[connID]
+		currentRecvPipes := currentConnAsReceiver[connID]
+		desiredExpPipes := desiredConnAsExporter[connID]
+		desiredRecvPipes := desiredConnAsReceiver[connID]
+
+		// Check each current connector node for removal.
+		for expPipeID := range currentExpPipes {
+			for recvPipeID := range currentRecvPipes {
+				connNode := newConnectorNode(expPipeID.Signal(), recvPipeID.Signal(), connID)
+				nodeID := connNode.ID()
+
+				expStillUsed := desiredExpPipes[expPipeID]
+				recvStillUsed := desiredRecvPipes[recvPipeID]
+
+				if !expStillUsed || !recvStillUsed {
+					if existingNode := g.componentGraph.Node(nodeID); existingNode != nil {
+						state.connectorsToRemove[nodeID] = existingNode.(*connectorNode)
+						state.pipelinesNeedingFanOutRebuild[expPipeID] = true
+						state.pipelinesAffected[expPipeID] = true
+					}
+				}
+			}
+		}
+
+		// Check for new connector nodes to add.
+		for expPipeID := range desiredExpPipes {
+			if state.pipelinesToAdd[expPipeID] {
+				continue
+			}
+			for recvPipeID := range desiredRecvPipes {
+				if state.pipelinesToAdd[recvPipeID] {
+					continue
+				}
+
+				connNode := newConnectorNode(expPipeID.Signal(), recvPipeID.Signal(), connID)
+				nodeID := connNode.ID()
+
+				wasExpUsed := currentExpPipes[expPipeID]
+				wasRecvUsed := currentRecvPipes[recvPipeID]
+
+				if !wasExpUsed || !wasRecvUsed {
+					state.connectorsToAdd[nodeID] = true
+					state.pipelinesNeedingFanOutRebuild[expPipeID] = true
+					state.pipelinesAffected[expPipeID] = true
+				}
+			}
+		}
+	}
+}
+
+// markReceiversInAffectedPipelines marks receivers for rebuild in affected pipelines.
+// Receivers store consumer references, so they must be rebuilt when downstream changes.
+func (g *Graph) markReceiversInAffectedPipelines(state *reloadState) {
+	for pipelineID := range state.pipelinesAffected {
+		if state.pipelinesToRemove[pipelineID] {
 			continue
 		}
 		pipe := g.pipelines[pipelineID]
@@ -777,13 +1014,14 @@ func (g *Graph) identifyChanges(set Settings,
 			state.receiversToRebuild[nodeID] = rn
 		}
 	}
-
-	return state
 }
 
 // reloadShutdown stops all components that need to be stopped.
 func (g *Graph) reloadShutdown(ctx context.Context, state *reloadState, host *Host) error {
 	// Shutdown all receivers first (ensures no data in flight).
+	// This includes receivers from pipelines being removed, which are captured
+	// in receiversToRemove (if only used by removed pipelines) or receiversToRebuild
+	// (if shared with remaining pipelines).
 	for nodeID, rn := range state.receiversToRemove {
 		if err := g.shutdownReceiverNode(ctx, nodeID, rn, host); err != nil {
 			return err
@@ -796,40 +1034,70 @@ func (g *Graph) reloadShutdown(ctx context.Context, state *reloadState, host *Ho
 	}
 
 	// Shutdown processors in affected pipelines.
-	for pipelineID := range state.affectedPipelines {
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		for _, node := range pipe.processors {
-			pn := node.(*processorNode)
-			instanceID := g.instanceIDs[pn.ID()]
-			host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
-			if err := pn.Shutdown(ctx); err != nil {
-				host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
-				return fmt.Errorf("failed to shutdown processor %q: %w", pn.componentID, err)
+			if err := g.shutdownProcessorNode(ctx, node.(*processorNode), host); err != nil {
+				return err
 			}
-			host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+		}
+	}
+
+	// Shutdown processors in pipelines being removed.
+	for pipelineID := range state.pipelinesToRemove {
+		pipe := g.pipelines[pipelineID]
+		for _, node := range pipe.processors {
+			if err := g.shutdownProcessorNode(ctx, node.(*processorNode), host); err != nil {
+				return err
+			}
 		}
 	}
 
 	// Shutdown exporters being rebuilt.
-	for nodeID, en := range state.exporterNodesToRebuild {
-		instanceID := g.instanceIDs[nodeID]
-		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
-		if err := en.Shutdown(ctx); err != nil {
-			host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
-			return fmt.Errorf("failed to shutdown exporter %q: %w", en.componentID, err)
+	shutdownExporters := make(map[int64]bool)
+	for nodeID, en := range state.exportersToRebuild {
+		shutdownExporters[nodeID] = true
+		if err := g.shutdownExporterNode(ctx, nodeID, en, host); err != nil {
+			return err
 		}
-		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+	}
+
+	// Shutdown exporters in pipelines being removed.
+	for pipelineID := range state.pipelinesToRemove {
+		pipe := g.pipelines[pipelineID]
+		for nodeID, node := range pipe.exporters {
+			en, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
+			if shutdownExporters[nodeID] {
+				continue
+			}
+			shutdownExporters[nodeID] = true
+			if err := g.shutdownExporterNode(ctx, nodeID, en, host); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Shutdown connectors being rebuilt.
-	for nodeID, cn := range state.connectorNodesToRebuild {
-		instanceID := g.instanceIDs[nodeID]
-		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopping))
-		if err := cn.Shutdown(ctx); err != nil {
-			host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(err))
-			return fmt.Errorf("failed to shutdown connector %q: %w", cn.componentID, err)
+	shutdownConnectors := make(map[int64]bool)
+	for nodeID, cn := range state.connectorsToRebuild {
+		shutdownConnectors[nodeID] = true
+		if err := g.shutdownConnectorNode(ctx, nodeID, cn, host); err != nil {
+			return err
 		}
-		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStopped))
+	}
+
+	// Shutdown connectors being removed.
+	for nodeID, cn := range state.connectorsToRemove {
+		if shutdownConnectors[nodeID] {
+			continue
+		}
+		shutdownConnectors[nodeID] = true
+		if err := g.shutdownConnectorNode(ctx, nodeID, cn, host); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -837,6 +1105,90 @@ func (g *Graph) reloadShutdown(ctx context.Context, state *reloadState, host *Ho
 
 // reloadUpdateGraph removes old nodes, creates new nodes, and wires edges.
 func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
+	// Remove all nodes from pipelines being removed.
+	for pipelineID := range state.pipelinesToRemove {
+		pipe := g.pipelines[pipelineID]
+
+		// Remove receiver nodes (only receiverNodes, not connectorNodes).
+		for nodeID, node := range pipe.receivers {
+			if rn, ok := node.(*receiverNode); ok {
+				// Only remove the node if it's not used by other pipelines.
+				// Check if any other pipeline uses this receiver.
+				usedElsewhere := false
+				for otherPipelineID, otherPipe := range g.pipelines {
+					if otherPipelineID == pipelineID || state.pipelinesToRemove[otherPipelineID] {
+						continue
+					}
+					if _, exists := otherPipe.receivers[nodeID]; exists {
+						usedElsewhere = true
+						break
+					}
+				}
+				if !usedElsewhere {
+					g.componentGraph.RemoveNode(nodeID)
+					delete(g.instanceIDs, nodeID)
+				} else {
+					// Update the instanceID to remove this pipeline from the list.
+					instanceID := g.instanceIDs[nodeID]
+					newPipelines := make([]pipeline.ID, 0)
+					instanceID.AllPipelineIDs(func(pid pipeline.ID) bool {
+						if pid != pipelineID {
+							newPipelines = append(newPipelines, pid)
+						}
+						return true
+					})
+					g.instanceIDs[nodeID] = componentstatus.NewInstanceID(rn.componentID, component.KindReceiver, newPipelines...)
+				}
+			}
+		}
+
+		// Remove processor nodes.
+		for _, node := range pipe.processors {
+			pn := node.(*processorNode)
+			g.componentGraph.RemoveNode(pn.ID())
+			delete(g.instanceIDs, pn.ID())
+		}
+
+		// Remove exporter nodes (only exporterNodes, not connectorNodes).
+		for nodeID, node := range pipe.exporters {
+			if en, ok := node.(*exporterNode); ok {
+				// Only remove the node if it's not used by other pipelines.
+				usedElsewhere := false
+				for otherPipelineID, otherPipe := range g.pipelines {
+					if otherPipelineID == pipelineID || state.pipelinesToRemove[otherPipelineID] {
+						continue
+					}
+					if _, exists := otherPipe.exporters[nodeID]; exists {
+						usedElsewhere = true
+						break
+					}
+				}
+				if !usedElsewhere {
+					g.componentGraph.RemoveNode(nodeID)
+					delete(g.instanceIDs, nodeID)
+				} else {
+					// Update the instanceID to remove this pipeline from the list.
+					instanceID := g.instanceIDs[nodeID]
+					newPipelines := make([]pipeline.ID, 0)
+					instanceID.AllPipelineIDs(func(pid pipeline.ID) bool {
+						if pid != pipelineID {
+							newPipelines = append(newPipelines, pid)
+						}
+						return true
+					})
+					g.instanceIDs[nodeID] = componentstatus.NewInstanceID(en.componentID, component.KindExporter, newPipelines...)
+				}
+			}
+		}
+
+		// Remove capabilities and fanout nodes.
+		g.componentGraph.RemoveNode(pipe.capabilitiesNode.ID())
+		g.componentGraph.RemoveNode(pipe.fanOutNode.ID())
+
+		// Remove the pipeline entry.
+		delete(g.pipelines, pipelineID)
+	}
+
 	// Remove receivers being removed or rebuilt.
 	for nodeID := range state.receiversToRemove {
 		g.componentGraph.RemoveNode(nodeID)
@@ -846,7 +1198,10 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 		g.componentGraph.RemoveNode(nodeID)
 		delete(g.instanceIDs, nodeID)
 	}
-	for _, pipe := range g.pipelines {
+	for pipelineID, pipe := range g.pipelines {
+		if state.pipelinesToRemove[pipelineID] {
+			continue // Already removed.
+		}
 		for nodeID, node := range pipe.receivers {
 			if _, ok := node.(*receiverNode); !ok {
 				continue
@@ -861,7 +1216,7 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 	}
 
 	// Remove processors in affected pipelines.
-	for pipelineID := range state.affectedPipelines {
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		for _, node := range pipe.processors {
 			pn := node.(*processorNode)
@@ -871,8 +1226,183 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 		pipe.processors = nil
 	}
 
-	// Create new processor nodes.
-	for pipelineID := range state.affectedPipelines {
+	// Remove connector nodes being removed.
+	for nodeID, cn := range state.connectorsToRemove {
+		g.componentGraph.RemoveNode(nodeID)
+		delete(g.instanceIDs, nodeID)
+		// Remove from pipeline exporter/receiver maps.
+		for _, pipe := range g.pipelines {
+			if _, exists := pipe.exporters[nodeID]; exists {
+				delete(pipe.exporters, nodeID)
+			}
+			if _, exists := pipe.receivers[nodeID]; exists {
+				delete(pipe.receivers, nodeID)
+			}
+		}
+		_ = cn // used for shutdown, node removal done above
+	}
+
+	// Create new exporter nodes for existing pipelines with changed exporter lists.
+	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		if state.pipelinesToAdd[pipelineID] || state.pipelinesToRemove[pipelineID] {
+			continue
+		}
+		if !state.pipelinesNeedingFanOutRebuild[pipelineID] {
+			continue
+		}
+		pipe := g.pipelines[pipelineID]
+		for _, exprID := range pipelineCfg.Exporters {
+			if set.ConnectorBuilder.IsConfigured(exprID) {
+				continue // Connectors handled separately.
+			}
+			expNode := newExporterNode(pipelineID.Signal(), exprID)
+			nodeID := expNode.ID()
+			if state.exportersToAdd[nodeID] {
+				// Create the new exporter node.
+				created := g.createExporter(pipelineID, exprID)
+				pipe.exporters[created.ID()] = created
+			}
+		}
+	}
+
+	// Create new connector nodes (for existing pipelines).
+	for nodeID := range state.connectorsToAdd {
+		// Find which connector this node represents by checking configs.
+		for pipelineID, pipelineCfg := range set.PipelineConfigs {
+			if state.pipelinesToAdd[pipelineID] || state.pipelinesToRemove[pipelineID] {
+				continue
+			}
+			for _, exprID := range pipelineCfg.Exporters {
+				if !set.ConnectorBuilder.IsConfigured(exprID) {
+					continue
+				}
+				// Check all receiver pipelines for this connector.
+				for recvPipelineID, recvPipelineCfg := range set.PipelineConfigs {
+					if state.pipelinesToAdd[recvPipelineID] || state.pipelinesToRemove[recvPipelineID] {
+						continue
+					}
+					for _, recvID := range recvPipelineCfg.Receivers {
+						if recvID != exprID {
+							continue
+						}
+						connNode := newConnectorNode(pipelineID.Signal(), recvPipelineID.Signal(), exprID)
+						if connNode.ID() == nodeID {
+							// Create the connector node.
+							created := g.createConnector(pipelineID, recvPipelineID, exprID)
+							g.pipelines[pipelineID].exporters[created.ID()] = created
+							g.pipelines[recvPipelineID].receivers[created.ID()] = created
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Create new pipelineNodes entries for added pipelines.
+	for pipelineID := range state.pipelinesToAdd {
+		g.pipelines[pipelineID] = &pipelineNodes{
+			receivers: make(map[int64]graph.Node),
+			exporters: make(map[int64]graph.Node),
+		}
+	}
+
+	// Create nodes for added pipelines (receivers are handled separately below).
+	for pipelineID := range state.pipelinesToAdd {
+		pipe := g.pipelines[pipelineID]
+		pipelineCfg := set.PipelineConfigs[pipelineID]
+
+		// Create capabilities node.
+		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
+		g.componentGraph.AddNode(pipe.capabilitiesNode)
+
+		// Create processor nodes.
+		for _, procID := range pipelineCfg.Processors {
+			procNode := g.createProcessor(pipelineID, procID)
+			pipe.processors = append(pipe.processors, procNode)
+		}
+
+		// Create fanout node.
+		pipe.fanOutNode = newFanOutNode(pipelineID)
+		g.componentGraph.AddNode(pipe.fanOutNode)
+
+		// Create exporter nodes (skip connectors, they're handled separately).
+		for _, exprID := range pipelineCfg.Exporters {
+			if set.ConnectorBuilder.IsConfigured(exprID) {
+				continue // Connectors are handled in the connector creation section.
+			}
+			expNode := g.createExporter(pipelineID, exprID)
+			pipe.exporters[expNode.ID()] = expNode
+			state.exportersToAdd[expNode.ID()] = true
+		}
+
+		// Mark this pipeline as affected so it gets wired and built.
+		state.pipelinesAffected[pipelineID] = true
+	}
+
+	// Create connector nodes for added pipelines.
+	// This handles connectors that connect new pipelines with existing or other new pipelines.
+	for pipelineID := range state.pipelinesToAdd {
+		pipe := g.pipelines[pipelineID]
+		pipelineCfg := set.PipelineConfigs[pipelineID]
+
+		// Handle connectors as exporters (this pipeline sends to connector).
+		for _, exprID := range pipelineCfg.Exporters {
+			if !set.ConnectorBuilder.IsConfigured(exprID) {
+				continue
+			}
+			// Find receiver pipelines for this connector.
+			for recvPipelineID, recvPipelineCfg := range set.PipelineConfigs {
+				if state.pipelinesToRemove[recvPipelineID] {
+					continue
+				}
+				for _, recvID := range recvPipelineCfg.Receivers {
+					if recvID != exprID {
+						continue
+					}
+					// Create connector node.
+					connNode := g.createConnector(pipelineID, recvPipelineID, exprID)
+					pipe.exporters[connNode.ID()] = connNode
+					g.pipelines[recvPipelineID].receivers[connNode.ID()] = connNode
+					state.connectorsToAdd[connNode.ID()] = true
+				}
+			}
+		}
+
+		// Handle connectors as receivers (this pipeline receives from connector).
+		for _, recvID := range pipelineCfg.Receivers {
+			if !set.ConnectorBuilder.IsConfigured(recvID) {
+				continue
+			}
+			// Find exporter pipelines for this connector.
+			for expPipelineID, expPipelineCfg := range set.PipelineConfigs {
+				if state.pipelinesToRemove[expPipelineID] {
+					continue
+				}
+				if state.pipelinesToAdd[expPipelineID] {
+					continue // Already handled in the exporter loop above for this new pipeline.
+				}
+				for _, exprID := range expPipelineCfg.Exporters {
+					if exprID != recvID {
+						continue
+					}
+					// Create connector node.
+					connNode := g.createConnector(expPipelineID, pipelineID, recvID)
+					g.pipelines[expPipelineID].exporters[connNode.ID()] = connNode
+					pipe.receivers[connNode.ID()] = connNode
+					state.connectorsToAdd[connNode.ID()] = true
+					// Mark exporter-side pipeline as needing fanOut rebuild.
+					state.pipelinesNeedingFanOutRebuild[expPipelineID] = true
+					state.pipelinesAffected[expPipelineID] = true
+				}
+			}
+		}
+	}
+
+	// Create new processor nodes for existing affected pipelines.
+	for pipelineID := range state.pipelinesAffected {
+		if state.pipelinesToAdd[pipelineID] {
+			continue // Already created above.
+		}
 		pipe := g.pipelines[pipelineID]
 		pipelineCfg := set.PipelineConfigs[pipelineID]
 		for _, procID := range pipelineCfg.Processors {
@@ -881,8 +1411,11 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 		}
 	}
 
-	// Create new receiver nodes.
+	// Create new receiver nodes for all pipelines (including new pipelines).
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		if state.pipelinesToRemove[pipelineID] {
+			continue
+		}
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.ConnectorBuilder.IsConfigured(recvID) {
@@ -897,8 +1430,8 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 		}
 	}
 
-	// Wire edges for affected pipelines.
-	for pipelineID := range state.affectedPipelines {
+	// Wire edges for affected pipelines (including new pipelines).
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		var from graph.Node = pipe.capabilitiesNode
 		for _, proc := range pipe.processors {
@@ -906,20 +1439,59 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 			from = proc
 		}
 		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, pipe.fanOutNode))
+
+		// For new pipelines, wire edges to all exporters.
+		// For existing pipelines with fanOut rebuild, wire edges to new exporters/connectors.
+		if state.pipelinesToAdd[pipelineID] {
+			for _, exporter := range pipe.exporters {
+				g.componentGraph.SetEdge(g.componentGraph.NewEdge(pipe.fanOutNode, exporter))
+			}
+		} else if state.pipelinesNeedingFanOutRebuild[pipelineID] {
+			for nodeID, exporter := range pipe.exporters {
+				if state.exportersToAdd[nodeID] || state.connectorsToAdd[nodeID] {
+					g.componentGraph.SetEdge(g.componentGraph.NewEdge(pipe.fanOutNode, exporter))
+				}
+			}
+		}
+	}
+
+	// Wire edges for new connectors to their receiver-side capabilitiesNodes.
+	for nodeID := range state.connectorsToAdd {
+		node := g.componentGraph.Node(nodeID)
+		if node == nil {
+			continue
+		}
+		// Find all receiver pipelines that have this connector.
+		for pipelineID, pipe := range g.pipelines {
+			if state.pipelinesToRemove[pipelineID] {
+				continue
+			}
+			if _, exists := pipe.receivers[nodeID]; exists {
+				g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
+			}
+		}
 	}
 
 	// Wire edges for new/rebuilt receivers.
-	for _, pipe := range g.pipelines {
-		for _, node := range pipe.receivers {
-			rn, ok := node.(*receiverNode)
-			if !ok {
-				continue
+	for pipelineID, pipe := range g.pipelines {
+		if state.pipelinesToAdd[pipelineID] {
+			// For new pipelines, wire all receivers.
+			for _, node := range pipe.receivers {
+				g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
 			}
-			nodeID := rn.ID()
-			if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
-				continue
+		} else {
+			// For existing pipelines, only wire new/rebuilt receivers.
+			for _, node := range pipe.receivers {
+				rn, ok := node.(*receiverNode)
+				if !ok {
+					continue
+				}
+				nodeID := rn.ID()
+				if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
+					continue
+				}
+				g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
 			}
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
 		}
 	}
 }
@@ -927,15 +1499,67 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 // reloadBuild builds all components that need to be built.
 // It uses the builders from set which were updated before this phase.
 func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadState) error {
-	// Build exporters.
-	for _, en := range state.exporterNodesToRebuild {
+	// Build exporters being rebuilt.
+	for nodeID, en := range state.exportersToRebuild {
+		state.builtExporter[nodeID] = true
 		if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
 			return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
 		}
 	}
 
-	// Build connectors.
-	for nodeID, cn := range state.connectorNodesToRebuild {
+	// Build new exporters (added to existing pipelines or new pipelines).
+	for nodeID := range state.exportersToAdd {
+		if state.builtExporter[nodeID] {
+			continue
+		}
+		state.builtExporter[nodeID] = true
+		node := g.componentGraph.Node(nodeID)
+		if node == nil {
+			continue
+		}
+		en := node.(*exporterNode)
+		if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
+			return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
+		}
+	}
+
+	// Build exporters for new pipelines (that weren't already built above).
+	for pipelineID := range state.pipelinesToAdd {
+		pipe := g.pipelines[pipelineID]
+		for nodeID, node := range pipe.exporters {
+			en, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
+			if state.builtExporter[nodeID] {
+				continue
+			}
+			state.builtExporter[nodeID] = true
+			if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
+				return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
+			}
+		}
+	}
+
+	// Build connectors being rebuilt.
+	for nodeID, cn := range state.connectorsToRebuild {
+		state.builtConnector[nodeID] = true
+		if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
+			return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
+		}
+	}
+
+	// Build new connectors.
+	for nodeID := range state.connectorsToAdd {
+		if state.builtConnector[nodeID] {
+			continue
+		}
+		state.builtConnector[nodeID] = true
+		node := g.componentGraph.Node(nodeID)
+		if node == nil {
+			continue
+		}
+		cn := node.(*connectorNode)
 		if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
 			return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
 		}
@@ -947,8 +1571,14 @@ func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadStat
 		g.rebuildFanOutNode(pipe.fanOutNode)
 	}
 
+	// Build fanOutNode for new pipelines.
+	for pipelineID := range state.pipelinesToAdd {
+		pipe := g.pipelines[pipelineID]
+		g.rebuildFanOutNode(pipe.fanOutNode)
+	}
+
 	// Build processors (reverse order).
-	for pipelineID := range state.affectedPipelines {
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		for i := len(pipe.processors) - 1; i >= 0; i-- {
 			pn := pipe.processors[i].(*processorNode)
@@ -959,8 +1589,8 @@ func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadStat
 		}
 	}
 
-	// Rebuild capabilitiesNode for affected pipelines.
-	for pipelineID := range state.affectedPipelines {
+	// Rebuild capabilitiesNode for affected pipelines (including new pipelines).
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		g.rebuildCapabilitiesNode(pipe)
 	}
@@ -976,10 +1606,10 @@ func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadStat
 			if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
 				continue
 			}
-			if state.builtReceivers[nodeID] {
+			if state.builtReceiver[nodeID] {
 				continue
 			}
-			state.builtReceivers[nodeID] = true
+			state.builtReceiver[nodeID] = true
 			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
 				return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
 			}
@@ -1051,8 +1681,12 @@ func (g *Graph) rebuildCapabilitiesNode(pipe *pipelineNodes) {
 
 // reloadStart starts all components that were built or need restarting.
 func (g *Graph) reloadStart(ctx context.Context, state *reloadState, host *Host) error {
-	// Start exporters.
-	for nodeID, en := range state.exporterNodesToRebuild {
+	// Track which exporters we've already started.
+	startedExporters := make(map[int64]bool)
+
+	// Start exporters being rebuilt.
+	for nodeID, en := range state.exportersToRebuild {
+		startedExporters[nodeID] = true
 		instanceID := g.instanceIDs[nodeID]
 		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStarting))
 		if compErr := en.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
@@ -1065,8 +1699,32 @@ func (g *Graph) reloadStart(ctx context.Context, state *reloadState, host *Host)
 		host.Reporter.ReportOKIfStarting(instanceID)
 	}
 
-	// Start connectors.
-	for nodeID, cn := range state.connectorNodesToRebuild {
+	// Start exporters for new pipelines.
+	for nodeID := range state.builtExporter {
+		if startedExporters[nodeID] {
+			continue
+		}
+		startedExporters[nodeID] = true
+		en := g.componentGraph.Node(nodeID).(*exporterNode)
+		instanceID := g.instanceIDs[nodeID]
+		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStarting))
+		if compErr := en.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+			host.Reporter.ReportStatus(instanceID, componentstatus.NewPermanentErrorEvent(compErr))
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start exporter during partial reload",
+					zap.Error(compErr), zap.String("id", instanceID.ComponentID().String()))
+			return fmt.Errorf("failed to start exporter %q: %w", en.componentID, compErr)
+		}
+		host.Reporter.ReportOKIfStarting(instanceID)
+	}
+
+	// Start connectors (both rebuilt and newly added).
+	for nodeID := range state.builtConnector {
+		node := g.componentGraph.Node(nodeID)
+		if node == nil {
+			continue
+		}
+		cn := node.(*connectorNode)
 		instanceID := g.instanceIDs[nodeID]
 		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStarting))
 		if compErr := cn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
@@ -1080,7 +1738,7 @@ func (g *Graph) reloadStart(ctx context.Context, state *reloadState, host *Host)
 	}
 
 	// Start processors (reverse order).
-	for pipelineID := range state.affectedPipelines {
+	for pipelineID := range state.pipelinesAffected {
 		pipe := g.pipelines[pipelineID]
 		for i := len(pipe.processors) - 1; i >= 0; i-- {
 			pn := pipe.processors[i].(*processorNode)
@@ -1098,7 +1756,7 @@ func (g *Graph) reloadStart(ctx context.Context, state *reloadState, host *Host)
 	}
 
 	// Start new/rebuilt receivers.
-	for nodeID := range state.builtReceivers {
+	for nodeID := range state.builtReceiver {
 		rn := g.componentGraph.Node(nodeID).(*receiverNode)
 		instanceID := g.instanceIDs[nodeID]
 		host.Reporter.ReportStatus(instanceID, componentstatus.NewEvent(componentstatus.StatusStarting))

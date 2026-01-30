@@ -60,8 +60,12 @@ When the `service.partialReload` feature gate is enabled (`--feature-gates=servi
 | Processor config | No | Processors + receivers in affected pipelines |
 | Exporter config | No | Exporters + processors + receivers in affected pipelines |
 | Connector config | No | Connectors + processors + receivers in affected pipelines |
+| Add pipeline | No | New pipeline components + affected existing pipelines |
+| Remove pipeline | No | Removed pipeline components shut down |
+| Add/remove exporters in pipeline | No | Exporter-side pipeline rebuilt |
+| Add connector between pipelines | No | Exporter-side pipeline rebuilt, connector created |
+| Remove connector from pipelines | No | Affected pipelines rebuilt |
 | Extension config | Yes | Everything |
-| Pipeline structure (add/remove pipeline, change exporter list, change connector-as-receiver) | Yes | Everything |
 | Telemetry config | Yes | Everything |
 
 ##### Pipeline Structure and Consumer References

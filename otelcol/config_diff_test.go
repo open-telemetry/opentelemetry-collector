@@ -178,7 +178,8 @@ func TestCategorizeConfigChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        ConfigChangeFullReload,
+			// Pipeline without connectors can be added via partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name: "pipeline_removed",
@@ -193,7 +194,65 @@ func TestCategorizeConfigChange(t *testing.T) {
 			}(),
 			newCfg:      baseConfig(),
 			isConnector: neverConnector,
-			want:        ConfigChangeFullReload,
+			// Pipeline without connectors can be removed via partial reload.
+			want: ConfigChangePartialReload,
+		},
+		{
+			name:   "pipeline_added_with_connector_as_receiver",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Connectors = map[component.ID]component.Config{
+					connectorID: struct{}{},
+				}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{connectorID}, // connector as receiver
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			isConnector: isForwardConnector,
+			// Pipeline with connector can now be handled by partial reload.
+			want: ConfigChangePartialReload,
+		},
+		{
+			name:   "pipeline_added_with_connector_as_exporter",
+			oldCfg: baseConfig(),
+			newCfg: func() *Config {
+				c := baseConfig()
+				c.Connectors = map[component.ID]component.Config{
+					connectorID: struct{}{},
+				}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("otlp")},
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{connectorID}, // connector as exporter
+				}
+				return c
+			}(),
+			isConnector: isForwardConnector,
+			// Pipeline with connector can now be handled by partial reload.
+			want: ConfigChangePartialReload,
+		},
+		{
+			name: "pipeline_removed_with_connector",
+			oldCfg: func() *Config {
+				c := baseConfig()
+				c.Connectors = map[component.ID]component.Config{
+					connectorID: struct{}{},
+				}
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+					Receivers:  []component.ID{connectorID}, // connector as receiver
+					Processors: []component.ID{component.MustNewID("batch")},
+					Exporters:  []component.ID{component.MustNewID("otlp")},
+				}
+				return c
+			}(),
+			newCfg:      baseConfig(),
+			isConnector: isForwardConnector,
+			// Pipeline with connector can now be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name:   "exporter_config_map_changed",
@@ -208,7 +267,8 @@ func TestCategorizeConfigChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        ConfigChangeFullReload,
+			// Adding exporter to config and pipeline can be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name: "pipeline_exporters_list_changed",
@@ -227,7 +287,8 @@ func TestCategorizeConfigChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        ConfigChangeFullReload,
+			// Changing pipeline exporter list can be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name: "connector_config_changed",
@@ -270,7 +331,8 @@ func TestCategorizeConfigChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: isForwardConnector,
-			want:        ConfigChangeFullReload,
+			// Adding connector as receiver can be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name: "extension_config_changed",
@@ -348,7 +410,8 @@ func TestCategorizeConfigChange(t *testing.T) {
 				return c
 			}(),
 			isConnector: neverConnector,
-			want:        ConfigChangeFullReload,
+			// Removing metrics and adding logs pipelines (both without connectors) can be handled by partial reload.
+			want: ConfigChangePartialReload,
 		},
 		{
 			name:   "receiver_and_processor_both_changed",

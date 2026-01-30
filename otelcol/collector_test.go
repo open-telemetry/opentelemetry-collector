@@ -156,7 +156,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
-func TestCollectorPartialReload(t *testing.T) {
+func TestCollectorPartialReloadNoChange(t *testing.T) {
 	// Enable the partial reload feature gate for this test.
 	require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), true))
 	defer func() {
@@ -187,7 +187,7 @@ func TestCollectorPartialReload(t *testing.T) {
 		Factories: func() (Factories, error) { return factories, nil },
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+				URIs: []string{filepath.Join("testdata", "otelcol-partial-reload.yaml")},
 				ProviderFactories: []confmap.ProviderFactory{
 					fileProvider,
 				},
@@ -230,6 +230,87 @@ func TestCollectorPartialReload(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorPartialReload(t *testing.T) {
+	// Enable the partial reload feature gate for this test.
+	require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), false))
+	}()
+
+	// Set up an observer logger to detect log messages.
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	// Use a counter to return different configs on subsequent calls.
+	// First call returns the base config, second call returns config with extra receiver.
+	callCount := 0
+	var watcher confmap.WatcherFunc
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		callCount++
+		if callCount == 1 {
+			return confmap.NewRetrieved(newConfFromFile(t, filepath.Join("testdata", "otelcol-partial-reload.yaml")))
+		}
+		// Second call: return config with an extra receiver added to traces pipeline.
+		return confmap.NewRetrieved(newConfFromFile(t, filepath.Join("testdata", "otelcol-partial-reload-extra-receiver.yaml")))
+	})
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Custom telemetry factory that uses an observer logger so we can
+	// verify which reload path was taken.
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", "otelcol-partial-reload.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileProvider,
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Trigger a config change. The new config has an extra receiver,
+	// which should trigger a partial reload.
+	watcher(&confmap.ChangeEvent{})
+
+	// Wait for the partial reload success log message.
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Partial reload completed successfully" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// Verify the collector stayed in StateRunning (a full reload
+	// would transition through StateClosing).
+	assert.Equal(t, StateRunning, col.GetState())
+
+	// Verify no full restart log message was emitted.
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 func TestCollectorPartialReloadFallbackToFull(t *testing.T) {
 	// Enable the partial reload feature gate for this test.
 	require.NoError(t, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), true))
@@ -249,7 +330,7 @@ func TestCollectorPartialReloadFallbackToFull(t *testing.T) {
 			return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
 		}
 		// Return a config with a new pipeline added (requires full reload).
-		return confmap.NewRetrieved(newConfFromFile(t, filepath.Join("testdata", "otelcol-nop-extra-pipeline.yaml")))
+		return confmap.NewRetrieved(newConfFromFile(t, filepath.Join("testdata", "otelcol-partial-reload-extra-pipeline.yaml")))
 	})
 
 	factories, err := nopFactories()
@@ -266,7 +347,7 @@ func TestCollectorPartialReloadFallbackToFull(t *testing.T) {
 		Factories: func() (Factories, error) { return factories, nil },
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+				URIs: []string{filepath.Join("testdata", "otelcol-partial-reload.yaml")},
 				ProviderFactories: []confmap.ProviderFactory{
 					fileProvider,
 				},
