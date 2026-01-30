@@ -5,7 +5,6 @@
 ### {{ $metricName }}
 
 {{ $metric.Description }}
-
 {{- if $metric.ExtendedDocumentation }}
 
 {{ $metric.ExtendedDocumentation }}
@@ -17,8 +16,12 @@
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
-{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }}{{ if $metric.Deprecated }} since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
 {{- if $metric.SemanticConvention }} [{{ $metricName }}]({{ $metric.SemanticConvention.SemanticConventionRef }}) |{{ end }}
+{{- if $metric.Deprecated }}{{ if $metric.Deprecated.Note }}
+
+**Deprecation note**: {{ $metric.Deprecated.Note }}
+{{- end }}{{ end }}
 
 {{- if $metric.Attributes }}
 
@@ -73,6 +76,13 @@
 ### {{ if $metric.Prefix -}}{{ $metric.Prefix }}{{- else -}}otelcol_{{- end -}}{{ $metricName }}
 
 {{ $metric.Description }}{{ $metric.Stability }}
+{{- if $metric.Deprecated }}
+
+> **Deprecated since {{ $metric.Deprecated.Since}}**
+{{- if $metric.Deprecated.Note }}
+> {{ $metric.Deprecated.Note }}
+{{- end }}
+{{- end }}
 
 {{- if $metric.ExtendedDocumentation }}
 
@@ -84,8 +94,12 @@
 | ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability.Level }} --------- |{{ end }}{{ if $metric.SemanticConvention }} ------------------- |{{ end }}
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
-{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }} |{{ end }}
+{{- if $metric.Stability.Level }} {{ $metric.Stability.Level }}{{ if $metric.Deprecated }} since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
 {{- if $metric.SemanticConvention }} [{{ $metricName }}]({{ $metric.SemanticConvention.SemanticConventionRef }}) |{{ end }}
+{{- if $metric.Deprecated }}{{ if $metric.Deprecated.Note }}
+
+**Deprecation note**: {{ $metric.Deprecated.Note }}
+{{- end }}{{ end }}
 
 {{- if $metric.Attributes }}
 
