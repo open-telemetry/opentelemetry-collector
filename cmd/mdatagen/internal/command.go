@@ -305,6 +305,20 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return false
 				},
+				// Derive "<class>/<subpath>" from scope_name; fallback to "<class>/<short>"
+				"deriveLabelFromScope": func(scope, class, short string) string {
+					if scope != "" && class != "" {
+						marker := "/" + class + "/"
+						if idx := strings.Index(scope, marker); idx >= 0 {
+							return scope[idx+1:] // drop leading '/'
+						}
+					}
+					return class + "/" + short
+				},
+				// URL-encode '/' as '%2F' for query params
+				"urlEncodeLabel": func(label string) string {
+					return strings.ReplaceAll(label, "/", "%2F")
+				},
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
 				"userLinks": func(elems []string) []string {
