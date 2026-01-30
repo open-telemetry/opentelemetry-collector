@@ -111,9 +111,10 @@ func TestNewDefaultServerConfig(t *testing.T) {
 }
 
 var (
-	testAuthID    = component.MustNewID("testauth")
-	mockID        = component.MustNewID("mock")
-	doesntExistID = component.MustNewID("doesntexist")
+	testAuthID         = component.MustNewID("testauth")
+	testConfigOptionID = component.MustNewID("test_config_option")
+	mockID             = component.MustNewID("mock")
+	doesntExistID      = component.MustNewID("doesntexist")
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -129,6 +130,62 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	 * - WithStatsHandler (always, for self-telemetry)
 	 */
 	assert.Len(t, opts, 2)
+}
+
+type clientOptionExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	opt ToClientConnOption
+	err error
+}
+
+func (e clientOptionExtension) GetToClientConnOption(context.Context) (ToClientConnOption, error) {
+	return e.opt, e.err
+}
+
+func TestGrpcClientAdditionalOptionError(t *testing.T) {
+	cc := &ClientConfig{
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		Options: []ClientOptionExtensionConfig{{ID: testConfigOptionID}},
+	}
+	myErr := errors.New("some error")
+	_, err := cc.getGrpcDialOptions(
+		context.Background(),
+		map[component.ID]component.Component{
+			testConfigOptionID: clientOptionExtension{err: myErr},
+		},
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.ErrorIs(t, err, myErr)
+}
+
+func TestGrpcClientAdditionalOption(t *testing.T) {
+	cc := &ClientConfig{
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		Options: []ClientOptionExtensionConfig{{ID: testConfigOptionID}},
+	}
+	extraOpt := grpc.WithUserAgent("test-agent")
+	opts, err := cc.getGrpcDialOptions(
+		context.Background(),
+		map[component.ID]component.Component{
+			testConfigOptionID: clientOptionExtension{opt: WithGrpcDialOption(extraOpt)},
+		},
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.NoError(t, err)
+	/* Expecting 3 DialOptions:
+	 * - WithTransportCredentials (TLS)
+	 * - WithStatsHandler (always, for self-telemetry)
+	 * - extraOpt
+	 */
+	require.Len(t, opts, 3)
+	assert.Equal(t, opts[2], extraOpt)
 }
 
 func TestGrpcClientExtraOption(t *testing.T) {
@@ -319,6 +376,57 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
+}
+
+type serverOptionExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	opt ToServerOption
+	err error
+}
+
+func (e serverOptionExtension) GetToServerOption(context.Context) (ToServerOption, error) {
+	return e.opt, e.err
+}
+
+func TestGrpcServerAdditionalOptionError(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+		Options: []ServerOptionExtensionConfig{{ID: testConfigOptionID}},
+	}
+	myErr := errors.New("some error")
+	_, err := gss.getGrpcServerOptions(
+		context.Background(),
+		map[component.ID]component.Component{
+			testConfigOptionID: serverOptionExtension{err: myErr},
+		},
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.ErrorIs(t, err, myErr)
+}
+
+func TestGrpcServerAdditionalOption(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+		Options: []ServerOptionExtensionConfig{{ID: testConfigOptionID}},
+	}
+	extraOpt := grpc.ConnectionTimeout(1_000_000_000)
+	opts, err := gss.getGrpcServerOptions(
+		context.Background(),
+		map[component.ID]component.Component{
+			testConfigOptionID: serverOptionExtension{opt: WithGrpcServerOption(extraOpt)},
+		},
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.NoError(t, err)
+	require.Len(t, opts, 4)
+	assert.Equal(t, opts[3], extraOpt)
 }
 
 func TestGrpcServerExtraOption(t *testing.T) {
