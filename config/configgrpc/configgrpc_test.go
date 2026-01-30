@@ -131,6 +131,30 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	assert.Len(t, opts, 2)
 }
 
+func TestGrpcClientAdditionalOption(t *testing.T) {
+	cc := &ClientConfig{
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	extraOpt := grpc.WithUserAgent("test-agent")
+	cc.AddToClientConnOption(WithGrpcDialOption(extraOpt))
+	opts, err := cc.getGrpcDialOptions(
+		context.Background(),
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.NoError(t, err)
+	/* Expecting 3 DialOptions:
+	 * - WithTransportCredentials (TLS)
+	 * - WithStatsHandler (always, for self-telemetry)
+	 * - extraOpt
+	 */
+	assert.Len(t, opts, 3)
+	assert.Equal(t, opts[2], extraOpt)
+}
+
 func TestGrpcClientExtraOption(t *testing.T) {
 	cc := &ClientConfig{
 		TLS: configtls.ClientConfig{
@@ -319,6 +343,25 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
+}
+
+func TestGrpcServerAdditionalOption(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
+	extraOpt := grpc.ConnectionTimeout(1_000_000_000)
+	gss.AddToServerOption(WithGrpcServerOption(extraOpt))
+	opts, err := gss.getGrpcServerOptions(
+		context.Background(),
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+	)
+	require.NoError(t, err)
+	assert.Len(t, opts, 4)
+	assert.Equal(t, opts[3], extraOpt)
 }
 
 func TestGrpcServerExtraOption(t *testing.T) {

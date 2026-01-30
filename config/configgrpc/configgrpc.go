@@ -113,6 +113,11 @@ type ClientConfig struct {
 
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	additionalOpts []ToClientConnOption `mapstructure:"-"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -209,6 +214,8 @@ type ServerConfig struct {
 	// Middlewares for the gRPC server.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	additionalOpts []ToServerOption `mapstructure:"-"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -291,6 +298,13 @@ func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
 	return grpcDialOptionWrapper{opt: opt}
 }
 func (grpcDialOptionWrapper) isToClientConnOption() {}
+
+// AddToClientConnOption adds additional [ToClientConnOption] that will be used when calling [ClientConfig.ToClientConn].
+// The purpose of this API is to allow customers to wrap components and add additional options
+// without having to copy the component code.
+func (cc *ClientConfig) AddToClientConnOption(opt ToClientConnOption) {
+	cc.additionalOpts = append(cc.additionalOpts, opt)
+}
 
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
@@ -435,6 +449,12 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, middlewareOptions...)
 	}
 
+	for _, opt := range cc.additionalOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
+
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
@@ -474,6 +494,13 @@ func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 	return grpcServerOptionWrapper{opt: opt}
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
+
+// AddToServerOption adds additional [ToServerOption] that will be used when calling [ServerConfig.ToServer].
+// The purpose of this API is to allow customers to wrap components and add additional options
+// without having to copy the component code.
+func (sc *ServerConfig) AddToServerOption(opt ToServerOption) {
+	sc.additionalOpts = append(sc.additionalOpts, opt)
+}
 
 // ToServer returns a [grpc.Server] for the configuration.
 //
@@ -587,6 +614,12 @@ func (sc *ServerConfig) getGrpcServerOptions(
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}
 		opts = append(opts, middlewareOptions...)
+	}
+
+	for _, opt := range sc.additionalOpts {
+		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
 	}
 
 	for _, opt := range extraOpts {
