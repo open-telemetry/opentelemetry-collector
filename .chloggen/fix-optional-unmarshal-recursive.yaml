@@ -16,10 +16,11 @@ issues: [14500]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This bug notably manifested in the fact that `sending_queue::batch::sizer` stopped defaulting to `sending_queue::sizer`,
-  which sometimes caused the wrong units to be used when configuring `sending_queue::batch::min_size` and `max_size`.
+  This bug notably manifested in the fact that the `sending_queue::batch::sizer` config for exporters
+  stopped defaulting to `sending_queue::sizer`, which sometimes caused the wrong units to be used
+  when configuring `sending_queue::batch::min_size` and `max_size`.
   
-  As part of the fix, `confmap` exposes a new `confmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
+  As part of the fix, `xconfmap` exposes a new `xconfmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
   of wrapper types like `configoptional.Optional` to make sure the `Unmarshal` method of the inner type is called.
   
   The default behavior remains that calling `conf.Unmarshal` on the `confmap.Conf` passed as argument to an `Unmarshal`
