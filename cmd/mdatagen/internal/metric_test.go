@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -37,4 +39,71 @@ func TestMetricData(t *testing.T) {
 		assert.Equal(t, arg.wantInstrument, arg.metricData.Instrument())
 		assert.Equal(t, arg.wantAsync, arg.metricData.IsAsync())
 	}
+}
+
+func TestMetricValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		metric  *Metric
+		wantErr string
+	}{
+		{
+			name: "missing metric type",
+			metric: &Metric{
+				Signal: Signal{
+					Stability:   Stability{Level: component.StabilityLevelBeta},
+					Description: "test",
+				},
+				Unit: ptr("1"),
+			},
+			wantErr: "missing metric type key",
+		},
+		{
+			name: "multiple metric types",
+			metric: &Metric{
+				Signal: Signal{
+					Stability:   Stability{Level: component.StabilityLevelBeta},
+					Description: "test",
+				},
+				Unit: ptr("1"),
+				Sum: &Sum{
+					MetricValueType: MetricValueType{ValueType: pmetric.NumberDataPointValueTypeInt},
+				},
+				Gauge: &Gauge{
+					MetricValueType: MetricValueType{ValueType: pmetric.NumberDataPointValueTypeInt},
+				},
+			},
+			wantErr: "more than one metric type keys",
+		},
+		{
+			name: "valid metric",
+			metric: &Metric{
+				Signal: Signal{
+					Stability:   Stability{Level: component.StabilityLevelBeta},
+					Description: "test",
+				},
+				Unit: ptr("1"),
+				Sum: &Sum{
+					MetricValueType: MetricValueType{ValueType: pmetric.NumberDataPointValueTypeInt},
+				},
+			},
+			wantErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.metric.validate("test.metric", "1.0.0")
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
