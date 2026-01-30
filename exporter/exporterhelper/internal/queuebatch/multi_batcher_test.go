@@ -116,3 +116,42 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 }
+
+func TestMultiBatcher_ConsumeAfterShutdown(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	}
+	sink := requesttest.NewSink()
+
+	type partitionKey struct{}
+
+	ba := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
+			return ctx.Value(partitionKey{}).(string)
+		}),
+		nil,
+		sink.Export,
+		zap.NewNop(),
+	)
+
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Shutdown the batcher.
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Try to consume after shutdown with a new partition key.
+	// This should not create a new shard and should return an error via the done callback.
+	done := newFakeDone()
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "new_partition"), &requesttest.FakeRequest{Items: 8}, done)
+
+	// The done callback should be called with an error.
+	assert.EqualValues(t, 1, done.errors.Load())
+	assert.EqualValues(t, 0, done.success.Load())
+
+	// No requests should have been sent.
+	assert.Equal(t, 0, sink.RequestsCount())
+}
