@@ -205,3 +205,20 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+feature_gates:
+  - id: service.AllowNoPipelines
+    description: 'Allow starting the Collector without starting any pipelines.'
+    stage: alpha
+    from_version: 'v0.122.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12613'
+  - id: service.profilesSupport
+    description: 'Controls whether profiles support can be enabled'
+    stage: alpha
+    from_version: 'v0.112.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
+  - id: telemetry.UseLocalHostAsDefaultMetricsAddress
+    description: 'Controls whether default Prometheus metrics server use localhost as the default host for their endpoints'
+    stage: beta
+    from_version: 'v0.111.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'
