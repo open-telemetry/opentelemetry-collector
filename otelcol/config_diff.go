@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // ConfigChangeType categorizes the type of configuration change to determine
@@ -68,25 +67,6 @@ func categorizeConfigChange(oldCfg, newCfg *Config, _ func(component.ID) bool) C
 	// can be handled by partial reload. Graph.Reload will determine what
 	// specific components need to be rebuilt.
 	return ConfigChangePartialReload
-}
-
-// pipelineUsesConnectors returns true if the pipeline has any connectors
-// as receivers or exporters.
-func pipelineUsesConnectors(pipe *pipelines.PipelineConfig, isConnector func(component.ID) bool) bool {
-	return slices.ContainsFunc(pipe.Receivers, isConnector) ||
-		slices.ContainsFunc(pipe.Exporters, isConnector)
-}
-
-// filterIDs returns only the IDs for which the predicate returns true,
-// preserving order.
-func filterIDs(ids []component.ID, pred func(component.ID) bool) []component.ID {
-	var out []component.ID
-	for _, id := range ids {
-		if pred(id) {
-			out = append(out, id)
-		}
-	}
-	return out
 }
 
 // isConnectorID returns a predicate function that checks whether a component.ID

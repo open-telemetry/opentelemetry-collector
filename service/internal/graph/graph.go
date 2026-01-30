@@ -545,10 +545,10 @@ func (g *Graph) shutdownConnectorNode(ctx context.Context, nodeID int64, cn *con
 // reloadState holds all the state needed during a partial reload operation.
 type reloadState struct {
 	// Pipelines
-	pipelinesToAdd                 map[pipeline.ID]bool // New pipelines in config.
-	pipelinesToRemove              map[pipeline.ID]bool // Pipelines no longer in config.
-	pipelinesAffected              map[pipeline.ID]bool // Pipelines affected by processor changes.
-	pipelinesNeedingFanOutRebuild  map[pipeline.ID]bool // Pipelines needing fanOutNode rebuild due to exporter/connector changes.
+	pipelinesToAdd                map[pipeline.ID]bool // New pipelines in config.
+	pipelinesToRemove             map[pipeline.ID]bool // Pipelines no longer in config.
+	pipelinesAffected             map[pipeline.ID]bool // Pipelines affected by processor changes.
+	pipelinesNeedingFanOutRebuild map[pipeline.ID]bool // Pipelines needing fanOutNode rebuild due to exporter/connector changes.
 
 	// Receivers
 	receiversToRemove  map[int64]*receiverNode // Receivers to shut down and remove.
@@ -556,7 +556,7 @@ type reloadState struct {
 	receiversToAdd     map[int64]bool          // Receivers to create (new pipelines or new receiver IDs).
 
 	// Exporters
-	exportersToAdd     map[int64]bool         // Exporters to create (for new pipelines).
+	exportersToAdd     map[int64]bool          // Exporters to create (for new pipelines).
 	exportersToRebuild map[int64]*exporterNode // Exporters to shut down and rebuild.
 
 	// Connectors
@@ -1232,12 +1232,8 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 		delete(g.instanceIDs, nodeID)
 		// Remove from pipeline exporter/receiver maps.
 		for _, pipe := range g.pipelines {
-			if _, exists := pipe.exporters[nodeID]; exists {
-				delete(pipe.exporters, nodeID)
-			}
-			if _, exists := pipe.receivers[nodeID]; exists {
-				delete(pipe.receivers, nodeID)
-			}
+			delete(pipe.exporters, nodeID)
+			delete(pipe.receivers, nodeID)
 		}
 		_ = cn // used for shutdown, node removal done above
 	}

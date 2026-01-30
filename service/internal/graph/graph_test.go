@@ -2719,7 +2719,6 @@ func TestReloadNoChange(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadNilHost verifies that Reload returns an error when host is nil.
 func TestReloadNilHost(t *testing.T) {
 	pg := &Graph{
@@ -2845,7 +2844,6 @@ func TestReloadReceiverOnlyChange(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadSharedReceiverWithNewPipeline verifies that when a new pipeline is added
 // that shares a receiver with an existing pipeline, the receiver is rebuilt.
@@ -2974,7 +2972,6 @@ func TestReloadSharedReceiverWithNewPipeline(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadProcessorChange verifies that when a processor config changes,
 // processors and receivers are rebuilt but exporters remain untouched.
 func TestReloadProcessorChange(t *testing.T) {
@@ -3095,7 +3092,6 @@ func TestReloadProcessorChange(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadMetricsPipeline verifies that processor changes in a metrics pipeline
 // correctly rebuild only the affected components.
 func TestReloadMetricsPipeline(t *testing.T) {
@@ -3190,7 +3186,6 @@ func TestReloadMetricsPipeline(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadLogsPipeline verifies that processor changes in a logs pipeline
 // correctly rebuild only the affected components.
@@ -3287,7 +3282,6 @@ func TestReloadLogsPipeline(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadProfilesPipeline verifies that processor changes in a profiles pipeline
 // correctly rebuild only the affected components.
 func TestReloadProfilesPipeline(t *testing.T) {
@@ -3382,7 +3376,6 @@ func TestReloadProfilesPipeline(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadMultiPipelineOnlyOneAffected verifies that when only one pipeline
 // is affected by a change, other pipelines remain completely untouched.
@@ -3540,7 +3533,6 @@ func TestReloadMultiPipelineOnlyOneAffected(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadExporterChange verifies that when an exporter config changes,
 // the exporter and upstream components (processors, receivers) are rebuilt.
 func TestReloadExporterChange(t *testing.T) {
@@ -3657,7 +3649,6 @@ func TestReloadExporterChange(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadExporterChangeMetrics verifies that exporter changes in a metrics pipeline
 // correctly rebuild the exporter and upstream components.
 func TestReloadExporterChangeMetrics(t *testing.T) {
@@ -3750,7 +3741,6 @@ func TestReloadExporterChangeMetrics(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadExporterChangeLogs verifies that exporter changes in a logs pipeline
 // correctly rebuild the exporter and upstream components.
@@ -3845,7 +3835,6 @@ func TestReloadExporterChangeLogs(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadExporterChangeProfiles verifies that exporter changes in a profiles pipeline
 // correctly rebuild the exporter and upstream components.
 func TestReloadExporterChangeProfiles(t *testing.T) {
@@ -3938,7 +3927,6 @@ func TestReloadExporterChangeProfiles(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadExporterListChange verifies that adding an exporter to a pipeline's
 // exporter list causes the pipeline to be rebuilt.
@@ -4036,7 +4024,6 @@ func TestReloadExporterListChange(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadAddNewExporterToExistingPipeline verifies that adding a new exporter
 // to an existing pipeline correctly rebuilds the pipeline.
@@ -4145,7 +4132,6 @@ func TestReloadAddNewExporterToExistingPipeline(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadRemoveExporterFromPipeline verifies that removing an exporter from a
 // pipeline causes the pipeline chain to be rebuilt.
@@ -4414,7 +4400,6 @@ func TestReloadConnectorChange(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadConnectorAddition verifies that adding a connector between two
 // existing pipelines correctly creates and wires up the connector.
 func TestReloadConnectorAddition(t *testing.T) {
@@ -4555,7 +4540,6 @@ func TestReloadConnectorAddition(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadConnectorRemoval verifies that removing a connector between two
 // pipelines correctly shuts down and removes the connector.
@@ -4702,7 +4686,6 @@ func TestReloadConnectorRemoval(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadWithConnectorBetweenPipelines verifies that when a connector bridges
 // two pipelines of different signal types, changing the connector rebuilds it properly.
@@ -4860,7 +4843,6 @@ func TestReloadWithConnectorBetweenPipelines(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadWithConnectorAsReceiverInPipeline verifies that when a pipeline has
 // a connector as a receiver, it is properly handled during reload.
 func TestReloadWithConnectorAsReceiverInPipeline(t *testing.T) {
@@ -4970,7 +4952,6 @@ func TestReloadWithConnectorAsReceiverInPipeline(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadAddNewConnectorBetweenExistingPipelines verifies that adding a new
 // connector between two existing pipelines correctly wires up both pipelines.
@@ -5107,7 +5088,6 @@ func TestReloadAddNewConnectorBetweenExistingPipelines(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadPipelineAddition verifies that adding a new pipeline during reload
 // correctly creates and starts all components in the new pipeline.
 func TestReloadPipelineAddition(t *testing.T) {
@@ -5240,7 +5220,6 @@ func TestReloadPipelineAddition(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
 
 // TestReloadPipelineRemoval verifies that removing a pipeline during reload
 // correctly shuts down and removes all components in the removed pipeline.
@@ -5380,7 +5359,6 @@ func TestReloadPipelineRemoval(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadPipelineRemovalWithSharedReceiver verifies that when removing a pipeline
 // that shares a receiver with another pipeline, the shared receiver is rebuilt.
 func TestReloadPipelineRemovalWithSharedReceiver(t *testing.T) {
@@ -5511,7 +5489,6 @@ func TestReloadPipelineRemovalWithSharedReceiver(t *testing.T) {
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-
 // TestReloadPipelineRemovalWithSharedExporter verifies that when removing a pipeline
 // that shares an exporter with another pipeline, the shared exporter's instanceID is updated.
 func TestReloadPipelineRemovalWithSharedExporter(t *testing.T) {
@@ -5641,5 +5618,3 @@ func TestReloadPipelineRemovalWithSharedExporter(t *testing.T) {
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
-
-
