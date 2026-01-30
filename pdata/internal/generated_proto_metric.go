@@ -9,72 +9,11 @@ package internal
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
-
-func (m *Metric) GetData() any {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type Metric_Gauge struct {
-	Gauge *Gauge
-}
-
-func (m *Metric) GetGauge() *Gauge {
-	if v, ok := m.GetData().(*Metric_Gauge); ok {
-		return v.Gauge
-	}
-	return nil
-}
-
-type Metric_Sum struct {
-	Sum *Sum
-}
-
-func (m *Metric) GetSum() *Sum {
-	if v, ok := m.GetData().(*Metric_Sum); ok {
-		return v.Sum
-	}
-	return nil
-}
-
-type Metric_Histogram struct {
-	Histogram *Histogram
-}
-
-func (m *Metric) GetHistogram() *Histogram {
-	if v, ok := m.GetData().(*Metric_Histogram); ok {
-		return v.Histogram
-	}
-	return nil
-}
-
-type Metric_ExponentialHistogram struct {
-	ExponentialHistogram *ExponentialHistogram
-}
-
-func (m *Metric) GetExponentialHistogram() *ExponentialHistogram {
-	if v, ok := m.GetData().(*Metric_ExponentialHistogram); ok {
-		return v.ExponentialHistogram
-	}
-	return nil
-}
-
-type Metric_Summary struct {
-	Summary *Summary
-}
-
-func (m *Metric) GetSummary() *Summary {
-	if v, ok := m.GetData().(*Metric_Summary); ok {
-		return v.Summary
-	}
-	return nil
-}
 
 // Metric represents one metric as a collection of datapoints.
 // See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto
@@ -82,47 +21,16 @@ type Metric struct {
 	Name        string
 	Description string
 	Unit        string
-	Data        any
+	Data        proto.OneOf
 	Metadata    []KeyValue
+	metadata    uint64
 }
 
-var (
-	protoPoolMetric = sync.Pool{
-		New: func() any {
-			return &Metric{}
-		},
-	}
-
-	ProtoPoolMetric_Gauge = sync.Pool{
-		New: func() any {
-			return &Metric_Gauge{}
-		},
-	}
-
-	ProtoPoolMetric_Sum = sync.Pool{
-		New: func() any {
-			return &Metric_Sum{}
-		},
-	}
-
-	ProtoPoolMetric_Histogram = sync.Pool{
-		New: func() any {
-			return &Metric_Histogram{}
-		},
-	}
-
-	ProtoPoolMetric_ExponentialHistogram = sync.Pool{
-		New: func() any {
-			return &Metric_ExponentialHistogram{}
-		},
-	}
-
-	ProtoPoolMetric_Summary = sync.Pool{
-		New: func() any {
-			return &Metric_Summary{}
-		},
-	}
-)
+var protoPoolMetric = sync.Pool{
+	New: func() any {
+		return &Metric{}
+	},
+}
 
 func NewMetric() *Metric {
 	if !UseProtoPooling.IsEnabled() {
@@ -141,27 +49,22 @@ func DeleteMetric(orig *Metric, nullable bool) {
 		return
 	}
 
-	switch ov := orig.Data.(type) {
-	case *Metric_Gauge:
-		DeleteGauge(ov.Gauge, true)
-		ov.Gauge = nil
-		ProtoPoolMetric_Gauge.Put(ov)
-	case *Metric_Sum:
-		DeleteSum(ov.Sum, true)
-		ov.Sum = nil
-		ProtoPoolMetric_Sum.Put(ov)
-	case *Metric_Histogram:
-		DeleteHistogram(ov.Histogram, true)
-		ov.Histogram = nil
-		ProtoPoolMetric_Histogram.Put(ov)
-	case *Metric_ExponentialHistogram:
-		DeleteExponentialHistogram(ov.ExponentialHistogram, true)
-		ov.ExponentialHistogram = nil
-		ProtoPoolMetric_ExponentialHistogram.Put(ov)
-	case *Metric_Summary:
-		DeleteSummary(ov.Summary, true)
-		ov.Summary = nil
-		ProtoPoolMetric_Summary.Put(ov)
+	switch orig.DataType() {
+	case MetricDataTypeGauge:
+		DeleteGauge(orig.Gauge(), true)
+		orig.ResetData()
+	case MetricDataTypeSum:
+		DeleteSum(orig.Sum(), true)
+		orig.ResetData()
+	case MetricDataTypeHistogram:
+		DeleteHistogram(orig.Histogram(), true)
+		orig.ResetData()
+	case MetricDataTypeExponentialHistogram:
+		DeleteExponentialHistogram(orig.ExponentialHistogram(), true)
+		orig.ResetData()
+	case MetricDataTypeSummary:
+		DeleteSummary(orig.Summary(), true)
+		orig.ResetData()
 	}
 	for i := range orig.Metadata {
 		DeleteKeyValue(&orig.Metadata[i], false)
@@ -188,64 +91,34 @@ func CopyMetric(dest, src *Metric) *Metric {
 	dest.Name = src.Name
 	dest.Description = src.Description
 	dest.Unit = src.Unit
-	switch t := src.Data.(type) {
-	case *Metric_Gauge:
-		var ov *Metric_Gauge
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Metric_Gauge{}
-		} else {
-			ov = ProtoPoolMetric_Gauge.Get().(*Metric_Gauge)
-		}
-		ov.Gauge = NewGauge()
-		CopyGauge(ov.Gauge, t.Gauge)
-		dest.Data = ov
+	switch src.DataType() {
+	case MetricDataTypeEmpty:
+		dest.ResetData()
+	case MetricDataTypeGauge:
+		ov := NewGauge()
+		CopyGauge(ov, src.Gauge())
+		dest.SetGauge(ov)
 
-	case *Metric_Sum:
-		var ov *Metric_Sum
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Metric_Sum{}
-		} else {
-			ov = ProtoPoolMetric_Sum.Get().(*Metric_Sum)
-		}
-		ov.Sum = NewSum()
-		CopySum(ov.Sum, t.Sum)
-		dest.Data = ov
+	case MetricDataTypeSum:
+		ov := NewSum()
+		CopySum(ov, src.Sum())
+		dest.SetSum(ov)
 
-	case *Metric_Histogram:
-		var ov *Metric_Histogram
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Metric_Histogram{}
-		} else {
-			ov = ProtoPoolMetric_Histogram.Get().(*Metric_Histogram)
-		}
-		ov.Histogram = NewHistogram()
-		CopyHistogram(ov.Histogram, t.Histogram)
-		dest.Data = ov
+	case MetricDataTypeHistogram:
+		ov := NewHistogram()
+		CopyHistogram(ov, src.Histogram())
+		dest.SetHistogram(ov)
 
-	case *Metric_ExponentialHistogram:
-		var ov *Metric_ExponentialHistogram
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Metric_ExponentialHistogram{}
-		} else {
-			ov = ProtoPoolMetric_ExponentialHistogram.Get().(*Metric_ExponentialHistogram)
-		}
-		ov.ExponentialHistogram = NewExponentialHistogram()
-		CopyExponentialHistogram(ov.ExponentialHistogram, t.ExponentialHistogram)
-		dest.Data = ov
+	case MetricDataTypeExponentialHistogram:
+		ov := NewExponentialHistogram()
+		CopyExponentialHistogram(ov, src.ExponentialHistogram())
+		dest.SetExponentialHistogram(ov)
 
-	case *Metric_Summary:
-		var ov *Metric_Summary
-		if !UseProtoPooling.IsEnabled() {
-			ov = &Metric_Summary{}
-		} else {
-			ov = ProtoPoolMetric_Summary.Get().(*Metric_Summary)
-		}
-		ov.Summary = NewSummary()
-		CopySummary(ov.Summary, t.Summary)
-		dest.Data = ov
+	case MetricDataTypeSummary:
+		ov := NewSummary()
+		CopySummary(ov, src.Summary())
+		dest.SetSummary(ov)
 
-	default:
-		dest.Data = nil
 	}
 	dest.Metadata = CopyKeyValueSlice(dest.Metadata, src.Metadata)
 
@@ -319,32 +192,22 @@ func (orig *Metric) MarshalJSON(dest *json.Stream) {
 		dest.WriteObjectField("unit")
 		dest.WriteString(orig.Unit)
 	}
-	switch orig := orig.Data.(type) {
-	case *Metric_Gauge:
-		if orig.Gauge != nil {
-			dest.WriteObjectField("gauge")
-			orig.Gauge.MarshalJSON(dest)
-		}
-	case *Metric_Sum:
-		if orig.Sum != nil {
-			dest.WriteObjectField("sum")
-			orig.Sum.MarshalJSON(dest)
-		}
-	case *Metric_Histogram:
-		if orig.Histogram != nil {
-			dest.WriteObjectField("histogram")
-			orig.Histogram.MarshalJSON(dest)
-		}
-	case *Metric_ExponentialHistogram:
-		if orig.ExponentialHistogram != nil {
-			dest.WriteObjectField("exponentialHistogram")
-			orig.ExponentialHistogram.MarshalJSON(dest)
-		}
-	case *Metric_Summary:
-		if orig.Summary != nil {
-			dest.WriteObjectField("summary")
-			orig.Summary.MarshalJSON(dest)
-		}
+	switch orig.DataType() {
+	case MetricDataTypeGauge:
+		dest.WriteObjectField("gauge")
+		orig.Gauge().MarshalJSON(dest)
+	case MetricDataTypeSum:
+		dest.WriteObjectField("sum")
+		orig.Sum().MarshalJSON(dest)
+	case MetricDataTypeHistogram:
+		dest.WriteObjectField("histogram")
+		orig.Histogram().MarshalJSON(dest)
+	case MetricDataTypeExponentialHistogram:
+		dest.WriteObjectField("exponentialHistogram")
+		orig.ExponentialHistogram().MarshalJSON(dest)
+	case MetricDataTypeSummary:
+		dest.WriteObjectField("summary")
+		orig.Summary().MarshalJSON(dest)
 	}
 	if len(orig.Metadata) > 0 {
 		dest.WriteObjectField("metadata")
@@ -356,6 +219,7 @@ func (orig *Metric) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	dest.WriteObjectEnd()
 }
 
@@ -372,63 +236,33 @@ func (orig *Metric) UnmarshalJSON(iter *json.Iterator) {
 
 		case "gauge":
 			{
-				var ov *Metric_Gauge
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Metric_Gauge{}
-				} else {
-					ov = ProtoPoolMetric_Gauge.Get().(*Metric_Gauge)
-				}
-				ov.Gauge = NewGauge()
-				ov.Gauge.UnmarshalJSON(iter)
-				orig.Data = ov
+				ov := NewGauge()
+				ov.UnmarshalJSON(iter)
+				orig.SetGauge(ov)
 			}
 		case "sum":
 			{
-				var ov *Metric_Sum
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Metric_Sum{}
-				} else {
-					ov = ProtoPoolMetric_Sum.Get().(*Metric_Sum)
-				}
-				ov.Sum = NewSum()
-				ov.Sum.UnmarshalJSON(iter)
-				orig.Data = ov
+				ov := NewSum()
+				ov.UnmarshalJSON(iter)
+				orig.SetSum(ov)
 			}
 		case "histogram":
 			{
-				var ov *Metric_Histogram
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Metric_Histogram{}
-				} else {
-					ov = ProtoPoolMetric_Histogram.Get().(*Metric_Histogram)
-				}
-				ov.Histogram = NewHistogram()
-				ov.Histogram.UnmarshalJSON(iter)
-				orig.Data = ov
+				ov := NewHistogram()
+				ov.UnmarshalJSON(iter)
+				orig.SetHistogram(ov)
 			}
 		case "exponentialHistogram", "exponential_histogram":
 			{
-				var ov *Metric_ExponentialHistogram
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Metric_ExponentialHistogram{}
-				} else {
-					ov = ProtoPoolMetric_ExponentialHistogram.Get().(*Metric_ExponentialHistogram)
-				}
-				ov.ExponentialHistogram = NewExponentialHistogram()
-				ov.ExponentialHistogram.UnmarshalJSON(iter)
-				orig.Data = ov
+				ov := NewExponentialHistogram()
+				ov.UnmarshalJSON(iter)
+				orig.SetExponentialHistogram(ov)
 			}
 		case "summary":
 			{
-				var ov *Metric_Summary
-				if !UseProtoPooling.IsEnabled() {
-					ov = &Metric_Summary{}
-				} else {
-					ov = ProtoPoolMetric_Summary.Get().(*Metric_Summary)
-				}
-				ov.Summary = NewSummary()
-				ov.Summary.UnmarshalJSON(iter)
-				orig.Data = ov
+				ov := NewSummary()
+				ov.UnmarshalJSON(iter)
+				orig.SetSummary(ov)
 			}
 
 		case "metadata":
@@ -462,35 +296,24 @@ func (orig *Metric) SizeProto() int {
 	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
-	switch orig := orig.Data.(type) {
-	case nil:
-		_ = orig
+	switch orig.DataType() {
+	case MetricDataTypeEmpty:
 		break
-	case *Metric_Gauge:
-		if orig.Gauge != nil {
-			l = orig.Gauge.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *Metric_Sum:
-		if orig.Sum != nil {
-			l = orig.Sum.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *Metric_Histogram:
-		if orig.Histogram != nil {
-			l = orig.Histogram.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *Metric_ExponentialHistogram:
-		if orig.ExponentialHistogram != nil {
-			l = orig.ExponentialHistogram.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
-	case *Metric_Summary:
-		if orig.Summary != nil {
-			l = orig.Summary.SizeProto()
-			n += 1 + proto.Sov(uint64(l)) + l
-		}
+	case MetricDataTypeGauge:
+		l = orig.Gauge().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case MetricDataTypeSum:
+		l = orig.Sum().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case MetricDataTypeHistogram:
+		l = orig.Histogram().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case MetricDataTypeExponentialHistogram:
+		l = orig.ExponentialHistogram().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	case MetricDataTypeSummary:
+		l = orig.Summary().SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	for i := range orig.Metadata {
 		l = orig.Metadata[i].SizeProto()
@@ -527,47 +350,42 @@ func (orig *Metric) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x1a
 	}
-	switch orig := orig.Data.(type) {
-	case *Metric_Gauge:
-		if orig.Gauge != nil {
-			l = orig.Gauge.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x2a
-		}
-	case *Metric_Sum:
-		if orig.Sum != nil {
-			l = orig.Sum.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x3a
-		}
-	case *Metric_Histogram:
-		if orig.Histogram != nil {
-			l = orig.Histogram.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x4a
-		}
-	case *Metric_ExponentialHistogram:
-		if orig.ExponentialHistogram != nil {
-			l = orig.ExponentialHistogram.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x52
-		}
-	case *Metric_Summary:
-		if orig.Summary != nil {
-			l = orig.Summary.MarshalProto(buf[:pos])
-			pos -= l
-			pos = proto.EncodeVarint(buf, pos, uint64(l))
-			pos--
-			buf[pos] = 0x5a
-		}
+	switch orig.DataType() {
+	case MetricDataTypeGauge:
+		l = orig.Gauge().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+
+	case MetricDataTypeSum:
+		l = orig.Sum().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x3a
+
+	case MetricDataTypeHistogram:
+		l = orig.Histogram().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x4a
+
+	case MetricDataTypeExponentialHistogram:
+		l = orig.ExponentialHistogram().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x52
+
+	case MetricDataTypeSummary:
+		l = orig.Summary().MarshalProto(buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x5a
+
 	}
 	for i := len(orig.Metadata) - 1; i >= 0; i-- {
 		l = orig.Metadata[i].MarshalProto(buf[:pos])
@@ -640,18 +458,12 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *Metric_Gauge
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Metric_Gauge{}
-			} else {
-				ov = ProtoPoolMetric_Gauge.Get().(*Metric_Gauge)
-			}
-			ov.Gauge = NewGauge()
-			err = ov.Gauge.UnmarshalProto(buf[startPos:pos])
+			ov := NewGauge()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ov
+			orig.SetGauge(ov)
 
 		case 7:
 			if wireType != proto.WireTypeLen {
@@ -663,18 +475,12 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *Metric_Sum
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Metric_Sum{}
-			} else {
-				ov = ProtoPoolMetric_Sum.Get().(*Metric_Sum)
-			}
-			ov.Sum = NewSum()
-			err = ov.Sum.UnmarshalProto(buf[startPos:pos])
+			ov := NewSum()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ov
+			orig.SetSum(ov)
 
 		case 9:
 			if wireType != proto.WireTypeLen {
@@ -686,18 +492,12 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *Metric_Histogram
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Metric_Histogram{}
-			} else {
-				ov = ProtoPoolMetric_Histogram.Get().(*Metric_Histogram)
-			}
-			ov.Histogram = NewHistogram()
-			err = ov.Histogram.UnmarshalProto(buf[startPos:pos])
+			ov := NewHistogram()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ov
+			orig.SetHistogram(ov)
 
 		case 10:
 			if wireType != proto.WireTypeLen {
@@ -709,18 +509,12 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *Metric_ExponentialHistogram
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Metric_ExponentialHistogram{}
-			} else {
-				ov = ProtoPoolMetric_ExponentialHistogram.Get().(*Metric_ExponentialHistogram)
-			}
-			ov.ExponentialHistogram = NewExponentialHistogram()
-			err = ov.ExponentialHistogram.UnmarshalProto(buf[startPos:pos])
+			ov := NewExponentialHistogram()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ov
+			orig.SetExponentialHistogram(ov)
 
 		case 11:
 			if wireType != proto.WireTypeLen {
@@ -732,18 +526,12 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *Metric_Summary
-			if !UseProtoPooling.IsEnabled() {
-				ov = &Metric_Summary{}
-			} else {
-				ov = ProtoPoolMetric_Summary.Get().(*Metric_Summary)
-			}
-			ov.Summary = NewSummary()
-			err = ov.Summary.UnmarshalProto(buf[startPos:pos])
+			ov := NewSummary()
+			err = ov.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
-			orig.Data = ov
+			orig.SetSummary(ov)
 
 		case 12:
 			if wireType != proto.WireTypeLen {
@@ -770,12 +558,108 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+type MetricDataType int32
+
+const (
+	MetricDataTypeEmpty MetricDataType = iota
+	MetricDataTypeGauge
+	MetricDataTypeSum
+	MetricDataTypeHistogram
+	MetricDataTypeExponentialHistogram
+	MetricDataTypeSummary
+)
+
+const (
+	startBitMetricData                      = uint64(0)
+	maskMetricData                          = uint64(7)
+	reversedMaskMetricData                  = ^maskMetricData
+	fieldMaskMetricDataGauge                = uint64(1 << startBitMetricData)
+	fieldMaskMetricDataSum                  = uint64(2 << startBitMetricData)
+	fieldMaskMetricDataHistogram            = uint64(3 << startBitMetricData)
+	fieldMaskMetricDataExponentialHistogram = uint64(4 << startBitMetricData)
+	fieldMaskMetricDataSummary              = uint64(5 << startBitMetricData)
+)
+
+func (m *Metric) DataType() MetricDataType {
+	val := (m.metadata & maskMetricData) >> startBitMetricData
+	return MetricDataType(val)
+}
+
+func (m *Metric) ResetData() {
+	m.Data.Reset()
+	m.metadata &= reversedMaskMetricData
+}
+func (m *Metric) SetGauge(value *Gauge) {
+	m.Data.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskMetricData
+	m.metadata |= fieldMaskMetricDataGauge
+}
+
+func (m *Metric) Gauge() *Gauge {
+	if m.DataType() != MetricDataTypeGauge {
+		return nil
+	}
+	return (*Gauge)(m.Data.Message())
+}
+
+func (m *Metric) SetSum(value *Sum) {
+	m.Data.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskMetricData
+	m.metadata |= fieldMaskMetricDataSum
+}
+
+func (m *Metric) Sum() *Sum {
+	if m.DataType() != MetricDataTypeSum {
+		return nil
+	}
+	return (*Sum)(m.Data.Message())
+}
+
+func (m *Metric) SetHistogram(value *Histogram) {
+	m.Data.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskMetricData
+	m.metadata |= fieldMaskMetricDataHistogram
+}
+
+func (m *Metric) Histogram() *Histogram {
+	if m.DataType() != MetricDataTypeHistogram {
+		return nil
+	}
+	return (*Histogram)(m.Data.Message())
+}
+
+func (m *Metric) SetExponentialHistogram(value *ExponentialHistogram) {
+	m.Data.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskMetricData
+	m.metadata |= fieldMaskMetricDataExponentialHistogram
+}
+
+func (m *Metric) ExponentialHistogram() *ExponentialHistogram {
+	if m.DataType() != MetricDataTypeExponentialHistogram {
+		return nil
+	}
+	return (*ExponentialHistogram)(m.Data.Message())
+}
+
+func (m *Metric) SetSummary(value *Summary) {
+	m.Data.SetMessage(unsafe.Pointer(value))
+	m.metadata &= reversedMaskMetricData
+	m.metadata |= fieldMaskMetricDataSummary
+}
+
+func (m *Metric) Summary() *Summary {
+	if m.DataType() != MetricDataTypeSummary {
+		return nil
+	}
+	return (*Summary)(m.Data.Message())
+}
+
 func GenTestMetric() *Metric {
 	orig := NewMetric()
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
-	orig.Data = &Metric_Gauge{Gauge: GenTestGauge()}
+	orig.SetGauge(GenTestGauge())
 	orig.Metadata = []KeyValue{{}, *GenTestKeyValue()}
 	return orig
 }

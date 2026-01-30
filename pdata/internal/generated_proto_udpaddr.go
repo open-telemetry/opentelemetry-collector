@@ -20,13 +20,11 @@ type UDPAddr struct {
 	Port int64
 }
 
-var (
-	protoPoolUDPAddr = sync.Pool{
-		New: func() any {
-			return &UDPAddr{}
-		},
-	}
-)
+var protoPoolUDPAddr = sync.Pool{
+	New: func() any {
+		return &UDPAddr{}
+	},
+}
 
 func NewUDPAddr() *UDPAddr {
 	if !UseProtoPooling.IsEnabled() {

@@ -21,13 +21,11 @@ type ResourceProfiles struct {
 	ScopeProfiles []*ScopeProfiles
 }
 
-var (
-	protoPoolResourceProfiles = sync.Pool{
-		New: func() any {
-			return &ResourceProfiles{}
-		},
-	}
-)
+var protoPoolResourceProfiles = sync.Pool{
+	New: func() any {
+		return &ResourceProfiles{}
+	},
+}
 
 func NewResourceProfiles() *ResourceProfiles {
 	if !UseProtoPooling.IsEnabled() {
@@ -145,6 +143,7 @@ func (orig *ResourceProfiles) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)

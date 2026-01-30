@@ -23,13 +23,11 @@ type SpanContext struct {
 	Remote     bool
 }
 
-var (
-	protoPoolSpanContext = sync.Pool{
-		New: func() any {
-			return &SpanContext{}
-		},
-	}
-)
+var protoPoolSpanContext = sync.Pool{
+	New: func() any {
+		return &SpanContext{}
+	},
+}
 
 func NewSpanContext() *SpanContext {
 	if !UseProtoPooling.IsEnabled() {

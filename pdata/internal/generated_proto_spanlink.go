@@ -27,13 +27,11 @@ type SpanLink struct {
 	SpanId                 SpanID
 }
 
-var (
-	protoPoolSpanLink = sync.Pool{
-		New: func() any {
-			return &SpanLink{}
-		},
-	}
-)
+var protoPoolSpanLink = sync.Pool{
+	New: func() any {
+		return &SpanLink{}
+	},
+}
 
 func NewSpanLink() *SpanLink {
 	if !UseProtoPooling.IsEnabled() {
@@ -167,6 +165,7 @@ func (orig *SpanLink) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)

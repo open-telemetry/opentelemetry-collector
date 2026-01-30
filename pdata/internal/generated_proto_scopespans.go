@@ -21,13 +21,11 @@ type ScopeSpans struct {
 	Scope     InstrumentationScope
 }
 
-var (
-	protoPoolScopeSpans = sync.Pool{
-		New: func() any {
-			return &ScopeSpans{}
-		},
-	}
-)
+var protoPoolScopeSpans = sync.Pool{
+	New: func() any {
+		return &ScopeSpans{}
+	},
+}
 
 func NewScopeSpans() *ScopeSpans {
 	if !UseProtoPooling.IsEnabled() {
@@ -145,6 +143,7 @@ func (orig *ScopeSpans) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
 		dest.WriteString(orig.SchemaUrl)
