@@ -422,6 +422,7 @@
       "runperf",
       "safelist",
       "samplefactoryreceiver",
+      "sampleprocessor",
       "samplereceiver",
       "samplingdecision",
       "samplingprocessor",
