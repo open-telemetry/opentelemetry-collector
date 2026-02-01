@@ -31,6 +31,18 @@ func WithIgnoreUnused() UnmarshalOption {
 	})
 }
 
+// WithForceUnmarshaler sets an option to run a top-level Unmarshal method,
+// even if the Conf being unmarshaled is already a parameter from an Unmarshal method.
+// To avoid infinite recursion, this should only be used when unmarshaling into
+// a different type from the current Unmarshaler.
+// For instance, this should be used in wrapper types such as configoptional.Optional
+// to ensure the inner type's Unmarshal method is called.
+func WithForceUnmarshaler() UnmarshalOption {
+	return UnmarshalOptionFunc(func(uo *UnmarshalOptions) {
+		uo.ForceUnmarshaler = true
+	})
+}
+
 // Decode decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
@@ -53,7 +65,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(settings),
