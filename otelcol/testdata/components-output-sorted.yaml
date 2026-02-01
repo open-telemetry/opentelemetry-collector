@@ -110,11 +110,9 @@ extensions:
       stability:
         extension: Stable
 providers:
-    - scheme: bar
+    - scheme: env
       module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
-    - scheme: baz
-      module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
-    - scheme: foo
+    - scheme: file
       module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
 converters:
     - module: go.opentelemetry.io/collector/converter/bar v1.2.3

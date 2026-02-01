@@ -5,14 +5,13 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"fmt"
-	"maps"
-	"slices"
 	"sort"
 
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -120,7 +119,11 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			}
 			components.BuildInfo = set.BuildInfo
 
-			components.Providers = append(components.Providers, sortProvidersByScheme(set.ProviderModules)...)
+			components.Providers = append(components.Providers, sortProvidersByScheme(
+				set.ProviderModules,
+				set.ConfigProviderSettings.ResolverSettings.ProviderFactories,
+				set.ConfigProviderSettings.ResolverSettings.ProviderSettings,
+			)...)
 			components.Converters = append(components.Converters, sortConverterModules(set.ConverterModules)...)
 
 			yamlData, err := yaml.Marshal(components)
@@ -156,15 +159,23 @@ func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []
 	return sortedFactories
 }
 
-func sortProvidersByScheme(providers map[string]string) []componentWithoutStability {
-	providerSchemes := slices.Collect(maps.Keys(providers))
-	sort.Strings(providerSchemes)
+func sortProvidersByScheme(providerModules map[string]string, provFactories []confmap.ProviderFactory, set confmap.ProviderSettings) []componentWithoutStability {
+	schemes := make([]string, 0, len(provFactories))
+	for _, f := range provFactories {
+		provF := f.Create(set)
+		scheme := provF.Scheme()
+		if !isComponentAlias(f) {
+			schemes = append(schemes, scheme)
+		}
+	}
 
-	providerComponents := make([]componentWithoutStability, 0, len(providers))
-	for _, providerScheme := range providerSchemes {
+	sort.Strings(schemes)
+
+	providerComponents := make([]componentWithoutStability, 0, len(providerModules))
+	for _, scheme := range schemes {
 		providerComponents = append(providerComponents, componentWithoutStability{
-			Scheme: providerScheme,
-			Module: providers[providerScheme],
+			Scheme: scheme,
+			Module: providerModules[scheme],
 		})
 	}
 	return providerComponents
@@ -184,8 +195,8 @@ func sortConverterModules(modules []string) []componentWithoutStability {
 	return sortedModules
 }
 
-func isComponentAlias[T component.Factory](component T) bool {
-	if al, ok := any(component).(componentalias.TypeAliasHolder); ok {
+func isComponentAlias(component any) bool {
+	if al, ok := component.(componentalias.TypeAliasHolder); ok {
 		return al.DeprecatedAlias().String() != ""
 	}
 	return false

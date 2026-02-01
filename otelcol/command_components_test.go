@@ -32,8 +32,10 @@ func TestNewBuildSubCommand(t *testing.T) {
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		// ensure default providers are referenced by scheme to a module
 		ProviderModules: map[string]string{
-			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"file": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"env":  "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
 		ConverterModules: []string{
 			"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
@@ -42,7 +44,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})
 
-	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output.yaml"))
+	expectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output.yaml"))
 	require.NoError(t, err)
 
 	b := bytes.NewBufferString("")
@@ -52,7 +54,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 
 	// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
 	// line that makes the test fail.
-	assert.Equal(t, strings.ReplaceAll(strings.ReplaceAll(string(ExpectedOutput), "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(b.String(), "\n", ""), "\r", ""))
+	assert.Equal(t, strings.TrimSpace(string(expectedOutput)), strings.TrimSpace(b.String()))
 }
 
 func TestComponentsStableOutput(t *testing.T) {
@@ -60,10 +62,10 @@ func TestComponentsStableOutput(t *testing.T) {
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              newNamedNopFactories([]string{"bar", "foo", "baz"}),
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		// assumes default config provider contains `file`` and `env` schemes`.
 		ProviderModules: map[string]string{
-			"bar": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
-			"foo": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
-			"baz": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"file": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+			"env":  "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
 		ConverterModules: []string{
 			"go.opentelemetry.io/collector/converter/baz v1.2.3",
@@ -74,7 +76,7 @@ func TestComponentsStableOutput(t *testing.T) {
 	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})
 
-	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output-sorted.yaml"))
+	expectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output-sorted.yaml"))
 	require.NoError(t, err)
 
 	// ensure output is reasonably consistent
@@ -85,7 +87,7 @@ func TestComponentsStableOutput(t *testing.T) {
 		require.NoError(t, err)
 		// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
 		// line that makes the test fail.
-		assert.Equal(t, strings.ReplaceAll(strings.ReplaceAll(string(ExpectedOutput), "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(b.String(), "\n", ""), "\r", ""))
+		assert.Equal(t, strings.TrimSpace(string(expectedOutput)), strings.TrimSpace(b.String()))
 	}
 }
 
