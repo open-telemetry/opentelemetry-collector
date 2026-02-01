@@ -250,17 +250,21 @@ func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	// Mark this queue as stopped, so consumer don't start any more work.
+	// Mark this queue as stopped, so consumers stop waiting for new items.
+	// Consumers will continue to drain remaining items before exiting.
 	pq.stopped = true
 	pq.hasMoreElements.Broadcast()
 	return pq.unrefClient(ctx)
 }
 
-// unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
+// unrefClient unrefs the client, and closes if no more references AND queue is empty. Callers MUST hold the mutex.
 // This is needed because consumers of the queue may still process the requests while the queue is shutting down or immediately after.
 func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 	pq.refClient--
-	if pq.refClient == 0 {
+	// Only close the client if there are no more references AND the queue is empty.
+	// If there are items still in the queue, keep the client open for draining.
+	// The last item's onDone will close the client after draining completes.
+	if pq.refClient == 0 && pq.metadata.ReadIndex == pq.metadata.WriteIndex {
 		return pq.client.Close(ctx)
 	}
 	return nil
@@ -323,12 +327,8 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 	defer pq.mu.Unlock()
 
 	for {
-		if pq.stopped {
-			var req T
-			return context.Background(), req, nil, false
-		}
-
 		// Read until either a successful retrieved element or no more elements in the storage.
+		// Check for elements first to ensure the queue drains before returning on stop.
 		for pq.metadata.ReadIndex != pq.metadata.WriteIndex {
 			index, req, reqCtx, consumed := pq.getNextItem(ctx)
 			// Ensure the used size are in sync when queue is drained.
@@ -343,6 +343,11 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			}
 			// More space available, data was dropped.
 			pq.hasMoreSpace.Signal()
+		}
+
+		if pq.stopped {
+			var req T
+			return context.Background(), req, nil, false
 		}
 
 		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
