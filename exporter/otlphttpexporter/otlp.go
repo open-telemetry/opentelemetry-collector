@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -197,18 +198,10 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
 }
 
-// handleResponse checks if the provided status code is in the DisableOnHTTPStatusCodes list.
+// failOnDisabledHTTPStatusCodes checks if the provided status code is in the DisableOnHTTPStatusCodes list.
 // If matched, it atomically disables the exporter and returns a permanent error.
-func (e *baseExporter) handleResponse(statusCode int) error {
-	shouldDisable := false
-	for _, code := range e.config.DisableOnHTTPStatusCodes {
-		if code == statusCode {
-			shouldDisable = true
-			break
-		}
-	}
-
-	if shouldDisable {
+func (e *baseExporter) failOnDisabledHTTPStatusCodes(statusCode int) error {
+	if slices.Contains(e.config.DisableOnHTTPStatusCodes, statusCode) {
 		if e.stopped.CompareAndSwap(false, true) {
 			e.logger.Error(
 				"Received fatal HTTP status code, disabling exporter permanently",
@@ -251,7 +244,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}()
 
 	// Check if the status code requires disabling the exporter.
-	if err := e.handleResponse(resp.StatusCode); err != nil {
+	if err := e.failOnDisabledHTTPStatusCodes(resp.StatusCode); err != nil {
 		return err
 	}
 

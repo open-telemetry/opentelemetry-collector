@@ -1179,7 +1179,7 @@ func (b badReader) Read([]byte) (int, error) {
 func TestDisableOnHTTPStatusCodes(t *testing.T) {
 	// 1. Setup Mock Server that always returns 410 Gone
 	serverRequests := atomic.Int32{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		serverRequests.Add(1)
 		w.WriteHeader(http.StatusGone)
 	}))
@@ -1208,7 +1208,7 @@ func TestDisableOnHTTPStatusCodes(t *testing.T) {
 	// 4. First push: Should fail with 410 and trigger the disable mechanism
 	td := ptrace.NewTraces()
 	err = exp.pushTraces(context.Background(), td)
-	assert.Error(t, err, "Expected error on first push (410)")
+	require.Error(t, err, "Expected error on first push (410)")
 
 	// Verify server received the request
 	assert.Equal(t, int32(1), serverRequests.Load(), "Server should have received 1 request")
@@ -1218,7 +1218,7 @@ func TestDisableOnHTTPStatusCodes(t *testing.T) {
 
 	// 5. Second push: Should return Permanent error immediately without network request
 	err = exp.pushTraces(context.Background(), td)
-	assert.Error(t, err, "Expected error on second push")
+	require.Error(t, err, "Expected error on second push")
 
 	// Verify the specific error message to ensure the circuit breaker logic is active
 	assert.Contains(t, err.Error(), "exporter is permanently disabled", "Error message should indicate disabled state")
@@ -1230,7 +1230,7 @@ func TestDisableOnHTTPStatusCodes(t *testing.T) {
 func TestDisableOnHTTPStatusCodes_NoMatch(t *testing.T) {
 	// Verify that non-matching status codes (e.g. 500) do NOT disable the exporter
 	serverRequests := atomic.Int32{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		serverRequests.Add(1)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
