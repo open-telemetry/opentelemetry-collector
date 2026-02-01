@@ -1,5 +1,5 @@
 change_type: enhancement
-component: exporter/otlphttpexporter
+component: exporter/otlp_http
 note: "Add `disable_on_http_status_codes` configuration to permanently disable the exporter when specific HTTP status codes (e.g., 410) are received."
 issues: [14464]
 change_logs: [user]
