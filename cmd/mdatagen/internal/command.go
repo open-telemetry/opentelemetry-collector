@@ -305,20 +305,49 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return false
 				},
-				// Derive "<class>/<subpath>" from scope_name; fallback to "<class>/<short>"
+				// deriveLabelFromScope: "<class>/<subpath>" using scope if available, fallback to "<class>/<short>".
+				// Additionally, trims trailing class suffix from the last segment (e.g. "envprovider" -> "env").
 				"deriveLabelFromScope": func(scope, class, short string) string {
+					// fallback
+					label := fmt.Sprintf("%s/%s", class, short)
+
+					// prefer scope if it contains "/<class>/"
 					if scope != "" && class != "" {
 						marker := "/" + class + "/"
 						if idx := strings.Index(scope, marker); idx >= 0 {
-							return scope[idx+1:] // drop leading '/'
+							label = scope[idx+1:] // drop leading '/'
 						}
 					}
-					return class + "/" + short
+
+					// Trim trailing class from last segment if present (case-insensitive).
+					parts := strings.Split(label, "/")
+					if len(parts) > 0 {
+						last := parts[len(parts)-1]
+						lowerLast := strings.ToLower(last)
+						lowerClass := strings.ToLower(class)
+						if strings.HasSuffix(lowerLast, lowerClass) {
+							// remove class suffix from the end of the last segment
+							trimmed := last[:len(last)-len(class)]
+							// avoid empty trimmed name
+							if trimmed != "" {
+								// normalize trimmed (remove trailing separators if any)
+								trimmed = strings.TrimRight(trimmed, "-_")
+								if trimmed != "" {
+									parts[len(parts)-1] = trimmed
+									label = strings.Join(parts, "/")
+								}
+							}
+						}
+					}
+
+					return label
 				},
-				// URL-encode '/' as '%2F' for query params
+
+				// urlEncodeLabel: simple encode for slashes used in GitHub query params ("/" -> "%2F").
 				"urlEncodeLabel": func(label string) string {
 					return strings.ReplaceAll(label, "/", "%2F")
 				},
+
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
 				"userLinks": func(elems []string) []string {
