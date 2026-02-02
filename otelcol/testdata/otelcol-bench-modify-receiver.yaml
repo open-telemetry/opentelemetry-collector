@@ -1,0 +1,144 @@
+# Config with receiver r1 and r2 config modified compared to base
+receivers:
+  configurable/r1:
+    endpoint: "localhost:4317"
+    timeout: 60  # changed from 30
+    retry_count: 5  # changed from 3
+    batch_size: 200  # changed from 100
+    enabled: true
+    compression: "zstd"  # changed from gzip
+    headers:
+      x-api-key: "key1-updated"  # changed
+      x-tenant: "tenant1"
+      x-new-header: "new-value"  # added
+    tags: ["prod", "us-east", "updated"]  # added tag
+    metadata:
+      name: "receiver1"
+      version: "1.1"  # changed from 1.0
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 2048  # changed from 1024
+      flush_interval: 10  # changed from 5
+      max_connections: 20  # changed from 10
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r2:
+    endpoint: "localhost:4318"
+    timeout: 45  # changed from 30
+    retry_count: 4  # changed from 3
+    batch_size: 150  # changed from 100
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key2-updated"  # changed
+      x-tenant: "tenant2-new"  # changed
+    tags: ["prod", "us-west", "migrated"]  # added tag
+    metadata:
+      name: "receiver2"
+      version: "1.2"  # changed from 1.0
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 2048  # changed from 1024
+      flush_interval: 8  # changed from 5
+      max_connections: 15  # changed from 10
+      keep_alive: false  # changed from true
+      protocol: "http"  # changed from grpc
+  configurable/r3:
+    endpoint: "localhost:4319"
+    timeout: 30
+    retry_count: 3
+    batch_size: 100
+    enabled: true
+    compression: "zstd"
+    headers:
+      x-api-key: "key3"
+      x-tenant: "tenant3"
+    tags: ["staging", "eu-west"]
+    metadata:
+      name: "receiver3"
+      version: "1.0"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 2048
+      flush_interval: 10
+      max_connections: 20
+      keep_alive: true
+      protocol: "http"
+  configurable/r4:
+    endpoint: "localhost:4320"
+    timeout: 60
+    retry_count: 5
+    batch_size: 200
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key4"
+      x-tenant: "tenant4"
+    tags: ["prod", "ap-south"]
+    metadata:
+      name: "receiver4"
+      version: "1.1"
+      environment: "production"
+      region: "ap-south-1"
+    advanced:
+      buffer_size: 4096
+      flush_interval: 15
+      max_connections: 50
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r5:
+    endpoint: "localhost:4321"
+    timeout: 45
+    retry_count: 4
+    batch_size: 150
+    enabled: true
+    compression: "none"
+    headers:
+      x-api-key: "key5"
+      x-tenant: "tenant5"
+    tags: ["dev", "local"]
+    metadata:
+      name: "receiver5"
+      version: "2.0"
+      environment: "development"
+      region: "local"
+    advanced:
+      buffer_size: 512
+      flush_interval: 1
+      max_connections: 5
+      keep_alive: false
+      protocol: "http"
+
+processors:
+  configurable:
+    endpoint: "processor"
+    timeout: 10
+    batch_size: 50
+
+exporters:
+  configurable:
+    endpoint: "exporter:4317"
+    timeout: 30
+    retry_count: 3
+
+extensions:
+  nop:
+
+service:
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [configurable/r1, configurable/r2, configurable/r3]
+      processors: [configurable]
+      exporters: [configurable]
+    metrics:
+      receivers: [configurable/r1, configurable/r4, configurable/r5]
+      processors: [configurable]
+      exporters: [configurable]
+    logs:
+      receivers: [configurable/r2, configurable/r3, configurable/r4]
+      processors: [configurable]
+      exporters: [configurable]
