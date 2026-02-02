@@ -636,7 +636,7 @@ func (g *Graph) Reload(ctx context.Context, set *Settings,
 	if len(state.exportersToRebuild) > 0 || len(state.exportersToAdd) > 0 || len(state.pipelinesToAdd) > 0 {
 		set.ExporterBuilder = builders.NewExporter(newExporterCfgs, exporterFactories)
 	}
-	if len(state.connectorsToRebuild) > 0 || len(state.connectorsToAdd) > 0 {
+	if len(state.connectorsToRebuild) > 0 || len(state.connectorsToAdd) > 0 || len(state.pipelinesToAdd) > 0 {
 		set.ConnectorBuilder = builders.NewConnector(newConnectorCfgs, connectorFactories)
 	}
 	if len(state.pipelinesAffected) > 0 || len(state.pipelinesToAdd) > 0 {
@@ -850,12 +850,10 @@ func (g *Graph) identifyExporterConnectorChanges(set Settings, state *reloadStat
 	}
 
 	// Build maps of current connector usage from existing graph.
+	// Include pipelines being removed so their connectors can be properly tracked for removal.
 	currentConnAsExporter := make(map[component.ID]map[pipeline.ID]bool)
 	currentConnAsReceiver := make(map[component.ID]map[pipeline.ID]bool)
 	for pipelineID, pipe := range g.pipelines {
-		if state.pipelinesToRemove[pipelineID] {
-			continue
-		}
 		for _, node := range pipe.exporters {
 			if cn, ok := node.(*connectorNode); ok {
 				if currentConnAsExporter[cn.componentID] == nil {
@@ -962,8 +960,11 @@ func (g *Graph) identifyExporterConnectorChanges(set Settings, state *reloadStat
 				if !expStillUsed || !recvStillUsed {
 					if existingNode := g.componentGraph.Node(nodeID); existingNode != nil {
 						state.connectorsToRemove[nodeID] = existingNode.(*connectorNode)
-						state.pipelinesNeedingFanOutRebuild[expPipeID] = true
-						state.pipelinesAffected[expPipeID] = true
+						// Only mark pipeline as affected if it's not being removed.
+						if !state.pipelinesToRemove[expPipeID] {
+							state.pipelinesNeedingFanOutRebuild[expPipeID] = true
+							state.pipelinesAffected[expPipeID] = true
+						}
 					}
 				}
 			}
@@ -1494,121 +1495,118 @@ func (g *Graph) reloadUpdateGraph(set Settings, state *reloadState) {
 
 // reloadBuild builds all components that need to be built.
 // It uses the builders from set which were updated before this phase.
+// Uses topological sort to ensure components are built in dependency order.
 func (g *Graph) reloadBuild(ctx context.Context, set Settings, state *reloadState) error {
-	// Build exporters being rebuilt.
-	for nodeID, en := range state.exportersToRebuild {
-		state.builtExporter[nodeID] = true
-		if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
-			return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
-		}
-	}
+	// Collect all nodes that need to be built/rebuilt.
+	nodesToBuild := make(map[int64]bool)
 
-	// Build new exporters (added to existing pipelines or new pipelines).
+	// Exporters to rebuild or add.
+	for nodeID := range state.exportersToRebuild {
+		nodesToBuild[nodeID] = true
+	}
 	for nodeID := range state.exportersToAdd {
-		if state.builtExporter[nodeID] {
-			continue
-		}
-		state.builtExporter[nodeID] = true
-		node := g.componentGraph.Node(nodeID)
-		if node == nil {
-			continue
-		}
-		en := node.(*exporterNode)
-		if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
-			return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
-		}
+		nodesToBuild[nodeID] = true
 	}
 
-	// Build exporters for new pipelines (that weren't already built above).
+	// Connectors to rebuild or add.
+	for nodeID := range state.connectorsToRebuild {
+		nodesToBuild[nodeID] = true
+	}
+	for nodeID := range state.connectorsToAdd {
+		nodesToBuild[nodeID] = true
+	}
+
+	// Receivers to rebuild or add.
+	for nodeID := range state.receiversToRebuild {
+		nodesToBuild[nodeID] = true
+	}
+	for nodeID := range state.receiversToAdd {
+		nodesToBuild[nodeID] = true
+	}
+
+	// For affected and new pipelines, add processors, fanOutNode, and capabilitiesNode.
+	for pipelineID := range state.pipelinesAffected {
+		pipe := g.pipelines[pipelineID]
+		for _, proc := range pipe.processors {
+			nodesToBuild[proc.ID()] = true
+		}
+		nodesToBuild[pipe.fanOutNode.ID()] = true
+		nodesToBuild[pipe.capabilitiesNode.ID()] = true
+	}
 	for pipelineID := range state.pipelinesToAdd {
 		pipe := g.pipelines[pipelineID]
-		for nodeID, node := range pipe.exporters {
-			en, ok := node.(*exporterNode)
-			if !ok {
-				continue
-			}
-			if state.builtExporter[nodeID] {
-				continue
-			}
-			state.builtExporter[nodeID] = true
-			if err := en.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
-				return fmt.Errorf("failed to build exporter %q: %w", en.componentID, err)
-			}
+		for _, proc := range pipe.processors {
+			nodesToBuild[proc.ID()] = true
+		}
+		nodesToBuild[pipe.fanOutNode.ID()] = true
+		nodesToBuild[pipe.capabilitiesNode.ID()] = true
+		// Also add exporters for new pipelines.
+		for nodeID := range pipe.exporters {
+			nodesToBuild[nodeID] = true
+		}
+		// Also add receivers for new pipelines.
+		for nodeID := range pipe.receivers {
+			nodesToBuild[nodeID] = true
 		}
 	}
 
-	// Build connectors being rebuilt.
-	for nodeID, cn := range state.connectorsToRebuild {
-		state.builtConnector[nodeID] = true
-		if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
-			return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
-		}
-	}
-
-	// Build new connectors.
-	for nodeID := range state.connectorsToAdd {
-		if state.builtConnector[nodeID] {
-			continue
-		}
-		state.builtConnector[nodeID] = true
-		node := g.componentGraph.Node(nodeID)
-		if node == nil {
-			continue
-		}
-		cn := node.(*connectorNode)
-		if err := cn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
-			return fmt.Errorf("failed to build connector %q: %w", cn.componentID, err)
-		}
-	}
-
-	// Rebuild fanOutNode for pipelines with changed exporters/connectors.
+	// For pipelines needing fanOut rebuild, add their fanOutNode.
 	for pipelineID := range state.pipelinesNeedingFanOutRebuild {
 		pipe := g.pipelines[pipelineID]
-		g.rebuildFanOutNode(pipe.fanOutNode)
+		nodesToBuild[pipe.fanOutNode.ID()] = true
 	}
 
-	// Build fanOutNode for new pipelines.
-	for pipelineID := range state.pipelinesToAdd {
-		pipe := g.pipelines[pipelineID]
-		g.rebuildFanOutNode(pipe.fanOutNode)
+	// Topological sort all nodes in the graph.
+	nodes, err := topo.Sort(g.componentGraph)
+	if err != nil {
+		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
-	// Build processors (reverse order).
-	for pipelineID := range state.pipelinesAffected {
-		pipe := g.pipelines[pipelineID]
-		for i := len(pipe.processors) - 1; i >= 0; i-- {
-			pn := pipe.processors[i].(*processorNode)
-			next := g.nextConsumers(pn.ID())[0]
-			if err := pn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, next); err != nil {
-				return fmt.Errorf("failed to build processor %q: %w", pn.componentID, err)
-			}
+	// Build nodes in reverse topological order (dependencies first).
+	for i := len(nodes) - 1; i >= 0; i-- {
+		node := nodes[i]
+		nodeID := node.ID()
+
+		// Skip nodes that don't need to be built.
+		if !nodesToBuild[nodeID] {
+			continue
 		}
-	}
 
-	// Rebuild capabilitiesNode for affected pipelines (including new pipelines).
-	for pipelineID := range state.pipelinesAffected {
-		pipe := g.pipelines[pipelineID]
-		g.rebuildCapabilitiesNode(pipe)
-	}
-
-	// Build receivers.
-	for _, pipe := range g.pipelines {
-		for _, node := range pipe.receivers {
-			rn, ok := node.(*receiverNode)
-			if !ok {
-				continue
-			}
-			nodeID := rn.ID()
-			if !state.receiversToAdd[nodeID] && state.receiversToRebuild[nodeID] == nil {
-				continue
-			}
+		switch n := node.(type) {
+		case *receiverNode:
 			if state.builtReceiver[nodeID] {
 				continue
 			}
 			state.builtReceiver[nodeID] = true
-			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
-				return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
+			if err := n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
+				return fmt.Errorf("failed to build receiver %q: %w", n.componentID, err)
 			}
+		case *processorNode:
+			next := g.nextConsumers(nodeID)[0]
+			if err := n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, next); err != nil {
+				return fmt.Errorf("failed to build processor %q: %w", n.componentID, err)
+			}
+		case *exporterNode:
+			if state.builtExporter[nodeID] {
+				continue
+			}
+			state.builtExporter[nodeID] = true
+			if err := n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder); err != nil {
+				return fmt.Errorf("failed to build exporter %q: %w", n.componentID, err)
+			}
+		case *connectorNode:
+			if state.builtConnector[nodeID] {
+				continue
+			}
+			state.builtConnector[nodeID] = true
+			if err := n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(nodeID)); err != nil {
+				return fmt.Errorf("failed to build connector %q: %w", n.componentID, err)
+			}
+		case *capabilitiesNode:
+			pipe := g.pipelines[n.pipelineID]
+			g.rebuildCapabilitiesNode(pipe)
+		case *fanOutNode:
+			g.rebuildFanOutNode(n)
 		}
 	}
 

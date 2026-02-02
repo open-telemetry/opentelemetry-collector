@@ -1,0 +1,550 @@
+# Alt large config for benchmarking - ALL component configs changed.
+# Same pipeline structure, but every config value is different to stress reflect.DeepEqual.
+receivers:
+  configurable:
+    endpoint: "localhost:5317"
+    timeout: 130
+    retry_count: 13
+    batch_size: 2000
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-api-key: "new-key-0"
+      x-tenant-id: "new-tenant-0"
+      x-trace-id: "trace-0"
+    tags: ["staging", "eu-west-1", "new-receiver-0"]
+    metadata:
+      name: "new-receiver-0"
+      version: "2.0.0"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 20000
+      flush_interval: 6000
+      max_connections: 200
+      keep_alive: false
+      protocol: "http"
+  configurable/r1:
+    endpoint: "localhost:5318"
+    timeout: 131
+    retry_count: 14
+    batch_size: 2001
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-api-key: "new-key-1"
+      x-tenant-id: "new-tenant-1"
+      x-trace-id: "trace-1"
+    tags: ["staging", "eu-west-1", "new-receiver-1"]
+    metadata:
+      name: "new-receiver-1"
+      version: "2.0.1"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 20001
+      flush_interval: 6001
+      max_connections: 201
+      keep_alive: false
+      protocol: "http"
+  configurable/r2:
+    endpoint: "localhost:5319"
+    timeout: 132
+    retry_count: 15
+    batch_size: 2002
+    enabled: false
+    compression: "none"
+    headers:
+      x-api-key: "new-key-2"
+      x-tenant-id: "new-tenant-2"
+      x-trace-id: "trace-2"
+    tags: ["staging", "eu-west-1", "new-receiver-2"]
+    metadata:
+      name: "new-receiver-2"
+      version: "2.0.2"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 20002
+      flush_interval: 6002
+      max_connections: 202
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r3:
+    endpoint: "localhost:5320"
+    timeout: 133
+    retry_count: 16
+    batch_size: 2003
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-api-key: "new-key-3"
+      x-tenant-id: "new-tenant-3"
+      x-trace-id: "trace-3"
+    tags: ["dev", "ap-northeast-1", "new-receiver-3"]
+    metadata:
+      name: "new-receiver-3"
+      version: "2.0.3"
+      environment: "development"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 20003
+      flush_interval: 6003
+      max_connections: 203
+      keep_alive: true
+      protocol: "http"
+  configurable/r4:
+    endpoint: "localhost:5321"
+    timeout: 134
+    retry_count: 17
+    batch_size: 2004
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-api-key: "new-key-4"
+      x-tenant-id: "new-tenant-4"
+      x-trace-id: "trace-4"
+    tags: ["dev", "ap-northeast-1", "new-receiver-4"]
+    metadata:
+      name: "new-receiver-4"
+      version: "2.0.4"
+      environment: "development"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 20004
+      flush_interval: 6004
+      max_connections: 204
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r5:
+    endpoint: "localhost:5322"
+    timeout: 135
+    retry_count: 18
+    batch_size: 2005
+    enabled: false
+    compression: "none"
+    headers:
+      x-api-key: "new-key-5"
+      x-tenant-id: "new-tenant-5"
+      x-trace-id: "trace-5"
+    tags: ["prod", "sa-east-1", "new-receiver-5"]
+    metadata:
+      name: "new-receiver-5"
+      version: "2.0.5"
+      environment: "production"
+      region: "sa-east-1"
+    advanced:
+      buffer_size: 20005
+      flush_interval: 6005
+      max_connections: 205
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r6:
+    endpoint: "localhost:5323"
+    timeout: 136
+    retry_count: 19
+    batch_size: 2006
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-api-key: "new-key-6"
+      x-tenant-id: "new-tenant-6"
+      x-trace-id: "trace-6"
+    tags: ["prod", "sa-east-1", "new-receiver-6"]
+    metadata:
+      name: "new-receiver-6"
+      version: "2.0.6"
+      environment: "production"
+      region: "sa-east-1"
+    advanced:
+      buffer_size: 20006
+      flush_interval: 6006
+      max_connections: 206
+      keep_alive: true
+      protocol: "http"
+  configurable/r7:
+    endpoint: "localhost:5324"
+    timeout: 137
+    retry_count: 20
+    batch_size: 2007
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-api-key: "new-key-7"
+      x-tenant-id: "new-tenant-7"
+      x-trace-id: "trace-7"
+    tags: ["prod", "sa-east-1", "new-receiver-7"]
+    metadata:
+      name: "new-receiver-7"
+      version: "2.0.7"
+      environment: "production"
+      region: "sa-east-1"
+    advanced:
+      buffer_size: 20007
+      flush_interval: 6007
+      max_connections: 207
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r8:
+    endpoint: "localhost:5325"
+    timeout: 138
+    retry_count: 21
+    batch_size: 2008
+    enabled: false
+    compression: "none"
+    headers:
+      x-api-key: "new-key-8"
+      x-tenant-id: "new-tenant-8"
+      x-trace-id: "trace-8"
+    tags: ["test", "local", "new-receiver-8"]
+    metadata:
+      name: "new-receiver-8"
+      version: "2.0.8"
+      environment: "test"
+      region: "local"
+    advanced:
+      buffer_size: 20008
+      flush_interval: 6008
+      max_connections: 208
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r9:
+    endpoint: "localhost:5326"
+    timeout: 139
+    retry_count: 22
+    batch_size: 2009
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-api-key: "new-key-9"
+      x-tenant-id: "new-tenant-9"
+      x-trace-id: "trace-9"
+    tags: ["test", "local", "new-receiver-9"]
+    metadata:
+      name: "new-receiver-9"
+      version: "2.0.9"
+      environment: "test"
+      region: "local"
+    advanced:
+      buffer_size: 20009
+      flush_interval: 6009
+      max_connections: 209
+      keep_alive: true
+      protocol: "http"
+  configurable/r10:
+    endpoint: "localhost:5327"
+    timeout: 140
+    retry_count: 23
+    batch_size: 2010
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-api-key: "new-key-10"
+      x-tenant-id: "new-tenant-10"
+      x-trace-id: "trace-10"
+    tags: ["test", "local", "new-receiver-10"]
+    metadata:
+      name: "new-receiver-10"
+      version: "2.0.10"
+      environment: "test"
+      region: "local"
+    advanced:
+      buffer_size: 20010
+      flush_interval: 6010
+      max_connections: 210
+      keep_alive: true
+      protocol: "grpc"
+
+processors:
+  configurable:
+    endpoint: "new-processor-0.local"
+    timeout: 200
+    retry_count: 12
+    batch_size: 8000
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-processor-id: "new-proc-0"
+      x-version: "v2"
+    tags: ["transform", "enrich", "new"]
+    metadata:
+      name: "new-processor-0"
+      version: "3.0.0"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 80000
+      flush_interval: 2000
+      max_connections: 80
+      keep_alive: false
+      protocol: "grpc"
+  configurable/p1:
+    endpoint: "new-processor-1.local"
+    timeout: 201
+    retry_count: 13
+    batch_size: 8001
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-processor-id: "new-proc-1"
+      x-version: "v2"
+    tags: ["filter", "drop", "new"]
+    metadata:
+      name: "new-processor-1"
+      version: "3.0.1"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 80001
+      flush_interval: 2001
+      max_connections: 81
+      keep_alive: false
+      protocol: "http"
+  configurable/p2:
+    endpoint: "new-processor-2.local"
+    timeout: 202
+    retry_count: 14
+    batch_size: 8002
+    enabled: false
+    compression: "none"
+    headers:
+      x-processor-id: "new-proc-2"
+      x-version: "v2"
+    tags: ["batch", "queue", "new"]
+    metadata:
+      name: "new-processor-2"
+      version: "3.0.2"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 80002
+      flush_interval: 2002
+      max_connections: 82
+      keep_alive: true
+      protocol: "grpc"
+  configurable/p3:
+    endpoint: "new-processor-3.local"
+    timeout: 203
+    retry_count: 15
+    batch_size: 8003
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-processor-id: "new-proc-3"
+      x-version: "v2"
+    tags: ["memory", "limiter", "new"]
+    metadata:
+      name: "new-processor-3"
+      version: "3.0.3"
+      environment: "development"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 80003
+      flush_interval: 2003
+      max_connections: 83
+      keep_alive: false
+      protocol: "http"
+  configurable/p4:
+    endpoint: "new-processor-4.local"
+    timeout: 204
+    retry_count: 16
+    batch_size: 8004
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-processor-id: "new-proc-4"
+      x-version: "v2"
+    tags: ["tail", "sampling", "new"]
+    metadata:
+      name: "new-processor-4"
+      version: "3.0.4"
+      environment: "development"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 80004
+      flush_interval: 2004
+      max_connections: 84
+      keep_alive: true
+      protocol: "grpc"
+
+exporters:
+  configurable:
+    endpoint: "https://new-export-0.example.com:8443"
+    timeout: 120
+    retry_count: 15
+    batch_size: 4000
+    enabled: false
+    compression: "zstd"
+    headers:
+      Authorization: "Bearer new-token-0"
+      x-exporter-id: "new-exp-0"
+      x-format: "otlp"
+    tags: ["new-primary", "eu-west-1"]
+    metadata:
+      name: "new-exporter-0"
+      version: "4.0.0"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 40000
+      flush_interval: 15000
+      max_connections: 300
+      keep_alive: false
+      protocol: "grpc"
+  configurable/e1:
+    endpoint: "https://new-export-1.example.com:8443"
+    timeout: 121
+    retry_count: 16
+    batch_size: 4001
+    enabled: false
+    compression: "gzip"
+    headers:
+      Authorization: "Bearer new-token-1"
+      x-exporter-id: "new-exp-1"
+      x-format: "otlp"
+    tags: ["new-secondary", "eu-west-1"]
+    metadata:
+      name: "new-exporter-1"
+      version: "4.0.1"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 40001
+      flush_interval: 15001
+      max_connections: 301
+      keep_alive: false
+      protocol: "https"
+  configurable/e2:
+    endpoint: "https://new-export-2.example.com:8443"
+    timeout: 122
+    retry_count: 17
+    batch_size: 4002
+    enabled: false
+    compression: "none"
+    headers:
+      Authorization: "Bearer new-token-2"
+      x-exporter-id: "new-exp-2"
+      x-format: "json"
+    tags: ["new-backup", "ap-northeast-1"]
+    metadata:
+      name: "new-exporter-2"
+      version: "4.0.2"
+      environment: "development"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 40002
+      flush_interval: 15002
+      max_connections: 302
+      keep_alive: true
+      protocol: "https"
+  configurable/e3:
+    endpoint: "https://new-export-3.example.com:8443"
+    timeout: 123
+    retry_count: 18
+    batch_size: 4003
+    enabled: false
+    compression: "zstd"
+    headers:
+      Authorization: "Bearer new-token-3"
+      x-exporter-id: "new-exp-3"
+      x-format: "json"
+    tags: ["new-archive", "sa-east-1"]
+    metadata:
+      name: "new-exporter-3"
+      version: "4.0.3"
+      environment: "production"
+      region: "sa-east-1"
+    advanced:
+      buffer_size: 40003
+      flush_interval: 15003
+      max_connections: 303
+      keep_alive: true
+      protocol: "grpc"
+  configurable/e4:
+    endpoint: "https://new-export-4.example.com:8443"
+    timeout: 124
+    retry_count: 19
+    batch_size: 4004
+    enabled: false
+    compression: "gzip"
+    headers:
+      Authorization: "Bearer new-token-4"
+      x-exporter-id: "new-exp-4"
+      x-format: "otlp"
+    tags: ["new-debug", "local"]
+    metadata:
+      name: "new-exporter-4"
+      version: "4.0.4"
+      environment: "test"
+      region: "local"
+    advanced:
+      buffer_size: 40004
+      flush_interval: 15004
+      max_connections: 304
+      keep_alive: false
+      protocol: "http"
+
+extensions:
+  nop:
+
+connectors:
+  configurable/c1:
+    endpoint: "new-connector-1.internal"
+    timeout: 25
+    retry_count: 12
+    batch_size: 1500
+    enabled: false
+    compression: "gzip"
+    headers:
+      x-connector-id: "new-conn-1"
+      x-version: "v2"
+    tags: ["traces-to-metrics", "new"]
+    metadata:
+      name: "new-connector-1"
+      version: "5.0.0"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 15000
+      flush_interval: 1500
+      max_connections: 55
+      keep_alive: false
+      protocol: "grpc"
+  configurable/c2:
+    endpoint: "new-connector-2.internal"
+    timeout: 26
+    retry_count: 13
+    batch_size: 1501
+    enabled: false
+    compression: "zstd"
+    headers:
+      x-connector-id: "new-conn-2"
+      x-version: "v2"
+    tags: ["traces-to-logs", "new"]
+    metadata:
+      name: "new-connector-2"
+      version: "5.0.1"
+      environment: "staging"
+      region: "ap-northeast-1"
+    advanced:
+      buffer_size: 15001
+      flush_interval: 1501
+      max_connections: 56
+      keep_alive: false
+      protocol: "http"
+
+service:
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [configurable, configurable/r1, configurable/r2, configurable/r3, configurable/r4]
+      processors: [configurable, configurable/p1, configurable/p2, configurable/p3, configurable/p4]
+      exporters: [configurable, configurable/e1, configurable/e2, configurable/e3, configurable/e4, configurable/c1]
+    metrics:
+      receivers: [configurable/r5, configurable/r6, configurable/r7, configurable/r8, configurable/c1]
+      processors: [configurable, configurable/p1, configurable/p2]
+      exporters: [configurable, configurable/e1, configurable/e2, configurable/c2]
+    logs:
+      receivers: [configurable/r9, configurable/r10, configurable/c2]
+      processors: [configurable/p3, configurable/p4]
+      exporters: [configurable/e3, configurable/e4]

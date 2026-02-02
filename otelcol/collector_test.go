@@ -1002,3 +1002,292 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	entries := observedLogs.All()
 	require.NotEmpty(t, entries, "Logger should have logged messages")
 }
+
+// BenchmarkReload compares the performance of partial reload vs full reload.
+// Both benchmarks make a processor config change which requires rebuilding
+// processors and receivers (the bulk of the pipeline).
+func BenchmarkReloadAddReceiver(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReload(b, true, "otelcol-partial-reload-extra-receiver.yaml")
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReload(b, false, "otelcol-partial-reload-extra-receiver.yaml")
+	})
+}
+
+func BenchmarkReloadAddProcessor(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReload(b, true, "otelcol-bench-processor-change.yaml")
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReload(b, false, "otelcol-bench-processor-change.yaml")
+	})
+}
+
+func BenchmarkReloadAddExporter(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReload(b, true, "otelcol-bench-exporter-change.yaml")
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReload(b, false, "otelcol-bench-exporter-change.yaml")
+	})
+}
+
+func BenchmarkReloadAddPipeline(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReload(b, true, "otelcol-bench-add-pipeline.yaml")
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReload(b, false, "otelcol-bench-add-pipeline.yaml")
+	})
+}
+
+// BenchmarkReloadFullChange benchmarks a config change where all pipelines and
+// components are different. This simulates the worst case for partial reload
+// where it must rebuild the entire graph, allowing comparison of overhead
+// between partial reload path vs actual full service restart.
+func BenchmarkReloadFullChange(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReload(b, true, "otelcol-bench-full-change.yaml")
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReload(b, false, "otelcol-bench-full-change.yaml")
+	})
+}
+
+// BenchmarkReloadLargeConfig benchmarks reload with a large config containing
+// many receivers, processors, exporters, connectors, and pipelines.
+// This stresses the reflect.DeepEqual comparisons in the config diff logic.
+// The config has 20+ receivers, 20+ processors, 20+ exporters, 5 connectors, and 9 pipelines.
+// Each component has actual configuration fields to stress config comparison.
+func BenchmarkReloadLargeConfig(b *testing.B) {
+	b.Run("partial_reload", func(b *testing.B) {
+		benchmarkReloadWithFactories(b, true, "otelcol-bench-large-config.yaml", "otelcol-bench-large-config-alt.yaml", configurableFactories)
+	})
+	b.Run("full_reload", func(b *testing.B) {
+		benchmarkReloadWithFactories(b, false, "otelcol-bench-large-config.yaml", "otelcol-bench-large-config-alt.yaml", configurableFactories)
+	})
+}
+
+const benchmarkBaseConfig = "otelcol-partial-reload.yaml"
+
+func benchmarkReloadWithBase(b *testing.B, partialReloadEnabled bool, baseConfig, altConfig string) {
+	benchmarkReloadWithFactories(b, partialReloadEnabled, baseConfig, altConfig, nopFactories)
+}
+
+func benchmarkReloadWithFactories(b *testing.B, partialReloadEnabled bool, baseConfig, altConfig string, factoriesFunc func() (Factories, error)) {
+	// Set the feature gate.
+	require.NoError(b, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), partialReloadEnabled))
+	b.Cleanup(func() {
+		require.NoError(b, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), false))
+	})
+
+	// Use an observer logger to detect when reload completes.
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	// Use a counter to alternate between configs on each reload.
+	var configMu sync.Mutex
+	useAltConfig := false
+	var watcher confmap.WatcherFunc
+
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		configMu.Lock()
+		alt := useAltConfig
+		configMu.Unlock()
+
+		if alt {
+			return confmap.NewRetrieved(newConfFromFile(b, filepath.Join("testdata", altConfig)))
+		}
+		return confmap.NewRetrieved(newConfFromFile(b, filepath.Join("testdata", baseConfig)))
+	})
+
+	factories, err := factoriesFunc()
+	require.NoError(b, err)
+
+	// Use observer logger to detect reload completion.
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", baseConfig)},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileProvider,
+				},
+			},
+		},
+	})
+	require.NoError(b, err)
+
+	// Start collector.
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = col.Run(ctx)
+	}()
+
+	// Wait for collector to be running.
+	require.Eventually(b, func() bool {
+		return StateRunning == col.GetState()
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Reset timer to exclude setup time.
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// Record log count before reload.
+		logCountBefore := observedLogs.Len()
+
+		// Toggle config.
+		configMu.Lock()
+		useAltConfig = !useAltConfig
+		configMu.Unlock()
+
+		// Trigger reload.
+		watcher(&confmap.ChangeEvent{})
+
+		// Wait for reload to complete.
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			logs := observedLogs.All()
+			for j := logCountBefore; j < len(logs); j++ {
+				msg := logs[j].Message
+				if partialReloadEnabled && msg == "Partial reload completed successfully" {
+					goto done
+				}
+				if !partialReloadEnabled && msg == "Config updated, restart service" {
+					for col.GetState() != StateRunning && time.Now().Before(deadline) {
+						time.Sleep(1 * time.Millisecond)
+					}
+					goto done
+				}
+			}
+			time.Sleep(100 * time.Microsecond)
+		}
+	done:
+	}
+
+	b.StopTimer()
+
+	// Cleanup.
+	cancel()
+	wg.Wait()
+}
+
+func benchmarkReload(b *testing.B, partialReloadEnabled bool, altConfig string) {
+	// Set the feature gate.
+	require.NoError(b, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), partialReloadEnabled))
+	b.Cleanup(func() {
+		require.NoError(b, featuregate.GlobalRegistry().Set(partialReloadGate.ID(), false))
+	})
+
+	// Use an observer logger to detect when reload completes.
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	// Use a counter to alternate between configs on each reload.
+	var configMu sync.Mutex
+	useAltConfig := false
+	var watcher confmap.WatcherFunc
+
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		configMu.Lock()
+		alt := useAltConfig
+		configMu.Unlock()
+
+		if alt {
+			return confmap.NewRetrieved(newConfFromFile(b, filepath.Join("testdata", altConfig)))
+		}
+		return confmap.NewRetrieved(newConfFromFile(b, filepath.Join("testdata", benchmarkBaseConfig)))
+	})
+
+	factories, err := nopFactories()
+	require.NoError(b, err)
+
+	// Use observer logger to detect reload completion.
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", benchmarkBaseConfig)},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileProvider,
+				},
+			},
+		},
+	})
+	require.NoError(b, err)
+
+	// Start collector.
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = col.Run(ctx)
+	}()
+
+	// Wait for collector to be running.
+	require.Eventually(b, func() bool {
+		return StateRunning == col.GetState()
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Reset timer to exclude setup time.
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// Record log count before reload.
+		logCountBefore := observedLogs.Len()
+
+		// Toggle config.
+		configMu.Lock()
+		useAltConfig = !useAltConfig
+		configMu.Unlock()
+
+		// Trigger reload.
+		watcher(&confmap.ChangeEvent{})
+
+		// Wait for reload to complete.
+		// Partial reload: look for "Partial reload completed successfully" log.
+		// Full reload: look for "Config updated, restart service" log then wait for Running state.
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			logs := observedLogs.All()
+			for j := logCountBefore; j < len(logs); j++ {
+				msg := logs[j].Message
+				if partialReloadEnabled && msg == "Partial reload completed successfully" {
+					goto done
+				}
+				if !partialReloadEnabled && msg == "Config updated, restart service" {
+					// Full reload started, now wait for state to return to Running.
+					for col.GetState() != StateRunning && time.Now().Before(deadline) {
+						time.Sleep(1 * time.Millisecond)
+					}
+					goto done
+				}
+			}
+			time.Sleep(100 * time.Microsecond)
+		}
+	done:
+	}
+
+	b.StopTimer()
+
+	// Cleanup.
+	cancel()
+	wg.Wait()
+}

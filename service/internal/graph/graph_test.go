@@ -4100,12 +4100,6 @@ func TestReloadAddNewExporterToExistingPipeline(t *testing.T) {
 		},
 	}
 	set.PipelineConfigs = newPipelineCfgs
-	set.ExporterBuilder = builders.NewExporter(
-		newExpCfgs,
-		map[component.Type]exporter.Factory{
-			testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
-		},
-	)
 
 	reloaded, err := pg.Reload(context.Background(), &set,
 		rcvrCfgs, rcvrCfgs,
@@ -4643,7 +4637,6 @@ func TestReloadConnectorRemoval(t *testing.T) {
 		},
 	}
 	set.PipelineConfigs = newPipelineCfgs
-	set.ConnectorBuilder = builders.NewConnector(newConnCfgs, nil)
 
 	reloaded, err := pg.Reload(context.Background(), &set,
 		rcvrCfgs, rcvrCfgs,
@@ -5043,12 +5036,6 @@ func TestReloadAddNewConnectorBetweenExistingPipelines(t *testing.T) {
 		},
 	}
 	set.PipelineConfigs = newPipelineCfgs
-	set.ConnectorBuilder = builders.NewConnector(
-		connCfgs,
-		map[component.Type]connector.Factory{
-			testcomponents.ExampleConnectorFactory.Type(): testcomponents.ExampleConnectorFactory,
-		},
-	)
 
 	reloaded, err := pg.Reload(context.Background(), &set,
 		rcvrCfgs, rcvrCfgs,
@@ -5615,6 +5602,334 @@ func TestReloadPipelineRemovalWithSharedExporter(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 1, pipelineCount, "exporter should be in 1 pipeline after reload")
+
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// TestReloadReplaceAllPipelinesWithConnector verifies that when ALL pipelines are replaced
+// (not just some), connectors between the old pipelines are properly removed.
+// This tests the case where pipelinesToRemove contains all pipelines that use a connector.
+func TestReloadReplaceAllPipelinesWithConnector(t *testing.T) {
+	// Start with two pipelines connected by a connector: traces -> connector -> logs.
+	rcvrCfgs := map[component.ID]component.Config{
+		component.MustNewID("examplereceiver"):                 testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("examplereceiver", "logs"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+	}
+	procCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleprocessor"):                 testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleprocessor", "logs"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	expCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleexporter"):                 testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleexporter", "logs"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	connCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleconnector"): testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
+	}
+	pipelineCfgs := pipelines.Config{
+		pipeline.NewID(pipeline.SignalTraces): {
+			Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+			Processors: []component.ID{component.MustNewID("exampleprocessor")},
+			Exporters:  []component.ID{component.MustNewID("exampleexporter"), component.MustNewID("exampleconnector")},
+		},
+		pipeline.NewID(pipeline.SignalLogs): {
+			Receivers:  []component.ID{component.MustNewIDWithName("examplereceiver", "logs"), component.MustNewID("exampleconnector")},
+			Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "logs")},
+			Exporters:  []component.ID{component.MustNewIDWithName("exampleexporter", "logs")},
+		},
+	}
+
+	set := Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverBuilder: builders.NewReceiver(
+			rcvrCfgs,
+			map[component.Type]receiver.Factory{
+				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+			},
+		),
+		ProcessorBuilder: builders.NewProcessor(
+			procCfgs,
+			map[component.Type]processor.Factory{
+				testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+			},
+		),
+		ExporterBuilder: builders.NewExporter(
+			expCfgs,
+			map[component.Type]exporter.Factory{
+				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+			},
+		),
+		ConnectorBuilder: builders.NewConnector(
+			connCfgs,
+			map[component.Type]connector.Factory{
+				testcomponents.ExampleConnectorFactory.Type(): testcomponents.ExampleConnectorFactory,
+			},
+		),
+		PipelineConfigs: pipelineCfgs,
+	}
+
+	pg, err := Build(context.Background(), set)
+	require.NoError(t, err)
+
+	host := &Host{
+		Reporter: status.NewReporter(
+			func(*componentstatus.InstanceID, *componentstatus.Event) {},
+			func(error) {},
+		),
+	}
+	require.NoError(t, pg.StartAll(context.Background(), host))
+
+	// Verify connector exists initially.
+	require.Len(t, pg.pipelines, 2)
+	tracePipe := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]
+	hasConnector := false
+	for _, node := range tracePipe.exporters {
+		if _, ok := node.(*connectorNode); ok {
+			hasConnector = true
+			break
+		}
+	}
+	require.True(t, hasConnector, "traces pipeline should have connector initially")
+
+	// Replace ALL pipelines with completely different ones (no connector).
+	// This is the key scenario: both traces and logs pipelines are removed,
+	// and new metrics and logs/new pipelines are added.
+	newRcvrCfgs := map[component.ID]component.Config{
+		component.MustNewIDWithName("examplereceiver", "new1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("examplereceiver", "new2"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+	}
+	newProcCfgs := map[component.ID]component.Config{
+		component.MustNewIDWithName("exampleprocessor", "new1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleprocessor", "new2"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	newExpCfgs := map[component.ID]component.Config{
+		component.MustNewIDWithName("exampleexporter", "new1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleexporter", "new2"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	newPipelineCfgs := pipelines.Config{
+		pipeline.NewID(pipeline.SignalMetrics): {
+			Receivers:  []component.ID{component.MustNewIDWithName("examplereceiver", "new1")},
+			Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "new1")},
+			Exporters:  []component.ID{component.MustNewIDWithName("exampleexporter", "new1")},
+		},
+		pipeline.NewIDWithName(pipeline.SignalLogs, "new"): {
+			Receivers:  []component.ID{component.MustNewIDWithName("examplereceiver", "new2")},
+			Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "new2")},
+			Exporters:  []component.ID{component.MustNewIDWithName("exampleexporter", "new2")},
+		},
+	}
+	set.PipelineConfigs = newPipelineCfgs
+
+	// Perform the reload - this should not panic.
+	// Note: Reload automatically updates set.*Builder internally based on the factory parameters.
+	reloaded, err := pg.Reload(context.Background(), &set,
+		rcvrCfgs, newRcvrCfgs,
+		map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+		procCfgs, newProcCfgs,
+		map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+		expCfgs, newExpCfgs,
+		map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+		connCfgs, nil,
+		map[component.Type]connector.Factory{testcomponents.ExampleConnectorFactory.Type(): testcomponents.ExampleConnectorFactory},
+		host)
+	require.NoError(t, err)
+	assert.True(t, reloaded, "replacing all pipelines should trigger reload")
+
+	// Verify old pipelines are gone and new ones exist.
+	require.NotContains(t, pg.pipelines, pipeline.NewID(pipeline.SignalTraces))
+	require.NotContains(t, pg.pipelines, pipeline.NewID(pipeline.SignalLogs))
+	require.Contains(t, pg.pipelines, pipeline.NewID(pipeline.SignalMetrics))
+	require.Contains(t, pg.pipelines, pipeline.NewIDWithName(pipeline.SignalLogs, "new"))
+
+	// Verify no connectors exist in any pipeline.
+	for pipelineID, pipe := range pg.pipelines {
+		for _, node := range pipe.exporters {
+			if _, ok := node.(*connectorNode); ok {
+				t.Errorf("pipeline %s should not have connector as exporter", pipelineID)
+			}
+		}
+		for _, node := range pipe.receivers {
+			if _, ok := node.(*connectorNode); ok {
+				t.Errorf("pipeline %s should not have connector as receiver", pipelineID)
+			}
+		}
+	}
+
+	// Verify data flows through new pipelines.
+	allReceivers := pg.getReceivers()
+	require.Contains(t, allReceivers, pipeline.SignalMetrics)
+	for _, c := range allReceivers[pipeline.SignalMetrics] {
+		require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+	}
+	for _, e := range pg.GetExporters()[pipeline.SignalMetrics] {
+		assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Metrics)
+	}
+
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// TestReloadAddNewPipelinesWithConnector verifies that when adding new pipelines
+// that are connected by a new connector, the build order is correct.
+// The connector needs its downstream capabilitiesNode to be built first.
+func TestReloadAddNewPipelinesWithConnector(t *testing.T) {
+	// Start with a simple metrics pipeline (no connector).
+	rcvrCfgs := map[component.ID]component.Config{
+		component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+	}
+	procCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	expCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	pipelineCfgs := pipelines.Config{
+		pipeline.NewID(pipeline.SignalMetrics): {
+			Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+			Processors: []component.ID{component.MustNewID("exampleprocessor")},
+			Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+		},
+	}
+
+	set := Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverBuilder: builders.NewReceiver(
+			rcvrCfgs,
+			map[component.Type]receiver.Factory{
+				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+			},
+		),
+		ProcessorBuilder: builders.NewProcessor(
+			procCfgs,
+			map[component.Type]processor.Factory{
+				testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+			},
+		),
+		ExporterBuilder: builders.NewExporter(
+			expCfgs,
+			map[component.Type]exporter.Factory{
+				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+			},
+		),
+		ConnectorBuilder: builders.NewConnector(nil, nil),
+		PipelineConfigs:  pipelineCfgs,
+	}
+
+	pg, err := Build(context.Background(), set)
+	require.NoError(t, err)
+
+	host := &Host{
+		Reporter: status.NewReporter(
+			func(*componentstatus.InstanceID, *componentstatus.Event) {},
+			func(error) {},
+		),
+	}
+	require.NoError(t, pg.StartAll(context.Background(), host))
+
+	// Verify initial state.
+	require.Len(t, pg.pipelines, 1)
+	require.Contains(t, pg.pipelines, pipeline.NewID(pipeline.SignalMetrics))
+
+	// Add two new pipelines connected by a connector: traces -> connector -> logs.
+	// This tests that the build order is correct when both the source and
+	// destination pipelines are new.
+	newRcvrCfgs := map[component.ID]component.Config{
+		component.MustNewID("examplereceiver"):                   testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("examplereceiver", "traces"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("examplereceiver", "logs"):   testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+	}
+	newProcCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleprocessor"):                   testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleprocessor", "traces"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleprocessor", "logs"):   testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	newExpCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleexporter"):                   testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleexporter", "traces"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+		component.MustNewIDWithName("exampleexporter", "logs"):   testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	newConnCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleconnector"): testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
+	}
+	newPipelineCfgs := pipelines.Config{
+		pipeline.NewID(pipeline.SignalMetrics): {
+			Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+			Processors: []component.ID{component.MustNewID("exampleprocessor")},
+			Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+		},
+		pipeline.NewID(pipeline.SignalTraces): {
+			Receivers:  []component.ID{component.MustNewIDWithName("examplereceiver", "traces")},
+			Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "traces")},
+			Exporters:  []component.ID{component.MustNewIDWithName("exampleexporter", "traces"), component.MustNewID("exampleconnector")},
+		},
+		pipeline.NewID(pipeline.SignalLogs): {
+			Receivers:  []component.ID{component.MustNewIDWithName("examplereceiver", "logs"), component.MustNewID("exampleconnector")},
+			Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "logs")},
+			Exporters:  []component.ID{component.MustNewIDWithName("exampleexporter", "logs")},
+		},
+	}
+	set.PipelineConfigs = newPipelineCfgs
+
+	// Perform the reload - this should not panic due to build order issues.
+	// Note: Reload automatically updates set.*Builder internally based on the factory parameters.
+	reloaded, err := pg.Reload(context.Background(), &set,
+		rcvrCfgs, newRcvrCfgs,
+		map[component.Type]receiver.Factory{testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory},
+		procCfgs, newProcCfgs,
+		map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+		expCfgs, newExpCfgs,
+		map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+		nil, newConnCfgs,
+		map[component.Type]connector.Factory{testcomponents.ExampleConnectorFactory.Type(): testcomponents.ExampleConnectorFactory},
+		host)
+	require.NoError(t, err)
+	assert.True(t, reloaded, "adding new pipelines with connector should trigger reload")
+
+	// Verify all pipelines exist.
+	require.Len(t, pg.pipelines, 3)
+	require.Contains(t, pg.pipelines, pipeline.NewID(pipeline.SignalMetrics))
+	require.Contains(t, pg.pipelines, pipeline.NewID(pipeline.SignalTraces))
+	require.Contains(t, pg.pipelines, pipeline.NewID(pipeline.SignalLogs))
+
+	// Verify connector exists.
+	tracePipe := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]
+	logsPipe := pg.pipelines[pipeline.NewID(pipeline.SignalLogs)]
+
+	hasConnectorAsExporter := false
+	for _, node := range tracePipe.exporters {
+		if _, ok := node.(*connectorNode); ok {
+			hasConnectorAsExporter = true
+			break
+		}
+	}
+	assert.True(t, hasConnectorAsExporter, "traces pipeline should have connector as exporter")
+
+	hasConnectorAsReceiver := false
+	for _, node := range logsPipe.receivers {
+		if _, ok := node.(*connectorNode); ok {
+			hasConnectorAsReceiver = true
+			break
+		}
+	}
+	assert.True(t, hasConnectorAsReceiver, "logs pipeline should have connector as receiver")
+
+	// Verify data flows through all pipelines.
+	allReceivers := pg.getReceivers()
+
+	// Test traces pipeline with connector to logs.
+	require.Contains(t, allReceivers, pipeline.SignalTraces)
+	for _, c := range allReceivers[pipeline.SignalTraces] {
+		require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	}
+	// The traces data should flow to traces exporter.
+	for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+		assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+	}
+	// And via connector to logs exporter.
+	for _, e := range pg.GetExporters()[pipeline.SignalLogs] {
+		assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Logs, "logs exporter should have data from connector")
+	}
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }

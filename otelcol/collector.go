@@ -348,6 +348,8 @@ func (col *Collector) tryPartialReload(ctx context.Context) (bool, error) {
 	}
 	if !reloaded {
 		col.service.Logger().Info("Config updated but no changes detected, skipping reload")
+	} else {
+		col.service.Logger().Info("Partial reload completed successfully")
 	}
 	col.currentCfg = newCfg
 	return true, nil
