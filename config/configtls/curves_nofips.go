@@ -14,3 +14,14 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	"X25519":         tls.X25519,
 	"X25519MLKEM768": tls.X25519MLKEM768,
 }
+
+// defaultCurvePreferences defines the default curve preference order when not explicitly configured.
+// Hybrid post-quantum KEX (X25519MLKEM768) is preferred, followed by X25519 and NIST curves
+// in decreasing order of strength.
+var defaultCurvePreferences = []tls.CurveID{
+	tls.X25519MLKEM768,
+	tls.X25519,
+	tls.CurveP521,
+	tls.CurveP384,
+	tls.CurveP256,
+}

@@ -16,6 +16,7 @@ By default, TLS is enabled:
   for gRPC.
 - `curve_preferences` (default = []): specify your curve preferences  that will
 	 be used in an ECDHE handshake, in preference order. Accepted values are:
+  - X25519MLKEM768
   - X25519
   - P521
   - P256
