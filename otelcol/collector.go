@@ -317,8 +317,8 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, err
 	}
 
-	if err := xconfmap.Validate(newCfg); err != nil {
-		return false, err
+	if validateErr := xconfmap.Validate(newCfg); validateErr != nil {
+		return false, validateErr
 	}
 
 	if !receiversOnlyChange(col.currentCfg, newCfg, isConnectorID(col.currentCfg.Connectors)) {

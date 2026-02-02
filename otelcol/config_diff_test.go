@@ -59,8 +59,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        true,
 		},
 		{
-			name: "receiver_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "receiver_config_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("otlp")] = "changed"
@@ -70,8 +70,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        true,
 		},
 		{
-			name: "receiver_added_to_config_map",
-			oldCfg:  baseConfig(),
+			name:   "receiver_added_to_config_map",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
@@ -81,8 +81,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        true,
 		},
 		{
-			name: "receiver_added_to_pipeline",
-			oldCfg:  baseConfig(),
+			name:   "receiver_added_to_pipeline",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Receivers[component.MustNewID("jaeger")] = struct{}{}
@@ -96,8 +96,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        true,
 		},
 		{
-			name: "processor_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "processor_config_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewID("batch")] = "changed"
@@ -107,8 +107,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "exporter_config_changed",
-			oldCfg:  baseConfig(),
+			name:   "exporter_config_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewID("otlp")] = "changed"
@@ -118,8 +118,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "pipeline_added",
-			oldCfg:  baseConfig(),
+			name:   "pipeline_added",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
@@ -148,8 +148,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "processor_config_map_changed",
-			oldCfg:  baseConfig(),
+			name:   "processor_config_map_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Processors[component.MustNewIDWithName("batch", "2")] = struct{}{}
@@ -182,8 +182,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "exporter_config_map_changed",
-			oldCfg:  baseConfig(),
+			name:   "exporter_config_map_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Exporters[component.MustNewIDWithName("otlp", "2")] = struct{}{}
@@ -277,8 +277,8 @@ func TestReceiversOnlyChange(t *testing.T) {
 			want:        false,
 		},
 		{
-			name: "extensions_list_changed",
-			oldCfg:  baseConfig(),
+			name:   "extensions_list_changed",
+			oldCfg: baseConfig(),
 			newCfg: func() *Config {
 				c := baseConfig()
 				c.Extensions = map[component.ID]component.Config{

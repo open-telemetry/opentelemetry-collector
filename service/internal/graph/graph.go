@@ -679,7 +679,7 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 
-		if compErr := rn.Component.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+		if compErr := rn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
 			host.Reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(compErr),
@@ -705,7 +705,7 @@ func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *rece
 		instanceID,
 		componentstatus.NewEvent(componentstatus.StatusStopping),
 	)
-	if err := rn.Component.Shutdown(ctx); err != nil {
+	if err := rn.Shutdown(ctx); err != nil {
 		host.Reporter.ReportStatus(
 			instanceID,
 			componentstatus.NewPermanentErrorEvent(err),
