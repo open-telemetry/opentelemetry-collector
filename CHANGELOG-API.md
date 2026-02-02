@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.51.0/v0.145.0
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configgrpc`: add client info to context before server authentication (#12836)
+- `pkg/xscraperhelper`: Add AddProfilesScraper similar to scraperhelper.AddMetricsScraper (#14427)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configoptional`: Fix `Unmarshal` methods not being called when config is wrapped inside `Optional` (#14500)
+  This bug notably manifested in the fact that the `sending_queue::batch::sizer` config for exporters
+  stopped defaulting to `sending_queue::sizer`, which sometimes caused the wrong units to be used
+  when configuring `sending_queue::batch::min_size` and `max_size`.
+  
+  As part of the fix, `xconfmap` exposes a new `xconfmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
+  of wrapper types like `configoptional.Optional` to make sure the `Unmarshal` method of the inner type is called.
+  
+  The default behavior remains that calling `conf.Unmarshal` on the `confmap.Conf` passed as argument to an `Unmarshal`
+  method will skip any top-level `Unmarshal` methods to avoid infinite recursion in standard use cases. 
+  
+
+<!-- previous-version -->
+
 ## v1.50.0/v0.144.0
 
 ### 🛑 Breaking changes 🛑
