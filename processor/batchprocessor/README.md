@@ -75,6 +75,28 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
+## Exporter failures and data loss
+
+The batch processor does not retry exporter errors. If a downstream exporter
+rejects a batch and both `retry_on_failure` and `sending_queue` are disabled on
+that exporter, the rejected data is dropped and cannot be recovered.
+
+To reduce data loss risk, enable exporter retries and/or queueing (including
+persistent queues when appropriate). See [Retry on Failure](../../exporter/exporterhelper/README.md#retry-on-failure)
+and [Sending Queue](../../exporter/exporterhelper/README.md#sending-queue) for details.
+
+### Warning log
+
+When a batch is rejected without retry or queueing, the exporter helper logs
+an error similar to:
+
+```
+Exporting failed. Rejecting data.
+```
+
+This indicates the batch was rejected and will not be retried; the log also
+includes a `rejected_items` count for the dropped items.
+
 ## Batching and client metadata
 
 Batching by metadata enables support for multi-tenant OpenTelemetry
