@@ -19,9 +19,9 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -201,6 +201,10 @@ func run(ymlPath string) error {
 		(md.Status.Class == "receiver" || md.Status.Class == "scraper") {
 		toGenerate[filepath.Join(tmplDir, "logs.go.tmpl")] = filepath.Join(codeDir, "generated_logs.go")
 		toGenerate[filepath.Join(tmplDir, "logs_test.go.tmpl")] = filepath.Join(codeDir, "generated_logs_test.go")
+	}
+
+	if len(md.FeatureGates) > 0 { // only generate feature gates if feature gates are present
+		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	}
 
 	// If at least one file to generate, will need the codeDir

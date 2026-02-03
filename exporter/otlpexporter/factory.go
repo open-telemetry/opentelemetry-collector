@@ -40,7 +40,6 @@ func createDefaultConfig() component.Config {
 	clientCfg.WriteBufferSize = 512 * 1024
 	// For backward compatibility:
 	clientCfg.Keepalive = configoptional.None[configgrpc.KeepaliveClientConfig]()
-	clientCfg.BalancerName = ""
 
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),

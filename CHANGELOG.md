@@ -7,6 +7,65 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.51.0/v0.145.0
+
+### 💡 Enhancements 💡
+
+- `pkg/scraperhelper`: ScraperID has been added to the logs for metrics, logs, and profiles (#14461)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/otlp_grpc`: Fix the OTLP exporter balancer to use round_robin by default, as intended. (#14090)
+- `pkg/config/configoptional`: Fix `Unmarshal` methods not being called when config is wrapped inside `Optional` (#14500)
+  This bug notably manifested in the fact that the `sending_queue::batch::sizer` config for exporters
+  stopped defaulting to `sending_queue::sizer`, which sometimes caused the wrong units to be used
+  when configuring `sending_queue::batch::min_size` and `max_size`.
+  
+  As part of the fix, `xconfmap` exposes a new `xconfmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
+  of wrapper types like `configoptional.Optional` to make sure the `Unmarshal` method of the inner type is called.
+  
+  The default behavior remains that calling `conf.Unmarshal` on the `confmap.Conf` passed as argument to an `Unmarshal`
+  method will skip any top-level `Unmarshal` methods to avoid infinite recursion in standard use cases. 
+  
+- `pkg/confmap`: Fix an issue where configs could fail to decode when using interpolated values in string fields. (#14413)
+  For example, a header can be set via an environment variable to a string that is parseable as a number, e.g. `1234`
+  
+- `pkg/service`: Don't error on startup when process metrics are enabled on unsupported OSes (e.g. AIX) (#14307)
+
+<!-- previous-version -->
+
+## v1.50.0/v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Change verbosity level for otelcol_exporter_queue_batch_send_size metric to detailed. (#14278)
+- `pkg/service`: Remove deprecated `telemetry.disableHighCardinalityMetrics` feature gate. (#14373)
+- `pkg/service`: Remove deprecated `service.noopTracerProvider` feature gate. (#14374)
+
+### 🚩 Deprecations 🚩
+
+- `exporter/otlp_grpc`: Rename `otlp` exporter to `otlp_grpc` exporter and add deprecated alias `otlp`. (#14403)
+- `exporter/otlp_http`: Rename `otlphttp` exporter to `otlp_http` exporter and add deprecated alias `otlphttp`. (#14396)
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Avoid duplicate CLI error logging in generated collector binaries by relying on cobra's error handling. (#14317)
+- `cmd/mdatagen`: Add the ability to disable attributes at the metric level and re-aggregate data points based off of these new dimensions (#10726)
+- `cmd/mdatagen`: Add optional `display_name` and `description` fields to metadata.yaml for human-readable component names (#14114)
+  The `display_name` field allows components to specify a human-readable name in metadata.yaml.
+  When provided, this name is used as the title in generated README files.
+  The `description` field allows components to include a brief description in generated README files.
+  
+- `cmd/mdatagen`: Validate stability level for entities (#14425)
+- `pkg/xexporterhelper`: Reenable batching for profiles (#14313)
+- `receiver/nop`: add profiles signal support (#14253)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/exporterhelper`: Fix reference count bug in partition batcher (#14444)
+
+<!-- previous-version -->
+
 ## v1.49.0/v0.143.0
 
 ### 💡 Enhancements 💡
