@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -343,11 +344,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					return label
 				},
 
-				// urlEncodeLabel: simple encode for slashes used in GitHub query params ("/" -> "%2F").
 				"urlEncodeLabel": func(label string) string {
-					return strings.ReplaceAll(label, "/", "%2F")
+					return url.PathEscape(label)
 				},
-
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
 				"userLinks": func(elems []string) []string {
