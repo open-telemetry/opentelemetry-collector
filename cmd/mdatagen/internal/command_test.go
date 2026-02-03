@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -872,14 +871,9 @@ func TestReadmeIssuesLabel_StoragePath_GenerateFile(t *testing.T) {
 	tmpdir := t.TempDir()
 	out := filepath.Join(tmpdir, "README.md")
 
-	// Render the README status section template directly to a file
 	require.NoError(t, generateFile("templates/readme.md.tmpl", out, md, "metadata"))
 
-	f, err := os.Open(out)
-	require.NoError(t, err)
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
+	b, err := os.ReadFile(out) //nolint:gosec
 	require.NoError(t, err)
 	s := strings.ReplaceAll(string(b), "\r\n", "\n")
 
