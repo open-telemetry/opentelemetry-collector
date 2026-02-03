@@ -1029,19 +1029,26 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 		expectedSpanName string
 	}
 
-	for name, testcase := range map[string]testcase{
+	for name, tc := range map[string]testcase{
 		"pattern": {
 			handler:          mux,
+			httpMethod:       "GET",
 			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 		"no_pattern": {
 			handler:          http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			httpMethod:       "GET",
 			expectedSpanName: "GET",
 		},
 		"unknown_method": {
 			handler:          mux,
 			httpMethod:       "FOOBAR",
 			expectedSpanName: "HTTP /b/{bucket}/o/{objectname...}",
+		},
+		"lowercase_method": {
+			handler:          mux,
+			httpMethod:       "get",
+			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -1052,7 +1059,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				context.Background(),
 				nil,
 				telemetry.NewTelemetrySettings(),
-				testcase.handler,
+				tc.handler,
 			)
 			require.NoError(t, err)
 
@@ -1068,11 +1075,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				<-done
 			}()
 
-			httpMethod := testcase.httpMethod
-			if httpMethod == "" {
-				httpMethod = "GET"
-			}
-			req, err := http.NewRequest(httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
+			req, err := http.NewRequest(tc.httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
 			require.NoError(t, err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
@@ -1081,7 +1084,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 
 			spans := telemetry.SpanRecorder.Ended()
 			require.Len(t, spans, 1)
-			assert.Equal(t, testcase.expectedSpanName, spans[0].Name())
+			assert.Equal(t, tc.expectedSpanName, spans[0].Name())
 		})
 	}
 }
