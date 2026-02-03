@@ -885,3 +885,82 @@ func TestReadmeIssuesLabel_StoragePath_GenerateFile(t *testing.T) {
 	// Also assert newline before Issues row to avoid concatenation
 	require.Contains(t, s, "\n| Distributions | [contrib] |\n| Issues        | ")
 }
+
+func TestDeriveLabelFromScope_TrimClassSuffix(t *testing.T) {
+	tmplFile := "templates/readme.md.tmpl" // any file passed into templatize; actual content doesn't matter here
+
+	md := Metadata{
+		Status: &Status{
+			Class: "extension",
+		},
+	}
+
+	tests := []struct {
+		name      string
+		scope     string
+		short     string
+		class     string
+		wantLabel string
+	}{
+		{
+			name:      "simple trim suffix",
+			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/myenvextension",
+			short:     "myenvextension",
+			class:     "extension",
+			wantLabel: "extension/myenv",
+		},
+		{
+			name:      "trim trailing separator after removing suffix",
+			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/myenv-extension",
+			short:     "myenv-extension",
+			class:     "extension",
+			wantLabel: "extension/myenv",
+		},
+		{
+			name:      "no change when suffix removal would empty segment",
+			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/extension",
+			short:     "extension",
+			class:     "extension",
+			wantLabel: "extension/extension",
+		},
+		{
+			name:      "scope does not contain class defaults to short name",
+			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/test/myprocessor",
+			short:     "mine",
+			class:     "processor",
+			wantLabel: "processor/mine",
+		},
+		{
+			name:      "derive from scope",
+			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mine",
+			class:     "extension",
+			wantLabel: "extension/mine",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdCopy := md
+			mdCopy.Type = "example"
+			mdCopy.ShortFolderName = tt.short
+			mdCopy.ScopeName = tt.scope
+			if mdCopy.Status == nil {
+				mdCopy.Status = &Status{}
+			}
+			mdCopy.Status.Class = tt.class
+
+			// Build a tiny template that only calls deriveLabelFromScope.
+			// We reuse templatize so we get the exact Funcs map from command.go.
+			tmpl := templatize(tmplFile, mdCopy)
+			tmpl, err := tmpl.Parse(`{{ deriveLabelFromScope .Metadata.ScopeName .Metadata.Status.Class .Metadata.ShortFolderName }}`)
+			require.NoError(t, err)
+
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, TemplateContext{Metadata: mdCopy, Package: "metadata"})
+			require.NoError(t, err)
+
+			got := buf.String()
+			require.Equal(t, tt.wantLabel, got)
+		})
+	}
+}
