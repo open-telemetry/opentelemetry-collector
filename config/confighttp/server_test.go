@@ -1074,6 +1074,62 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 	}
 }
 
+// TestHTTPServerTelemetry_TracingWithAuth tests that span names include the route pattern
+// even when authentication middleware is used (which calls r.WithContext).
+func TestHTTPServerTelemetry_TracingWithAuth(t *testing.T) {
+	// Create a pattern route
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/{version}/data", func(http.ResponseWriter, *http.Request) {})
+
+	telemetry := componenttest.NewTelemetry()
+
+	// Create a mock auth extension that simply passes through (authenticates successfully)
+	mockID := component.MustNewID("mock")
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, nil
+		}),
+	}
+
+	config := NewDefaultServerConfig()
+	config.NetAddr.Endpoint = "localhost:0"
+	config.Auth = configoptional.Some(AuthConfig{
+		Config: configauth.Config{
+			AuthenticatorID: mockID,
+		},
+	})
+
+	srv, err := config.ToServer(
+		context.Background(),
+		extensions,
+		telemetry.NewTelemetrySettings(),
+		mux,
+	)
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	lis, err := config.ToListener(context.Background())
+	require.NoError(t, err)
+	go func() {
+		defer close(done)
+		_ = srv.Serve(lis)
+	}()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		<-done
+	}()
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1/data", lis.Addr()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	resp.Body.Close()
+
+	spans := telemetry.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+	// Verify that the span name includes the route pattern, not just the method
+	assert.Equal(t, "GET /api/{version}/data", spans[0].Name())
+}
+
 // TestUnmarshalYAMLWithMiddlewares tests that the "middlewares" field is correctly
 // parsed from YAML configurations (fixing the bug where "middleware" was used instead)
 func TestServerUnmarshalYAMLWithMiddlewares(t *testing.T) {

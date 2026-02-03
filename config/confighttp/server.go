@@ -368,7 +368,13 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(ctx))
+		// Preserve the Pattern field when creating a new request with updated context.
+		// WithContext creates a shallow copy but doesn't preserve Pattern (Go issue).
+		reqWithCtx := r.WithContext(ctx)
+		reqWithCtx.Pattern = r.Pattern
+		next.ServeHTTP(w, reqWithCtx)
+		// After inner handler returns, copy Pattern back so parent middleware can see it
+		r.Pattern = reqWithCtx.Pattern
 	})
 }
 
