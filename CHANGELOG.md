@@ -7,6 +7,33 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.51.0/v0.145.0
+
+### 💡 Enhancements 💡
+
+- `pkg/scraperhelper`: ScraperID has been added to the logs for metrics, logs, and profiles (#14461)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/otlp_grpc`: Fix the OTLP exporter balancer to use round_robin by default, as intended. (#14090)
+- `pkg/config/configoptional`: Fix `Unmarshal` methods not being called when config is wrapped inside `Optional` (#14500)
+  This bug notably manifested in the fact that the `sending_queue::batch::sizer` config for exporters
+  stopped defaulting to `sending_queue::sizer`, which sometimes caused the wrong units to be used
+  when configuring `sending_queue::batch::min_size` and `max_size`.
+  
+  As part of the fix, `xconfmap` exposes a new `xconfmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
+  of wrapper types like `configoptional.Optional` to make sure the `Unmarshal` method of the inner type is called.
+  
+  The default behavior remains that calling `conf.Unmarshal` on the `confmap.Conf` passed as argument to an `Unmarshal`
+  method will skip any top-level `Unmarshal` methods to avoid infinite recursion in standard use cases. 
+  
+- `pkg/confmap`: Fix an issue where configs could fail to decode when using interpolated values in string fields. (#14413)
+  For example, a header can be set via an environment variable to a string that is parseable as a number, e.g. `1234`
+  
+- `pkg/service`: Don't error on startup when process metrics are enabled on unsupported OSes (e.g. AIX) (#14307)
+
+<!-- previous-version -->
+
 ## v1.50.0/v0.144.0
 
 ### 🛑 Breaking changes 🛑

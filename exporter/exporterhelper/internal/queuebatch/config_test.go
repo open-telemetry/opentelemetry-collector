@@ -169,7 +169,7 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg := newBaseCfg()
-			err = cfg.Unmarshal(cm)
+			err = cm.Unmarshal(&cfg)
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, err, tt.expectedErr)
 				return
