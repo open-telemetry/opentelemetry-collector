@@ -387,7 +387,7 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 
 // standardizeHTTPMethod returns an upper case HTTP method if well-known, otherwise unknown.
 // Based on https://github.com/open-telemetry/opentelemetry-go-contrib/blob/1530d71edc6d40d0659187d069081b639ef1b394/instrumentation/github.com/emicklei/go-restful/otelrestful/internal/semconv/util.go#L119
-func standardizeHTTPMethod(method string, unknown string) string {
+func standardizeHTTPMethod(method, unknown string) string {
 	method = strings.ToUpper(method)
 	switch method {
 	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
