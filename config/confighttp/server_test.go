@@ -1025,6 +1025,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 
 	type testcase struct {
 		handler          http.Handler
+		httpMethod       string
 		expectedSpanName string
 	}
 
@@ -1036,6 +1037,11 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 		"no_pattern": {
 			handler:          http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 			expectedSpanName: "GET",
+		},
+		"unknown_method": {
+			handler:          mux,
+			httpMethod:       "FOOBAR",
+			expectedSpanName: "HTTP /b/{bucket}/o/{objectname...}",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -1062,7 +1068,13 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				<-done
 			}()
 
-			resp, err := http.Get(fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()))
+			httpMethod := testcase.httpMethod
+			if httpMethod == "" {
+				httpMethod = "GET"
+			}
+			req, err := http.NewRequest(httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			resp.Body.Close()
