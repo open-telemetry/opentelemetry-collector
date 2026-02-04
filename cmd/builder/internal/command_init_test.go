@@ -4,7 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -39,15 +38,9 @@ func TestRunInit(t *testing.T) {
 			wantErr:   "argument must be a folder",
 		},
 		{
-			name: "with a relative path",
-			buildPath: func(dir string) string {
-				wd, err := os.Getwd()
-				require.NoError(t, err)
-				p, err := filepath.Rel(wd, dir)
-				require.NoError(t, err)
-				return p
-			},
-			wantErr: "",
+			name:      "with a relative path",
+			buildPath: func(string) string { return "./tmp/init" },
+			wantErr:   "",
 		},
 		{
 			name:      "with an absolute path",
