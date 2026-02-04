@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/scraperhelper
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: ScraperID has been added to the logs for metrics, logs, and profiles
+
+# One or more tracking issues or pull requests related to the change
+issues: [14461]

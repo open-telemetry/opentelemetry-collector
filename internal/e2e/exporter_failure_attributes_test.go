@@ -47,7 +47,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		require.NoError(t, sendTestMetrics(otelPort))
 
 		require.Eventually(t, func() bool {
-			metric := scrapeFailureMetric(t, metricsPort, "otlphttp/test")
+			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
 			if metric == nil {
 				return false
 			}
@@ -74,7 +74,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
 
 		require.NoError(t, sendTestMetrics(otelPort))
-		assertNoFailureMetric(t, metricsPort, "otlphttp/test")
+		assertNoFailureMetric(t, metricsPort, "otlp_http/test")
 	})
 
 	t.Run("retryable error exhausts retries", func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		require.NoError(t, sendTestMetrics(otelPort))
 
 		require.Eventually(t, func() bool {
-			metric := scrapeFailureMetric(t, metricsPort, "otlphttp/test")
+			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
 			if metric == nil {
 				return false
 			}
