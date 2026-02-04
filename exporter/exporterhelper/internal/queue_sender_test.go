@@ -77,7 +77,7 @@ type mockRequestMiddleware struct {
 }
 
 // WrapSender creates a new wrapper that intercepts calls
-func (m *mockRequestMiddleware) WrapSender(set requestmiddleware.RequestMiddlewareSettings, next sender.Sender[request.Request]) (sender.Sender[request.Request], error) {
+func (m *mockRequestMiddleware) WrapSender(_ requestmiddleware.RequestMiddlewareSettings, next sender.Sender[request.Request]) (sender.Sender[request.Request], error) {
 	if m.onWrap != nil {
 		if err := m.onWrap(); err != nil {
 			return nil, err
@@ -105,7 +105,7 @@ func (m *mockWrapperSender) Send(ctx context.Context, req request.Request) error
 	return m.next.Send(ctx, req)
 }
 
-func (m *mockWrapperSender) Shutdown(ctx context.Context) error {
+func (m *mockWrapperSender) Shutdown(_ context.Context) error {
 	m.shutdown.Add(1)
 	if m.onShutdown != nil {
 		m.onShutdown()
@@ -142,7 +142,7 @@ func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 	// Make test deterministic using WaitForResult.
 	qCfg.WaitForResult = true
 
-	nextSender := sender.NewSender(func(ctx context.Context, req request.Request) error {
+	nextSender := sender.NewSender(func(_ context.Context, _ request.Request) error {
 		return nil
 	})
 
@@ -187,7 +187,7 @@ func TestQueueSender_MultipleMiddlewares_Ordering(t *testing.T) {
 	// Make test deterministic
 	qCfg.WaitForResult = true
 
-	nextSender := sender.NewSender(func(ctx context.Context, req request.Request) error {
+	nextSender := sender.NewSender(func(_ context.Context, _ request.Request) error {
 		callOrder = append(callOrder, "base")
 		return nil
 	})
@@ -283,7 +283,7 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 			qCfg := NewDefaultQueueConfig()
 			qCfg.RequestMiddlewares = []component.ID{mw1ID, mw2ID}
 
-			nextSender := sender.NewSender(func(ctx context.Context, req request.Request) error { return nil })
+			nextSender := sender.NewSender(func(_ context.Context, _ request.Request) error { return nil })
 			qs, err := NewQueueSender(qSet, qCfg, "", nextSender)
 			require.NoError(t, err)
 

@@ -65,7 +65,6 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
-
 	qs := &queueSender{
 		mwIDs:     qCfg.RequestMiddlewares,
 		id:        qSet.ID,

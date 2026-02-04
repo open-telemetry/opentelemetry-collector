@@ -1,5 +1,5 @@
 change_type: enhancement
-component: exporterhelper
+component: pkg/exporterhelper
 note: >
   Add `RequestMiddleware` interface support to the queue sender. This allows
   extensions to intercept and manage export requests (e.g., for dynamic concurrency control).
