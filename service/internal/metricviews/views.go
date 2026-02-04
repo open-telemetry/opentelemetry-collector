@@ -109,7 +109,7 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 				},
 				Stream: &config.ViewStream{
 					AttributeKeys: &config.IncludeExclude{
-						Included: []string{"exporter"},
+						Excluded: []string{"error.type", "error.permanent"},
 					},
 				},
 			},

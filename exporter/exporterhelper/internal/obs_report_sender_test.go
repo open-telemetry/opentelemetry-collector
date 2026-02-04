@@ -52,7 +52,7 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "PermanentError",
 			err:          consumererror.NewPermanent(errors.New("bad data")),
 			numItems:     5,
-			expectedType: "Unknown",
+			expectedType: "_OTHER",
 			expectedPerm: true,
 		},
 		{
@@ -86,7 +86,7 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			name:         "UnknownError",
 			err:          errFake,
 			numItems:     8,
-			expectedType: "Unknown",
+			expectedType: "_OTHER",
 			expectedPerm: false,
 		},
 	}
@@ -260,7 +260,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	if failedToSendSpans > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -334,7 +334,7 @@ func TestExportMetricsOp(t *testing.T) {
 	if failedToSendMetricPoints > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -408,7 +408,7 @@ func TestExportLogsOp(t *testing.T) {
 	if failedToSendLogRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{
@@ -447,7 +447,7 @@ func TestDetermineErrorType(t *testing.T) {
 		{
 			name:              "unknown error",
 			err:               errors.New("some error"),
-			expectedErrorType: "Unknown",
+			expectedErrorType: "_OTHER",
 		},
 		{
 			name:              "wrapped context canceled",
@@ -490,7 +490,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "permanent error",
 			err:  consumererror.NewPermanent(errors.New("bad data")),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 				attribute.Bool(ErrorPermanentKey, true),
 			),
 		},
@@ -498,7 +498,7 @@ func TestExtractFailureAttributes(t *testing.T) {
 			name: "non-permanent error",
 			err:  errors.New("transient error"),
 			expected: attribute.NewSet(
-				attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+				attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 				attribute.Bool(ErrorPermanentKey, false),
 			),
 		},
@@ -604,7 +604,7 @@ func TestExportProfilesOp(t *testing.T) {
 	if failedToSendProfileRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
-			attribute.String(string(semconv.ErrorTypeKey), "Unknown"),
+			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
 		expectedDataPoints = []metricdata.DataPoint[int64]{

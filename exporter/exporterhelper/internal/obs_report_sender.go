@@ -183,5 +183,5 @@ func determineErrorType(err error) string {
 		return st.Code().String()
 	}
 
-	return "Unknown"
+	return "_OTHER"
 }
