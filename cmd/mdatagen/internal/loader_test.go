@@ -6,6 +6,7 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -727,6 +728,143 @@ func TestLoadMetadata(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestLoadMetadata_LabelMapping(t *testing.T) {
+	// stub packageNameFunc for all subtests
+	origPackageNameFunc := packageNameFunc
+	packageNameFunc = func(_ string) (string, error) {
+		return "go.opentelemetry.io/collector/fake", nil
+	}
+	defer func() { packageNameFunc = origPackageNameFunc }()
+
+	type testCase struct {
+		name string
+		// repo layout
+		relCompDir      string // component directory relative to repoRoot
+		labelsFileLines []string
+		// metadata YAML snippet
+		metadataYAML string
+		// expected label
+		wantLabel string
+		// whether we create .github/component_labels.txt at all
+		omitLabelsFile bool
+	}
+
+	cases := []testCase{
+		{
+			name:       "confmap provider https",
+			relCompDir: "confmap/provider/https",
+			labelsFileLines: []string{
+				"confmap/provider/https confmap/provider/https",
+			},
+			metadataYAML: `
+type: https
+github_project: open-telemetry/opentelemetry-collector
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    beta: [logs]
+`,
+			wantLabel: "confmap/provider/https",
+		},
+
+		{
+			name:       "extension storage filestorage",
+			relCompDir: "extension/storage/filestorage",
+			labelsFileLines: []string{
+				"extension/storage/filestorage extension/storage/filestorage",
+			},
+			metadataYAML: `
+type: filestorage
+github_project: open-telemetry/opentelemetry-collector-contrib
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    beta: [logs]
+`,
+			wantLabel: "extension/storage/filestorage",
+		},
+		{
+			name:       "fallback class shortFolderName when no mapping entry",
+			relCompDir: "receiver/nopreceiver",
+			labelsFileLines: []string{
+				// note: no entry for receiver/nopreceiver
+				"receiver/filelogreceiver receiver/filelog",
+			},
+			metadataYAML: `
+type: nop
+github_project: open-telemetry/opentelemetry-collector
+status:
+  disable_codecov_badge: true
+  class: receiver
+  stability:
+    beta: [logs]
+`,
+			// LoadMetadata does not itself set class/short fallback into Label;
+			// that is used in template as a fallback. So here we expect Label to stay empty.
+			// The template will later use receiver/ShortFolderName instead.
+			wantLabel: "",
+		},
+		{
+			name:            "no labels file present",
+			relCompDir:      "receiver/nopreceiver",
+			omitLabelsFile:  true,
+			labelsFileLines: nil,
+			metadataYAML: `
+type: nop
+github_project: open-telemetry/opentelemetry-collector
+status:
+  disable_codecov_badge: true
+  class: receiver
+  stability:
+    beta: [logs]
+`,
+			wantLabel: "",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+
+			// Optionally create .github/component_labels.txt
+			if !tt.omitLabelsFile {
+				githubDir := filepath.Join(repoRoot, ".github")
+				require.NoError(t, os.MkdirAll(githubDir, 0o700))
+
+				var b strings.Builder
+				for _, line := range tt.labelsFileLines {
+					b.WriteString(line)
+					if !strings.HasSuffix(line, "\n") {
+						b.WriteString("\n")
+					}
+				}
+				labelsPath := filepath.Join(githubDir, "component_labels.txt")
+				require.NoError(t, os.WriteFile(labelsPath, []byte(b.String()), 0o600))
+			}
+
+			// Create component directory
+			compDir := filepath.Join(repoRoot, filepath.FromSlash(tt.relCompDir))
+			require.NoError(t, os.MkdirAll(compDir, 0o700))
+
+			// Write metadata.yaml
+			mdFile := filepath.Join(compDir, "metadata.yaml")
+			require.NoError(t, os.WriteFile(mdFile, []byte(tt.metadataYAML), 0o600))
+
+			// Call LoadMetadata (uses findRepoRoot + loadComponentLabels internally)
+			md, err := LoadMetadata(mdFile)
+			require.NoError(t, err)
+
+			if tt.wantLabel == "" {
+				require.Equal(t, "", md.Label, "expected no label to be set")
+			} else {
+				require.Equal(t, tt.wantLabel, md.Label)
 			}
 		})
 	}
