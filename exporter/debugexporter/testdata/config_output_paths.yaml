@@ -1,0 +1,4 @@
+use_internal_logger: false
+output_paths:
+  - stderr
+
