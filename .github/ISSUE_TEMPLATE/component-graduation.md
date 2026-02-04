@@ -48,8 +48,8 @@ The component must have evidence of real-world adoption. Provide at least one of
 ### Option 1: Public Adopter Testimonials
 At least two organizations have publicly stated they use the component in production.
 
-- [ ] Adopter 1: <!-- Link to blog post, conference talk, GitHub issue, or other public statement -->
-- [ ] Adopter 2: <!-- Link to blog post, conference talk, GitHub issue, or other public statement -->
+- [ ] Adopter 1: <!-- Link to blog post, conference talk, GitHub issue, vendor documentation or other public statement -->
+- [ ] Adopter 2: <!-- Link to blog post, conference talk, GitHub issue, vendor documentation or other public statement -->
 
 ### Option 2: Private Attestation
 If adopters cannot be named publicly, provide private attestation to the assigned maintainer.
