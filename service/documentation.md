@@ -101,3 +101,15 @@ Number of items emitted from the receiver. [Development]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {item} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `service.AllowNoPipelines` | alpha | Allow starting the Collector without starting any pipelines. | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/12613) |
+| `service.profilesSupport` | alpha | Controls whether profiles support can be enabled | v0.112.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11477) |
+| `telemetry.UseLocalHostAsDefaultMetricsAddress` | beta | Controls whether default Prometheus metrics server use localhost as the default host for their endpoints | v0.111.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11251) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
