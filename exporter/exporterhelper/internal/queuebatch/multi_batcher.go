@@ -15,14 +15,16 @@ import (
 )
 
 type multiBatcher struct {
-	cfg         BatchConfig
-	wp          *workerPool
-	sizer       request.Sizer
-	partitioner Partitioner[request.Request]
-	mergeCtx    func(context.Context, context.Context) context.Context
-	consumeFunc sender.SendFunc[request.Request]
-	shards      sync.Map
-	logger      *zap.Logger
+	cfg                      BatchConfig
+	wp                       *workerPool
+	sizer                    request.Sizer
+	partitioner              Partitioner[request.Request]
+	mergeCtx                 func(context.Context, context.Context) context.Context
+	consumeFunc              sender.SendFunc[request.Request]
+	shards                   sync.Map
+	logger                   *zap.Logger
+	maxActivePartitionsCount int64
+	activePartitionsCount    int64
 }
 
 func newMultiBatcher(
@@ -35,14 +37,30 @@ func newMultiBatcher(
 	logger *zap.Logger,
 ) *multiBatcher {
 	return &multiBatcher{
-		cfg:         bCfg,
-		wp:          wp,
-		sizer:       sizer,
-		partitioner: partitioner,
-		mergeCtx:    mergeCtx,
-		consumeFunc: next,
-		logger:      logger,
+		cfg:                      bCfg,
+		wp:                       wp,
+		sizer:                    sizer,
+		partitioner:              partitioner,
+		mergeCtx:                 mergeCtx,
+		consumeFunc:              next,
+		logger:                   logger,
+		maxActivePartitionsCount: int64(10000), // TODO: fix this by reading from config.
+		activePartitionsCount:    0,
 	}
+}
+
+func (mb *multiBatcher) evictPartitionKey() {
+	// TODO: find the key to be evicted.
+	key := "dummy"
+	// remove the key from the map.
+	partition, loaded := mb.shards.LoadAndDelete(key)
+	if !loaded {
+		// Some other thread might have evicted the key and that will take responsibility to flush the partition.
+		return
+	}
+	// flush partition on worker pool.
+	pb := partition.(*partitionBatcher)
+	mb.wp.execute(pb.flushCurrentBatchIfNecessary)
 }
 
 func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
@@ -53,12 +71,19 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 		return s.(*partitionBatcher)
 	}
 
+	if mb.activePartitionsCount > mb.maxActivePartitionsCount {
+		// we need to evict a key.
+		mb.evictPartitionKey()
+	}
+
 	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
+	mb.activePartitionsCount++
 	_ = newS.Start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.
 	if loaded {
 		_ = newS.Shutdown(ctx)
+		mb.activePartitionsCount--
 	}
 	return s.(*partitionBatcher)
 }
