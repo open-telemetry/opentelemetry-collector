@@ -54,3 +54,5 @@ server-side middleware object.
 
 - **GRPCClient**: The extension returns `[]grpc.DialOption`.
 - **GRPCServer**: The extension returns `[]grpc.ServerOption`.
+- **GRPCClientContext**: Like `GRPCClient`, but accepts a `context.Context` for operations requiring it (e.g., fetching TLS credentials from a remote source).
+- **GRPCServerContext**: Like `GRPCServer`, but accepts a `context.Context`.

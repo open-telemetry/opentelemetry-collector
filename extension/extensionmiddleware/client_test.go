@@ -4,6 +4,7 @@
 package extensionmiddleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -84,6 +85,45 @@ func TestGetGRPCClientOptionsFunc(t *testing.T) {
 		})
 
 		options, err := errorFunc.GetGRPCClientOptions()
+		require.Error(t, err)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, options)
+	})
+}
+
+func TestGetGRPCClientOptionsContextFunc(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nil function", func(t *testing.T) {
+		var nilFunc GetGRPCClientOptionsContextFunc
+		options, err := nilFunc.GetGRPCClientOptionsContext(ctx)
+		require.NoError(t, err)
+		require.Nil(t, options)
+	})
+
+	t.Run("receives context", func(t *testing.T) {
+		type ctxKey struct{}
+		testCtx := context.WithValue(ctx, ctxKey{}, "test-value")
+		var receivedCtx context.Context
+
+		f := GetGRPCClientOptionsContextFunc(func(c context.Context) ([]grpc.DialOption, error) {
+			receivedCtx = c
+			return []grpc.DialOption{grpc.WithAuthority("test")}, nil
+		})
+
+		options, err := f.GetGRPCClientOptionsContext(testCtx)
+		require.NoError(t, err)
+		require.Len(t, options, 1)
+		require.Equal(t, "test-value", receivedCtx.Value(ctxKey{}))
+	})
+
+	t.Run("error function", func(t *testing.T) {
+		expectedErr := errors.New("context grpc options error")
+		errorFunc := GetGRPCClientOptionsContextFunc(func(context.Context) ([]grpc.DialOption, error) {
+			return nil, expectedErr
+		})
+
+		options, err := errorFunc.GetGRPCClientOptionsContext(ctx)
 		require.Error(t, err)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, options)

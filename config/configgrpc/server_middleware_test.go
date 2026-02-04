@@ -43,6 +43,12 @@ type testServerMiddleware struct {
 	extensionmiddleware.GetGRPCServerOptionsFunc
 }
 
+// testServerMiddlewareContext is a test implementation that uses context
+type testServerMiddlewareContext struct {
+	extension.Extension
+	extensionmiddleware.GetGRPCServerOptionsContextFunc
+}
+
 func newTestServerMiddleware(name string) extension.Extension {
 	return &testServerMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
@@ -55,6 +61,25 @@ func newTestServerMiddleware(name string) extension.Extension {
 				) (any, error) {
 					ctx = context.WithValue(ctx, middlewareCallsKey, append(getMiddlewareCalls(ctx), name))
 					return handler(ctx, req)
+				})}, nil
+		},
+	}
+}
+
+func newTestServerMiddlewareContext(name string) extension.Extension {
+	return &testServerMiddlewareContext{
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetGRPCServerOptionsContextFunc: func(ctx context.Context) ([]grpc.ServerOption, error) {
+			// Use "ctx-" prefix to indicate context-aware middleware was used
+			ctxName := "ctx-" + name
+			return []grpc.ServerOption{grpc.ChainUnaryInterceptor(
+				func(
+					callCtx context.Context,
+					req any, _ *grpc.UnaryServerInfo,
+					handler grpc.UnaryHandler,
+				) (any, error) {
+					callCtx = context.WithValue(callCtx, middlewareCallsKey, append(getMiddlewareCalls(callCtx), ctxName))
+					return handler(callCtx, req)
 				})}, nil
 		},
 	}
@@ -99,6 +124,47 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 
 	// Verify interceptors were called in the correct order
 	assert.Equal(t, []string{"test1", "test2"}, getMiddlewareCalls(server.recordedContext))
+}
+
+func TestGrpcServerUnaryInterceptorContext(t *testing.T) {
+	// Register two context-aware test extensions
+	extensions := map[component.ID]component.Component{
+		component.MustNewID("test1"): newTestServerMiddlewareContext("test1"),
+		component.MustNewID("test2"): newTestServerMiddlewareContext("test2"),
+	}
+
+	// Setup the server with both middleware options
+	server := &grpcTraceServer{}
+	var addr string
+
+	// Create the server with middleware interceptors
+	{
+		var srv *grpc.Server
+		srv, addr = server.startTestServerWithExtensions(t, configoptional.Some(ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  "localhost:0",
+				Transport: confignet.TransportTypeTCP,
+			},
+			Middlewares: []configmiddleware.Config{
+				newTestMiddlewareConfig("test1"),
+				newTestMiddlewareConfig("test2"),
+			},
+		}), extensions)
+		defer srv.Stop()
+	}
+
+	// Send a request to trigger the interceptors
+	resp, errResp := sendTestRequest(t, ClientConfig{
+		Endpoint: addr,
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	})
+	require.NoError(t, errResp)
+	require.NotNil(t, resp)
+
+	// Verify context-aware interceptors were called (indicated by "ctx-" prefix)
+	assert.Equal(t, []string{"ctx-test1", "ctx-test2"}, getMiddlewareCalls(server.recordedContext))
 }
 
 // TestServerMiddlewareToServerErrors tests failure cases for the ToServer method

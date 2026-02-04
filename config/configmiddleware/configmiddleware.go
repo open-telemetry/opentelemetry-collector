@@ -68,8 +68,15 @@ func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component
 // extensionmiddleware.GRPCClient from the map of extensions, and
 // returns the gRPC dial options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC clients.
-func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
+//
+// This function first checks if the extension implements
+// GRPCClientContext (which accepts a context), falling back to
+// GRPCClient for backwards compatibility.
+func (m Config) GetGRPCClientOptions(ctx context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
 	if ext, found := extensions[m.ID]; found {
+		if client, ok := ext.(extensionmiddleware.GRPCClientContext); ok {
+			return client.GetGRPCClientOptionsContext(ctx)
+		}
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
 			return client.GetGRPCClientOptions()
 		}
@@ -82,8 +89,15 @@ func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component
 // extensionmiddleware.GRPCServer from the map of extensions, and
 // returns the gRPC server options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC servers.
-func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.ServerOption, error) {
+//
+// This function first checks if the extension implements
+// GRPCServerContext (which accepts a context), falling back to
+// GRPCServer for backwards compatibility.
+func (m Config) GetGRPCServerOptions(ctx context.Context, extensions map[component.ID]component.Component) ([]grpc.ServerOption, error) {
 	if ext, found := extensions[m.ID]; found {
+		if server, ok := ext.(extensionmiddleware.GRPCServerContext); ok {
+			return server.GetGRPCServerOptionsContext(ctx)
+		}
 		if server, ok := ext.(extensionmiddleware.GRPCServer); ok {
 			return server.GetGRPCServerOptions()
 		}

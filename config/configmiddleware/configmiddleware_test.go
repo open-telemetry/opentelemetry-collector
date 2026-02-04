@@ -159,6 +159,26 @@ func TestConfig_GetGRPCServerOptions(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "found_and_valid_context",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: struct {
+					extension.Extension
+					extensionmiddleware.GetGRPCServerOptionsContextFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetGRPCServerOptionsContextFunc: func(context.Context) ([]grpc.ServerOption, error) {
+						return []grpc.ServerOption{
+							grpc.EmptyServerOption{},
+						}, nil
+					},
+				},
+			},
+			wantErr: nil,
+		},
+		{
 			name: "middleware_not_found",
 			middleware: Config{
 				ID: testID,
@@ -222,6 +242,26 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "found_and_valid_context",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: struct {
+					extension.Extension
+					extensionmiddleware.GetGRPCClientOptionsContextFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetGRPCClientOptionsContextFunc: func(context.Context) ([]grpc.DialOption, error) {
+						return []grpc.DialOption{
+							grpc.EmptyDialOption{},
+						}, nil
+					},
+				},
+			},
+			wantErr: nil,
+		},
+		{
 			name: "middleware_not_found",
 			middleware: Config{
 				ID: testID,
@@ -253,4 +293,52 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_GetGRPCClientOptions_ContextPassed(t *testing.T) {
+	type ctxKey struct{}
+	testCtx := context.WithValue(context.Background(), ctxKey{}, "test-value")
+	var receivedCtx context.Context
+
+	middleware := Config{ID: testID}
+	extensions := map[component.ID]component.Component{
+		testID: struct {
+			extension.Extension
+			extensionmiddleware.GetGRPCClientOptionsContextFunc
+		}{
+			Extension: extensionmiddlewaretest.NewNop(),
+			GetGRPCClientOptionsContextFunc: func(ctx context.Context) ([]grpc.DialOption, error) {
+				receivedCtx = ctx
+				return []grpc.DialOption{grpc.EmptyDialOption{}}, nil
+			},
+		},
+	}
+
+	_, err := middleware.GetGRPCClientOptions(testCtx, extensions)
+	require.NoError(t, err)
+	require.Equal(t, "test-value", receivedCtx.Value(ctxKey{}))
+}
+
+func TestConfig_GetGRPCServerOptions_ContextPassed(t *testing.T) {
+	type ctxKey struct{}
+	testCtx := context.WithValue(context.Background(), ctxKey{}, "server-test-value")
+	var receivedCtx context.Context
+
+	middleware := Config{ID: testID}
+	extensions := map[component.ID]component.Component{
+		testID: struct {
+			extension.Extension
+			extensionmiddleware.GetGRPCServerOptionsContextFunc
+		}{
+			Extension: extensionmiddlewaretest.NewNop(),
+			GetGRPCServerOptionsContextFunc: func(ctx context.Context) ([]grpc.ServerOption, error) {
+				receivedCtx = ctx
+				return []grpc.ServerOption{grpc.EmptyServerOption{}}, nil
+			},
+		},
+	}
+
+	_, err := middleware.GetGRPCServerOptions(testCtx, extensions)
+	require.NoError(t, err)
+	require.Equal(t, "server-test-value", receivedCtx.Value(ctxKey{}))
 }

@@ -4,6 +4,7 @@
 package extensionmiddlewaretest // import "go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -14,11 +15,13 @@ import (
 )
 
 var (
-	_ extension.Extension            = (*baseExtension)(nil)
-	_ extensionmiddleware.HTTPClient = (*baseExtension)(nil)
-	_ extensionmiddleware.GRPCClient = (*baseExtension)(nil)
-	_ extensionmiddleware.HTTPServer = (*baseExtension)(nil)
-	_ extensionmiddleware.GRPCServer = (*baseExtension)(nil)
+	_ extension.Extension                   = (*baseExtension)(nil)
+	_ extensionmiddleware.HTTPClient        = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCClient        = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCClientContext = (*baseExtension)(nil)
+	_ extensionmiddleware.HTTPServer        = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCServer        = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCServerContext = (*baseExtension)(nil)
 )
 
 type baseExtension struct {
@@ -26,8 +29,10 @@ type baseExtension struct {
 	component.ShutdownFunc
 	extensionmiddleware.GetHTTPHandlerFunc
 	extensionmiddleware.GetGRPCServerOptionsFunc
+	extensionmiddleware.GetGRPCServerOptionsContextFunc
 	extensionmiddleware.GetHTTPRoundTripperFunc
 	extensionmiddleware.GetGRPCClientOptionsFunc
+	extensionmiddleware.GetGRPCClientOptionsContextFunc
 }
 
 // NewErr returns a new [extension.Extension] that implements all
@@ -40,10 +45,16 @@ func NewErr(err error) extension.Extension {
 		GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
 			return nil, err
 		},
+		GetGRPCClientOptionsContextFunc: func(context.Context) ([]grpc.DialOption, error) {
+			return nil, err
+		},
 		GetHTTPHandlerFunc: func(http.Handler) (http.Handler, error) {
 			return nil, err
 		},
 		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+			return nil, err
+		},
+		GetGRPCServerOptionsContextFunc: func(context.Context) ([]grpc.ServerOption, error) {
 			return nil, err
 		},
 	}

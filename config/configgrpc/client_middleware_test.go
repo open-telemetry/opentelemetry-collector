@@ -31,6 +31,12 @@ type testClientMiddleware struct {
 	extensionmiddleware.GetGRPCClientOptionsFunc
 }
 
+// testClientMiddlewareContext is a mock implementation that uses context
+type testClientMiddlewareContext struct {
+	extension.Extension
+	extensionmiddleware.GetGRPCClientOptionsContextFunc
+}
+
 func newTestMiddlewareConfig(name string) configmiddleware.Config {
 	return configmiddleware.Config{
 		ID: component.MustNewID(name),
@@ -80,6 +86,50 @@ func newTestClientMiddleware(name string) extension.Extension {
 						newCtx := metadata.NewOutgoingContext(ctx, md)
 
 						// Continue the call with our updated context
+						return invoker(newCtx, method, req, reply, cc, opts...)
+					}),
+			}, nil
+		},
+	}
+}
+
+func newTestClientMiddlewareContext(name string) extension.Extension {
+	return &testClientMiddlewareContext{
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetGRPCClientOptionsContextFunc: func(ctx context.Context) ([]grpc.DialOption, error) {
+			return []grpc.DialOption{
+				grpc.WithChainUnaryInterceptor(
+					func(
+						callCtx context.Context,
+						method string,
+						req, reply any,
+						cc *grpc.ClientConn,
+						invoker grpc.UnaryInvoker,
+						opts ...grpc.CallOption,
+					) error {
+						// Get existing metadata or create new metadata
+						md, ok := metadata.FromOutgoingContext(callCtx)
+						if !ok {
+							md = metadata.New(nil)
+						} else {
+							md = md.Copy()
+						}
+
+						sequence := ""
+						if values := md.Get("middleware-sequence"); len(values) > 0 {
+							sequence = values[0]
+						}
+
+						// Use "ctx-" prefix to indicate context-aware middleware was used
+						ctxName := "ctx-" + name
+						if sequence == "" {
+							sequence = ctxName
+						} else {
+							sequence = fmt.Sprintf("%s,%s", sequence, ctxName)
+						}
+
+						md.Set("middleware-sequence", sequence)
+						newCtx := metadata.NewOutgoingContext(callCtx, md)
 						return invoker(newCtx, method, req, reply, cc, opts...)
 					}),
 			}, nil
@@ -137,6 +187,58 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 
 	// The sequence should be "middleware-1,middleware-2" as that's the order they were registered
 	expectedSequence := "middleware-1,middleware-2"
+	assert.Equal(t, expectedSequence, md[0])
+}
+
+// TestClientMiddlewareContextOrdering verifies that context-aware client middleware
+// interceptors are called and work correctly.
+func TestClientMiddlewareContextOrdering(t *testing.T) {
+	const middlewareTrackingHeader = "middleware-sequence"
+
+	// Create context-aware middleware extensions
+	mockMiddleware1 := newTestClientMiddlewareContext("middleware-1")
+	mockMiddleware2 := newTestClientMiddlewareContext("middleware-2")
+
+	mockExt := map[component.ID]component.Component{
+		component.MustNewID("middleware1"): mockMiddleware1,
+		component.MustNewID("middleware2"): mockMiddleware2,
+	}
+
+	// Start a gRPC server that will record the incoming metadata
+	server := &grpcTraceServer{}
+	srv, addr := server.startTestServer(t, configoptional.Some(ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+	}))
+	defer srv.Stop()
+
+	// Create client config with middleware extensions
+	clientConfig := ClientConfig{
+		Endpoint: addr,
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		Middlewares: []configmiddleware.Config{
+			newTestMiddlewareConfig("middleware1"),
+			newTestMiddlewareConfig("middleware2"),
+		},
+	}
+
+	// Send a request using the client with middleware
+	resp, err := sendTestRequestWithExtensions(t, clientConfig, mockExt)
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+
+	// Verify that the context-aware middleware was used (indicated by "ctx-" prefix)
+	ictx, ok := metadata.FromIncomingContext(server.recordedContext)
+	require.True(t, ok, "middleware tracking header not found in metadata")
+	md := ictx[middlewareTrackingHeader]
+	require.Len(t, md, 1, "expected exactly one middleware tracking header value")
+
+	// The sequence should show ctx- prefix indicating context-aware interface was used
+	expectedSequence := "ctx-middleware-1,ctx-middleware-2"
 	assert.Equal(t, expectedSequence, md[0])
 }
 

@@ -104,3 +104,51 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 		require.Nil(t, opts)
 	})
 }
+
+func TestGetGRPCServerOptionsContextFunc(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nil_function", func(t *testing.T) {
+		var f GetGRPCServerOptionsContextFunc
+		opts, err := f.GetGRPCServerOptionsContext(ctx)
+		require.NoError(t, err)
+		require.Nil(t, opts)
+	})
+
+	t.Run("receives_context", func(t *testing.T) {
+		type ctxKey struct{}
+		testCtx := context.WithValue(ctx, ctxKey{}, "test-value")
+		var receivedCtx context.Context
+
+		var interceptor grpc.UnaryServerInterceptor = func(
+			context.Context,
+			any,
+			*grpc.UnaryServerInfo,
+			grpc.UnaryHandler,
+		) (resp any, err error) {
+			return nil, nil
+		}
+		expectedOpts := []grpc.ServerOption{grpc.UnaryInterceptor(interceptor)}
+
+		f := GetGRPCServerOptionsContextFunc(func(c context.Context) ([]grpc.ServerOption, error) {
+			receivedCtx = c
+			return expectedOpts, nil
+		})
+
+		opts, err := f.GetGRPCServerOptionsContext(testCtx)
+		require.NoError(t, err)
+		require.Equal(t, expectedOpts, opts)
+		require.Equal(t, "test-value", receivedCtx.Value(ctxKey{}))
+	})
+
+	t.Run("returns_error", func(t *testing.T) {
+		expectedErr := errors.New("context server options error")
+		f := GetGRPCServerOptionsContextFunc(func(context.Context) ([]grpc.ServerOption, error) {
+			return nil, expectedErr
+		})
+
+		opts, err := f.GetGRPCServerOptionsContext(ctx)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, opts)
+	})
+}

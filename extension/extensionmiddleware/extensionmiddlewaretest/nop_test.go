@@ -4,6 +4,7 @@
 package extensionmiddlewaretest
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -26,6 +27,12 @@ func TestNopClient(t *testing.T) {
 	grpcOpts, err := grpcClient.GetGRPCClientOptions()
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
+
+	grpcClientContext, ok := client.(extensionmiddleware.GRPCClientContext)
+	require.True(t, ok)
+	grpcOptsContext, err := grpcClientContext.GetGRPCClientOptionsContext(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, grpcOptsContext)
 }
 
 func TestNopServer(t *testing.T) {
@@ -42,6 +49,12 @@ func TestNopServer(t *testing.T) {
 	grpcOpts, err := grpcServer.GetGRPCServerOptions()
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
+
+	grpcServerContext, ok := client.(extensionmiddleware.GRPCServerContext)
+	require.True(t, ok)
+	grpcOptsContext, err := grpcServerContext.GetGRPCServerOptionsContext(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, grpcOptsContext)
 }
 
 func TestRoundTripperFunc(t *testing.T) {
