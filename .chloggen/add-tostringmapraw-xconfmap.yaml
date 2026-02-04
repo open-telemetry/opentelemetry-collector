@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: added experimental method to decode `confmap.Conf` into a string map without losing internal types
+note: Add experimental `ToStringMapRaw` function to decode `confmap.Conf` into a string map without losing internal types
 
 # One or more tracking issues or pull requests related to the change
 issues: [14480]
