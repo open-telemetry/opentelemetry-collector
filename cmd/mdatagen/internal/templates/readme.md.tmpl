@@ -34,12 +34,14 @@
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
 {{- end }}
 {{- if ne $class "" }}
-{{- /* Derive GitHub issue label:*/ -}}
-{{- $label := deriveLabelFromScope .ScopeName .Status.Class .ShortFolderName -}}
-{{- $encodedLabel := urlEncodeLabel $label -}}
+{{- $rawLabel := .Label -}}
+{{- if eq $rawLabel "" -}}
+  {{- /* fallback: keep legacy behavior if we couldn't find a mapping */ -}}
+  {{- $rawLabel = printf "%s/%s" .Status.Class .ShortFolderName -}}
+{{- end -}}
+{{- $encodedLabel := urlEncodeLabel $rawLabel -}}
 {{ printf "\n" -}}
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aopen%20label%3A{{ $encodedLabel }}%20&label=open&color=orange&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aopen+is%3Aissue+label%3A{{ $encodedLabel }}) [![Closed issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aclosed%20label%3A{{ $encodedLabel }}%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aclosed+is%3Aissue+label%3A{{ $encodedLabel }}) |
-{{- if not .Status.DisableCodeCov }}
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aopen%20label%3A{{ $encodedLabel }}%20&label=open&color=orange&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aopen+is%3Aissue+label%3A{{ $encodedLabel }}) [![Closed issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aclosed%20label%3A{{ $encodedLabel }}%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aclosed+is%3Aissue+label%3A{{ $encodedLabel }}) |{{- if not .Status.DisableCodeCov }}
 | Code coverage | [![codecov](https://codecov.io/github/{{ .GithubProject }}/graph/main/badge.svg?component={{ .GetCodeCovComponentID }})](https://app.codecov.io/gh/{{ .GithubProject}}/tree/main/?components%5B0%5D={{ .GetCodeCovComponentID }}&displayType=list) |
 {{- end }}
 {{- end }}

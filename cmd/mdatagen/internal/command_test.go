@@ -10,7 +10,6 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -847,120 +846,6 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) //nolint:gosec
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
-		})
-	}
-}
-
-func TestReadmeIssuesLabel_StoragePath_GenerateFile(t *testing.T) {
-	stability := map[component.StabilityLevel][]string{
-		component.StabilityLevelBeta: {"metrics"},
-	}
-	md := Metadata{
-		GithubProject:   "open-telemetry/opentelemetry-collector-contrib",
-		Type:            "filestorageexample",
-		ShortFolderName: "filestorageexample",
-		ScopeName:       "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorageexample",
-		Status: &Status{
-			DisableCodeCov: true,
-			Stability:      stability,
-			Distributions:  []string{"contrib"},
-			Class:          "extension",
-		},
-	}
-
-	tmpdir := t.TempDir()
-	out := filepath.Join(tmpdir, "README.md")
-
-	require.NoError(t, generateFile("templates/readme.md.tmpl", out, md, "metadata"))
-
-	b, err := os.ReadFile(out) //nolint:gosec
-	require.NoError(t, err)
-	s := strings.ReplaceAll(string(b), "\r\n", "\n")
-
-	// Assert URL-encoded label appears in badge and link queries
-	require.Contains(t, s, "label%3Aextension%2Fstorage%2Ffilestorageexample")
-	require.Contains(t, s, "issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorageexample")
-	require.Contains(t, s, "issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorageexample")
-
-	// Also assert newline before Issues row to avoid concatenation
-	require.Contains(t, s, "\n| Distributions | [contrib] |\n| Issues        | ")
-}
-
-func TestDeriveLabelFromScope_TrimClassSuffix(t *testing.T) {
-	tmplFile := "templates/readme.md.tmpl" // any file passed into templatize; actual content doesn't matter here
-
-	md := Metadata{
-		Status: &Status{
-			Class: "extension",
-		},
-	}
-
-	tests := []struct {
-		name      string
-		scope     string
-		short     string
-		class     string
-		wantLabel string
-	}{
-		{
-			name:      "simple trim suffix",
-			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/myenvextension",
-			short:     "myenvextension",
-			class:     "extension",
-			wantLabel: "extension/myenv",
-		},
-		{
-			name:      "trim trailing separator after removing suffix",
-			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/myenv-extension",
-			short:     "myenv-extension",
-			class:     "extension",
-			wantLabel: "extension/myenv",
-		},
-		{
-			name:      "no change when suffix removal would empty segment",
-			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/extension",
-			short:     "extension",
-			class:     "extension",
-			wantLabel: "extension/extension",
-		},
-		{
-			name:      "scope does not contain class defaults to short name",
-			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/test/myprocessor",
-			short:     "mine",
-			class:     "processor",
-			wantLabel: "processor/mine",
-		},
-		{
-			name:      "derive from scope",
-			scope:     "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mine",
-			class:     "extension",
-			wantLabel: "extension/mine",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mdCopy := md
-			mdCopy.Type = "example"
-			mdCopy.ShortFolderName = tt.short
-			mdCopy.ScopeName = tt.scope
-			if mdCopy.Status == nil {
-				mdCopy.Status = &Status{}
-			}
-			mdCopy.Status.Class = tt.class
-
-			// Build a tiny template that only calls deriveLabelFromScope.
-			// We reuse templatize so we get the exact Funcs map from command.go.
-			tmpl := templatize(tmplFile, mdCopy)
-			tmpl, err := tmpl.Parse(`{{ deriveLabelFromScope .Metadata.ScopeName .Metadata.Status.Class .Metadata.ShortFolderName }}`)
-			require.NoError(t, err)
-
-			var buf bytes.Buffer
-			err = tmpl.Execute(&buf, TemplateContext{Metadata: mdCopy, Package: "metadata"})
-			require.NoError(t, err)
-
-			got := buf.String()
-			require.Equal(t, tt.wantLabel, got)
 		})
 	}
 }
