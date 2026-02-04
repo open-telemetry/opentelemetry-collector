@@ -73,7 +73,8 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 
 	if mb.activePartitionsCount > mb.maxActivePartitionsCount {
 		// we need to evict a key.
-		mb.evictPartitionKey()
+		// TODO uncomment this later.
+		// mb.evictPartitionKey()
 	}
 
 	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
