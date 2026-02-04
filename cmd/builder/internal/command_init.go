@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"text/template"
 
@@ -80,7 +81,7 @@ func writeTemplate(path, fn string, m metadata) error {
 }
 
 func executeTemplate(tmplFile string, m metadata) ([]byte, error) {
-	tmplPath := filepath.Join("init/templates", tmplFile)
+	tmplPath := path.Join("init/templates", tmplFile)
 	tmpl := template.Must(template.New(tmplFile).ParseFS(templatesFS, tmplPath))
 	buf := bytes.Buffer{}
 
