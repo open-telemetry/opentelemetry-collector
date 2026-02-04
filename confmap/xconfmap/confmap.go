@@ -8,6 +8,11 @@ import (
 	"go.opentelemetry.io/collector/confmap/internal"
 )
 
+// ExpandedValue represents a configuration value that has been expanded from a template
+// (e.g., environment variable substitution). It contains both the parsed value and the
+// original string representation.
+//
+// This type is exposed to allow working with configuration values returned by ToStringMapRaw.
 type ExpandedValue = internal.ExpandedValue
 
 // ToStringMapRaw returns the raw configuration map without sanitization.
