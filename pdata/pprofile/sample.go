@@ -9,7 +9,7 @@ import "fmt"
 // dictionary to another.
 func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 	for i, v := range ms.AttributeIndices().All() {
-		if src.AttributeTable().Len() < int(v) {
+		if src.AttributeTable().Len() <= int(v) {
 			return fmt.Errorf("invalid attribute index %d", v)
 		}
 
@@ -26,7 +26,7 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if ms.LinkIndex() > 0 {
-		if src.LinkTable().Len() < int(ms.LinkIndex()) {
+		if src.LinkTable().Len() <= int(ms.LinkIndex()) {
 			return fmt.Errorf("invalid link index %d", ms.LinkIndex())
 		}
 
@@ -38,7 +38,7 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if ms.StackIndex() > 0 {
-		if src.StackTable().Len() < int(ms.StackIndex()) {
+		if src.StackTable().Len() <= int(ms.StackIndex()) {
 			return fmt.Errorf("invalid stack index %d", ms.StackIndex())
 		}
 
