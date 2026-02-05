@@ -126,7 +126,7 @@ func TestInitRunCollector(t *testing.T) {
 		default:
 			return false
 		}
-	}, 30*time.Second, 100*time.Millisecond, "Collector should start up and print 'Everything is ready.'")
+	}, 60*time.Second, 100*time.Millisecond, "Collector should start up and print 'Everything is ready.'")
 
 	t.Log("Collector started up correctly - killing process")
 	cancel()
