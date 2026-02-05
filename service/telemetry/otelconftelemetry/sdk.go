@@ -6,23 +6,23 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"context"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
-func newSDK(ctx context.Context, res *sdkresource.Resource, conf config.OpenTelemetryConfiguration) (config.SDK, error) {
-	resourceAttrs := make([]config.AttributeNameValue, 0, res.Len())
+func newSDK(ctx context.Context, res *sdkresource.Resource, conf otelconf.OpenTelemetryConfiguration) (otelconf.SDK, error) {
+	resourceAttrs := make([]otelconf.AttributeNameValue, 0, res.Len())
 	for _, r := range res.Attributes() {
 		key := string(r.Key)
-		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
+		resourceAttrs = append(resourceAttrs, otelconf.AttributeNameValue{
 			Name:  key,
 			Value: mustAttributeValueString(key, r.Value),
 		})
 	}
-	conf.Resource = &config.Resource{
+	conf.Resource = &otelconf.Resource{
 		SchemaUrl:  ptr(semconv.SchemaURL),
 		Attributes: resourceAttrs,
 	}
-	return config.NewSDK(config.WithContext(ctx), config.WithOpenTelemetryConfiguration(conf))
+	return otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(conf))
 }

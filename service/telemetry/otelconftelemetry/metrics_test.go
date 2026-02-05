@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -103,10 +103,10 @@ func TestCreateMeterProvider(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Metrics = MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{
-						Exporter: config.PullMetricExporter{Prometheus: prom},
+			MeterProvider: otelconf.MeterProvider{
+				Readers: []otelconf.MetricReader{{
+					Pull: &otelconf.PullMetricReader{
+						Exporter: otelconf.PullMetricExporter{PrometheusDevelopment: prom},
 					},
 				}},
 			},
@@ -209,9 +209,9 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Logs.Level = zapcore.FatalLevel
 	cfg.Traces.Level = configtelemetry.LevelNone
-	cfg.Metrics.Readers = []config.MetricReader{{
+	cfg.Metrics.Readers = []otelconf.MetricReader{{
 		// Invalid -- no OTLP protocol defined
-		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
+		Periodic: &otelconf.PeriodicMetricReader{Exporter: otelconf.PushMetricExporter{}},
 	}}
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -219,14 +219,14 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 	_, err = createMeterProvider(t.Context(), telemetry.MeterSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
-	require.EqualError(t, err, "no valid metric exporter")
+	require.EqualError(t, err, "invalid config: no valid metric exporter")
 }
 
 func TestCreateMeterProvider_Disabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics.Readers = []config.MetricReader{{
+	cfg.Metrics.Readers = []otelconf.MetricReader{{
 		// Invalid -- no OTLP protocol defined
-		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
+		Periodic: &otelconf.PeriodicMetricReader{Exporter: otelconf.PushMetricExporter{}},
 	}}
 
 	core, observedLogs := observer.New(zapcore.DebugLevel)
@@ -241,7 +241,7 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 	settings.Logger = zap.New(core)
 
 	_, err = factory.CreateMeterProvider(context.Background(), settings, cfg)
-	require.EqualError(t, err, "no valid metric exporter")
+	require.EqualError(t, err, "invalid config: no valid metric exporter")
 	assert.Zero(t, observedLogs.Len())
 
 	// Setting Metrics.Level to LevelNone disables metrics,
@@ -264,8 +264,8 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 func TestInstrumentEnabled(t *testing.T) {
 	prom := promtest.GetAvailableLocalAddressPrometheus(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics.Readers = []config.MetricReader{{
-		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
+	cfg.Metrics.Readers = []otelconf.MetricReader{{
+		Pull: &otelconf.PullMetricReader{Exporter: otelconf.PullMetricExporter{PrometheusDevelopment: prom}},
 	}}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
@@ -318,19 +318,19 @@ func TestInstrumentEnabled(t *testing.T) {
 
 func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 	type testcase struct {
-		configuredViews    []config.View
+		configuredViews    []otelconf.View
 		expectedMeterNames []string
 	}
 
-	defaultViews := func(level configtelemetry.Level) []config.View {
+	defaultViews := func(level configtelemetry.Level) []otelconf.View {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
-		return []config.View{{
-			Selector: &config.ViewSelector{
+		return []otelconf.View{{
+			Selector: otelconf.ViewSelector{
 				MeterName: ptr("a"),
 			},
-			Stream: &config.ViewStream{
-				Aggregation: &config.ViewStreamAggregation{
-					Drop: config.ViewStreamAggregationDrop{},
+			Stream: otelconf.ViewStream{
+				Aggregation: &otelconf.Aggregation{
+					Drop: otelconf.DropAggregation{},
 				},
 			},
 		}}
@@ -341,13 +341,13 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 			expectedMeterNames: []string{"b", "c"},
 		},
 		"configured_views": {
-			configuredViews: []config.View{{
-				Selector: &config.ViewSelector{
+			configuredViews: []otelconf.View{{
+				Selector: otelconf.ViewSelector{
 					MeterName: ptr("b"),
 				},
-				Stream: &config.ViewStream{
-					Aggregation: &config.ViewStreamAggregation{
-						Drop: config.ViewStreamAggregationDrop{},
+				Stream: otelconf.ViewStream{
+					Aggregation: &otelconf.Aggregation{
+						Drop: otelconf.DropAggregation{},
 					},
 				},
 			}},
@@ -369,13 +369,11 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Metrics.Level = configtelemetry.LevelDetailed
 			cfg.Metrics.Views = tc.configuredViews
-			cfg.Metrics.Readers = []config.MetricReader{{
-				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.PushMetricExporter{
-						OTLP: &config.OTLPMetric{
+			cfg.Metrics.Readers = []otelconf.MetricReader{{
+				Periodic: &otelconf.PeriodicMetricReader{
+					Exporter: otelconf.PushMetricExporter{
+						OTLPHttp: &otelconf.OTLPHttpMetricExporter{
 							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
 						},
 					},
 				},

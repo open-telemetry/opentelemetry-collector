@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -61,10 +61,10 @@ func TestConfig(t *testing.T) {
 					Initial:    234,
 					Thereafter: 567,
 				}
-				cfg.Logs.Processors = []config.LogRecordProcessor{{
-					Batch: &config.BatchLogRecordProcessor{
-						Exporter: config.LogRecordExporter{
-							Console: config.Console{},
+				cfg.Logs.Processors = []otelconf.LogRecordProcessor{{
+					Batch: &otelconf.BatchLogRecordProcessor{
+						Exporter: otelconf.LogRecordExporter{
+							Console: otelconf.ConsoleExporter{},
 						},
 					},
 				}}
@@ -75,7 +75,7 @@ func TestConfig(t *testing.T) {
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Metrics.Level = configtelemetry.LevelNone
-				cfg.Metrics.Readers = []config.MetricReader{}
+				cfg.Metrics.Readers = []otelconf.MetricReader{}
 				return cfg
 			}(),
 		},
