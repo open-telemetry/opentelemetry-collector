@@ -15,6 +15,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
 
