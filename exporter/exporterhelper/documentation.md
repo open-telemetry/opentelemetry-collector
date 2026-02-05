@@ -24,7 +24,7 @@ Number of metric points failed to be added to the sending queue.
 
 ### otelcol_exporter_enqueue_failed_profile_samples
 
-Number of profile samples failed to be added to the sending queue. [Development]
+Number of profile samples failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -88,7 +88,7 @@ Number of metric points in failed attempts to send to destination.
 
 ### otelcol_exporter_send_failed_profile_samples
 
-Number of profile samples in failed attempts to send to destination. [Development]
+Number of profile samples in failed attempts to send to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -120,7 +120,7 @@ Number of metric points successfully sent to destination.
 
 ### otelcol_exporter_sent_profile_samples
 
-Number of profile samples successfully sent to destination. [Development]
+Number of profile samples successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

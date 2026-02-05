@@ -24,7 +24,7 @@ Number of metric points successfully pushed into the pipeline.
 
 ### otelcol_receiver_accepted_profile_samples
 
-Number of profile samples successfully pushed into the pipeline. [Alpha]
+Number of profile samples successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -56,7 +56,7 @@ The number of metric points that failed to be processed by the receiver due to i
 
 ### otelcol_receiver_failed_profile_samples
 
-The number of profile samples that failed to be processed by the receiver due to internal errors. [Alpha]
+The number of profile samples that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -88,7 +88,7 @@ Number of metric points that could not be pushed into the pipeline.
 
 ### otelcol_receiver_refused_profile_samples
 
-Number of profile samples that could not be pushed into the pipeline. [Alpha]
+Number of profile samples that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
