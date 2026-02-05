@@ -188,3 +188,50 @@ func TestValidUnixSocketEndpoint(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, xconfmap.Validate(cfg))
 }
+
+func TestConnectionPoolConfig(t *testing.T) {
+	factory := NewFactory()
+
+	t.Run("disabled by default", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		assert.False(t, cfg.ConnectionPool.HasValue(), "connection pool should not have value by default")
+	})
+
+	t.Run("valid pool config", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = "localhost:4317"
+		cfg.ConnectionPool = configoptional.Some(ConnectionPoolConfig{
+			Size: 4,
+		})
+		assert.NoError(t, xconfmap.Validate(cfg))
+	})
+
+	t.Run("pool with zero size", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = "localhost:4317"
+		cfg.ConnectionPool = configoptional.Some(ConnectionPoolConfig{
+			Size: 0,
+		})
+		err := xconfmap.Validate(cfg)
+		assert.ErrorContains(t, err, "connection_pool.size must be greater than 0")
+	})
+
+	t.Run("pool with negative size", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = "localhost:4317"
+		cfg.ConnectionPool = configoptional.Some(ConnectionPoolConfig{
+			Size: -5,
+		})
+		err := xconfmap.Validate(cfg)
+		assert.ErrorContains(t, err, "connection_pool.size must be greater than 0")
+	})
+
+	t.Run("pool with size 1", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ClientConfig.Endpoint = "localhost:4317"
+		cfg.ConnectionPool = configoptional.Some(ConnectionPoolConfig{
+			Size: 1,
+		})
+		assert.NoError(t, xconfmap.Validate(cfg))
+	})
+}

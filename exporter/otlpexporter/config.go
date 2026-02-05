@@ -5,6 +5,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -16,12 +17,26 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+// ConnectionPoolConfig configures the gRPC connection pool.
+// When present, connection pooling is enabled with the specified settings.
+// When absent, a single connection is used (default behavior).
+type ConnectionPoolConfig struct {
+	// Size specifies the number of connections in the pool.
+	// Must be greater than 0.
+	// Default: 4
+	Size int `mapstructure:"size"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config defines configuration for OTLP exporter.
 type Config struct {
-	TimeoutConfig exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
-	ClientConfig  configgrpc.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	TimeoutConfig    exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetryConfig      configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig     configgrpc.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ConnectionPool   configoptional.Optional[ConnectionPoolConfig]            `mapstructure:"connection_pool"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -36,6 +51,15 @@ func (c *Config) Validate() error {
 	if endpoint := c.sanitizedEndpoint(); endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
+
+	// Validate connection pool configuration
+	if c.ConnectionPool.HasValue() {
+		poolCfg := c.ConnectionPool.Get()
+		if poolCfg.Size <= 0 {
+			return fmt.Errorf("connection_pool.size must be greater than 0, got %d", poolCfg.Size)
+		}
+	}
+
 	return nil
 }
 

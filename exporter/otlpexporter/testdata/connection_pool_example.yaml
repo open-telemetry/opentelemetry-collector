@@ -1,0 +1,32 @@
+# Example configuration showing connection pool feature
+# The connection pool is disabled by default for backward compatibility
+# To enable it, you must explicitly configure it as shown below
+
+# Example 1: Connection pool with 4 connections (recommended for high-throughput scenarios)
+exporters:
+  otlp/with-pool:
+    endpoint: backend.example.com:4317
+    connection_pool:
+      size: 4
+
+# Example 2: Default configuration (single connection, no pool)
+exporters:
+  otlp/default:
+    endpoint: backend.example.com:4317
+
+# Example 3: Connection pool with larger size for very high throughput
+exporters:
+  otlp/large-pool:
+    endpoint: backend.example.com:4317
+    connection_pool:
+      size: 8
+
+# Use cases for connection pooling:
+# - High-latency networks where multiplexing on a single HTTP/2 connection
+#   hits stream limits
+# - Very high-throughput scenarios where a single connection becomes a bottleneck
+# - When exporting to endpoints with high round-trip times (RTT)
+#
+# Note: Most deployments should continue using the default single connection.
+# Only enable connection pooling when you've identified it as a bottleneck
+# through monitoring and profiling.

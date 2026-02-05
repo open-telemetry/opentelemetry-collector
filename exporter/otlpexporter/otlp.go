@@ -35,14 +35,18 @@ type baseExporter struct {
 	// Input configuration.
 	config *Config
 
-	// gRPC clients and connection.
+	// gRPC clients and connection (for single connection mode).
 	traceExporter   ptraceotlp.GRPCClient
 	metricExporter  pmetricotlp.GRPCClient
 	logExporter     plogotlp.GRPCClient
 	profileExporter pprofileotlp.GRPCClient
 	clientConn      *grpc.ClientConn
-	metadata        metadata.MD
-	callOptions     []grpc.CallOption
+
+	// Connection pool (for pooled connection mode).
+	pool *connPool
+
+	metadata    metadata.MD
+	callOptions []grpc.CallOption
 
 	settings component.TelemetrySettings
 
@@ -63,13 +67,31 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
 	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
-		return err
+
+	// Check if connection pooling is enabled (indicated by presence of config)
+	if e.config.ConnectionPool.HasValue() {
+		// Create connection pool
+		poolCfg := e.config.ConnectionPool.Get()
+		poolSize := poolCfg.Size
+		if poolSize <= 0 {
+			poolSize = 4 // Default pool size
+		}
+
+		e.pool, err = newConnPool(ctx, poolSize, e.config.ClientConfig, host, e.settings, agentOpt)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Single connection mode (default, backward compatible)
+		if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
+			return err
+		}
+		e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
+		e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+		e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
+		e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	}
-	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
-	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
-	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
-	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
+
 	headers := map[string]string{}
 	for k, v := range e.config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
@@ -83,6 +105,9 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 }
 
 func (e *baseExporter) shutdown(context.Context) error {
+	if e.pool != nil {
+		return e.pool.Close()
+	}
 	if e.clientConn != nil {
 		return e.clientConn.Close()
 	}
@@ -91,7 +116,20 @@ func (e *baseExporter) shutdown(context.Context) error {
 
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
-	resp, respErr := e.traceExporter.Export(ctx, req, e.callOptions...)
+
+	var resp ptraceotlp.ExportResponse
+	var respErr error
+
+	if e.pool != nil {
+		// Connection pooling enabled - get connection and create client dynamically
+		conn := e.pool.getConn()
+		client := ptraceotlp.NewGRPCClient(conn)
+		resp, respErr = client.Export(ctx, req, e.callOptions...)
+	} else {
+		// Single connection mode (default)
+		resp, respErr = e.traceExporter.Export(ctx, req, e.callOptions...)
+	}
+
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -107,7 +145,20 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	resp, respErr := e.metricExporter.Export(ctx, req, e.callOptions...)
+
+	var resp pmetricotlp.ExportResponse
+	var respErr error
+
+	if e.pool != nil {
+		// Connection pooling enabled - get connection and create client dynamically
+		conn := e.pool.getConn()
+		client := pmetricotlp.NewGRPCClient(conn)
+		resp, respErr = client.Export(ctx, req, e.callOptions...)
+	} else {
+		// Single connection mode (default)
+		resp, respErr = e.metricExporter.Export(ctx, req, e.callOptions...)
+	}
+
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -123,7 +174,20 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
-	resp, respErr := e.logExporter.Export(ctx, req, e.callOptions...)
+
+	var resp plogotlp.ExportResponse
+	var respErr error
+
+	if e.pool != nil {
+		// Connection pooling enabled - get connection and create client dynamically
+		conn := e.pool.getConn()
+		client := plogotlp.NewGRPCClient(conn)
+		resp, respErr = client.Export(ctx, req, e.callOptions...)
+	} else {
+		// Single connection mode (default)
+		resp, respErr = e.logExporter.Export(ctx, req, e.callOptions...)
+	}
+
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -139,7 +203,20 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
-	resp, respErr := e.profileExporter.Export(ctx, req, e.callOptions...)
+
+	var resp pprofileotlp.ExportResponse
+	var respErr error
+
+	if e.pool != nil {
+		// Connection pooling enabled - get connection and create client dynamically
+		conn := e.pool.getConn()
+		client := pprofileotlp.NewGRPCClient(conn)
+		resp, respErr = client.Export(ctx, req, e.callOptions...)
+	} else {
+		// Single connection mode (default)
+		resp, respErr = e.profileExporter.Export(ctx, req, e.callOptions...)
+	}
+
 	if err := processError(respErr); err != nil {
 		return err
 	}
