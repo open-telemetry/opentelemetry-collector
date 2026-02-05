@@ -66,6 +66,8 @@ func TestRunInit(t *testing.T) {
 func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, ".gitignore"))
 	require.FileExists(t, filepath.Join(path, "manifest.yaml"))
+	require.FileExists(t, filepath.Join(path, "go.mod"))
+	require.FileExists(t, filepath.Join(path, "go.sum"))
 
 	k := koanf.New(".")
 	err := k.Load(file.Provider(filepath.Join(path, "manifest.yaml")), yaml.Parser())

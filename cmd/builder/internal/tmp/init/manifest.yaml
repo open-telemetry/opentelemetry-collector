@@ -1,4 +1,0 @@
-dist:
-  name: init
-  description: Custom OpenTelemetry Collector
-  output_path: ./build/collector

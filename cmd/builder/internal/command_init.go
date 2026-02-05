@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"text/template"
@@ -67,6 +68,16 @@ func run(path string) error {
 		return fmt.Errorf("failed writing gitignore: %w", err)
 	}
 
+	err = writeTemplate(path, "go.mod", meta)
+	if err != nil {
+		return fmt.Errorf("failed writing go.mod: %w", err)
+	}
+
+	err = runTidy(path)
+	if err != nil {
+		return fmt.Errorf("failed running go mod tidy: %w", err)
+	}
+
 	return nil
 }
 
@@ -89,4 +100,14 @@ func executeTemplate(tmplFile string, m metadata) ([]byte, error) {
 		return []byte{}, fmt.Errorf("failed executing template: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+func runTidy(path string) error {
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = path
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w (%s)", err, string(output))
+	}
+	return nil
 }
