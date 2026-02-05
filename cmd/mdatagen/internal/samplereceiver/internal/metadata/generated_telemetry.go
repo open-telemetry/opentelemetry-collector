@@ -106,7 +106,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_batch_size_trigger_send",
-		metric.WithDescription("Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]"),
+		metric.WithDescription("Number of times the batch was sent due to a size trigger [Deprecated]"),
 		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
