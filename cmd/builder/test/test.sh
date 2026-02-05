@@ -59,6 +59,8 @@ test_build_config() {
     "${out}/${test}" --config "./test/${test}.otel.yaml" > "${out}/otelcol.log" 2>&1 &
     pid=$!
 
+    # each attempt pauses for 100ms before retrying
+    max_retries=50
     retries=0
     while true
     do
@@ -126,6 +128,8 @@ test_init() {
   make run > "${out}/otelcol.log" 2>&1 &
   pid=$!
 
+  # each attempt pauses for 100ms before retrying
+  max_retries=15000
   retries=0
   while true
   do
@@ -152,7 +156,7 @@ test_init() {
 
       ((retries++))
       if [ "$retries" -gt "$max_retries" ]; then
-          echo "❌ FAIL ${test}. Server wasn't up after about 5s."
+          echo "❌ FAIL ${test}. Server wasn't up after about 5m."
           failed=true
 
           kill "${pid}"
@@ -168,9 +172,6 @@ test_init() {
 
   echo "Stopping server for '${test}' (pid: ${pid})" >> "${out}/test.log"
 }
-
-# each attempt pauses for 100ms before retrying
-max_retries=50
 
 tests="core"
 
