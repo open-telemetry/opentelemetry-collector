@@ -84,8 +84,8 @@ func TestDefaultViewsFiltersSendFailedAttributes(t *testing.T) {
 				foundSendFailedView = true
 				require.NotNil(t, view.Stream, "send_failed view should have a stream")
 				require.NotNil(t, view.Stream.AttributeKeys, "send_failed view should have attribute keys")
-				require.Equal(t, []string{"exporter"}, view.Stream.AttributeKeys.Included,
-					"send_failed view should only include 'exporter' attribute")
+				require.Equal(t, []string{"error.type", "error.permanent"}, view.Stream.AttributeKeys.Excluded,
+					"send_failed view should exclude 'error.type' and 'error.permanent' attributes")
 				break
 			}
 
