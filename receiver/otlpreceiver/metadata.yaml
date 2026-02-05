@@ -1,3 +1,4 @@
+display_name: OTLP Receiver
 type: otlp
 github_project: open-telemetry/opentelemetry-collector
 

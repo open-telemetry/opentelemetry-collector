@@ -147,6 +147,12 @@ metrics:
     attributes: [string]
     # Required: the metric stability
     stability: <development|alpha|beta|stable|deprecated>
+    # Deprecation information for the metric. Required when stability is `deprecated`.
+    deprecated:
+      # Required: version when the metric was deprecated
+      since:
+      # Required: migration note
+      note:
     # Optional: the reference to a semantic convention
     semantic_convention:
       ref:
@@ -200,8 +206,18 @@ telemetry:
       enabled: bool
       # Required: metric description.
       description:
-      # Optional: the stability level of the metric. Set to alpha by default.
-      stability: [alpha|stable|deprecated]
+      # Optional: the stability of the metric. Set to alpha by default.
+      stability:
+        # Optional: the stability level of the metric. Set to alpha by default.
+        level: [alpha|stable|deprecated]
+        # Optional: the version current stability was introduced
+        from:
+      # Deprecation information for the metric. Required when stability is `deprecated`.
+      deprecated:
+        # Required: version when the metric was deprecated
+        since:
+        # Required: migration note
+        note:
       # Optional: extended documentation of the metric.
       extended_documentation:
       # Optional: whether or not this metric is optional. Optional metrics may only be initialized
@@ -234,3 +250,18 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+# Optional: list of feature gate definitions.
+feature_gates:
+  - # Required: unique identifier for the feature gate.
+    id: <gate.id>
+    # Required: description of the feature gate.
+    description: string
+    # Required: lifecycle stage of the feature gate.
+    stage: <alpha|beta|stable|deprecated>
+    # Required: version when the feature gate was introduced.
+    from_version: string
+    # Required for stable/deprecated gates: version when the feature gate reached stable stage.
+    to_version: string
+    # Required: URL with contextual information about the feature gate.
+    reference_url: string

@@ -61,6 +61,7 @@ client:
 server:
   # Network endpoint configuration
   endpoint: "0.0.0.0:4318"
+  transport: tcp
 
   # TLS configuration
   tls:

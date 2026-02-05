@@ -180,6 +180,31 @@ func TestStackSwitchDictionary(t *testing.T) {
 
 			wantErr: errors.New("invalid location index 2"),
 		},
+		{
+			name: "with a location index equal to the source table length (boundary condition)",
+			stack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2) // Index 2 with length 2 (indices 0,1 are valid)
+				return s
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LocationTable().AppendEmpty() // Index 0
+				d.LocationTable().AppendEmpty() // Index 1
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantStack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+
+			wantErr: errors.New("invalid location index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			stack := tt.stack

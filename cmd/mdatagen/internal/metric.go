@@ -48,10 +48,20 @@ type Metric struct {
 
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
+
+	// Deprecation metadata for deprecated metrics
+	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
 }
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
+
+	if m.Deprecated != nil {
+		if err := m.Deprecated.validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))
