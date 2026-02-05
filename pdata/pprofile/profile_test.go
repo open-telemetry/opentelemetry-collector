@@ -99,6 +99,30 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid attribute index 1"),
 		},
 		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
+		},
+		{
 			name: "with a profile that has a sample",
 			profile: func() Profile {
 				p := NewProfile()
