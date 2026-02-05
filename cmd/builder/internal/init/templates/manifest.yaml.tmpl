@@ -4,7 +4,7 @@ dist:
   output_path: ./build/collector
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter {{.UnstableVersion}}
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter {{.BetaVersion}}
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver {{.UnstableVersion}}
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver {{.BetaVersion}}

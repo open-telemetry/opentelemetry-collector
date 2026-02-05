@@ -15,6 +15,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
 
 const defaultDescription = "Custom OpenTelemetry Collector"
@@ -23,10 +24,10 @@ const defaultDescription = "Custom OpenTelemetry Collector"
 var templatesFS embed.FS
 
 type metadata struct {
-	Name            string
-	Description     string
-	StableVersion   string
-	UnstableVersion string
+	Name          string
+	Description   string
+	StableVersion string
+	BetaVersion   string
 }
 
 func initCommand() *cobra.Command {
@@ -57,10 +58,10 @@ func run(path string) error {
 	}
 
 	meta := metadata{
-		Name:            filepath.Base(path),
-		Description:     defaultDescription,
-		StableVersion:   "v1.51.0",
-		UnstableVersion: "v0.145.0",
+		Name:          filepath.Base(path),
+		Description:   defaultDescription,
+		StableVersion: builder.DefaultStableOtelColVersion,
+		BetaVersion:   builder.DefaultBetaOtelColVersion,
 	}
 
 	err = writeTemplate(path, "manifest.yaml", meta)
