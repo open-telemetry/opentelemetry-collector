@@ -37,7 +37,7 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 		{{ else -}}
 		Name:        "otelcol_{{ $name }}",
 		{{ end -}}
-		Description: "{{ $metric.Description }}{{ $metric.Stability }}",
+		Description: "{{ $metric.Description }} [{{ $metric.Stability }}]",
 		Unit:        "{{ $metric.Unit }}",
 		Data:        metricdata.{{ $metric.Data.Type }}[{{ $metric.Data.BasicType }}]{
 			{{- if $metric.Data.HasAggregated }}

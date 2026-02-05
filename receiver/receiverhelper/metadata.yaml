@@ -9,16 +9,14 @@ telemetry:
   metrics:
     receiver_accepted_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log records successfully pushed into the pipeline.
       unit: "{records}"
       sum:
         value_type: int
         monotonic: true
     receiver_accepted_metric_points:
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Number of metric points successfully pushed into the pipeline.
       unit: "{datapoints}"
@@ -27,8 +25,7 @@ telemetry:
         monotonic: true
     receiver_accepted_profile_samples:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of profile samples successfully pushed into the pipeline.
       unit: "{samples}"
       sum:
@@ -36,8 +33,7 @@ telemetry:
         monotonic: true
     receiver_accepted_spans:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of spans successfully pushed into the pipeline.
       unit: "{spans}"
       sum:
@@ -45,8 +41,7 @@ telemetry:
         monotonic: true
     receiver_failed_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: The number of log records that failed to be processed by the receiver due to internal errors.
       unit: "{records}"
       sum:
@@ -54,8 +49,7 @@ telemetry:
         monotonic: true
     receiver_failed_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: The number of metric points that failed to be processed by the receiver due to internal errors.
       unit: "{datapoints}"
       sum:
@@ -63,8 +57,7 @@ telemetry:
         monotonic: true
     receiver_failed_profile_samples:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: The number of profile samples that failed to be processed by the receiver due to internal errors.
       unit: "{samples}"
       sum:
@@ -72,8 +65,7 @@ telemetry:
         monotonic: true
     receiver_failed_spans:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: The number of spans that failed to be processed by the receiver due to internal errors.
       unit: "{spans}"
       sum:
@@ -81,8 +73,7 @@ telemetry:
         monotonic: true
     receiver_refused_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log records that could not be pushed into the pipeline.
       unit: "{records}"
       sum:
@@ -90,8 +81,7 @@ telemetry:
         monotonic: true
     receiver_refused_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of metric points that could not be pushed into the pipeline.
       unit: "{datapoints}"
       sum:
@@ -99,8 +89,7 @@ telemetry:
         monotonic: true
     receiver_refused_profile_samples:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of profile samples that could not be pushed into the pipeline.
       unit: "{samples}"
       sum:
@@ -108,8 +97,7 @@ telemetry:
         monotonic: true
     receiver_refused_spans:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of spans that could not be pushed into the pipeline.
       unit: "{spans}"
       sum:
@@ -117,8 +105,7 @@ telemetry:
         monotonic: true
     receiver_requests:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: The number of requests performed.
       unit: "{requests}"
       sum:
