@@ -151,6 +151,30 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid mapping index 1"),
 		},
 		{
+			name: "with a mapping index equal to the source table length (boundary condition)",
+			location: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(2)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.MappingTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantLocation: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(2)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid mapping index 2"),
+		},
+		{
 			name: "with an existing attribute",
 			location: func() Location {
 				l := NewLocation()
@@ -211,6 +235,30 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 1"),
+		},
+		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			location: func() Location {
+				l := NewLocation()
+				l.AttributeIndices().Append(2)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantLocation: func() Location {
+				l := NewLocation()
+				l.AttributeIndices().Append(2)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
 		},
 		{
 			name: "with an existing line",

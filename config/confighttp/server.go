@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -266,13 +267,18 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 				//
 				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
 				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
-				//   ...
+				//
+				//   The {method} MUST be {http.request.method} if the method represents the original method known
+				//   to the instrumentation. In other cases (when {http.request.method} is set to _OTHER),
+				//   {method} MUST be HTTP.
+				//
 				//   Instrumentation MUST NOT default to using URI path as a {target}."
 				//
+				method := standardizeHTTPMethod(r.Method, "HTTP")
 				if r.Pattern != "" {
-					return r.Method + " " + r.Pattern
+					return method + " " + r.Pattern
 				}
-				return r.Method
+				return method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
@@ -377,4 +383,15 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// standardizeHTTPMethod returns an upper case HTTP method if well-known, otherwise unknown.
+// Based on https://github.com/open-telemetry/opentelemetry-go-contrib/blob/1530d71edc6d40d0659187d069081b639ef1b394/instrumentation/github.com/emicklei/go-restful/otelrestful/internal/semconv/util.go#L119
+func standardizeHTTPMethod(method, unknown string) string {
+	method = strings.ToUpper(method)
+	switch method {
+	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
+		return method
+	}
+	return unknown
 }
