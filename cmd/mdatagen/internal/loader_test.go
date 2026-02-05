@@ -279,7 +279,7 @@ func TestLoadMetadata(t *testing.T) {
 					"reaggregate.metric": {
 						Signal: Signal{
 							Enabled:     true,
-							Description: "Metric for testing spacial reaggregation",
+							Description: "Metric for testing spatial reaggregation",
 							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
 						},
