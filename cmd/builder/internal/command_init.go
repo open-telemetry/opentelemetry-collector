@@ -73,6 +73,16 @@ func run(path string) error {
 		return fmt.Errorf("failed writing go.mod: %w", err)
 	}
 
+	err = writeTemplate(path, "Makefile", meta)
+	if err != nil {
+		return fmt.Errorf("failed writing Makefile: %w", err)
+	}
+
+	err = writeTemplate(path, "config.yaml", meta)
+	if err != nil {
+		return fmt.Errorf("failed writing config.yaml: %w", err)
+	}
+
 	err = runTidy(path)
 	if err != nil {
 		return fmt.Errorf("failed running go mod tidy: %w", err)

@@ -68,6 +68,8 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "manifest.yaml"))
 	require.FileExists(t, filepath.Join(path, "go.mod"))
 	require.FileExists(t, filepath.Join(path, "go.sum"))
+	require.FileExists(t, filepath.Join(path, "Makefile"))
+	require.FileExists(t, filepath.Join(path, "config.yaml"))
 
 	k := koanf.New(".")
 	err := k.Load(file.Provider(filepath.Join(path, "manifest.yaml")), yaml.Parser())
