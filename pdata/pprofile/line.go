@@ -31,7 +31,7 @@ func (l Line) Equal(val Line) bool {
 // dictionary to another.
 func (l Line) switchDictionary(src, dst ProfilesDictionary) error {
 	if l.FunctionIndex() > 0 {
-		if src.FunctionTable().Len() < int(l.FunctionIndex()) {
+		if src.FunctionTable().Len() <= int(l.FunctionIndex()) {
 			return fmt.Errorf("invalid function index %d", l.FunctionIndex())
 		}
 

@@ -23,7 +23,9 @@ telemetry:
       description: Number of log records successfully pushed into the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{records}"
       sum:
         value_type: int
@@ -34,7 +36,9 @@ telemetry:
       description: Number of metric points successfully pushed into the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -45,7 +49,9 @@ telemetry:
       description: Number of spans successfully pushed into the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{spans}"
       sum:
         value_type: int
@@ -56,7 +62,9 @@ telemetry:
       description: Number of log records that were rejected by the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{records}"
       sum:
         value_type: int
@@ -67,7 +75,9 @@ telemetry:
       description: Number of metric points that were rejected by the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -78,7 +88,9 @@ telemetry:
       description: Number of spans that were rejected by the next component in the pipeline.
       stability:
         level: deprecated
-        from: v0.110.0
+      deprecated:
+        since: "0.110.0"
+        note: "This metric is deprecated"
       unit: "{spans}"
       sum:
         value_type: int
