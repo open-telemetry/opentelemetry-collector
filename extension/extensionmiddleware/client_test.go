@@ -4,6 +4,7 @@
 package extensionmiddleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -46,44 +47,41 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 }
 
 func TestGetGRPCClientOptionsFunc(t *testing.T) {
+	var (
+		key = "testkey"
+		value = "testval"
+	)
+	testctx := context.WithValue(context.Background(), key, value)
+
 	t.Run("nil function", func(t *testing.T) {
 		var nilFunc GetGRPCClientOptionsFunc
-		options, err := nilFunc.GetGRPCClientOptions()
+		options, err := nilFunc.GetGRPCClientOptions(testctx)
 		require.NoError(t, err)
 		require.Nil(t, options)
 	})
 
-	t.Run("empty options function", func(t *testing.T) {
-		emptyFunc := GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
-			return []grpc.DialOption{}, nil
-		})
-
-		options, err := emptyFunc.GetGRPCClientOptions()
-		require.NoError(t, err)
-		require.Empty(t, options)
-	})
-
 	t.Run("options function", func(t *testing.T) {
-		// Create some test dial options
 		dialOpt1 := grpc.WithAuthority("test-authority")
 		dialOpt2 := grpc.WithDisableRetry()
 
-		optionsFunc := GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
+		optionsFunc := GetGRPCClientOptionsFunc(func(ctx context.Context) ([]grpc.DialOption, error) {
+			require.Equal(t, ctx.Value(key), value)
 			return []grpc.DialOption{dialOpt1, dialOpt2}, nil
 		})
 
-		options, err := optionsFunc.GetGRPCClientOptions()
+		options, err := optionsFunc.GetGRPCClientOptions(testctx)
 		require.NoError(t, err)
 		require.Len(t, options, 2)
 	})
 
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("grpc options error")
-		errorFunc := GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
+		errorFunc := GetGRPCClientOptionsFunc(func(ctx context.Context) ([]grpc.DialOption, error) {
+			require.Equal(t, ctx.Value(key), value)
 			return nil, expectedErr
 		})
 
-		options, err := errorFunc.GetGRPCClientOptions()
+		options, err := errorFunc.GetGRPCClientOptions(testctx)
 		require.Error(t, err)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, options)
