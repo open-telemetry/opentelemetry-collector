@@ -292,7 +292,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     true,
 							Description: "Metric for testing spatial reaggregation with required attributes",
-							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
 						},
 						Unit: strPtr("1"),
