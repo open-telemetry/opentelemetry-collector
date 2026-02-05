@@ -23,8 +23,10 @@ const defaultDescription = "Custom OpenTelemetry Collector"
 var templatesFS embed.FS
 
 type metadata struct {
-	Name        string
-	Description string
+	Name            string
+	Description     string
+	StableVersion   string
+	UnstableVersion string
 }
 
 func initCommand() *cobra.Command {
@@ -54,8 +56,10 @@ func run(path string) error {
 	}
 
 	meta := metadata{
-		Name:        filepath.Base(path),
-		Description: defaultDescription,
+		Name:            filepath.Base(path),
+		Description:     defaultDescription,
+		StableVersion:   "v1.51.0",
+		UnstableVersion: "v0.145.0",
 	}
 
 	err = writeTemplate(path, "manifest.yaml", meta)
@@ -81,6 +85,11 @@ func run(path string) error {
 	err = writeTemplate(path, "config.yaml", meta)
 	if err != nil {
 		return fmt.Errorf("failed writing config.yaml: %w", err)
+	}
+
+	err = os.MkdirAll(filepath.Join(path, "build"), 0o750)
+	if err != nil {
+		return fmt.Errorf("failed creating build folder: %w", err)
 	}
 
 	err = runTidy(path)

@@ -2,3 +2,9 @@ dist:
   name: {{.Name}}
   description: {{.Description}}
   output_path: ./build/collector
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter {{.UnstableVersion}}
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver {{.UnstableVersion}}

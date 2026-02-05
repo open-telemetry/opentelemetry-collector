@@ -4,8 +4,13 @@
 package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
+	"bufio"
+	"context"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -61,6 +66,72 @@ func TestRunInit(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitRunCollector(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "run")
+
+	err := run(path)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "make", "run")
+	cmd.Dir = path
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("Failed to get stdout pipe: %v", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatalf("Failed to get stderr pipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Failed to start process: %v", err)
+	}
+
+	found := make(chan bool, 1)
+
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			t.Logf("STDOUT: %s", line)
+			if strings.Contains(line, "Everything is ready.") {
+				found <- true
+				return
+			}
+		}
+	}()
+
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			t.Logf("STDERR: %s", line)
+			if strings.Contains(line, "Everything is ready.") {
+				found <- true
+				return
+			}
+		}
+	}()
+
+	assert.Eventually(t, func() bool {
+		select {
+		case <-found:
+			return true
+		default:
+			return false
+		}
+	}, 30*time.Second, 100*time.Millisecond, "Collector should start up and print 'Everything is ready.'")
+
+	t.Log("Collector started up correctly - killing process")
+	cancel()
+
+	require.NoError(t, cmd.Wait())
 }
 
 func validateCollector(t *testing.T, path string) {
