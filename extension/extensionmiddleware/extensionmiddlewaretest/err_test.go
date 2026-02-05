@@ -4,6 +4,7 @@
 package extensionmiddlewaretest
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestErrClient(t *testing.T) {
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
 	require.True(t, ok)
-	_, err := httpClient.GetHTTPRoundTripper(nil)
+	_, err := httpClient.GetHTTPRoundTripper(context.Background(), nil)
 	require.Error(t, err)
 
 	grpcClient, ok := client.(extensionmiddleware.GRPCClient)
@@ -28,10 +29,11 @@ func TestErrClient(t *testing.T) {
 
 func TestErrServer(t *testing.T) {
 	server := NewErr(errors.New("error"))
+	testctx := context.Background()
 
 	httpServer, ok := server.(extensionmiddleware.HTTPServer)
 	require.True(t, ok)
-	_, err := httpServer.GetHTTPHandler(nil)
+	_, err := httpServer.GetHTTPHandler(testctx, nil)
 	require.Error(t, err)
 
 	grpcServer, ok := server.(extensionmiddleware.GRPCServer)

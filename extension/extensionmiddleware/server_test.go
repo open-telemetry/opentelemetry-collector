@@ -15,13 +15,15 @@ import (
 )
 
 func TestGetHTTPHandlerFunc(t *testing.T) {
+	testctx := context.Background()
+
 	t.Run("nil_function", func(t *testing.T) {
 		var f GetHTTPHandlerFunc
 		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
 
-		handler, err := f.GetHTTPHandler(baseHandler)
+		handler, err := f.GetHTTPHandler(testctx, baseHandler)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -35,14 +37,14 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		f := GetHTTPHandlerFunc(func(base http.Handler) (http.Handler, error) {
+		f := GetHTTPHandlerFunc(func(_ context.Context, base http.Handler) (http.Handler, error) {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
 				base.ServeHTTP(w, r)
 			}), nil
 		})
 
-		handler, err := f.GetHTTPHandler(baseHandler)
+		handler, err := f.GetHTTPHandler(testctx, baseHandler)
 		require.NoError(t, err)
 		require.NotNil(t, handler)
 
@@ -54,12 +56,12 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 
 	t.Run("returns_error", func(t *testing.T) {
 		expectedErr := errors.New("test error")
-		f := GetHTTPHandlerFunc(func(http.Handler) (http.Handler, error) {
+		f := GetHTTPHandlerFunc(func(_ context.Context, _ http.Handler) (http.Handler, error) {
 			return nil, expectedErr
 		})
 
 		baseHandler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
-		handler, err := f.GetHTTPHandler(baseHandler)
+		handler, err := f.GetHTTPHandler(testctx, baseHandler)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, handler)
 	})

@@ -4,6 +4,7 @@
 package extensionmiddleware // import "go.opentelemetry.io/collector/extension/extensionmiddleware"
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -12,7 +13,7 @@ import (
 // HTTPServer defines the interface for HTTP server middleware extensions.
 type HTTPServer interface {
 	// GetHTTPHandler wraps the provided base http.Handler.
-	GetHTTPHandler(base http.Handler) (http.Handler, error)
+	GetHTTPHandler(_ context.Context, base http.Handler) (http.Handler, error)
 }
 
 // GRPCServer defines the interface for gRPC server middleware extensions.
@@ -24,13 +25,13 @@ type GRPCServer interface {
 var _ HTTPServer = (*GetHTTPHandlerFunc)(nil)
 
 // GetHTTPHandlerFunc is a function that implements HTTPServer.
-type GetHTTPHandlerFunc func(base http.Handler) (http.Handler, error)
+type GetHTTPHandlerFunc func(_ context.Context, base http.Handler) (http.Handler, error)
 
-func (f GetHTTPHandlerFunc) GetHTTPHandler(base http.Handler) (http.Handler, error) {
+func (f GetHTTPHandlerFunc) GetHTTPHandler(ctx context.Context, base http.Handler) (http.Handler, error) {
 	if f == nil {
 		return base, nil
 	}
-	return f(base)
+	return f(ctx, base)
 }
 
 var _ GRPCServer = (*GetGRPCServerOptionsFunc)(nil)

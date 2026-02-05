@@ -4,6 +4,7 @@
 package extensionmiddlewaretest
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestNopClient(t *testing.T) {
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
 	require.True(t, ok)
-	rt, err := httpClient.GetHTTPRoundTripper(nil)
+	rt, err := httpClient.GetHTTPRoundTripper(context.Background(), nil)
 	require.NoError(t, err)
 	require.Nil(t, rt)
 
@@ -30,10 +31,11 @@ func TestNopClient(t *testing.T) {
 
 func TestNopServer(t *testing.T) {
 	client := NewNop()
+	testctx := context.Background()
 
 	httpServer, ok := client.(extensionmiddleware.HTTPServer)
 	require.True(t, ok)
-	rt, err := httpServer.GetHTTPHandler(nil)
+	rt, err := httpServer.GetHTTPHandler(testctx, nil)
 	require.NoError(t, err)
 	require.Nil(t, rt)
 

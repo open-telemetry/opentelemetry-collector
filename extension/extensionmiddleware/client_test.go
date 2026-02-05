@@ -4,6 +4,7 @@
 package extensionmiddleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -15,30 +16,31 @@ import (
 func TestGetHTTPRoundTripperFunc(t *testing.T) {
 	// Create a base round tripper for testing
 	baseRT := http.DefaultTransport
+	testctx := context.Background()
 
 	t.Run("nil function", func(t *testing.T) {
 		var nilFunc GetHTTPRoundTripperFunc
-		rt, err := nilFunc.GetHTTPRoundTripper(baseRT)
+		rt, err := nilFunc.GetHTTPRoundTripper(testctx)(baseRT)
 		require.NoError(t, err)
 		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("identity function", func(t *testing.T) {
-		identityFunc := GetHTTPRoundTripperFunc(func(base http.RoundTripper) (http.RoundTripper, error) {
+		identityFunc := GetHTTPRoundTripperFunc(func(_ context.Context, base http.RoundTripper) (http.RoundTripper, error) {
 			return base, nil
 		})
-		rt, err := identityFunc.GetHTTPRoundTripper(baseRT)
+		rt, err := identityFunc.GetHTTPRoundTripper(testctx, baseRT)
 		require.NoError(t, err)
 		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("round tripper error")
-		errorFunc := GetHTTPRoundTripperFunc(func(_ http.RoundTripper) (http.RoundTripper, error) {
+		errorFunc := GetHTTPRoundTripperFunc(func(_ context.Context, _ http.RoundTripper) (http.RoundTripper, error) {
 			return nil, expectedErr
 		})
 
-		rt, err := errorFunc.GetHTTPRoundTripper(baseRT)
+		rt, err := errorFunc.GetHTTPRoundTripper(testctx, baseRT)
 		require.Error(t, err)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, rt)

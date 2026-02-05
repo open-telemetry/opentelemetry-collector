@@ -4,6 +4,7 @@
 package extensionmiddleware // import "go.opentelemetry.io/collector/extension/extensionmiddleware"
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -12,7 +13,7 @@ import (
 // HTTPClient is an interface for HTTP client middleware extensions.
 type HTTPClient interface {
 	// GetHTTPRoundTripper wraps the provided client RoundTripper.
-	GetHTTPRoundTripper(http.RoundTripper) (http.RoundTripper, error)
+	GetHTTPRoundTripper(context.Context) (func (http.RoundTripper) (http.RoundTripper, error), error)
 }
 
 // GRPCClient is an interface for gRPC client middleware extensions.
@@ -24,13 +25,13 @@ type GRPCClient interface {
 var _ HTTPClient = (*GetHTTPRoundTripperFunc)(nil)
 
 // GetHTTPRoundTripperFunc is a function that implements HTTPClient.
-type GetHTTPRoundTripperFunc func(base http.RoundTripper) (http.RoundTripper, error)
+type GetHTTPRoundTripperFunc func(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error)
 
-func (f GetHTTPRoundTripperFunc) GetHTTPRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (f GetHTTPRoundTripperFunc) GetHTTPRoundTripper(ctx context.Context) (func(base http.RoundTripper) (http.RoundTripper, error), error) {
 	if f == nil {
-		return base, nil
+		return identityRoundTripper, nil
 	}
-	return f(base)
+	return f(ctx)
 }
 
 var _ GRPCClient = (*GetGRPCClientOptionsFunc)(nil)
@@ -43,4 +44,9 @@ func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions() ([]grpc.DialOption, err
 		return nil, nil
 	}
 	return f()
+}
+
+
+func identityRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return base, nil
 }
