@@ -48,7 +48,7 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 
 func TestGetGRPCClientOptionsFunc(t *testing.T) {
 	var (
-		key = "testkey"
+		key   = "testkey"
 		value = "testval"
 	)
 	testctx := context.WithValue(context.Background(), key, value)

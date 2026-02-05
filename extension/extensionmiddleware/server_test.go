@@ -67,7 +67,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 
 func TestGetGRPCServerOptionsFunc(t *testing.T) {
 	var (
-		key = "testkey"
+		key   = "testkey"
 		value = "testval"
 	)
 	testctx := context.WithValue(context.Background(), key, value)
