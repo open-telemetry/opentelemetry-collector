@@ -44,11 +44,11 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 	})
 
 	done := newFakeDone()
-	assert.Equal(t, int64(0), ba.activePartitionsCount)
+	assert.Equal(t, int64(0), ba.activePartitionsCount.Load())
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}, done)
-	assert.Equal(t, int64(1), ba.activePartitionsCount)
+	assert.Equal(t, int64(1), ba.activePartitionsCount.Load())
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}, done)
-	assert.Equal(t, int64(2), ba.activePartitionsCount)
+	assert.Equal(t, int64(2), ba.activePartitionsCount.Load())
 
 	// Neither batch should be flushed since they haven't reached min threshold.
 	assert.Equal(t, 0, sink.RequestsCount())
