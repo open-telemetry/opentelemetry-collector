@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -28,13 +29,36 @@ func TestCreateResource(t *testing.T) {
 			"service.version": "latest",
 		}, raw)
 	})
-	t.Run("with resource attributes", func(t *testing.T) {
+	t.Run("with resource attributes (deprecated format)", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Resource = map[string]*string{
-			"extra.attr":          ptr("value"),
-			"service.name":        ptr("custom-service"),
-			"service.version":     ptr("0.1.0"),
-			"service.instance.id": nil, // removes the attribute
+		cfg.Resource = resource.Config{
+			DeprecatedAttributes: map[string]any{
+				"extra.attr":          "value",
+				"service.name":        "custom-service",
+				"service.version":     "0.1.0",
+				"service.instance.id": nil, // removes the attribute
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, map[string]any{
+			"extra.attr":      "value",
+			"service.name":    "custom-service",
+			"service.version": "0.1.0",
+		}, raw)
+	})
+	t.Run("with resource attributes (new format)", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource = resource.Config{
+			Attributes: []resource.Attribute{
+				{Name: "extra.attr", Value: "value"},
+				{Name: "service.name", Value: "custom-service"},
+				{Name: "service.version", Value: "0.1.0"},
+				{Name: "service.instance.id", Value: nil}, // removes the attribute
+			},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 		res, err := createResource(t.Context(), set, cfg)

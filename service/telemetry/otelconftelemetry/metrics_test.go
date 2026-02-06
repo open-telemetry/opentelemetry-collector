@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/service/internal/promtest"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -111,10 +112,12 @@ func TestCreateMeterProvider(t *testing.T) {
 				}},
 			},
 		}
-		cfg.Resource = map[string]*string{
-			"service.name":        ptr("otelcol"),
-			"service.version":     ptr("latest"),
-			"service.instance.id": ptr(testInstanceID),
+		cfg.Resource = resource.Config{
+			DeprecatedAttributes: map[string]any{
+				"service.name":        "otelcol",
+				"service.version":     "latest",
+				"service.instance.id": testInstanceID,
+			},
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
