@@ -22,7 +22,10 @@ import (
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(
-		NewFactory().CreateDefaultConfig(),
+		// here we add the option to skip struct tag regexp matching as we are
+		// including the structs as published by otelconf, which include the suffix
+		// */development for experimental features.
+		NewFactory().CreateDefaultConfig(), componenttest.WithSkipStructTagRegexp(),
 	))
 }
 

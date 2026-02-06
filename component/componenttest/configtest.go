@@ -15,12 +15,31 @@ import (
 // The regular expression for valid config field tag.
 var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 
+type ConfigTestOption interface {
+	apply(*configTester)
+}
+
+type configTester struct {
+	skipStructTagRegexp bool
+}
+
+type configTestOptionFunc func(*configTester)
+
+func (f configTestOptionFunc) apply(o *configTester) { f(o) }
+
+// WithSkipStructTagRegexp skip regexp matching for struct field tags.
+func WithSkipStructTagRegexp() ConfigTestOption {
+	return configTestOptionFunc(func(o *configTester) {
+		o.skipStructTagRegexp = true
+	})
+}
+
 // CheckConfigStruct enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations
 // of components and extensions. It is recommended for implementers of components
 // to call this function on their tests passing the default configuration of the
 // component factory.
-func CheckConfigStruct(config any) error {
+func CheckConfigStruct(config any, opts ...ConfigTestOption) error {
 	t := reflect.TypeOf(config)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -30,24 +49,29 @@ func CheckConfigStruct(config any) error {
 		return fmt.Errorf("config must be a struct or a pointer to one, the passed object is a %s", t.Kind())
 	}
 
-	return validateConfigDataType(t)
+	c := configTester{}
+	for _, opt := range opts {
+		opt.apply(&c)
+	}
+
+	return c.validateConfigDataType(t)
 }
 
 // validateConfigDataType performs a descending validation of the given type.
 // If the type is a struct it goes to each of its fields to check for the proper
 // tags.
-func validateConfigDataType(t reflect.Type) error {
+func (c *configTester) validateConfigDataType(t reflect.Type) error {
 	var errs error
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		errs = multierr.Append(errs, validateConfigDataType(t.Elem()))
+		errs = multierr.Append(errs, c.validateConfigDataType(t.Elem()))
 	case reflect.Struct:
 		// Reflect on the pointed data and check each of its fields.
 		nf := t.NumField()
 		for i := range nf {
 			f := t.Field(i)
-			errs = multierr.Append(errs, checkStructFieldTags(f))
+			errs = multierr.Append(errs, c.checkStructFieldTags(f))
 		}
 	default:
 		// The config object can carry other types but they are not used when
@@ -64,7 +88,7 @@ func validateConfigDataType(t reflect.Type) error {
 }
 
 // checkStructFieldTags inspects the tags of a struct field.
-func checkStructFieldTags(f reflect.StructField) error {
+func (c *configTester) checkStructFieldTags(f reflect.StructField) error {
 	tagValue, ok := f.Tag.Lookup("mapstructure")
 	if !ok {
 		// Ignore special types.
@@ -114,15 +138,15 @@ func checkStructFieldTags(f reflect.StructField) error {
 	switch f.Type.Kind() {
 	case reflect.Struct:
 		// It is another struct, continue down-level.
-		return validateConfigDataType(f.Type)
+		return c.validateConfigDataType(f.Type)
 
 	case reflect.Map, reflect.Slice, reflect.Array:
 		// The element of map, array, or slice can be itself a configuration object.
-		return validateConfigDataType(f.Type.Elem())
+		return c.validateConfigDataType(f.Type.Elem())
 
 	default:
 		fieldTag := tagParts[0]
-		if fieldTag != "" && !configFieldTagRegExp.MatchString(fieldTag) {
+		if fieldTag != "" && !configFieldTagRegExp.MatchString(fieldTag) && !c.skipStructTagRegexp {
 			return fmt.Errorf(
 				"field %q has config tag %q which doesn't satisfy %q",
 				f.Name,
