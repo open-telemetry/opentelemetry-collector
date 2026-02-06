@@ -25,6 +25,9 @@ all_set:
     system.cpu.time:
       enabled: true
       attributes: []
+    system.memory.limit:
+      enabled: true
+      attributes: []
   events:
     default.event:
       enabled: true
@@ -75,6 +78,9 @@ reaggregate_set:
     system.cpu.time:
       enabled: true
       attributes: []
+    system.memory.limit:
+      enabled: true
+      attributes: []
   events:
     default.event:
       enabled: true
@@ -123,6 +129,9 @@ none_set:
       enabled: false
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
+      enabled: false
+      attributes: []
+    system.memory.limit:
       enabled: false
       attributes: []
   events:

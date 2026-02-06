@@ -76,6 +76,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
 			aggMap["ReaggregateMetricWithRequired"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
 			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
+			aggMap["SystemMemoryLimit"] = mb.metricSystemMemoryLimit.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet == testDataSetDefault {
@@ -165,6 +166,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemCPUTimeDataPoint(ts, 1)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemCPUTimeDataPoint(ts, 3)
+			}
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemMemoryLimitDataPoint(ts, 3)
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -572,7 +580,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["system.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
+						assert.Equal(t, metricSemConvSystemCPUTime.Description(), ms.At(i).Description())
 						assert.Equal(t, "s", ms.At(i).Unit())
 						assert.True(t, ms.At(i).Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -586,7 +594,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["system.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
+						assert.Equal(t, metricSemConvSystemCPUTime.Description(), ms.At(i).Description())
 						assert.Equal(t, "s", ms.At(i).Unit())
 						assert.True(t, ms.At(i).Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -595,6 +603,45 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						switch aggMap["system.cpu.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
+				case "system.memory.limit":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.memory.limit"], "Found a duplicate in the metrics slice: system.memory.limit")
+						validatedMetrics["system.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, metricSemConvSystemMemoryLimit.Description(), ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["system.memory.limit"], "Found a duplicate in the metrics slice: system.memory.limit")
+						validatedMetrics["system.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, metricSemConvSystemMemoryLimit.Description(), ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.memory.limit"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":

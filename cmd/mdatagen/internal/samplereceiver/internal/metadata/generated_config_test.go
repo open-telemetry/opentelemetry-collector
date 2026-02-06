@@ -67,6 +67,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{},
 					},
+					SystemMemoryLimit: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -120,6 +125,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 					},
 					SystemCPUTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					SystemMemoryLimit: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{},

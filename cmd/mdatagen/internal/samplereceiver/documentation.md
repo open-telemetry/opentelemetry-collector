@@ -108,6 +108,14 @@ The metric will be become optional soon.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
 | s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
 
+### system.memory.limit
+
+Total bytes of memory available.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| By | Sum | Int | Cumulative | false | Development | [system.memory.limit](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit) |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:

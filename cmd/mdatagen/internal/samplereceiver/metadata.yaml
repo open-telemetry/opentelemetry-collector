@@ -294,6 +294,23 @@ metrics:
       aggregation_temporality: cumulative
     semantic_convention:
       ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      package: systemconv
+      type: CPUTime
+
+  system.memory.limit:
+    enabled: true
+    stability:
+      level: development
+    description: Total bytes of memory available.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit
+      package: systemconv
+      type: MemoryLimit
 
 telemetry:
   metrics:
