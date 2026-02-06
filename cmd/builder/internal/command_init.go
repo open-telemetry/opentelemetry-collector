@@ -32,15 +32,19 @@ type metadata struct {
 }
 
 func initCommand() *cobra.Command {
+	var outputPath string
+
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "[EXPERIMENTAL] Initializes a new custom collector repository in the provided folder",
 		Long:  `ocb init initializes a new repository in the provided folder with a manifest to start building a custom Collector. This command is experimental and very likely to change.`,
-		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
-			return run(args[0])
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return run(outputPath)
 		},
 	}
+
+	cmd.Flags().StringVar(&outputPath, "path", ".", "Output path where the collector repository will be initialized")
 
 	return cmd
 }
