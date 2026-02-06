@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_scraper_errored_log_records
 
-Number of log records that were unable to be scraped. [Alpha]
+Number of log records that were unable to be scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of log records that were unable to be scraped. [Alpha]
 
 ### otelcol_scraper_errored_metric_points
 
-Number of metric points that were unable to be scraped. [Alpha]
+Number of metric points that were unable to be scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of metric points that were unable to be scraped. [Alpha]
 
 ### otelcol_scraper_scraped_log_records
 
-Number of log records successfully scraped. [Alpha]
+Number of log records successfully scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of log records successfully scraped. [Alpha]
 
 ### otelcol_scraper_scraped_metric_points
 
-Number of metric points successfully scraped. [Alpha]
+Number of metric points successfully scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

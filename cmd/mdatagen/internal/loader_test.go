@@ -259,7 +259,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
-							Stability:             Stability{Level: component.StabilityLevelDevelopment},
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
@@ -270,6 +270,10 @@ func TestLoadMetadata(t *testing.T) {
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 					},
 					"reaggregate.metric": {
@@ -321,6 +325,10 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
+						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
@@ -335,6 +343,10 @@ func TestLoadMetadata(t *testing.T) {
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
@@ -351,6 +363,10 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
 							},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -413,9 +429,15 @@ func TestLoadMetadata(t *testing.T) {
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
 							Signal: Signal{
-								Enabled:     true,
-								Stability:   Stability{Level: component.StabilityLevelDeprecated, From: "v0.110.0"},
+								Enabled: true,
+								Stability: Stability{
+									Level: component.StabilityLevelDeprecated,
+								},
 								Description: "Number of times the batch was sent due to a size trigger",
+							},
+							Deprecated: &Deprecated{
+								Since: "1.5.0",
+								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
 							Unit: strPtr("{times}"),
 							Sum: &Sum{

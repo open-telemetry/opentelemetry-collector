@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -824,4 +825,60 @@ func TestValidateGraph(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRegisterProcessMetrics_UnsupportedOS_Warns(t *testing.T) {
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		t.Fatalf("should not be called on unsupported OS")
+		return nil
+	}
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	logger := zap.New(core)
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: logger},
+	}
+
+	err := registerProcessMetrics(srv, "aix", mockRegister)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.Len(), "Expected exactly one warning log")
+	entry := logs.All()[0]
+	require.Equal(t, "Process metrics are disabled on this operating system", entry.Message)
+	require.Equal(t, "aix", entry.ContextMap()["os"], "Log should contain the OS field")
+}
+
+func TestRegisterProcessMetrics_SupportedOS_CallsRegister(t *testing.T) {
+	called := false
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		called = true
+		return nil
+	}
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
+
+	err := registerProcessMetrics(srv, "linux", mockRegister)
+
+	require.NoError(t, err)
+	require.True(t, called, "Registration function should be called on supported OS")
+}
+
+func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testing.T) {
+	wantErr := errors.New("boom")
+	mockRegister := func(_ component.TelemetrySettings, _ ...proctelemetry.RegisterOption) error {
+		return wantErr
+	}
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
+
+	err := registerProcessMetrics(srv, "linux", mockRegister)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, wantErr)
+	require.Contains(t, err.Error(), "failed to register process metrics")
 }
