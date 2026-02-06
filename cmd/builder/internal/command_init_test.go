@@ -65,6 +65,7 @@ func TestRunInit(t *testing.T) {
 
 func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, ".gitignore"))
+	require.FileExists(t, filepath.Join(path, "README.md"))
 	require.FileExists(t, filepath.Join(path, "manifest.yaml"))
 	require.FileExists(t, filepath.Join(path, "go.mod"))
 	require.FileExists(t, filepath.Join(path, "go.sum"))

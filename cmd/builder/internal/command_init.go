@@ -79,6 +79,11 @@ func run(path string) error {
 		return fmt.Errorf("failed writing gitignore: %w", err)
 	}
 
+	err = writeTemplate(path, "README.md", meta)
+	if err != nil {
+		return fmt.Errorf("failed writing README: %w", err)
+	}
+
 	err = writeTemplate(path, "go.mod", meta)
 	if err != nil {
 		return fmt.Errorf("failed writing go.mod: %w", err)
