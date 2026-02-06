@@ -267,6 +267,17 @@ It is recommended to run `make gofmt all` before submitting your PR.
 
 See the [Coding Guidelines](docs/coding-guidelines.md) document for more information.
 
+## Performance Testing
+
+The OpenTelemetry Collector uses continuous performance monitoring to detect regressions and improvements. When making changes that could affect performance:
+
+- **Run benchmarks locally** before submitting your PR using `make gobenchmark`
+- **Review CodSpeed results** posted as PR comments for any performance impacts
+- **Document trade-offs** if a performance regression is intentional for correctness or features
+- **Add benchmarks** for new performance-critical code paths
+
+See the [Performance Benchmarking](docs/performance-benchmarking.md) guide for detailed information on writing and running benchmarks.
+
 ## Changelog
 
 ### Overview
