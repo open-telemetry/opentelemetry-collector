@@ -470,6 +470,9 @@ func (mvt ValueType) Primitive() string {
 
 type SemanticConvention struct {
 	SemanticConventionRef string `mapstructure:"ref"`
+	Package               string `mapstructure:"package"`
+	Type                  string `mapstructure:"type"`
+	UseSemconvValues      *bool  `mapstructure:"use_semconv_values"`
 }
 
 type Warnings struct {
@@ -639,6 +642,27 @@ func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool
 		}
 	}
 	return false
+}
+
+func (s *SemanticConvention) HasSemConvType() bool {
+	return s != nil && s.Package != "" && s.Type != ""
+}
+
+func (s *SemanticConvention) ShouldUseSemConvValues() bool {
+	if s == nil || s.Type == "" {
+		return false
+	}
+	if s.UseSemconvValues == nil {
+		return true
+	}
+	return *s.UseSemconvValues
+}
+
+func (s *SemanticConvention) ImportPath(semConvVersion string) string {
+	if s.Package == "" {
+		return ""
+	}
+	return fmt.Sprintf("go.opentelemetry.io/otel/semconv/%v/%s", semConvVersion, s.Package)
 }
 
 type Entity struct {

@@ -131,6 +131,11 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 			errs = errors.Join(errs, err)
 		}
 	}
+	if m.SemanticConvention != nil && m.SemanticConvention.HasSemConvType() {
+		if err := m.validateSemConvType(metricName, semConvVersion); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
 	return errs
 }
 
@@ -165,6 +170,18 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 		return fmt.Errorf(
 			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
 			semConvVersion, anchor, rawURL)
+	}
+	return nil
+}
+
+func (m *Metric) validateSemConvType(metricName MetricName, semConvVersion string) error {
+	sc := m.SemanticConvention
+
+	knownPackages := map[string]bool{
+		"systemconv": true,
+	}
+	if !knownPackages[sc.Package] {
+		return fmt.Errorf("unknown semconv package: %s", sc.Package)
 	}
 	return nil
 }

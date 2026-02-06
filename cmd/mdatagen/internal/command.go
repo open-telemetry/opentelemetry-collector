@@ -36,6 +36,34 @@ var nonComponents = []string{
 	"provider",
 }
 
+type SemConvImport struct {
+	Package string
+	Alias   string
+}
+
+func (md Metadata) SemConvImports() []SemConvImport {
+	imports := make(map[string]SemConvImport)
+
+	for _, m := range md.Metrics {
+		if m.SemanticConvention != nil && m.SemanticConvention.Package != "" {
+			pkg := m.SemanticConvention.Package
+			imports[pkg] = SemConvImport{
+				Package: pkg,
+				Alias:   pkg,
+			}
+		}
+	}
+
+	result := make([]SemConvImport, 0, len(imports))
+	for _, imp := range imports {
+		result = append(result, imp)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Package < result[j].Package
+	})
+	return result
+}
+
 func getVersion() (string, error) {
 	// the second returned value is a boolean, which is true if the binaries are built with module support.
 	info, ok := debug.ReadBuildInfo()

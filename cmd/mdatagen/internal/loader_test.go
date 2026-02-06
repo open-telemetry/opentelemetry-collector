@@ -302,9 +302,13 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"system.cpu.time": {
 						Signal: Signal{
-							Enabled:               true,
-							Stability:             Stability{Level: component.StabilityLevelBeta},
-							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Enabled:   true,
+							Stability: Stability{Level: component.StabilityLevelBeta},
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
+								Package:               "systemconv",
+								Type:                  "CPUTime",
+							},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
 						},
@@ -313,6 +317,24 @@ func TestLoadMetadata(t *testing.T) {
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.memory.limit": {
+						Signal: Signal{
+							Enabled:   true,
+							Stability: Stability{Level: component.StabilityLevelDevelopment},
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit",
+								Package:               "systemconv",
+								Type:                  "MemoryLimit",
+							},
+							Description: "Total bytes of memory available.",
+						},
+						Unit: strPtr("By"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 					"optional.metric": {

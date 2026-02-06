@@ -160,6 +160,9 @@ metrics:
     # Optional: the reference to a semantic convention
     semantic_convention:
       ref:
+      package:
+      type:
+      use_semconv_values:
 
 # Optional: map of event names with the key being the event name and value
 # being described below.

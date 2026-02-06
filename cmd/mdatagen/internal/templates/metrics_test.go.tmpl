@@ -15,6 +15,9 @@ import (
 	{{- end }}
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+  {{- range .SemConvImports }}
+  {{ .Alias }} "go.opentelemetry.io/otel/semconv/v{{ $.SemConvVersion }}/{{ .Package }}"
+  {{- end }}
 )
 
 type testDataSet int
@@ -218,7 +221,11 @@ func TestMetricsBuilder(t *testing.T) {
             validatedMetrics["{{ $name }}"] = true
             assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
             assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
+            assert.Equal(t, metricSemConv{{ $name.Render }}.Description(), ms.At(i).Description())
+            {{- else }}
             assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- end }}
             {{- if len $metric.Unit}}
             assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
             {{- else }}
@@ -258,7 +265,11 @@ func TestMetricsBuilder(t *testing.T) {
             validatedMetrics["{{ $name }}"] = true
             assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
             assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            {{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
+            assert.Equal(t, metricSemConv{{ $name.Render }}.Description(), ms.At(i).Description())
+            {{- else }}
             assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- end }}
             {{- if len $metric.Unit}}
             assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
             {{- else }}
@@ -316,7 +327,11 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
-					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+          {{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
+          assert.Equal(t, metricSemConv{{ $name.Render }}.Description(), ms.At(i).Description())
+          {{- else }}
+          assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+          {{- end }}
 					{{- if len $metric.Unit}}
 					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
 					{{- else }}
