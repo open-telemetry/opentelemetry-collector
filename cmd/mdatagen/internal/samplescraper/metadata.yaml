@@ -12,14 +12,40 @@ status:
   disable_codecov_badge: true
   class: scraper
   stability:
-    stable: [metrics]
-    development: [logs]
-  distributions: []
-  unsupported_platforms: [freebsd, illumos]
+    stable: [ metrics ]
+    development: [ logs ]
+  distributions: [ ]
+  unsupported_platforms: [ freebsd, illumos ]
   codeowners:
-    active: [dmitryax]
+    active: [ dmitryax ]
   warnings:
     - Any additional information that should be brought to the consumer's attention
+
+config:
+  type: object
+  description: Configuration for the Sample Scraper.
+  allOf:
+    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  $defs:
+    target:
+      type: object
+      properties:
+        http_client:
+          $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+        interval:
+          type: string
+          format: duration
+          x-optional: true
+  properties:
+    targets:
+      description: Targets configuration for the scraper.
+      x-pointer: true
+      type: array
+      items:
+        $ref: target
+    options:
+      x-customType: "com.github/test/options"
+      description: Custom options for the scraper.
 
 resource_attributes:
   map.resource.attr:
@@ -40,7 +66,7 @@ resource_attributes:
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.
     type: string
-    enum: [one, two]
+    enum: [ one, two ]
     enabled: true
 
   string.resource.attr:
@@ -83,7 +109,7 @@ attributes:
   enum_attr:
     description: Attribute with a known set of string values.
     type: string
-    enum: [red, green, blue]
+    enum: [ red, green, blue ]
 
   map_attr:
     description: Attribute with a map value.
@@ -115,7 +141,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
-      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+      [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
@@ -145,7 +171,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
-      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+      [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
 
   optional.metric:
     enabled: false
@@ -155,7 +181,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2]
+    attributes: [ string_attr, boolean_attr, boolean_attr2 ]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
@@ -167,7 +193,7 @@ metrics:
     unit: ""
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr]
+    attributes: [ string_attr, boolean_attr ]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
@@ -178,8 +204,8 @@ metrics:
     stability:
       level: beta
     gauge:
-      value_type: double 
-    attributes: [string_attr, boolean_attr]
+      value_type: double
+    attributes: [ string_attr, boolean_attr ]
 
   system.cpu.time:
     enabled: true

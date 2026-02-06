@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "go.opentelemetry.io/collector/main/cmd/mdatagen/internal/samplescraper",
+  "title": "scraper/sample",
+  "description": "Configuration for the Sample Scraper.",
+  "type": "object",
+  "allOf": [
+    {
+      "description": "ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
+      "type": "object",
+      "properties": {
+        "collection_interval": {
+          "description": "CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. (duration format, e.g., \"30s\", \"1h30m\")",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "initial_delay": {
+          "description": "InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately. (duration format, e.g., \"30s\", \"1h30m\")",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "description": "Timeout is an optional value used to set scraper's context deadline. (duration format, e.g., \"30s\", \"1h30m\")",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      }
+    }
+  ],
+  "properties": {
+    "options": {
+      "description": "Custom options for the scraper."
+    },
+    "targets": {
+      "description": "Targets configuration for the scraper.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "http_client": {
+            "description": "ClientConfig defines settings for creating an HTTP client.",
+            "type": "object",
+            "properties": {
+              "auth": {
+                "description": "Config defines the auth settings for the receiver.",
+                "type": "object",
+                "properties": {
+                  "authenticator": {
+                    "description": "AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.",
+                    "type": "string"
+                  }
+                }
+              },
+              "compression": {
+                "description": "Type represents a compression method",
+                "type": "string"
+              },
+              "compression_params": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "cookies": {
+                "description": "Cookies configures the cookie management of the HTTP client.",
+                "$comment": "Empty or unknown reference, defaulting to 'any' type."
+              },
+              "disable_keep_alives": {
+                "description": "DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server for a single HTTP request. WARNING: enabling this option can result in significant overhead establishing a new HTTP(S) connection for every request. Before enabling this option please consider whether changes to idle connection settings can achieve your goal.",
+                "type": "boolean"
+              },
+              "endpoint": {
+                "description": "The target URL to send data to (e.g.: http://some.url:9411/v1/traces).",
+                "type": "string"
+              },
+              "force_attempt_http2": {
+                "description": "Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol. By default, this is set to true. NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.",
+                "type": "boolean"
+              },
+              "headers": {
+                "description": "MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value pairs. Pairs are assumed to have distinct names. This is checked during config validation.",
+                "type": "array",
+                "items": {
+                  "description": "Pair is an element of a MapList, and consists of a name and an opaque value.",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "http2_ping_timeout": {
+                "description": "HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed. If not set or set to 0, it defaults to 15s. (duration format, e.g., \"30s\", \"1h30m\")",
+                "type": "string",
+                "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+              },
+              "http2_read_idle_timeout": {
+                "description": "This is needed in case you run into https://github.com/golang/go/issues/59690 https://github.com/golang/go/issues/36026 HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check 0s means no health check will be performed. (duration format, e.g., \"30s\", \"1h30m\")",
+                "type": "string",
+                "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+              },
+              "idle_conn_timeout": {
+                "description": "IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself. By default, it is set to 90 seconds. (duration format, e.g., \"30s\", \"1h30m\")",
+                "type": "string",
+                "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+              },
+              "max_conns_per_host": {
+                "description": "MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).",
+                "type": "integer"
+              },
+              "max_idle_conns": {
+                "description": "MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open. By default, it is set to 100. Zero means no limit.",
+                "type": "integer"
+              },
+              "max_idle_conns_per_host": {
+                "description": "MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open. If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.",
+                "type": "integer"
+              },
+              "middlewares": {
+                "description": "Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.",
+                "type": "array",
+                "items": {
+                  "description": "Middleware defines the extension ID for a middleware component.",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "ID specifies the name of the extension to use.",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "proxy_url": {
+                "description": "ProxyURL setting for the collector",
+                "type": "string"
+              },
+              "read_buffer_size": {
+                "description": "ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize. Default is 0.",
+                "type": "integer"
+              },
+              "timeout": {
+                "description": "Timeout parameter configures `http.Client.Timeout`. Default is 0 (unlimited). (duration format, e.g., \"30s\", \"1h30m\")",
+                "type": "string",
+                "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+              },
+              "tls": {
+                "description": "ClientConfig contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.",
+                "type": "object",
+                "allOf": [
+                  {
+                    "description": "Config exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+                    "type": "object",
+                    "properties": {
+                      "ca_file": {
+                        "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)",
+                        "type": "string"
+                      },
+                      "ca_pem": {
+                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "type": "string"
+                      },
+                      "cert_file": {
+                        "description": "Path to the TLS cert to use for TLS required connections. (optional)",
+                        "type": "string"
+                      },
+                      "cert_pem": {
+                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "type": "string"
+                      },
+                      "cipher_suites": {
+                        "description": "CipherSuites is a list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "curve_preferences": {
+                        "description": "contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "include_system_ca_certs_pool": {
+                        "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct.",
+                        "type": "boolean"
+                      },
+                      "key_file": {
+                        "description": "Path to the TLS key to use for TLS required connections. (optional)",
+                        "type": "string"
+                      },
+                      "key_pem": {
+                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "type": "string"
+                      },
+                      "max_version": {
+                        "description": "MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)",
+                        "type": "string"
+                      },
+                      "min_version": {
+                        "description": "MinVersion sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)",
+                        "type": "string"
+                      },
+                      "reload_interval": {
+                        "description": "ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+                        "type": "string",
+                        "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                      },
+                      "tpm": {
+                        "description": "TPMConfig defines trusted platform module configuration for storing TLS keys.",
+                        "type": "object",
+                        "properties": {
+                          "auth": {
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "owner_auth": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                "properties": {
+                  "insecure": {
+                    "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)",
+                    "type": "boolean"
+                  },
+                  "insecure_skip_verify": {
+                    "description": "InsecureSkipVerify will enable TLS but not verify the certificate.",
+                    "type": "boolean"
+                  },
+                  "server_name_override": {
+                    "description": "ServerName requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)",
+                    "type": "string"
+                  }
+                }
+              },
+              "write_buffer_size": {
+                "description": "WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize. Default is 0.",
+                "type": "integer"
+              }
+            }
+          },
+          "interval": {
+            "type": "string",
+            "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+          }
+        }
+      }
+    }
+  }
+}

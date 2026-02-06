@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +75,23 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
+				},
+				Config: &cfgen.ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*cfgen.ConfigMetadata{
+						"endpoint": {
+							Description: "The endpoint to scrape metrics from.",
+							Type:        "string",
+							Default:     "localhost:12345",
+						},
+						"timeout": {
+							Description: "Timeout for scraping metrics.",
+							Type:        "string",
+							Format:      "duration",
+							Default:     "10s",
+						},
+					},
+					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {

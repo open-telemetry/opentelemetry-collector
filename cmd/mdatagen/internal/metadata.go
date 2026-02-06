@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -57,6 +58,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfgen.ConfigMetadata `mapstructure:"config"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -99,6 +102,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -348,6 +355,20 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that stable/deprecated gates should have to_version
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
+		}
+	}
+	return errs
+}
+
+func (md *Metadata) validateConfig() error {
+	var errs error
+	if md.Config != nil {
+		cfg := md.Config
+		if cfg.Type != "object" {
+			errs = errors.Join(errs, fmt.Errorf("config type must be Object, got %q", cfg.Type))
+		}
+		if len(cfg.Properties) == 0 && len(cfg.AllOf) == 0 {
+			errs = errors.Join(errs, errors.New("config must not be empty"))
 		}
 	}
 	return errs

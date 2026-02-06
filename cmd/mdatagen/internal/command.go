@@ -22,6 +22,9 @@ import (
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"golang.org/x/tools/go/packages"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 )
 
 const (
@@ -218,6 +221,10 @@ func run(ymlPath string) error {
 		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
+	}
+
+	if err := generateConfigFiles(md, ymlDir); err != nil {
+		return fmt.Errorf("failed to generate config files: %w", err)
 	}
 
 	return nil
@@ -495,4 +502,70 @@ func validateYAMLKeyOrder(raw []byte) error {
 		}
 	}
 	return nil
+}
+
+func generateConfigFiles(md Metadata, outputDir string) error {
+	// skip components that do not have configuration metadata
+	if md.Config != nil {
+		// retrieve full path of target go module
+		pkgID, err := getGoPkgID(outputDir)
+		if err != nil {
+			return fmt.Errorf("failed to get go module name: %w", err)
+		}
+		// retrieve version of the module
+		version, err := getVersion()
+		if err != nil {
+			return fmt.Errorf("failed to get version: %w", err)
+		}
+		// Clean up version for schema ID - use "main" for development builds
+		version = cleanVersionForSchema(version)
+
+		// resolve config schema
+		resolver := cfgen.NewResolver(pkgID, md.Status.Class, md.Type, version)
+		resolvedSchema, err := resolver.ResolveSchema(md.Config)
+		if err != nil {
+			return fmt.Errorf("failed to resolve config schema: %w", err)
+		}
+
+		// write config schema to file
+		err = cfgen.WriteJSONSchema(outputDir, resolvedSchema)
+		if err != nil {
+			return fmt.Errorf("failed to write config schema: %w", err)
+		}
+	}
+	return nil
+}
+
+func getGoPkgID(dir string) (string, error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedModule,
+		Dir:  dir,
+	}
+
+	pkgs, err := packages.Load(cfg, ".")
+	if err != nil {
+		return "", fmt.Errorf("failed to load package: %w", err)
+	}
+
+	if len(pkgs) == 0 {
+		return "", fmt.Errorf("no packages found in %q", dir)
+	}
+
+	if pkgs[0].Module == nil {
+		return "", fmt.Errorf("no module found in %q", dir)
+	}
+
+	return pkgs[0].ID, nil
+}
+
+// cleanVersionForSchema cleans up a version string for use in schema IDs.
+// Development builds (with git hashes) are converted to "main" for stable schema IDs.
+func cleanVersionForSchema(version string) string {
+	// Check if this is a pseudo-version (development build)
+	// Pseudo-versions have format: v0.0.0-yyyymmddhhmmss-abcdefabcdef
+	if strings.HasPrefix(version, "v0.0.0-") || strings.Contains(version, "+dirty") {
+		return "main"
+	}
+	// For tagged releases, keep the version as-is
+	return version
 }

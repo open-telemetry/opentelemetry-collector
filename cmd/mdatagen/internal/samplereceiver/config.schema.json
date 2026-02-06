@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "go.opentelemetry.io/collector/main/cmd/mdatagen/internal/samplereceiver",
+  "title": "receiver/sample",
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "description": "The endpoint to scrape metrics from.",
+      "type": "string",
+      "default": "localhost:12345"
+    },
+    "timeout": {
+      "description": "Timeout for scraping metrics. (duration format, e.g., \"30s\", \"1h30m\")",
+      "type": "string",
+      "default": "10s",
+      "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+    }
+  },
+  "required": [
+    "endpoint"
+  ]
+}
