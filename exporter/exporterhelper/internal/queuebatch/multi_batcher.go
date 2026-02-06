@@ -73,6 +73,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	s, found := mb.shards[key]
 	// Fast path, shard already created.
 	if found {
+		mb.lruKeys.access(key)
 		return s.(*partitionBatcher)
 	}
 
