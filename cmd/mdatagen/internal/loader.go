@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,10 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
+
+const componentLabelsRelPath = ".github/component_labels.txt"
+
+var packageNameFunc = packageName
 
 func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
@@ -47,7 +52,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	if err != nil {
 		return md, err
 	}
-	packageName, err := packageName(filepath.Dir(filePath))
+	packageName, err := packageNameFunc(filepath.Dir(filePath))
 	if err != nil {
 		return md, fmt.Errorf("unable to determine package name: %w", err)
 	}
@@ -64,6 +69,19 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
+	// compute md.Label from repo mapping
+	if repoRoot, err := findRepoRoot(filepath.Dir(filePath)); err == nil {
+		labelsPath := filepath.Join(repoRoot, componentLabelsRelPath)
+		if labelMap, err := loadComponentLabels(labelsPath); err == nil {
+			compDir := filepath.Dir(filePath)
+			if rel, err := filepath.Rel(repoRoot, compDir); err == nil {
+				rel = filepath.ToSlash(rel)
+				if lbl, ok := labelMap[rel]; ok {
+					md.Label = lbl
+				}
+			}
+		}
+	}
 	setAttributeDefaultFields(md.Attributes)
 	setAttributeDefaultFields(md.ResourceAttributes)
 
@@ -102,4 +120,43 @@ func packageName(filePath string) (string, error) {
 		return "", fmt.Errorf("unable to determine package name: %v failed: %v %w", cmd.Args, string(output), err)
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+func findRepoRoot(start string) (string, error) {
+	dir := start
+	for {
+		if _, err := os.Stat(filepath.Join(dir, componentLabelsRelPath)); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("repo root not found from %s", start)
+		}
+		dir = parent
+	}
+}
+
+// loadComponentLabels loads .github/component_labels.txt into a map[repoPath]label.
+// repoPath -> label (second column)
+func loadComponentLabels(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	labels := make(map[string]string)
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) != 2 {
+			continue
+		}
+		repoPath := parts[0] // e.g. "extension/storage/filestorage"
+		label := parts[1]    // e.g. "extension/storage/filestorage"
+		labels[repoPath] = label
+	}
+	return labels, nil
 }
