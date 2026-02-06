@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"runtime"
 	"testing"
 	"time"
 
@@ -158,4 +159,74 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 	require.NoError(t, err)
 	err = tt.UnmarshalText([]byte("invalid"))
 	require.Error(t, err)
+}
+
+func TestServerReusePort(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		sc := &AddrConfig{
+			Endpoint:  "localhost:4318",
+			Transport: TransportTypeTCP,
+			ReusePort: true,
+		}
+
+		_, err := sc.Listen(t.Context())
+		require.Error(t, err, "ReusePort is not supported on Windows")
+		return
+	}
+
+	tests := []struct {
+		name          string
+		reusePort     bool
+		expectedError bool
+	}{
+		{
+			name:          "ReusePort enabled",
+			reusePort:     true,
+			expectedError: false,
+		},
+		{
+			name:          "ReusePort disabled",
+			reusePort:     false,
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc := &AddrConfig{
+				Endpoint:  "localhost:4318",
+				Transport: TransportTypeTCP,
+				ReusePort: tt.reusePort,
+			}
+
+			ln1, err := sc.Listen(t.Context())
+			require.NoError(t, err)
+			defer ln1.Close()
+
+			ln2, err := sc.Listen(t.Context())
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if ln2 != nil {
+				ln2.Close()
+			}
+		})
+	}
+}
+
+func TestServerConfigValidate(t *testing.T) {
+	sc := &AddrConfig{
+		Endpoint:  "localhost:4318",
+		Transport: TransportTypeTCP,
+		ReusePort: true,
+	}
+
+	if runtime.GOOS == "windows" {
+		require.Error(t, sc.Validate())
+	} else {
+		require.NoError(t, sc.Validate())
+	}
 }
