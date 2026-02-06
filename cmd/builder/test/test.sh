@@ -117,7 +117,7 @@ test_init() {
 
   echo "Starting init test at $(date)" >> "${out}/test.log"
 
-  if ! go run . init "${out}" > "${out}/builder.log" 2>&1; then
+  if ! go run . init --path "${out}" > "${out}/builder.log" 2>&1; then
       echo "❌ FAIL ${test}. Failed to compile the test. Build logs:"
       cat "${out}/builder.log"
       failed=true
