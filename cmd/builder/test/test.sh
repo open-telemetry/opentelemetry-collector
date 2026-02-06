@@ -141,7 +141,7 @@ test_init() {
       fi
 
       if cat "${out}/otelcol.log" | grep "Everything is ready."; then
-        echo "✅ PASS ${test}"
+        echo "✅ PASS init"
 
         kill "${pid}"
         ret=$?
