@@ -345,9 +345,37 @@ func TestPersistentQueue_Shutdown(t *testing.T) {
 	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
+// TestPersistentQueue_DrainOnShutdown verifies that when Shutdown is called,
+// the queue properly drains all remaining items before consumers exit.
+// This test would fail if Read returns early when stopped without draining.
+func TestPersistentQueue_DrainOnShutdown(t *testing.T) {
+	consumed := &atomic.Int64{}
+	numMessages := 100
+
+	pq := newPersistentQueue[intRequest](newSettingsWithStorage(request.SizerTypeRequests, 1000))
+	aq := newAsyncQueue[intRequest](pq, 3, func(_ context.Context, _ intRequest, done Done) {
+		consumed.Add(1)
+		done.OnDone(nil)
+	}, nil)
+	require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+
+	for i := 0; i < numMessages; i++ {
+		require.NoError(t, aq.Offer(context.Background(), intRequest(10)))
+	}
+
+	// Shutdown should wait for all items to be drained.
+	require.NoError(t, aq.Shutdown(context.Background()))
+
+	// After Shutdown returns, all items should have been consumed.
+	assert.Equal(t, int64(numMessages), consumed.Load(), "all items should be consumed after Shutdown returns")
+}
+
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	cases := []struct {
 		numMessagesProduced int
+
 		numConsumers        int
 	}{
 		{
@@ -390,12 +418,10 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 				require.NoError(t, aq.Offer(context.Background(), intRequest(10)))
 			}
 
-			// Because the persistent queue is not draining after Shutdown, need to wait here for the drain.
-			assert.Eventually(t, func() bool {
-				return c.numMessagesProduced == int(consumed.Load())
-			}, 5*time.Second, 10*time.Millisecond)
-
 			require.NoError(t, aq.Shutdown(context.Background()))
+
+			// Shutdown should wait for all items to be drained.
+			assert.Equal(t, c.numMessagesProduced, int(consumed.Load()))
 		})
 	}
 }
@@ -441,11 +467,10 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				}()
 			}
 			wg.Wait()
-			// Because the persistent queue is not draining after Shutdown, need to wait here for the drain.
-			assert.Eventually(t, func() bool {
-				return int(consumed.Load()) == 1_000_000
-			}, 5*time.Second, 10*time.Millisecond)
 			require.NoError(t, ac.Shutdown(context.Background()))
+
+			// Shutdown should wait for all items to be drained.
+			assert.Equal(t, 1_000_000, int(consumed.Load()))
 		})
 	}
 }
