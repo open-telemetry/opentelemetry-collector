@@ -20,13 +20,11 @@ type TCPAddr struct {
 	Port int64
 }
 
-var (
-	protoPoolTCPAddr = sync.Pool{
-		New: func() any {
-			return &TCPAddr{}
-		},
-	}
-)
+var protoPoolTCPAddr = sync.Pool{
+	New: func() any {
+		return &TCPAddr{}
+	},
+}
 
 func NewTCPAddr() *TCPAddr {
 	if !UseProtoPooling.IsEnabled() {

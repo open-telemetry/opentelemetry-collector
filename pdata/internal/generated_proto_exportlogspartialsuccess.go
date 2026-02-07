@@ -20,13 +20,11 @@ type ExportLogsPartialSuccess struct {
 	RejectedLogRecords int64
 }
 
-var (
-	protoPoolExportLogsPartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportLogsPartialSuccess{}
-		},
-	}
-)
+var protoPoolExportLogsPartialSuccess = sync.Pool{
+	New: func() any {
+		return &ExportLogsPartialSuccess{}
+	},
+}
 
 func NewExportLogsPartialSuccess() *ExportLogsPartialSuccess {
 	if !UseProtoPooling.IsEnabled() {

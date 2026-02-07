@@ -19,13 +19,11 @@ type UnixAddr struct {
 	Net  string
 }
 
-var (
-	protoPoolUnixAddr = sync.Pool{
-		New: func() any {
-			return &UnixAddr{}
-		},
-	}
-)
+var protoPoolUnixAddr = sync.Pool{
+	New: func() any {
+		return &UnixAddr{}
+	},
+}
 
 func NewUnixAddr() *UnixAddr {
 	if !UseProtoPooling.IsEnabled() {

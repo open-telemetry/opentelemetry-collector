@@ -17,11 +17,11 @@ const oneOfMessageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lower
 //
 // Calling this function on zero-initialized {{ .structName }} will cause a panic.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
-	v, ok := ms.orig.Get{{ .originOneOfFieldName }}().(*internal.{{ .originStructType }})
-	if !ok {
+	v := ms.orig.{{ .fieldName }}()
+	if v == nil {
 		return {{ .returnType }}{}
 	}
-	return new{{ .returnType }}(v.{{ .fieldName }}, ms.state)
+	return new{{ .returnType }}(v, ms.state)
 }
 
 // SetEmpty{{ .fieldName }} sets an empty {{ .lowerFieldName }} to this {{ .structName }}.
@@ -31,22 +31,16 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 // Calling this function on zero-initialized {{ .structName }} will cause a panic.
 func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	ms.state.AssertMutable()
-	var ov *internal.{{ .originStructType }}
-	if !internal.UseProtoPooling.IsEnabled() {
-		ov = &internal.{{ .originStructType }}{}
-	} else {
-		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})
-	}
-	ov.{{ .fieldName }} = internal.New{{ .fieldOriginName }}()
-	ms.orig.{{ .originOneOfFieldName }} = ov
-	return new{{ .returnType }}(ov.{{ .fieldName }}, ms.state)
+	ov := internal.New{{ .fieldOriginName }}()
+	ms.orig.Set{{ .fieldName }}(ov)
+	return new{{ .returnType }}(ov, ms.state)
 }`
 
 const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	ms.SetEmpty{{ .fieldName }}()
 	assert.Equal(t, New{{ .returnType }}(), ms.{{ .fieldName }}())
-	ms.orig.Get{{ .originOneOfFieldName }}().(*internal.{{ .originStructType }}).{{ .fieldName }} = internal.GenTest{{ .returnType }}()
+	ms.orig.Set{{ .fieldName }}(internal.GenTest{{ .returnType }}())
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	sharedState := internal.NewState()

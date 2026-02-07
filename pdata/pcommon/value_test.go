@@ -48,7 +48,9 @@ func TestValue(t *testing.T) {
 func TestValueReadOnly(t *testing.T) {
 	state := internal.NewState()
 	state.MarkReadOnly()
-	v := newValue(&internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "v"}}, state)
+	av := &internal.AnyValue{}
+	av.SetStringValue("v")
+	v := newValue(av, state)
 
 	assert.Equal(t, ValueTypeStr, v.Type())
 	assert.Equal(t, "v", v.Str())
@@ -158,7 +160,8 @@ func TestValueMap(t *testing.T) {
 	assert.False(t, exists)
 
 	// Test nil KvlistValue case for MapWrapper() func.
-	orig := &internal.AnyValue{Value: &internal.AnyValue_KvlistValue{KvlistValue: nil}}
+	orig := &internal.AnyValue{}
+	orig.SetKvlistValue(nil)
 	m1 = newValue(orig, internal.NewState())
 	assert.Equal(t, Map{}, m1.Map())
 }
@@ -196,7 +199,9 @@ func TestValueSlice(t *testing.T) {
 	assert.Equal(t, "somestr", v.Str())
 
 	// Test nil values case for Slice() func.
-	a1 = newValue(&internal.AnyValue{Value: &internal.AnyValue_ArrayValue{ArrayValue: nil}}, internal.NewState())
+	orig := &internal.AnyValue{}
+	orig.SetArrayValue(nil)
+	a1 = newValue(orig, internal.NewState())
 	assert.Equal(t, newSlice(nil, nil), a1.Slice())
 }
 
@@ -258,8 +263,9 @@ func TestValue_CopyTo(t *testing.T) {
 func TestSliceWithNilValues(t *testing.T) {
 	origWithNil := []internal.AnyValue{
 		{},
-		{Value: &internal.AnyValue_StringValue{StringValue: "test_value"}},
+		{},
 	}
+	origWithNil[1].SetStringValue("test_value")
 	sm := newSlice(&origWithNil, internal.NewState())
 
 	val := sm.At(0)
