@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -98,6 +99,9 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 			blockingDonePool.Put(done)
 			return doneErr
 		case <-ctx.Done():
+			// Mark as abandoned so the consumer knows not to process this item
+			// and onDone knows to return the blockingDone to the pool.
+			done.abandoned.Store(true)
 			return ctx.Err()
 		}
 	}
@@ -164,7 +168,15 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
 	if mq.waitForResult {
-		// In this case the done will be added back to the queue by the waiter.
+		// Check if the producer abandoned waiting (context cancelled).
+		// If abandoned, the producer already returned an error and won't receive from the channel,
+		// so we return the blockingDone to the pool here instead.
+		if bd.abandoned.Load() {
+			blockingDonePool.Put(bd)
+			return
+		}
+		// Producer is still waiting, send the result.
+		// In this case the done will be added back to the pool by the waiter.
 		bd.ch <- err
 		return
 	}
@@ -235,11 +247,16 @@ type blockingDone struct {
 	}
 	elSize int64
 	ch     chan error
+	// abandoned is set to true when the producer's context is cancelled and
+	// the producer returns without waiting for the result. This prevents
+	// data from being exported after the caller already received a timeout error.
+	abandoned atomic.Bool
 }
 
 func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDone, error) }) {
 	bd.elSize = elSize
 	bd.queue = queue
+	bd.abandoned.Store(false)
 }
 
 func (bd *blockingDone) OnDone(err error) {
