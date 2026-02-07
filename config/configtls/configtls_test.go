@@ -949,6 +949,34 @@ func TestCurvePreferences(t *testing.T) {
 	}
 }
 
+func TestDefaultCurvePreferences(t *testing.T) {
+	// Test that default curve preferences are applied when none are specified
+	tlsSetting := ClientConfig{
+		Config: Config{
+			CurvePreferences: []string{}, // Empty, should use defaults
+		},
+	}
+	config, err := tlsSetting.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+	require.NotEmpty(t, config.CurvePreferences, "default curve preferences should be set")
+
+	// Verify that the preferences are in the expected order
+	// When not in FIPS mode, hybrid KEX should be first
+	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
+		require.Equal(t, tls.X25519MLKEM768, config.CurvePreferences[0], "X25519MLKEM768 should be first in default preferences")
+		require.Equal(t, tls.X25519, config.CurvePreferences[1], "X25519 should be second in default preferences")
+		// Verify NIST curves follow
+		require.Contains(t, config.CurvePreferences, tls.CurveP521)
+		require.Contains(t, config.CurvePreferences, tls.CurveP384)
+		require.Contains(t, config.CurvePreferences, tls.CurveP256)
+	} else {
+		// In FIPS mode, only NIST curves should be present
+		require.NotContains(t, config.CurvePreferences, tls.X25519MLKEM768)
+		require.NotContains(t, config.CurvePreferences, tls.X25519)
+		require.Equal(t, tls.CurveP521, config.CurvePreferences[0], "P521 should be first in FIPS mode")
+	}
+}
+
 func TestServerConfigValidate(t *testing.T) {
 	tests := []struct {
 		name         string
