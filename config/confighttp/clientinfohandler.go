@@ -22,8 +22,13 @@ type clientInfoHandler struct {
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
 // a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	req = req.WithContext(contextWithClient(req, h.includeMetadata)) //nolint:contextcheck //context already handled through contextWithClient
-	h.next.ServeHTTP(w, req)
+	reqWithCtx := req.WithContext(contextWithClient(req, h.includeMetadata)) //nolint:contextcheck //context already handled through contextWithClient
+	// Preserve Pattern: copy from original request to modified request
+	reqWithCtx.Pattern = req.Pattern
+	h.next.ServeHTTP(w, reqWithCtx)
+	// After inner handler returns, copy Pattern back to allow parent middleware to see it
+	// This is safe because req.Pattern is just a string field
+	req.Pattern = reqWithCtx.Pattern
 }
 
 // contextWithClient attempts to add the client IP address to the client.Info from the context. When no
