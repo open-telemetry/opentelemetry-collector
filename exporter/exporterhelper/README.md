@@ -30,6 +30,8 @@ The following configuration options can be modified:
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
   - `batch`: see below.
 
+**Failure behavior**: If data cannot be added to the sending queue, it is dropped. This occurs when the queue has reached its configured capacity or, for persistent queues, when the underlying storage cannot accept additional data (for example, due to insufficient disk space or I/O errors). Because the data is rejected before entering the queue, it does not reach the exporter retry logic. Enqueue failures are reported by the otelcol_exporter_enqueue_failed_* metrics.
+
 #### Sending queue batch settings
 
 Batch settings are available in the sending queue. Batching is disabled, by default. To enable default
