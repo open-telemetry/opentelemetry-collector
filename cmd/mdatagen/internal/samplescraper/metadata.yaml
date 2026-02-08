@@ -132,6 +132,9 @@ metrics:
     extended_documentation: The metric will be removed soon.
     stability:
       level: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: double
@@ -159,7 +162,10 @@ metrics:
     description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: '1'
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: "1"
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
@@ -171,7 +177,10 @@ metrics:
     description: '[DEPRECATED] Gauge double metric disabled by default.'
     stability:
       level: deprecated
-    unit: ''
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: ""
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]

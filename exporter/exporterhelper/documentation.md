@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_exporter_enqueue_failed_log_records
 
-Number of log records failed to be added to the sending queue. [Alpha]
+Number of log records failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of log records failed to be added to the sending queue. [Alpha]
 
 ### otelcol_exporter_enqueue_failed_metric_points
 
-Number of metric points failed to be added to the sending queue. [Alpha]
+Number of metric points failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of metric points failed to be added to the sending queue. [Alpha]
 
 ### otelcol_exporter_enqueue_failed_profile_samples
 
-Number of profile samples failed to be added to the sending queue. [Development]
+Number of profile samples failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of profile samples failed to be added to the sending queue. [Development]
 
 ### otelcol_exporter_enqueue_failed_spans
 
-Number of spans failed to be added to the sending queue. [Alpha]
+Number of spans failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Number of spans failed to be added to the sending queue. [Alpha]
 
 ### otelcol_exporter_queue_batch_send_size
 
-Number of units in the batch [Development]
+Number of units in the batch
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +48,7 @@ Number of units in the batch [Development]
 
 ### otelcol_exporter_queue_batch_send_size_bytes
 
-Number of bytes in batch that was sent. Only available on detailed level. [Development]
+Number of bytes in batch that was sent. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -56,7 +56,7 @@ Number of bytes in batch that was sent. Only available on detailed level. [Devel
 
 ### otelcol_exporter_queue_capacity
 
-Fixed capacity of the retry queue (in batches). [Alpha]
+Fixed capacity of the retry queue (in batches).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -64,7 +64,7 @@ Fixed capacity of the retry queue (in batches). [Alpha]
 
 ### otelcol_exporter_queue_size
 
-Current size of the retry queue (in batches). [Alpha]
+Current size of the retry queue (in batches).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -72,7 +72,7 @@ Current size of the retry queue (in batches). [Alpha]
 
 ### otelcol_exporter_send_failed_log_records
 
-Number of log records in failed attempts to send to destination. [Alpha]
+Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +80,7 @@ Number of log records in failed attempts to send to destination. [Alpha]
 
 ### otelcol_exporter_send_failed_metric_points
 
-Number of metric points in failed attempts to send to destination. [Alpha]
+Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -88,7 +88,7 @@ Number of metric points in failed attempts to send to destination. [Alpha]
 
 ### otelcol_exporter_send_failed_profile_samples
 
-Number of profile samples in failed attempts to send to destination. [Development]
+Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -96,7 +96,7 @@ Number of profile samples in failed attempts to send to destination. [Developmen
 
 ### otelcol_exporter_send_failed_spans
 
-Number of spans in failed attempts to send to destination. [Alpha]
+Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -104,7 +104,7 @@ Number of spans in failed attempts to send to destination. [Alpha]
 
 ### otelcol_exporter_sent_log_records
 
-Number of log record successfully sent to destination. [Alpha]
+Number of log record successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -112,7 +112,7 @@ Number of log record successfully sent to destination. [Alpha]
 
 ### otelcol_exporter_sent_metric_points
 
-Number of metric points successfully sent to destination. [Alpha]
+Number of metric points successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -120,7 +120,7 @@ Number of metric points successfully sent to destination. [Alpha]
 
 ### otelcol_exporter_sent_profile_samples
 
-Number of profile samples successfully sent to destination. [Development]
+Number of profile samples successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -128,7 +128,7 @@ Number of profile samples successfully sent to destination. [Development]
 
 ### otelcol_exporter_sent_spans
 
-Number of spans successfully sent to destination. [Alpha]
+Number of spans successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
