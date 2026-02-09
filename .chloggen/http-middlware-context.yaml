@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: extensionmiddleware
+component: pkg/config/configmiddleware
 
 note: Add context.Context to HTTP middleware interface constructors
 
