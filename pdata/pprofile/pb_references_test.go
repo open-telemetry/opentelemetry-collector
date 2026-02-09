@@ -139,11 +139,11 @@ func TestRoundTripWithReferences(t *testing.T) {
 	dict := original.Dictionary()
 	dict.StringTable().Append("")
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		rp := original.ResourceProfiles().AppendEmpty()
 		rp.Resource().Attributes().PutStr("resource.id", "resource-"+string(rune('A'+i)))
 
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			sp := rp.ScopeProfiles().AppendEmpty()
 			sp.Scope().SetName("scope-" + string(rune('X'+j)))
 			sp.Scope().Attributes().PutStr("scope.version", "1.0.0")
@@ -166,14 +166,14 @@ func TestRoundTripWithReferences(t *testing.T) {
 	// Verify structure is preserved
 	assert.Equal(t, 3, restored.ResourceProfiles().Len())
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		rp := restored.ResourceProfiles().At(i)
 		resourceID, ok := rp.Resource().Attributes().Get("resource.id")
 		assert.True(t, ok)
 		assert.Equal(t, "resource-"+string(rune('A'+i)), resourceID.Str())
 
 		assert.Equal(t, 2, rp.ScopeProfiles().Len())
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			sp := rp.ScopeProfiles().At(j)
 			assert.Equal(t, "scope-"+string(rune('X'+j)), sp.Scope().Name())
 

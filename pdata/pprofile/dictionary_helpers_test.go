@@ -382,7 +382,7 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		},
 	})
 
-	getStringIndex := func(s string) int32 {
+	getStringIndex := func(_ string) int32 {
 		return 1
 	}
 
@@ -410,7 +410,7 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		},
 	})
 
-	getStringIndex := func(s string) int32 {
+	getStringIndex := func(_ string) int32 {
 		return 99
 	}
 
@@ -442,7 +442,7 @@ func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
 }
 
 func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
-	getStringIndex := func(s string) int32 {
+	getStringIndex := func(_ string) int32 {
 		return 0
 	}
 
@@ -458,5 +458,5 @@ func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 	// Should remain as BoolValue
 	boolVal, ok := anyVal.Value.(*internal.AnyValue_BoolValue)
 	assert.True(t, ok)
-	assert.Equal(t, true, boolVal.BoolValue)
+	assert.True(t, boolVal.BoolValue)
 }

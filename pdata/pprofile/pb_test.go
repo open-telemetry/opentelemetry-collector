@@ -55,7 +55,7 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// Both should unmarshal successfully, proving wire compatibility
 	assert.NotNil(t, check1.ResourceProfiles)
 	assert.NotNil(t, check2.ResourceProfiles)
-	assert.Equal(t, len(check1.ResourceProfiles), len(check2.ResourceProfiles))
+	assert.Len(t, check1.ResourceProfiles, len(check2.ResourceProfiles))
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
