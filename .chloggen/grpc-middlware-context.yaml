@@ -1,0 +1,7 @@
+change_type: bug_fix
+
+component: extensionmiddleware
+
+note: Add context.Context to gRPC middleware interface constructors
+
+issues: [14523]
