@@ -109,6 +109,11 @@ var keyValueStruct = &messageStruct{
 			protoID:       2,
 			returnMessage: anyValueClone,
 		},
+		&PrimitiveField{
+			fieldName: "KeyRef",
+			protoID:   3,
+			protoType: proto.TypeInt32,
+		},
 	},
 	hasOnlyInternal: true,
 }
@@ -170,6 +175,12 @@ var anyValueStruct = &messageStruct{
 					protoID:         7,
 					originFieldName: "BytesValue",
 					protoType:       proto.TypeBytes,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "StringValueRef",
+					protoID:         8,
+					originFieldName: "StringValueRef",
+					protoType:       proto.TypeInt32,
 				},
 			},
 		},

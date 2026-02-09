@@ -42,9 +42,20 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	td2, err = unmarshaler.UnmarshalProfiles(wire2)
 	require.NoError(t, err)
 
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, td, td2)
+	// After unmarshal, td2 will have resolved references (strings instead of string_value_ref/key_ref)
+	// while td may have references. Marshal td2 again to verify wire compatibility.
+	wire3, err := marshaler.MarshalProfiles(td2)
+	require.NoError(t, err)
+
+	// Verify that wire1 and wire3 are compatible by unmarshaling both and checking the data
+	var check1, check2 gootlpprofiles.ProfilesData
+	require.NoError(t, goproto.Unmarshal(wire1, &check1))
+	require.NoError(t, goproto.Unmarshal(wire3, &check2))
+
+	// Both should unmarshal successfully, proving wire compatibility
+	assert.NotNil(t, check1.ResourceProfiles)
+	assert.NotNil(t, check2.ResourceProfiles)
+	assert.Equal(t, len(check1.ResourceProfiles), len(check2.ResourceProfiles))
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {

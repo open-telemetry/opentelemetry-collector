@@ -15,8 +15,9 @@ import (
 )
 
 type KeyValue struct {
-	Value AnyValue
-	Key   string
+	Value  AnyValue
+	Key    string
+	KeyRef int32
 }
 
 var (
@@ -45,6 +46,7 @@ func DeleteKeyValue(orig *KeyValue, nullable bool) {
 	}
 
 	DeleteAnyValue(&orig.Value, false)
+
 	orig.Reset()
 	if nullable {
 		protoPoolKeyValue.Put(orig)
@@ -66,6 +68,8 @@ func CopyKeyValue(dest, src *KeyValue) *KeyValue {
 	}
 	dest.Key = src.Key
 	CopyAnyValue(&dest.Value, &src.Value)
+
+	dest.KeyRef = src.KeyRef
 
 	return dest
 }
@@ -131,6 +135,10 @@ func (orig *KeyValue) MarshalJSON(dest *json.Stream) {
 	}
 	dest.WriteObjectField("value")
 	orig.Value.MarshalJSON(dest)
+	if orig.KeyRef != int32(0) {
+		dest.WriteObjectField("keyRef")
+		dest.WriteInt32(orig.KeyRef)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -143,6 +151,8 @@ func (orig *KeyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "value":
 
 			orig.Value.UnmarshalJSON(iter)
+		case "keyRef", "key_ref":
+			orig.KeyRef = iter.ReadInt32()
 		default:
 			iter.Skip()
 		}
@@ -160,6 +170,9 @@ func (orig *KeyValue) SizeProto() int {
 	}
 	l = orig.Value.SizeProto()
 	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.KeyRef != int32(0) {
+		n += 1 + proto.Sov(uint64(orig.KeyRef))
+	}
 	return n
 }
 
@@ -181,6 +194,11 @@ func (orig *KeyValue) MarshalProto(buf []byte) int {
 	pos--
 	buf[pos] = 0x12
 
+	if orig.KeyRef != int32(0) {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.KeyRef))
+		pos--
+		buf[pos] = 0x18
+	}
 	return len(buf) - pos
 }
 
@@ -226,6 +244,17 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyRef", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.KeyRef = int32(num)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -240,6 +269,7 @@ func GenTestKeyValue() *KeyValue {
 	orig := NewKeyValue()
 	orig.Key = "test_key"
 	orig.Value = *GenTestAnyValue()
+	orig.KeyRef = int32(13)
 	return orig
 }
 

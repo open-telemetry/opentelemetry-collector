@@ -8,6 +8,9 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	// Convert strings to references for efficient transmission
+	convertProfilesToReferences(pd)
+
 	size := pd.getOrig().SizeProto()
 	buf := make([]byte, size)
 	_ = pd.getOrig().MarshalProto(buf)
@@ -38,5 +41,10 @@ func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	if err != nil {
 		return Profiles{}, err
 	}
+
+	// Resolve all string_value_ref and key_ref to their actual strings
+	// so the pdata API works transparently
+	resolveProfilesReferences(pd)
+
 	return pd, nil
 }

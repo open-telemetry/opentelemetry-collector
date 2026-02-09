@@ -100,6 +100,17 @@ func (m *AnyValue) GetBytesValue() []byte {
 	return nil
 }
 
+type AnyValue_StringValueRef struct {
+	StringValueRef int32
+}
+
+func (m *AnyValue) GetStringValueRef() int32 {
+	if v, ok := m.GetValue().(*AnyValue_StringValueRef); ok {
+		return v.StringValueRef
+	}
+	return int32(0)
+}
+
 type AnyValue struct {
 	Value any
 }
@@ -150,6 +161,12 @@ var (
 	ProtoPoolAnyValue_BytesValue = sync.Pool{
 		New: func() any {
 			return &AnyValue_BytesValue{}
+		},
+	}
+
+	ProtoPoolAnyValue_StringValueRef = sync.Pool{
+		New: func() any {
+			return &AnyValue_StringValueRef{}
 		},
 	}
 )
@@ -203,6 +220,11 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 		if UseProtoPooling.IsEnabled() {
 			ov.BytesValue = nil
 			ProtoPoolAnyValue_BytesValue.Put(ov)
+		}
+	case *AnyValue_StringValueRef:
+		if UseProtoPooling.IsEnabled() {
+			ov.StringValueRef = int32(0)
+			ProtoPoolAnyValue_StringValueRef.Put(ov)
 		}
 	}
 	orig.Reset()
@@ -297,6 +319,16 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		ov.BytesValue = t.BytesValue
 		dest.Value = ov
 
+	case *AnyValue_StringValueRef:
+		var ov *AnyValue_StringValueRef
+		if !UseProtoPooling.IsEnabled() {
+			ov = &AnyValue_StringValueRef{}
+		} else {
+			ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+		}
+		ov.StringValueRef = t.StringValueRef
+		dest.Value = ov
+
 	default:
 		dest.Value = nil
 	}
@@ -386,6 +418,9 @@ func (orig *AnyValue) MarshalJSON(dest *json.Stream) {
 
 		dest.WriteObjectField("bytesValue")
 		dest.WriteBytes(orig.BytesValue)
+	case *AnyValue_StringValueRef:
+		dest.WriteObjectField("stringValueRef")
+		dest.WriteInt32(orig.StringValueRef)
 	}
 	dest.WriteObjectEnd()
 }
@@ -474,6 +509,17 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 				ov.BytesValue = iter.ReadBytes()
 				orig.Value = ov
 			}
+		case "stringValueRef", "string_value_ref":
+			{
+				var ov *AnyValue_StringValueRef
+				if !UseProtoPooling.IsEnabled() {
+					ov = &AnyValue_StringValueRef{}
+				} else {
+					ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+				}
+				ov.StringValueRef = iter.ReadInt32()
+				orig.Value = ov
+			}
 
 		default:
 			iter.Skip()
@@ -514,6 +560,9 @@ func (orig *AnyValue) SizeProto() int {
 	case *AnyValue_BytesValue:
 		l = len(orig.BytesValue)
 		n += 1 + proto.Sov(uint64(l)) + l
+	case *AnyValue_StringValueRef:
+
+		n += 1 + proto.Sov(uint64(orig.StringValueRef))
 	}
 	return n
 }
@@ -575,6 +624,11 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x3a
+
+	case *AnyValue_StringValueRef:
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.StringValueRef))
+		pos--
+		buf[pos] = 0x40
 
 	}
 	return len(buf) - pos
@@ -734,6 +788,24 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov.BytesValue = make([]byte, length)
 				copy(ov.BytesValue, buf[startPos:pos])
 			}
+			orig.Value = ov
+
+		case 8:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field StringValueRef", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			var ov *AnyValue_StringValueRef
+			if !UseProtoPooling.IsEnabled() {
+				ov = &AnyValue_StringValueRef{}
+			} else {
+				ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+			}
+			ov.StringValueRef = int32(num)
 			orig.Value = ov
 
 		default:
