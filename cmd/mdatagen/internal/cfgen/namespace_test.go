@@ -6,7 +6,6 @@ package cfgen
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +18,7 @@ func TestRef_PkgPath(t *testing.T) {
 
 	result := ref.PkgPath()
 	expected := "go.opentelemetry.io/collector/scraper/scraperhelper"
-	assert.Equal(t, expected, result)
+	require.Equal(t, expected, result)
 }
 
 func TestIsInNamespace(t *testing.T) {
@@ -53,7 +52,7 @@ func TestIsInNamespace(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isInNamespace(tt.packagePath)
-			assert.Equal(t, tt.expected, result)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -95,11 +94,11 @@ func TestGetNamespace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := getNamespace(tt.packagePath)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "namespace not supported")
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "namespace not supported")
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
+				require.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -157,14 +156,14 @@ func TestGetRef(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := getRef(tt.refPath)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
+					require.Contains(t, err.Error(), tt.errMsg)
 				}
-				assert.Nil(t, result)
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
+				require.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -212,7 +211,7 @@ func TestGetRefURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getRefURL(tt.ref, tt.version)
-			assert.Equal(t, tt.expected, result)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }

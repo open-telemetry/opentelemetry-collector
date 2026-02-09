@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,11 +27,11 @@ func TestResolver_ResolveSchema_BasicMetadata(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, schemaVersion, result.Schema)
-	assert.Equal(t, "go.opentelemetry.io/collector/v1.0.0/receiver/otlpreceiver", result.ID)
-	assert.Equal(t, "receiver/otlp", result.Title)
-	assert.Equal(t, "OTLP receiver configuration", result.Description)
-	assert.Equal(t, "object", result.Type)
+	require.Equal(t, schemaVersion, result.Schema)
+	require.Equal(t, "go.opentelemetry.io/collector/v1.0.0/receiver/otlpreceiver", result.ID)
+	require.Equal(t, "receiver/otlp", result.Title)
+	require.Equal(t, "OTLP receiver configuration", result.Description)
+	require.Equal(t, "object", result.Type)
 }
 
 func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
@@ -61,10 +60,10 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, "object", result.Type)
-	assert.NotNil(t, result.Properties["config"])
-	assert.Equal(t, "string", result.Properties["config"].Type)
-	assert.Equal(t, "Target type description", result.Properties["config"].Description)
+	require.Equal(t, "object", result.Type)
+	require.NotNil(t, result.Properties["config"])
+	require.Equal(t, "string", result.Properties["config"].Type)
+	require.Equal(t, "Target type description", result.Properties["config"].Description)
 }
 
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
@@ -88,8 +87,8 @@ func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 	// Should fallback to "any" type
-	assert.Equal(t, "unknown_type", result.Properties["config"].GoType)
-	assert.Contains(t, result.Properties["config"].Comment, "Empty or unknown reference")
+	require.Equal(t, "unknown_type", result.Properties["config"].GoType)
+	require.Contains(t, result.Properties["config"].Comment, "Empty or unknown reference")
 }
 
 func TestResolver_ResolveSchema_NestedStructures(t *testing.T) {
@@ -120,13 +119,13 @@ func TestResolver_ResolveSchema_NestedStructures(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, "object", result.Type)
-	assert.NotNil(t, result.Properties["nested"])
-	assert.Equal(t, "object", result.Properties["nested"].Type)
-	assert.NotNil(t, result.Properties["nested"].Properties["field1"])
-	assert.Equal(t, "string", result.Properties["nested"].Properties["field1"].Type)
-	assert.NotNil(t, result.Properties["nested"].Properties["field2"])
-	assert.Equal(t, "integer", result.Properties["nested"].Properties["field2"].Type)
+	require.Equal(t, "object", result.Type)
+	require.NotNil(t, result.Properties["nested"])
+	require.Equal(t, "object", result.Properties["nested"].Type)
+	require.NotNil(t, result.Properties["nested"].Properties["field1"])
+	require.Equal(t, "string", result.Properties["nested"].Properties["field1"].Type)
+	require.NotNil(t, result.Properties["nested"].Properties["field2"])
+	require.Equal(t, "integer", result.Properties["nested"].Properties["field2"].Type)
 }
 
 func TestResolver_ResolveSchema_AllOf(t *testing.T) {
@@ -158,9 +157,9 @@ func TestResolver_ResolveSchema_AllOf(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Len(t, result.AllOf, 2)
-	assert.NotNil(t, result.AllOf[0].Properties["field1"])
-	assert.NotNil(t, result.AllOf[1].Properties["field2"])
+	require.Len(t, result.AllOf, 2)
+	require.NotNil(t, result.AllOf[0].Properties["field1"])
+	require.NotNil(t, result.AllOf[1].Properties["field2"])
 }
 
 func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
@@ -184,10 +183,10 @@ func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, "array", result.Type)
-	assert.NotNil(t, result.Items)
-	assert.Equal(t, "object", result.Items.Type)
-	assert.NotNil(t, result.Items.Properties["name"])
+	require.Equal(t, "array", result.Type)
+	require.NotNil(t, result.Items)
+	require.Equal(t, "object", result.Items.Type)
+	require.NotNil(t, result.Items.Properties["name"])
 }
 
 func TestResolver_LoadExternalRef_Success(t *testing.T) {
@@ -195,7 +194,7 @@ func TestResolver_LoadExternalRef_Success(t *testing.T) {
 
 	// Create external schema
 	schemaPath := filepath.Join(tempDir, "main", "go.opentelemetry.io/collector/scraper/scraperhelper")
-	require.NoError(t, os.MkdirAll(schemaPath, 0o755))
+	require.NoError(t, os.MkdirAll(schemaPath, 0o750))
 	schemaFile := filepath.Join(schemaPath, schemaFileName)
 	schemaContent := `type: object
 $defs:
@@ -205,7 +204,7 @@ $defs:
       timeout:
         type: string
 `
-	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o644))
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
 
 	resolver := &Resolver{
 		pkgID:   "go.opentelemetry.io/collector/test/component",
@@ -217,9 +216,9 @@ $defs:
 
 	result, err := resolver.loadExternalRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
 	require.NoError(t, err)
-	assert.Equal(t, "object", result.Type)
-	assert.NotNil(t, result.Properties["timeout"])
-	assert.Equal(t, "string", result.Properties["timeout"].Type)
+	require.Equal(t, "object", result.Type)
+	require.NotNil(t, result.Properties["timeout"])
+	require.Equal(t, "string", result.Properties["timeout"].Type)
 }
 
 func TestResolver_LoadExternalRef_InvalidPath(t *testing.T) {
@@ -232,9 +231,9 @@ func TestResolver_LoadExternalRef_InvalidPath(t *testing.T) {
 	}
 
 	result, err := resolver.loadExternalRef("invalid/path/without/namespace")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid reference path")
-	assert.Nil(t, result)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid reference path")
+	require.Nil(t, result)
 }
 
 func TestResolver_LoadExternalRef_TypeNotFound(t *testing.T) {
@@ -242,14 +241,14 @@ func TestResolver_LoadExternalRef_TypeNotFound(t *testing.T) {
 
 	// Create external schema without the requested type
 	schemaPath := filepath.Join(tempDir, "main", "go.opentelemetry.io/collector/scraper/scraperhelper")
-	require.NoError(t, os.MkdirAll(schemaPath, 0o755))
+	require.NoError(t, os.MkdirAll(schemaPath, 0o750))
 	schemaFile := filepath.Join(schemaPath, schemaFileName)
 	schemaContent := `type: object
 $defs:
   other_type:
     type: string
 `
-	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o644))
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
 
 	resolver := &Resolver{
 		pkgID:   "go.opentelemetry.io/collector/test/component",
@@ -260,9 +259,9 @@ $defs:
 	}
 
 	result, err := resolver.loadExternalRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "type \"controller_config\" not found")
-	assert.Nil(t, result)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type \"controller_config\" not found")
+	require.Nil(t, result)
 }
 
 func TestResolver_IsExternalRef(t *testing.T) {
@@ -306,7 +305,7 @@ func TestResolver_IsExternalRef(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isExternalRef(tt.ref)
-			assert.Equal(t, tt.expected, result)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -316,7 +315,7 @@ func TestResolver_ResolveSchema_ExternalReference_Integration(t *testing.T) {
 
 	// Create external schema
 	schemaPath := filepath.Join(tempDir, "v1.0.0", "go.opentelemetry.io/collector/config/confighttp")
-	require.NoError(t, os.MkdirAll(schemaPath, 0o755))
+	require.NoError(t, os.MkdirAll(schemaPath, 0o750))
 	schemaFile := filepath.Join(schemaPath, schemaFileName)
 	schemaContent := `type: object
 $defs:
@@ -330,7 +329,7 @@ $defs:
         type: string
         description: "Request timeout"
 `
-	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o644))
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
 
 	resolver := &Resolver{
 		pkgID:   "go.opentelemetry.io/collector/receiver/otlpreceiver",
@@ -351,13 +350,13 @@ $defs:
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, "object", result.Type)
-	assert.NotNil(t, result.Properties["http"])
-	assert.Equal(t, "object", result.Properties["http"].Type)
-	assert.NotNil(t, result.Properties["http"].Properties["endpoint"])
-	assert.Equal(t, "HTTP endpoint", result.Properties["http"].Properties["endpoint"].Description)
-	assert.NotNil(t, result.Properties["http"].Properties["timeout"])
-	assert.Equal(t, "Request timeout", result.Properties["http"].Properties["timeout"].Description)
+	require.Equal(t, "object", result.Type)
+	require.NotNil(t, result.Properties["http"])
+	require.Equal(t, "object", result.Properties["http"].Type)
+	require.NotNil(t, result.Properties["http"].Properties["endpoint"])
+	require.Equal(t, "HTTP endpoint", result.Properties["http"].Properties["endpoint"].Description)
+	require.NotNil(t, result.Properties["http"].Properties["timeout"])
+	require.Equal(t, "Request timeout", result.Properties["http"].Properties["timeout"].Description)
 }
 
 func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
@@ -388,16 +387,16 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check timeout field - should have pattern instead of format
-	assert.NotNil(t, result.Properties["timeout"])
-	assert.Equal(t, "string", result.Properties["timeout"].Type)
-	assert.Empty(t, result.Properties["timeout"].Format, "format should be cleared")
-	assert.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["timeout"].Pattern)
-	assert.Contains(t, result.Properties["timeout"].Description, "duration format")
-	assert.Contains(t, result.Properties["timeout"].Description, "Request timeout")
+	require.NotNil(t, result.Properties["timeout"])
+	require.Equal(t, "string", result.Properties["timeout"].Type)
+	require.Empty(t, result.Properties["timeout"].Format, "format should be cleared")
+	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["timeout"].Pattern)
+	require.Contains(t, result.Properties["timeout"].Description, "duration format")
+	require.Contains(t, result.Properties["timeout"].Description, "Request timeout")
 
 	// Check interval field - should have pattern and auto-generated description hint
-	assert.NotNil(t, result.Properties["interval"])
-	assert.Equal(t, "string", result.Properties["interval"].Type)
-	assert.Empty(t, result.Properties["interval"].Format)
-	assert.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["interval"].Pattern)
+	require.NotNil(t, result.Properties["interval"])
+	require.Equal(t, "string", result.Properties["interval"].Type)
+	require.Empty(t, result.Properties["interval"].Format)
+	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["interval"].Pattern)
 }

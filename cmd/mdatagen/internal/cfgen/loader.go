@@ -119,7 +119,7 @@ func (l *loader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
 func (l *loader) loadFromFile(ref Ref, version string) (*ConfigMetadata, error) {
 	filePath := filepath.Join(l.schemasDir, version, ref.PkgPath(), schemaFileName)
 
-	body, err := os.ReadFile(filePath)
+	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, ErrNotFound
@@ -169,7 +169,7 @@ func (l *loader) loadFromHTTP(ref Ref, version string) (*ConfigMetadata, error) 
 func (l *loader) persistToFile(ref Ref, version string, md *ConfigMetadata) error {
 	filePath := filepath.Join(l.schemasDir, version, ref.PkgPath(), schemaFileName)
 
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -178,7 +178,7 @@ func (l *loader) persistToFile(ref Ref, version string, md *ConfigMetadata) erro
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, data, 0o644); err != nil {
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
