@@ -69,7 +69,7 @@ configuration is provided, ocb will generate a default Collector.
 		return nil, err
 	}
 
-	// version of this binary
+	cmd.AddCommand(initCommand())
 	cmd.AddCommand(versionCommand())
 
 	return cmd, nil
