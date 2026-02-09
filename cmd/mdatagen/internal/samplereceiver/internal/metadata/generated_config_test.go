@@ -57,6 +57,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
+					ReaggregateMetricWithRequired: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
+					},
 					SystemCPUTime: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -108,6 +113,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+					},
+					ReaggregateMetricWithRequired: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 					},
 					SystemCPUTime: MetricConfig{
 						Enabled:             false,

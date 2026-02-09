@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -56,6 +57,24 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+}
+
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
+func (d *Deprecated) validate() error {
+	if strings.TrimSpace(d.Since) == "" {
+		return errors.New("deprecated.since must be set")
+	}
+
+	// NOTE: note is optional, but if present, it must not be empty
+	if d.Note != "" && strings.TrimSpace(d.Note) == "" {
+		return errors.New("deprecated.note must not be empty")
+	}
+
+	return nil
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -628,7 +647,7 @@ type Entity struct {
 	// Brief is a brief description of the entity.
 	Brief string `mapstructure:"brief"`
 	// Stability is the stability level of the entity.
-	Stability string `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 	// Identity contains references to resource attributes that uniquely identify the entity.
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.

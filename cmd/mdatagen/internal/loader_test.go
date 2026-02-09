@@ -244,6 +244,14 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "opt_in_bool_attr",
 						RequirementLevel: AttributeRequirementLevelOptIn,
 					},
+					"required_string_attr": {
+						Description: "A required attribute with a string value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "required_string_attr",
+						RequirementLevel: AttributeRequirementLevelRequired,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -251,7 +259,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
-							Stability:             Stability{Level: component.StabilityLevelDevelopment},
+							Stability:             Stability{Level: component.StabilityLevelDeprecated},
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
@@ -263,13 +271,29 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
+						},
 					},
 					"reaggregate.metric": {
 						Signal: Signal{
 							Enabled:     true,
-							Description: "Metric for testing spacial reaggregation",
+							Description: "Metric for testing spatial reaggregation",
 							Stability:   Stability{Level: component.StabilityLevelBeta},
 							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Unit: strPtr("1"),
+						Gauge: &Gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+					},
+					"reaggregate.metric.with_required": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Metric for testing spatial reaggregation with required attributes",
+							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -301,6 +325,10 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
+						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
@@ -315,6 +343,10 @@ func TestLoadMetadata(t *testing.T) {
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
@@ -331,6 +363,10 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
 							},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -393,9 +429,15 @@ func TestLoadMetadata(t *testing.T) {
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
 							Signal: Signal{
-								Enabled:     true,
-								Stability:   Stability{Level: component.StabilityLevelDeprecated, From: "v0.110.0"},
+								Enabled: true,
+								Stability: Stability{
+									Level: component.StabilityLevelDeprecated,
+								},
 								Description: "Number of times the batch was sent due to a size trigger",
+							},
+							Deprecated: &Deprecated{
+								Since: "1.5.0",
+								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
 							Unit: strPtr("{times}"),
 							Sum: &Sum{
@@ -464,6 +506,15 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
 				Tests:           Tests{Host: "newMdatagenNopHost()"},
+				FeatureGates: []FeatureGate{
+					{
+						ID:           "receiver.sample.featuregate.example",
+						Description:  "This is an example feature gate for testing mdatagen code generation.",
+						Stage:        "alpha",
+						FromVersion:  "v0.100.0",
+						ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+					},
+				},
 			},
 		},
 		{
