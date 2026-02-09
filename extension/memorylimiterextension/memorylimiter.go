@@ -49,7 +49,12 @@ func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
 }
 
-func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handler, error) {
+// GetHTTPHandler implements extensionmiddleware.HTTPServer
+func (ml *memoryLimiterExtension) GetHTTPHandler(_ context.Context) (func (http.Handler) (http.Handler, error), error) {
+	return ml.wrapHTTPHandler, nil
+}
+	
+func (ml *memoryLimiterExtension) wrapHTTPHandler(base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		if ml.MustRefuse() {
 			http.Error(resp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
