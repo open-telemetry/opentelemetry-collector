@@ -614,6 +614,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "metric \"default.metric\": missing required field: `stability.level`",
 		},
 		{
+			name:    "testdata/undeprecated_with_deprecation.yaml",
+			want:    Metadata{},
+			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
