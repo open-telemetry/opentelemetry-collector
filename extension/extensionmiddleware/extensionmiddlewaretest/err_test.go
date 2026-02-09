@@ -18,7 +18,7 @@ func TestErrClient(t *testing.T) {
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
 	require.True(t, ok)
-	_, err := httpClient.GetHTTPRoundTripper(context.Background(), nil)
+	_, err := httpClient.GetHTTPRoundTripper(context.Background())
 	require.Error(t, err)
 
 	grpcClient, ok := client.(extensionmiddleware.GRPCClient)
@@ -33,7 +33,7 @@ func TestErrServer(t *testing.T) {
 
 	httpServer, ok := server.(extensionmiddleware.HTTPServer)
 	require.True(t, ok)
-	_, err := httpServer.GetHTTPHandler(testctx, nil)
+	_, err := httpServer.GetHTTPHandler(testctx)
 	require.Error(t, err)
 
 	grpcServer, ok := server.(extensionmiddleware.GRPCServer)

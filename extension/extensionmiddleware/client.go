@@ -46,7 +46,6 @@ func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions() ([]grpc.DialOption, err
 	return f()
 }
 
-
 func identityRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return base, nil
 }

@@ -35,13 +35,13 @@ type baseExtension struct {
 // extensionmiddleware interface and always returns an error.
 func NewErr(err error) extension.Extension {
 	return &baseExtension{
-		GetHTTPRoundTripperFunc: func(context.Context, http.RoundTripper) (http.RoundTripper, error) {
+		GetHTTPRoundTripperFunc: func(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error) {
 			return nil, err
 		},
 		GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
 			return nil, err
 		},
-		GetHTTPHandlerFunc: func(context.Context, http.Handler) (http.Handler, error) {
+		GetHTTPHandlerFunc: func(context.Context) (func(http.Handler) (http.Handler, error), error) {
 			return nil, err
 		},
 		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {

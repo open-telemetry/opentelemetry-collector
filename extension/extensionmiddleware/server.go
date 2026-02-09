@@ -13,7 +13,7 @@ import (
 // HTTPServer defines the interface for HTTP server middleware extensions.
 type HTTPServer interface {
 	// GetHTTPHandler wraps the provided base http.Handler.
-	GetHTTPHandler(_ context.Context, base http.Handler) (http.Handler, error)
+	GetHTTPHandler(_ context.Context) (func (base http.Handler) (http.Handler, error), error)
 }
 
 // GRPCServer defines the interface for gRPC server middleware extensions.
@@ -25,13 +25,13 @@ type GRPCServer interface {
 var _ HTTPServer = (*GetHTTPHandlerFunc)(nil)
 
 // GetHTTPHandlerFunc is a function that implements HTTPServer.
-type GetHTTPHandlerFunc func(_ context.Context, base http.Handler) (http.Handler, error)
+type GetHTTPHandlerFunc func(_ context.Context) (func (http.Handler) (http.Handler, error), error)
 
-func (f GetHTTPHandlerFunc) GetHTTPHandler(ctx context.Context, base http.Handler) (http.Handler, error) {
+func (f GetHTTPHandlerFunc) GetHTTPHandler(ctx context.Context) (func (http.Handler) (http.Handler, error), error) {
 	if f == nil {
-		return base, nil
+		return identityHandler, nil
 	}
-	return f(ctx, base)
+	return f(ctx)
 }
 
 var _ GRPCServer = (*GetGRPCServerOptionsFunc)(nil)
@@ -44,4 +44,8 @@ func (f GetGRPCServerOptionsFunc) GetGRPCServerOptions() ([]grpc.ServerOption, e
 		return nil, nil
 	}
 	return f()
+}
+
+func identityHandler(base http.Handler) (http.Handler, error) {
+	return base, nil
 }

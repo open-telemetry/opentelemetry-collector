@@ -22,8 +22,11 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
+		
+		hfunc, err := f.GetHTTPHandler(testctx)
+		require.NoError(t, err)
 
-		handler, err := f.GetHTTPHandler(testctx, baseHandler)
+		handler, err := hfunc(baseHandler)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -37,16 +40,21 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		f := GetHTTPHandlerFunc(func(_ context.Context, base http.Handler) (http.Handler, error) {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				called = true
-				base.ServeHTTP(w, r)
-			}), nil
+		f := GetHTTPHandlerFunc(func(_ context.Context) (func(http.Handler) (http.Handler, error), error) {
+			return func(base http.Handler) (http.Handler, error) {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					called = true
+					base.ServeHTTP(w, r)
+				}), nil
+			}, nil
 		})
 
-		handler, err := f.GetHTTPHandler(testctx, baseHandler)
+		hfunc, err := f.GetHTTPHandler(testctx)
 		require.NoError(t, err)
-		require.NotNil(t, handler)
+		require.NotNil(t, hfunc)
+
+		handler, err := hfunc(baseHandler)		
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
@@ -56,14 +64,13 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 
 	t.Run("returns_error", func(t *testing.T) {
 		expectedErr := errors.New("test error")
-		f := GetHTTPHandlerFunc(func(_ context.Context, _ http.Handler) (http.Handler, error) {
+		f := GetHTTPHandlerFunc(func(_ context.Context) (func(http.Handler) (http.Handler, error), error) {
 			return nil, expectedErr
 		})
 
-		baseHandler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
-		handler, err := f.GetHTTPHandler(testctx, baseHandler)
+		hfunc, err := f.GetHTTPHandler(testctx)
 		require.Equal(t, expectedErr, err)
-		require.Nil(t, handler)
+		require.Nil(t, hfunc)
 	})
 }
 
