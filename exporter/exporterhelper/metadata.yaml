@@ -128,7 +128,7 @@ telemetry:
     exporter_send_failed_log_records:
       enabled: true
       stability: alpha
-      description: Number of log records in failed attempts to send to destination.
+      description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{records}"
       sum:
         value_type: int
@@ -137,7 +137,7 @@ telemetry:
     exporter_send_failed_metric_points:
       enabled: true
       stability: alpha
-      description: Number of metric points in failed attempts to send to destination.
+      description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -146,7 +146,7 @@ telemetry:
     exporter_send_failed_profile_samples:
       enabled: true
       stability: development
-      description: Number of profile samples in failed attempts to send to destination.
+      description: "Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{samples}"
       sum:
         value_type: int
@@ -155,7 +155,7 @@ telemetry:
     exporter_send_failed_spans:
       enabled: true
       stability: alpha
-      description: Number of spans in failed attempts to send to destination.
+      description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{spans}"
       sum:
         value_type: int

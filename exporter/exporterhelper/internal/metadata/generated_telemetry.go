@@ -167,25 +167,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
-		metric.WithDescription("Number of log records in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
-		metric.WithDescription("Number of metric points in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedProfileSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_profile_samples",
-		metric.WithDescription("Number of profile samples in failed attempts to send to destination. [Development]"),
+		metric.WithDescription("Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]"),
 		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_spans",
-		metric.WithDescription("Number of spans in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

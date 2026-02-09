@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.51.0
@@ -85,11 +86,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/pierrec/lz4/v4 v4.1.23 // indirect
+	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
