@@ -2,6 +2,6 @@ change_type: bug_fix
 
 component: extensionmiddleware
 
-note: Add context.Context to gRPC middleware interface constructors
+note: Add context.Context to HTTP middleware interface constructors
 
 issues: [14523]
