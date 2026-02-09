@@ -22,7 +22,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
-		
+
 		hfunc, err := f.GetHTTPHandler(testctx)
 		require.NoError(t, err)
 
@@ -53,7 +53,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, hfunc)
 
-		handler, err := hfunc(baseHandler)		
+		handler, err := hfunc(baseHandler)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()

@@ -13,7 +13,7 @@ import (
 // HTTPClient is an interface for HTTP client middleware extensions.
 type HTTPClient interface {
 	// GetHTTPRoundTripper wraps the provided client RoundTripper.
-	GetHTTPRoundTripper(context.Context) (func (http.RoundTripper) (http.RoundTripper, error), error)
+	GetHTTPRoundTripper(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error)
 }
 
 // GRPCClient is an interface for gRPC client middleware extensions.
