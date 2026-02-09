@@ -66,8 +66,9 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 }
 
 func TestGetGRPCServerOptionsFunc(t *testing.T) {
+	type testCtx struct{}
 	var (
-		key   = "testkey"
+		key   = testCtx{}
 		value = "testval"
 	)
 	testctx := context.WithValue(context.Background(), key, value)
