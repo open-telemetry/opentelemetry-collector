@@ -184,7 +184,7 @@ func TestGetRefURL(t *testing.T) {
 				Type:      "controller_config",
 			},
 			version:  "v1.0.0",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.schema.yaml",
 		},
 		{
 			name: "contrib reference",
@@ -194,7 +194,7 @@ func TestGetRefURL(t *testing.T) {
 				Type:      "config",
 			},
 			version:  "v0.95.0",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.95.0/receiver/mysqlreceiver/config.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.95.0/receiver/mysqlreceiver/config.schema.yaml",
 		},
 		{
 			name: "main version",
@@ -204,7 +204,7 @@ func TestGetRefURL(t *testing.T) {
 				Type:      "config",
 			},
 			version:  "main",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/config.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/config.schema.yaml",
 		},
 	}
 

@@ -70,8 +70,9 @@ func getRef(refPath string) (*Ref, error) {
 func getRefURL(ref Ref, version string) string {
 	// Construct the URL for fetching the reference based on the namespace, version, path
 	baseURL := namespaceToURL[ref.Namespace]
-	return fmt.Sprintf("%s/%s/%s/config.yaml",
+	return fmt.Sprintf("%s/%s/%s/%s",
 		baseURL,
 		version,
-		ref.Path)
+		ref.Path,
+		schemaFileName)
 }
