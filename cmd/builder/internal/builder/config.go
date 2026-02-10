@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	defaultBetaOtelColVersion   = "v0.145.0"
-	defaultStableOtelColVersion = "v1.51.0"
+	DefaultBetaOtelColVersion   = "v0.145.0"
+	DefaultStableOtelColVersion = "v1.51.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
@@ -102,7 +102,7 @@ func NewDefaultConfig() (*Config, error) {
 	}
 
 	return &Config{
-		OtelColVersion: defaultBetaOtelColVersion,
+		OtelColVersion: DefaultBetaOtelColVersion,
 		Logger:         log,
 		Distribution: Distribution{
 			OutputPath: outputDir,
@@ -116,19 +116,19 @@ func NewDefaultConfig() (*Config, error) {
 		},
 		ConfmapProviders: []Module{
 			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion,
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + DefaultStableOtelColVersion,
 			},
 			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + defaultStableOtelColVersion,
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + DefaultStableOtelColVersion,
 			},
 			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + defaultStableOtelColVersion,
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + DefaultStableOtelColVersion,
 			},
 			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + defaultStableOtelColVersion,
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + DefaultStableOtelColVersion,
 			},
 			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + defaultStableOtelColVersion,
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + DefaultStableOtelColVersion,
 			},
 		},
 	}, nil
