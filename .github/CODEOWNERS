@@ -18,7 +18,7 @@
 
 # Start components list
 
-cmd/builder/                                 @open-telemetry/collector-approvers
+cmd/builder/                                 @open-telemetry/collector-approvers @ArthurSens @dmathieu
 cmd/mdatagen/                                @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/sampleconnector/       @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplefactoryreceiver/ @open-telemetry/collector-approvers @dmitryax
