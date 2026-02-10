@@ -51,6 +51,8 @@ type Metadata struct {
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// ExampleConfigs are example configuration snippets for the component.
+	ExampleConfigs []ExampleConfig `mapstructure:"example_configs"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
 	// PackageName is the name of the package where the component is defined.
