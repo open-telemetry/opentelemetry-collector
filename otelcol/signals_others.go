@@ -9,5 +9,7 @@ import (
 	"syscall"
 )
 
-const SIGHUP = syscall.SIGHUP
-const SIGTERM = syscall.SIGTERM
+const (
+	SIGHUP  = syscall.SIGHUP
+	SIGTERM = syscall.SIGTERM
+)

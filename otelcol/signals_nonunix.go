@@ -9,5 +9,7 @@ import (
 	"syscall"
 )
 
-const SIGHUP = syscall.Signal(-1)
-const SIGTERM = syscall.Signal(-1)
+const (
+	SIGHUP  = syscall.Signal(-1)
+	SIGTERM = syscall.Signal(-1)
+)
