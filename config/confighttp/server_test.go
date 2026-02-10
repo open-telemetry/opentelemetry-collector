@@ -280,7 +280,7 @@ func TestHttpServerTLS(t *testing.T) {
 }
 
 func TestHttpServerTransport(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS == "linux" {
 		t.Run("unix", func(t *testing.T) {
 			addr := "@" + t.Name() // abstract unix socket
 			sc := &ServerConfig{
