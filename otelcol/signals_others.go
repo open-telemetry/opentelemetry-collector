@@ -1,0 +1,13 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build !(windows || (js && wasm))
+
+package otelcol // import "go.opentelemetry.io/collector/otelcol"
+
+import (
+	"syscall"
+)
+
+const SIGHUP = syscall.SIGHUP
+const SIGTERM = syscall.SIGTERM
