@@ -252,6 +252,23 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "required_string_attr",
 						RequirementLevel: AttributeRequirementLevelRequired,
 					},
+					"cpu": {
+						Description: "Logical CPU number starting at 0.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "cpu",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
+					"state": {
+						Description: "Breakdown of CPU usage by type.",
+						Enum:        []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "state",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -302,8 +319,9 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"system.cpu.time": {
 						Signal: Signal{
-							Enabled:   true,
-							Stability: Stability{Level: component.StabilityLevelBeta},
+							Attributes: []AttributeName{"cpu", "state"},
+							Enabled:    true,
+							Stability:  Stability{Level: component.StabilityLevelBeta},
 							SemanticConvention: &SemanticConvention{
 								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
 								Package:               "systemconv",

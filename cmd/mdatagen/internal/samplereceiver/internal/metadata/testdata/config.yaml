@@ -24,7 +24,7 @@ all_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
-      attributes: []
+      attributes: ["cpu","state"]
     system.memory.limit:
       enabled: true
       attributes: []
@@ -130,7 +130,7 @@ none_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
-      attributes: []
+      attributes: ["cpu","state"]
     system.memory.limit:
       enabled: false
       attributes: []

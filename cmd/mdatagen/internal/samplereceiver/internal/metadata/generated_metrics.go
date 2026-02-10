@@ -55,6 +55,56 @@ var MapAttributeEnumAttr = map[string]AttributeEnumAttr{
 	"blue":  AttributeEnumAttrBlue,
 }
 
+// AttributeState specifies the value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateIdle
+	AttributeStateInterrupt
+	AttributeStateNice
+	AttributeStateSoftirq
+	AttributeStateSteal
+	AttributeStateSystem
+	AttributeStateUser
+	AttributeStateWait
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateIdle:
+		return "idle"
+	case AttributeStateInterrupt:
+		return "interrupt"
+	case AttributeStateNice:
+		return "nice"
+	case AttributeStateSoftirq:
+		return "softirq"
+	case AttributeStateSteal:
+		return "steal"
+	case AttributeStateSystem:
+		return "system"
+	case AttributeStateUser:
+		return "user"
+	case AttributeStateWait:
+		return "wait"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"idle":      AttributeStateIdle,
+	"interrupt": AttributeStateInterrupt,
+	"nice":      AttributeStateNice,
+	"softirq":   AttributeStateSoftirq,
+	"steal":     AttributeStateSteal,
+	"system":    AttributeStateSystem,
+	"user":      AttributeStateUser,
+	"wait":      AttributeStateWait,
+}
+
 var MetricsInfo = metricsInfo{
 	DefaultMetric: metricInfo{
 		Name: "default.metric",
@@ -810,9 +860,10 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuAttributeValue string, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -820,6 +871,12 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "cpu") {
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "state") {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
 
 	var s string
 	dps := m.data.Sum().DataPoints()
@@ -1246,8 +1303,8 @@ func (mb *MetricsBuilder) RecordReaggregateMetricWithRequiredDataPoint(ts pcommo
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.

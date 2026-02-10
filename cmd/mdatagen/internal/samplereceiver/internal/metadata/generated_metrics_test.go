@@ -163,9 +163,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1)
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUTimeDataPoint(ts, 3)
+				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
 			}
 
 			defaultMetricsCount++
@@ -589,6 +589,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("cpu")
+						assert.True(t, ok)
+						assert.Equal(t, "cpu-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "idle", attrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
 						validatedMetrics["system.cpu.time"] = true
@@ -612,6 +618,10 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
+						_, ok := dp.Attributes().Get("cpu")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.False(t, ok)
 					}
 				case "system.memory.limit":
 					if tt.name != "reaggregate_set" {

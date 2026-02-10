@@ -134,8 +134,8 @@ func DefaultMetricsConfig() MetricsConfig {
 
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			definedAttributes:   []string{"cpu", "state"},
+			EnabledAttributes:   []string{"cpu", "state"},
 		},
 		SystemMemoryLimit: MetricConfig{
 			Enabled: true,
