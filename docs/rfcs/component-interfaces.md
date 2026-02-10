@@ -301,3 +301,4 @@ interfaces for capability detection:
 - [Go Blog: Working with Interfaces](https://go.dev/blog/module-compatibility#working-with-interfaces)
 - [http.HandlerFunc](https://pkg.go.dev/net/http#HandlerFunc)—prior art
 - [Functional Options Pattern](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
+- [Function Types in Go](https://kinbiko.com/posts/2021-01-10-function-types-in-go/)
