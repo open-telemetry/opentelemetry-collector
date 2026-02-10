@@ -6,7 +6,7 @@ package cfgen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfg
 import (
 	"fmt"
 	"maps"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 )
@@ -18,7 +18,7 @@ type Ref struct {
 }
 
 func (r *Ref) PkgPath() string {
-	return filepath.Join(r.Namespace, r.Path)
+	return path.Join(r.Namespace, r.Path)
 }
 
 var namespaceToURL = map[string]string{

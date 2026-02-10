@@ -117,7 +117,7 @@ func (l *loader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
 
 // loadFromFile loads a schema from the local filesystem.
 func (l *loader) loadFromFile(ref Ref, version string) (*ConfigMetadata, error) {
-	filePath := filepath.Join(l.schemasDir, version, ref.PkgPath(), schemaFileName)
+	filePath := filepath.Join(l.schemasDir, version, filepath.FromSlash(ref.PkgPath()), schemaFileName)
 
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
@@ -167,7 +167,7 @@ func (l *loader) loadFromHTTP(ref Ref, version string) (*ConfigMetadata, error) 
 
 // persistToFile saves a schema to the filesystem.
 func (l *loader) persistToFile(ref Ref, version string, md *ConfigMetadata) error {
-	filePath := filepath.Join(l.schemasDir, version, ref.PkgPath(), schemaFileName)
+	filePath := filepath.Join(l.schemasDir, version, filepath.FromSlash(ref.PkgPath()), schemaFileName)
 
 	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
