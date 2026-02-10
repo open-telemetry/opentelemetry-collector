@@ -573,7 +573,7 @@ type metricReaggregateMetric struct {
 // init fills reaggregate.metric metric with initial data.
 func (m *metricReaggregateMetric) init() {
 	m.data.SetName("reaggregate.metric")
-	m.data.SetDescription("Metric for testing spacial reaggregation")
+	m.data.SetDescription("Metric for testing spatial reaggregation")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
