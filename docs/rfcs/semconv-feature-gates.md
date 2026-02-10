@@ -188,6 +188,16 @@ is as follows:
 This mechanism does not cover any sort of transition for experimental semantic conventions. These
 presumably would be covered by separate feature gates or some other mechanism.
 
+## Handling conflicts during double-publishing
+
+During the double-publishing phase (when both `<kind>.<id>.EmitV1<Area>Conventions` is enabled and `<kind>.<id>.DontEmitV0<Area>Conventions` is disabled), components typically emit both v0 and v1 telemetry. For metrics, this usually means emitting two separate metrics with different names (e.g., `http.server.duration` for v0 and `http.server.request.duration` for v1).
+
+However, in some cases v0 and v1 conventions may use the same metric name but with different characteristics (e.g., different attributes or metric types). Two metrics with identical names must not be emitted, as this would produce an invalid OpenTelemetry dataset and cause issues on backends. Below are examples illustrating how such conflicts can be resolved:
+
+**Different attributes:** If a metric name stays the same but an attribute is renamed, emit a single metric with both the v0 and v1 attributes present. For instance, if `process.cpu.time` uses `process.owner` in v0 and `process.owner.name` in v1, emit one metric with both attributes.
+
+**Different metric type:** If a metric name stays the same but the type changes (e.g., Gauge to UpDownCounter), emit a single metric with the v1 type, effectively prioritizing the new convention. For instance, if `system.memory.usage` changes from Gauge to UpDownCounter, emit it as an UpDownCounter.
+
 ## Alternative mechanisms
 
 There are some other possibilities:
