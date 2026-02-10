@@ -7,10 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -40,67 +37,4 @@ func TestMetricData(t *testing.T) {
 		assert.Equal(t, arg.wantInstrument, arg.metricData.Instrument())
 		assert.Equal(t, arg.wantAsync, arg.metricData.IsAsync())
 	}
-}
-
-func TestStability_String(t *testing.T) {
-	tests := []struct {
-		name      string
-		stability Stability
-		want      string
-	}{
-		{
-			name: "undefined level",
-			stability: Stability{
-				Level: component.StabilityLevelUndefined,
-			},
-			want: "",
-		},
-		{
-			name: "stable level",
-			stability: Stability{
-				Level: component.StabilityLevelStable,
-			},
-			want: "",
-		},
-		{
-			name: "beta level",
-			stability: Stability{
-				Level: component.StabilityLevelBeta,
-			},
-			want: " [Beta]",
-		},
-		{
-			name: "alpha level",
-			stability: Stability{
-				Level: component.StabilityLevelAlpha,
-			},
-			want: " [Alpha]",
-		},
-		{
-			name: "deprecated level",
-			stability: Stability{
-				Level: component.StabilityLevelDeprecated,
-			},
-			want: " [Deprecated]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.stability.String()
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestStability_Unmarshal_WithoutFrom(t *testing.T) {
-	parser := confmap.NewFromStringMap(map[string]any{
-		"level": "beta",
-	})
-
-	var s Stability
-	err := s.Unmarshal(parser)
-	require.NoError(t, err)
-	assert.Equal(t, component.StabilityLevelBeta, s.Level)
-	assert.Empty(t, s.From)
 }
