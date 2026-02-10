@@ -2,6 +2,8 @@ change_type: bug_fix
 
 component: pkg/config/configmiddleware
 
-note: Add context.Context to HTTP middleware interface constructors
+note: Add context.Context to HTTP middleware interface constructors. 
+
+subtext: This is a breaking API change for components that implement or use extensionmiddleware.
 
 issues: [14523]
