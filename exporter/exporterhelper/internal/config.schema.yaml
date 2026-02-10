@@ -1,0 +1,10 @@
+$defs:
+  timeout_config:
+    description: TimeoutConfig for timeout. The timeout applies to individual attempts to send data to the backend.
+    type: object
+    properties:
+      timeout:
+        description: Timeout is the timeout for every attempt to send data to the backend. A zero timeout means no timeout.
+        type: string
+        x-customType: time.Duration
+        format: duration

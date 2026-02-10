@@ -17,7 +17,7 @@ func (ms Location) Equal(val Location) bool {
 // dictionary to another.
 func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
 	if ms.MappingIndex() > 0 {
-		if src.MappingTable().Len() < int(ms.MappingIndex()) {
+		if src.MappingTable().Len() <= int(ms.MappingIndex()) {
 			return fmt.Errorf("invalid mapping index %d", ms.MappingIndex())
 		}
 
@@ -34,7 +34,7 @@ func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	for i, v := range ms.AttributeIndices().All() {
-		if src.AttributeTable().Len() < int(v) {
+		if src.AttributeTable().Len() <= int(v) {
 			return fmt.Errorf("invalid attribute index %d", v)
 		}
 

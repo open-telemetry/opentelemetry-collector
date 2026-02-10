@@ -48,11 +48,15 @@ type Metric struct {
 
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
+
+	// Deprecation metadata for deprecated metrics
+	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
 }
 
 type Stability struct {
 	Level component.StabilityLevel `mapstructure:"level"`
-	From  string                   `mapstructure:"from"`
+	// Deprecated: [0.144.0] Replaced with `deprecated.since`.
+	From string `mapstructure:"from"`
 }
 
 func (s Stability) String() string {
@@ -60,21 +64,48 @@ func (s Stability) String() string {
 		s.Level == component.StabilityLevelStable {
 		return ""
 	}
-	if s.From != "" {
-		return fmt.Sprintf(" [%s since %s]", s.Level.String(), s.From)
-	}
 	return fmt.Sprintf(" [%s]", s.Level.String())
 }
 
+// Unmarshal decodes the stability configuration.
+// NOTE: confmap rejects unknown keys by default.
+// The "from" field cannot be tested via full metadata loading
+// unless WithIgnoreUnused() is used by the caller.
 func (s *Stability) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("level") {
 		return errors.New("missing required field: `stability.level`")
 	}
-	return parser.Unmarshal(s)
+
+	var level component.StabilityLevel
+	if err := parser.Unmarshal(&struct {
+		Level *component.StabilityLevel `mapstructure:"level"`
+	}{
+		Level: &level,
+	}); err != nil {
+		return err
+	}
+
+	s.Level = level
+	if parser.IsSet("from") {
+		if err := parser.Unmarshal(&struct {
+			From *string `mapstructure:"from"`
+		}{From: &s.From}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
+
+	if m.Deprecated != nil {
+		if err := m.Deprecated.validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))
