@@ -304,7 +304,8 @@ func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
 	var errs []error
 	for _, suite := range cipherSuites {
 		found := false
-		for _, supported := range tls.CipherSuites() {
+		allSuites := append(tls.CipherSuites(), tls.InsecureCipherSuites()...)
+		for _, supported := range allSuites {
 			if suite == supported.Name {
 				result = append(result, supported.ID)
 				found = true
