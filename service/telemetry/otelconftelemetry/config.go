@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
 
@@ -19,8 +20,19 @@ type Config struct {
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
 	// if they are not specified here. In order to suppress such attributes the
-	// attribute must be specified in this map with null YAML value (nil string pointer).
-	Resource map[string]*string `mapstructure:"resource,omitempty"`
+	// attribute must be specified with a null value in the configuration.
+	//
+	// Supports two formats:
+	// 1. New array format (recommended):
+	//    resource:
+	//      attributes:
+	//        - name: service.name
+	//          value: my-collector
+	//
+	// 2. Legacy inline format (deprecated, for backward compatibility):
+	//    resource:
+	//      service.name: my-collector
+	Resource resource.Config `mapstructure:"resource,omitempty"`
 }
 
 // LogsConfig defines the configurable settings for service telemetry logs.
