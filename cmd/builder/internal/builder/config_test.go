@@ -275,6 +275,15 @@ func TestMissingModule(t *testing.T) {
 			},
 			err: errMissingGoMod,
 		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
+				Telemetry: &Module{
+					Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
+				},
+			},
+			err: errMissingGoMod,
+		},
 	}
 
 	for _, test := range configurations {
@@ -285,10 +294,11 @@ func TestMissingModule(t *testing.T) {
 func TestNewDefaultConfig(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
-	require.NoError(t, cfg.ParseModules())
-	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetGoPath())
+	assert.Nil(t, cfg.Telemetry)
 	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.SetGoPath())
+	require.NoError(t, cfg.ParseModules())
+	assert.NotNil(t, cfg.Telemetry)
 	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
 	assert.False(t, cfg.LDSet)
@@ -305,9 +315,9 @@ func TestNewBuiltinConfig(t *testing.T) {
 	cfg := Config{Logger: zaptest.NewLogger(t)}
 
 	require.NoError(t, k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}))
-	assert.NoError(t, cfg.ParseModules())
-	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetGoPath())
+	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.SetGoPath())
+	require.NoError(t, cfg.ParseModules())
 
 	// Unlike the config initialized in NewDefaultConfig(), we expect
 	// the builtin default to be practically useful, so there must be
