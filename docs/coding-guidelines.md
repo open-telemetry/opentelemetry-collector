@@ -70,6 +70,51 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
+#### Avoid Embedded Structs
+
+When defining configuration structs, avoid using embedded (anonymous) struct fields. Instead, use explicitly named fields.
+
+**Rationale:**
+
+1. **Unmarshal Compatibility**: Embedded structs can break custom `Unmarshal` implementations. If an embedded struct requires special unmarshaling logic, it may not function correctly when embedded.
+
+2. **Naming Conflicts**: Embedded structs can cause field name collisions. Even if the YAML configuration nests them properly (e.g., under `sending_queue`), having identical field names in embedded structs creates ambiguity in the Go code.
+
+3. **Clarity**: Named fields make the configuration structure more explicit and easier to understand.
+
+**Example:**
+
+```go
+// ❌ BAD: Using embedded structs
+type ExporterConfig struct {
+    exporterhelper.TimeoutConfig     // embedded
+    exporterhelper.QueueConfig       // embedded
+    exporterhelper.RetryConfig       // embedded
+}
+
+// ✅ GOOD: Using named fields
+type ExporterConfig struct {
+    Timeout exporterhelper.TimeoutConfig `mapstructure:"timeout"`
+    Queue   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+    Retry   exporterhelper.RetryConfig   `mapstructure:"retry_on_failure"`
+}
+```
+
+This practice ensures better maintainability and prevents subtle bugs related to struct composition and configuration unmarshaling.
+
+**Preserving Flat YAML Structure with the `squash` Tag:**
+
+In some cases, you may need to maintain backward compatibility with an existing flat YAML configuration structure while still using named fields in Go. The `mapstructure:",squash"` tag achieves this by flattening the nested struct's fields into the parent configuration:
+
+```go
+// Using named fields with squash tag for flat YAML structure
+type Config struct {
+    ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+}
+```
+
+This allows the YAML configuration to remain flat (fields at the top level) while the Go code uses a named field. However, prefer explicitly nested configurations (without `squash`) for new components, as the nested structure is clearer and avoids the issues mentioned above.
+
 ## Module organization
 
 As usual in Go projects, organize your code into packages grouping related functionality. To ensure

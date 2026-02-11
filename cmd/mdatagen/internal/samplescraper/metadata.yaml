@@ -12,12 +12,12 @@ status:
   disable_codecov_badge: true
   class: scraper
   stability:
-    stable: [ metrics ]
-    development: [ logs ]
-  distributions: [ ]
-  unsupported_platforms: [ freebsd, illumos ]
+    stable: [metrics]
+    development: [logs]
+  distributions: []
+  unsupported_platforms: [freebsd, illumos]
   codeowners:
-    active: [ dmitryax ]
+    active: [dmitryax]
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
@@ -66,7 +66,7 @@ resource_attributes:
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.
     type: string
-    enum: [ one, two ]
+    enum: [one, two]
     enabled: true
 
   string.resource.attr:
@@ -109,7 +109,7 @@ attributes:
   enum_attr:
     description: Attribute with a known set of string values.
     type: string
-    enum: [ red, green, blue ]
+    enum: [red, green, blue]
 
   map_attr:
     description: Attribute with a map value.
@@ -133,15 +133,14 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
-      [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
@@ -149,8 +148,10 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: double
@@ -161,8 +162,7 @@ metrics:
 
   metric.input_type:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:
@@ -171,46 +171,48 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
-      [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
 
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: "1"
     gauge:
       value_type: double
-    attributes: [ string_attr, boolean_attr, boolean_attr2 ]
+    attributes: [string_attr, boolean_attr, boolean_attr2]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: ""
     gauge:
       value_type: double
-    attributes: [ string_attr, boolean_attr ]
+    attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
   reaggregate.metric:
     enabled: true
-    description: Metric for testing spacial reaggregation
+    description: Metric for testing spatial reaggregation
     unit: "1"
-    stability:
-      level: beta
+    stability: beta
     gauge:
       value_type: double
-    attributes: [ string_attr, boolean_attr ]
+    attributes: [string_attr, boolean_attr]
 
   system.cpu.time:
     enabled: true
-    stability:
-      level: beta
+    stability: beta
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     unit: s
