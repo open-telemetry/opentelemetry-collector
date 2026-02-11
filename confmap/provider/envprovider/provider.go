@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
@@ -64,7 +65,31 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
 
-	return confmap.NewRetrievedFromYAML([]byte(val))
+	// Environment variables are always strings at the OS level.
+	// Try parsing as YAML to check if it's a complex structure (map/array).
+	// For scalar values, preserve the string type to avoid YAML's automatic
+	// numeric type inference (e.g., "123456789012" stays string, not int64).
+	
+	// Handle empty string specially - YAML treats it as nil
+	if val == "" {
+		return confmap.NewRetrievedFromYAML([]byte(val))
+	}
+	
+	var rawConf any
+	if err := yaml.Unmarshal([]byte(val), &rawConf); err != nil {
+		// Not valid YAML, use as string verbatim
+		return confmap.NewRetrieved(val)
+	}
+
+	// If it's a map or array, use the parsed YAML structure
+	switch rawConf.(type) {
+	case map[string]any, []any:
+		return confmap.NewRetrievedFromYAML([]byte(val))
+	default:
+		// For scalar values (including numbers that YAML parsed),
+		// return the original string to preserve the string type
+		return confmap.NewRetrieved(val)
+	}
 }
 
 func (*provider) Scheme() string {
