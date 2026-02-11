@@ -401,7 +401,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	watcherWG.Go(func() {
 		errW, ok := <-resolver.Watch()
 		// Channel is closed, no exception
-		assert.NoError(t, errW)
+		require.NoError(t, errW)
 		assert.False(t, ok)
 	})
 
