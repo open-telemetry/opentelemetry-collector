@@ -82,6 +82,10 @@ for-all:
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
+.PHONY: gomodernize
+gomodernize:
+	@$(MAKE) for-all-target TARGET="modernize"
+
 .PHONY: goimpi
 goimpi:
 	@$(MAKE) for-all-target TARGET="impi"
