@@ -332,7 +332,7 @@ Example:
 - The `config.schema.json` file will be a direct representation of the `config` section from `metadata.yaml`,
   with proper handling of `$ref` references to include definitions from external packages and internal definitions
   in a single JSON Schema file.
-- Each referenced schema will be included in the `$defs` section of the JSON Schema.
+- Each referenced schema will be embedded inline.
 - The `$id` field will be set to the component's import path for easy identification.
 - The custom types will be represented as `any` type in JSON Schema.
 
