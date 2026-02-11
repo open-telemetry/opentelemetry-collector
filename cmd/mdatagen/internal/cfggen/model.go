@@ -3,7 +3,11 @@
 
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
 // ConfigMetadata represents a JSON schema object, draft 2020-12 (limited), with additional custom fields.
 type ConfigMetadata struct {
@@ -50,4 +54,15 @@ type ConfigMetadata struct {
 
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(md, "", "  ")
+}
+
+func (md *ConfigMetadata) Validate() error {
+	var errs error
+	if md.Type != "object" {
+		errs = errors.Join(errs, fmt.Errorf("config type must be Object, got %q", md.Type))
+	}
+	if len(md.Properties) == 0 && len(md.AllOf) == 0 {
+		errs = errors.Join(errs, errors.New("config must not be empty"))
+	}
+	return errs
 }

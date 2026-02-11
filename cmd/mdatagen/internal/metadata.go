@@ -379,17 +379,10 @@ func (md *Metadata) validateFeatureGates() error {
 }
 
 func (md *Metadata) validateConfig() error {
-	var errs error
 	if md.Config != nil {
-		cfg := md.Config
-		if cfg.Type != "object" {
-			errs = errors.Join(errs, fmt.Errorf("config type must be Object, got %q", cfg.Type))
-		}
-		if len(cfg.Properties) == 0 && len(cfg.AllOf) == 0 {
-			errs = errors.Join(errs, errors.New("config must not be empty"))
-		}
+		return md.Config.Validate()
 	}
-	return errs
+	return nil
 }
 
 type AttributeName string
