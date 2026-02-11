@@ -70,6 +70,9 @@ func TestAliases(t *testing.T) {
 				GoMod: "github.com/another3/module v0.1.2",
 			},
 		},
+		Telemetry: Module{
+			GoMod: "github.com/another3/module v0.1.2",
+		},
 	}
 
 	// test
@@ -128,6 +131,10 @@ func TestAliases(t *testing.T) {
 	assert.Equal(t, "github.com/another3/module v0.1.2", cfg.Connectors[2].GoMod)
 	assert.Equal(t, "github.com/another3/module", cfg.Connectors[2].Import)
 	assert.Equal(t, "module5", cfg.Connectors[2].Name)
+
+	assert.Equal(t, "github.com/another3/module v0.1.2", cfg.Telemetry.GoMod)
+	assert.Equal(t, "github.com/another3/module", cfg.Telemetry.Import)
+	assert.Equal(t, "module6", cfg.Telemetry.Name)
 }
 
 func TestParseModules(t *testing.T) {
@@ -278,7 +285,7 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Telemetry: &Module{
+				Telemetry: Module{
 					Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
 				},
 			},
@@ -294,11 +301,11 @@ func TestMissingModule(t *testing.T) {
 func TestNewDefaultConfig(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
-	assert.Nil(t, cfg.Telemetry)
+	assert.Empty(t, cfg.Telemetry.GoMod)
 	require.NoError(t, cfg.Validate())
 	require.NoError(t, cfg.SetGoPath())
 	require.NoError(t, cfg.ParseModules())
-	assert.NotNil(t, cfg.Telemetry)
+	assert.NotEmpty(t, cfg.Telemetry.GoMod)
 	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
 	assert.False(t, cfg.LDSet)

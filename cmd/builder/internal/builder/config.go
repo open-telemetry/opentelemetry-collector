@@ -46,7 +46,7 @@ type Config struct {
 	Receivers         []Module     `mapstructure:"receivers"`
 	Processors        []Module     `mapstructure:"processors"`
 	Connectors        []Module     `mapstructure:"connectors"`
-	Telemetry         *Module      `mapstructure:"telemetry"`
+	Telemetry         Module       `mapstructure:"telemetry"`
 	ConfmapProviders  []Module     `mapstructure:"providers"`
 	ConfmapConverters []Module     `mapstructure:"converters"`
 	Replaces          []string     `mapstructure:"replaces"`
@@ -195,11 +195,11 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
-	telemetry, err := parseModules([]Module{*c.Telemetry}, usedNames)
+	telemetry, err := parseModules([]Module{c.Telemetry}, usedNames)
 	if err != nil {
 		return err
 	}
-	c.Telemetry = &telemetry[0]
+	c.Telemetry = telemetry[0]
 
 	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
@@ -213,7 +213,7 @@ func (c *Config) ParseModules() error {
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{*c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
+	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
 }
 
 func validateModules(name string, mods []Module) error {
@@ -232,8 +232,8 @@ func validateTelemetry(c *Config) error {
 	// would get a blend of this value and user-provided values. Once
 	// otelconftelemetry is its own module (that is, the `Import` field is not
 	// set), we can likely move the default to createDefaultConfig.
-	if c.Telemetry == nil {
-		c.Telemetry = &Module{
+	if c.Telemetry.Name == "" && c.Telemetry.Import == "" && c.Telemetry.GoMod == "" && c.Telemetry.Path == "" {
+		c.Telemetry = Module{
 			GoMod:  "go.opentelemetry.io/collector/service " + DefaultBetaOtelColVersion,
 			Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
 		}
