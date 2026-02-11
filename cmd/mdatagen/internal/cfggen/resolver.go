@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfgen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 
 import (
 	"fmt"
@@ -26,7 +26,6 @@ type Resolver struct {
 }
 
 func NewResolver(pkgID, class, name, version string) *Resolver {
-	// Create a fully configured loader with file and HTTP sources
 	schemasDir := getSchemasDir()
 	loader := NewLoader(schemasDir)
 
@@ -42,7 +41,6 @@ func NewResolver(pkgID, class, name, version string) *Resolver {
 // getSchemasDir returns the path to .schemas directory at the repo root.
 // Returns empty string if repo root cannot be determined.
 func getSchemasDir() string {
-	// Try to find git repo root
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	output, err := cmd.Output()
 	if err != nil {
@@ -102,17 +100,14 @@ func transformDurationFormat(md *ConfigMetadata) {
 }
 
 func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
-	// Handle $ref first - if present, resolve it and use the resolved schema
 	if current.Ref != "" {
 		resolved, err := r.resolveRef(root, current)
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q: %w", current.Ref, err)
 		}
-		// Replace current with resolved schema and continue
 		current = resolved
 	}
 
-	// Transform format: duration to Go duration pattern
 	transformDurationFormat(current)
 
 	currRef := reflect.ValueOf(current).Elem()
@@ -128,9 +123,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 
 		switch field.Kind() {
 		case reflect.Struct:
-			// Handle nested struct (*ConfigMetadata)
 			if field.Type() == reflect.TypeFor[*ConfigMetadata]() {
-				// Create new ConfigMetadata and resolve recursively
 				newMeta := &ConfigMetadata{}
 				if err := r.resolveSchema(root, field.Addr().Interface().(*ConfigMetadata), newMeta); err != nil {
 					return err
@@ -138,7 +131,6 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 				targetField.Set(reflect.ValueOf(newMeta).Elem())
 			}
 		case reflect.Ptr:
-			// Handle pointer to struct (*ConfigMetadata)
 			if !field.IsNil() && field.Elem().Kind() == reflect.Struct {
 				if field.Type() == reflect.TypeFor[*ConfigMetadata]() {
 					newMeta := &ConfigMetadata{}
@@ -149,7 +141,6 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 				}
 			}
 		case reflect.Map:
-			// Handle maps like Properties and Defs (map[string]*ConfigMetadata)
 			if field.Type().Elem() == reflect.TypeFor[*ConfigMetadata]() {
 				newMap := reflect.MakeMap(field.Type())
 				iter := field.MapRange()
@@ -166,11 +157,9 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 				}
 				targetField.Set(newMap)
 			} else {
-				// Copy other maps directly (like DependentRequired)
 				targetField.Set(field)
 			}
 		case reflect.Slice:
-			// Handle slices like AllOf, AnyOf, OneOf ([]*ConfigMetadata)
 			if field.Type().Elem() == reflect.TypeFor[*ConfigMetadata]() {
 				newSlice := reflect.MakeSlice(field.Type(), field.Len(), field.Len())
 				for j := 0; j < field.Len(); j++ {
@@ -185,11 +174,9 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 				}
 				targetField.Set(newSlice)
 			} else {
-				// Copy other slices directly (like Examples, Required, Enum)
 				targetField.Set(field)
 			}
 		default:
-			// Copy basic field value from current to target
 			targetField.Set(field)
 		}
 	}
@@ -207,7 +194,7 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata) (*ConfigMetadata, e
 		return r.loadExternalRef(ref)
 	}
 
-	// Handle simplified syntax for internal references (e.g., "target" instead of "#/$defs/target")
+	// Handle simplified syntax for internal references
 	if root.Defs != nil {
 		if val, ok := root.Defs[ref]; ok {
 			return val, nil
@@ -226,7 +213,7 @@ func (r *Resolver) loadExternalRef(refPath string) (*ConfigMetadata, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid reference path %q: %w", refPath, err)
 	}
-	// Load the external schema
+
 	md, err := r.loader.Load(*ref, r.version)
 	if err != nil {
 		return nil, err
@@ -235,15 +222,11 @@ func (r *Resolver) loadExternalRef(refPath string) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", refPath)
 	}
 
-	// Resolve any internal references within the loaded schema
-	// The loaded schema becomes both the root (for resolving its own $refs) and the source
 	resolved := &ConfigMetadata{}
 	if err := r.resolveSchema(md, md, resolved); err != nil {
 		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", refPath, err)
 	}
 
-	// get specific type from the fetched metadata
-	// For simplicity, we assume the type is directly under the fetched metadata's Defs
 	if resolved.Defs != nil {
 		if def, ok := resolved.Defs[ref.Type]; ok {
 			return def, nil
@@ -255,11 +238,9 @@ func (r *Resolver) loadExternalRef(refPath string) (*ConfigMetadata, error) {
 
 // isExternalRef checks if a reference is an external reference (URL or relative path)
 func isExternalRef(ref string) bool {
-	// Check for remote references within supported namespaces
 	if isInNamespace(ref) {
 		return true
 	}
-	// Check for relative URLs (starts with ./)
 	if strings.HasPrefix(ref, "./") {
 		return true
 	}

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfgen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 
 import "encoding/json"
 

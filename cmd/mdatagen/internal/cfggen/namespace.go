@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfgen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 
 import (
 	"fmt"
@@ -68,7 +68,6 @@ func getRef(refPath string) (*Ref, error) {
 }
 
 func getRefURL(ref Ref, version string) string {
-	// Construct the URL for fetching the reference based on the namespace, version, path
 	baseURL := namespaceToURL[ref.Namespace]
 	return fmt.Sprintf("%s/%s/%s/%s",
 		baseURL,

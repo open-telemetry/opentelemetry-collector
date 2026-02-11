@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfgen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
 
 import (
 	"errors"
@@ -67,18 +67,15 @@ func (l *loader) Load(ref Ref, version string) (*ConfigMetadata, error) {
 
 // loadWithFallback tries to load the requested version, falling back to "main" if not found.
 func (l *loader) loadWithFallback(ref Ref, version string) (*ConfigMetadata, error) {
-	// Try requested version
 	metadata, err := l.tryLoad(ref, version)
 	if err == nil {
 		return metadata, nil
 	}
 
-	// If version is "main" or error is not "not found", return error
 	if version == defaultVersion || !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
 
-	// Fallback to "main"
 	metadata, err = l.tryLoad(ref, defaultVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load version %s (fallback to main also failed: %w)", version, err)
@@ -89,7 +86,6 @@ func (l *loader) loadWithFallback(ref Ref, version string) (*ConfigMetadata, err
 
 // tryLoad attempts to load from file, then HTTP if file not found.
 func (l *loader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
-	// Try file source first (if configured)
 	if l.schemasDir != "" {
 		metadata, err := l.loadFromFile(ref, version)
 		if err == nil {
@@ -98,16 +94,13 @@ func (l *loader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
 		if !errors.Is(err, ErrNotFound) {
 			return nil, err // Real error (parse error, permission denied, etc.)
 		}
-		// File not found, continue to HTTP
 	}
 
-	// Try HTTP source
 	metadata, err := l.loadFromHTTP(ref, version)
 	if err != nil {
 		return nil, err
 	}
 
-	// Persist HTTP-fetched schema to disk (if configured)
 	if l.schemasDir != "" {
 		_ = l.persistToFile(ref, version, metadata)
 	}

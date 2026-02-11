@@ -24,7 +24,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/tools/go/packages"
 
-	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 const (
@@ -506,30 +506,25 @@ func validateYAMLKeyOrder(raw []byte) error {
 }
 
 func generateConfigFiles(md Metadata, outputDir string) error {
-	// skip components that do not have configuration metadata
 	if md.Config != nil {
-		// retrieve full path of target go module
 		pkgID, err := getGoPkgID(outputDir)
 		if err != nil {
 			return fmt.Errorf("failed to get go module name: %w", err)
 		}
-		// retrieve version of the module
+
 		version, err := getVersion()
 		if err != nil {
 			return fmt.Errorf("failed to get version: %w", err)
 		}
-		// Clean up version for schema ID - use "main" for development builds
 		version = cleanVersionForSchema(version)
 
-		// resolve config schema
-		resolver := cfgen.NewResolver(pkgID, md.Status.Class, md.Type, version)
+		resolver := cfggen.NewResolver(pkgID, md.Status.Class, md.Type, version)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		// write config schema to file
-		err = cfgen.WriteJSONSchema(outputDir, resolvedSchema)
+		err = cfggen.WriteJSONSchema(outputDir, resolvedSchema)
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}

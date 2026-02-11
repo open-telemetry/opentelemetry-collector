@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfgen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -59,7 +59,7 @@ type Metadata struct {
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 	// Config is the configuration schema for the component.
-	Config *cfgen.ConfigMetadata `mapstructure:"config"`
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
 }
 
 type Deprecated struct {
