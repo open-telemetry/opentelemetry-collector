@@ -514,6 +514,10 @@ package test
 func DoFoo() {}
 ```
 
+If applicable, add the [`//go:fix inline`
+directive](https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/inline#hdr-Analyzer_inline) on
+the deprecated to help with the migration.
+
 #### Example #1 - Renaming a function
 
 1. Current version `v0.N` has `func GetFoo() Bar`
