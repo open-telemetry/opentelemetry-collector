@@ -40,7 +40,9 @@ The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Deprecated |
+| s | Sum | Double | Delta | false | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 ### metric.input_type
 
@@ -62,7 +64,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 ### reaggregate.metric
 
-Metric for testing spacial reaggregation
+Metric for testing spatial reaggregation
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -91,7 +93,9 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Deprecated |
+| 1 | Gauge | Double | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -107,7 +111,9 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Deprecated |
+|  | Gauge | Double | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 

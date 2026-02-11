@@ -25,7 +25,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_log_records",
-		Description: "Number of log records successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of log records successfully pushed into the next component in the pipeline. [Deprecated]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -41,7 +41,7 @@ func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Tele
 func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_metric_points",
-		Description: "Number of metric points successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of metric points successfully pushed into the next component in the pipeline. [Deprecated]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -57,7 +57,7 @@ func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Te
 func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_spans",
-		Description: "Number of spans successfully pushed into the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of spans successfully pushed into the next component in the pipeline. [Deprecated]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -73,7 +73,7 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_log_records",
-		Description: "Number of log records that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of log records that were rejected by the next component in the pipeline. [Deprecated]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -89,7 +89,7 @@ func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telem
 func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_metric_points",
-		Description: "Number of metric points that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of metric points that were rejected by the next component in the pipeline. [Deprecated]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -105,7 +105,7 @@ func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Tel
 func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_spans",
-		Description: "Number of spans that were rejected by the next component in the pipeline. [Deprecated since v0.110.0]",
+		Description: "Number of spans that were rejected by the next component in the pipeline. [Deprecated]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
