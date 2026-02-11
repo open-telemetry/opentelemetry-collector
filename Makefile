@@ -10,7 +10,14 @@ ALL_SRC := $(shell find . -name '*.go' \
 
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
-                                -type f | sort)
+								-not -path './node_modules/*' \
+								-type f | sort)
+
+# All Markdown documents. Used in markdownlint.
+ALL_MD := $(shell find . -type f -name "*.md" \
+							-not -path './.github/*' \
+							-not -path './node_modules/*' \
+							| sort)
 
 # ALL_MODULES includes ./* dirs (excludes . dir)
 ALL_MODULES := $(shell find . -mindepth 2 \
@@ -129,6 +136,15 @@ checklicense:
 .PHONY: misspell
 misspell:
 	$(GO_TOOL) misspell -error $(ALL_DOC)
+
+.PHONY: markdownlint
+markdownlint:
+	@if ! command -v npm >/dev/null 2>&1; then \
+		echo "Error: npm is required for markdownlint"; \
+		exit 1; \
+	fi
+	@npm install --no-audit --no-fund --no-package-lock
+	npx --no-install markdownlint -c .markdownlint.yaml --ignore-path .markdownlintignore $(ALL_MD)
 
 .PHONY: misspell-correction
 misspell-correction:

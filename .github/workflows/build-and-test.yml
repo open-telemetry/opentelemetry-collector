@@ -95,6 +95,10 @@ jobs:
         with:
           go-version: stable
           cache: false
+      - name: Setup Node
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: lts/*
       - name: Cache Go
         id: go-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
@@ -109,6 +113,8 @@ jobs:
         run: make misspell
       - name: checkdoc
         run: make checkdoc
+      - name: markdownlint
+        run: make markdownlint
       - name: checkapi
         run: make checkapi
       - name: Check for go mod dependency changes
