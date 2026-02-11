@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 func TestValidate(t *testing.T) {
@@ -517,4 +518,50 @@ func TestValidateFeatureGatesNotSorted(t *testing.T) {
 	err := md.validateFeatureGates()
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "feature gates must be sorted by ID")
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *cfggen.ConfigMetadata
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: &cfggen.ConfigMetadata{
+				Type: "object",
+				AllOf: []*cfggen.ConfigMetadata{
+					{
+						Ref: "component.config",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no config defined",
+			config:  nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "exporter",
+					Stability: StabilityMap{
+						6: {"traces"},
+					},
+				},
+				Config: tt.config,
+			}
+			err := md.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

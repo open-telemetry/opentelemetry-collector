@@ -59,7 +59,7 @@ func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 func (md *ConfigMetadata) Validate() error {
 	var errs error
 	if md.Type != "object" {
-		errs = errors.Join(errs, fmt.Errorf("config type must be Object, got %q", md.Type))
+		errs = errors.Join(errs, fmt.Errorf("config type must be \"object\":, got %q", md.Type))
 	}
 	if len(md.Properties) == 0 && len(md.AllOf) == 0 {
 		errs = errors.Join(errs, errors.New("config must not be empty"))
