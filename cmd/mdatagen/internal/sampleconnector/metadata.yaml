@@ -115,8 +115,7 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -131,8 +130,7 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -147,8 +145,7 @@ metrics:
   metric.input_type:
     enabled: true
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -161,8 +158,7 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
        since: "1.0.0"
        note: "This metric will be removed"
@@ -176,8 +172,7 @@ metrics:
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -190,10 +185,9 @@ metrics:
 
   reaggregate.metric:
     enabled: true
-    description: Metric for testing spacial reaggregation
+    description: Metric for testing spatial reaggregation
     unit: "1"
-    stability:
-      level: beta
+    stability: beta
     gauge:
-      value_type: double 
+      value_type: double
     attributes: [string_attr, boolean_attr]
