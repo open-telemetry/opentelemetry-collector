@@ -288,13 +288,15 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		curvePreferences = allowedCurves
 	}
 
+	// Intentionally allowing insecure cipher suites for legacy system compatibility.
+	// Users explicitly configure cipher_suites in their configuration when needed.
 	return &tls.Config{
 		RootCAs:              certPool,
 		GetCertificate:       getCertificate,
 		GetClientCertificate: getClientCertificate,
 		MinVersion:           minTLS,
 		MaxVersion:           maxTLS,
-		CipherSuites:         cipherSuites,
+		CipherSuites:         cipherSuites, // lgtm[go/insecure-tls]
 		CurvePreferences:     curvePreferences,
 	}, nil
 }
