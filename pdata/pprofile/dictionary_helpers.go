@@ -23,13 +23,12 @@ func resolveProfilesReferences(profiles Profiles) {
 	rp := profiles.ResourceProfiles().At(0)
 	if !needsResolution(rp.Resource().Attributes()) {
 		// Check scope attributes too
-		if rp.ScopeProfiles().Len() > 0 {
-			sp := rp.ScopeProfiles().At(0)
-			if !needsResolution(sp.Scope().Attributes()) {
-				// Already resolved, skip
-				return
-			}
-		} else {
+		if rp.ScopeProfiles().Len() == 0 {
+			return
+		}
+		sp := rp.ScopeProfiles().At(0)
+		if !needsResolution(sp.Scope().Attributes()) {
+			// Already resolved, skip
 			return
 		}
 	}
@@ -161,13 +160,12 @@ func convertProfilesToReferences(profiles Profiles) {
 	rp := profiles.ResourceProfiles().At(0)
 	if !needsConversion(rp.Resource().Attributes()) {
 		// Check scope attributes too
-		if rp.ScopeProfiles().Len() > 0 {
-			sp := rp.ScopeProfiles().At(0)
-			if !needsConversion(sp.Scope().Attributes()) {
-				// Already converted, skip
-				return
-			}
-		} else {
+		if rp.ScopeProfiles().Len() == 0 {
+			return
+		}
+		sp := rp.ScopeProfiles().At(0)
+		if !needsConversion(sp.Scope().Attributes()) {
+			// Already converted, skip
 			return
 		}
 	}
