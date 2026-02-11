@@ -64,7 +64,7 @@ modernize:
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.24.0
+	$(GOCMD) mod tidy -compat=1.25.0
 
 .PHONY: lint
 lint:
