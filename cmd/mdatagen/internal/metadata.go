@@ -59,6 +59,24 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 }
 
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
+func (d *Deprecated) validate() error {
+	if strings.TrimSpace(d.Since) == "" {
+		return errors.New("deprecated.since must be set")
+	}
+
+	// NOTE: note is optional, but if present, it must not be empty
+	if d.Note != "" && strings.TrimSpace(d.Note) == "" {
+		return errors.New("deprecated.note must not be empty")
+	}
+
+	return nil
+}
+
 func (md Metadata) GetCodeCovComponentID() string {
 	if md.Status.CodeCovComponentID != "" {
 		return md.Status.CodeCovComponentID
@@ -605,7 +623,7 @@ type Signal struct {
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
-	Stability Stability `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 
 	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`

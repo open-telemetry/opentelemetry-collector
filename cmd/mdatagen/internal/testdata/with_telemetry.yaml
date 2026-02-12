@@ -14,8 +14,7 @@ telemetry:
       description: Latency (in microseconds) of a given sampling policy
       unit: µs
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       histogram:
         value_type: int
       attributes: [name]
