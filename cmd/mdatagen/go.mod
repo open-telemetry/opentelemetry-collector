@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/cmd/mdatagen
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.145.0
 	go.opentelemetry.io/collector/consumer v1.51.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.145.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.145.0
 	go.opentelemetry.io/collector/featuregate v1.51.0
 	go.opentelemetry.io/collector/filter v0.145.0
 	go.opentelemetry.io/collector/pdata v1.51.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.145.0
 	go.opentelemetry.io/collector/receiver v1.51.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.145.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.145.0
 	go.opentelemetry.io/collector/scraper v0.145.0
 	go.opentelemetry.io/collector/scraper/scrapertest v0.145.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.145.0
@@ -61,14 +63,12 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.145.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.145.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.145.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.145.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.145.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.145.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.145.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.145.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.145.0 // indirect
 	go.opentelemetry.io/collector/service v0.145.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
