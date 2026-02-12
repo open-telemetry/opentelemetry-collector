@@ -328,11 +328,9 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
-	}()
+	})
 
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
@@ -582,11 +580,9 @@ func TestCollectorDryRun(t *testing.T) {
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, col.Run(ctx))
-	}()
+	})
 	return wg
 }
 
