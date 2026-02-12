@@ -244,6 +244,8 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          - goos: js
+            goarch: wasm
           - goos: linux
             goarch: 386
           - goos: linux
