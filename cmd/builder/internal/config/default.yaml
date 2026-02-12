@@ -36,3 +36,7 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.51.0
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.51.0
 
+telemetry:
+  gomod: go.opentelemetry.io/collector/service v0.145.0
+  import: go.opentelemetry.io/collector/service/telemetry/otelconftelemetry
+
