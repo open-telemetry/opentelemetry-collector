@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Reset aggDataPoints during metric init to avoid index out of range panic across emit cycles when reaggregation is enabled.
+issues: [14569]
