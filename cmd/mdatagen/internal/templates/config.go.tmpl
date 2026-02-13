@@ -9,6 +9,9 @@ import (
     "fmt"
     "slices"
     {{- end }}
+    {{- if or .Metrics .Events }}
+    "time"
+    {{- end }}
 
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
@@ -20,8 +23,10 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled             bool     `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled             bool          `mapstructure:"enabled"`
+	// CollectionInterval overrides the global collection interval for this metric. Zero means use the receiver default.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
   {{ if $reag }}
   AggregationStrategy string   `mapstructure:"aggregation_strategy"`
   EnabledAttributes   []string `mapstructure:"attributes"` 
@@ -105,6 +110,8 @@ func DefaultMetricsConfig() MetricsConfig {
 // EventConfig provides common config for a particular event.
 type EventConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval overrides the global collection interval for this event. Zero means use the receiver default.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	enabledSetByUser bool
 }
