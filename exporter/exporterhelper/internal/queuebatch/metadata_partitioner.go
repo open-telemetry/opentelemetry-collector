@@ -6,8 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -68,15 +66,6 @@ func NewMetadataKeysMergeCtx(keys []string) func(context.Context, context.Contex
 			v2 := m2.Get(key)
 			if len(v1) == 0 && len(v2) == 0 {
 				continue
-			}
-
-			// Since the mergeCtx is based on partition key, we MUST have the same
-			// partition key-values in both the metadata. If they are not same then
-			// fail fast and dramatically.
-			if !slices.Equal(v1, v2) {
-				panic(fmt.Errorf(
-					"unexpected client metadata found when merging context for key %s", key,
-				))
 			}
 			m[key] = v1
 		}

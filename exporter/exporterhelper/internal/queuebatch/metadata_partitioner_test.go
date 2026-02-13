@@ -102,7 +102,7 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 		assert.Empty(t, mergedMeta.Get("key1"))
 	})
 
-	t.Run("panic when one context has metadata and other is empty", func(t *testing.T) {
+	t.Run("merge when one context has metadata and other is empty", func(t *testing.T) {
 		mergeCtx := NewMetadataKeysMergeCtx([]string{"key1"})
 
 		ctx1 := client.NewContext(
@@ -121,13 +121,13 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 			},
 		)
 
-		// When one has value and other is empty, they are different, so it should panic
-		assert.Panics(t, func() {
-			mergeCtx(ctx1, ctx2)
-		}, "should panic when contexts have different metadata values")
+		mergedCtx := mergeCtx(ctx1, ctx2)
+		require.NotNil(t, mergedCtx)
+		mergedMeta := client.FromContext(mergedCtx).Metadata
+		assert.Equal(t, []string{"value1"}, mergedMeta.Get("key1"))
 	})
 
-	t.Run("panic when contexts have different metadata key values", func(t *testing.T) {
+	t.Run("merge when contexts have different metadata key values", func(t *testing.T) {
 		mergeCtx := NewMetadataKeysMergeCtx([]string{"key1"})
 
 		ctx1 := client.NewContext(
@@ -148,12 +148,13 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 			},
 		)
 
-		assert.Panics(t, func() {
-			mergeCtx(ctx1, ctx2)
-		}, "should panic when contexts have different metadata values")
+		mergedCtx := mergeCtx(ctx1, ctx2)
+		require.NotNil(t, mergedCtx)
+		mergedMeta := client.FromContext(mergedCtx).Metadata
+		assert.Equal(t, []string{"value1"}, mergedMeta.Get("key1"))
 	})
 
-	t.Run("panic when contexts have different metadata key values for multiple keys", func(t *testing.T) {
+	t.Run("merge when contexts have different metadata key values for multiple keys", func(t *testing.T) {
 		mergeCtx := NewMetadataKeysMergeCtx([]string{"key1", "key2"})
 
 		ctx1 := client.NewContext(
@@ -176,9 +177,11 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 			},
 		)
 
-		assert.Panics(t, func() {
-			mergeCtx(ctx1, ctx2)
-		}, "should panic when contexts have different metadata values")
+		mergedCtx := mergeCtx(ctx1, ctx2)
+		require.NotNil(t, mergedCtx)
+		mergedMeta := client.FromContext(mergedCtx).Metadata
+		assert.Equal(t, []string{"value1"}, mergedMeta.Get("key1"))
+		assert.Equal(t, []string{"value2"}, mergedMeta.Get("key2"))
 	})
 
 	t.Run("merge contexts with multiple values for same key", func(t *testing.T) {
@@ -209,7 +212,7 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 		assert.Equal(t, []string{"value1", "value2"}, mergedMeta.Get("key1"))
 	})
 
-	t.Run("panic when contexts have different multiple values for same key", func(t *testing.T) {
+	t.Run("merge when contexts have different multiple values for same key", func(t *testing.T) {
 		mergeCtx := NewMetadataKeysMergeCtx([]string{"key1"})
 
 		ctx1 := client.NewContext(
@@ -230,9 +233,10 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 			},
 		)
 
-		assert.Panics(t, func() {
-			mergeCtx(ctx1, ctx2)
-		}, "should panic when contexts have different metadata values")
+		mergedCtx := mergeCtx(ctx1, ctx2)
+		require.NotNil(t, mergedCtx)
+		mergedMeta := client.FromContext(mergedCtx).Metadata
+		assert.Equal(t, []string{"value1", "value2"}, mergedMeta.Get("key1"))
 	})
 }
 
