@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "go.opentelemetry.io/collector/main/cmd/mdatagen/internal/samplereceiver",
+  "$id": "go.opentelemetry.io/collector/v0.0.0-20260213130050-39a62fb4bd8f/cmd/mdatagen/internal/samplereceiver",
   "title": "receiver/sample",
   "type": "object",
   "properties": {
