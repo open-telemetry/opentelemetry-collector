@@ -22,7 +22,6 @@ import (
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"golang.org/x/tools/go/packages"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
@@ -515,18 +514,12 @@ func validateYAMLKeyOrder(raw []byte) error {
 
 func generateConfigFiles(md Metadata, outputDir string) error {
 	if md.Config != nil {
-		pkgID, err := getGoPkgID(outputDir)
-		if err != nil {
-			return fmt.Errorf("failed to get go module name: %w", err)
-		}
-
 		version, err := getVersion()
 		if err != nil {
-			return fmt.Errorf("failed to get version: %w", err)
+			return fmt.Errorf("failed to get collector version: %w", err)
 		}
-		version = cleanVersionForSchema(version)
 
-		resolver := cfggen.NewResolver(pkgID, md.Status.Class, md.Type, version)
+		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, version)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
@@ -538,38 +531,4 @@ func generateConfigFiles(md Metadata, outputDir string) error {
 		}
 	}
 	return nil
-}
-
-func getGoPkgID(dir string) (string, error) {
-	cfg := &packages.Config{
-		Mode: packages.NeedModule,
-		Dir:  dir,
-	}
-
-	pkgs, err := packages.Load(cfg, ".")
-	if err != nil {
-		return "", fmt.Errorf("failed to load package: %w", err)
-	}
-
-	if len(pkgs) == 0 {
-		return "", fmt.Errorf("no packages found in %q", dir)
-	}
-
-	if pkgs[0].Module == nil {
-		return "", fmt.Errorf("no module found in %q", dir)
-	}
-
-	return pkgs[0].ID, nil
-}
-
-// cleanVersionForSchema cleans up a version string for use in schema IDs.
-// Development builds (with git hashes) are converted to "main" for stable schema IDs.
-func cleanVersionForSchema(version string) string {
-	// Check if this is a pseudo-version (development build)
-	// Pseudo-versions have format: v0.0.0-yyyymmddhhmmss-abcdefabcdef
-	if strings.HasPrefix(version, "v0.0.0-") || strings.Contains(version, "+dirty") {
-		return "main"
-	}
-	// For tagged releases, keep the version as-is
-	return version
 }
