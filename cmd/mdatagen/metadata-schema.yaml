@@ -145,6 +145,10 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+    # Optional: the entity type this metric is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
     # Required: the metric stability
     stability: <development|alpha|beta|stable|deprecated>
     # Deprecation information for the metric. Required when stability is `deprecated`.
@@ -178,6 +182,10 @@ events:
       if_configured:
     # Optional: array of attributes that were defined in the attributes section that are emitted by this event.
     attributes: [string]
+    # Optional: the entity type this event is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
 
 # Lifecycle tests generated for this component.
 tests:

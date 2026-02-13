@@ -123,6 +123,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes:
       [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    entity: test.entity
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
@@ -139,6 +140,7 @@ metrics:
       value_type: double
       monotonic: false
       aggregation_temporality: delta
+    entity: test.entity
     warnings:
       if_enabled: This metric is deprecated and will be removed soon.
 
@@ -154,6 +156,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes:
       [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    entity: test.entity
 
   optional.metric:
     enabled: false
@@ -166,6 +169,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
+    entity: test.entity
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
@@ -180,6 +184,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
+    entity: test.entity
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
@@ -191,3 +196,4 @@ metrics:
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
+    entity: test.entity
