@@ -157,11 +157,17 @@ metrics:
       since:
       # Required: migration note
       note:
-    # Optional: the reference to a semantic convention
+    # Optional: the reference to a semantic convention.
+    # When ref is provided, package and type are auto-inferred from the metric name
+    # (e.g. "system.cpu.time" → package "systemconv", type "CPUTime").
+    # Explicit package/type can be specified to override the inferred values.
     semantic_convention:
       ref:
+      # Optional: semconv Go package name. Inferred from metric name if omitted (e.g. "systemconv").
       package:
+      # Optional: semconv Go type name. Inferred from metric name if omitted (e.g. "CPUTime").
       type:
+      # Optional: whether to use semconv Name/Description/Unit in generated code. Defaults to true.
       use_semconv_values:
 
 # Optional: map of event names with the key being the event name and value

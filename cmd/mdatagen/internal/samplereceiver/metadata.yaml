@@ -317,10 +317,9 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    # package and type are intentionally omitted to test auto-inference from metric name
     semantic_convention:
       ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit
-      package: systemconv
-      type: MemoryLimit
 
 telemetry:
   metrics:

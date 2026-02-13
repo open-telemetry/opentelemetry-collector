@@ -518,3 +518,174 @@ func TestValidateFeatureGatesNotSorted(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "feature gates must be sorted by ID")
 }
+
+func TestInferSemConvFromMetricName(t *testing.T) {
+	tests := []struct {
+		name     string
+		metric   string
+		wantPkg  string
+		wantType string
+		wantErr  bool
+	}{
+		{
+			name:     "go.goroutine.count",
+			metric:   "go.goroutine.count",
+			wantPkg:  "goconv",
+			wantType: "GoroutineCount",
+		},
+		{
+			name:     "k8s.container.cpu.limit",
+			metric:   "k8s.container.cpu.limit",
+			wantPkg:  "k8sconv",
+			wantType: "ContainerCPULimit",
+		},
+		{
+			name:     "system.cpu.time",
+			metric:   "system.cpu.time",
+			wantPkg:  "systemconv",
+			wantType: "CPUTime",
+		},
+		{
+			name:     "system.cpu.logical.count",
+			metric:   "system.cpu.logical.count",
+			wantPkg:  "systemconv",
+			wantType: "CPULogicalCount",
+		},
+		{
+			name:     "system.memory.limit",
+			metric:   "system.memory.limit",
+			wantPkg:  "systemconv",
+			wantType: "MemoryLimit",
+		},
+		{
+			name:     "system.disk.io uses IO acronym",
+			metric:   "system.disk.io",
+			wantPkg:  "systemconv",
+			wantType: "DiskIO",
+		},
+		{
+			name:     "system.disk.io_time handles underscores and IO",
+			metric:   "system.disk.io_time",
+			wantPkg:  "systemconv",
+			wantType: "DiskIOTime",
+		},
+		{
+			name:     "system.network.io",
+			metric:   "system.network.io",
+			wantPkg:  "systemconv",
+			wantType: "NetworkIO",
+		},
+		{
+			name:     "system.linux.memory.available",
+			metric:   "system.linux.memory.available",
+			wantPkg:  "systemconv",
+			wantType: "LinuxMemoryAvailable",
+		},
+		{
+			name:     "system.linux.memory.slab.usage",
+			metric:   "system.linux.memory.slab.usage",
+			wantPkg:  "systemconv",
+			wantType: "LinuxMemorySlabUsage",
+		},
+		{
+			name:     "system.uptime single remaining segment",
+			metric:   "system.uptime",
+			wantPkg:  "systemconv",
+			wantType: "Uptime",
+		},
+		{
+			name:     "system.filesystem.utilization",
+			metric:   "system.filesystem.utilization",
+			wantPkg:  "systemconv",
+			wantType: "FilesystemUtilization",
+		},
+		{
+			name:     "system.paging.faults",
+			metric:   "system.paging.faults",
+			wantPkg:  "systemconv",
+			wantType: "PagingFaults",
+		},
+		{
+			name:     "system.network.packet.dropped",
+			metric:   "system.network.packet.dropped",
+			wantPkg:  "systemconv",
+			wantType: "NetworkPacketDropped",
+		},
+		{
+			name:     "http.server.request.duration uses different namespace",
+			metric:   "http.server.request.duration",
+			wantPkg:  "httpconv",
+			wantType: "ServerRequestDuration",
+		},
+		{
+			name:    "single segment fails",
+			metric:  "system",
+			wantErr: true,
+		},
+		{
+			name:    "empty string fails",
+			metric:  "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pkg, typeName, err := InferSemConvFromMetricName(tt.metric)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPkg, pkg)
+			assert.Equal(t, tt.wantType, typeName)
+		})
+	}
+}
+
+func TestInferSemConvTypes(t *testing.T) {
+	md := &Metadata{
+		Metrics: map[MetricName]Metric{
+			"system.cpu.time": {
+				Signal: Signal{
+					SemanticConvention: &SemanticConvention{
+						SemanticConventionRef: "https://example.com",
+					},
+				},
+			},
+			"system.disk.io": {
+				Signal: Signal{
+					SemanticConvention: &SemanticConvention{
+						SemanticConventionRef: "https://example.com",
+					},
+				},
+			},
+			// Explicit values should not be overwritten
+			"system.memory.limit": {
+				Signal: Signal{
+					SemanticConvention: &SemanticConvention{
+						SemanticConventionRef: "https://example.com",
+						Package:               "custom",
+						Type:                  "Custom",
+					},
+				},
+			},
+			// No semantic convention, should be left alone
+			"default.metric": {
+				Signal: Signal{},
+			},
+		},
+	}
+
+	md.inferSemConvTypes()
+
+	assert.Equal(t, "systemconv", md.Metrics["system.cpu.time"].SemanticConvention.Package)
+	assert.Equal(t, "CPUTime", md.Metrics["system.cpu.time"].SemanticConvention.Type)
+	assert.Equal(t, "systemconv", md.Metrics["system.disk.io"].SemanticConvention.Package)
+	assert.Equal(t, "DiskIO", md.Metrics["system.disk.io"].SemanticConvention.Type)
+	// Explicit values preserved
+	assert.Equal(t, "custom", md.Metrics["system.memory.limit"].SemanticConvention.Package)
+	assert.Equal(t, "Custom", md.Metrics["system.memory.limit"].SemanticConvention.Type)
+	// No semantic convention
+	assert.Nil(t, md.Metrics["default.metric"].SemanticConvention)
+}

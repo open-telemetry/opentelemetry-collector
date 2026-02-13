@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/mod/semver"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -126,13 +127,12 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	if m.Gauge != nil {
 		errs = errors.Join(errs, m.Gauge.Validate())
 	}
+	if m.SemanticConvention != nil && semver.Compare("v"+semConvVersion, "v1.32.0") < 0 {
+		errs = errors.Join(errs, fmt.Errorf("semantic_convention requires sem_conv_version >= 1.32.0"))
+		return errs
+	}
 	if m.SemanticConvention != nil {
 		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {
-			errs = errors.Join(errs, err)
-		}
-	}
-	if m.SemanticConvention != nil && m.SemanticConvention.HasSemConvType() {
-		if err := m.validateSemConvType(metricName, semConvVersion); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}
@@ -170,18 +170,6 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 		return fmt.Errorf(
 			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
 			semConvVersion, anchor, rawURL)
-	}
-	return nil
-}
-
-func (m *Metric) validateSemConvType(metricName MetricName, semConvVersion string) error {
-	sc := m.SemanticConvention
-
-	knownPackages := map[string]bool{
-		"systemconv": true,
-	}
-	if !knownPackages[sc.Package] {
-		return fmt.Errorf("unknown semconv package: %s", sc.Package)
 	}
 	return nil
 }

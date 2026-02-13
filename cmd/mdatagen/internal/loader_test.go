@@ -651,6 +651,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
+			name:    "testdata/invalid_metric_semconvref_old_version.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\": semantic_convention requires sem_conv_version >= 1.32.0",
+		},
+		{
 			name:    "testdata/no_metric_stability.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' missing required field: `stability.level`",
