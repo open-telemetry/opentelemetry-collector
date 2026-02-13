@@ -144,12 +144,36 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/invalid_entity_stability.yaml",
 			wantErr: `unsupported stability level: "stable42"`,
 		},
+		{
+			name:    "testdata/entity_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_event_missing_association.yaml",
+			wantErr: `event "host.restart": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_undefined_reference.yaml",
+			wantErr: `metric "host.cpu.time": entity refers to undefined entity type: undefined_entity`,
+		},
+		{
+			name:    "testdata/entity_single_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_metrics_events_valid.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
-			require.Error(t, err)
-			require.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
