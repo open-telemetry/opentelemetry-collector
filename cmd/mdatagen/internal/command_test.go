@@ -146,6 +146,12 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
+			yml:                        "with_tests_profiles_connector.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+		},
+		{
 			yml:                        "with_goleak_ignores.yaml",
 			wantStatusGenerated:        true,
 			wantGoleakIgnore:           true,

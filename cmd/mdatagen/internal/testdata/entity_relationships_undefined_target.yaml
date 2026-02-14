@@ -1,0 +1,21 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  k8s.pod.uid:
+    description: The unique identifier of the Kubernetes pod
+    type: string
+    enabled: true
+
+entities:
+  - type: k8s.pod
+    brief: A Kubernetes pod
+    stability: stable
+    identity:
+      - ref: k8s.pod.uid
+    relationships:
+      - type: controlled_by
+        target: k8s.replicaset
