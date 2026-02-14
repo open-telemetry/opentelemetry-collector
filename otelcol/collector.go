@@ -117,6 +117,10 @@ type Collector struct {
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
+
+	// currentCfg holds the last successfully applied configuration.
+	// Only populated when the service.receiverPartialReload feature gate is enabled.
+	currentCfg *Config
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -257,12 +261,32 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
+	if partialReloadGate.IsEnabled() {
+		col.currentCfg = cfg
+	}
 	col.setCollectorState(StateRunning)
 
 	return nil
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	if partialReloadGate.IsEnabled() && col.currentCfg != nil {
+		reloaded, err := col.tryPartialReload(ctx)
+		if reloaded {
+			// Partial reload was attempted.
+			// Return the result directly — on success err is nil; on failure
+			// we cannot safely fall back to a full reload because the graph
+			// may be in a partially modified state (some components shut down,
+			// nodes removed, new nodes without components). Calling ShutdownAll
+			// on such a graph risks double-shutdowns on already-stopped
+			// components and nil-pointer panics on nodes whose components were
+			// never built. This is consistent with how full reload failures are
+			// handled: the error propagates to Run(), which exits the collector.
+			return err
+		}
+		// The config change requires a full reload. Fall through.
+	}
+
 	col.service.Logger().Warn("Config updated, restart service")
 	col.setCollectorState(StateClosing)
 
@@ -275,6 +299,59 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// tryPartialReload attempts to perform a partial reload based on what changed.
+// The bool return indicates whether a partial reload was attempted (true) or
+// the change requires a full reload (false). When true, the error indicates
+// whether the reload succeeded.
+func (col *Collector) tryPartialReload(ctx context.Context) (bool, error) {
+	factories, err := col.set.Factories()
+	if err != nil {
+		return false, err
+	}
+
+	newCfg, err := col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return false, err
+	}
+
+	if validateErr := xconfmap.Validate(newCfg); validateErr != nil {
+		return false, validateErr
+	}
+
+	changeType := categorizeConfigChange(col.currentCfg, newCfg, isConnectorID(col.currentCfg.Connectors))
+
+	if changeType == ConfigChangeFullReload {
+		return false, nil
+	}
+
+	// Attempt partial reload. It will detect if there are actual changes.
+	reloaded, err := col.service.Reload(ctx,
+		col.currentCfg.Receivers,
+		newCfg.Receivers,
+		factories.Receivers,
+		col.currentCfg.Processors,
+		newCfg.Processors,
+		factories.Processors,
+		col.currentCfg.Exporters,
+		newCfg.Exporters,
+		factories.Exporters,
+		col.currentCfg.Connectors,
+		newCfg.Connectors,
+		factories.Connectors,
+		newCfg.Service.Pipelines,
+	)
+	if err != nil {
+		return true, fmt.Errorf("partial reload failed: %w", err)
+	}
+	if !reloaded {
+		col.service.Logger().Info("Config updated but no changes detected, skipping reload")
+	} else {
+		col.service.Logger().Info("Partial reload completed successfully")
+	}
+	col.currentCfg = newCfg
+	return true, nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
