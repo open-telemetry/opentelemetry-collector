@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -35,14 +36,18 @@ type baseExporter struct {
 	// Input configuration.
 	config *Config
 
-	// gRPC clients and connection.
-	traceExporter   ptraceotlp.GRPCClient
-	metricExporter  pmetricotlp.GRPCClient
-	logExporter     plogotlp.GRPCClient
-	profileExporter pprofileotlp.GRPCClient
-	clientConn      *grpc.ClientConn
-	metadata        metadata.MD
-	callOptions     []grpc.CallOption
+	// gRPC clients and connections - can be multiple for connection pooling
+	traceExporters   []ptraceotlp.GRPCClient
+	metricExporters  []pmetricotlp.GRPCClient
+	logExporters     []plogotlp.GRPCClient
+	profileExporters []pprofileotlp.GRPCClient
+	clientConns      []*grpc.ClientConn
+
+	// Round-robin counter for connection selection
+	connIndex atomic.Uint64
+
+	metadata    metadata.MD
+	callOptions []grpc.CallOption
 
 	settings component.TelemetrySettings
 
@@ -59,17 +64,44 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}
 }
 
-// start actually creates the gRPC connection. The client construction is deferred till this point as this
+// start actually creates the gRPC connection(s). The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
-		return err
+	// Determine number of connections to create
+	numConns := e.config.ConnectionPool.MaxConnections
+	if numConns <= 1 {
+		numConns = 1 // Default: single connection
 	}
-	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
-	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
-	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
-	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
+
+	// Pre-allocate slices for connections and clients
+	e.clientConns = make([]*grpc.ClientConn, numConns)
+	e.traceExporters = make([]ptraceotlp.GRPCClient, numConns)
+	e.metricExporters = make([]pmetricotlp.GRPCClient, numConns)
+	e.logExporters = make([]plogotlp.GRPCClient, numConns)
+	e.profileExporters = make([]pprofileotlp.GRPCClient, numConns)
+
+	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
+
+	// Create all connections
+	for i := 0; i < numConns; i++ {
+		conn, connErr := e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt)
+		if connErr != nil {
+			// Close any previously created connections on error
+			for j := 0; j < i; j++ {
+				if e.clientConns[j] != nil {
+					_ = e.clientConns[j].Close()
+				}
+			}
+			return connErr
+		}
+		e.clientConns[i] = conn
+		e.traceExporters[i] = ptraceotlp.NewGRPCClient(conn)
+		e.metricExporters[i] = pmetricotlp.NewGRPCClient(conn)
+		e.logExporters[i] = plogotlp.NewGRPCClient(conn)
+		e.profileExporters[i] = pprofileotlp.NewGRPCClient(conn)
+	}
+
+	// Set up metadata and call options (shared across all connections)
 	headers := map[string]string{}
 	for k, v := range e.config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
@@ -79,19 +111,33 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 
-	return err
-}
-
-func (e *baseExporter) shutdown(context.Context) error {
-	if e.clientConn != nil {
-		return e.clientConn.Close()
-	}
 	return nil
 }
 
+func (e *baseExporter) shutdown(context.Context) error {
+	var firstErr error
+	for _, conn := range e.clientConns {
+		if conn != nil {
+			if err := conn.Close(); err != nil && firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+	return firstErr
+}
+
+// nextConnIndex returns the next connection index using round-robin selection
+func (e *baseExporter) nextConnIndex() int {
+	if len(e.clientConns) == 1 {
+		return 0
+	}
+	return int(e.connIndex.Add(1) % uint64(len(e.clientConns)))
+}
+
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	idx := e.nextConnIndex()
 	req := ptraceotlp.NewExportRequestFromTraces(td)
-	resp, respErr := e.traceExporter.Export(ctx, req, e.callOptions...)
+	resp, respErr := e.traceExporters[idx].Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -106,8 +152,9 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 }
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	idx := e.nextConnIndex()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	resp, respErr := e.metricExporter.Export(ctx, req, e.callOptions...)
+	resp, respErr := e.metricExporters[idx].Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -122,8 +169,9 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	idx := e.nextConnIndex()
 	req := plogotlp.NewExportRequestFromLogs(ld)
-	resp, respErr := e.logExporter.Export(ctx, req, e.callOptions...)
+	resp, respErr := e.logExporters[idx].Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -138,8 +186,9 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
+	idx := e.nextConnIndex()
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
-	resp, respErr := e.profileExporter.Export(ctx, req, e.callOptions...)
+	resp, respErr := e.profileExporters[idx].Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
