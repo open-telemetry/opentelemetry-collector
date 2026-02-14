@@ -190,6 +190,44 @@ func TestEnvWithDefaultValue(t *testing.T) {
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
+func TestEnvNumericStringsPreserved(t *testing.T) {
+	env := createProvider()
+	tests := []struct {
+		name        string
+		value       string
+		expectedVal string
+	}{
+		{name: "integer", value: "123456789012", expectedVal: "123456789012"},
+		{name: "float", value: "3.14159", expectedVal: "3.14159"},
+		{name: "scientific", value: "1.23e10", expectedVal: "1.23e10"},
+		{name: "negative", value: "-42", expectedVal: "-42"},
+		{name: "zero", value: "0", expectedVal: "0"},
+		{name: "leading_zeros", value: "00123", expectedVal: "00123"},
+		{name: "alphanumeric", value: "abc123", expectedVal: "abc123"},
+		{name: "hex_like", value: "0x1234", expectedVal: "0x1234"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const envName = "NUMERIC_TEST_VAR"
+			t.Setenv(envName, tt.value)
+			ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+			require.NoError(t, err)
+			
+			// Verify it's retrieved as a string
+			str, err := ret.AsString()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedVal, str)
+			
+			// Verify the raw value is also a string type, not a number
+			raw, err := ret.AsRaw()
+			require.NoError(t, err)
+			assert.IsType(t, "", raw, "value should be string type, not numeric")
+			assert.Equal(t, tt.expectedVal, raw)
+		})
+	}
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
 func createProvider() confmap.Provider {
 	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
