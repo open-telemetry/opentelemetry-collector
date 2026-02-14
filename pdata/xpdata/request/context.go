@@ -43,18 +43,19 @@ func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 		switch len(vals) {
 		case 1:
 			rc.ClientMetadata = append(rc.ClientMetadata, internal.KeyValue{
-				Key:   k,
-				Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: vals[0]}},
+				Key: k,
 			})
+			rc.ClientMetadata[len(rc.ClientMetadata)-1].Value.SetStringValue(vals[0])
 		default:
 			metadataArray := make([]internal.AnyValue, 0, len(vals))
 			for i := range vals {
-				metadataArray = append(metadataArray, internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: vals[i]}})
+				metadataArray = append(metadataArray, internal.AnyValue{})
+				metadataArray[len(metadataArray)-1].SetStringValue(vals[i])
 			}
 			rc.ClientMetadata = append(rc.ClientMetadata, internal.KeyValue{
-				Key:   k,
-				Value: internal.AnyValue{Value: &internal.AnyValue_ArrayValue{ArrayValue: &internal.ArrayValue{Values: metadataArray}}},
+				Key: k,
 			})
+			rc.ClientMetadata[len(rc.ClientMetadata)-1].Value.SetArrayValue(&internal.ArrayValue{Values: metadataArray})
 		}
 	}
 }
@@ -62,27 +63,27 @@ func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 func encodeClientAddress(ctx context.Context, rc *internal.RequestContext) {
 	switch a := client.FromContext(ctx).Addr.(type) {
 	case *net.IPAddr:
-		rc.ClientAddress = &internal.RequestContext_IP{IP: &internal.IPAddr{
+		rc.SetIP(&internal.IPAddr{
 			IP:   a.IP,
 			Zone: a.Zone,
-		}}
+		})
 	case *net.TCPAddr:
-		rc.ClientAddress = &internal.RequestContext_TCP{TCP: &internal.TCPAddr{
+		rc.SetTCP(&internal.TCPAddr{
 			IP:   a.IP,
 			Port: int64(a.Port),
 			Zone: a.Zone,
-		}}
+		})
 	case *net.UDPAddr:
-		rc.ClientAddress = &internal.RequestContext_UDP{UDP: &internal.UDPAddr{
+		rc.SetUDP(&internal.UDPAddr{
 			IP:   a.IP,
 			Port: int64(a.Port),
 			Zone: a.Zone,
-		}}
+		})
 	case *net.UnixAddr:
-		rc.ClientAddress = &internal.RequestContext_Unix{Unix: &internal.UnixAddr{
+		rc.SetUnix(&internal.UnixAddr{
 			Name: a.Name,
 			Net:  a.Net,
-		}}
+		})
 	}
 }
 
@@ -125,43 +126,53 @@ func decodeClientMetadata(clientMetadata []internal.KeyValue) map[string][]strin
 	}
 	metadataMap := make(map[string][]string, len(clientMetadata))
 	for _, kv := range clientMetadata {
-		switch val := kv.Value.Value.(type) {
-		case *internal.AnyValue_StringValue:
+		switch kv.Value.ValueType() {
+		case internal.AnyValueValueTypeStringValue:
 			metadataMap[kv.Key] = make([]string, 1)
-			metadataMap[kv.Key][0] = val.StringValue
-		case *internal.AnyValue_ArrayValue:
-			metadataMap[kv.Key] = make([]string, len(val.ArrayValue.Values))
-			for i, v := range val.ArrayValue.Values {
-				metadataMap[kv.Key][i] = v.GetStringValue()
+			metadataMap[kv.Key][0] = kv.Value.StringValue()
+		case internal.AnyValueValueTypeArrayValue:
+			av := kv.Value.ArrayValue()
+			if av == nil {
+				continue
 			}
+			metadataMap[kv.Key] = make([]string, len(av.Values))
+			for i, v := range av.Values {
+				metadataMap[kv.Key][i] = v.StringValue()
+			}
+		default:
+			// Do nothing
 		}
 	}
 	return metadataMap
 }
 
 func decodeClientAddress(rc *internal.RequestContext) net.Addr {
-	switch a := rc.ClientAddress.(type) {
-	case *internal.RequestContext_IP:
+	switch rc.ClientAddressType() {
+	case internal.RequestContextClientAddressTypeIP:
+		ip := rc.IP()
 		return &net.IPAddr{
-			IP:   a.IP.IP,
-			Zone: a.IP.Zone,
+			IP:   ip.IP,
+			Zone: ip.Zone,
 		}
-	case *internal.RequestContext_TCP:
+	case internal.RequestContextClientAddressTypeTCP:
+		tcp := rc.TCP()
 		return &net.TCPAddr{
-			IP:   a.TCP.IP,
-			Port: int(a.TCP.Port),
-			Zone: a.TCP.Zone,
+			IP:   tcp.IP,
+			Port: int(tcp.Port),
+			Zone: tcp.Zone,
 		}
-	case *internal.RequestContext_UDP:
+	case internal.RequestContextClientAddressTypeUDP:
+		udp := rc.UDP()
 		return &net.UDPAddr{
-			IP:   a.UDP.IP,
-			Port: int(a.UDP.Port),
-			Zone: a.UDP.Zone,
+			IP:   udp.IP,
+			Port: int(udp.Port),
+			Zone: udp.Zone,
 		}
-	case *internal.RequestContext_Unix:
+	case internal.RequestContextClientAddressTypeUnix:
+		unix := rc.Unix()
 		return &net.UnixAddr{
-			Name: a.Unix.Name,
-			Net:  a.Unix.Net,
+			Name: unix.Name,
+			Net:  unix.Net,
 		}
 	}
 	return nil

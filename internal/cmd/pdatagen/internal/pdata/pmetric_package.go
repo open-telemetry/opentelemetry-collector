@@ -377,16 +377,16 @@ var numberDataPoint = &messageStruct{
 			testValueIdx:    0, // Double
 			values: []oneOfValue{
 				&OneOfPrimitiveValue{
-					fieldName:       "Double",
-					protoID:         4,
-					originFieldName: "AsDouble",
-					protoType:       proto.TypeDouble,
-				},
-				&OneOfPrimitiveValue{
 					fieldName:       "Int",
 					protoID:         6,
 					originFieldName: "AsInt",
 					protoType:       proto.TypeSFixed64,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "Double",
+					protoID:         4,
+					originFieldName: "AsDouble",
+					protoType:       proto.TypeDouble,
 				},
 			},
 		},
@@ -723,16 +723,16 @@ var exemplar = &messageStruct{
 			testValueIdx:    1, // Int
 			values: []oneOfValue{
 				&OneOfPrimitiveValue{
-					fieldName:       "Double",
-					originFieldName: "AsDouble",
-					protoID:         3,
-					protoType:       proto.TypeDouble,
-				},
-				&OneOfPrimitiveValue{
 					fieldName:       "Int",
 					originFieldName: "AsInt",
 					protoID:         6,
 					protoType:       proto.TypeSFixed64,
+				},
+				&OneOfPrimitiveValue{
+					fieldName:       "Double",
+					originFieldName: "AsDouble",
+					protoID:         3,
+					protoType:       proto.TypeDouble,
 				},
 			},
 		},

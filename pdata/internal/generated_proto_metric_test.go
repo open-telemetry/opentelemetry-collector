@@ -217,12 +217,52 @@ func genTestEncodingValuesMetric() map[string]*Metric {
 		"Name/test":        {Name: "test_name"},
 		"Description/test": {Description: "test_description"},
 		"Unit/test":        {Unit: "test_unit"},
-		"Gauge/default":    {Data: &Metric_Gauge{Gauge: &Gauge{}}},
-		"Gauge/test":       {Data: &Metric_Gauge{Gauge: GenTestGauge()}}, "Sum/default": {Data: &Metric_Sum{Sum: &Sum{}}},
-		"Sum/test": {Data: &Metric_Sum{Sum: GenTestSum()}}, "Histogram/default": {Data: &Metric_Histogram{Histogram: &Histogram{}}},
-		"Histogram/test": {Data: &Metric_Histogram{Histogram: GenTestHistogram()}}, "ExponentialHistogram/default": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: &ExponentialHistogram{}}},
-		"ExponentialHistogram/test": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: GenTestExponentialHistogram()}}, "Summary/default": {Data: &Metric_Summary{Summary: &Summary{}}},
-		"Summary/test":  {Data: &Metric_Summary{Summary: GenTestSummary()}},
+		"Gauge/default": func() *Metric {
+			ms := NewMetric()
+			ms.SetGauge(&Gauge{})
+			return ms
+		}(),
+		"Gauge/test": func() *Metric {
+			ms := NewMetric()
+			ms.SetGauge(GenTestGauge())
+			return ms
+		}(), "Sum/default": func() *Metric {
+			ms := NewMetric()
+			ms.SetSum(&Sum{})
+			return ms
+		}(),
+		"Sum/test": func() *Metric {
+			ms := NewMetric()
+			ms.SetSum(GenTestSum())
+			return ms
+		}(), "Histogram/default": func() *Metric {
+			ms := NewMetric()
+			ms.SetHistogram(&Histogram{})
+			return ms
+		}(),
+		"Histogram/test": func() *Metric {
+			ms := NewMetric()
+			ms.SetHistogram(GenTestHistogram())
+			return ms
+		}(), "ExponentialHistogram/default": func() *Metric {
+			ms := NewMetric()
+			ms.SetExponentialHistogram(&ExponentialHistogram{})
+			return ms
+		}(),
+		"ExponentialHistogram/test": func() *Metric {
+			ms := NewMetric()
+			ms.SetExponentialHistogram(GenTestExponentialHistogram())
+			return ms
+		}(), "Summary/default": func() *Metric {
+			ms := NewMetric()
+			ms.SetSummary(&Summary{})
+			return ms
+		}(),
+		"Summary/test": func() *Metric {
+			ms := NewMetric()
+			ms.SetSummary(GenTestSummary())
+			return ms
+		}(),
 		"Metadata/test": {Metadata: []KeyValue{{}, *GenTestKeyValue()}},
 	}
 }

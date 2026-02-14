@@ -15,17 +15,15 @@ import (
 )
 
 type KeyValue struct {
-	Value AnyValue
 	Key   string
+	Value AnyValue
 }
 
-var (
-	protoPoolKeyValue = sync.Pool{
-		New: func() any {
-			return &KeyValue{}
-		},
-	}
-)
+var protoPoolKeyValue = sync.Pool{
+	New: func() any {
+		return &KeyValue{}
+	},
+}
 
 func NewKeyValue() *KeyValue {
 	if !UseProtoPooling.IsEnabled() {

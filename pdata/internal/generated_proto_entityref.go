@@ -21,13 +21,11 @@ type EntityRef struct {
 	DescriptionKeys []string
 }
 
-var (
-	protoPoolEntityRef = sync.Pool{
-		New: func() any {
-			return &EntityRef{}
-		},
-	}
-)
+var protoPoolEntityRef = sync.Pool{
+	New: func() any {
+		return &EntityRef{}
+	},
+}
 
 func NewEntityRef() *EntityRef {
 	if !UseProtoPooling.IsEnabled() {

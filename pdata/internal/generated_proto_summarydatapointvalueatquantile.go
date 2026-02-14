@@ -22,13 +22,11 @@ type SummaryDataPointValueAtQuantile struct {
 	Value    float64
 }
 
-var (
-	protoPoolSummaryDataPointValueAtQuantile = sync.Pool{
-		New: func() any {
-			return &SummaryDataPointValueAtQuantile{}
-		},
-	}
-)
+var protoPoolSummaryDataPointValueAtQuantile = sync.Pool{
+	New: func() any {
+		return &SummaryDataPointValueAtQuantile{}
+	},
+}
 
 func NewSummaryDataPointValueAtQuantile() *SummaryDataPointValueAtQuantile {
 	if !UseProtoPooling.IsEnabled() {
