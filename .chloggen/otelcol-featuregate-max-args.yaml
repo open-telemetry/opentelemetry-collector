@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/otelcol
+note: The featuregate subcommand now rejects extra positional arguments instead of silently ignoring them.
+issues: [14554]
