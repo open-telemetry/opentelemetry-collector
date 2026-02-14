@@ -66,6 +66,15 @@ func (qb *partitionBatcher) resetTimer() {
 }
 
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	// Check if the producer's context was cancelled before processing.
+	// This prevents exporting data when the caller already received a timeout error,
+	// which would cause confusing observability results and potential duplicate data
+	// if the caller retries.
+	if ctx.Err() != nil {
+		done.OnDone(ctx.Err())
+		return
+	}
+
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {

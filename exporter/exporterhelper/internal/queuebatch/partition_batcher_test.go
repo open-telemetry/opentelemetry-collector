@@ -560,3 +560,81 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 		})
 	}
 }
+
+// TestPartitionBatcher_ContextCancelled verifies that the partition batcher
+// checks for context cancellation before processing.
+// This is a regression test for the context check fix in PR #14473.
+func TestPartitionBatcher_ContextCancelled(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      0,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop())
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	// Create already cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	done := newFakeDone()
+	ba.Consume(ctx, &requesttest.FakeRequest{Items: 10}, done)
+
+	// Should have error from context cancellation
+	assert.Eventually(t, func() bool {
+		return done.errors.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// Data should NOT have been exported
+	assert.Equal(t, 0, sink.RequestsCount(),
+		"Request with cancelled context should not be exported")
+	assert.Equal(t, 0, sink.ItemsCount(),
+		"Items from cancelled context should not be exported")
+}
+
+// TestPartitionBatcher_RefCountCorrectness verifies that the reference count
+// is correctly calculated when a request triggers multiple exports (due to
+// splitting or batching).
+// This is a regression test for the reference count bug fix in PR #14473
+// where numRefs was incorrectly set to len(reqList) instead of the actual
+// number of references needed.
+func TestPartitionBatcher_RefCountCorrectness(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      0,
+		MaxSize:      10, // Force splitting of large requests
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop())
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+
+	// Send a request that will be split into 3 parts (25 items / max 10 = 3 batches: 10, 10, 5)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 25}, done)
+
+	// Wait for all parts to be exported
+	assert.Eventually(t, func() bool {
+		return sink.ItemsCount() == 25
+	}, time.Second, 10*time.Millisecond)
+
+	// The done callback should be called exactly once with success
+	// after all split parts complete
+	assert.Eventually(t, func() bool {
+		return done.success.Load() == 1
+	}, time.Second, 10*time.Millisecond,
+		"Done callback should be called once after all split parts complete")
+
+	assert.EqualValues(t, 0, done.errors.Load(),
+		"Should not have any error callbacks")
+}
