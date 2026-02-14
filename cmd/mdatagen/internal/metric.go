@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var reNonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
+var reNonAlnum = regexp.MustCompile(`[^a-z0-9_]+`)
 
 type MetricName string
 
