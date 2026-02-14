@@ -3,4 +3,6 @@ github_project: open-telemetry/opentelemetry-collector
 
 status:
   disable_codecov_badge: true
-  class: pdata
+  class: pkg
+  stability:
+    development: [traces, metrics, logs, profiles]
