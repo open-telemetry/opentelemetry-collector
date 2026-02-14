@@ -282,10 +282,10 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	}
 
 	// If no curve preferences were explicitly specified in the configuration, use
-	// the ones we allow. This helps in particular with FIPS builds where not all curves
-	// are allowed.
+	// the default preferences. This ensures predictable behavior with a preference
+	// for modern cryptography (hybrid post-quantum KEX when available).
 	if len(curvePreferences) == 0 {
-		curvePreferences = allowedCurves
+		curvePreferences = defaultCurvePreferences
 	}
 
 	return &tls.Config{
