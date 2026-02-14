@@ -57,14 +57,14 @@ fmt: common/gofmt common/goimports common/gofumpt
 .PHONY: modernize
 modernize:
 	$(GO_TOOL) modernize \
-		-fix -test -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
+		-fix -test -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
 		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
 		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.24.0
+	$(GOCMD) mod tidy -compat=1.25.0
 
 .PHONY: lint
 lint:
