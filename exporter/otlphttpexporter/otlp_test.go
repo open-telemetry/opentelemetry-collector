@@ -255,7 +255,10 @@ func TestErrorResponses(t *testing.T) {
 			cfg := &Config{
 				Encoding:       EncodingProto,
 				TracesEndpoint: srv.URL + "/v1/traces",
-				// Create without QueueConfig and RetryConfig so that ConsumeTraces
+				RetryConfig: RetryConfig{
+					RetryableStatuses: []int{429, 502, 503, 504},
+				},
+				// Create without QueueConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -273,6 +276,150 @@ func TestErrorResponses(t *testing.T) {
 			err = exp.ConsumeTraces(context.Background(), traces)
 			require.Error(t, err)
 			test.checkErr(t, err, srv)
+		})
+	}
+}
+
+func TestIsRetryableStatusCode(t *testing.T) {
+	tests := []struct {
+		name              string
+		statusCode        int
+		retryableStatuses []int
+		expectRetryable   bool
+	}{
+		{
+			name:              "429 retryable when in list",
+			statusCode:        http.StatusTooManyRequests,
+			retryableStatuses: []int{429, 502, 503, 504},
+			expectRetryable:   true,
+		},
+		{
+			name:              "429 not retryable when removed from list",
+			statusCode:        http.StatusTooManyRequests,
+			retryableStatuses: []int{502, 503, 504},
+			expectRetryable:   false,
+		},
+		{
+			name:              "502 retryable when in list",
+			statusCode:        http.StatusBadGateway,
+			retryableStatuses: []int{429, 502, 503, 504},
+			expectRetryable:   true,
+		},
+		{
+			name:              "503 retryable even when 429 removed",
+			statusCode:        http.StatusServiceUnavailable,
+			retryableStatuses: []int{502, 503, 504},
+			expectRetryable:   true,
+		},
+		{
+			name:              "404 not retryable when not in list",
+			statusCode:        http.StatusNotFound,
+			retryableStatuses: []int{429, 502, 503, 504},
+			expectRetryable:   false,
+		},
+		{
+			name:              "empty list means no retries",
+			statusCode:        http.StatusTooManyRequests,
+			retryableStatuses: []int{},
+			expectRetryable:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "http://test.com",
+				},
+				RetryConfig: RetryConfig{
+					RetryableStatuses: tt.retryableStatuses,
+				},
+			}
+			exp := &baseExporter{
+				config: cfg,
+			}
+
+			result := exp.isRetryableStatusCode(tt.statusCode)
+			assert.Equal(t, tt.expectRetryable, result,
+				"For status %d with retryable_statuses=%v, expected retryable=%v but got %v",
+				tt.statusCode, tt.retryableStatuses, tt.expectRetryable, result)
+		})
+	}
+}
+
+func TestRetryableStatuses(t *testing.T) {
+	// This test verifies that when a status code is NOT in retryable_statuses,
+	// the error is marked as permanent (will not be retried by the retry queue).
+	tests := []struct {
+		name              string
+		responseStatus    int
+		retryableStatuses []int
+		expectPermanent   bool
+	}{
+		{
+			name:              "429 permanent when not in retryable list",
+			responseStatus:    http.StatusTooManyRequests,
+			retryableStatuses: []int{502, 503, 504},
+			expectPermanent:   true,
+		},
+		{
+			name:              "502 permanent when not in retryable list",
+			responseStatus:    http.StatusBadGateway,
+			retryableStatuses: []int{429, 503, 504},
+			expectPermanent:   true,
+		},
+		{
+			name:              "503 permanent when not in retryable list",
+			responseStatus:    http.StatusServiceUnavailable,
+			retryableStatuses: []int{429, 502, 504},
+			expectPermanent:   true,
+		},
+		{
+			name:              "504 permanent when not in retryable list",
+			responseStatus:    http.StatusGatewayTimeout,
+			retryableStatuses: []int{429, 502, 503},
+			expectPermanent:   true,
+		},
+		{
+			name:              "empty list means all codes are permanent",
+			responseStatus:    http.StatusServiceUnavailable,
+			retryableStatuses: []int{},
+			expectPermanent:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(tt.responseStatus)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: srv.URL,
+				},
+				RetryConfig: RetryConfig{
+					RetryableStatuses: tt.retryableStatuses,
+				},
+			}
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			require.NoError(t, err)
+
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			traces := ptrace.NewTraces()
+			err = exp.ConsumeTraces(context.Background(), traces)
+			require.Error(t, err)
+
+			// When a status code is NOT in retryable_statuses, it should be marked as permanent
+			assert.Equal(t, tt.expectPermanent, consumererror.IsPermanent(err),
+				"For status %d with retryable_statuses=%v, expected permanent=%v",
+				tt.responseStatus, tt.retryableStatuses, tt.expectPermanent)
 		})
 	}
 }
