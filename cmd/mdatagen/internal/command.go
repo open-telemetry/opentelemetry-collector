@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -230,6 +231,7 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
 			Funcs(map[string]any{
+				"urlquery": url.QueryEscape,
 				"publicVar": func(s string) (string, error) {
 					return FormatIdentifier(s, true)
 				},

@@ -82,7 +82,7 @@ var componentTypes = []string{
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
 	for _, cType := range componentTypes {
-		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
+		if before, ok := strings.CutSuffix(parentFolder, cType); ok && before != "" {
 			return before
 		}
 	}

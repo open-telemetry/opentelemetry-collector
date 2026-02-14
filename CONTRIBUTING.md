@@ -263,6 +263,8 @@ This project uses Go 1.25.* and [Github Actions.](https://github.com/features/ac
 
 It is recommended to run `make gofmt all` before submitting your PR.
 
+If your PR changes Markdown files, you can also run `make markdownlint`. This requires Node.js/npm.
+
 ## Coding Guidelines
 
 See the [Coding Guidelines](docs/coding-guidelines.md) document for more information.
