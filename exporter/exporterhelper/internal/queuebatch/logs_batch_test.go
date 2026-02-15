@@ -253,12 +253,39 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 			}())},
 			expectPartialError: true,
 		},
+		{
+			name:    "unsplittable_then_splittable_log",
+			szt:     request.SizerTypeBytes,
+			maxSize: 1000,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 1001)))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 10)))
+				return ld
+			}()),
+			lr2: nil,
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 10)))
+				// Remove the first log record (the oversized one) to get the expected output.
+				first := true
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
+					if first {
+						first = false
+						return true
+					}
+					return false
+				})
+				return ld
+			}())},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			if tt.expectPartialError {
-				require.ErrorContains(t, err, "one log record size is greater than max size, dropping")
+				require.ErrorContains(t, err, "log records exceeded max size, the records were dropped")
 			} else {
 				require.NoError(t, err)
 			}
