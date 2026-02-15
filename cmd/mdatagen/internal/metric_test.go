@@ -11,6 +11,108 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+func TestMetricAnchor(t *testing.T) {
+	tests := []struct {
+		name       string
+		metricName string
+		want       string
+	}{
+		{
+			name:       "simple metric name",
+			metricName: "system.cpu.time",
+			want:       "metric-systemcputime",
+		},
+		{
+			name:       "metric name with underscore",
+			metricName: "system.disk.io_time",
+			want:       "metric-systemdiskio_time",
+		},
+		{
+			name:       "metric name with multiple underscores",
+			metricName: "system.disk.weighted_io_time",
+			want:       "metric-systemdiskweighted_io_time",
+		},
+		{
+			name:       "metric name with uppercase",
+			metricName: "System.CPU.Time",
+			want:       "metric-systemcputime",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, metricAnchor(tt.metricName))
+		})
+	}
+}
+
+func TestValidateSemConvMetricURL(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawURL         string
+		semConvVersion string
+		metricName     string
+		wantErr        bool
+	}{
+		{
+			name:           "valid URL",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
+			semConvVersion: "1.38.0",
+			metricName:     "system.cpu.time",
+		},
+		{
+			name:           "valid URL with underscore in metric name",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+			semConvVersion: "1.38.0",
+			metricName:     "system.disk.io_time",
+		},
+		{
+			name:           "empty URL",
+			rawURL:         "",
+			semConvVersion: "1.38.0",
+			metricName:     "system.cpu.time",
+			wantErr:        true,
+		},
+		{
+			name:           "empty semConvVersion",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
+			semConvVersion: "",
+			metricName:     "system.cpu.time",
+			wantErr:        true,
+		},
+		{
+			name:           "empty metricName",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
+			semConvVersion: "1.38.0",
+			metricName:     "",
+			wantErr:        true,
+		},
+		{
+			name:           "wrong version",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime",
+			semConvVersion: "1.38.0",
+			metricName:     "system.cpu.time",
+			wantErr:        true,
+		},
+		{
+			name:           "wrong anchor",
+			rawURL:         "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcpuusage",
+			semConvVersion: "1.38.0",
+			metricName:     "system.cpu.time",
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSemConvMetricURL(tt.rawURL, tt.semConvVersion, tt.metricName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestMetricData(t *testing.T) {
 	for _, arg := range []struct {
 		metricData        MetricData
