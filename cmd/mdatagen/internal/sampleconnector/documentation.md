@@ -28,7 +28,7 @@ The metric will be become optional soon.
 | ---- | ----------- | ------ | -------- |
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | state | Integer attribute with overridden name. | Any Int | Recommended |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Conditionally Required |
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
@@ -58,7 +58,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | ---- | ----------- | ------ | -------- |
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | state | Integer attribute with overridden name. | Any Int | Recommended |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Conditionally Required |
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 

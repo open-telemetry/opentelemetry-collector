@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 const (
@@ -88,6 +87,22 @@ type metricInfo struct {
 	Name string
 }
 
+type MetricAttributeOption interface {
+	apply(pmetric.NumberDataPoint)
+}
+
+type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+
+func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
+	maof(dp)
+}
+
+func WithEnumAttrMetricAttribute(enumAttrAttributeValue AttributeEnumAttr) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue.String())
+	})
+}
+
 type metricDefaultMetric struct {
 	data          pmetric.Metric // data buffer for generated metric.
 	config        MetricConfig   // metric config provided by user.
@@ -107,7 +122,7 @@ func (m *metricDefaultMetric) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -121,14 +136,14 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "enum_attr") {
-		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
-	}
 	if slices.Contains(m.config.EnabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	}
+	for _, op := range options {
+		op.apply(dp)
 	}
 
 	var s string
@@ -297,7 +312,7 @@ func (m *metricMetricInputType) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
 	if !m.config.Enabled {
 		return
 	}
@@ -311,14 +326,14 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "enum_attr") {
-		dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
-	}
 	if slices.Contains(m.config.EnabledAttributes, "slice_attr") {
 		dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, "map_attr") {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
+	}
+	for _, op := range options {
+		op.apply(dp)
 	}
 
 	var s string
@@ -887,8 +902,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
+	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
@@ -897,12 +912,12 @@ func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Tim
 }
 
 // RecordMetricInputTypeDataPoint adds a data point to metric.input_type metric.
-func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) error {
+func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MetricInputType, value was %s: %w", inputVal, err)
 	}
-	mb.metricMetricInputType.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+	mb.metricMetricInputType.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 	return nil
 }
 

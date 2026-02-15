@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testDataSet int
@@ -113,9 +112,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed))
 			if tt.name == "reaggregate_set" {
-				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed))
 			}
 
 			defaultMetricsCount++
@@ -127,9 +126,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed))
 			if tt.name == "reaggregate_set" {
-				mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 20, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed))
 			}
 
 			allMetricsCount++
@@ -247,8 +246,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("state")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("enum_attr")
-						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("slice_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("map_attr")
@@ -349,8 +346,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("state")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("enum_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("slice_attr")
 						assert.False(t, ok)
