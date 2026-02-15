@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/netip"
 
 	"go.opentelemetry.io/collector/client"
 )
@@ -56,11 +57,12 @@ func parseIP(source string) *net.IPAddr {
 	if err == nil {
 		source = ipstr
 	}
-	ip := net.ParseIP(source)
-	if ip != nil {
-		return &net.IPAddr{
-			IP: ip,
-		}
+	addr, err := netip.ParseAddr(source)
+	if err != nil {
+		return nil
 	}
-	return nil
+	return &net.IPAddr{
+		IP:   addr.AsSlice(),
+		Zone: addr.Zone(),
+	}
 }
