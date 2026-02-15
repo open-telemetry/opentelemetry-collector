@@ -64,6 +64,15 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
 
+	// When the resolved value is an empty string, return it directly as a string
+	// rather than passing it through YAML unmarshaling. YAML unmarshaling of empty
+	// bytes produces nil, but environment variables are inherently strings, and an
+	// empty value (whether from an explicit empty default like ${env:VAR:-} or from
+	// an env var set to "") should resolve to "" not nil.
+	if val == "" {
+		return confmap.NewRetrieved("")
+	}
+
 	return confmap.NewRetrievedFromYAML([]byte(val))
 }
 
