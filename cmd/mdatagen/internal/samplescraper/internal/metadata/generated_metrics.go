@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -58,6 +57,9 @@ var MetricsInfo = metricsInfo{
 	DefaultMetric: metricInfo{
 		Name: "default.metric",
 	},
+	DefaultMetricHistogram: metricInfo{
+		Name: "default.metric.histogram",
+	},
 	DefaultMetricToBeRemoved: metricInfo{
 		Name: "default.metric.to_be_removed",
 	},
@@ -80,6 +82,7 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	DefaultMetric            metricInfo
+	DefaultMetricHistogram   metricInfo
 	DefaultMetricToBeRemoved metricInfo
 	MetricInputType          metricInfo
 	OptionalMetric           metricInfo
@@ -187,6 +190,74 @@ func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 
 func newMetricDefaultMetric(cfg MetricConfig) metricDefaultMetric {
 	m := metricDefaultMetric{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricDefaultMetricHistogram struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills default.metric.histogram metric with initial data.
+func (m *metricDefaultMetricHistogram) init() {
+	m.data.SetName("default.metric.histogram")
+	m.data.SetDescription("Cumulative histogram double metric enabled by default.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyHistogram()
+	m.data.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Histogram().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricDefaultMetricHistogram) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Histogram().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetCount(1)
+	dp.SetSum(float64(val))
+	dp.SetMin(float64(val))
+	dp.SetMax(float64(val))
+	dp.ExplicitBounds().FromRaw([]float64{10, 25, 50, 75, 100, 250, 500, 1000})
+	bucketCounts := make([]uint64, 8+1)
+	idx := len(bucketCounts) - 1
+	for i, b := range dp.ExplicitBounds().AsRaw() {
+		if float64(val) <= b {
+			idx = i
+			break
+		}
+	}
+	bucketCounts[idx]++
+	dp.BucketCounts().FromRaw(bucketCounts)
+	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricDefaultMetricHistogram) updateCapacity() {
+	if m.data.Histogram().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Histogram().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricDefaultMetricHistogram) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Histogram().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricDefaultMetricHistogram(cfg MetricConfig) metricDefaultMetricHistogram {
+	m := metricDefaultMetricHistogram{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -762,6 +833,7 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	metricDefaultMetric            metricDefaultMetric
+	metricDefaultMetricHistogram   metricDefaultMetricHistogram
 	metricDefaultMetricToBeRemoved metricDefaultMetricToBeRemoved
 	metricMetricInputType          metricMetricInputType
 	metricOptionalMetric           metricOptionalMetric
@@ -815,6 +887,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
 		metricDefaultMetric:            newMetricDefaultMetric(mbc.Metrics.DefaultMetric),
+		metricDefaultMetricHistogram:   newMetricDefaultMetricHistogram(mbc.Metrics.DefaultMetricHistogram),
 		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(mbc.Metrics.DefaultMetricToBeRemoved),
 		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
@@ -914,17 +987,24 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})
@@ -943,6 +1023,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricDefaultMetric.emit(ils.Metrics())
+	mb.metricDefaultMetricHistogram.emit(ils.Metrics())
 	mb.metricDefaultMetricToBeRemoved.emit(ils.Metrics())
 	mb.metricMetricInputType.emit(ils.Metrics())
 	mb.metricOptionalMetric.emit(ils.Metrics())
@@ -983,6 +1064,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
 func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+}
+
+// RecordDefaultMetricHistogramDataPoint adds a data point to default.metric.histogram metric.
+func (mb *MetricsBuilder) RecordDefaultMetricHistogramDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	mb.metricDefaultMetricHistogram.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.

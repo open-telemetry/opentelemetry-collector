@@ -118,6 +118,17 @@ metrics:
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
+  default.metric.histogram:
+    enabled: true
+    description: Cumulative histogram double metric enabled by default.
+    stability: development
+    unit: ms
+    histogram:
+      value_type: double
+      aggregation_temporality: cumulative
+      bucket_boundaries: [10.0, 25.0, 50.0, 75.0, 100.0, 250.0, 500.0, 1000.0]
+    attributes: [string_attr, boolean_attr]
+
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."

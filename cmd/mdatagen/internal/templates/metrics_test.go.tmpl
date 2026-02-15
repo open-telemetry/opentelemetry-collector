@@ -154,7 +154,7 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
-        {{- if $reag }}
+        {{- if and $reag (ne $metric.Data.Type "Histogram") }}
         if tt.name == "reaggregate_set" {
           mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
           {{- range $metric.Attributes -}}
@@ -192,8 +192,10 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			{{- if $reag }}
 			if tt.name == "reaggregate_set" {
-				{{- range $name, $_ := .Metrics }}
+				{{- range $name, $metric := .Metrics }}
+				{{- if ne $metric.Data.Type "Histogram" }}
 				assert.Empty(t, mb.metric{{ $name.Render }}.aggDataPoints)
+				{{- end }}
 				{{- end }}
 			}
 			{{- end }}
@@ -219,7 +221,7 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-          {{- if $reag }}
+          {{- if and $reag (ne $metric.Data.Type "Histogram") }}
           if tt.name != "reaggregate_set" {
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
             validatedMetrics["{{ $name }}"] = true
@@ -338,11 +340,18 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					{{- if eq $metric.Data.Type "Histogram" }}
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+					assert.InDelta(t, float64(1), dp.Min(), 0.01)
+					assert.InDelta(t, float64(1), dp.Max(), 0.01)
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
 					{{- else }}
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+					{{- end }}
 					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
