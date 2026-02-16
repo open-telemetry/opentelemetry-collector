@@ -63,9 +63,8 @@ func NewMetadataKeysMergeCtx(keys []string) func(context.Context, context.Contex
 		for _, key := range keys {
 			v1 := m1.Get(key)
 			if len(v1) > 0 {
-				continue
+				m[key] = v1
 			}
-			m[key] = v1
 		}
 		return client.NewContext(
 			context.Background(),
