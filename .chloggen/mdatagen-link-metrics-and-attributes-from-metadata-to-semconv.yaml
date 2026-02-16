@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for linking metrics to semantic cenventions definitions
+note: Add support for linking metrics to semantic conventions definitions
 
 # One or more tracking issues or pull requests related to the change
 issues: [13297]
