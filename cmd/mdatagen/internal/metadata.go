@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -808,4 +809,32 @@ type FeatureGate struct {
 	ToVersion string `mapstructure:"to_version"`
 	// ReferenceURL is the URL with contextual information about the feature gate.
 	ReferenceURL string `mapstructure:"reference_url"`
+}
+
+type SemConvImport struct {
+	Package string
+	Alias   string
+}
+
+func (md Metadata) SemConvImports() []SemConvImport {
+	imports := make(map[string]SemConvImport)
+
+	for _, m := range md.Metrics {
+		if m.SemanticConvention != nil && m.SemanticConvention.Package != "" {
+			pkg := m.SemanticConvention.Package
+			imports[pkg] = SemConvImport{
+				Package: pkg,
+				Alias:   pkg,
+			}
+		}
+	}
+
+	result := make([]SemConvImport, 0, len(imports))
+	for _, imp := range imports {
+		result = append(result, imp)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Package < result[j].Package
+	})
+	return result
 }
