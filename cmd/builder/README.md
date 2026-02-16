@@ -141,7 +141,9 @@ The configuration file is composed of two main parts: `dist` and module types. A
 ocb --config=config.yaml
 ```
 
-The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
+The module types are specified at the top-level. Available options are `extensions`, `exporters`, `receivers`, `processors`, `providers`, and `converters`. They all accept a list of components, and each component is required to have at least the `gomod` entry. The telemetry provider for the Collector binary can also be specified through the `telemetry` key, which can be set to a single module, also requiring a `gomod` entry at a minimum.
+
+When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
 
 The `import` might specify a more specific path than what is specified in the `gomod`. For instance, your Go module might be `gitlab.com/myorg/myrepo` and the `import` might be `gitlab.com/myorg/myrepo/myexporter`.
 
@@ -159,10 +161,13 @@ dist:
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
     debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
 exporters:
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.129.0" # the Go module for the component. Required.
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.146.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
     name: "alibabacloudlogserviceexporter" # package name to use in the generated sources. Optional.
     path: "./alibabacloudlogserviceexporter" # in case a local version should be used for the module, the path relative to the current dir, or a full path can be specified. Optional.
+telemetry:
+  gomod: go.opentelemetry.io/collector/service v0.146.0
+  import: go.opentelemetry.io/collector/service/telemetry/otelconftelemetry
 replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
