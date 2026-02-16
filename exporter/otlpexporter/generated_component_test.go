@@ -4,13 +4,16 @@ package otlpexporter
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -28,6 +31,21 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentConfigMarshal(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	data := cm.ToStringMap()
+	_, err := yaml.Marshal(data)
+	require.NoError(t, err)
+	_, err = json.Marshal(data)
+	require.NoError(t, err)
+
+	roundTrip := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&roundTrip))
 }
 
 func TestComponentLifecycle(t *testing.T) {

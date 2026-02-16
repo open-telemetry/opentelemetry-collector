@@ -7,6 +7,7 @@
 package {{ .Package }}
 
 import (
+	"encoding/json"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"context"
 	{{- end }}
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
@@ -58,6 +60,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
 	{{- end }}
+	"go.yaml.in/yaml/v3"
 )
 
 var typ = component.MustNewType("{{ .Type }}")
@@ -68,6 +71,21 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentConfigMarshal(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	data := cm.ToStringMap()
+	_, err := yaml.Marshal(data)
+	require.NoError(t, err)
+	_, err = json.Marshal(data)
+	require.NoError(t, err)
+
+	roundTrip := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&roundTrip))
 }
 
 {{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
