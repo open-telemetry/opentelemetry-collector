@@ -3,7 +3,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/knadh/koanf/parsers/yaml v1.1.0
@@ -17,7 +17,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/mod v0.32.0
+	golang.org/x/mod v0.33.0
 )
 
 require (

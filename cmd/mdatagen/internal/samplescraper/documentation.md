@@ -64,7 +64,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 ### reaggregate.metric
 
-Metric for testing spacial reaggregation
+Metric for testing spatial reaggregation
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package migration // import "go.opentelemetry.io/collector/service/telemetry/internal/migration"
+package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
 	configv02 "go.opentelemetry.io/contrib/otelconf/v0.2.0"
