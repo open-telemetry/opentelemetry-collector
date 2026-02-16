@@ -56,7 +56,7 @@ func NewMetadataKeysMergeCtx(keys []string) func(context.Context, context.Contex
 	if len(keys) == 0 {
 		return nil
 	}
-	return func(ctx1, ctx2 context.Context) context.Context {
+	return func(ctx1, _ context.Context) context.Context {
 		m1 := client.FromContext(ctx1).Metadata
 
 		m := make(map[string][]string, len(keys))
