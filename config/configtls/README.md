@@ -113,7 +113,7 @@ Example:
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: myserver.local:55690
     tls:
       insecure: false
@@ -188,7 +188,7 @@ Example:
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: myserver.local:55690
     tls:
       ca_file: ca.crt

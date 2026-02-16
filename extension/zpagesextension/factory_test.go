@@ -19,13 +19,11 @@ import (
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
+	expectedServerConfig := confighttp.NewDefaultServerConfig()
+	expectedServerConfig.NetAddr.Endpoint = "localhost:55679"
+
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:55679",
-		},
-	},
-		cfg)
+	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
 
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ext, err := create(context.Background(), extensiontest.NewNopSettings(metadata.Type), cfg)
@@ -35,7 +33,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactoryCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.ID = component.NewID(NewFactory().Type())

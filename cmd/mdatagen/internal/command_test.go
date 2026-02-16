@@ -29,6 +29,16 @@ func TestNewCommand(t *testing.T) {
 	assert.True(t, cmd.SilenceUsage)
 }
 
+func TestCommandNoArgs(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	cmd.SetArgs([]string{})
+	err = cmd.Execute()
+
+	require.Error(t, err)
+}
+
 func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                  string
@@ -47,6 +57,7 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSkip                  bool
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
+		wantFeatureGatesGenerated       bool
 		wantErr                         bool
 		wantOrderErr                    bool
 		wantAttributes                  []string
@@ -135,6 +146,12 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
+			yml:                        "with_tests_profiles_connector.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+		},
+		{
 			yml:                        "with_goleak_ignores.yaml",
 			wantStatusGenerated:        true,
 			wantGoleakIgnore:           true,
@@ -193,6 +210,13 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
+			yml:                        "feature_gates.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
+		},
+		{
 			yml:                        "with_conditional_attribute.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
@@ -245,6 +269,9 @@ foo
 				return
 			}
 			require.NoError(t, err)
+
+			// Documentation is generated when any of these features are present
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -301,7 +328,9 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 			}
 
-			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated && !tt.wantEventsGenerated {
+			if wantDocumentationGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 

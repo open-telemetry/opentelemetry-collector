@@ -15,8 +15,7 @@ telemetry:
   metrics:
     exporter_enqueue_failed_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log records failed to be added to the sending queue.
       unit: "{records}"
       sum:
@@ -25,18 +24,25 @@ telemetry:
 
     exporter_enqueue_failed_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of metric points failed to be added to the sending queue.
       unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
 
+    exporter_enqueue_failed_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples failed to be added to the sending queue.
+      unit: "{samples}"
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_enqueue_failed_spans:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of spans failed to be added to the sending queue.
       unit: "{spans}"
       sum:
@@ -46,8 +52,7 @@ telemetry:
     exporter_queue_batch_send_size:
       enabled: true
       description: Number of units in the batch
-      stability:
-        level: development
+      stability: development
       unit: "{units}"
       histogram:
         value_type: int
@@ -80,8 +85,7 @@ telemetry:
     exporter_queue_batch_send_size_bytes:
       enabled: true
       description: Number of bytes in batch that was sent. Only available on detailed level.
-      stability:
-        level: development
+      stability: development
       unit: By
       histogram:
         value_type: int
@@ -105,8 +109,7 @@ telemetry:
 
     exporter_queue_capacity:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Fixed capacity of the retry queue (in batches).
       unit: "{batches}"
       gauge:
@@ -115,8 +118,7 @@ telemetry:
 
     exporter_queue_size:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Current size of the retry queue (in batches).
       unit: "{batches}"
       gauge:
@@ -125,9 +127,8 @@ telemetry:
 
     exporter_send_failed_log_records:
       enabled: true
-      stability:
-        level: alpha
-      description: Number of log records in failed attempts to send to destination.
+      stability: alpha
+      description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{records}"
       sum:
         value_type: int
@@ -135,19 +136,26 @@ telemetry:
 
     exporter_send_failed_metric_points:
       enabled: true
-      stability:
-        level: alpha
-      description: Number of metric points in failed attempts to send to destination.
+      stability: alpha
+      description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_send_failed_profile_samples:
+      enabled: true
+      stability: development
+      description: "Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
+      unit: "{samples}"
       sum:
         value_type: int
         monotonic: true
 
     exporter_send_failed_spans:
       enabled: true
-      stability:
-        level: alpha
-      description: Number of spans in failed attempts to send to destination.
+      stability: alpha
+      description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{spans}"
       sum:
         value_type: int
@@ -155,8 +163,7 @@ telemetry:
 
     exporter_sent_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log record successfully sent to destination.
       unit: "{records}"
       sum:
@@ -165,18 +172,25 @@ telemetry:
 
     exporter_sent_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of metric points successfully sent to destination.
       unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
 
+    exporter_sent_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples successfully sent to destination.
+      unit: "{samples}"
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_sent_spans:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of spans successfully sent to destination.
       unit: "{spans}"
       sum:

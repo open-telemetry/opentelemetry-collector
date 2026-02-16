@@ -106,13 +106,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_batch_size_trigger_send",
-		metric.WithDescription("Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]"),
+		metric.WithDescription("Number of times the batch was sent due to a size trigger [Deprecated]"),
 		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
 		"otelcol_process_runtime_total_alloc_bytes",
-		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
+		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Stable]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)

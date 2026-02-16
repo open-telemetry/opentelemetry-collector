@@ -25,22 +25,25 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                             metric.Meter
-	mu                                sync.Mutex
-	registrations                     []metric.Registration
-	ExporterEnqueueFailedLogRecords   metric.Int64Counter
-	ExporterEnqueueFailedMetricPoints metric.Int64Counter
-	ExporterEnqueueFailedSpans        metric.Int64Counter
-	ExporterQueueBatchSendSize        metric.Int64Histogram
-	ExporterQueueBatchSendSizeBytes   metric.Int64Histogram
-	ExporterQueueCapacity             metric.Int64ObservableGauge
-	ExporterQueueSize                 metric.Int64ObservableGauge
-	ExporterSendFailedLogRecords      metric.Int64Counter
-	ExporterSendFailedMetricPoints    metric.Int64Counter
-	ExporterSendFailedSpans           metric.Int64Counter
-	ExporterSentLogRecords            metric.Int64Counter
-	ExporterSentMetricPoints          metric.Int64Counter
-	ExporterSentSpans                 metric.Int64Counter
+	meter                               metric.Meter
+	mu                                  sync.Mutex
+	registrations                       []metric.Registration
+	ExporterEnqueueFailedLogRecords     metric.Int64Counter
+	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
+	ExporterEnqueueFailedProfileSamples metric.Int64Counter
+	ExporterEnqueueFailedSpans          metric.Int64Counter
+	ExporterQueueBatchSendSize          metric.Int64Histogram
+	ExporterQueueBatchSendSizeBytes     metric.Int64Histogram
+	ExporterQueueCapacity               metric.Int64ObservableGauge
+	ExporterQueueSize                   metric.Int64ObservableGauge
+	ExporterSendFailedLogRecords        metric.Int64Counter
+	ExporterSendFailedMetricPoints      metric.Int64Counter
+	ExporterSendFailedProfileSamples    metric.Int64Counter
+	ExporterSendFailedSpans             metric.Int64Counter
+	ExporterSentLogRecords              metric.Int64Counter
+	ExporterSentMetricPoints            metric.Int64Counter
+	ExporterSentProfileSamples          metric.Int64Counter
+	ExporterSentSpans                   metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -124,6 +127,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ExporterEnqueueFailedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_enqueue_failed_profile_samples",
+		metric.WithDescription("Number of profile samples failed to be added to the sending queue. [Development]"),
+		metric.WithUnit("{samples}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [Alpha]"),
@@ -158,19 +167,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
-		metric.WithDescription("Number of log records in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
-		metric.WithDescription("Number of metric points in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterSendFailedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_send_failed_profile_samples",
+		metric.WithDescription("Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]"),
+		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_spans",
-		metric.WithDescription("Number of spans in failed attempts to send to destination. [Alpha]"),
+		metric.WithDescription("Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
@@ -184,6 +199,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination. [Alpha]"),
 		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterSentProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_sent_profile_samples",
+		metric.WithDescription("Number of profile samples successfully sent to destination. [Development]"),
+		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
