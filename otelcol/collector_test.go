@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -305,13 +304,13 @@ func TestCollectorSendSignal(t *testing.T) {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.signalsChannel <- syscall.SIGHUP
+	col.signalsChannel <- SIGHUP
 
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.signalsChannel <- syscall.SIGTERM
+	col.signalsChannel <- SIGTERM
 
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
