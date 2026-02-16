@@ -158,7 +158,7 @@ func GetModules(cfg *Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.24"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 

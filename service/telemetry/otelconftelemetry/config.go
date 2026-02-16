@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
-	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 // Config defines the configurable settings for service telemetry.

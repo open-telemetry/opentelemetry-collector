@@ -144,6 +144,22 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/invalid_entity_stability.yaml",
 			wantErr: `unsupported stability level: "stable42"`,
 		},
+		{
+			name:    "testdata/entity_relationships_bidirectional.yaml",
+			wantErr: `duplicate relationship to target "k8s.replicaset" (only one relationship allowed between two entities)`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_type.yaml",
+			wantErr: `entity "k8s.pod": relationship type cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_undefined_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target "k8s.replicaset" does not exist`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

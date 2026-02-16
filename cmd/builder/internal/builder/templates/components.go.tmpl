@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+	{{.Telemetry.Name}} "{{.Telemetry.Import}}"
 	{{- range .Connectors}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -45,7 +45,7 @@ func makeModulesMap[T component.Factory](factories map[component.Type]T, modules
 func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{
-		Telemetry: otelconftelemetry.NewFactory(),
+		Telemetry: {{.Telemetry.Name}}.NewFactory(),
 	}
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](

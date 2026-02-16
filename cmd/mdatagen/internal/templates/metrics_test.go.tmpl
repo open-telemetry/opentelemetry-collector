@@ -190,6 +190,13 @@ func TestMetricsBuilder(t *testing.T) {
 			res := pcommon.NewResource()
 			{{- end }}
 			metrics := mb.Emit(WithResource(res))
+			{{- if $reag }}
+			if tt.name == "reaggregate_set" {
+				{{- range $name, $_ := .Metrics }}
+				assert.Empty(t, mb.metric{{ $name.Render }}.aggDataPoints)
+				{{- end }}
+			}
+			{{- end }}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

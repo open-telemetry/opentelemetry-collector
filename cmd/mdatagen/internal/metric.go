@@ -53,54 +53,14 @@ type Metric struct {
 	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
 }
 
-type Stability struct {
-	Level component.StabilityLevel `mapstructure:"level"`
-	// Deprecated: [0.144.0] Replaced with `deprecated.since`.
-	From string `mapstructure:"from"`
-}
-
-func (s Stability) String() string {
-	if s.Level == component.StabilityLevelUndefined ||
-		s.Level == component.StabilityLevelStable {
-		return ""
-	}
-	return fmt.Sprintf(" [%s]", s.Level.String())
-}
-
-// Unmarshal decodes the stability configuration.
-// NOTE: confmap rejects unknown keys by default.
-// The "from" field cannot be tested via full metadata loading
-// unless WithIgnoreUnused() is used by the caller.
-func (s *Stability) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("level") {
-		return errors.New("missing required field: `stability.level`")
-	}
-
-	var level component.StabilityLevel
-	if err := parser.Unmarshal(&struct {
-		Level *component.StabilityLevel `mapstructure:"level"`
-	}{
-		Level: &level,
-	}); err != nil {
-		return err
-	}
-
-	s.Level = level
-	if parser.IsSet("from") {
-		if err := parser.Unmarshal(&struct {
-			From *string `mapstructure:"from"`
-		}{From: &s.From}); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	var errs error
 
 	if m.Deprecated != nil {
+		if m.Stability != component.StabilityLevelDeprecated {
+			errs = errors.Join(errs, errors.New("`stability` must be `deprecated` when specifying a `deprecated` field"))
+		}
+
 		if err := m.Deprecated.validate(); err != nil {
 			errs = errors.Join(errs, err)
 		}
@@ -113,6 +73,9 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
 		errs = errors.Join(errs, errors.New("more than one metric type keys, "+
 			"only one of the following has to be specified: sum, gauge, histogram"))
+	}
+	if m.Stability == component.StabilityLevelUndefined {
+		errs = errors.Join(errs, errors.New("missing required field: `stability.level`"))
 	}
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))

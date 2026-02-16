@@ -183,13 +183,10 @@ func (bp *batchProcessor[T]) Shutdown(context.Context) error {
 }
 
 func (b *shard[T]) start() {
-	b.processor.goroutines.Add(1)
-	go b.startLoop()
+	b.processor.goroutines.Go(b.startLoop)
 }
 
 func (b *shard[T]) startLoop() {
-	defer b.processor.goroutines.Done()
-
 	// timerCh ensures we only block when there is a
 	// timer, since <- from a nil channel is blocking.
 	var timerCh <-chan time.Time

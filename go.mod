@@ -8,7 +8,7 @@ module go.opentelemetry.io/collector
 // For the OpenTelemetry Collector Core distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
