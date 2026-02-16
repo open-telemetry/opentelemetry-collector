@@ -301,8 +301,7 @@ metrics:
 
   system.memory.limit:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Total bytes of memory available.
     unit: By
     sum:

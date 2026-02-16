@@ -195,6 +195,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
 				assert.Empty(t, mb.metricReaggregateMetricWithRequired.aggDataPoints)
 				assert.Empty(t, mb.metricSystemCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemMemoryLimit.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
