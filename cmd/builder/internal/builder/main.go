@@ -174,7 +174,7 @@ func GetModules(cfg *Config) error {
 	}
 
 	coreDepVersion, ok := dependencyVersions[otelcolPath]
-	betaVersion := semver.MajorMinor(defaultBetaOtelColVersion)
+	betaVersion := semver.MajorMinor(DefaultBetaOtelColVersion)
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, otelcolPath, skipStrictMsg)
 	}

@@ -137,7 +137,7 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_log_records",
-		Description: "Number of log records in failed attempts to send to destination. [Alpha]",
+		Description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -153,7 +153,7 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Tel
 func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_metric_points",
-		Description: "Number of metric points in failed attempts to send to destination. [Alpha]",
+		Description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -169,7 +169,7 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.T
 func AssertEqualExporterSendFailedProfileSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_profile_samples",
-		Description: "Number of profile samples in failed attempts to send to destination. [Development]",
+		Description: "Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]",
 		Unit:        "{samples}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -185,7 +185,7 @@ func AssertEqualExporterSendFailedProfileSamples(t *testing.T, tt *componenttest
 func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_spans",
-		Description: "Number of spans in failed attempts to send to destination. [Alpha]",
+		Description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
