@@ -80,7 +80,6 @@ jobs:
 
       - name: Run tests
         run: |
-          chmod +x /tmp/contrib/.tools/*
           make CONTRIB_PATH=/tmp/contrib SKIP_RESTORE_CONTRIB=true GROUP=${{ matrix.group }} check-contrib
 
   contrib_tests:
