@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: processor/batch
+
+note: batch processor implemented by exporterhelper behind feature flags
+
+issues: [13582]
+
+subtext: |
+  there are two feature gates:
+  - processor.batch.useExporterHelper: use the new implementation
+  - processor.batch.propagateErrors: return errors, implies backpressure
+  new features are functional however the processor produces exporter metrics,
+  see https://github.com/open-telemetry/opentelemetry-collector/issues/14038
+
+change_logs: [user]

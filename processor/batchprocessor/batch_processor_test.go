@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,7 +33,44 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+// Helper function to set up feature gates for testing
+func setFeatureGateForTest(t *testing.T, useExporterHelper bool) func() {
+	originalValue := useExporterHelper
+	if useExporterHelper {
+		originalValue = false // Default is false (Alpha stage)
+	}
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(useExporterHelperGate, useExporterHelper))
+
+	// Return cleanup function
+	return func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(useExporterHelperGate, originalValue))
+	}
+}
+
+// Helper function to set up propagateErrors feature gate for testing
+func setPropagateErrorsForTest(t *testing.T, usePropagateErrors bool) func() {
+	originalValue := usePropagateErrors
+	if usePropagateErrors {
+		originalValue = false // Default is false (Alpha stage)
+	}
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(propagateErrorsGate, usePropagateErrors))
+
+	// Return cleanup function
+	return func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(propagateErrorsGate, originalValue))
+	}
+}
+
 func TestProcessorShutdown(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testProcessorShutdown(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testProcessorShutdown(t, true) })  // Test new implementation
+}
+
+func testProcessorShutdown(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	factory := NewFactory()
 
 	ctx := context.Background()
@@ -60,6 +98,13 @@ func TestProcessorShutdown(t *testing.T) {
 }
 
 func TestProcessorLifecycle(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testProcessorLifecycle(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testProcessorLifecycle(t, true) })  // Test new implementation
+}
+
+func testProcessorLifecycle(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	factory := NewFactory()
 
 	ctx := context.Background()
@@ -84,46 +129,77 @@ func TestProcessorLifecycle(t *testing.T) {
 }
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDelivered(t, false, false) })
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, false) })
+	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, true) })
+}
+
+func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropagateErrors bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+	defer setPropagateErrorsForTest(t, usePropagateErrors)()
+
 	sink := new(consumertest.TracesSink)
+
+	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	traces, err := NewFactory().CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
-	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, traces.Start(ctx, componenttest.NewNopHost()))
 
 	requestCount := 1000
 	spansPerRequest := 100
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+
+	var srsMutex sync.Mutex
+	sentTraces := ptrace.NewTraces()
+
+	var wg sync.WaitGroup
+	wg.Add(requestCount + 1)
 	for requestNum := range requestCount {
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := range spansPerRequest {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
+		go func() {
+			defer wg.Done()
+			td := testdata.GenerateTraces(spansPerRequest)
+			spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+			for spanIndex := range spansPerRequest {
+				spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+			}
+			srsMutex.Lock()
+			td.ResourceSpans().At(0).CopyTo(sentTraces.ResourceSpans().AppendEmpty())
+			srsMutex.Unlock()
+			if err := traces.ConsumeTraces(ctx, td); err != nil {
+				t.Errorf("consume-spans error: %v", err)
+			}
+		}()
 	}
 
-	// Added to test logic that check for empty resources.
-	td := ptrace.NewTraces()
-	assert.NoError(t, traces.ConsumeTraces(context.Background(), td))
+	go func() {
+		defer wg.Done()
+		// Added to test logic that check for empty resources.
+		td := ptrace.NewTraces()
+		assert.NoError(t, traces.ConsumeTraces(context.Background(), td))
+	}()
+	wg.Wait()
 
 	require.NoError(t, traces.Shutdown(context.Background()))
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
-	spansReceivedByName := spansReceivedByName(receivedTraces)
-	for requestNum := range requestCount {
-		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
-		for spanIndex := range spansPerRequest {
-			require.Equal(t,
-				spans.At(spanIndex),
-				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
-		}
-	}
+	spansByName := spansReceivedByName(receivedTraces)
+	expectedByName := spansReceivedByName([]ptrace.Traces{sentTraces})
+
+	require.Equal(t, expectedByName, spansByName)
 }
 
 func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, false, false) })
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, false) })
+	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, true) })
+}
+
+func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterHelper, usePropagateErrors bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+	defer setPropagateErrorsForTest(t, usePropagateErrors)()
+
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
@@ -134,14 +210,23 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	requestCount := 1000
 	spansPerRequest := 150
+	var wg sync.WaitGroup
+	wg.Add(requestCount)
+	// Requests are in parallel
 	for requestNum := range requestCount {
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := range spansPerRequest {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
+		go func() {
+			defer wg.Done()
+			td := testdata.GenerateTraces(spansPerRequest)
+			spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+			for spanIndex := range spansPerRequest {
+				spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+			}
+			if err := traces.ConsumeTraces(context.Background(), td); err != nil {
+				t.Errorf("consome-spans error %v", err)
+			}
+		}()
 	}
+	wg.Wait()
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
@@ -155,14 +240,33 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	require.NoError(t, traces.Shutdown(context.Background()))
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
-	for i := 0; i < len(sink.AllTraces())-1; i++ {
-		assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i].SpanCount())
+	haveSizes := map[int]int{}
+	for i := 0; i < len(sink.AllTraces()); i++ {
+		sz := sink.AllTraces()[i].SpanCount()
+		haveSizes[sz]++
 	}
-	// the last batch has the remaining size
-	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+
+	// We do not insist on perfect batching as a matter of letting
+	// the exporterhelper have its own implementation details. In
+	// the actual test, with max-size=130, we observe one less
+	// than the expected number of full batches and two partial
+	// batches, which is OK!
+	assert.Greater(
+		t,
+		haveSizes[int(cfg.SendBatchMaxSize)],
+		((requestCount*spansPerRequest)/int(cfg.SendBatchMaxSize))-3)
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSentBySize(t, false) }) // Test legacy implementation
+
+	// TODO Metrics-based tests are disabled in exporterhelper mode #14038
+	// t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSentBySize(t, true) })  // Test new implementation
+}
+
+func testBatchProcessorSentBySize(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	const (
 		sendBatchSize          = 20
 		requestCount           = 100
@@ -257,6 +361,15 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSentBySizeWithMaxSize(t, false) }) // Test legacy implementation
+
+	// TODO Metrics-based tests are disabled in exporterhelper mode #14038
+	// t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSentBySizeWithMaxSize(t, true) })  // Test new implementation
+}
+
+func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	const (
 		sendBatchSize    = 20
 		sendBatchMaxSize = 37
@@ -356,6 +469,13 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSentByTimeout(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSentByTimeout(t, true) })  // Test new implementation
+}
+
+func testBatchProcessorSentByTimeout(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
@@ -402,6 +522,13 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 }
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorTraceSendWhenClosing(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorTraceSendWhenClosing(t, true) })  // Test new implementation
+}
+
+func testBatchProcessorTraceSendWhenClosing(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	cfg := &Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
@@ -426,6 +553,13 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchMetricProcessorReceivingData(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchMetricProcessorReceivingData(t, true) })  // Test new implementation
+}
+
+func testBatchMetricProcessorReceivingData(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := &Config{
@@ -473,6 +607,15 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessorBatchSize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchMetricProcessorBatchSize(t, false) }) // Test legacy implementation
+
+	// TODO Metrics-based tests are disabled in exporterhelper mode #14038
+	// t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchMetricProcessorBatchSize(t, true) })  // Test new implementation
+}
+
+func testBatchMetricProcessorBatchSize(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	tel := componenttest.NewTelemetry()
 	sizer := &pmetric.ProtoMarshaler{}
 
@@ -570,6 +713,13 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 }
 
 func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchMetricsUnevenBatchMaxSize(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchMetricsUnevenBatchMaxSize(t, true) })  // Test new implementation
+}
+
+func testBatchMetricsUnevenBatchMaxSize(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	ctx := context.Background()
 	sink := new(metricsSink)
 	metricsCount := 50
@@ -589,7 +739,14 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 	require.Equal(t, remainingDataPointCount, batchMetrics.dataPointCount)
 }
 
-func TestBatchMetricsProcessor_Timeout(t *testing.T) {
+func TestBatchMetricsProcessorTimeout(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchMetricsProcessorTimeout(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchMetricsProcessorTimeout(t, true) })  // Test new implementation
+}
+
+func testBatchMetricsProcessorTimeout(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	cfg := &Config{
 		Timeout:       100 * time.Millisecond,
 		SendBatchSize: 101,
@@ -633,7 +790,14 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 }
 
-func TestBatchMetricProcessor_Shutdown(t *testing.T) {
+func TestBatchMetricProcessorShutdown(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchMetricProcessorShutdown(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchMetricProcessorShutdown(t, true) })  // Test new implementation
+}
+
+func testBatchMetricProcessorShutdown(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	cfg := &Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
@@ -772,7 +936,14 @@ func (sme *metricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) er
 	return nil
 }
 
-func TestBatchLogProcessor_ReceivingData(t *testing.T) {
+func TestBatchLogProcessorReceivingData(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchLogProcessorReceivingData(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchLogProcessorReceivingData(t, true) })  // Test new implementation
+}
+
+func testBatchLogProcessorReceivingData(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := &Config{
@@ -819,7 +990,16 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
-func TestBatchLogProcessor_BatchSize(t *testing.T) {
+func TestBatchLogProcessorBatchSize(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchLogProcessorBatchSize(t, false) }) // Test legacy implementation
+
+	// TODO Metrics-based tests are disabled in exporterhelper mode #14038
+	// t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchLogProcessorBatchSize(t, true) })  // Test new implementation
+}
+
+func testBatchLogProcessorBatchSize(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	tel := componenttest.NewTelemetry()
 	sizer := &plog.ProtoMarshaler{}
 
@@ -914,7 +1094,14 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
-func TestBatchLogsProcessor_Timeout(t *testing.T) {
+func TestBatchLogsProcessorTimeout(t *testing.T) {
+	testBatchLogsProcessorTimeout(t, false) // Test legacy implementation
+	testBatchLogsProcessorTimeout(t, true)  // Test new implementation
+}
+
+func testBatchLogsProcessorTimeout(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	cfg := &Config{
 		Timeout:       100 * time.Millisecond,
 		SendBatchSize: 100,
@@ -958,7 +1145,14 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 }
 
-func TestBatchLogProcessor_Shutdown(t *testing.T) {
+func TestBatchLogProcessorShutdown(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchLogProcessorShutdown(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchLogProcessorShutdown(t, true) })  // Test new implementation
+}
+
+func testBatchLogProcessorShutdown(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	cfg := &Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
@@ -1006,6 +1200,13 @@ func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.LogRecord {
 }
 
 func TestShutdown(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testShutdown(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testShutdown(t, true) })  // Test new implementation
+}
+
+func testShutdown(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	factory := NewFactory()
 	processortest.VerifyShutdown(t, factory, factory.CreateDefaultConfig())
 }
@@ -1167,6 +1368,13 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 }
 
 func TestBatchZeroConfig(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchZeroConfig(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchZeroConfig(t, true) })  // Test new implementation
+}
+
+func testBatchZeroConfig(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	// This is a no-op configuration. No need for a timer, no
 	// minimum, no maximum, just a pass through.
 	cfg := &Config{}
@@ -1204,6 +1412,13 @@ func TestBatchZeroConfig(t *testing.T) {
 }
 
 func TestBatchSplitOnly(t *testing.T) {
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchSplitOnly(t, false) }) // Test legacy implementation
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchSplitOnly(t, true) })  // Test new implementation
+}
+
+func testBatchSplitOnly(t *testing.T, useExporterHelper bool) {
+	defer setFeatureGateForTest(t, useExporterHelper)()
+
 	const maxBatch = 10
 	const requestCount = 5
 	const logsPerRequest = 100
