@@ -452,7 +452,6 @@ func withMockApplyComponentLabel(t *testing.T) {
 	applyComponentLabelFromRepoFunc = func(_ string, md *Metadata) {
 		md.Label = ""
 	}
-
 }
 
 func TestInlineReplace(t *testing.T) {
@@ -688,7 +687,7 @@ Some info about a component
 					Codeowners:     tt.codeowners,
 					Deprecation:    tt.deprecation,
 				},
-				Label: fmt.Sprintf("%s/foo", tt.componentClass),
+				Label: tt.componentClass + "/foo",
 			}
 			tmpdir := t.TempDir()
 
