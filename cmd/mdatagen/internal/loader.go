@@ -19,6 +19,7 @@ import (
 const componentLabelsRelPath = ".github/component_labels.txt"
 
 var packageNameFunc = packageName
+var applyComponentLabelFromRepoFunc = applyComponentLabelFromRepo
 
 func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
@@ -69,19 +70,12 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
-	// compute md.Label from repo mapping
-	if repoRoot, err := findRepoRoot(filepath.Dir(filePath)); err == nil {
-		labelsPath := filepath.Join(repoRoot, componentLabelsRelPath)
-		if labelMap, err := loadComponentLabels(labelsPath); err == nil {
-			compDir := filepath.Dir(filePath)
-			if rel, err := filepath.Rel(repoRoot, compDir); err == nil {
-				rel = filepath.ToSlash(rel)
-				if lbl, ok := labelMap[rel]; ok {
-					md.Label = lbl
-				}
-			}
-		}
+	applyComponentLabelFromRepoFunc(filePath, &md)
+
+	if md.Label == "" && md.Status != nil {
+		md.Label = fmt.Sprintf("%s/%s", md.Status.Class, md.ShortFolderName)
 	}
+
 	setAttributeDefaultFields(md.Attributes)
 	setAttributeDefaultFields(md.ResourceAttributes)
 
@@ -159,4 +153,34 @@ func loadComponentLabels(path string) (map[string]string, error) {
 		labels[repoPath] = label
 	}
 	return labels, nil
+}
+
+func applyComponentLabelFromRepo(filePath string, md *Metadata) {
+	// Find the repo root (directory that has .github/component_labels.txt)
+	repoRoot, err := findRepoRoot(filepath.Dir(filePath))
+	if err != nil {
+		return
+	}
+
+	// Load labels file
+	labelsPath := filepath.Join(repoRoot, componentLabelsRelPath)
+	labelMap, err := loadComponentLabels(labelsPath)
+	if err != nil {
+		return
+	}
+
+	// Determine repo-relative directory for this component
+	compDir := filepath.Dir(filePath)
+	rel, err := filepath.Rel(repoRoot, compDir)
+	if err != nil {
+		return
+	}
+	rel = filepath.ToSlash(rel)
+
+	// If there is a mapping, set the label. If not, we just leave md.Label empty.
+	if lbl, ok := labelMap[rel]; ok {
+		md.Label = lbl
+	}
+
+	return
 }
