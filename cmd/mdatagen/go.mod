@@ -6,23 +6,23 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.51.0
+	go.opentelemetry.io/collector/component v1.52.0
 	go.opentelemetry.io/collector/component/componenttest v0.146.0
-	go.opentelemetry.io/collector/confmap v1.51.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.0
+	go.opentelemetry.io/collector/confmap v1.52.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.52.0
 	go.opentelemetry.io/collector/connector v0.146.0
 	go.opentelemetry.io/collector/connector/connectortest v0.146.0
-	go.opentelemetry.io/collector/consumer v1.51.0
+	go.opentelemetry.io/collector/consumer v1.52.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.146.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.146.0
-	go.opentelemetry.io/collector/featuregate v1.51.0
+	go.opentelemetry.io/collector/featuregate v1.52.0
 	go.opentelemetry.io/collector/filter v0.146.0
-	go.opentelemetry.io/collector/pdata v1.51.0
+	go.opentelemetry.io/collector/pdata v1.52.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.146.0
-	go.opentelemetry.io/collector/pipeline v1.51.0
-	go.opentelemetry.io/collector/processor v1.51.0
+	go.opentelemetry.io/collector/pipeline v1.52.0
+	go.opentelemetry.io/collector/processor v1.52.0
 	go.opentelemetry.io/collector/processor/processortest v0.146.0
-	go.opentelemetry.io/collector/receiver v1.51.0
+	go.opentelemetry.io/collector/receiver v1.52.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.146.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.146.0
 	go.opentelemetry.io/collector/scraper v0.146.0
