@@ -37,6 +37,7 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 }
 
 func TestLoadMetadata(t *testing.T) {
+	withMockApplyComponentLabel(t)
 	tests := []struct {
 		name    string
 		want    Metadata
@@ -47,6 +48,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				GithubProject:        "open-telemetry/opentelemetry-collector",
 				GeneratedPackageName: "metadata",
+				Label:                "receiver/sample",
 				Type:                 "sample",
 				DisplayName:          "Sample Receiver",
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
@@ -536,6 +538,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				Label:                "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -555,6 +558,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				Label:                "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -632,6 +636,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				Label:                "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -650,6 +655,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				Label:                "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -669,6 +675,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				Label:                "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -806,10 +813,7 @@ status:
   stability:
     beta: [logs]
 `,
-			// LoadMetadata does not itself set class/short fallback into Label;
-			// that is used in template as a fallback. So here we expect Label to stay empty.
-			// The template will later use receiver/ShortFolderName instead.
-			wantLabel: "",
+			wantLabel: "receiver/nop",
 		},
 		{
 			name:            "no labels file present",
@@ -825,7 +829,7 @@ status:
   stability:
     beta: [logs]
 `,
-			wantLabel: "",
+			wantLabel: "receiver/nop",
 		},
 	}
 
