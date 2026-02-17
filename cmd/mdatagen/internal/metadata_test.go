@@ -160,12 +160,36 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/entity_relationships_undefined_target.yaml",
 			wantErr: `entity "k8s.pod": relationship target "k8s.replicaset" does not exist`,
 		},
+		{
+			name:    "testdata/entity_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_event_missing_association.yaml",
+			wantErr: `event "host.restart": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_undefined_reference.yaml",
+			wantErr: `metric "host.cpu.time": entity refers to undefined entity type: undefined_entity`,
+		},
+		{
+			name:    "testdata/entity_single_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_metrics_events_valid.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
-			require.Error(t, err)
-			require.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
