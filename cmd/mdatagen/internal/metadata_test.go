@@ -705,3 +705,126 @@ func TestInferSemConvTypes(t *testing.T) {
 	// No semantic convention
 	assert.Nil(t, md.Metrics["default.metric"].SemanticConvention)
 }
+
+func TestSemConvImports(t *testing.T) {
+	tests := []struct {
+		name string
+		md   Metadata
+		want []SemConvImport
+	}{
+		{
+			name: "empty semconv import",
+			md:   Metadata{},
+			want: []SemConvImport{},
+		},
+		{
+			name: "Multiple packages sorted alphabetically",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"system.cpu.time": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								Package: "systemconv",
+							},
+						},
+					},
+					"http.server.duration": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								Package: "httpconv",
+							},
+						},
+					},
+				},
+			},
+			want: []SemConvImport{
+				{
+					Package: "httpconv",
+					Alias:   "httpconv",
+				},
+				{
+					Package: "systemconv",
+					Alias:   "systemconv",
+				},
+			},
+		},
+		{
+			name: "duplicate packages deduplicates",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"system.cpu.time": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								Package: "systemconv",
+							},
+						},
+					},
+					"system.memory.usage": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								Package: "systemconv",
+							},
+						},
+					},
+				},
+			},
+			want: []SemConvImport{
+				{
+					Package: "systemconv",
+					Alias:   "systemconv",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.md.SemConvImports()
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestShouldUseSemConvValues(t *testing.T) {
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name string
+		sc   *SemanticConvention
+		want bool
+	}{
+		{
+			name: "nil semantic convention",
+			sc:   nil,
+			want: false,
+		},
+		{
+			name: "empty type",
+			sc:   &SemanticConvention{Type: ""},
+			want: false,
+		},
+		{
+			name: "type set, UseSemconvValues nil (default true)",
+			sc:   &SemanticConvention{Type: "CPUTime"},
+			want: true,
+		},
+		{
+			name: "type set, UseSemconvValues true",
+			sc:   &SemanticConvention{Type: "CPUTime", UseSemconvValues: &trueValue},
+			want: true,
+		},
+		{
+			name: "type set, UseSemconvValues false",
+			sc:   &SemanticConvention{Type: "CPUTime", UseSemconvValues: &falseValue},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.sc.ShouldUseSemConvValues()
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
