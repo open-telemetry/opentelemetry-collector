@@ -18,8 +18,10 @@ import (
 
 const componentLabelsRelPath = ".github/component_labels.txt"
 
-var packageNameFunc = packageName
-var applyComponentLabelFromRepoFunc = applyComponentLabelFromRepo
+var (
+	packageNameFunc                 = packageName
+	applyComponentLabelFromRepoFunc = applyComponentLabelFromRepo
+)
 
 func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
@@ -133,6 +135,10 @@ func findRepoRoot(start string) (string, error) {
 // loadComponentLabels loads .github/component_labels.txt into a map[repoPath]label.
 // repoPath -> label (second column)
 func loadComponentLabels(path string) (map[string]string, error) {
+	// Validate path is within expected location
+	if strings.Contains(path, "..") {
+		return nil, fmt.Errorf("invalid path")
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -181,6 +187,4 @@ func applyComponentLabelFromRepo(filePath string, md *Metadata) {
 	if lbl, ok := labelMap[rel]; ok {
 		md.Label = lbl
 	}
-
-	return
 }

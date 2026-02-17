@@ -866,7 +866,7 @@ status:
 			require.NoError(t, err)
 
 			if tt.wantLabel == "" {
-				require.Equal(t, "", md.Label, "expected no label to be set")
+				require.Empty(t, md.Label, "expected no label to be set")
 			} else {
 				require.Equal(t, tt.wantLabel, md.Label)
 			}
