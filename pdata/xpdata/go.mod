@@ -7,8 +7,8 @@ require (
 	go.opentelemetry.io/collector/client v1.52.0
 	go.opentelemetry.io/collector/featuregate v1.52.0
 	go.opentelemetry.io/collector/pdata v1.52.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.146.0
-	go.opentelemetry.io/collector/pdata/testdata v0.146.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.1
+	go.opentelemetry.io/collector/pdata/testdata v0.146.1
 	go.opentelemetry.io/otel/trace v1.40.0
 )
 
