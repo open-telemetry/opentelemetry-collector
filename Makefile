@@ -225,7 +225,6 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.
