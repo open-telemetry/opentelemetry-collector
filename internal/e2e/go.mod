@@ -33,6 +33,8 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.144.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.144.0
 	go.opentelemetry.io/collector/extension v1.50.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.144.0
+	go.opentelemetry.io/collector/featuregate v1.50.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.144.0
 	go.opentelemetry.io/collector/internal/testutil v0.144.0
 	go.opentelemetry.io/collector/otelcol v0.144.0
@@ -41,10 +43,12 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.50.0
 	go.opentelemetry.io/collector/processor v1.50.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.144.0
+	go.opentelemetry.io/collector/processor/processortest v0.144.0
 	go.opentelemetry.io/collector/receiver v1.50.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.144.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.144.0
 	go.opentelemetry.io/collector/service v0.144.0
+	go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.144.0
 	go.opentelemetry.io/proto/otlp v1.9.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -114,16 +118,13 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.50.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.144.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.144.0 // indirect
-	go.opentelemetry.io/collector/extension/extensiontest v0.144.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.144.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.144.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.144.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.144.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.144.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.144.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.0 // indirect
-	go.opentelemetry.io/collector/processor/processortest v0.144.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.144.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.144.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.144.0 // indirect
