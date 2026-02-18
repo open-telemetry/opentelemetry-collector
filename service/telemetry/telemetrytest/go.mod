@@ -179,3 +179,6 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/tes
 replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../../config/confignet
+
+// Remove this once https://github.com/open-telemetry/opentelemetry-collector/issues/14615 is resolved
+replace go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.60.0
