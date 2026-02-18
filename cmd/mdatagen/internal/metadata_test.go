@@ -544,31 +544,31 @@ func TestInferSemConvFromMetricName(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "go.goroutine.count",
+			name:     "go.goroutine.count metric returns correct package and type",
 			metric:   "go.goroutine.count",
 			wantPkg:  "goconv",
 			wantType: "GoroutineCount",
 		},
 		{
-			name:     "k8s.container.cpu.limit",
+			name:     "k8s.container.cpu.limit metric returns correct package and type",
 			metric:   "k8s.container.cpu.limit",
 			wantPkg:  "k8sconv",
 			wantType: "ContainerCPULimit",
 		},
 		{
-			name:     "system.cpu.time",
+			name:     "system.cpu.time metric returns correct package and type",
 			metric:   "system.cpu.time",
 			wantPkg:  "systemconv",
 			wantType: "CPUTime",
 		},
 		{
-			name:     "system.cpu.logical.count",
+			name:     "system.cpu.logical.count metric returns correct package and type",
 			metric:   "system.cpu.logical.count",
 			wantPkg:  "systemconv",
 			wantType: "CPULogicalCount",
 		},
 		{
-			name:     "system.memory.limit",
+			name:     "system.memory.limit metric returns correct package and type",
 			metric:   "system.memory.limit",
 			wantPkg:  "systemconv",
 			wantType: "MemoryLimit",
@@ -586,19 +586,19 @@ func TestInferSemConvFromMetricName(t *testing.T) {
 			wantType: "DiskIOTime",
 		},
 		{
-			name:     "system.network.io",
+			name:     "system.network.io metric returns correct package and type",
 			metric:   "system.network.io",
 			wantPkg:  "systemconv",
 			wantType: "NetworkIO",
 		},
 		{
-			name:     "system.linux.memory.available",
+			name:     "system.linux.memory.available metric returns correct package and type",
 			metric:   "system.linux.memory.available",
 			wantPkg:  "systemconv",
 			wantType: "LinuxMemoryAvailable",
 		},
 		{
-			name:     "system.linux.memory.slab.usage",
+			name:     "system.linux.memory.slab.usage metric returns correct package and type",
 			metric:   "system.linux.memory.slab.usage",
 			wantPkg:  "systemconv",
 			wantType: "LinuxMemorySlabUsage",
@@ -610,19 +610,19 @@ func TestInferSemConvFromMetricName(t *testing.T) {
 			wantType: "Uptime",
 		},
 		{
-			name:     "system.filesystem.utilization",
+			name:     "system.filesystem.utilization metric returns correct package and type",
 			metric:   "system.filesystem.utilization",
 			wantPkg:  "systemconv",
 			wantType: "FilesystemUtilization",
 		},
 		{
-			name:     "system.paging.faults",
+			name:     "system.paging.faults metric returns correct package and type",
 			metric:   "system.paging.faults",
 			wantPkg:  "systemconv",
 			wantType: "PagingFaults",
 		},
 		{
-			name:     "system.network.packet.dropped",
+			name:     "system.network.packet.dropped metric returns correct package and type",
 			metric:   "system.network.packet.dropped",
 			wantPkg:  "systemconv",
 			wantType: "NetworkPacketDropped",
@@ -660,50 +660,112 @@ func TestInferSemConvFromMetricName(t *testing.T) {
 }
 
 func TestInferSemConvTypes(t *testing.T) {
-	md := &Metadata{
-		Metrics: map[MetricName]Metric{
-			"system.cpu.time": {
-				Signal: Signal{
-					SemanticConvention: &SemanticConvention{
-						SemanticConventionRef: "https://example.com",
+	tests := []struct {
+		name       string
+		metricName string
+		md         Metadata
+		wantPkg    string
+		wantType   string
+		wantNil    bool
+	}{
+		{
+			name:       "system.cpu.time has valid package and type",
+			metricName: "system.cpu.time",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"system.cpu.time": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://example.com",
+							},
+						},
 					},
 				},
 			},
-			"system.disk.io": {
-				Signal: Signal{
-					SemanticConvention: &SemanticConvention{
-						SemanticConventionRef: "https://example.com",
+			wantPkg:  "systemconv",
+			wantType: "CPUTime",
+		},
+		{
+			name:       "system.disk.io has valid package and type",
+			metricName: "system.disk.io",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"system.disk.io": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://example.com",
+							},
+						},
 					},
 				},
 			},
-			// Explicit values should not be overwritten
-			"system.memory.limit": {
-				Signal: Signal{
-					SemanticConvention: &SemanticConvention{
-						SemanticConventionRef: "https://example.com",
-						Package:               "custom",
-						Type:                  "Custom",
+			wantPkg:  "systemconv",
+			wantType: "DiskIO",
+		},
+		{
+			name:       "don't overwrite default values",
+			metricName: "system.memory.limit",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"system.memory.limit": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://example.com",
+								Package:               "custom",
+								Type:                  "custom",
+							},
+						},
 					},
 				},
 			},
-			// No semantic convention, should be left alone
-			"default.metric": {
-				Signal: Signal{},
+			wantPkg:  "custom",
+			wantType: "custom",
+		},
+		{
+			name:       "no semantic convention doesn't do anything",
+			metricName: "default.metric",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"default.metric": {
+						Signal: Signal{},
+					},
+				},
 			},
+			wantNil: true,
+		},
+		{
+			name:       "invalid metric name doesn't pupulate pkg and type",
+			metricName: "invalid",
+			md: Metadata{
+				Metrics: map[MetricName]Metric{
+					"invalid": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://example.com",
+							},
+						},
+					},
+				},
+			},
+			wantPkg:  "",
+			wantType: "",
 		},
 	}
 
-	md.inferSemConvTypes()
-
-	assert.Equal(t, "systemconv", md.Metrics["system.cpu.time"].SemanticConvention.Package)
-	assert.Equal(t, "CPUTime", md.Metrics["system.cpu.time"].SemanticConvention.Type)
-	assert.Equal(t, "systemconv", md.Metrics["system.disk.io"].SemanticConvention.Package)
-	assert.Equal(t, "DiskIO", md.Metrics["system.disk.io"].SemanticConvention.Type)
-	// Explicit values preserved
-	assert.Equal(t, "custom", md.Metrics["system.memory.limit"].SemanticConvention.Package)
-	assert.Equal(t, "Custom", md.Metrics["system.memory.limit"].SemanticConvention.Type)
-	// No semantic convention
-	assert.Nil(t, md.Metrics["default.metric"].SemanticConvention)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.md.inferSemConvTypes()
+			sc := tt.md.Metrics[MetricName(tt.metricName)].SemanticConvention
+			if tt.wantNil {
+				assert.Nil(t, sc)
+				require.Nil(t, sc, "The semantic convention must be nil")
+			} else {
+				require.NotNil(t, sc, "The semantic convention must not be nil")
+				assert.Equal(t, tt.wantPkg, sc.Package)
+				assert.Equal(t, tt.wantType, sc.Type)
+			}
+		})
+	}
 }
 
 func TestSemConvImports(t *testing.T) {
@@ -825,6 +887,77 @@ func TestShouldUseSemConvValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.sc.ShouldUseSemConvValues()
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestImportPath(t *testing.T) {
+	tests := []struct {
+		name string
+		sc   *SemanticConvention
+		scv  string
+		want string
+	}{
+		{
+			name: "Empty package returns empty string",
+			sc: &SemanticConvention{
+				Package: "",
+			},
+			scv:  "1.38.0",
+			want: "",
+		},
+		{
+			name: "systemconv package",
+			sc: &SemanticConvention{
+				Package: "systemconv",
+			},
+			scv:  "1.38.0",
+			want: "go.opentelemetry.io/otel/semconv/1.38.0/systemconv",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.sc.ImportPath(tt.scv)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFormatSemConvIdentifiers(t *testing.T) {
+	tests := []struct {
+		name              string
+		semconvIdentifier string
+		want              string
+		wantErr           bool
+	}{
+		{
+			name:              "correctly formats semconv go type",
+			semconvIdentifier: "cpu.time",
+			want:              "CPUTime",
+		},
+		{
+			name:              "correctly formats disk.io to DiskIO",
+			semconvIdentifier: "disk.io",
+			want:              "DiskIO",
+		},
+		{
+			name:              "returns an error when an empty string is supplied",
+			semconvIdentifier: "",
+			wantErr:           true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatSemConvIdentifier(tt.semconvIdentifier)
+			if tt.wantErr {
+				require.Error(t, err, "error is required for empty strings")
+				assert.Equal(t, "", got, "expect an empty string if an error is returned")
+			} else {
+				require.NoError(t, err, "require no error")
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
