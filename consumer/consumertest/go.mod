@@ -1,16 +1,16 @@
 module go.opentelemetry.io/collector/consumer/consumertest
 
-go 1.24.0
+go 1.25.0
 
 replace go.opentelemetry.io/collector/consumer => ../
 
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer v1.51.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.145.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.146.0
 	go.opentelemetry.io/collector/pdata v1.51.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.145.0
-	go.opentelemetry.io/collector/pdata/testdata v0.145.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.0
+	go.opentelemetry.io/collector/pdata/testdata v0.146.0
 	go.uber.org/goleak v1.3.0
 )
 

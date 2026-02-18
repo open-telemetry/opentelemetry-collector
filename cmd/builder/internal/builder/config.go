@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	DefaultBetaOtelColVersion   = "v0.145.0"
+	DefaultBetaOtelColVersion   = "v0.146.0"
 	DefaultStableOtelColVersion = "v1.51.0"
 )
 
@@ -46,6 +46,7 @@ type Config struct {
 	Receivers         []Module     `mapstructure:"receivers"`
 	Processors        []Module     `mapstructure:"processors"`
 	Connectors        []Module     `mapstructure:"connectors"`
+	Telemetry         Module       `mapstructure:"telemetry"`
 	ConfmapProviders  []Module     `mapstructure:"providers"`
 	ConfmapConverters []Module     `mapstructure:"converters"`
 	Replaces          []string     `mapstructure:"replaces"`
@@ -144,6 +145,7 @@ func (c *Config) Validate() error {
 		validateModules("connector", c.Connectors),
 		validateModules("provider", c.ConfmapProviders),
 		validateModules("converter", c.ConfmapConverters),
+		validateTelemetry(c),
 	)
 }
 
@@ -193,6 +195,12 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
+	telemetry, err := parseModules([]Module{c.Telemetry}, usedNames)
+	if err != nil {
+		return err
+	}
+	c.Telemetry = telemetry[0]
+
 	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
@@ -205,7 +213,7 @@ func (c *Config) ParseModules() error {
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.ConfmapProviders, c.ConfmapConverters)
+	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
 }
 
 func validateModules(name string, mods []Module) error {
@@ -214,6 +222,25 @@ func validateModules(name string, mods []Module) error {
 			return fmt.Errorf("%s module at index %v: %w", name, i, errMissingGoMod)
 		}
 	}
+	return nil
+}
+
+// validateTelemetry ensures there is a valid telemetry module specified.
+// If the field is not set, it is defaulted to otelconftelemetry.
+func validateTelemetry(c *Config) error {
+	// We cannot set this in createDefaultConfig, since koanf merges maps and we
+	// would get a blend of this value and user-provided values. Once
+	// otelconftelemetry is its own module (that is, the `Import` field is not
+	// set), we can likely move the default to createDefaultConfig.
+	if c.Telemetry.Name == "" && c.Telemetry.Import == "" && c.Telemetry.GoMod == "" && c.Telemetry.Path == "" {
+		c.Telemetry = Module{
+			GoMod:  "go.opentelemetry.io/collector/service " + DefaultBetaOtelColVersion,
+			Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
+		}
+	} else if c.Telemetry.GoMod == "" {
+		return fmt.Errorf("telemetry module: %w", errMissingGoMod)
+	}
+
 	return nil
 }
 

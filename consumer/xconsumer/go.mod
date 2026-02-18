@@ -1,11 +1,11 @@
 module go.opentelemetry.io/collector/consumer/xconsumer
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer v1.51.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.145.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.0
 )
 
 require (
