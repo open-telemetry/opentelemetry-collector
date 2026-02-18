@@ -15,9 +15,6 @@ import (
 	{{- end }}
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-  {{- range .SemConvImports }}
-  {{ .Alias }} "go.opentelemetry.io/otel/semconv/v{{ $.SemConvVersion }}/{{ .Package }}"
-  {{- end }}
 )
 
 type testDataSet int
@@ -26,9 +23,9 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
-  {{- if $reag }}
-  testDataSetReag
-  {{- end }}
+	{{- if $reag }}
+	testDataSetReag
+	{{- end }}
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -46,13 +43,13 @@ func TestMetricsBuilder(t *testing.T) {
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
 		},
-    {{- if $reag }}
-    {
-      name: "reaggregate_set",
-      metricsSet: testDataSetReag,
-      resAttrsSet: testDataSetReag,
-    },
-    {{- end }}
+		{{- if $reag }}
+		{
+			name: "reaggregate_set",
+			metricsSet: testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{{- end }}
 		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
@@ -76,18 +73,18 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-        	{{- if or isReceiver isScraper isConnector }}
-            settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-	        {{- end }}
+			{{- if or isReceiver isScraper isConnector }}
+			settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+			{{- end }}
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
-      {{- if $reag }}
-      aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-      {{- range $name, $_ := .Metrics }}
-      aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy 
-      {{- end }}
-      {{- end }}
+			{{- if $reag }}
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			{{- range $name, $_ := .Metrics }}
+			aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
+			{{- end }}
+			{{- end }}
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
@@ -131,13 +128,13 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 
-      {{- if $reag }}
-      if tt.metricsSet != testDataSetReag {
-			  assert.Equal(t, expectedWarnings, observedLogs.Len())
-      }
-      {{- else }}
-      assert.Equal(t, expectedWarnings, observedLogs.Len())
-      {{- end }}
+			{{- if $reag }}
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
+			{{- else }}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			{{- end }}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -330,15 +327,15 @@ func TestMetricsBuilder(t *testing.T) {
             {{- end }}
           }
           {{- else }}
-          assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+					assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
-          {{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
-          assert.Equal(t, metricSemConv{{ $name.Render }}.Description(), ms.At(i).Description())
-          {{- else }}
-          assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
-          {{- end }}
+					{{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
+					assert.Equal(t, metricSemConv{{ $name.Render }}.Description(), ms.At(i).Description())
+					{{- else }}
+					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+					{{- end }}
 					{{- if len $metric.Unit}}
 					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
 					{{- else }}
@@ -379,3 +376,17 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{ range $name, $info := .Attributes }}
+{{- if $info.Enum }}
+func TestAttribute{{ $name.Render }}StringInvalid(t *testing.T) {
+	assert.Equal(t, "", Attribute{{ $name.Render }}(999).String())
+}
+
+func TestMapAttribute{{ $name.Render }}(t *testing.T) {
+	for str, val := range MapAttribute{{ $name.Render }} {
+		assert.Equal(t, str, val.String())
+	}
+}
+{{- end }}
+{{ end }}

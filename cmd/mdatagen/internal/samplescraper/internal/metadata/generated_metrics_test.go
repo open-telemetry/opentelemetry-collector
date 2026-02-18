@@ -550,3 +550,13 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributeEnumAttrStringInvalid(t *testing.T) {
+	assert.Equal(t, "", AttributeEnumAttr(999).String())
+}
+
+func TestMapAttributeEnumAttr(t *testing.T) {
+	for str, val := range MapAttributeEnumAttr {
+		assert.Equal(t, str, val.String())
+	}
+}
