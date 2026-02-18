@@ -132,10 +132,7 @@ func findRepoRoot(start string) (string, error) {
 	}
 }
 
-// loadComponentLabels loads .github/component_labels.txt into a map[repoPath]label.
-// repoPath -> label (second column)
 func loadComponentLabels(path string) (map[string]string, error) {
-
 	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
 		return nil, err
@@ -151,8 +148,8 @@ func loadComponentLabels(path string) (map[string]string, error) {
 		if len(parts) != 2 {
 			continue
 		}
-		repoPath := parts[0] // e.g. "extension/storage/filestorage"
-		label := parts[1]    // e.g. "extension/storage/filestorage"
+		repoPath := parts[0]
+		label := parts[1]
 		labels[repoPath] = label
 	}
 	return labels, nil
