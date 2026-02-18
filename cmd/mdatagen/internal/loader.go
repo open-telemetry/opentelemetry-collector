@@ -135,17 +135,14 @@ func findRepoRoot(start string) (string, error) {
 // loadComponentLabels loads .github/component_labels.txt into a map[repoPath]label.
 // repoPath -> label (second column)
 func loadComponentLabels(path string) (map[string]string, error) {
-	// Validate path is within expected location
-	if strings.Contains(path, "..") {
-		return nil, fmt.Errorf("invalid path")
-	}
-	data, err := os.ReadFile(path)
+
+	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
 		return nil, err
 	}
 
 	labels := make(map[string]string)
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.Lines(string(data)) {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
