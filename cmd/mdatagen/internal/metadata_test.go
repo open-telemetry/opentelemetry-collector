@@ -977,7 +977,7 @@ func TestFormatSemConvIdentifiers(t *testing.T) {
 			got, err := formatSemConvIdentifier(tt.semconvIdentifier)
 			if tt.wantErr {
 				require.Error(t, err, "error is required for empty strings")
-				assert.Equal(t, "", got, "expect an empty string if an error is returned")
+				assert.Empty(t, got, "expect an empty string if an error is returned")
 			} else {
 				require.NoError(t, err, "require no error")
 				assert.Equal(t, tt.want, got)
