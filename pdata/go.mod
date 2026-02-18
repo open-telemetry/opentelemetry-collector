@@ -38,3 +38,5 @@ retract (
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
+
+replace go.virtana.io/vdc => ../protocols/virtana/vdc

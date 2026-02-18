@@ -16,6 +16,9 @@ import (
 
 // Resource is a message representing the resource information.
 type Resource struct {
+	EntityGuid             string
+	EntityType             string
+	EntityName             string
 	Attributes             []KeyValue
 	EntityRefs             []*EntityRef
 	DroppedAttributesCount uint32
@@ -52,6 +55,7 @@ func DeleteResource(orig *Resource, nullable bool) {
 	for i := range orig.EntityRefs {
 		DeleteEntityRef(orig.EntityRefs[i], true)
 	}
+
 	orig.Reset()
 	if nullable {
 		protoPoolResource.Put(orig)
@@ -75,6 +79,10 @@ func CopyResource(dest, src *Resource) *Resource {
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.EntityRefs = CopyEntityRefPtrSlice(dest.EntityRefs, src.EntityRefs)
+
+	dest.EntityGuid = src.EntityGuid
+	dest.EntityType = src.EntityType
+	dest.EntityName = src.EntityName
 
 	return dest
 }
@@ -158,6 +166,18 @@ func (orig *Resource) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+	if orig.EntityGuid != "" {
+		dest.WriteObjectField("entityGuid")
+		dest.WriteString(orig.EntityGuid)
+	}
+	if orig.EntityType != "" {
+		dest.WriteObjectField("entityType")
+		dest.WriteString(orig.EntityType)
+	}
+	if orig.EntityName != "" {
+		dest.WriteObjectField("entityName")
+		dest.WriteString(orig.EntityName)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -179,6 +199,12 @@ func (orig *Resource) UnmarshalJSON(iter *json.Iterator) {
 				orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalJSON(iter)
 			}
 
+		case "entityGuid", "entity_guid":
+			orig.EntityGuid = iter.ReadString()
+		case "entityType", "entity_type":
+			orig.EntityType = iter.ReadString()
+		case "entityName", "entity_name":
+			orig.EntityName = iter.ReadString()
 		default:
 			iter.Skip()
 		}
@@ -198,6 +224,21 @@ func (orig *Resource) SizeProto() int {
 	}
 	for i := range orig.EntityRefs {
 		l = orig.EntityRefs[i].SizeProto()
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+
+	l = len(orig.EntityGuid)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+
+	l = len(orig.EntityType)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+
+	l = len(orig.EntityName)
+	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
@@ -225,6 +266,30 @@ func (orig *Resource) MarshalProto(buf []byte) int {
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x1a
+	}
+	l = len(orig.EntityGuid)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.EntityGuid)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x22
+	}
+	l = len(orig.EntityType)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.EntityType)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+	}
+	l = len(orig.EntityName)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.EntityName)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
 	}
 	return len(buf) - pos
 }
@@ -286,6 +351,42 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityGuid", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.EntityGuid = string(buf[startPos:pos])
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityType", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.EntityType = string(buf[startPos:pos])
+
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityName", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.EntityName = string(buf[startPos:pos])
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -301,6 +402,9 @@ func GenTestResource() *Resource {
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	orig.EntityRefs = []*EntityRef{{}, GenTestEntityRef()}
+	orig.EntityGuid = "test_entityguid"
+	orig.EntityType = "test_entitytype"
+	orig.EntityName = "test_entityname"
 	return orig
 }
 

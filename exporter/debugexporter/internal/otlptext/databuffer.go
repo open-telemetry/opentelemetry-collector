@@ -48,7 +48,37 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 	}
 }
 
+func (b *dataBuffer) logMetaData(meta pcommon.MetaData) {
+	if meta.ConfigId() == "" && meta.VdcId() == "" && meta.CollectionType() == "" && meta.CollectionId() == "" {
+		return
+	}
+
+	b.logEntry("Metadata:")
+	if meta.ConfigId() != "" {
+		b.logEntry("     -> Config ID: %s", meta.ConfigId())
+	}
+	if meta.VdcId() != "" {
+		b.logEntry("     -> Vdc ID: %s", meta.VdcId())
+	}
+	if meta.CollectionType() != "" {
+		b.logEntry("     -> Collection Type: %s", meta.CollectionType())
+	}
+	if meta.CollectionId() != "" {
+		b.logEntry("     -> Collection ID: %s", meta.CollectionId())
+	}
+}
+
 func (b *dataBuffer) logEntityRefs(resource pcommon.Resource) {
+	if resource.EntityGuid() != "" {
+		b.logEntry("Resource Entity ID: %s", resource.EntityGuid())
+	}
+	if resource.EntityType() != "" {
+		b.logEntry("Resource Entity Type: %s", resource.EntityType())
+	}
+	if resource.EntityName() != "" {
+		b.logEntry("Resource Entity Name: %s", resource.EntityName())
+	}
+
 	entityRefs := entity.ResourceEntityRefs(resource)
 	if entityRefs.Len() == 0 {
 		return

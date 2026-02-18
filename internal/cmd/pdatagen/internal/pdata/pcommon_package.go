@@ -21,6 +21,7 @@ var pcommon = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`gootlpmeta "go.virtana.io/vdc/proto/meta/v1"`,
 		},
 		testImports: []string{
 			`"strconv"`,
@@ -45,6 +46,7 @@ var pcommon = &Package{
 		anyValueSlice,
 		scope,
 		resource,
+		metaData,
 		byteSlice,
 		float64Slice,
 		uInt64Slice,
@@ -274,6 +276,51 @@ var resource = &messageStruct{
 			// Hide accessors for this field from 1.x public API since the proto field is experimental.
 			// It's available via the xpdata/entity.ResourceEntityRefs.
 			hideAccessors: true,
+		},
+		&PrimitiveField{
+			fieldName: "EntityGuid",
+			protoID:   4,
+			protoType: proto.TypeString,
+		},
+		&PrimitiveField{
+			fieldName: "EntityType",
+			protoID:   5,
+			protoType: proto.TypeString,
+		},
+		&PrimitiveField{
+			fieldName: "EntityName",
+			protoID:   6,
+			protoType: proto.TypeString,
+		},
+	},
+}
+
+var metaData = &messageStruct{
+	structName:    "MetaData",
+	packageName:   "pcommon",
+	description:   "// MetaData represents metadata information.",
+	protoName:     "MetaData",
+	upstreamProto: "gootlpmeta.MetaData",
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "ConfigId",
+			protoID:   1,
+			protoType: proto.TypeString,
+		},
+		&PrimitiveField{
+			fieldName: "VdcId",
+			protoID:   2,
+			protoType: proto.TypeString,
+		},
+		&PrimitiveField{
+			fieldName: "CollectionType",
+			protoID:   3,
+			protoType: proto.TypeString,
+		},
+		&PrimitiveField{
+			fieldName: "CollectionId",
+			protoID:   4,
+			protoType: proto.TypeString,
 		},
 	},
 }

@@ -16,8 +16,8 @@ import (
 
 // ResourceProfiles is a collection of profiles from a Resource.
 type ResourceProfiles struct {
-	SchemaUrl     string
 	Resource      Resource
+	SchemaUrl     string
 	ScopeProfiles []*ScopeProfiles
 }
 

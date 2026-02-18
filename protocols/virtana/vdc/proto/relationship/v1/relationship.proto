@@ -1,0 +1,30 @@
+// Copyright 2026 Virtana
+
+syntax = "proto3";
+
+package virtana.vdc.proto.relationship.v1;
+
+import "opentelemetry/proto/common/v1/common.proto";
+import "virtana/vdc/proto/resource/v1/resource.proto";
+
+option csharp_namespace = "Virtana.Vdc.Proto.Relationship.V1";
+option java_multiple_files = true;
+option java_package = "io.virtana.vdc.proto.relationship.v1";
+option java_outer_classname = "RelationshipProto";
+option go_package = "go.virtana.io/vdc/proto/relationship/v1";
+
+message ResourceRelationship {
+  // Type of relationship
+  string type = 1;
+  // Name of relationship (Display name)
+  string name = 2;
+  // Description of Relationship
+  string description = 3;
+  // Attributes of relationship
+  opentelemetry.proto.common.v1.KeyValueList attributes = 4;  
+  
+  // An array of Resource.
+  repeated virtana.vdc.proto.resource.v1.Resource source_resources = 5;
+  // An array of Resource.
+  repeated virtana.vdc.proto.resource.v1.Resource target_resources = 6;
+}

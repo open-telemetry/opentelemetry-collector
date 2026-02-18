@@ -66,6 +66,13 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	assert.Panics(t, func() { newResourceMetrics(internal.NewResourceMetrics(), sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
+func TestResourceMetrics_Meta(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.Equal(t, pcommon.NewMetaData(), ms.Meta())
+	ms.orig.Meta = *internal.GenTestMetaData()
+	assert.Equal(t, pcommon.MetaData(internal.GenTestMetaDataWrapper()), ms.Meta())
+}
+
 func generateTestResourceMetrics() ResourceMetrics {
 	return newResourceMetrics(internal.GenTestResourceMetrics(), internal.NewState())
 }

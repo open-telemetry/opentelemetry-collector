@@ -19,6 +19,7 @@ func (textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	for i := 0; i < rms.Len(); i++ {
 		buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)
+		buf.logMetaData(rm.Meta())
 		buf.logEntry("Resource SchemaURL: %s", rm.SchemaUrl())
 		buf.logAttributes("Resource attributes", rm.Resource().Attributes())
 		buf.logEntityRefs(rm.Resource())

@@ -197,6 +197,8 @@ func genTestFailingUnmarshalProtoValuesResourceMetrics() map[string][]byte {
 		"SchemaUrl/missing_value":                {0x1a},
 		"DeprecatedScopeMetrics/wrong_wire_type": {0xc4, 0x3e},
 		"DeprecatedScopeMetrics/missing_value":   {0xc2, 0x3e},
+		"Meta/wrong_wire_type":                   {0x24},
+		"Meta/missing_value":                     {0x22},
 	}
 }
 
@@ -207,5 +209,6 @@ func genTestEncodingValuesResourceMetrics() map[string]*ResourceMetrics {
 		"ScopeMetrics/test":           {ScopeMetrics: []*ScopeMetrics{{}, GenTestScopeMetrics()}},
 		"SchemaUrl/test":              {SchemaUrl: "test_schemaurl"},
 		"DeprecatedScopeMetrics/test": {DeprecatedScopeMetrics: []*ScopeMetrics{{}, GenTestScopeMetrics()}},
+		"Meta/test":                   {Meta: *GenTestMetaData()},
 	}
 }

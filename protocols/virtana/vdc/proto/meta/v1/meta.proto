@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package virtana.vdc.proto.meta.v1;
+
+option csharp_namespace = "Virtana.Vdc.Proto.Meta.V1";
+option java_multiple_files = true;
+option java_package = "io.virtana.vdc.proto.meta.v1";
+option java_outer_classname = "MetaProto";
+option go_package = "go.virtana.io/vdc/proto/meta/v1";
+
+
+message MetaData {
+  string config_id = 1;
+  string vdc_id = 2;
+  string collection_type = 3;
+  string collection_id = 4;
+}
+
+

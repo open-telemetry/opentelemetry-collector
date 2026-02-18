@@ -141,6 +141,11 @@ var resourceMetrics = &messageStruct{
 			// Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
 			hideAccessors: true,
 		},
+		&MessageField{
+			fieldName:     "Meta",
+			protoID:       4,
+			returnMessage: metaData,
+		},
 	},
 }
 

@@ -195,6 +195,12 @@ func genTestFailingUnmarshalProtoValuesResource() map[string][]byte {
 		"DroppedAttributesCount/missing_value":   {0x10},
 		"EntityRefs/wrong_wire_type":             {0x1c},
 		"EntityRefs/missing_value":               {0x1a},
+		"EntityGuid/wrong_wire_type":             {0x24},
+		"EntityGuid/missing_value":               {0x22},
+		"EntityType/wrong_wire_type":             {0x2c},
+		"EntityType/missing_value":               {0x2a},
+		"EntityName/wrong_wire_type":             {0x34},
+		"EntityName/missing_value":               {0x32},
 	}
 }
 
@@ -204,5 +210,8 @@ func genTestEncodingValuesResource() map[string]*Resource {
 		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 		"EntityRefs/test":             {EntityRefs: []*EntityRef{{}, GenTestEntityRef()}},
+		"EntityGuid/test":             {EntityGuid: "test_entityguid"},
+		"EntityType/test":             {EntityType: "test_entitytype"},
+		"EntityName/test":             {EntityName: "test_entityname"},
 	}
 }

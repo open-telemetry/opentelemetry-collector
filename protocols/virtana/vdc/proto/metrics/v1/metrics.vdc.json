@@ -1,0 +1,107 @@
+{
+    "resource_metrics": [
+        {
+            "resource": {
+                "entity_guid": "guid-1234-5678",
+                "entity_type": "host",
+                "entity_name": "prod-server-01",
+                "attributes": [
+                    {
+                        "key": "service.name",
+                        "value": {
+                            "string_value": "web-api"
+                        }
+                    },
+                    {
+                        "key": "os.type",
+                        "value": {
+                            "string_value": "linux"
+                        }
+                    }
+                ],
+                "dropped_attributes_count": 0,
+                "entity_refs": [
+                    {
+                        "type": "service",
+                        "id_keys": [
+                            "service.name"
+                        ],
+                        "schema_url": "http://opentelemetry.io/schemas/1.21.0"
+                    }
+                ]
+            },
+            "meta": {
+                "config_id": "config-abc",
+                "vdc_id": "vdc-xyz",
+                "collection_type": "pull",
+                "collection_id": "job-123"
+            },
+            "schema_url": "http://opentelemetry.io/schemas/1.21.0",
+            "scope_metrics": [
+                {
+                    "scope": {
+                        "name": "virtana-collector",
+                        "version": "2.4.0",
+                        "dropped_attributes_count": 0,
+                        "attributes": [
+                            {
+                                "key": "library.language",
+                                "value": {
+                                    "string_value": "go"
+                                }
+                            }
+                        ]
+                    },
+                    "schema_url": "http://opentelemetry.io/schemas/1.21.0",
+                    "metrics": [
+                        {
+                            "name": "system.cpu.usage",
+                            "description": "CPU usage percentage",
+                            "unit": "percent",
+                            "metadata": [
+                                {
+                                    "key": "metric_source",
+                                    "value": {
+                                        "string_value": "procfs"
+                                    }
+                                }
+                            ],
+                            "gauge": {
+                                "data_points": [
+                                    {
+                                        "start_time_unix_nano": "1707555541000000000",
+                                        "time_unix_nano": "1707555601000000000",
+                                        "as_double": 0.15,
+                                        "flags": 0,
+                                        "attributes": [
+                                            {
+                                                "key": "cpu",
+                                                "value": {
+                                                    "string_value": "0"
+                                                }
+                                            },
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "string_value": "idle"
+                                                }
+                                            }
+                                        ],
+                                        "exemplars": [
+                                            {
+                                                "time_unix_nano": "1707555600500000000",
+                                                "as_double": 0.12,
+                                                "trace_id": "MDEyMzQ1Njc4OWFiY2RlZg==",
+                                                "span_id": "ZnVkY2JhOTg="
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

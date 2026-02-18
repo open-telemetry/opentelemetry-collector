@@ -69,6 +69,11 @@ func (ms ResourceMetrics) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
+// Meta returns the meta associated with this ResourceMetrics.
+func (ms ResourceMetrics) Meta() pcommon.MetaData {
+	return pcommon.MetaData(internal.NewMetaDataWrapper(&ms.orig.Meta, ms.state))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	dest.state.AssertMutable()

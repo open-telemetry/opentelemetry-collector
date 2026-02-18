@@ -17,8 +17,9 @@ import (
 // ResourceMetrics is a collection of metrics from a Resource.
 type ResourceMetrics struct {
 	Resource               Resource
-	ScopeMetrics           []*ScopeMetrics
+	Meta                   MetaData
 	SchemaUrl              string
+	ScopeMetrics           []*ScopeMetrics
 	DeprecatedScopeMetrics []*ScopeMetrics
 }
 
@@ -54,6 +55,7 @@ func DeleteResourceMetrics(orig *ResourceMetrics, nullable bool) {
 	for i := range orig.DeprecatedScopeMetrics {
 		DeleteScopeMetrics(orig.DeprecatedScopeMetrics[i], true)
 	}
+	DeleteMetaData(&orig.Meta, false)
 	orig.Reset()
 	if nullable {
 		protoPoolResourceMetrics.Put(orig)
@@ -79,6 +81,8 @@ func CopyResourceMetrics(dest, src *ResourceMetrics) *ResourceMetrics {
 
 	dest.SchemaUrl = src.SchemaUrl
 	dest.DeprecatedScopeMetrics = CopyScopeMetricsPtrSlice(dest.DeprecatedScopeMetrics, src.DeprecatedScopeMetrics)
+
+	CopyMetaData(&dest.Meta, &src.Meta)
 
 	return dest
 }
@@ -164,6 +168,8 @@ func (orig *ResourceMetrics) MarshalJSON(dest *json.Stream) {
 		}
 		dest.WriteArrayEnd()
 	}
+	dest.WriteObjectField("meta")
+	orig.Meta.MarshalJSON(dest)
 	dest.WriteObjectEnd()
 }
 
@@ -188,6 +194,9 @@ func (orig *ResourceMetrics) UnmarshalJSON(iter *json.Iterator) {
 				orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalJSON(iter)
 			}
 
+		case "meta":
+
+			orig.Meta.UnmarshalJSON(iter)
 		default:
 			iter.Skip()
 		}
@@ -213,6 +222,8 @@ func (orig *ResourceMetrics) SizeProto() int {
 		l = orig.DeprecatedScopeMetrics[i].SizeProto()
 		n += 2 + proto.Sov(uint64(l)) + l
 	}
+	l = orig.Meta.SizeProto()
+	n += 1 + proto.Sov(uint64(l)) + l
 	return n
 }
 
@@ -250,6 +261,12 @@ func (orig *ResourceMetrics) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0xc2
 	}
+	l = orig.Meta.MarshalProto(buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x22
+
 	return len(buf) - pos
 }
 
@@ -327,6 +344,22 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
+
+		case 4:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Meta", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+
+			err = orig.Meta.UnmarshalProto(buf[startPos:pos])
+			if err != nil {
+				return err
+			}
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -343,6 +376,7 @@ func GenTestResourceMetrics() *ResourceMetrics {
 	orig.ScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
 	orig.SchemaUrl = "test_schemaurl"
 	orig.DeprecatedScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.Meta = *GenTestMetaData()
 	return orig
 }
 

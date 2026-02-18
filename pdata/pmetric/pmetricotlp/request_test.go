@@ -37,7 +37,8 @@ var metricsRequestJSON = []byte(`
 							}
 						]
 					}
-				]
+				],
+				"meta": {}
 			}
 		]
 	}`)

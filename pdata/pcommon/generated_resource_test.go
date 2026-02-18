@@ -58,6 +58,36 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
+func TestResource_EntityGuid(t *testing.T) {
+	ms := NewResource()
+	assert.Empty(t, ms.EntityGuid())
+	ms.SetEntityGuid("test_entityguid")
+	assert.Equal(t, "test_entityguid", ms.EntityGuid())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetEntityGuid("test_entityguid") })
+}
+
+func TestResource_EntityType(t *testing.T) {
+	ms := NewResource()
+	assert.Empty(t, ms.EntityType())
+	ms.SetEntityType("test_entitytype")
+	assert.Equal(t, "test_entitytype", ms.EntityType())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetEntityType("test_entitytype") })
+}
+
+func TestResource_EntityName(t *testing.T) {
+	ms := NewResource()
+	assert.Empty(t, ms.EntityName())
+	ms.SetEntityName("test_entityname")
+	assert.Equal(t, "test_entityname", ms.EntityName())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newResource(internal.NewResource(), sharedState).SetEntityName("test_entityname") })
+}
+
 func generateTestResource() Resource {
 	return newResource(internal.GenTestResource(), internal.NewState())
 }
