@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gonum.org/v1/gonum/graph/simple"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -2613,4 +2614,765 @@ func testGraphBuildErrors(t *testing.T) {
 			assert.EqualError(t, err, tt.expected)
 		})
 	}
+}
+
+func TestUpdateReceivers(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testUpdateReceiversAddReceiver(t)
+		testUpdateReceiversRemoveReceiver(t)
+		testUpdateReceiversConfigChange(t)
+		testUpdateReceiversNoChange(t)
+		testUpdateReceiversPipelineSetChange(t)
+		testUpdateReceiversAddRemoveAndRebuild(t)
+		testUpdateReceiversConnectorUntouched(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testUpdateReceiversAddReceiver(t)
+		testUpdateReceiversRemoveReceiver(t)
+		testUpdateReceiversConfigChange(t)
+		testUpdateReceiversNoChange(t)
+		testUpdateReceiversPipelineSetChange(t)
+		testUpdateReceiversAddRemoveAndRebuild(t)
+		testUpdateReceiversConnectorUntouched(t)
+	})
+}
+
+func TestUpdateReceivers_NilHost(t *testing.T) {
+	pg := &Graph{
+		componentGraph: simple.NewDirectedGraph(),
+		pipelines:      make(map[pipeline.ID]*pipelineNodes),
+		instanceIDs:    make(map[int64]*componentstatus.InstanceID),
+		telemetry:      componenttest.NewNopTelemetrySettings(),
+	}
+	err := pg.UpdateReceivers(context.Background(), Settings{}, nil, nil, nil, nil)
+	require.EqualError(t, err, "host cannot be nil")
+}
+
+// receiverFactories returns the standard receiver factory map for UpdateReceivers tests.
+var testReceiverFactories = map[component.Type]receiver.Factory{
+	testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+}
+
+// updateReceiversTestGraph builds a graph with the given pipeline configs and starts it.
+// Returns the graph, host, and Settings used to build it.
+func updateReceiversTestGraph(t *testing.T,
+	rcvrCfgs map[component.ID]component.Config,
+	connCfgs map[component.ID]component.Config,
+	pipelineConfigs pipelines.Config,
+) (*Graph, *Host, Settings) {
+	t.Helper()
+	procCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	expCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	if connCfgs == nil {
+		connCfgs = map[component.ID]component.Config{}
+	}
+
+	connFactories := map[component.Type]connector.Factory{}
+	if len(connCfgs) > 0 {
+		connFactories[testcomponents.ExampleConnectorFactory.Type()] = testcomponents.ExampleConnectorFactory
+	}
+
+	set := Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverBuilder: builders.NewReceiver(
+			rcvrCfgs,
+			map[component.Type]receiver.Factory{
+				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+			},
+		),
+		ProcessorBuilder: builders.NewProcessor(
+			procCfgs,
+			map[component.Type]processor.Factory{
+				testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+			},
+		),
+		ExporterBuilder: builders.NewExporter(
+			expCfgs,
+			map[component.Type]exporter.Factory{
+				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+			},
+		),
+		ConnectorBuilder: builders.NewConnector(connCfgs, connFactories),
+		PipelineConfigs:  pipelineConfigs,
+	}
+
+	pg, err := Build(context.Background(), set)
+	require.NoError(t, err)
+
+	host := &Host{
+		Reporter: status.NewReporter(
+			func(*componentstatus.InstanceID, *componentstatus.Event) {},
+			func(error) {},
+		),
+	}
+	require.NoError(t, pg.StartAll(context.Background(), host))
+	return pg, host, set
+}
+
+// receiverSnapshot captures the state of all receiver nodes in a graph
+// so we can assert which receivers were or were not touched after an update.
+type receiverSnapshot struct {
+	component     component.Component
+	stoppedBefore bool
+}
+
+func captureReceiverSnapshots(t *testing.T, pg *Graph) map[int64]receiverSnapshot {
+	t.Helper()
+	snapshots := make(map[int64]receiverSnapshot)
+	for _, pipe := range pg.pipelines {
+		for nodeID, node := range pipe.receivers {
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
+			snapshots[nodeID] = receiverSnapshot{
+				component:     rn.Component,
+				stoppedBefore: rn.Component.(*testcomponents.ExampleReceiver).Stopped(),
+			}
+		}
+	}
+	return snapshots
+}
+
+// countReceiverNodes returns the number of receiverNode entries in a pipeline.
+func countReceiverNodes(pipe *pipelineNodes) int {
+	count := 0
+	for _, node := range pipe.receivers {
+		if _, ok := node.(*receiverNode); ok {
+			count++
+		}
+	}
+	return count
+}
+
+// assertUnchangedReceivers verifies that all receivers present in the snapshot
+// that still exist in the graph have the same component instance and were not
+// shut down.
+func assertUnchangedReceivers(t *testing.T, pg *Graph, snapshots map[int64]receiverSnapshot) {
+	t.Helper()
+	for _, pipe := range pg.pipelines {
+		for nodeID, node := range pipe.receivers {
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
+			if snap, exists := snapshots[nodeID]; exists {
+				assert.Same(t, snap.component, rn.Component,
+					"unchanged receiver %q should keep the same component instance", rn.componentID)
+				assert.Equal(t, snap.stoppedBefore, rn.Component.(*testcomponents.ExampleReceiver).Stopped(),
+					"unchanged receiver %q Stopped() state should not have changed", rn.componentID)
+			}
+		}
+	}
+}
+
+// makeUpdatedSettings creates a new Settings with updated receiver builder and pipeline configs.
+func makeUpdatedSettings(base Settings, newRcvrCfgs map[component.ID]component.Config, newPipelineCfgs pipelines.Config) Settings {
+	updated := base
+	updated.ReceiverBuilder = builders.NewReceiver(
+		newRcvrCfgs,
+		map[component.Type]receiver.Factory{
+			testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+		},
+	)
+	updated.PipelineConfigs = newPipelineCfgs
+	return updated
+}
+
+// testUpdateReceiversAddReceiver verifies that adding a new receiver to
+// an existing pipeline creates and starts only the new receiver while
+// leaving existing receivers untouched.
+func testUpdateReceiversAddReceiver(t *testing.T) {
+	t.Run("add_receiver", func(t *testing.T) {
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+			component.MustNewIDWithName("examplereceiver", "2"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		initialPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewID(pipeline.SignalMetrics): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, initialPipelines)
+		snapshots := captureReceiverSnapshots(t, pg)
+
+		// Add examplereceiver/2 to traces pipeline.
+		updatedPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers: []component.ID{
+					component.MustNewID("examplereceiver"),
+					component.MustNewIDWithName("examplereceiver", "2"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewID(pipeline.SignalMetrics): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		updatedSet := makeUpdatedSettings(set, rcvrCfgs, updatedPipelines)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, rcvrCfgs, testReceiverFactories, host))
+
+		// Existing receivers must be untouched.
+		assertUnchangedReceivers(t, pg, snapshots)
+
+		// Traces pipeline should now have 2 receivers, metrics still 1.
+		assert.Equal(t, 2, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+		assert.Equal(t, 1, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalMetrics)]))
+
+		// New receiver should be started.
+		for _, node := range pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers {
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
+			assert.True(t, rn.Component.(*testcomponents.ExampleReceiver).Started(),
+				"receiver %q should be started", rn.componentID)
+		}
+
+		// Data flows through the new receiver to the exporter.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversRemoveReceiver verifies that removing a receiver from a
+// pipeline shuts down and removes only the removed receiver.
+func testUpdateReceiversRemoveReceiver(t *testing.T) {
+	t.Run("remove_receiver", func(t *testing.T) {
+		cfg1 := testcomponents.ExampleReceiverFactory.CreateDefaultConfig()
+		cfg2 := testcomponents.ExampleReceiverFactory.CreateDefaultConfig()
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"):              cfg1,
+			component.MustNewIDWithName("examplereceiver", "2"): cfg2,
+		}
+		initialPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers: []component.ID{
+					component.MustNewID("examplereceiver"),
+					component.MustNewIDWithName("examplereceiver", "2"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, initialPipelines)
+		assert.Equal(t, 2, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+
+		// Capture the component that will be removed so we can verify it was shut down.
+		var removedComponent *testcomponents.ExampleReceiver
+		removedNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "2")).ID()
+		for _, pipe := range pg.pipelines {
+			for nodeID, node := range pipe.receivers {
+				if nodeID == removedNodeID {
+					removedComponent = node.(*receiverNode).Component.(*testcomponents.ExampleReceiver)
+				}
+			}
+		}
+		require.NotNil(t, removedComponent)
+		stoppedBefore := removedComponent.Stopped()
+
+		// Capture snapshot of the receiver that should survive.
+		survivorNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewID("examplereceiver")).ID()
+		snapshots := map[int64]receiverSnapshot{
+			survivorNodeID: {
+				component:     pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[survivorNodeID].(*receiverNode).Component,
+				stoppedBefore: pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[survivorNodeID].(*receiverNode).Component.(*testcomponents.ExampleReceiver).Stopped(),
+			},
+		}
+
+		// Remove examplereceiver/2 from the traces pipeline.
+		updatedRcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): cfg1,
+		}
+		updatedPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		updatedSet := makeUpdatedSettings(set, updatedRcvrCfgs, updatedPipelines)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, updatedRcvrCfgs, testReceiverFactories, host))
+
+		// Should now have 1 receiver.
+		assert.Equal(t, 1, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+
+		// Surviving receiver should be untouched.
+		assertUnchangedReceivers(t, pg, snapshots)
+
+		// Removed receiver should have been shut down (Stopped changed from before).
+		if !stoppedBefore {
+			assert.True(t, removedComponent.Stopped(), "removed receiver should have been shut down")
+		}
+
+		// Removed node should no longer be in the graph.
+		assert.Nil(t, pg.componentGraph.Node(removedNodeID), "removed receiver node should not exist in graph")
+
+		// Data still flows through the remaining receiver.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversConfigChange verifies that when a receiver's configuration
+// changes (detected by reflect.DeepEqual), it is shut down and rebuilt while
+// other receivers are left untouched.
+//
+// Note: the test component factory caches receiver instances by config value in
+// a global map. To ensure the factory creates a genuinely new instance for the
+// rebuilt receiver, we use struct configs with a distinguishing field so that
+// the old and new configs are both different by DeepEqual and produce distinct
+// cache keys in the factory.
+func testUpdateReceiversConfigChange(t *testing.T) {
+	t.Run("config_change_rebuilds_receiver", func(t *testing.T) {
+		// Use struct values with a field so configs are distinguishable.
+		type namedCfg struct{ Name string }
+		cfg1 := &namedCfg{Name: "unchanged"}
+		cfg2 := &namedCfg{Name: "original"}
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"):              cfg1,
+			component.MustNewIDWithName("examplereceiver", "2"): cfg2,
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers: []component.ID{
+					component.MustNewID("examplereceiver"),
+					component.MustNewIDWithName("examplereceiver", "2"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, pipelineCfgs)
+
+		// Capture the component that will be rebuilt.
+		rebuiltNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "2")).ID()
+		originalRebuilt := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[rebuiltNodeID].(*receiverNode).Component
+		originalRebuiltStopped := originalRebuilt.(*testcomponents.ExampleReceiver).Stopped()
+
+		// Capture snapshot for the unchanged receiver.
+		unchangedNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewID("examplereceiver")).ID()
+		snapshots := map[int64]receiverSnapshot{
+			unchangedNodeID: {
+				component:     pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[unchangedNodeID].(*receiverNode).Component,
+				stoppedBefore: pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[unchangedNodeID].(*receiverNode).Component.(*testcomponents.ExampleReceiver).Stopped(),
+			},
+		}
+
+		// Change the config for examplereceiver/2 to a structurally different value.
+		newCfg2 := &namedCfg{Name: "changed"}
+		newRcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"):              cfg1, // same
+			component.MustNewIDWithName("examplereceiver", "2"): newCfg2,
+		}
+
+		updatedSet := makeUpdatedSettings(set, newRcvrCfgs, pipelineCfgs)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testReceiverFactories, host))
+
+		// Still have 2 receivers.
+		assert.Equal(t, 2, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+
+		// Unchanged receiver should be the same instance.
+		assertUnchangedReceivers(t, pg, snapshots)
+
+		// The old receiver should have been shut down.
+		if !originalRebuiltStopped {
+			assert.True(t, originalRebuilt.(*testcomponents.ExampleReceiver).Stopped(),
+				"old receiver should be shut down after config change")
+		}
+
+		// Rebuilt receiver should be a different component instance.
+		newRebuilt := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[rebuiltNodeID].(*receiverNode).Component
+		assert.NotSame(t, originalRebuilt, newRebuilt,
+			"rebuilt receiver should be a new component instance")
+		assert.True(t, newRebuilt.(*testcomponents.ExampleReceiver).Started(),
+			"rebuilt receiver should be started")
+
+		// Data flows through rebuilt receiver.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversNoChange verifies that when nothing has changed in
+// the receiver configuration, no receivers are stopped or rebuilt.
+func testUpdateReceiversNoChange(t *testing.T) {
+	t.Run("no_change_is_noop", func(t *testing.T) {
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		pipelineCfgs := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewID(pipeline.SignalMetrics): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewID(pipeline.SignalLogs): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, pipelineCfgs)
+		snapshots := captureReceiverSnapshots(t, pg)
+		nodeCountBefore := pg.componentGraph.Nodes().Len()
+
+		// Call update with identical configs.
+		updatedSet := makeUpdatedSettings(set, rcvrCfgs, pipelineCfgs)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, rcvrCfgs, testReceiverFactories, host))
+
+		// Every receiver should be the exact same instance as before.
+		assertUnchangedReceivers(t, pg, snapshots)
+
+		// Graph should have the same number of nodes.
+		assert.Equal(t, nodeCountBefore, pg.componentGraph.Nodes().Len(),
+			"graph node count should not change on no-op update")
+
+		// Pipeline receiver counts should be unchanged.
+		for pid := range pipelineCfgs {
+			assert.Equal(t, 1, countReceiverNodes(pg.pipelines[pid]),
+				"pipeline %s should still have 1 receiver", pid)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversPipelineSetChange verifies that when a receiver's pipeline
+// membership changes (e.g. the receiver is added to a new pipeline of the same
+// signal type), it is rebuilt even though its config hasn't changed.
+//
+// Note: the test component factory caches receiver instances by config, so
+// after rebuild the component pointer may be reused. We verify the rebuild
+// occurred by confirming the old receiver was shut down and the receiver
+// is present in both pipelines after the update.
+func testUpdateReceiversPipelineSetChange(t *testing.T) {
+	t.Run("pipeline_set_change_rebuilds_receiver", func(t *testing.T) {
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		// Start with the receiver in one traces pipeline only.
+		initialPipelines := pipelines.Config{
+			pipeline.NewIDWithName(pipeline.SignalTraces, "a"): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewIDWithName(pipeline.SignalTraces, "b"): {
+				Receivers:  []component.ID{},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, initialPipelines)
+
+		rcvrNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewID("examplereceiver")).ID()
+		originalComponent := pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "a")].receivers[rcvrNodeID].(*receiverNode).Component
+		originalStopped := originalComponent.(*testcomponents.ExampleReceiver).Stopped()
+
+		// Pipeline "b" should not have the receiver yet.
+		_, hasBefore := pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "b")].receivers[rcvrNodeID]
+		assert.False(t, hasBefore, "pipeline b should not have the receiver initially")
+
+		// Update: add the same receiver to pipeline "b" as well.
+		updatedPipelines := pipelines.Config{
+			pipeline.NewIDWithName(pipeline.SignalTraces, "a"): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			pipeline.NewIDWithName(pipeline.SignalTraces, "b"): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		updatedSet := makeUpdatedSettings(set, rcvrCfgs, updatedPipelines)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, rcvrCfgs, testReceiverFactories, host))
+
+		// The old receiver should have been shut down as part of the rebuild.
+		if !originalStopped {
+			assert.True(t, originalComponent.(*testcomponents.ExampleReceiver).Stopped(),
+				"old receiver should be shut down when pipeline set changes")
+		}
+
+		// Both pipelines should now have the receiver.
+		assert.Equal(t, 1, countReceiverNodes(pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "a")]))
+		assert.Equal(t, 1, countReceiverNodes(pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "b")]))
+
+		// The rebuilt receiver should be started.
+		newComponent := pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "a")].receivers[rcvrNodeID].(*receiverNode).Component
+		assert.True(t, newComponent.(*testcomponents.ExampleReceiver).Started(),
+			"rebuilt receiver should be started")
+
+		// Data flows from the receiver to exporters in both pipelines.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversAddRemoveAndRebuild tests a scenario where multiple
+// changes happen at once: one receiver is added, one is removed, and one
+// has its config changed. Unchanged receivers remain untouched.
+func testUpdateReceiversAddRemoveAndRebuild(t *testing.T) {
+	t.Run("add_remove_and_rebuild_simultaneously", func(t *testing.T) {
+		// Use struct configs with a field so DeepEqual can distinguish them
+		// and the factory cache creates separate instances.
+		type namedCfg struct{ Name string }
+		cfgKeep := &namedCfg{Name: "keep"}
+		cfgRemove := &namedCfg{Name: "remove"}
+		cfgRebuild := &namedCfg{Name: "rebuild_v1"}
+
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewIDWithName("examplereceiver", "keep"):    cfgKeep,
+			component.MustNewIDWithName("examplereceiver", "remove"):  cfgRemove,
+			component.MustNewIDWithName("examplereceiver", "rebuild"): cfgRebuild,
+		}
+		initialPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers: []component.ID{
+					component.MustNewIDWithName("examplereceiver", "keep"),
+					component.MustNewIDWithName("examplereceiver", "remove"),
+					component.MustNewIDWithName("examplereceiver", "rebuild"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, initialPipelines)
+		assert.Equal(t, 3, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+
+		// Capture snapshots.
+		keepNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "keep")).ID()
+		removeNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "remove")).ID()
+		rebuildNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "rebuild")).ID()
+
+		keepSnap := receiverSnapshot{
+			component:     pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[keepNodeID].(*receiverNode).Component,
+			stoppedBefore: pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[keepNodeID].(*receiverNode).Component.(*testcomponents.ExampleReceiver).Stopped(),
+		}
+		removedComponent := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[removeNodeID].(*receiverNode).Component.(*testcomponents.ExampleReceiver)
+		removedStoppedBefore := removedComponent.Stopped()
+		originalRebuild := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[rebuildNodeID].(*receiverNode).Component
+		originalRebuildStopped := originalRebuild.(*testcomponents.ExampleReceiver).Stopped()
+
+		// New config: remove "remove", change config of "rebuild", add "add".
+		cfgAdd := &namedCfg{Name: "add"}
+		newCfgRebuild := &namedCfg{Name: "rebuild_v2"}
+		newRcvrCfgs := map[component.ID]component.Config{
+			component.MustNewIDWithName("examplereceiver", "keep"):    cfgKeep,
+			component.MustNewIDWithName("examplereceiver", "rebuild"): newCfgRebuild,
+			component.MustNewIDWithName("examplereceiver", "add"):     cfgAdd,
+		}
+		updatedPipelines := pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers: []component.ID{
+					component.MustNewIDWithName("examplereceiver", "keep"),
+					component.MustNewIDWithName("examplereceiver", "rebuild"),
+					component.MustNewIDWithName("examplereceiver", "add"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		updatedSet := makeUpdatedSettings(set, newRcvrCfgs, updatedPipelines)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testReceiverFactories, host))
+
+		// Should have 3 receivers: keep, rebuild, add.
+		assert.Equal(t, 3, countReceiverNodes(pg.pipelines[pipeline.NewID(pipeline.SignalTraces)]))
+
+		// "keep" should be the same instance.
+		keepNode := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[keepNodeID].(*receiverNode)
+		assert.Same(t, keepSnap.component, keepNode.Component, "kept receiver should be same instance")
+		assert.Equal(t, keepSnap.stoppedBefore, keepNode.Component.(*testcomponents.ExampleReceiver).Stopped(),
+			"kept receiver Stopped() should not change")
+
+		// "remove" should have been shut down and removed from graph.
+		if !removedStoppedBefore {
+			assert.True(t, removedComponent.Stopped(), "removed receiver should be stopped")
+		}
+		assert.Nil(t, pg.componentGraph.Node(removeNodeID), "removed receiver should not be in graph")
+
+		// "rebuild" old component should have been shut down.
+		if !originalRebuildStopped {
+			assert.True(t, originalRebuild.(*testcomponents.ExampleReceiver).Stopped(),
+				"old rebuild receiver should be stopped")
+		}
+
+		// "rebuild" should be a new component instance.
+		rebuildNode := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[rebuildNodeID].(*receiverNode)
+		assert.NotSame(t, originalRebuild, rebuildNode.Component, "rebuilt receiver should be new instance")
+		assert.True(t, rebuildNode.Component.(*testcomponents.ExampleReceiver).Started(), "rebuilt receiver should be started")
+
+		// "add" should be present and started.
+		addNodeID := newReceiverNode(pipeline.SignalTraces, component.MustNewIDWithName("examplereceiver", "add")).ID()
+		addNode, exists := pg.pipelines[pipeline.NewID(pipeline.SignalTraces)].receivers[addNodeID]
+		require.True(t, exists, "added receiver should be in pipeline")
+		assert.True(t, addNode.(*receiverNode).Component.(*testcomponents.ExampleReceiver).Started(), "added receiver should be started")
+
+		// Data flows through all remaining receivers.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
+}
+
+// testUpdateReceiversConnectorUntouched verifies that connector-as-receiver
+// entries in pipeline receiver lists are not affected by UpdateReceivers.
+func testUpdateReceiversConnectorUntouched(t *testing.T) {
+	t.Run("connector_as_receiver_untouched", func(t *testing.T) {
+		rcvrCfgs := map[component.ID]component.Config{
+			component.MustNewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+			component.MustNewIDWithName("examplereceiver", "2"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		}
+		connCfgs := map[component.ID]component.Config{
+			component.MustNewID("exampleconnector"): testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
+		}
+
+		// Two pipelines connected by a connector:
+		// traces/in -> exampleconnector -> traces/out
+		initialPipelines := pipelines.Config{
+			pipeline.NewIDWithName(pipeline.SignalTraces, "in"): {
+				Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+			},
+			pipeline.NewIDWithName(pipeline.SignalTraces, "out"): {
+				Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, connCfgs, initialPipelines)
+
+		// Count connector nodes in the "out" pipeline's receivers.
+		outPipe := pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "out")]
+		connectorCountBefore := 0
+		var connectorNodeIDs []int64
+		for nodeID, node := range outPipe.receivers {
+			if _, ok := node.(*connectorNode); ok {
+				connectorCountBefore++
+				connectorNodeIDs = append(connectorNodeIDs, nodeID)
+			}
+		}
+		assert.Equal(t, 1, connectorCountBefore, "out pipeline should have 1 connector-as-receiver")
+
+		// Capture connector component reference.
+		connectorComponents := make(map[int64]component.Component)
+		for _, nodeID := range connectorNodeIDs {
+			connectorComponents[nodeID] = outPipe.receivers[nodeID].(*connectorNode).Component
+		}
+
+		// Add a new receiver to the "in" pipeline. The connector in "out" should be unaffected.
+		updatedPipelines := pipelines.Config{
+			pipeline.NewIDWithName(pipeline.SignalTraces, "in"): {
+				Receivers: []component.ID{
+					component.MustNewID("examplereceiver"),
+					component.MustNewIDWithName("examplereceiver", "2"),
+				},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+			},
+			pipeline.NewIDWithName(pipeline.SignalTraces, "out"): {
+				Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+
+		updatedSet := makeUpdatedSettings(set, rcvrCfgs, updatedPipelines)
+		require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, rcvrCfgs, testReceiverFactories, host))
+
+		// Connector-as-receiver in "out" pipeline should be the same instance.
+		outPipeAfter := pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "out")]
+		for _, nodeID := range connectorNodeIDs {
+			node, exists := outPipeAfter.receivers[nodeID]
+			require.True(t, exists, "connector node should still exist in pipeline")
+			cn, ok := node.(*connectorNode)
+			require.True(t, ok, "node should still be a connectorNode")
+			assert.Same(t, connectorComponents[nodeID], cn.Component,
+				"connector component should be the same instance after receiver update")
+		}
+
+		// "in" pipeline should now have 2 receivers.
+		assert.Equal(t, 2, countReceiverNodes(pg.pipelines[pipeline.NewIDWithName(pipeline.SignalTraces, "in")]))
+
+		// Data flows end-to-end: receiver -> connector -> exporter.
+		allReceivers := pg.getReceivers()
+		for _, c := range allReceivers[pipeline.SignalTraces] {
+			require.NoError(t, c.(*testcomponents.ExampleReceiver).ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+		}
+		for _, e := range pg.GetExporters()[pipeline.SignalTraces] {
+			assert.NotEmpty(t, e.(*testcomponents.ExampleExporter).Traces)
+		}
+
+		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
 }
