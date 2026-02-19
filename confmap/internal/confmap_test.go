@@ -1031,6 +1031,16 @@ func TestExpandedValue(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfgStr))
 	assert.Equal(t, "original", cfgStr.Key)
 
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	if assert.NotNil(t, cfgStrPtr.Key) {
+		assert.Equal(t, "original", *cfgStrPtr.Key)
+	}
+
 	cfgMapStrPtr := map[string]*string{}
 	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
 	if assert.NotNil(t, cfgMapStrPtr["key"]) {
