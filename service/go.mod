@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/collector/service/hostcapabilities v0.146.1
 	go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.146.1
 	go.opentelemetry.io/contrib/bridges/otelzap v0.15.0
-	go.opentelemetry.io/contrib/otelconf v0.20.0
+	go.opentelemetry.io/contrib/otelconf v0.18.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.40.0
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/log v0.16.0
@@ -259,6 +259,3 @@ replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
 replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-// Remove this once https://github.com/open-telemetry/opentelemetry-collector/issues/14615 is resolved
-replace go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.60.0
