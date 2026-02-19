@@ -95,8 +95,23 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		data any,
 	) (any, error) {
 		if exp, ok := data.(ExpandedValue); ok {
-			useOriginal := to.Kind() == reflect.String ||
-				(to.Kind() == reflect.Pointer && to.Elem().Kind() == reflect.String)
+			// Based on mapstructure's behavior, we can map `exp.Original` to `to` if it is a `string`,
+			// or potentially a pointer (to a pointer...) to a `string``.
+			baseType := to
+			pointed := false
+			for baseType.Kind() == reflect.Pointer {
+				baseType = baseType.Elem()
+				pointed = true
+			}
+			useOriginal := baseType.Kind() == reflect.String
+
+			// `exp.Value` should take priority if it can be mapped and has a different value.
+			// If `exp.Value` is a string, `NewRetrievedFromYAML` guarantees they have the same value,
+			// but this leaves the case of a `null` value.
+			if useOriginal && pointed && exp.Value == nil {
+				useOriginal = false
+			}
+
 			v := castTo(exp, useOriginal)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
 			// If the `to.Kind` is not a string, then expandValue's original value is useless and
