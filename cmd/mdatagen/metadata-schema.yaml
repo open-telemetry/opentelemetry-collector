@@ -87,6 +87,16 @@ entities:
     # All referenced attributes must be defined in the resource_attributes section.
     description:
       - ref: string
+    # Optional: array of relationships to other entities. Relationships should be defined on only
+    # one end to avoid bidirectional definitions. It is recommended to define relationships on
+    # entities with lower lifespan (higher churn). For example, a pod should define its relationship
+    # to a replicaset, rather than the replicaset defining its relationship to pods.
+    relationships:
+      - # Required: the type of the relationship (e.g., "controlled_by", "parent", "peer").
+        type: string
+        # Required: the target entity type this entity relates to. Must reference an entity
+        # defined in the same metadata.yaml file.
+        target: string
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
@@ -145,12 +155,18 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+    # Optional: the entity type this metric is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
     # Required: the metric stability
-    stability:
-      # Required: the level of stability
-      level: <development|alpha|beta|stable|deprecated>
-      # Optional: the version current stability was introduced
-      from:
+    stability: <development|alpha|beta|stable|deprecated>
+    # Deprecation information for the metric. Required when stability is `deprecated`.
+    deprecated:
+      # Required: version when the metric was deprecated
+      since:
+      # Required: migration note
+      note:
     # Optional: the reference to a semantic convention
     semantic_convention:
       ref:
@@ -176,6 +192,10 @@ events:
       if_configured:
     # Optional: array of attributes that were defined in the attributes section that are emitted by this event.
     attributes: [string]
+    # Optional: the entity type this event is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
 
 # Lifecycle tests generated for this component.
 tests:
@@ -204,8 +224,18 @@ telemetry:
       enabled: bool
       # Required: metric description.
       description:
-      # Optional: the stability level of the metric. Set to alpha by default.
-      stability: [alpha|stable|deprecated]
+      # Optional: the stability of the metric. Set to alpha by default.
+      stability:
+        # Optional: the stability level of the metric. Set to alpha by default.
+        level: [alpha|stable|deprecated]
+        # Optional: the version current stability was introduced
+        from:
+      # Deprecation information for the metric. Required when stability is `deprecated`.
+      deprecated:
+        # Required: version when the metric was deprecated
+        since:
+        # Required: migration note
+        note:
       # Optional: extended documentation of the metric.
       extended_documentation:
       # Optional: whether or not this metric is optional. Optional metrics may only be initialized
@@ -238,3 +268,18 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+# Optional: list of feature gate definitions.
+feature_gates:
+  - # Required: unique identifier for the feature gate.
+    id: <gate.id>
+    # Required: description of the feature gate.
+    description: string
+    # Required: lifecycle stage of the feature gate.
+    stage: <alpha|beta|stable|deprecated>
+    # Required: version when the feature gate was introduced.
+    from_version: string
+    # Required for stable/deprecated gates: version when the feature gate reached stable stage.
+    to_version: string
+    # Required: URL with contextual information about the feature gate.
+    reference_url: string

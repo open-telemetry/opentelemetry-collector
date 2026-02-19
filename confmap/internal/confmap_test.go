@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -1373,4 +1373,36 @@ func TestConfmapNilMerge(t *testing.T) {
 			assert.Equal(t, test.expected, leftConf.ToStringMap())
 		})
 	}
+}
+
+type simpleUnmarshaler struct {
+	unmarshaled bool
+	Value       string `mapstructure:"value"`
+}
+
+var _ Unmarshaler = (*simpleUnmarshaler)(nil)
+
+func (s *simpleUnmarshaler) Unmarshal(c *Conf) error {
+	s.unmarshaled = true
+	return c.Unmarshal(s) // Does not call simpleUnmarshaler.Unmarshal
+}
+
+type wrapperUnmarshaler[T any] struct {
+	inner T
+}
+
+var _ Unmarshaler = (*wrapperUnmarshaler[simpleUnmarshaler])(nil)
+
+func (w *wrapperUnmarshaler[T]) Unmarshal(c *Conf) error {
+	return c.Unmarshal(&w.inner, WithForceUnmarshaler()) // Calls T.Unmarshal
+}
+
+func TestUnmarshalWithForceUnmarshaler(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{
+		"value": "test_value",
+	})
+	var out wrapperUnmarshaler[simpleUnmarshaler]
+	require.NoError(t, conf.Unmarshal(&out))
+	assert.Equal(t, "test_value", out.inner.Value)
+	assert.True(t, out.inner.unmarshaled)
 }

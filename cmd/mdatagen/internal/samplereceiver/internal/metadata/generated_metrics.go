@@ -73,19 +73,23 @@ var MetricsInfo = metricsInfo{
 	ReaggregateMetric: metricInfo{
 		Name: "reaggregate.metric",
 	},
+	ReaggregateMetricWithRequired: metricInfo{
+		Name: "reaggregate.metric.with_required",
+	},
 	SystemCPUTime: metricInfo{
 		Name: "system.cpu.time",
 	},
 }
 
 type metricsInfo struct {
-	DefaultMetric            metricInfo
-	DefaultMetricToBeRemoved metricInfo
-	MetricInputType          metricInfo
-	OptionalMetric           metricInfo
-	OptionalMetricEmptyUnit  metricInfo
-	ReaggregateMetric        metricInfo
-	SystemCPUTime            metricInfo
+	DefaultMetric                 metricInfo
+	DefaultMetricToBeRemoved      metricInfo
+	MetricInputType               metricInfo
+	OptionalMetric                metricInfo
+	OptionalMetricEmptyUnit       metricInfo
+	ReaggregateMetric             metricInfo
+	ReaggregateMetricWithRequired metricInfo
+	SystemCPUTime                 metricInfo
 }
 
 type metricInfo struct {
@@ -130,6 +134,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, optInBoolAttrAttributeValue bool, options ...MetricAttributeOption) {
@@ -237,6 +242,7 @@ func (m *metricDefaultMetricToBeRemoved) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -324,6 +330,7 @@ func (m *metricMetricInputType) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
@@ -424,6 +431,7 @@ func (m *metricOptionalMetric) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool, options ...MetricAttributeOption) {
@@ -521,6 +529,7 @@ func (m *metricOptionalMetricEmptyUnit) init() {
 	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
@@ -608,10 +617,11 @@ type metricReaggregateMetric struct {
 // init fills reaggregate.metric metric with initial data.
 func (m *metricReaggregateMetric) init() {
 	m.data.SetName("reaggregate.metric")
-	m.data.SetDescription("Metric for testing spacial reaggregation")
+	m.data.SetDescription("Metric for testing spatial reaggregation")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricReaggregateMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
@@ -689,6 +699,101 @@ func newMetricReaggregateMetric(cfg MetricConfig) metricReaggregateMetric {
 	return m
 }
 
+type metricReaggregateMetricWithRequired struct {
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+}
+
+// init fills reaggregate.metric.with_required metric with initial data.
+func (m *metricReaggregateMetricWithRequired) init() {
+	m.data.SetName("reaggregate.metric.with_required")
+	m.data.SetDescription("Metric for testing spatial reaggregation with required attributes")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricReaggregateMetricWithRequired) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, requiredStringAttrAttributeValue string, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "required_string_attr") {
+		dp.Attributes().PutStr("required_string_attr", requiredStringAttrAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "string_attr") {
+		dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "boolean_attr") {
+		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricReaggregateMetricWithRequired) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricReaggregateMetricWithRequired) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricReaggregateMetricWithRequired(cfg MetricConfig) metricReaggregateMetricWithRequired {
+	m := metricReaggregateMetricWithRequired{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemCPUTime struct {
 	data          pmetric.Metric // data buffer for generated metric.
 	config        MetricConfig   // metric config provided by user.
@@ -704,6 +809,7 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -778,20 +884,21 @@ func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                         MetricsBuilderConfig // config of the metrics builder.
-	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                int                  // maximum observed number of metrics per resource.
-	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
-	metricDefaultMetric            metricDefaultMetric
-	metricDefaultMetricToBeRemoved metricDefaultMetricToBeRemoved
-	metricMetricInputType          metricMetricInputType
-	metricOptionalMetric           metricOptionalMetric
-	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
-	metricReaggregateMetric        metricReaggregateMetric
-	metricSystemCPUTime            metricSystemCPUTime
+	config                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter      map[string]filter.Filter
+	resourceAttributeExcludeFilter      map[string]filter.Filter
+	metricDefaultMetric                 metricDefaultMetric
+	metricDefaultMetricToBeRemoved      metricDefaultMetricToBeRemoved
+	metricMetricInputType               metricMetricInputType
+	metricOptionalMetric                metricOptionalMetric
+	metricOptionalMetricEmptyUnit       metricOptionalMetricEmptyUnit
+	metricReaggregateMetric             metricReaggregateMetric
+	metricReaggregateMetricWithRequired metricReaggregateMetricWithRequired
+	metricSystemCPUTime                 metricSystemCPUTime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -834,19 +941,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		settings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
 	}
 	mb := &MetricsBuilder{
-		config:                         mbc,
-		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      settings.BuildInfo,
-		metricDefaultMetric:            newMetricDefaultMetric(mbc.Metrics.DefaultMetric),
-		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(mbc.Metrics.DefaultMetricToBeRemoved),
-		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
-		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
-		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
-		metricReaggregateMetric:        newMetricReaggregateMetric(mbc.Metrics.ReaggregateMetric),
-		metricSystemCPUTime:            newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		config:                              mbc,
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           settings.BuildInfo,
+		metricDefaultMetric:                 newMetricDefaultMetric(mbc.Metrics.DefaultMetric),
+		metricDefaultMetricToBeRemoved:      newMetricDefaultMetricToBeRemoved(mbc.Metrics.DefaultMetricToBeRemoved),
+		metricMetricInputType:               newMetricMetricInputType(mbc.Metrics.MetricInputType),
+		metricOptionalMetric:                newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
+		metricOptionalMetricEmptyUnit:       newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
+		metricReaggregateMetric:             newMetricReaggregateMetric(mbc.Metrics.ReaggregateMetric),
+		metricReaggregateMetricWithRequired: newMetricReaggregateMetricWithRequired(mbc.Metrics.ReaggregateMetricWithRequired),
+		metricSystemCPUTime:                 newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
+		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.MapResourceAttr.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["map.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.MapResourceAttr.MetricsInclude)
@@ -972,6 +1080,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOptionalMetric.emit(ils.Metrics())
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
 	mb.metricReaggregateMetric.emit(ils.Metrics())
+	mb.metricReaggregateMetricWithRequired.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -1037,6 +1146,11 @@ func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Time
 // RecordReaggregateMetricDataPoint adds a data point to reaggregate.metric metric.
 func (mb *MetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricReaggregateMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
+}
+
+// RecordReaggregateMetricWithRequiredDataPoint adds a data point to reaggregate.metric.with_required metric.
+func (mb *MetricsBuilder) RecordReaggregateMetricWithRequiredDataPoint(ts pcommon.Timestamp, val float64, requiredStringAttrAttributeValue string, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	mb.metricReaggregateMetricWithRequired.recordDataPoint(mb.startTime, ts, val, requiredStringAttrAttributeValue, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.

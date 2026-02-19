@@ -19,9 +19,9 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -59,6 +59,7 @@ func NewCommand() (*cobra.Command, error) {
 		Use:          "mdatagen",
 		Version:      ver,
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return run(args[0])
 		},
@@ -172,7 +173,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 { // if there's metrics or internal metrics or events, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
@@ -201,6 +202,10 @@ func run(ymlPath string) error {
 		(md.Status.Class == "receiver" || md.Status.Class == "scraper") {
 		toGenerate[filepath.Join(tmplDir, "logs.go.tmpl")] = filepath.Join(codeDir, "generated_logs.go")
 		toGenerate[filepath.Join(tmplDir, "logs_test.go.tmpl")] = filepath.Join(codeDir, "generated_logs_test.go")
+	}
+
+	if len(md.FeatureGates) > 0 { // only generate feature gates if feature gates are present
+		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	}
 
 	// If at least one file to generate, will need the codeDir
@@ -347,18 +352,26 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
-				"supportsLogs":             func() bool { return md.supportsSignal("logs") },
-				"supportsMetrics":          func() bool { return md.supportsSignal("metrics") },
-				"supportsTraces":           func() bool { return md.supportsSignal("traces") },
-				"supportsLogsToLogs":       func() bool { return md.supportsSignal("logs_to_logs") },
-				"supportsLogsToMetrics":    func() bool { return md.supportsSignal("logs_to_metrics") },
-				"supportsLogsToTraces":     func() bool { return md.supportsSignal("logs_to_traces") },
-				"supportsMetricsToLogs":    func() bool { return md.supportsSignal("metrics_to_logs") },
-				"supportsMetricsToMetrics": func() bool { return md.supportsSignal("metrics_to_metrics") },
-				"supportsMetricsToTraces":  func() bool { return md.supportsSignal("metrics_to_traces") },
-				"supportsTracesToLogs":     func() bool { return md.supportsSignal("traces_to_logs") },
-				"supportsTracesToMetrics":  func() bool { return md.supportsSignal("traces_to_metrics") },
-				"supportsTracesToTraces":   func() bool { return md.supportsSignal("traces_to_traces") },
+				"supportsLogs":               func() bool { return md.supportsSignal("logs") },
+				"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
+				"supportsTraces":             func() bool { return md.supportsSignal("traces") },
+				"supportsProfiles":           func() bool { return md.supportsSignal("profiles") },
+				"supportsLogsToLogs":         func() bool { return md.supportsSignal("logs_to_logs") },
+				"supportsLogsToMetrics":      func() bool { return md.supportsSignal("logs_to_metrics") },
+				"supportsLogsToTraces":       func() bool { return md.supportsSignal("logs_to_traces") },
+				"supportsLogsToProfiles":     func() bool { return md.supportsSignal("logs_to_profiles") },
+				"supportsMetricsToLogs":      func() bool { return md.supportsSignal("metrics_to_logs") },
+				"supportsMetricsToMetrics":   func() bool { return md.supportsSignal("metrics_to_metrics") },
+				"supportsMetricsToTraces":    func() bool { return md.supportsSignal("metrics_to_traces") },
+				"supportsMetricsToProfiles":  func() bool { return md.supportsSignal("metrics_to_profiles") },
+				"supportsTracesToLogs":       func() bool { return md.supportsSignal("traces_to_logs") },
+				"supportsTracesToMetrics":    func() bool { return md.supportsSignal("traces_to_metrics") },
+				"supportsTracesToTraces":     func() bool { return md.supportsSignal("traces_to_traces") },
+				"supportsTracesToProfiles":   func() bool { return md.supportsSignal("traces_to_profiles") },
+				"supportsProfilesToLogs":     func() bool { return md.supportsSignal("profiles_to_logs") },
+				"supportsProfilesToMetrics":  func() bool { return md.supportsSignal("profiles_to_metrics") },
+				"supportsProfilesToTraces":   func() bool { return md.supportsSignal("profiles_to_traces") },
+				"supportsProfilesToProfiles": func() bool { return md.supportsSignal("profiles_to_profiles") },
 				"expectConsumerError": func() bool {
 					return md.Tests.ExpectConsumerError
 				},
