@@ -88,7 +88,7 @@ type AddrConfig struct {
 	// ReusePort enables the SO_REUSEPORT socket option on the listener.
 	// This allows multiple server instances to bind to the same address/port.
 	// This is useful for horizontal scaling and zero-downtime restarts.
-	// Note: This option is not supported on all operating systems.
+	// Note: This option is only supported on Linux and Darwin-based operating systems.
 	ReusePort bool `mapstructure:"reuse_port,omitempty"`
 
 	// prevent unkeyed literal initialization
