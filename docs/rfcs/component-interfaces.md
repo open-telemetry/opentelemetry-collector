@@ -7,7 +7,7 @@ extension points that require careful attention to avoid breaking
 changes for users. 
 
 These guidelines describe how to achieve safe interface evolution in
-Golang. This approach is recomended for all Golang modules that want
+Golang. This approach is recommended for all Golang modules that want
 a safe approach to interface evolution.
 
 When an interface type is exported for users outside of this
