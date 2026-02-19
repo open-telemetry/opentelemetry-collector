@@ -1051,10 +1051,6 @@ func TestExpandedValue(t *testing.T) {
 	assert.Error(t, cm.Unmarshal(&cfgBool))
 }
 
-func TestExpandedValueInMap(t *testing.T) {
-
-}
-
 func TestSubExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
 		"key": map[string]any{
