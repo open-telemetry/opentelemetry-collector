@@ -162,7 +162,7 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 }
 
 func TestServerReusePort(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		sc := &AddrConfig{
 			Endpoint:  "localhost:4318",
 			Transport: TransportTypeTCP,
@@ -224,7 +224,7 @@ func TestServerConfigValidate(t *testing.T) {
 		ReusePort: true,
 	}
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		require.Error(t, sc.Validate())
 	} else {
 		require.NoError(t, sc.Validate())
