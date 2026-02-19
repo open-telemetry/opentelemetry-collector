@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
@@ -330,4 +331,33 @@ func TestBuildResource(t *testing.T) {
 	value, ok = res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)
 	assert.Equal(t, "c", value.AsString())
+}
+
+func TestConvertLegacyAttributesEmptyMap(t *testing.T) {
+	result, err := convertLegacyAttributes(map[string]any{})
+	require.NoError(t, err)
+	assert.Nil(t, result)
+}
+
+func TestMergeEmptyValues(t *testing.T) {
+	attrSet := newAttributeSet()
+
+	attrSet.merge(map[string]*attributeValue{})
+	assert.Empty(t, attrSet.keyValues())
+
+	attrSet.merge(map[string]*attributeValue{
+		"key1": {value: attribute.StringValue("value1")},
+	})
+	assert.Len(t, attrSet.keyValues(), 1)
+
+	attrSet.merge(map[string]*attributeValue{
+		"key1": nil,
+	})
+	assert.Empty(t, attrSet.keyValues())
+}
+
+func TestConvertAttributeEntriesEmptyList(t *testing.T) {
+	result, err := convertAttributeEntries([]Attribute{})
+	require.NoError(t, err)
+	assert.Empty(t, result)
 }
