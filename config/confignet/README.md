@@ -13,7 +13,8 @@ leverage network configuration to set connection and transport information.
 - `transport`: Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6"
   (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4"
   (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-- `reuse_port`: If set to `true`, enables SO_REUSEPOST on the listener, allowing 
+<!-- cspell:ignore SO_REUSEPORT -->
+- `reuse_port`: If set to `true`, enables the SO_REUSEPORT socket option on the listener, allowing multiple processes to listen on the same port
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 
