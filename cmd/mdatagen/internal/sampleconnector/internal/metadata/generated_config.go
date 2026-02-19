@@ -5,6 +5,7 @@ package metadata
 import (
 	"fmt"
 	"slices"
+	"time"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -12,8 +13,10 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval overrides the global collection interval for this metric. Zero means use the receiver default.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []string `mapstructure:"attributes"`
