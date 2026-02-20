@@ -32,6 +32,7 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 
 		destRs := dest.ResourceMetrics().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
+		destRs.SetSchemaUrl(srcRs.SchemaUrl())
 		srcRs.ScopeMetrics().RemoveIf(func(srcIlm pmetric.ScopeMetrics) bool {
 			// If we are done skip everything else.
 			if totalCopiedDataPoints == size {
@@ -48,6 +49,7 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 
 			destIlm := destRs.ScopeMetrics().AppendEmpty()
 			srcIlm.Scope().CopyTo(destIlm.Scope())
+			destIlm.SetSchemaUrl(srcIlm.SchemaUrl())
 			srcIlm.Metrics().RemoveIf(func(srcMetric pmetric.Metric) bool {
 				// If we are done skip everything else.
 				if totalCopiedDataPoints == size {
