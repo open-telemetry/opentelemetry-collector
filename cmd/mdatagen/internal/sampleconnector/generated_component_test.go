@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
 	"go.opentelemetry.io/collector/pipeline"
 
 	"go.yaml.in/yaml/v3"
@@ -46,6 +47,33 @@ func TestComponentConfigMarshal(t *testing.T) {
 
 	roundTrip := NewFactory().CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&roundTrip))
+}
+
+func TestComponentConfigMarshalInvalid(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		expectedErr string
+	}{
+		{
+			name: "invalid_unknown_field",
+			config: map[string]any{
+				"unknown_field": "value",
+			},
+			expectedErr: "has invalid keys: unknown_field",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			cm := confmap.NewFromStringMap(tt.config)
+			err := cm.Unmarshal(&cfg)
+			require.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
 }
 
 func TestComponentLifecycle(t *testing.T) {

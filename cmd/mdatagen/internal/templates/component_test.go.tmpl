@@ -30,15 +30,24 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/processor/xprocessor"
+	{{- end }}
 	{{- end }}
 	{{- if isReceiver }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	{{- end }}
 	{{- end }}
 	{{- if isScraper }}
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/scraper/xscraper"
+	{{- end }}
 	{{- end }}
 	{{- if isExtension }}
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -48,8 +57,12 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	"go.opentelemetry.io/collector/connector/xconnector"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	{{- end }}
 	"go.opentelemetry.io/collector/pipeline"
-	{{ if supportsProfiles }}
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	{{- end }}
 	{{- end }}
@@ -86,6 +99,33 @@ func TestComponentConfigMarshal(t *testing.T) {
 
 	roundTrip := NewFactory().CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&roundTrip))
+}
+
+func TestComponentConfigMarshalInvalid(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		expectedErr string
+	}{
+		{
+			name: "invalid_unknown_field",
+			config: map[string]any{
+				"unknown_field": "value",
+			},
+			expectedErr: "has invalid keys: unknown_field",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			cm := confmap.NewFromStringMap(tt.config)
+			err := cm.Unmarshal(&cfg)
+			require.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
 }
 
 {{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
