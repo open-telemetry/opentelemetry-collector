@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -18,10 +19,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
 	"go.opentelemetry.io/collector/pipeline"
-
-	"go.yaml.in/yaml/v3"
 )
 
 var typ = component.MustNewType("sample")

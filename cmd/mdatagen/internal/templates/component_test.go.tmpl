@@ -17,6 +17,8 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
@@ -25,27 +27,35 @@ import (
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
 	{{- if isProcessor }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	{{ if supportsProfiles }}
+	{{- if supportsProfiles -}}
 	"go.opentelemetry.io/collector/processor/xprocessor"
-	{{- end }}
+	{{- end -}}
 	{{- end }}
 	{{- if isReceiver }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	{{ if supportsProfiles }}
+	{{- if supportsProfiles }}
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	{{- end }}
 	{{- end }}
 	{{- if isScraper }}
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-	{{ if supportsProfiles }}
+	{{- if supportsProfiles }}
 	"go.opentelemetry.io/collector/scraper/xscraper"
 	{{- end }}
 	{{- end }}
@@ -57,23 +67,16 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles -}}
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	{{- end }}
+	{{ end -}}
 	"go.opentelemetry.io/collector/pipeline"
-	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles -}}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	{{ end -}}
 	{{- end }}
 	{{- end }}
-	{{- if or isExporter isProcessor }}
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	{{- end }}
-	{{- end }}
-	"go.yaml.in/yaml/v3"
 )
 
 var typ = component.MustNewType("{{ .Type }}")
