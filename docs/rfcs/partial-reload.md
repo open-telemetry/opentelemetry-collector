@@ -30,7 +30,7 @@ Affected components: `k8sclusterreceiver`, `prometheusreceiver`, `googlecloudpub
 
 Some components have a blast radius that extends beyond the collector itself, causing disruption to other systems and instances that are entirely unrelated to the configuration change.
 
-Affected components: `kafkareceiver` (consumer group rebalance affects all group members), `loadbalancingexporter` (routing disruption breaks downstream tail sampling)
+Affected components: `kafkareceiver` (consumer group rebalance affects all group members unless static membership is configured via `group_instance_id`)
 
 ---
 
