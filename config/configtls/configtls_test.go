@@ -711,6 +711,13 @@ func TestCipherSuites(t *testing.T) {
 			result: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA},
 		},
 		{
+			name: "insecure cipher suite set",
+			tlsSetting: Config{
+				CipherSuites: []string{"TLS_RSA_WITH_RC4_128_SHA"},
+			},
+			result: []uint16{tls.TLS_RSA_WITH_RC4_128_SHA},
+		},
+		{
 			name: "invalid cipher suite set",
 			tlsSetting: Config{
 				CipherSuites: []string{"FOO"},
