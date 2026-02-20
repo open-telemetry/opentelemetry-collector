@@ -72,11 +72,11 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
-	applyComponentLabelFromRepoFunc(filePath, &md)
-
-	if md.Label == "" && md.Status != nil {
-		md.Label = fmt.Sprintf("%s/%s", md.Status.Class, md.ShortFolderName)
+	lbl := getComponentLabelFromRepo(filePath)
+	if lbl == "" && md.Status != nil {
+		lbl = fmt.Sprintf("%s/%s", md.Status.Class, md.ShortFolderName)
 	}
+	md.Label = lbl
 
 	setAttributeDefaultFields(md.Attributes)
 	setAttributeDefaultFields(md.ResourceAttributes)
