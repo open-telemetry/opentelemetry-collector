@@ -37,7 +37,6 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 }
 
 func TestLoadMetadata(t *testing.T) {
-	withMockApplyComponentLabel(t)
 	tests := []struct {
 		name    string
 		want    Metadata
@@ -741,12 +740,6 @@ func TestLoadMetadata(t *testing.T) {
 }
 
 func TestLoadMetadata_LabelMapping(t *testing.T) {
-	// stub packageNameFunc for all subtests
-	origPackageNameFunc := packageNameFunc
-	packageNameFunc = func(_ string) (string, error) {
-		return "go.opentelemetry.io/collector/fake", nil
-	}
-	defer func() { packageNameFunc = origPackageNameFunc }()
 
 	type testCase struct {
 		name string
@@ -856,6 +849,11 @@ status:
 			// Create component directory
 			compDir := filepath.Join(repoRoot, filepath.FromSlash(tt.relCompDir))
 			require.NoError(t, os.MkdirAll(compDir, 0o700))
+
+			// Create a minimal Go module structure
+			// This is needed because LoadMetadata calls packageName() which uses `go list`
+			require.NoError(t, os.WriteFile(filepath.Join(compDir, "go.mod"), []byte("module testcomponent"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(compDir, "component.go"), []byte("package testcomponent"), 0o600))
 
 			// Write metadata.yaml
 			mdFile := filepath.Join(compDir, "metadata.yaml")
