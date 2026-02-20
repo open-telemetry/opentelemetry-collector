@@ -108,7 +108,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 			// `exp.Value` should take priority if it can be mapped and has a different value.
 			// If `exp.Value` is a string, `NewRetrievedFromYAML` guarantees they have the same value,
 			// but this leaves the case of a `null` value.
-			if useOriginal && pointed && exp.Value == nil {
+			if pointed && exp.Value == nil {
 				useOriginal = false
 			}
 
