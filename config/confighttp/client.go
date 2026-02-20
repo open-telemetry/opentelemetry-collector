@@ -205,13 +205,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
 	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
-		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, extensions)
+		getClient, err := cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
 		}
-		clientTransport, err = wrapper(clientTransport)
+		clientTransport, err = getClient(clientTransport)
 		// If we failed to construct a wrapper
 		if err != nil {
 			return nil, err
