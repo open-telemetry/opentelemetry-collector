@@ -4,9 +4,17 @@ Support partial configuration reload to rebuild only affected components, reduci
 
 ## Motivation
 
-Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in lost events during the reload window, downtime where the collector is not accepting or processing telemetry data, and unnecessary performance overhead from rebuilding components that did not change.
+Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in costly re-initialization of components, loss of accumulated in-memory state, ingestion endpoint downtime where clients receive connection refused errors, disruption of consumption cursors and checkpoints, and unnecessary impact on external systems.
 
-A survey of components in the collector-contrib repository reveals the full scope of this problem across four categories of impact:
+A survey of components in the collector-contrib repository reveals the full scope of this problem across five categories of impact:
+
+### Expensive Startup
+
+Components with costly initialization that involves large state synchronization, service discovery, or log replay. Restarting these components introduces significant delays before they are fully operational.
+
+- `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes.
+- `prometheusreceiver` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
+- `prometheusremotewriteexporter` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
 
 ### Accumulated State Loss
 
@@ -14,23 +22,25 @@ Many components maintain in-memory state (buffers, counters, accumulators, cache
 
 Affected components: `tailsamplingprocessor`, `groupbytraceprocessor`, `deltatocumulativeprocessor`, `cumulativetodeltaprocessor`, `intervalprocessor`, `logdedupprocessor`, `metricstarttimeprocessor`, `statsdreceiver`, `prometheusexporter`, `signalfxexporter`
 
+### Ingestion Endpoint Downtime
+
+Receivers that expose network endpoints (HTTP, gRPC, TCP, UDP) for push-based telemetry ingestion must close and rebind their listening sockets during a restart. During this window, clients sending data receive connection refused errors, resulting in event loss until the receiver is fully restarted and listening again.
+
+In multi-replica deployments, this can be mitigated by rolling out configuration changes one instance at a time, but in IoT, edge, or single-instance deployments where only one collector is running, there is no redundancy to absorb the downtime.
+
+Affected components: `otlpreceiver`, `jaegerreceiver`, `zipkinreceiver`, `otelarrowreceiver`, `skywalkingreceiver`, `lokireceiver`, `datadogreceiver`, `splunkhecreceiver`, `signalfxreceiver`, `prometheusremotewritereceiver`, `fluentforwardreceiver`, `statsdreceiver`, `carbonreceiver`, `collectdreceiver`, `influxdbreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`, `awsfirehosereceiver`, `webhookeventreceiver`, `faroreceiver`, `libhoneyreceiver`, `googlecloudpubsubpushreceiver`
+
 ### Cursor and Checkpoint Disruption
 
 Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
 
 Affected components: `filelogreceiver`, `azureeventhubreceiver`, `awscloudwatchreceiver`, `googlecloudspannerreceiver`, `mongodbatlasreceiver`
 
-### Expensive Reconnection and Authentication
-
-Components with costly startup involving connection establishment, authentication handshakes, or large state synchronization. Startup cost ranges from seconds (TLS handshakes, OAuth token exchange) to minutes (Kubernetes cluster state sync).
-
-Affected components: `k8sclusterreceiver`, `prometheusreceiver`, `googlecloudpubsubreceiver`, `solacereceiver`, `pulsarreceiver`, `kafkametricsreceiver`, `elasticsearchexporter`, `prometheusremotewriteexporter`, `datadogexporter`
-
 ### External System Disruption
 
-Some components have a blast radius that extends beyond the collector itself, causing disruption to other systems and instances that are entirely unrelated to the configuration change.
+Components whose restart causes disruption to external systems or other instances beyond the collector itself.
 
-Affected components: `kafkareceiver` (consumer group rebalance affects all group members unless static membership is configured via `group_instance_id`)
+- `kafkareceiver` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group. No messages are consumed by any member during the rebalance. This can be mitigated by configuring `group_instance_id` for static membership.
 
 ---
 
