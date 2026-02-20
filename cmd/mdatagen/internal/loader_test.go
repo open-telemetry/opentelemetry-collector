@@ -872,6 +872,189 @@ status:
 	}
 }
 
+func TestGetComponentLabelFromRepo(t *testing.T) {
+	tests := []struct {
+		name             string
+		setupRepo        func(t *testing.T, repoRoot string) string // returns metadata file path
+		labelsContent    string
+		expectedLabel    string
+		omitLabelsFile   bool
+		createInvalidRel bool // test filepath.Rel error
+	}{
+		{
+			name: "exact match in labels file",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "receiver", "filelog")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `receiver/filelog receiver/filelog
+processor/batch processor/batch`,
+			expectedLabel: "receiver/filelog",
+		},
+		{
+			name: "label differs from path",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "receiver", "filelogreceiver")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `receiver/filelogreceiver receiver/filelog
+processor/batch processor/batch`,
+			expectedLabel: "receiver/filelog",
+		},
+		{
+			name: "nested path match",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "extension", "storage", "filestorage")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `extension/storage/filestorage extension/filestorage
+receiver/filelog receiver/filelog`,
+			expectedLabel: "extension/filestorage",
+		},
+		{
+			name: "no match returns empty string",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "receiver", "unmapped")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `receiver/filelog receiver/filelog
+processor/batch processor/batch`,
+			expectedLabel: "",
+		},
+		{
+			name: "no labels file returns empty",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "receiver", "nop")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			omitLabelsFile: true,
+			expectedLabel:  "",
+		},
+		{
+			name: "labels file with comments and empty lines",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "processor", "batch")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `# Comment line
+receiver/filelog receiver/filelog
+
+# Another comment
+processor/batch processor/batch`,
+			expectedLabel: "processor/batch",
+		},
+		{
+			name: "component at repo root",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				mdPath := filepath.Join(repoRoot, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `. root-component
+receiver/filelog receiver/filelog`,
+			expectedLabel: "root-component",
+		},
+		{
+			name: "invalid labels file - malformed lines ignored",
+			setupRepo: func(t *testing.T, repoRoot string) string {
+				compDir := filepath.Join(repoRoot, "receiver", "valid")
+				require.NoError(t, os.MkdirAll(compDir, 0o755))
+				mdPath := filepath.Join(compDir, "metadata.yaml")
+				return mdPath
+			},
+			labelsContent: `receiver/valid receiver/valid
+invalid_line_with_one_field
+receiver/other receiver/other extra
+   
+# comment`,
+			expectedLabel: "receiver/valid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+
+			// Create .github directory and labels file
+			if !tt.omitLabelsFile {
+				githubDir := filepath.Join(repoRoot, ".github")
+				require.NoError(t, os.MkdirAll(githubDir, 0o755))
+				labelsPath := filepath.Join(githubDir, "component_labels.txt")
+				require.NoError(t, os.WriteFile(labelsPath, []byte(tt.labelsContent), 0o600))
+			}
+
+			// Setup component directory structure
+			mdPath := tt.setupRepo(t, repoRoot)
+
+			// Call the function
+			got := getComponentLabelFromRepo(mdPath)
+
+			// Verify result
+			require.Equal(t, tt.expectedLabel, got)
+		})
+	}
+}
+
+func TestGetComponentLabelFromRepo_EdgeCases(t *testing.T) {
+	t.Run("file outside repo returns empty", func(t *testing.T) {
+		// Create a temporary file that's not in a git-like repo structure
+		tmpDir := t.TempDir()
+		mdPath := filepath.Join(tmpDir, "metadata.yaml")
+		require.NoError(t, os.WriteFile(mdPath, []byte("test"), 0o600))
+
+		got := getComponentLabelFromRepo(mdPath)
+		require.Empty(t, got, "expected empty string when no repo root found")
+	})
+
+	t.Run("repo root is component dir itself", func(t *testing.T) {
+		repoRoot := t.TempDir()
+
+		// Create .github/component_labels.txt at repo root
+		githubDir := filepath.Join(repoRoot, ".github")
+		require.NoError(t, os.MkdirAll(githubDir, 0o755))
+		labelsPath := filepath.Join(githubDir, "component_labels.txt")
+		labelsContent := `. root-label
+subdir/component subdir/component`
+		require.NoError(t, os.WriteFile(labelsPath, []byte(labelsContent), 0o600))
+
+		// metadata.yaml is directly in repo root
+		mdPath := filepath.Join(repoRoot, "metadata.yaml")
+
+		got := getComponentLabelFromRepo(mdPath)
+		require.Equal(t, "root-label", got)
+	})
+
+	t.Run("deeply nested component", func(t *testing.T) {
+		repoRoot := t.TempDir()
+
+		// Create .github/component_labels.txt
+		githubDir := filepath.Join(repoRoot, ".github")
+		require.NoError(t, os.MkdirAll(githubDir, 0o755))
+		labelsPath := filepath.Join(githubDir, "component_labels.txt")
+		labelsContent := `a/b/c/d/e/component deep/component/label`
+		require.NoError(t, os.WriteFile(labelsPath, []byte(labelsContent), 0o600))
+
+		// Create deeply nested structure
+		compDir := filepath.Join(repoRoot, "a", "b", "c", "d", "e", "component")
+		require.NoError(t, os.MkdirAll(compDir, 0o755))
+		mdPath := filepath.Join(compDir, "metadata.yaml")
+
+		got := getComponentLabelFromRepo(mdPath)
+		require.Equal(t, "deep/component/label", got)
+	})
+}
+
 func strPtr(s string) *string {
 	return &s
 }
