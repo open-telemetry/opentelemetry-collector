@@ -427,18 +427,7 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func withMockApplyComponentLabel(t *testing.T) {
-	t.Helper()
-	t.Cleanup(func() {
-		applyComponentLabelFromRepoFunc = applyComponentLabelFromRepo
-	})
-	applyComponentLabelFromRepoFunc = func(_ string, md *Metadata) {
-		md.Label = ""
-	}
-}
-
 func TestInlineReplace(t *testing.T) {
-	withMockApplyComponentLabel(t)
 	tests := []struct {
 		name           string
 		markdown       string
@@ -695,7 +684,6 @@ Some info about a component
 }
 
 func TestGenerateStatusMetadata(t *testing.T) {
-	withMockApplyComponentLabel(t)
 	tests := []struct {
 		name     string
 		output   string
