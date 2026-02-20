@@ -51,16 +51,63 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]request.Request, error) {
 	var res []request.Request
+	var droppedItems int
 	for req.size(sz) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+			// The first span is too large to fit into a batch.
+			// Drop it and continue processing the rest.
+			droppedItems++
+			removeFirstSpan(req.td)
+			// Invalidate the cached size since we modified the data directly.
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	res = append(res, req)
+	if droppedItems == 0 || req.td.SpanCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("%d spans exceeded max size, the spans were dropped", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstSpan removes the first span from the traces.
+// It cleans up any empty scope spans and resource spans that result from the removal.
+func removeFirstSpan(td ptrace.Traces) {
+	rs := td.ResourceSpans().At(0)
+	ss := rs.ScopeSpans().At(0)
+	first := true
+	ss.Spans().RemoveIf(func(_ ptrace.Span) bool {
+		if first {
+			first = false
+			return true
+		}
+		return false
+	})
+	if ss.Spans().Len() == 0 {
+		first = true
+		rs.ScopeSpans().RemoveIf(func(_ ptrace.ScopeSpans) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+	if rs.ScopeSpans().Len() == 0 {
+		first = true
+		td.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.
