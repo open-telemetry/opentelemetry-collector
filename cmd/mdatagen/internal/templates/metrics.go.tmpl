@@ -23,6 +23,9 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{- range .SemConvImports }}
+	{{ .Alias }} "go.opentelemetry.io/otel/semconv/v{{ $.SemConvVersion }}/{{ .Package }}"
+	{{- end }}
 	{{ if .ResourceAttributes -}}
 	"go.opentelemetry.io/collector/filter"
 	{{- end }}
@@ -71,11 +74,15 @@ var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
 {{- end }}
 
 var MetricsInfo = metricsInfo{
-    {{- range $name, $metric := .Metrics }}
-    {{ $name.Render }}: metricInfo{
-        Name: "{{ $name }}",
-    },
-    {{- end }}
+	{{- range $name, $metric := .Metrics }}
+	{{ $name.Render }}: metricInfo{
+		{{- if $metric.SemanticConvention.HasSemConvType }}
+		Name: metricSemConv{{ $name.Render }}.Name(),
+		{{- else }}
+		Name: "{{ $name }}",
+		{{- end }}
+	},
+	{{- end }}
 }
 
 type metricsInfo struct {
@@ -118,11 +125,22 @@ type metric{{ $name.Render }} struct {
   {{- end }}
 }
 
+{{- if $metric.SemanticConvention.HasSemConvType }}
+// metricSemConv{{ $name.Render }} provides access to the semantic convention type
+var metricSemConv{{ $name.Render }} = {{ $metric.SemanticConvention.Package }}.{{ $metric.SemanticConvention.Type }}{}
+{{- end }}
+
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
+	{{- if $metric.SemanticConvention.ShouldUseSemConvValues }}
+	m.data.SetName(metricSemConv{{ $name.Render }}.Name())
+	m.data.SetDescription(metricSemConv{{ $name.Render }}.Description())
+	m.data.SetUnit(metricSemConv{{ $name.Render }}.Unit())
+	{{- else }}
 	m.data.SetName("{{ $name }}")
 	m.data.SetDescription("{{ $metric.Description }}")
 	m.data.SetUnit("{{ $metric.Unit }}")
+	{{- end }}
 	m.data.SetEmpty{{ $metric.Data.Type }}()
 	{{- if $metric.Data.HasMonotonic }}
 	m.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})

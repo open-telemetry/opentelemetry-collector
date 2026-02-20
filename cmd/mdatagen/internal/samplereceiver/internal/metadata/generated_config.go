@@ -68,6 +68,7 @@ type MetricsConfig struct {
 	ReaggregateMetric             MetricConfig `mapstructure:"reaggregate.metric"`
 	ReaggregateMetricWithRequired MetricConfig `mapstructure:"reaggregate.metric.with_required"`
 	SystemCPUTime                 MetricConfig `mapstructure:"system.cpu.time"`
+	SystemMemoryLimit             MetricConfig `mapstructure:"system.memory.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -129,6 +130,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 		},
 		SystemCPUTime: MetricConfig{
+			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"cpu", "state"},
+			EnabledAttributes:   []string{"cpu", "state"},
+		},
+		SystemMemoryLimit: MetricConfig{
 			Enabled: true,
 
 			AggregationStrategy: AggregationStrategySum,

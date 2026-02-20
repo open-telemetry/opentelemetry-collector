@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/mod/semver"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -88,6 +89,10 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	}
 	if m.Gauge != nil {
 		errs = errors.Join(errs, m.Gauge.Validate())
+	}
+	if m.SemanticConvention != nil && semver.Compare("v"+semConvVersion, "v1.32.0") < 0 {
+		errs = errors.Join(errs, errors.New("semantic_convention requires sem_conv_version >= 1.32.0"))
+		return errs
 	}
 	if m.SemanticConvention != nil {
 		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {

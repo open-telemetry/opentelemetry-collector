@@ -60,6 +60,8 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		md.GeneratedPackageName = "metadata"
 	}
 
+	md.inferSemConvTypes()
+
 	if err := md.Validate(); err != nil {
 		return md, err
 	}
