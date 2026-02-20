@@ -5,7 +5,7 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 
 import (
-    {{- if $reag -}}
+    {{- if and $reag .Metrics -}}
     "fmt"
     "slices"
     {{- end }}
