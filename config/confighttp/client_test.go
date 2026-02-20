@@ -613,7 +613,7 @@ func TestContextWithClient(t *testing.T) {
 			},
 			expected: client.Info{
 				Addr: &net.IPAddr{
-					IP: net.IPv4(1, 2, 3, 4),
+					IP: net.IPv4(1, 2, 3, 4).To4(),
 				},
 			},
 		},
