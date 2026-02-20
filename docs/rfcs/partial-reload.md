@@ -16,7 +16,7 @@ Affected components: `tailsamplingprocessor`, `groupbytraceprocessor`, `deltatoc
 
 ### Cursor and Checkpoint Disruption
 
-Components that track consumption progress via file offsets, poll cursors, or partition checkpoints lose their position on restart. This causes duplicate ingestion or missed data depending on how the cursor is recovered.
+Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
 
 Affected components: `filelogreceiver`, `azureeventhubreceiver`, `awscloudwatchreceiver`, `googlecloudspannerreceiver`, `mongodbatlasreceiver`
 
