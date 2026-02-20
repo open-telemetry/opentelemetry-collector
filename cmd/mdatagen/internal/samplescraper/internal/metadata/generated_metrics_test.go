@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testDataSet int
@@ -69,6 +68,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["DefaultMetric"] = mb.metricDefaultMetric.config.AggregationStrategy
+			aggMap["DefaultMetricHistogram"] = mb.metricDefaultMetricHistogram.config.AggregationStrategy
 			aggMap["DefaultMetricToBeRemoved"] = mb.metricDefaultMetricToBeRemoved.config.AggregationStrategy
 			aggMap["MetricInputType"] = mb.metricMetricInputType.config.AggregationStrategy
 			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
@@ -118,6 +118,10 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
 			}
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordDefaultMetricHistogramDataPoint(ts, 1, "string_attr-val", true)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -263,6 +267,27 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("map_attr")
 						assert.False(t, ok)
 					}
+				case "default.metric.histogram":
+					assert.False(t, validatedMetrics["default.metric.histogram"], "Found a duplicate in the metrics slice: default.metric.histogram")
+					validatedMetrics["default.metric.histogram"] = true
+					assert.Equal(t, pmetric.MetricTypeHistogram, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Histogram().DataPoints().Len())
+					assert.Equal(t, "Cumulative histogram double metric enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Histogram().AggregationTemporality())
+					dp := ms.At(i).Histogram().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+					assert.InDelta(t, float64(1), dp.Min(), 0.01)
+					assert.InDelta(t, float64(1), dp.Max(), 0.01)
+					attrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("boolean_attr")
+					assert.True(t, ok)
+					assert.True(t, attrVal.Bool())
 				case "default.metric.to_be_removed":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")

@@ -32,6 +32,21 @@ The metric will be become optional soon.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
+### default.metric.histogram
+
+Cumulative histogram double metric enabled by default.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Histogram | Double | Cumulative | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
 ### default.metric.to_be_removed
 
 [DEPRECATED] Non-monotonic delta sum double metric enabled by default.

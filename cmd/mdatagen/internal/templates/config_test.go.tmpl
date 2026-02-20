@@ -36,6 +36,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
             Enabled: true,
             {{- if eq $metric.Data.Type "Sum" }}
             AggregationStrategy: AggregationStrategySum,
+            {{- else if eq $metric.Data.Type "Histogram" }}
+            AggregationStrategy: AggregationStrategySum,
             {{- else }}
             AggregationStrategy: AggregationStrategyAvg,
             {{- end }}
@@ -67,6 +69,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					{{ $name.Render }}: MetricConfig{
             Enabled: false,
             {{- if eq $metric.Data.Type "Sum" }}
+            AggregationStrategy: AggregationStrategySum,
+            {{- else if eq $metric.Data.Type "Histogram" }}
             AggregationStrategy: AggregationStrategySum,
             {{- else }}
             AggregationStrategy: AggregationStrategyAvg,
