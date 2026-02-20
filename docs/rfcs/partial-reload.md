@@ -24,7 +24,7 @@ Affected components: `tailsamplingprocessor`, `groupbytraceprocessor`, `deltatoc
 
 ### Ingestion Endpoint Downtime
 
-Receivers that expose network endpoints (HTTP, gRPC, TCP, UDP) for push-based telemetry ingestion must close and rebind their listening sockets during a restart. During this window, clients sending data receive connection refused errors, resulting in event loss until the receiver is fully restarted and listening again.
+Receivers that expose network endpoints (HTTP, gRPC, TCP, UDP) for push-based telemetry ingestion must close and rebind their listening sockets during a restart. During this window, clients sending data receive connection refused errors. Clients that implement retry logic can recover once the receiver is listening again, but clients that do not retry will permanently lose those events.
 
 In multi-replica deployments, this can be mitigated by rolling out configuration changes one instance at a time, but in IoT, edge, or single-instance deployments where only one collector is running, there is no redundancy to absorb the downtime.
 
