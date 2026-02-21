@@ -8,6 +8,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// mapKeyValues returns the underlying KeyValue slice of a pcommon.Map.
+func mapKeyValues(m pcommon.Map) []internal.KeyValue {
+	return *internal.GetMapOrig(internal.MapWrapper(m))
+}
+
 // resolveProfilesReferences walks through all profiles data after unmarshaling
 // and resolves any string_value_ref and key_ref to their actual string values.
 // This ensures the pdata API works transparently with referenced strings.
@@ -17,32 +22,30 @@ func resolveProfilesReferences(profiles Profiles) {
 	// Resolve references in resource attributes
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		rp := profiles.ResourceProfiles().At(i)
-		resolveMapReferences(dict, rp.Resource().Attributes())
+		resolveKeyValueReferences(dict, mapKeyValues(rp.Resource().Attributes()))
 
 		// Resolve references in scope attributes
 		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
 			sp := rp.ScopeProfiles().At(j)
-			resolveMapReferences(dict, sp.Scope().Attributes())
+			resolveKeyValueReferences(dict, mapKeyValues(sp.Scope().Attributes()))
 		}
 	}
 }
 
-// resolveMapReferences resolves all string_value_ref and key_ref in a map
-func resolveMapReferences(dict ProfilesDictionary, m pcommon.Map) {
-	mapOrig := internal.GetMapOrig(internal.MapWrapper(m))
-
-	for i := 0; i < len(*mapOrig); i++ {
-		kv := &(*mapOrig)[i]
-
+// resolveKeyValueReferences resolves key_ref and string_value_ref in a KeyValue slice
+func resolveKeyValueReferences(dict ProfilesDictionary, kvs []internal.KeyValue) {
+	for i := range kvs {
+		kv := &kvs[i]
 		// Resolve key_ref if set
 		if kv.KeyRef >= 0 {
 			idx := int(kv.KeyRef)
 			if idx < dict.StringTable().Len() {
 				kv.Key = dict.StringTable().At(idx)
-				// Keep ref set for potential re-marshaling
+				// N.b. keep KeyRef set to optimize re-marshaling. This is
+				// technically a violation of the proto spec, but acceptable
+				// for the in-memory pdata API since keys are immutable.
 			}
 		}
-
 		// Resolve string_value_ref if set
 		resolveAnyValueReference(dict, &kv.Value)
 	}
@@ -64,16 +67,7 @@ func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyVal
 			anyValue.Value = ov
 		}
 	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
-		for i := 0; i < len(kvList.KvlistValue.Values); i++ {
-			kv := &kvList.KvlistValue.Values[i]
-			if kv.KeyRef >= 0 {
-				idx := int(kv.KeyRef)
-				if idx < dict.StringTable().Len() {
-					kv.Key = dict.StringTable().At(idx)
-				}
-			}
-			resolveAnyValueReference(dict, &kv.Value)
-		}
+		resolveKeyValueReferences(dict, kvList.KvlistValue.Values)
 	} else if arrVal, ok := anyValue.Value.(*internal.AnyValue_ArrayValue); ok && arrVal.ArrayValue != nil {
 		for i := 0; i < len(arrVal.ArrayValue.Values); i++ {
 			resolveAnyValueReference(dict, &arrVal.ArrayValue.Values[i])
@@ -110,22 +104,20 @@ func convertProfilesToReferences(profiles Profiles) {
 	// Convert strings in resource attributes
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		rp := profiles.ResourceProfiles().At(i)
-		convertMapToReferences(getStringIndex, rp.Resource().Attributes())
+		convertKeyValueToReferences(getStringIndex, mapKeyValues(rp.Resource().Attributes()))
 
 		// Convert strings in scope attributes
 		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
 			sp := rp.ScopeProfiles().At(j)
-			convertMapToReferences(getStringIndex, sp.Scope().Attributes())
+			convertKeyValueToReferences(getStringIndex, mapKeyValues(sp.Scope().Attributes()))
 		}
 	}
 }
 
-// convertMapToReferences converts string keys and values to references
-func convertMapToReferences(getStringIndex func(string) int32, m pcommon.Map) {
-	mapOrig := internal.GetMapOrig(internal.MapWrapper(m))
-
-	for i := 0; i < len(*mapOrig); i++ {
-		kv := &(*mapOrig)[i]
+// convertKeyValueToReferences converts string keys and values to references in a KeyValue slice
+func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []internal.KeyValue) {
+	for i := range kvs {
+		kv := &kvs[i]
 
 		// Convert key to reference
 		if kv.Key != "" && kv.KeyRef == 0 {
@@ -157,15 +149,7 @@ func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *int
 		ov.StringValueRef = idx
 		anyValue.Value = ov
 	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
-		// Recursively convert nested key-value lists
-		for i := 0; i < len(kvList.KvlistValue.Values); i++ {
-			kv := &kvList.KvlistValue.Values[i]
-			if kv.Key != "" && kv.KeyRef == 0 {
-				kv.KeyRef = getStringIndex(kv.Key)
-				kv.Key = ""
-			}
-			convertAnyValueToReference(getStringIndex, &kv.Value)
-		}
+		convertKeyValueToReferences(getStringIndex, kvList.KvlistValue.Values)
 	} else if arrVal, ok := anyValue.Value.(*internal.AnyValue_ArrayValue); ok && arrVal.ArrayValue != nil {
 		// Recursively convert arrays
 		for i := 0; i < len(arrVal.ArrayValue.Values); i++ {

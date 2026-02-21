@@ -386,7 +386,7 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		return 1
 	}
 
-	convertMapToReferences(getStringIndex, attrs)
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
 	// Empty key should not have KeyRef set
 	kv := &(*mapOrig)[0]
@@ -414,7 +414,7 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		return 99
 	}
 
-	convertMapToReferences(getStringIndex, attrs)
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
 	// KeyRef should remain unchanged
 	kv := &(*mapOrig)[0]
@@ -463,7 +463,7 @@ func TestConvertMapToReferencesClearsKey(t *testing.T) {
 		return 2
 	}
 
-	convertMapToReferences(getStringIndex, attrs)
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
 	kv := &(*mapOrig)[0]
 	// key_ref should be set
