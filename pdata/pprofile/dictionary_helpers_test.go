@@ -441,6 +441,77 @@ func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
 	assert.Equal(t, int64(42), intVal.IntValue)
 }
 
+func TestConvertMapToReferencesClearsKey(t *testing.T) {
+	profiles := NewProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	attrs := rp.Resource().Attributes()
+
+	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
+	*mapOrig = append(*mapOrig, internal.KeyValue{
+		Key: "my-key",
+		Value: internal.AnyValue{
+			Value: &internal.AnyValue_StringValue{
+				StringValue: "my-value",
+			},
+		},
+	})
+
+	getStringIndex := func(s string) int32 {
+		if s == "my-key" {
+			return 1
+		}
+		return 2
+	}
+
+	convertMapToReferences(getStringIndex, attrs)
+
+	kv := &(*mapOrig)[0]
+	// key_ref should be set
+	assert.Equal(t, int32(1), kv.KeyRef)
+	// key MUST NOT be set when key_ref is used (per proto spec)
+	assert.Equal(t, "", kv.Key, "Key must be cleared when KeyRef is set")
+}
+
+func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
+	stringIndex := make(map[string]int32)
+	counter := int32(1)
+	getStringIndex := func(s string) int32 {
+		if idx, ok := stringIndex[s]; ok {
+			return idx
+		}
+		idx := counter
+		counter++
+		stringIndex[s] = idx
+		return idx
+	}
+
+	kvList := &internal.KeyValueList{
+		Values: []internal.KeyValue{
+			{
+				Key: "nested-key",
+				Value: internal.AnyValue{
+					Value: &internal.AnyValue_StringValue{
+						StringValue: "nested-value",
+					},
+				},
+			},
+		},
+	}
+
+	anyVal := &internal.AnyValue{
+		Value: &internal.AnyValue_KvlistValue{
+			KvlistValue: kvList,
+		},
+	}
+
+	convertAnyValueToReference(getStringIndex, anyVal)
+
+	// key_ref should be set
+	assert.NotEqual(t, int32(0), kvList.Values[0].KeyRef)
+	// key MUST NOT be set when key_ref is used (per proto spec)
+	assert.Equal(t, "", kvList.Values[0].Key, "Key must be cleared when KeyRef is set in nested kvlist")
+}
+
 func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 	getStringIndex := func(_ string) int32 {
 		return 0

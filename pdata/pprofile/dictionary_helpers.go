@@ -253,6 +253,7 @@ func convertMapToReferences(getStringIndex func(string) int32, m pcommon.Map) {
 		// Convert key to reference
 		if kv.Key != "" && kv.KeyRef == 0 {
 			kv.KeyRef = getStringIndex(kv.Key)
+			kv.Key = ""
 		}
 
 		// Convert string values to references
@@ -284,6 +285,7 @@ func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *int
 			kv := &kvList.KvlistValue.Values[i]
 			if kv.Key != "" && kv.KeyRef == 0 {
 				kv.KeyRef = getStringIndex(kv.Key)
+				kv.Key = ""
 			}
 			convertAnyValueToReference(getStringIndex, &kv.Value)
 		}
