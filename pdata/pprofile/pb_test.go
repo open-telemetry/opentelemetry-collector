@@ -50,15 +50,13 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	wire3, err := marshaler.MarshalProfiles(td2)
 	require.NoError(t, err)
 
-	// Verify that wire1 and wire3 are compatible by unmarshaling both and checking the data
+	// Verify full round-trip fidelity: unmarshal both wire1 and wire3 into goproto
+	// messages and compare them semantically. This ensures all data (attributes,
+	// dictionary, profiles, etc.) survives the round-trip through both libraries.
 	var check1, check2 gootlpprofiles.ProfilesData
 	require.NoError(t, goproto.Unmarshal(wire1, &check1))
 	require.NoError(t, goproto.Unmarshal(wire3, &check2))
-
-	// Both should unmarshal successfully, proving wire compatibility
-	assert.NotNil(t, check1.ResourceProfiles)
-	assert.NotNil(t, check2.ResourceProfiles)
-	assert.Len(t, check1.ResourceProfiles, len(check2.ResourceProfiles))
+	assert.True(t, goproto.Equal(&check1, &check2), "round-trip through goproto did not preserve profile data")
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
