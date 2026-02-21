@@ -98,9 +98,9 @@ func resolveMapReferences(dict ProfilesDictionary, m pcommon.Map) {
 		kv := &(*mapOrig)[i]
 
 		// Resolve key_ref if set
-		if kv.KeyRef != 0 {
+		if kv.KeyRef >= 0 {
 			idx := int(kv.KeyRef)
-			if idx >= 0 && idx < dict.StringTable().Len() {
+			if idx < dict.StringTable().Len() {
 				kv.Key = dict.StringTable().At(idx)
 				// Keep ref set for potential re-marshaling
 			}
@@ -129,9 +129,9 @@ func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyVal
 	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
 		for i := 0; i < len(kvList.KvlistValue.Values); i++ {
 			kv := &kvList.KvlistValue.Values[i]
-			if kv.KeyRef != 0 {
+			if kv.KeyRef >= 0 {
 				idx := int(kv.KeyRef)
-				if idx >= 0 && idx < dict.StringTable().Len() {
+				if idx < dict.StringTable().Len() {
 					kv.Key = dict.StringTable().At(idx)
 				}
 			}
