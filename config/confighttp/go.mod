@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.146.1
 	go.opentelemetry.io/collector/featuregate v1.52.0
 	go.opentelemetry.io/collector/internal/testutil v0.146.1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0
 	go.opentelemetry.io/otel v1.40.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
