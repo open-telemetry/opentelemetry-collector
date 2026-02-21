@@ -89,12 +89,15 @@ func convertProfilesToReferences(profiles Profiles) {
 	stringTable := dict.StringTable()
 
 	// Map for quick string lookups - only allocate if needed
-	stringIndex := make(map[string]int32, stringTable.Len())
-	for i := 0; i < stringTable.Len(); i++ {
-		stringIndex[stringTable.At(i)] = int32(i)
-	}
-
+	var stringIndex map[string]int32
 	getStringIndex := func(s string) int32 {
+		if stringIndex == nil {
+			stringIndex = make(map[string]int32, stringTable.Len())
+			for i := 0; i < stringTable.Len(); i++ {
+				stringIndex[stringTable.At(i)] = int32(i)
+			}
+		}
+
 		if idx, ok := stringIndex[s]; ok {
 			return idx
 		}
