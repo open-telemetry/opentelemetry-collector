@@ -518,6 +518,146 @@ func TestShardBatcher_EmptyRequestList(t *testing.T) {
 	assert.Equal(t, 0, sink.RequestsCount())
 }
 
+// TestPartitionBatcher_ShutdownRespectsContextTimeout verifies that Shutdown respects
+// the context deadline and doesn't hang indefinitely when workers are blocked.
+func TestPartitionBatcher_ShutdownRespectsContextTimeout(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      0, // Flush immediately
+	}
+
+	// Create a worker pool with 1 worker
+	wp := newWorkerPool(1)
+
+	// Create a blocking export function that holds the worker
+	blockCh := make(chan struct{})
+	blockingExport := func(_ context.Context, _ request.Request) error {
+		<-blockCh // Block until channel is closed
+		return nil
+	}
+
+	core, observed := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, blockingExport, logger)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send a request that will block the only worker
+	done1 := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done1)
+
+	// Wait a bit for the worker to be blocked
+	time.Sleep(50 * time.Millisecond)
+
+	// Now queue another item that will need to wait for a worker during shutdown
+	done2 := newFakeDone()
+	go ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done2)
+	time.Sleep(50 * time.Millisecond)
+
+	// Create a context with a short timeout for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Shutdown should return within the timeout, not hang
+	shutdownDone := make(chan error, 1)
+	go func() {
+		shutdownDone <- ba.Shutdown(ctx)
+	}()
+
+	select {
+	case <-shutdownDone:
+		// Shutdown completed (may have timed out but didn't hang)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Shutdown hung despite context timeout - bug not fixed")
+	}
+
+	// Verify that a warning was logged about data loss
+	assert.Eventually(t, func() bool {
+		logs := observed.All()
+		for _, log := range logs {
+			if log.Level == zap.WarnLevel && log.Message == "Failed to flush batch during shutdown, data may be lost" {
+				return true
+			}
+		}
+		return false
+	}, 500*time.Millisecond, 10*time.Millisecond, "Expected warning log about failed flush during shutdown")
+
+	// Clean up: unblock the worker so test can exit cleanly
+	close(blockCh)
+}
+
+// TestPartitionBatcher_WorkerPoolExecuteWithContext tests the context-aware execute function.
+func TestPartitionBatcher_WorkerPoolExecuteWithContext(t *testing.T) {
+	t.Run("succeeds_when_worker_available", func(t *testing.T) {
+		wp := newWorkerPool(1)
+		executed := make(chan struct{})
+
+		err := wp.executeWithContext(context.Background(), func() {
+			close(executed)
+		})
+
+		require.NoError(t, err)
+		select {
+		case <-executed:
+			// Success
+		case <-time.After(time.Second):
+			t.Fatal("function was not executed")
+		}
+	})
+
+	t.Run("returns_error_when_context_cancelled", func(t *testing.T) {
+		wp := newWorkerPool(1)
+
+		// Block the only worker
+		blockCh := make(chan struct{})
+		wp.execute(func() {
+			<-blockCh
+		})
+
+		// Try to execute with a cancelled context
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		executed := false
+		err := wp.executeWithContext(ctx, func() {
+			executed = true
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, context.Canceled, err)
+		assert.False(t, executed, "function should not have been executed")
+
+		// Clean up
+		close(blockCh)
+	})
+
+	t.Run("returns_error_when_context_times_out", func(t *testing.T) {
+		wp := newWorkerPool(1)
+
+		// Block the only worker
+		blockCh := make(chan struct{})
+		wp.execute(func() {
+			<-blockCh
+		})
+
+		// Try to execute with a short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		executed := false
+		err := wp.executeWithContext(ctx, func() {
+			executed = true
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, context.DeadlineExceeded, err)
+		assert.False(t, executed, "function should not have been executed")
+
+		// Clean up
+		close(blockCh)
+	})
+}
+
 func TestPartitionBatcher_ContextMerging(t *testing.T) {
 	tests := []struct {
 		name         string
