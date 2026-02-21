@@ -14,25 +14,6 @@ import (
 func resolveProfilesReferences(profiles Profiles) {
 	dict := profiles.Dictionary()
 
-	// Quick check: if there are no resource profiles, nothing to do
-	if profiles.ResourceProfiles().Len() == 0 {
-		return
-	}
-
-	// Check if resolution is needed by sampling first resource
-	rp := profiles.ResourceProfiles().At(0)
-	if !needsResolution(rp.Resource().Attributes()) {
-		// Check scope attributes too
-		if rp.ScopeProfiles().Len() == 0 {
-			return
-		}
-		sp := rp.ScopeProfiles().At(0)
-		if !needsResolution(sp.Scope().Attributes()) {
-			// Already resolved, skip
-			return
-		}
-	}
-
 	// Resolve references in resource attributes
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		rp := profiles.ResourceProfiles().At(i)
@@ -44,50 +25,6 @@ func resolveProfilesReferences(profiles Profiles) {
 			resolveMapReferences(dict, sp.Scope().Attributes())
 		}
 	}
-}
-
-// needsResolution checks if a map has any refs that need resolution
-func needsResolution(m pcommon.Map) bool {
-	if m.Len() == 0 {
-		return false
-	}
-	mapOrig := internal.GetMapOrig(internal.MapWrapper(m))
-	for i := 0; i < len(*mapOrig); i++ {
-		kv := &(*mapOrig)[i]
-		// If KeyRef is set, needs resolution
-		if kv.KeyRef != 0 {
-			return true
-		}
-		// Check if any values need resolution
-		if anyValueNeedsResolution(&kv.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-// anyValueNeedsResolution checks if an AnyValue has refs that need resolution
-func anyValueNeedsResolution(anyValue *internal.AnyValue) bool {
-	if ref, ok := anyValue.Value.(*internal.AnyValue_StringValueRef); ok && ref.StringValueRef != 0 {
-		return true
-	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
-		for i := 0; i < len(kvList.KvlistValue.Values); i++ {
-			kv := &kvList.KvlistValue.Values[i]
-			if kv.KeyRef != 0 {
-				return true
-			}
-			if anyValueNeedsResolution(&kv.Value) {
-				return true
-			}
-		}
-	} else if arrVal, ok := anyValue.Value.(*internal.AnyValue_ArrayValue); ok && arrVal.ArrayValue != nil {
-		for i := 0; i < len(arrVal.ArrayValue.Values); i++ {
-			if anyValueNeedsResolution(&arrVal.ArrayValue.Values[i]) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // resolveMapReferences resolves all string_value_ref and key_ref in a map
@@ -151,25 +88,6 @@ func convertProfilesToReferences(profiles Profiles) {
 	dict := profiles.Dictionary()
 	stringTable := dict.StringTable()
 
-	// Quick check: if there are no resource profiles, nothing to do
-	if profiles.ResourceProfiles().Len() == 0 {
-		return
-	}
-
-	// Check if conversion is needed by sampling first resource
-	rp := profiles.ResourceProfiles().At(0)
-	if !needsConversion(rp.Resource().Attributes()) {
-		// Check scope attributes too
-		if rp.ScopeProfiles().Len() == 0 {
-			return
-		}
-		sp := rp.ScopeProfiles().At(0)
-		if !needsConversion(sp.Scope().Attributes()) {
-			// Already converted, skip
-			return
-		}
-	}
-
 	// Map for quick string lookups - only allocate if needed
 	stringIndex := make(map[string]int32, stringTable.Len())
 	for i := 0; i < stringTable.Len(); i++ {
@@ -197,50 +115,6 @@ func convertProfilesToReferences(profiles Profiles) {
 			convertMapToReferences(getStringIndex, sp.Scope().Attributes())
 		}
 	}
-}
-
-// needsConversion checks if a map has any string values that need conversion to refs
-func needsConversion(m pcommon.Map) bool {
-	if m.Len() == 0 {
-		return false
-	}
-	mapOrig := internal.GetMapOrig(internal.MapWrapper(m))
-	for i := 0; i < len(*mapOrig); i++ {
-		kv := &(*mapOrig)[i]
-		// If KeyRef is not set but Key is, needs conversion
-		if kv.Key != "" && kv.KeyRef == 0 {
-			return true
-		}
-		// Check if any string values need conversion
-		if anyValueNeedsConversion(&kv.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-// anyValueNeedsConversion checks if an AnyValue has string values that need conversion
-func anyValueNeedsConversion(anyValue *internal.AnyValue) bool {
-	if strVal, ok := anyValue.Value.(*internal.AnyValue_StringValue); ok && strVal.StringValue != "" {
-		return true
-	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
-		for i := 0; i < len(kvList.KvlistValue.Values); i++ {
-			kv := &kvList.KvlistValue.Values[i]
-			if kv.Key != "" && kv.KeyRef == 0 {
-				return true
-			}
-			if anyValueNeedsConversion(&kv.Value) {
-				return true
-			}
-		}
-	} else if arrVal, ok := anyValue.Value.(*internal.AnyValue_ArrayValue); ok && arrVal.ArrayValue != nil {
-		for i := 0; i < len(arrVal.ArrayValue.Values); i++ {
-			if anyValueNeedsConversion(&arrVal.ArrayValue.Values[i]) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // convertMapToReferences converts string keys and values to references
