@@ -145,3 +145,16 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-4", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(4).Name())
 }
+
+func TestSplitTracesPreserveSchemaURLOnPartialSplit(t *testing.T) {
+	resourceSchemaUrl := "https://test-resource-schema-url.com/"
+	scopeSchemaUrl := "https://test-scope-schema-url.com/"
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).SetSchemaUrl(resourceSchemaUrl)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl(scopeSchemaUrl)
+
+	splitSize := 1
+	split := splitTraces(splitSize, td)
+	assert.Equal(t, resourceSchemaUrl, split.ResourceSpans().At(0).SchemaUrl())
+	assert.Equal(t, scopeSchemaUrl, split.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
+}
