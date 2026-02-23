@@ -26,7 +26,7 @@ pattern](https://pkg.go.dev/net/http#HandlerFunc). `http.HandlerFunc`
 can be seen as a prototype for this pattern, in this case for HTTP
 servers. The public interface type `http.Handler`:
 
-```
+```go
 // A Handler responds to an HTTP request.
 type Handler interface {
 	ServeHTTP(ResponseWriter, *Request)
@@ -35,7 +35,7 @@ type Handler interface {
 
 has a corresponding function type:
 
-```
+```go
 // The HandlerFunc type is an adapter to allow the use of
 // ordinary functions as HTTP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
@@ -64,7 +64,7 @@ In our version of this, the implementation is required to check for
 nil and expose only other interfaces for parameter- and return-types,
 themselves subject to the same safety requirements.
 
-```
+```go
 // SAFE VERSION satisfies requirements because arguments are interfaces
 // and nil is checked.
 //
@@ -204,7 +204,7 @@ Imagine a new RPC framework is introduced, with a new kind of client
 configuration that middleware extensions can implement. We cannot
 extend the existing interfaces, but we can create new ones,
 
-```
+```go
 // Imagine a new RPC framework called "Super".
 type SuperClient interface {
     GetSuperClientOptions(context.Context) ([]super.ClientOption, error)
@@ -215,7 +215,7 @@ We can also accommodate new interface types corresponding with
 existing frameworks. For example, if gRPC decides to add a new sort of
 configuration type, we can add an optional new interface,
 
-```
+```go
 // Imagine a V2 gRPC option type.
 type GRPCClientV2 interface {
     GetGRPCClientOptionsV2(context.Context) ([]grpc.ClientOptionV2, error)
