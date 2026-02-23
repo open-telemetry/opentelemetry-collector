@@ -469,7 +469,7 @@ func TestConvertMapToReferencesClearsKey(t *testing.T) {
 	// key_ref should be set
 	assert.Equal(t, int32(1), kv.KeyRef)
 	// key MUST NOT be set when key_ref is used (per proto spec)
-	assert.Equal(t, "", kv.Key, "Key must be cleared when KeyRef is set")
+	assert.Empty(t, kv.Key, "Key must be cleared when KeyRef is set")
 }
 
 func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
@@ -509,7 +509,7 @@ func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
 	// key_ref should be set
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyRef)
 	// key MUST NOT be set when key_ref is used (per proto spec)
-	assert.Equal(t, "", kvList.Values[0].Key, "Key must be cleared when KeyRef is set in nested kvlist")
+	assert.Empty(t, kvList.Values[0].Key, "Key must be cleared when KeyRef is set in nested kvlist")
 }
 
 func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
