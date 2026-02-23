@@ -114,7 +114,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "debug.log")
+	filePath := filepath.Clean(filepath.Join(tmpDir, "debug.log"))
 
 	config := &Config{
 		OutputPaths:        []string{filePath},
@@ -129,7 +129,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, logger.Sync())
 
 	// Verify file was created and contains content
-	content, err := os.ReadFile(filepath.Clean(filePath))
+	content, err := os.ReadFile(filePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "test message to file")
 }
