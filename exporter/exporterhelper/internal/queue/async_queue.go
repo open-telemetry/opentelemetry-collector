@@ -36,9 +36,7 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 	}
 	var startWG sync.WaitGroup
 	for i := 0; i < qc.numConsumers; i++ {
-		startWG.Add(1)
 		qc.stopWG.Go(func() { //nolint:contextcheck
-			startWG.Done()
 			for {
 				ctx, req, done, ok := qc.Read(context.Background())
 				if !ok {
