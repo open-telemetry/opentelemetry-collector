@@ -1,0 +1,9 @@
+type: extension/extensionmiddleware
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  codeowners:
+    active:
+      - jmacd
+  class: pkg

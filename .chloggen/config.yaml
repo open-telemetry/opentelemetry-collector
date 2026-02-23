@@ -38,6 +38,7 @@ components:
     - pkg/confmap
     - pkg/consumer/consumertest
     - pkg/exporterhelper
+    - pkg/extension/extensionmiddleware
     - pkg/otelcol
     - pkg/pdata
     - pkg/processorhelper
