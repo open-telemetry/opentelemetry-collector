@@ -200,6 +200,11 @@ events:
 # Lifecycle tests generated for this component.
 tests:
   config: # {} by default, specific testing configuration for lifecycle tests.
+  # Optional: array of invalid configurations that must fail to unmarshal.
+  invalid_configs:
+    - name: string # Optional: name for the invalid config test case.
+      config: object # Required: invalid configuration map.
+      error: string # Optional: expected error substring.
   # Skip lifecycle tests for this component. Not recommended for components that are not in development.
   skip_lifecycle: false # false by default
   # Skip shutdown tests for this component. Not recommended for components that are not in development.

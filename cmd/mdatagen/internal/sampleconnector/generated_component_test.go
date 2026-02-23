@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -45,6 +46,18 @@ func TestComponentConfigMarshal(t *testing.T) {
 
 	roundTrip := NewFactory().CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&roundTrip))
+	cmRoundTrip := confmap.New()
+	require.NoError(t, cmRoundTrip.Marshal(roundTrip))
+	roundTripAgain := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTrip.Unmarshal(&roundTripAgain))
+	cmRoundTripAgain := confmap.New()
+	require.NoError(t, cmRoundTripAgain.Marshal(roundTripAgain))
+	roundTripAgainMap := cmRoundTripAgain.ToStringMap()
+	roundTripThird := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTripAgain.Unmarshal(&roundTripThird))
+	cmRoundTripThird := confmap.New()
+	require.NoError(t, cmRoundTripThird.Marshal(roundTripThird))
+	require.Equal(t, roundTripAgainMap, cmRoundTripThird.ToStringMap())
 }
 
 func TestComponentConfigMarshalInvalid(t *testing.T) {
@@ -60,6 +73,11 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 			},
 			expectedErr: "has invalid keys: unknown_field",
 		},
+		{
+			name:        "unknown_field",
+			config:      map[string]interface{}{"unknown_field": "value"},
+			expectedErr: "has invalid keys: unknown_field",
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,7 +87,10 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 
 			cm := confmap.NewFromStringMap(tt.config)
 			err := cm.Unmarshal(&cfg)
-			require.ErrorContains(t, err, tt.expectedErr)
+			require.Error(t, err)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			}
 		})
 	}
 }

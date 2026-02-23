@@ -20,6 +20,13 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+tests:
+  invalid_configs:
+    - name: unknown_field
+      config:
+        unknown_field: value
+      error: "has invalid keys: unknown_field"
+
 resource_attributes:
   map.resource.attr:
     description: Resource attribute with a map value.

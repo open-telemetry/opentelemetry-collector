@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
@@ -44,6 +45,18 @@ func TestComponentConfigMarshal(t *testing.T) {
 
 	roundTrip := NewFactory().CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&roundTrip))
+	cmRoundTrip := confmap.New()
+	require.NoError(t, cmRoundTrip.Marshal(roundTrip))
+	roundTripAgain := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTrip.Unmarshal(&roundTripAgain))
+	cmRoundTripAgain := confmap.New()
+	require.NoError(t, cmRoundTripAgain.Marshal(roundTripAgain))
+	roundTripAgainMap := cmRoundTripAgain.ToStringMap()
+	roundTripThird := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTripAgain.Unmarshal(&roundTripThird))
+	cmRoundTripThird := confmap.New()
+	require.NoError(t, cmRoundTripThird.Marshal(roundTripThird))
+	require.Equal(t, roundTripAgainMap, cmRoundTripThird.ToStringMap())
 }
 
 func TestComponentConfigMarshalInvalid(t *testing.T) {
@@ -68,7 +81,10 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 
 			cm := confmap.NewFromStringMap(tt.config)
 			err := cm.Unmarshal(&cfg)
-			require.ErrorContains(t, err, tt.expectedErr)
+			require.Error(t, err)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			}
 		})
 	}
 }
