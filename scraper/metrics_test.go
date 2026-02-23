@@ -66,14 +66,12 @@ func TestMetricsConcurrency(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for range 10000 {
 				_, errScrape := mp.ScrapeMetrics(context.Background())
 				assert.NoError(t, errScrape)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	require.NoError(t, mp.Shutdown(context.Background()))

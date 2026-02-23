@@ -7,6 +7,59 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.52.0/v0.146.1
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Increase minimum Go version to 1.25 (#14567)
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Declare removed aggregation elements as deprecated. (#14528)
+
+### 💡 Enhancements 💡
+
+- `all`: Add detailed failure attributes to exporter send_failed metrics at detailed telemetry level. (#13956)
+  The `otelcol_exporter_send_failed_{spans,metric_points,log_records}` metrics now include
+  failure attributes when telemetry level is Detailed: `error.type` (OpenTelemetry semantic convention
+  describing the error class) and `error.permanent` (indicates if error is permanent/non-retryable).
+  The `error.type` attribute captures gRPC status codes (e.g., "Unavailable", "ResourceExhausted"),
+  standard Go context errors (e.g., "canceled", "deadline_exceeded"),
+  and collector-specific errors (e.g., "shutdown").
+  This enables better alerting and debugging by providing standardized error classification.
+- `cmd/builder`: Introduce new experimental `init` subcommand (#14530)
+  The new `init` subcommand initializes a new custom collector
+- `cmd/builder`: Add "telemetry" field to allow configuring telemetry providers (#14575)
+  Most users should not need to use this, this field should only be set if you
+  intend to provide your own OpenTelemetry SDK.
+  
+- `cmd/mdatagen`: Introduce additional metadata (the version since the deprecation started, and the deprecation reason) for deprecated metrics. (#14113)
+- `cmd/mdatagen`: Add optional `relationships` field to entity schema in metadata.yaml (#14284)
+- `exporter/debug`: Add `output_paths` configuration option to control output destination when `use_internal_logger` is false. (#10472)
+  When `use_internal_logger` is set to `false`, the debug exporter now supports configuring the output destination via the `output_paths` option.
+  This allows users to send debug exporter output to `stdout`, `stderr`, or a file path.
+  The default value is `["stdout"]` to maintain backward compatibility.
+  
+- `pkg/confmap`: Add experimental `ToStringMapRaw` function to decode `confmap.Conf` into a string map without losing internal types (#14480)
+  This method exposes the internal structure of a `confmap.Conf` which may change at any time without prior notice
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Reset aggDataPoints during metric init to avoid index out of range panic across emit cycles when reaggregation is enabled. (#14569)
+- `cmd/mdatagen`: Fix panic when mdatagen is run without arguments. (#14506)
+- `pdata/pprofile`: Fix off-by-one issue in dictionary lookups. (#14534)
+- `pkg/config/confighttp`: Fix high cardinality span name from request method from confighttp server internal telemetry (#14516)
+  Follow spec to bound request method cardinality.
+- `pkg/otelcol`: Ignore component aliases in the `otelcol components` command (#14492)
+- `pkg/otelcol`: Order providers and converters in alphabetical order in the `components` subcommand. (#14476)
+
+<!-- previous-version -->
+
 ## v1.51.0/v0.145.0
 
 ### 💡 Enhancements 💡
