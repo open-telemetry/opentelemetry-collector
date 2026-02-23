@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "go.opentelemetry.io/collector/v0.0.0-20260213130758-f6c772783351/cmd/mdatagen/internal/samplescraper",
+  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper",
   "title": "scraper/sample",
   "description": "Configuration for the Sample Scraper.",
   "type": "object",

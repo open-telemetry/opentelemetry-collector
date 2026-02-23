@@ -79,7 +79,7 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 
 	// Set JSON Schema metadata
 	target.Schema = schemaVersion
-	target.ID = fmt.Sprintf("%s/%s%s", ns, r.version, filepath.ToSlash(path))
+	target.ID = filepath.Join(ns, path)
 	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
 
 	return target, nil

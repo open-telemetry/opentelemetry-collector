@@ -28,7 +28,7 @@ func TestResolver_ResolveSchema_BasicMetadata(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 	require.Equal(t, schemaVersion, result.Schema)
-	require.Equal(t, "go.opentelemetry.io/collector/v1.0.0/receiver/otlpreceiver", result.ID)
+	require.Equal(t, "go.opentelemetry.io/collector/receiver/otlpreceiver", result.ID)
 	require.Equal(t, "receiver/otlp", result.Title)
 	require.Equal(t, "OTLP receiver configuration", result.Description)
 	require.Equal(t, "object", result.Type)
