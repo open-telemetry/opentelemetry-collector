@@ -147,14 +147,14 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 }
 
 func TestSplitTracesPreserveSchemaURLOnPartialSplit(t *testing.T) {
-	resourceSchemaUrl := "https://test-resource-schema-url.com/"
-	scopeSchemaUrl := "https://test-scope-schema-url.com/"
+	resourceSchemaURL := "https://test-resource-schema-url.com/"
+	scopeSchemaURL := "https://test-scope-schema-url.com/"
 	td := testdata.GenerateTraces(2)
-	td.ResourceSpans().At(0).SetSchemaUrl(resourceSchemaUrl)
-	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl(scopeSchemaUrl)
+	td.ResourceSpans().At(0).SetSchemaUrl(resourceSchemaURL)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl(scopeSchemaURL)
 
 	splitSize := 1
 	split := splitTraces(splitSize, td)
-	assert.Equal(t, resourceSchemaUrl, split.ResourceSpans().At(0).SchemaUrl())
-	assert.Equal(t, scopeSchemaUrl, split.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
+	assert.Equal(t, resourceSchemaURL, split.ResourceSpans().At(0).SchemaUrl())
+	assert.Equal(t, scopeSchemaURL, split.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 }

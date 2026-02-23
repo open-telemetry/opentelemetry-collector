@@ -147,14 +147,14 @@ func TestSplitLogsMultipleILL(t *testing.T) {
 }
 
 func TestSplitLogsPreserveSchemaURLOnPartialSplit(t *testing.T) {
-	resourceSchemaUrl := "https://test-resource-schema-url.com/"
-	scopeSchemaUrl := "https://test-scope-schema-url.com/"
+	resourceSchemaURL := "https://test-resource-schema-url.com/"
+	scopeSchemaURL := "https://test-scope-schema-url.com/"
 	td := testdata.GenerateLogs(2)
-	td.ResourceLogs().At(0).SetSchemaUrl(resourceSchemaUrl)
-	td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl(scopeSchemaUrl)
+	td.ResourceLogs().At(0).SetSchemaUrl(resourceSchemaURL)
+	td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl(scopeSchemaURL)
 
 	splitSize := 1
 	split := splitLogs(splitSize, td)
-	assert.Equal(t, resourceSchemaUrl, split.ResourceLogs().At(0).SchemaUrl())
-	assert.Equal(t, scopeSchemaUrl, split.ResourceLogs().At(0).ScopeLogs().At(0).SchemaUrl())
+	assert.Equal(t, resourceSchemaURL, split.ResourceLogs().At(0).SchemaUrl())
+	assert.Equal(t, scopeSchemaURL, split.ResourceLogs().At(0).ScopeLogs().At(0).SchemaUrl())
 }

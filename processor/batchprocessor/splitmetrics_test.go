@@ -316,14 +316,14 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 }
 
 func TestSplitMetricsPreserveSchemaURLOnPartialSplit(t *testing.T) {
-	resourceSchemaUrl := "https://test-resource-schema-url.com/"
-	scopeSchemaUrl := "https://test-scope-schema-url.com/"
+	resourceSchemaURL := "https://test-resource-schema-url.com/"
+	scopeSchemaURL := "https://test-scope-schema-url.com/"
 	md := testdata.GenerateMetrics(2)
-	md.ResourceMetrics().At(0).SetSchemaUrl(resourceSchemaUrl)
-	md.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl(scopeSchemaUrl)
+	md.ResourceMetrics().At(0).SetSchemaUrl(resourceSchemaURL)
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl(scopeSchemaURL)
 
 	splitSize := 1
 	split := splitMetrics(splitSize, md)
-	assert.Equal(t, resourceSchemaUrl, split.ResourceMetrics().At(0).SchemaUrl())
-	assert.Equal(t, scopeSchemaUrl, split.ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
+	assert.Equal(t, resourceSchemaURL, split.ResourceMetrics().At(0).SchemaUrl())
+	assert.Equal(t, scopeSchemaURL, split.ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
 }
