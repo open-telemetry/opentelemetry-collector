@@ -17,7 +17,7 @@ func (ms KeyValueAndUnit) Equal(val KeyValueAndUnit) bool {
 // dictionary to another.
 func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary) error {
 	if ms.KeyStrindex() > 0 {
-		if src.StringTable().Len() < int(ms.KeyStrindex()) {
+		if src.StringTable().Len() <= int(ms.KeyStrindex()) {
 			return fmt.Errorf("invalid key index %d", ms.KeyStrindex())
 		}
 
@@ -29,7 +29,7 @@ func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if ms.UnitStrindex() > 0 {
-		if src.StringTable().Len() < int(ms.UnitStrindex()) {
+		if src.StringTable().Len() <= int(ms.UnitStrindex()) {
 			return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
 		}
 

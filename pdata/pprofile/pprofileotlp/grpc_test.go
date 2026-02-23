@@ -27,11 +27,9 @@ func TestGrpc(t *testing.T) {
 	s := grpc.NewServer()
 	RegisterGRPCServer(s, &fakeProfilesServer{t: t})
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, s.Serve(lis))
-	}()
+	})
 	t.Cleanup(func() {
 		s.Stop()
 		wg.Wait()
@@ -60,11 +58,9 @@ func TestGrpcError(t *testing.T) {
 	s := grpc.NewServer()
 	RegisterGRPCServer(s, &fakeProfilesServer{t: t, err: errors.New("my error")})
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, s.Serve(lis))
-	}()
+	})
 	t.Cleanup(func() {
 		s.Stop()
 		wg.Wait()
