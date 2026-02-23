@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: pkg/extension/extensionmiddleware
+
+note: Add context.Context to gRPC middleware interface constructors. 
+
+subtext: This is a breaking API change for components that implement or use extensionmiddleware.
+
+issues: [14523]
+
+change_logs: [api]

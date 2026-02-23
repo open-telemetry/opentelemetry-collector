@@ -21,7 +21,6 @@ components:
     - exporter/otlp_http
     - extension/memory_limiter
     - extension/xextension
-    - extension/xextension
     - extension/zpages
     - pdata/pprofile
     - pdata/xpdata
@@ -39,6 +38,10 @@ components:
     - pkg/confmap
     - pkg/consumer/consumertest
     - pkg/exporterhelper
+    - pkg/extension/extensionauth
+    - pkg/extension/extensioncapabilities
+    - pkg/extension/extensionmiddleware
+    - pkg/extension/extensiontest
     - pkg/otelcol
     - pkg/pdata
     - pkg/processorhelper
