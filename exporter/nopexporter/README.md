@@ -26,5 +26,5 @@ exporter definitions. It takes no configuration.
 
 ```yaml
 exporters:
-  nop:
+  nop: {}
 ```
