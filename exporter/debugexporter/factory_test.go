@@ -129,7 +129,7 @@ func TestCreateCustomLoggerWithFileOutput(t *testing.T) {
 	require.NoError(t, logger.Sync())
 
 	// Verify file was created and contains content
-	content, err := os.ReadFile(filePath) //nolint:gosec
+	content, err := os.ReadFile(filepath.Clean(filePath))
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "test message to file")
 }
