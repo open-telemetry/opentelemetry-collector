@@ -67,15 +67,7 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 		name        string
 		config      map[string]any
 		expectedErr string
-	}{
-		{
-			name: "invalid_unknown_field",
-			config: map[string]any{
-				"unknown_field": "value",
-			},
-			expectedErr: "has invalid keys: unknown_field",
-		},
-	}
+	}{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

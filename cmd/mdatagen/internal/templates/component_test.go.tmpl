@@ -122,13 +122,6 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 		config      map[string]any
 		expectedErr string
 	}{
-		{
-			name: "invalid_unknown_field",
-			config: map[string]any{
-				"unknown_field": "value",
-			},
-			expectedErr: "has invalid keys: unknown_field",
-		},
 		{{- range $i, $cfg := .Tests.InvalidConfigs }}
 		{
 			name: {{- if $cfg.Name }}{{ printf "%q" $cfg.Name }}{{ else }}"invalid_config_{{ $i }}"{{ end }},

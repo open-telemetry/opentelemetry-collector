@@ -67,13 +67,6 @@ func TestComponentConfigMarshalInvalid(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "invalid_unknown_field",
-			config: map[string]any{
-				"unknown_field": "value",
-			},
-			expectedErr: "has invalid keys: unknown_field",
-		},
-		{
 			name:        "unknown_field",
 			config:      map[string]interface{}{"unknown_field": "value"},
 			expectedErr: "has invalid keys: unknown_field",
