@@ -41,6 +41,7 @@ has a corresponding function type:
 // with the appropriate signature, HandlerFunc(f) is a
 // [Handler] that calls f.
 type HandlerFunc func(ResponseWriter, *Request)
+
 // ServeHTTP calls f(w, r).
 func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
 	f(w, r)
@@ -68,7 +69,7 @@ themselves subject to the same safety requirements.
 // and nil is checked.
 //
 // ServeHTTP calls f(w, r).
-func (f HandlerFunc) ServeHTTP(w ResponseWriter, r RequestIface) {
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r Request) {
     if f == nil {
         return
     }
