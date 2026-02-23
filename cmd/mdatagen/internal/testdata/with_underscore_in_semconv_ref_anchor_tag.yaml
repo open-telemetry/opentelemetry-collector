@@ -1,0 +1,27 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+sem_conv_version: 1.38.0
+
+metrics:
+  system.disk.io_time:
+    enabled: true
+    description: Time disk spent activated..
+    stability: development
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+
