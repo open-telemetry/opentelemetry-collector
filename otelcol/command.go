@@ -75,6 +75,7 @@ func newFeatureGateCommand() *cobra.Command {
 		Use:   "featuregate [feature-id]",
 		Short: "Display feature gates information",
 		Long:  "Display information about available feature gates and their status",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				found := false
