@@ -196,39 +196,28 @@ there are initially no options.
 ### Evolving Open Interfaces
 
 Open interfaces evolve by creating new companion interfaces for new
-capabilities. The original interface MUST remain unchanged to preserve
-backward compatibility:
+capabilities. Open interfaces MUST remain unchanged until a major
+version bump, to preserve compatibility.
 
-```go
-// Original interface—keep unchanged
-type GRPCClient interface {
-    GetGRPCClientOptions() ([]grpc.DialOption, error)
-}
-```
-
-In case of mistake ([for
-example](https://github.com/open-telemetry/opentelemetry-collector/pull/14525))
-or because of new-but-equivalent interfaces in the underlying library (e.g., a hypothetical `grpc.DialOption
-
-```
-// We made a mistake! Some gRPC dial options require context and some do not.
-type GRPCClientContext interface {
-    GetGRPCClientOptionsContext(context.Context) ([]grpc.DialOption, error)
-}
-```
-
-We provide a `configmiddleware.GetGRPCClientOptions` method that is able 
-to check for both the original and the new form of middleware interface, so
-callers are protected from this breaking change.
-
-We can also extend the concept of middleware to a new framework. For
-example, imagine a new RPC framework called "Super" and we are adding support
-for Super middleware to the OTLP/Super exporter.
+Imagine a new RPC framework is introduced, with a new kind of client
+configuration that middleware extensions can implement. We cannot
+extend the existing interfaces, but we can create new ones,
 
 ```
 // Imagine a new RPC framework called "Super".
-type SuperClientContext interface {
+type SuperClient interface {
     GetSuperClientOptions(context.Context) ([]super.ClientOption, error)
+}
+```
+
+We can also accommodate new interface types corresponding with
+existing frameworks. For example, if gRPC decides to add a new sort of
+configuration type, we can add an optional new interface,
+
+```
+// Imagine a V2 gRPC option type.
+type GRPCClientV2 interface {
+    GetGRPCClientOptionsV2(context.Context) ([]grpc.ClientOptionV2, error)
 }
 ```
 
@@ -236,11 +225,16 @@ The new middleware extension can be added without changing the existing
 implementations, because only a user of the new framework needs to know
 about the new kind of middleware.
 
+This works because components generally know which specific extension
+interface they want. When there is more than one viable extension
+interface, callers can choose the one they prefer depending on the use.
+
 ### Test Helpers with NewNop and NewErr
 
 Every public and extension interface package SHOULD provide test
-helpers in a `<package>test` subpackage. These helpers generally 
-can be composed of a `<Method>Func` for every method in the extension.
+helpers in a `<package>test` subpackage using a dedicated Go module
+(`go.mod`). These helpers generally can be composed of a
+`<Method>Func` for every method in the extension.
 
 For example, here is a type for use in testing that implements every
 public interface method, making it easy for tests to override only one
