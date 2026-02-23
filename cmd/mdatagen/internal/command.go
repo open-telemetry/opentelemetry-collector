@@ -81,7 +81,7 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
-	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	raw, readErr := os.ReadFile(filepath.Clean(ymlPath))
 	if readErr != nil {
 		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
 	}
@@ -401,7 +401,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
+	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
 		return err
 	}
 
