@@ -66,6 +66,16 @@ type Deprecated struct {
 	Note  string `mapstructure:"note"`
 }
 
+// ExampleConfig represents an example configuration snippet for a component.
+type ExampleConfig struct {
+	// Name is a descriptive name for the example configuration.
+	Name string `mapstructure:"name"`
+	// Description provides context about when this configuration should be used.
+	Description string `mapstructure:"description"`
+	// Config is the example configuration snippet in YAML format.
+	Config string `mapstructure:"config"`
+}
+
 func (d *Deprecated) validate() error {
 	if strings.TrimSpace(d.Since) == "" {
 		return errors.New("deprecated.since must be set")
