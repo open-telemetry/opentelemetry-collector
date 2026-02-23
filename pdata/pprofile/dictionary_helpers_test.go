@@ -386,7 +386,7 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		return 1
 	}
 
-	convertMapToReferences(getStringIndex, attrs)
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
 	// Empty key should not have KeyRef set
 	kv := &(*mapOrig)[0]
@@ -414,7 +414,7 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		return 99
 	}
 
-	convertMapToReferences(getStringIndex, attrs)
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
 	// KeyRef should remain unchanged
 	kv := &(*mapOrig)[0]
@@ -441,6 +441,77 @@ func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
 	assert.Equal(t, int64(42), intVal.IntValue)
 }
 
+func TestConvertMapToReferencesClearsKey(t *testing.T) {
+	profiles := NewProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	attrs := rp.Resource().Attributes()
+
+	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
+	*mapOrig = append(*mapOrig, internal.KeyValue{
+		Key: "my-key",
+		Value: internal.AnyValue{
+			Value: &internal.AnyValue_StringValue{
+				StringValue: "my-value",
+			},
+		},
+	})
+
+	getStringIndex := func(s string) int32 {
+		if s == "my-key" {
+			return 1
+		}
+		return 2
+	}
+
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+
+	kv := &(*mapOrig)[0]
+	// key_ref should be set
+	assert.Equal(t, int32(1), kv.KeyRef)
+	// key MUST NOT be set when key_ref is used (per proto spec)
+	assert.Equal(t, "", kv.Key, "Key must be cleared when KeyRef is set")
+}
+
+func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
+	stringIndex := make(map[string]int32)
+	counter := int32(1)
+	getStringIndex := func(s string) int32 {
+		if idx, ok := stringIndex[s]; ok {
+			return idx
+		}
+		idx := counter
+		counter++
+		stringIndex[s] = idx
+		return idx
+	}
+
+	kvList := &internal.KeyValueList{
+		Values: []internal.KeyValue{
+			{
+				Key: "nested-key",
+				Value: internal.AnyValue{
+					Value: &internal.AnyValue_StringValue{
+						StringValue: "nested-value",
+					},
+				},
+			},
+		},
+	}
+
+	anyVal := &internal.AnyValue{
+		Value: &internal.AnyValue_KvlistValue{
+			KvlistValue: kvList,
+		},
+	}
+
+	convertAnyValueToReference(getStringIndex, anyVal)
+
+	// key_ref should be set
+	assert.NotEqual(t, int32(0), kvList.Values[0].KeyRef)
+	// key MUST NOT be set when key_ref is used (per proto spec)
+	assert.Equal(t, "", kvList.Values[0].Key, "Key must be cleared when KeyRef is set in nested kvlist")
+}
+
 func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 	getStringIndex := func(_ string) int32 {
 		return 0
@@ -459,591 +530,4 @@ func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 	boolVal, ok := anyVal.Value.(*internal.AnyValue_BoolValue)
 	assert.True(t, ok)
 	assert.True(t, boolVal.BoolValue)
-}
-
-func TestNeedsResolution(t *testing.T) {
-	t.Run("empty map", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-		assert.False(t, needsResolution(attrs))
-	})
-
-	t.Run("map with KeyRef set", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key:    "test-key",
-			KeyRef: 1,
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_StringValue{
-					StringValue: "value",
-				},
-			},
-		})
-
-		assert.True(t, needsResolution(attrs))
-	})
-
-	t.Run("map with StringValueRef in value", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key: "test-key",
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_StringValueRef{
-					StringValueRef: 1,
-				},
-			},
-		})
-
-		assert.True(t, needsResolution(attrs))
-	})
-
-	t.Run("map with no refs", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-		attrs.PutStr("key", "value")
-
-		assert.False(t, needsResolution(attrs))
-	})
-
-	t.Run("map with nested KvList with KeyRef", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key: "test-key",
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_KvlistValue{
-					KvlistValue: &internal.KeyValueList{
-						Values: []internal.KeyValue{
-							{
-								Key:    "nested-key",
-								KeyRef: 1,
-								Value: internal.AnyValue{
-									Value: &internal.AnyValue_StringValue{
-										StringValue: "nested-value",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		})
-
-		assert.True(t, needsResolution(attrs))
-	})
-
-	t.Run("map with nested array with StringValueRef", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key: "test-key",
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_ArrayValue{
-					ArrayValue: &internal.ArrayValue{
-						Values: []internal.AnyValue{
-							{
-								Value: &internal.AnyValue_StringValueRef{
-									StringValueRef: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		})
-
-		assert.True(t, needsResolution(attrs))
-	})
-}
-
-func TestAnyValueNeedsResolution(t *testing.T) {
-	t.Run("StringValueRef with non-zero ref", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValueRef{
-				StringValueRef: 1,
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("StringValueRef with zero ref", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValueRef{
-				StringValueRef: 0,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("StringValue no ref", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValue{
-				StringValue: "test",
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("IntValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_IntValue{
-				IntValue: 42,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("BoolValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_BoolValue{
-				BoolValue: true,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("DoubleValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_DoubleValue{
-				DoubleValue: 3.14,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("BytesValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_BytesValue{
-				BytesValue: []byte{1, 2, 3},
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("KvList with KeyRef", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key:    "test",
-							KeyRef: 1,
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValue{
-									StringValue: "value",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("KvList with StringValueRef in nested value", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key: "test",
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValueRef{
-									StringValueRef: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("KvList with no refs", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key: "test",
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValue{
-									StringValue: "value",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("KvList nil", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: nil,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("Array with StringValueRef", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: &internal.ArrayValue{
-					Values: []internal.AnyValue{
-						{
-							Value: &internal.AnyValue_StringValueRef{
-								StringValueRef: 1,
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("Array with no refs", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: &internal.ArrayValue{
-					Values: []internal.AnyValue{
-						{
-							Value: &internal.AnyValue_StringValue{
-								StringValue: "test",
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("Array nil", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: nil,
-			},
-		}
-		assert.False(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("nested array within kvlist", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key: "test",
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_ArrayValue{
-									ArrayValue: &internal.ArrayValue{
-										Values: []internal.AnyValue{
-											{
-												Value: &internal.AnyValue_StringValueRef{
-													StringValueRef: 1,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-
-	t.Run("deeply nested kvlist", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key: "level1",
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_KvlistValue{
-									KvlistValue: &internal.KeyValueList{
-										Values: []internal.KeyValue{
-											{
-												Key:    "level2",
-												KeyRef: 5,
-												Value: internal.AnyValue{
-													Value: &internal.AnyValue_StringValue{
-														StringValue: "value",
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsResolution(anyVal))
-	})
-}
-
-func TestNeedsConversion(t *testing.T) {
-	t.Run("empty map", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-		assert.False(t, needsConversion(attrs))
-	})
-
-	t.Run("map with key but no KeyRef", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-		attrs.PutStr("key", "value")
-
-		assert.True(t, needsConversion(attrs))
-	})
-
-	t.Run("map with KeyRef already set", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key:    "test-key",
-			KeyRef: 1,
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_StringValueRef{
-					StringValueRef: 1,
-				},
-			},
-		})
-
-		assert.False(t, needsConversion(attrs))
-	})
-
-	t.Run("map with StringValue needs conversion", func(t *testing.T) {
-		profiles := NewProfiles()
-		rp := profiles.ResourceProfiles().AppendEmpty()
-		attrs := rp.Resource().Attributes()
-
-		mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
-		*mapOrig = append(*mapOrig, internal.KeyValue{
-			Key:    "test-key",
-			KeyRef: 1,
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_StringValue{
-					StringValue: "needs-conversion",
-				},
-			},
-		})
-
-		assert.True(t, needsConversion(attrs))
-	})
-}
-
-func TestAnyValueNeedsConversion(t *testing.T) {
-	t.Run("StringValue with non-empty string", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValue{
-				StringValue: "test",
-			},
-		}
-		assert.True(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("StringValue with empty string", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValue{
-				StringValue: "",
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("StringValueRef already converted", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_StringValueRef{
-				StringValueRef: 1,
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("IntValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_IntValue{
-				IntValue: 42,
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("KvList with key but no KeyRef", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key:    "test",
-							KeyRef: 0,
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_IntValue{
-									IntValue: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("KvList with StringValue in nested value", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key:    "test",
-							KeyRef: 1,
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValue{
-									StringValue: "needs-conversion",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("KvList already converted", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key:    "test",
-							KeyRef: 1,
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValueRef{
-									StringValueRef: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("KvList nil", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: nil,
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("Array with StringValue", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: &internal.ArrayValue{
-					Values: []internal.AnyValue{
-						{
-							Value: &internal.AnyValue_StringValue{
-								StringValue: "needs-conversion",
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("Array already converted", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: &internal.ArrayValue{
-					Values: []internal.AnyValue{
-						{
-							Value: &internal.AnyValue_StringValueRef{
-								StringValueRef: 1,
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("Array nil", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_ArrayValue{
-				ArrayValue: nil,
-			},
-		}
-		assert.False(t, anyValueNeedsConversion(anyVal))
-	})
-
-	t.Run("nested structures needing conversion", func(t *testing.T) {
-		anyVal := &internal.AnyValue{
-			Value: &internal.AnyValue_KvlistValue{
-				KvlistValue: &internal.KeyValueList{
-					Values: []internal.KeyValue{
-						{
-							Key:    "test",
-							KeyRef: 1,
-							Value: internal.AnyValue{
-								Value: &internal.AnyValue_ArrayValue{
-									ArrayValue: &internal.ArrayValue{
-										Values: []internal.AnyValue{
-											{
-												Value: &internal.AnyValue_StringValue{
-													StringValue: "deep-value",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		assert.True(t, anyValueNeedsConversion(anyVal))
-	})
 }

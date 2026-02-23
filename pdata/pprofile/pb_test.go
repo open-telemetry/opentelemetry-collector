@@ -50,15 +50,13 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	wire3, err := marshaler.MarshalProfiles(td2)
 	require.NoError(t, err)
 
-	// Verify that wire1 and wire3 are compatible by unmarshaling both and checking the data
+	// Verify full round-trip fidelity: unmarshal both wire1 and wire3 into goproto
+	// messages and compare them semantically. This ensures all data (attributes,
+	// dictionary, profiles, etc.) survives the round-trip through both libraries.
 	var check1, check2 gootlpprofiles.ProfilesData
 	require.NoError(t, goproto.Unmarshal(wire1, &check1))
 	require.NoError(t, goproto.Unmarshal(wire3, &check2))
-
-	// Both should unmarshal successfully, proving wire compatibility
-	assert.NotNil(t, check1.ResourceProfiles)
-	assert.NotNil(t, check2.ResourceProfiles)
-	assert.Len(t, check1.ResourceProfiles, len(check2.ResourceProfiles))
+	assert.True(t, goproto.Equal(&check1, &check2), "round-trip through goproto did not preserve profile data")
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
@@ -283,20 +281,55 @@ func BenchmarkMarshalProfiles(b *testing.B) {
 
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
-			// Generate profile data once
-			profiles := generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
-
 			marshaler := &ProtoMarshaler{}
-			b.ResetTimer()
-			b.ReportAllocs()
 
-			for i := 0; i < b.N; i++ {
+			// with_refs: simulate the normal ingest path where data was
+			// received on the wire (refs present), then unmarshaled (refs
+			// resolved but KeyRef kept), and is now being re-marshaled
+			// without any attribute modifications.
+			b.Run("with_refs", func(b *testing.B) {
+				profiles := generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
+				unmarshaler := &ProtoUnmarshaler{}
 				buf, err := marshaler.MarshalProfiles(profiles)
 				if err != nil {
 					b.Fatalf("failed to marshal: %v", err)
 				}
-				_ = buf
-			}
+				profiles, err = unmarshaler.UnmarshalProfiles(buf)
+				if err != nil {
+					b.Fatalf("failed to unmarshal: %v", err)
+				}
+
+				b.ResetTimer()
+				b.ReportAllocs()
+
+				for i := 0; i < b.N; i++ {
+					buf, err := marshaler.MarshalProfiles(profiles)
+					if err != nil {
+						b.Fatalf("failed to marshal: %v", err)
+					}
+					_ = buf
+				}
+			})
+
+			// without_refs: each iteration gets a fresh copy with no refs,
+			// simulating data that was constructed or had attributes modified.
+			b.Run("without_refs", func(b *testing.B) {
+				copies := make([]Profiles, b.N)
+				for i := range copies {
+					copies[i] = generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
+				}
+
+				b.ResetTimer()
+				b.ReportAllocs()
+
+				for i := 0; i < b.N; i++ {
+					buf, err := marshaler.MarshalProfiles(copies[i])
+					if err != nil {
+						b.Fatalf("failed to marshal: %v", err)
+					}
+					_ = buf
+				}
+			})
 		})
 	}
 }
