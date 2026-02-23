@@ -65,7 +65,7 @@
               },
               "cookies": {
                 "description": "Cookies configures the cookie management of the HTTP client.",
-                "$comment": "Empty or unknown reference, defaulting to 'any' type."
+                "$comment": "Uses `any` type."
               },
               "disable_keep_alives": {
                 "description": "DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server for a single HTTP request. WARNING: enabling this option can result in significant overhead establishing a new HTTP(S) connection for every request. Before enabling this option please consider whether changes to idle connection settings can achieve your goal.",

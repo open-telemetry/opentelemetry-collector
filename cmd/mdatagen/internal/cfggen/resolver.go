@@ -40,7 +40,7 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 // Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
 func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	target := &ConfigMetadata{}
-	err := r.resolveSchema(src, src, target)
+	err := r.resolveSchema(src, src, target, "")
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +66,9 @@ func transformDurationFormat(md *ConfigMetadata) {
 	}
 }
 
-func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
+func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin string) error {
 	if current.Ref != "" {
-		resolved, err := r.resolveRef(root, current)
+		resolved, err := r.resolveRef(root, current, origin)
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q: %w", current.Ref, err)
 		}
@@ -92,7 +92,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 		case reflect.Struct:
 			if field.Type() == reflect.TypeFor[*ConfigMetadata]() {
 				newMeta := &ConfigMetadata{}
-				if err := r.resolveSchema(root, field.Addr().Interface().(*ConfigMetadata), newMeta); err != nil {
+				if err := r.resolveSchema(root, field.Addr().Interface().(*ConfigMetadata), newMeta, origin); err != nil {
 					return err
 				}
 				targetField.Set(reflect.ValueOf(newMeta).Elem())
@@ -101,7 +101,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 			if !field.IsNil() && field.Elem().Kind() == reflect.Struct {
 				if field.Type() == reflect.TypeFor[*ConfigMetadata]() {
 					newMeta := &ConfigMetadata{}
-					if err := r.resolveSchema(root, field.Interface().(*ConfigMetadata), newMeta); err != nil {
+					if err := r.resolveSchema(root, field.Interface().(*ConfigMetadata), newMeta, origin); err != nil {
 						return err
 					}
 					targetField.Set(reflect.ValueOf(newMeta))
@@ -116,7 +116,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 					value := iter.Value()
 					if !value.IsNil() {
 						newMeta := &ConfigMetadata{}
-						if err := r.resolveSchema(root, value.Interface().(*ConfigMetadata), newMeta); err != nil {
+						if err := r.resolveSchema(root, value.Interface().(*ConfigMetadata), newMeta, origin); err != nil {
 							return err
 						}
 						newMap.SetMapIndex(key, reflect.ValueOf(newMeta))
@@ -133,7 +133,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 					elem := field.Index(j)
 					if !elem.IsNil() {
 						newMeta := &ConfigMetadata{}
-						if err := r.resolveSchema(root, elem.Interface().(*ConfigMetadata), newMeta); err != nil {
+						if err := r.resolveSchema(root, elem.Interface().(*ConfigMetadata), newMeta, origin); err != nil {
 							return err
 						}
 						newSlice.Index(j).Set(reflect.ValueOf(newMeta))
@@ -151,9 +151,11 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 	return nil
 }
 
-// resolveRef resolves a JSON Schema $ref, handling both internal and external references
-func (r *Resolver) resolveRef(root, current *ConfigMetadata) (*ConfigMetadata, error) {
-	ref := NewRef(current.Ref)
+// resolveRef resolves a JSON Schema $ref, handling both internal and external references.
+// The origin parameter tracks which namespace the current schema was loaded from,
+// enabling local refs in remotely-fetched schemas to be converted to external refs.
+func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin string) (*ConfigMetadata, error) {
+	ref := NewRef(current.Ref, origin)
 
 	if err := ref.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
@@ -165,21 +167,21 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata) (*ConfigMetadata, e
 				return val, nil
 			}
 		}
-		return nil, fmt.Errorf("internal reference %q not found in $defs", current.Ref)
 	}
 
-	if ref.isExternal() {
-		// check if it's in known namespace
-		if _, ok := ref.Namespace(); !ok {
-			// fallback to type "any"
-			current.GoType = current.Ref
-			current.Comment = "Empty or unknown reference, defaulting to 'any' type."
-			return current, nil
-		}
+	if ref.isLocal() {
+		return r.loadExternalRef(ref)
 	}
 
-	// attempt to load external reference using registered loaders
-	return r.loadExternalRef(ref)
+	// check if it's in known namespace
+	if _, ok := ref.Namespace(); ok {
+		return r.loadExternalRef(ref)
+	}
+
+	// fallback to type "any"
+	current.GoType = current.Ref
+	current.Comment = "Uses `any` type."
+	return current, nil
 }
 
 // loadExternalRef uses SchemaLoader to load external references
@@ -192,8 +194,10 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
+	origin := ref.Origin()
+
 	resolved := &ConfigMetadata{}
-	if err := r.resolveSchema(md, md, resolved); err != nil {
+	if err := r.resolveSchema(md, md, resolved, origin); err != nil {
 		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
 	}
 

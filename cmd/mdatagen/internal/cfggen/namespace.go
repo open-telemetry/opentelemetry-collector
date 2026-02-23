@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path"
 	"slices"
 	"strings"
 )
@@ -22,23 +23,64 @@ type Ref struct {
 	path string
 }
 
-func NewRef(path string) *Ref {
-	return &Ref{path: path}
+// NewRef creates a new Ref from a path string. If origin is non-empty (the module
+// path of the schema containing the ref, e.g. "go.opentelemetry.io/collector/config/confighttp"),
+// local refs are converted to fully qualified external refs:
+//   - "/config/configauth.config"       → namespace + path (absolute within namespace)
+//   - "./internal/metadata.config"      → origin + "/internal/metadata.config" (relative to schema)
+//   - "../configtls.config"             → parent(origin) + "/configtls.config" (parent-relative)
+func NewRef(refPath, origin string) *Ref {
+	if origin != "" {
+		// Split off inline version from origin (e.g. "mod/path@v1.2.0" → "mod/path", "v1.2.0")
+		originModule, originVersion, _ := strings.Cut(origin, "@")
+
+		var resolved bool
+		switch {
+		case strings.HasPrefix(refPath, "/"):
+			if ns := namespaceOf(originModule); ns != "" {
+				refPath = path.Join(ns, refPath)
+				resolved = true
+			}
+		case strings.HasPrefix(refPath, "./"), strings.HasPrefix(refPath, "../"):
+			refPath = path.Join(originModule, refPath)
+			resolved = true
+		}
+
+		if resolved && originVersion != "" {
+			refPath += "@" + originVersion
+		}
+	}
+	return &Ref{path: refPath}
+}
+
+func namespaceOf(path string) string {
+	for _, namespace := range supportedNamespaces {
+		if strings.HasPrefix(path, namespace) {
+			return namespace
+		}
+	}
+	return ""
 }
 
 func (r *Ref) Namespace() (string, bool) {
-	for _, namespace := range supportedNamespaces {
-		if strings.HasPrefix(r.path, namespace) {
-			return namespace, true
-		}
-	}
-	return "", false
+	ns := namespaceOf(r.path)
+	return ns, ns != ""
 }
 
 func (r *Ref) Module() string {
 	pathAndVersion := strings.Split(r.path, "@")[0]
 	moduleAndDef := strings.Split(pathAndVersion, ".")
 	return strings.Join(moduleAndDef[:len(moduleAndDef)-1], ".")
+}
+
+// Origin returns the module path with inline version (if any), suitable for
+// passing as origin to NewRef when resolving local refs inside this schema.
+func (r *Ref) Origin() string {
+	origin := r.Module()
+	if v := r.InlineVersion(); v != "" {
+		origin += "@" + v
+	}
+	return origin
 }
 
 func (r *Ref) SchemaID() string {
@@ -116,5 +158,9 @@ func (r *Ref) Validate() error {
 }
 
 func (r *Ref) CacheKey() string {
+	return r.path
+}
+
+func (r *Ref) String() string {
 	return r.path
 }
