@@ -690,6 +690,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "metricreceiver",
 				GeneratedPackageName: "metadata",
 				SemConvVersion:       "1.38.0",
+				Label:                "receiver/testdata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
