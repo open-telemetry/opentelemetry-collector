@@ -23,7 +23,6 @@ components:
     - extension/xextension
     - extension/zpages
     - pdata/pprofile
-    - pdata/xpdata
     - pkg/config/configauth
     - pkg/config/configcompression
     - pkg/config/configgrpc
@@ -53,6 +52,7 @@ components:
     - pkg/xconnector
     - pkg/xexporter
     - pkg/xexporterhelper
+    - pkg/xpdata
     - pkg/xprocessor
     - pkg/xreceiver
     - pkg/xscraper
