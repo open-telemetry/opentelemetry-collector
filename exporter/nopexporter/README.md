@@ -26,5 +26,5 @@ exporter definitions. It takes no configuration.
 
 ```yaml
 exporters:
-  nop: {}
+  nop: {} # Explicitly set in case the config is re-serialized (e.g. with the Operator)
 ```
