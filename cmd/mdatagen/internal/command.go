@@ -512,20 +512,15 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func generateConfigFiles(md Metadata, outputDir string) error {
+func generateConfigFiles(md Metadata, mdDir string) error {
 	if md.Config != nil {
-		version, err := getVersion()
-		if err != nil {
-			return fmt.Errorf("failed to get collector version: %w", err)
-		}
-
-		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, version)
+		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		err = cfggen.WriteJSONSchema(outputDir, resolvedSchema)
+		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}

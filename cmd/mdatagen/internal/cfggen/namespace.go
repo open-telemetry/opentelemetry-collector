@@ -4,22 +4,12 @@
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 
 import (
+	"errors"
 	"fmt"
 	"maps"
-	"path"
 	"slices"
 	"strings"
 )
-
-type Ref struct {
-	Namespace string
-	Path      string
-	Type      string
-}
-
-func (r *Ref) PkgPath() string {
-	return path.Join(r.Namespace, r.Path)
-}
 
 var namespaceToURL = map[string]string{
 	"go.opentelemetry.io/collector":                             "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector",
@@ -28,50 +18,103 @@ var namespaceToURL = map[string]string{
 
 var supportedNamespaces = slices.Collect(maps.Keys(namespaceToURL))
 
-func isInNamespace(packagePath string) bool {
-	_, err := getNamespace(packagePath)
-	return err == nil
+type Ref struct {
+	path string
 }
 
-// getNamespace checks if the given package path belongs to any of the supported namespaces
-// and returns the matching namespace.
-func getNamespace(packagePath string) (string, error) {
-	for _, ns := range supportedNamespaces {
-		if strings.HasPrefix(packagePath, ns) {
-			return ns, nil
+func NewRef(path string) *Ref {
+	return &Ref{path: path}
+}
+
+func (r *Ref) Namespace() (string, bool) {
+	for _, namespace := range supportedNamespaces {
+		if strings.HasPrefix(r.path, namespace) {
+			return namespace, true
 		}
 	}
-	return "", fmt.Errorf("namespace not supported: %s", packagePath)
+	return "", false
 }
 
-// getRef parses a reference path and extracts the namespace, version, path, and type information.
-func getRef(refPath string) (*Ref, error) {
-	namespace, err := getNamespace(refPath)
-	if err != nil {
-		return nil, err
-	}
-
-	trimmed := strings.TrimPrefix(refPath, namespace+"/")
-	parts := strings.SplitN(trimmed, ".", 2)
-	// We expect at least a package path and type name (e.g., "scraper/scraperhelper.controller_config")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid reference path: %s", refPath)
-	}
-	path := parts[0]
-	typ := parts[1]
-
-	return &Ref{
-		Namespace: namespace,
-		Path:      path,
-		Type:      typ,
-	}, nil
+func (r *Ref) Module() string {
+	pathAndVersion := strings.Split(r.path, "@")[0]
+	moduleAndDef := strings.Split(pathAndVersion, ".")
+	return strings.Join(moduleAndDef[:len(moduleAndDef)-1], ".")
 }
 
-func getRefURL(ref Ref, version string) string {
-	baseURL := namespaceToURL[ref.Namespace]
+func (r *Ref) SchemaID() string {
+	module := r.Module()
+	namespace, ok := r.Namespace()
+	if ok {
+		return strings.TrimPrefix(module, namespace+"/")
+	}
+	return module
+}
+
+func (r *Ref) DefName() string {
+	if r.isInternal() {
+		return r.path
+	}
+	pathAndVersion := strings.Split(r.path, "@")
+	schemaAndDef := strings.Split(pathAndVersion[0], ".")
+	return schemaAndDef[len(schemaAndDef)-1]
+}
+
+func (r *Ref) InlineVersion() string {
+	pathAndVersion := strings.Split(r.path, "@")
+	if len(pathAndVersion) == 2 {
+		return pathAndVersion[1]
+	}
+	return ""
+}
+
+func (r *Ref) URL(version string) (string, error) {
+	ns, ok := r.Namespace()
+	if !ok {
+		return "", errors.New("unsupported namespace")
+	}
+	baseURL := namespaceToURL[ns]
 	return fmt.Sprintf("%s/%s/%s/%s",
-		baseURL,
-		version,
-		ref.Path,
-		schemaFileName)
+			baseURL,
+			version,
+			r.SchemaID(),
+			schemaFileName),
+		nil
+}
+
+func (r *Ref) isInternal() bool {
+	return !strings.ContainsRune(r.path, '/')
+}
+
+func (r *Ref) isLocal() bool {
+	return strings.HasPrefix(r.path, "./") || strings.HasPrefix(r.path, "../") || strings.HasPrefix(r.path, "/")
+}
+
+func (r *Ref) isExternal() bool {
+	return !r.isInternal() && !r.isLocal()
+}
+
+func (r *Ref) Validate() error {
+	if r.path == "" {
+		return errors.New("empty path")
+	}
+	inlineVersion := r.InlineVersion()
+	if inlineVersion != "" {
+		if r.isInternal() || r.isLocal() {
+			return errors.New("inline version is not allowed for internal or local references")
+		}
+	}
+
+	if r.isInternal() && strings.Contains(r.path, ".") {
+		return errors.New("internal references should not contain '.' character")
+	}
+
+	if r.DefName() == "" {
+		return errors.New("reference must contain a definition part")
+	}
+
+	return nil
+}
+
+func (r *Ref) CacheKey() string {
+	return r.path
 }

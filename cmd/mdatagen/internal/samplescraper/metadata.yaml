@@ -25,13 +25,13 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
-    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+    - $ref: /scraper/scraperhelper.controller_config
   $defs:
     target:
       type: object
       properties:
         http_client:
-          $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+          $ref: go.opentelemetry.io/collector/config/confighttp.client_config@v0.146.0
         interval:
           type: string
           format: duration

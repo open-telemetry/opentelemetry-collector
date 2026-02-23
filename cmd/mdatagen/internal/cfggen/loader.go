@@ -7,12 +7,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/tools/go/packages"
 )
 
 const (
@@ -24,94 +28,59 @@ const (
 var ErrNotFound = errors.New("schema not found")
 
 // Loader loads configuration metadata from various sources (file, HTTP).
-// It automatically handles caching, version fallback, and persistence.
 type Loader interface {
-	Load(ref Ref, version string) (*ConfigMetadata, error)
+	Load(ref Ref) (*ConfigMetadata, error)
 }
 
-// NewLoader creates a fully configured loader.
-// If schemasDir is provided, enables file source and automatic persistence of HTTP fetches.
-func NewLoader(schemasDir string) Loader {
-	return &loader{
+type schemaLoader struct {
+	cache      map[string]*ConfigMetadata
+	cd         string
+	httpClient *http.Client
+}
+
+// NewLoader creates a fully configured loader. Takes current component's directory to determine where to look for local schema files.
+func NewLoader(cwd string) Loader {
+	return &schemaLoader{
 		cache:      make(map[string]*ConfigMetadata),
-		schemasDir: schemasDir,
+		cd:         cwd,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
-// loader is the concrete implementation of Loader.
-type loader struct {
-	cache      map[string]*ConfigMetadata
-	schemasDir string
-	httpClient *http.Client
-}
-
-func (l *loader) Load(ref Ref, version string) (*ConfigMetadata, error) {
-	// 1. Check cache
-	key := cacheKey(ref, version)
-	if cached, ok := l.cache[key]; ok {
+func (sl *schemaLoader) Load(ref Ref) (*ConfigMetadata, error) {
+	if cached, ok := sl.cache[ref.CacheKey()]; ok {
 		return cached, nil
 	}
 
-	// 2. Try loading (with version fallback)
-	metadata, err := l.loadWithFallback(ref, version)
+	metadata, err := sl.load(ref)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. Cache the result
-	l.cache[key] = metadata
-
+	sl.cache[ref.CacheKey()] = metadata
 	return metadata, nil
 }
 
-// loadWithFallback tries to load the requested version, falling back to "main" if not found.
-func (l *loader) loadWithFallback(ref Ref, version string) (*ConfigMetadata, error) {
-	metadata, err := l.tryLoad(ref, version)
-	if err == nil {
-		return metadata, nil
-	}
-
-	if version == defaultVersion || !errors.Is(err, ErrNotFound) {
+func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
+	repoRoot, err := repoRoot(sl.cd)
+	if err != nil {
 		return nil, err
 	}
 
-	metadata, err = l.tryLoad(ref, defaultVersion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load version %s (fallback to main also failed: %w)", version, err)
-	}
-
-	return metadata, nil
-}
-
-// tryLoad attempts to load from file, then HTTP if file not found.
-func (l *loader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
-	if l.schemasDir != "" {
-		metadata, err := l.loadFromFile(ref, version)
-		if err == nil {
-			return metadata, nil
+	if ref.isLocal() {
+		var filePath string
+		if strings.HasPrefix(ref.path, "/") {
+			filePath = filepath.Join(repoRoot, ref.SchemaID(), schemaFileName)
+		} else {
+			filePath = filepath.Join(sl.cd, ref.SchemaID(), schemaFileName)
 		}
-		if !errors.Is(err, ErrNotFound) {
-			return nil, err // Real error (parse error, permission denied, etc.)
-		}
+		return sl.loadFromFile(filePath)
 	}
 
-	metadata, err := l.loadFromHTTP(ref, version)
-	if err != nil {
-		return nil, err
-	}
-
-	if l.schemasDir != "" {
-		_ = l.persistToFile(ref, version, metadata)
-	}
-
-	return metadata, nil
+	return sl.loadFromHTTP(ref, filepath.Join(repoRoot, ".schemas"))
 }
 
-// loadFromFile loads a schema from the local filesystem.
-func (l *loader) loadFromFile(ref Ref, version string) (*ConfigMetadata, error) {
-	filePath := filepath.Join(l.schemasDir, version, filepath.FromSlash(ref.PkgPath()), schemaFileName)
-
+func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -128,11 +97,34 @@ func (l *loader) loadFromFile(ref Ref, version string) (*ConfigMetadata, error) 
 	return &metadata, nil
 }
 
-// loadFromHTTP fetches a schema from HTTP.
-func (l *loader) loadFromHTTP(ref Ref, version string) (*ConfigMetadata, error) {
-	url := getRefURL(ref, version)
+func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigMetadata, error) {
+	version := sl.refVersion(&ref)
+	filePath := filepath.Join(fileCacheDir, version, filepath.FromSlash(ref.SchemaID()), schemaFileName)
+	// check fs cache first
+	metadata, err := sl.loadFromFile(filePath)
+	if err == nil {
+		return metadata, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		log.Printf("warning: failed to load schema from file cache at %s: %v", filePath, err)
+	}
+	metadata, err = sl.tryLoad(ref, version)
+	if err != nil {
+		return nil, err
+	}
+	if err := sl.persistToFile(filePath, metadata); err != nil {
+		log.Printf("warning: failed to persist schema to file cache at %s: %v", filePath, err)
+	}
+	return metadata, nil
+}
 
-	resp, err := l.httpClient.Get(url)
+func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
+	url, err := ref.URL(version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct URL for %s: %w", ref.CacheKey(), err)
+	}
+
+	resp, err := sl.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from %s: %w", url, err)
 	}
@@ -158,10 +150,7 @@ func (l *loader) loadFromHTTP(ref Ref, version string) (*ConfigMetadata, error) 
 	return &metadata, nil
 }
 
-// persistToFile saves a schema to the filesystem.
-func (l *loader) persistToFile(ref Ref, version string, md *ConfigMetadata) error {
-	filePath := filepath.Join(l.schemasDir, version, filepath.FromSlash(ref.PkgPath()), schemaFileName)
-
+func (l *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error {
 	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
@@ -178,7 +167,47 @@ func (l *loader) persistToFile(ref Ref, version string, md *ConfigMetadata) erro
 	return nil
 }
 
-// cacheKey generates a cache key from ref and version.
-func cacheKey(ref Ref, version string) string {
-	return ref.PkgPath() + "@" + version
+func (sl *schemaLoader) refVersion(ref *Ref) string {
+	if v := ref.InlineVersion(); v != "" {
+		return v
+	}
+
+	// Try to resolve version via packages.Load (respects replace directives)
+	modulePath := ref.Module()
+	if modulePath != "" {
+		if version := sl.resolveModuleVersion(modulePath); version != "" {
+			return version
+		}
+	}
+
+	log.Printf("warning: could not resolve version for %s, falling back to %q", ref.CacheKey(), defaultVersion)
+	return defaultVersion
+}
+
+func (sl *schemaLoader) resolveModuleVersion(importPath string) string {
+	cfg := &packages.Config{
+		Mode: packages.NeedModule,
+		Dir:  sl.cd,
+	}
+	pkgs, err := packages.Load(cfg, importPath)
+	if err != nil || len(pkgs) == 0 {
+		return ""
+	}
+
+	pkg := pkgs[0]
+	if pkg.Module == nil {
+		return ""
+	}
+
+	return pkg.Module.Version
+}
+
+func repoRoot(componentDir string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
+	cmd.Dir = componentDir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine repo root: %w", err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }

@@ -5,8 +5,6 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import (
 	"fmt"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 )
@@ -18,68 +16,37 @@ const (
 )
 
 type Resolver struct {
-	pkgID   string
-	version string
-	class   string
-	name    string
-	loader  Loader
+	pkgID  string
+	class  string
+	name   string
+	loader Loader
 }
 
-func NewResolver(pkgID, class, name, version string) *Resolver {
-	schemasDir := getSchemasDir()
-	loader := NewLoader(schemasDir)
+func NewResolver(pkgID, class, name, dir string) *Resolver {
+	loader := NewLoader(dir)
 
 	return &Resolver{
-		loader:  loader,
-		pkgID:   pkgID,
-		version: version,
-		class:   class,
-		name:    name,
+		loader: loader,
+		pkgID:  pkgID,
+		class:  class,
+		name:   name,
 	}
-}
-
-// getSchemasDir returns the path to .schemas directory at the repo root.
-// Returns empty string if repo root cannot be determined.
-func getSchemasDir() string {
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-
-	repoRoot := strings.TrimSpace(string(output))
-	return filepath.Join(repoRoot, ".schemas")
 }
 
 // ResolveSchema takes a source configuration metadata schema and resolves all references ($ref)
-// to produce a fully resolved schema. It creates a new ConfigMetadata with proper JSON Schema
-// metadata (Schema, ID, Title) based on the component's pkgID, class, name, and version.
-//
-// The resolution process:
-//   - Sets the JSON Schema version to draft 2020-12
-//   - Generates a unique schema ID from the pkgID namespace, version, and path
-//   - Sets the title to "class/name" (e.g., "receiver/otlp")
-//   - Recursively resolves all $ref references within the schema
-//   - Deep copies all fields while expanding simplified references
+// to produce a fully resolved schema. It handles both internal references (within the same schema) and external references
+// (pointing to other schemas, either locally or remotely). The resolver uses registered loaders to fetch external schemas as needed.
 //
 // Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
 func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
-	ns, err1 := getNamespace(r.pkgID)
-	if err1 != nil {
-		return nil, fmt.Errorf("failed to get namespace from pkgID %q: %w", r.pkgID, err1)
-	}
-	path := strings.TrimPrefix(r.pkgID, ns)
-
 	target := &ConfigMetadata{}
-	err2 := r.resolveSchema(src, src, target)
-
-	if err2 != nil {
-		return nil, err2
+	err := r.resolveSchema(src, src, target)
+	if err != nil {
+		return nil, err
 	}
 
-	// Set JSON Schema metadata
 	target.Schema = schemaVersion
-	target.ID = filepath.Join(ns, path)
+	target.ID = r.pkgID
 	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
 
 	return target, nil
@@ -186,64 +153,55 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata) error {
 
 // resolveRef resolves a JSON Schema $ref, handling both internal and external references
 func (r *Resolver) resolveRef(root, current *ConfigMetadata) (*ConfigMetadata, error) {
-	ref := current.Ref
-	// Handle external references (./internal/metadata.metrics_builder_config,
-	// go.opentelemetry.io/collector/scraper/scraperhelper.controller_config)
-	if isExternalRef(ref) {
-		// These would use the Resolver.loaders in the future
-		return r.loadExternalRef(ref)
+	ref := NewRef(current.Ref)
+
+	if err := ref.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
 	}
 
-	// Handle simplified syntax for internal references
-	if root.Defs != nil {
-		if val, ok := root.Defs[ref]; ok {
-			return val, nil
+	if ref.isInternal() {
+		if root.Defs != nil {
+			if val, ok := root.Defs[ref.DefName()]; ok {
+				return val, nil
+			}
+		}
+		return nil, fmt.Errorf("internal reference %q not found in $defs", current.Ref)
+	}
+
+	if ref.isExternal() {
+		// check if it's in known namespace
+		if _, ok := ref.Namespace(); !ok {
+			// fallback to type "any"
+			current.GoType = current.Ref
+			current.Comment = "Empty or unknown reference, defaulting to 'any' type."
+			return current, nil
 		}
 	}
 
-	// fallback to type "any"
-	current.GoType = current.Ref
-	current.Comment = "Empty or unknown reference, defaulting to 'any' type."
-	return current, nil
+	// attempt to load external reference using registered loaders
+	return r.loadExternalRef(ref)
 }
 
-// loadExternalRef uses registered loaders to load external references
-func (r *Resolver) loadExternalRef(refPath string) (*ConfigMetadata, error) {
-	ref, err := getRef(refPath)
-	if err != nil {
-		return nil, fmt.Errorf("invalid reference path %q: %w", refPath, err)
-	}
-
-	md, err := r.loader.Load(*ref, r.version)
+// loadExternalRef uses SchemaLoader to load external references
+func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
+	md, err := r.loader.Load(*ref)
 	if err != nil {
 		return nil, err
 	}
 	if md == nil {
-		return nil, fmt.Errorf("no loader could resolve external reference: %s", refPath)
+		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
 	resolved := &ConfigMetadata{}
 	if err := r.resolveSchema(md, md, resolved); err != nil {
-		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", refPath, err)
+		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
 	}
 
 	if resolved.Defs != nil {
-		if def, ok := resolved.Defs[ref.Type]; ok {
+		if def, ok := resolved.Defs[ref.DefName()]; ok {
 			return def, nil
 		}
 	}
 
-	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.Type, refPath)
-}
-
-// isExternalRef checks if a reference is an external reference (URL or relative path)
-func isExternalRef(ref string) bool {
-	if isInNamespace(ref) {
-		return true
-	}
-	if strings.HasPrefix(ref, "./") {
-		return true
-	}
-
-	return false
+	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)
 }
