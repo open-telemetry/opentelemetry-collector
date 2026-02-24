@@ -9,6 +9,8 @@ $defs:
           type: string
     allOf:
       - $ref: /config/configauth.config
+  cookies_config:
+    description: CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
   client_config:
     description: ClientConfig defines settings for creating an HTTP client.
     type: object
