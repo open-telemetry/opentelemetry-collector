@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const oneOfMessageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
@@ -72,23 +72,23 @@ func (omv *OneOfMessageValue) GetOriginFieldName() string {
 }
 
 func (omv *OneOfMessageValue) GenerateAccessors(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageAccessorsTemplate", []byte(oneOfMessageAccessorsTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfMessageAccessorsTemplate", []byte(oneOfMessageAccessorsTemplate))
+	return tmplutil.Execute(t, omv.templateFields(ms, of))
 }
 
 func (omv *OneOfMessageValue) GenerateTests(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageAccessorsTestTemplate", []byte(oneOfMessageAccessorsTestTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfMessageAccessorsTestTemplate", []byte(oneOfMessageAccessorsTestTemplate))
+	return tmplutil.Execute(t, omv.templateFields(ms, of))
 }
 
 func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageSetTestTemplate", []byte(oneOfMessageSetTestTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfMessageSetTestTemplate", []byte(oneOfMessageSetTestTemplate))
+	return tmplutil.Execute(t, omv.templateFields(ms, of))
 }
 
 func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfMessageTypeTemplate", []byte(oneOfMessageTypeTemplate))
-	return template.Execute(t, omv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfMessageTypeTemplate", []byte(oneOfMessageTypeTemplate))
+	return tmplutil.Execute(t, omv.templateFields(ms, of))
 }
 
 func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) proto.FieldInterface {
