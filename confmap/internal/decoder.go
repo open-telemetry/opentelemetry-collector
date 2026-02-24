@@ -87,7 +87,10 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
-// original string representation when decoding into a string field, and use the original otherwise.
+// original string representation when decoding into a string field, and use the parsed value otherwise.
+//
+// Fields containing a pointer to a string will also be set to the original string representation,
+// except when the parsed value is nil (i.e. parsed from YAML `null`, `NULL`, `~`, the empty string, etc.)
 func useExpandValue() mapstructure.DecodeHookFuncType {
 	return func(
 		_ reflect.Type,
@@ -97,8 +100,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		if exp, ok := data.(ExpandedValue); ok {
 			var useOriginal bool
 			if NewExpandedValueSanitizer.IsEnabled() {
-				// Based on mapstructure's behavior, we can map `exp.Original` to `to` if it is a `string`,
-				// or potentially a pointer (to a pointer...) to a `string``.
+				// Check if the target field is string, *string, **string, etc.
 				baseType := to
 				pointed := false
 				for baseType.Kind() == reflect.Pointer {
@@ -107,9 +109,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 				}
 				useOriginal = baseType.Kind() == reflect.String
 
-				// `exp.Value` should take priority if it can be mapped and has a different value.
-				// If `exp.Value` is a string, `NewRetrievedFromYAML` guarantees they have the same value,
-				// but this leaves the case of a `null` value.
+				// If the parsed value is nil and the target is a pointer, use the parsed value.
 				if pointed && exp.Value == nil {
 					useOriginal = false
 				}
