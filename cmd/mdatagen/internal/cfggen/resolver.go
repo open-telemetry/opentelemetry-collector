@@ -139,7 +139,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 			targetField.Set(field)
 		}
 	}
-
+	target.Defs = nil // Clear defs after resolution to avoid confusion
 	return nil
 }
 
@@ -186,14 +186,13 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
-	resolved := &ConfigMetadata{}
-	if err := r.resolveSchema(md, md, resolved, ref); err != nil {
-		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
-	}
-
-	if resolved.Defs != nil {
-		if def, ok := resolved.Defs[ref.DefName()]; ok {
-			return def, nil
+	if md.Defs != nil {
+		if def, ok := md.Defs[ref.DefName()]; ok {
+			resolved := &ConfigMetadata{}
+			if err := r.resolveSchema(md, def, resolved, ref); err != nil {
+				return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
+			}
+			return resolved, nil
 		}
 	}
 

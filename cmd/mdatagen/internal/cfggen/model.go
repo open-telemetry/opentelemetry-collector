@@ -25,7 +25,7 @@ type ConfigMetadata struct {
 	Const                any                        `mapstructure:"const,omitempty" json:"const,omitempty" yaml:"const,omitempty"`
 	AllOf                []*ConfigMetadata          `mapstructure:"allOf,omitempty" json:"allOf,omitempty" yaml:"allOf,omitempty"`
 	Properties           map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
-	AdditionalProperties any                        `mapstructure:"additionalProperties,omitempty" json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
+	AdditionalProperties *ConfigMetadata            `mapstructure:"additionalProperties,omitempty" json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
 	Required             []string                   `mapstructure:"required,omitempty" json:"required,omitempty" yaml:"required,omitempty"`
 	MinProperties        *int                       `mapstructure:"minProperties,omitempty" json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
 	MaxProperties        *int                       `mapstructure:"maxProperties,omitempty" json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`

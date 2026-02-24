@@ -150,7 +150,7 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error
 	return &metadata, nil
 }
 
-func (l *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error {
+func (sl *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error {
 	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
