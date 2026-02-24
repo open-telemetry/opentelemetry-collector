@@ -9,7 +9,7 @@ import (
 )
 
 func TestLru(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	lruKeys.access("1")
 	require.Equal(t, "1", lruKeys.keyToEvict())
 	lruKeys.access("2")
@@ -19,12 +19,12 @@ func TestLru(t *testing.T) {
 }
 
 func TestLruEmpty(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	require.Equal(t, "", lruKeys.keyToEvict())
 }
 
 func TestLruEvictionOrder(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	// Add keys in order 1, 2, 3, 4
 	lruKeys.access("1")
 	lruKeys.access("2")
@@ -44,7 +44,7 @@ func TestLruEvictionOrder(t *testing.T) {
 }
 
 func TestLruAccessMiddleElement(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	lruKeys.access("1")
 	lruKeys.access("2")
 	lruKeys.access("3")
@@ -59,7 +59,7 @@ func TestLruAccessMiddleElement(t *testing.T) {
 }
 
 func TestLruEvictTail(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	lruKeys.access("1")
 	lruKeys.access("2")
 	lruKeys.access("3")
@@ -74,8 +74,28 @@ func TestLruEvictTail(t *testing.T) {
 	require.Equal(t, "3", lruKeys.keyToEvict())
 }
 
+func TestLruEvictLRU(t *testing.T) {
+	lruKeys := newLRU()
+	lruKeys.access("1")
+	lruKeys.access("2")
+	lruKeys.access("3")
+
+	// evictLRU should return and remove the LRU key
+	require.Equal(t, "1", lruKeys.evictLRU())
+	require.Equal(t, "2", lruKeys.keyToEvict())
+
+	require.Equal(t, "2", lruKeys.evictLRU())
+	require.Equal(t, "3", lruKeys.keyToEvict())
+
+	require.Equal(t, "3", lruKeys.evictLRU())
+	require.Equal(t, "", lruKeys.keyToEvict())
+
+	// evictLRU on empty should return ""
+	require.Equal(t, "", lruKeys.evictLRU())
+}
+
 func TestLruEvictHead(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	lruKeys.access("1")
 	lruKeys.access("2")
 	lruKeys.access("3")
@@ -90,7 +110,7 @@ func TestLruEvictHead(t *testing.T) {
 }
 
 func TestLruEvictMiddle(t *testing.T) {
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 	lruKeys.access("1")
 	lruKeys.access("2")
 	lruKeys.access("3")
@@ -111,7 +131,7 @@ func TestLruEvictMiddle(t *testing.T) {
 
 func TestLruRandomAccessAndEvict(t *testing.T) {
 	rng := rand.New(rand.NewSource(123)) // fixed seed for reproducibility
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 
 	// Reference list to track LRU order (index 0 = LRU, last index = MRU)
 	var order []string
@@ -160,9 +180,61 @@ func TestLruRandomAccessAndEvict(t *testing.T) {
 	}
 }
 
+func TestLruRandomAccessAndEvictLRU(t *testing.T) {
+	rng := rand.New(rand.NewSource(456)) // fixed seed for reproducibility
+	lruKeys := newLRU()
+
+	// Reference list to track LRU order (index 0 = LRU, last index = MRU)
+	var order []string
+
+	refAccess := func(key string) {
+		for i, k := range order {
+			if k == key {
+				order = append(order[:i], order[i+1:]...)
+				break
+			}
+		}
+		order = append(order, key)
+	}
+
+	refEvictLRU := func() string {
+		if len(order) == 0 {
+			return ""
+		}
+		evicted := order[0]
+		order = order[1:]
+		return evicted
+	}
+
+	numKeys := 10
+	numOperations := 10000
+
+	for i := 0; i < numOperations; i++ {
+		key := strconv.Itoa(rng.Intn(numKeys))
+
+		// 70% access, 30% evictLRU
+		if rng.Float32() < 0.7 {
+			lruKeys.access(key)
+			refAccess(key)
+		} else if len(order) > 0 {
+			actualEvicted := lruKeys.evictLRU()
+			expectedEvicted := refEvictLRU()
+			require.Equal(t, expectedEvicted, actualEvicted, "evictLRU mismatch at operation %d", i)
+		}
+
+		// Verify LRU key matches reference
+		if len(order) == 0 {
+			require.Equal(t, "", lruKeys.keyToEvict(), "expected empty at operation %d", i)
+		} else {
+			expectedLRU := order[0]
+			require.Equal(t, expectedLRU, lruKeys.keyToEvict(), "keyToEvict mismatch at operation %d", i)
+		}
+	}
+}
+
 func TestLruRandomAccess(t *testing.T) {
 	rng := rand.New(rand.NewSource(42)) // fixed seed for reproducibility
-	lruKeys := lru{km: make(map[string]*lruNode), h: nil, t: nil}
+	lruKeys := newLRU()
 
 	// Reference list to track LRU order (index 0 = LRU, last index = MRU)
 	var order []string

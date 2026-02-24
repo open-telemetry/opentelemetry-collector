@@ -25,7 +25,7 @@ type multiBatcher struct {
 	logger                   *zap.Logger
 	maxActivePartitionsCount int64
 	activePartitionsCount    int64
-	lruKeys                  lru
+	lruKeys                  *lru
 	mu                       sync.Mutex
 }
 
@@ -48,21 +48,25 @@ func newMultiBatcher(
 		logger:                   logger,
 		maxActivePartitionsCount: int64(10000), // TODO: fix this by reading from config.
 		activePartitionsCount:    0,
-		lruKeys:                  lru{km: make(map[string]*lruNode), h: nil, t: nil},
+		lruKeys:                  newLRU(),
 		shards:                   make(map[string]any),
 	}
 }
 
 func (mb *multiBatcher) evictPartitionKey() {
-	key := mb.lruKeys.keyToEvict()
+	key := mb.lruKeys.evictLRU()
+	if key == "" {
+		return
+	}
 	// remove the key from the map.
-	partition, _ := mb.shards[key]
+	partition, ok := mb.shards[key]
+	if !ok {
+		return
+	}
 	mb.activePartitionsCount--
 	// flush partition on worker pool.
 	pb := partition.(*partitionBatcher)
 	mb.wp.execute(pb.flushCurrentBatchIfNecessary)
-	mb.lruKeys.evict(key)
-	// confirm if flush can still go on worker pool when we delete shard.
 	delete(mb.shards, key)
 }
 
@@ -83,10 +87,11 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	}
 
 	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
+	_ = newS.Start(ctx, nil)
 	mb.shards[key] = newS
 	mb.activePartitionsCount++
 	mb.lruKeys.access(key)
-	return s.(*partitionBatcher)
+	return newS
 }
 
 func (mb *multiBatcher) Start(context.Context, component.Host) error {
@@ -98,16 +103,28 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 	shard.Consume(ctx, req, done)
 }
 
+func (mb *multiBatcher) getActivePartitionsCount() int64 {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+	return mb.activePartitionsCount
+}
+
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
+	mb.mu.Lock()
+	shards := make([]*partitionBatcher, 0, len(mb.shards))
+	for _, shard := range mb.shards {
+		shards = append(shards, shard.(*partitionBatcher))
+	}
+	mb.mu.Unlock()
+
 	var wg sync.WaitGroup
-	mb.shards.Range(func(_, shard any) bool {
+	for _, shard := range shards {
 		wg.Add(1)
-		go func() {
+		go func(s *partitionBatcher) {
 			defer wg.Done()
-			_ = shard.(*partitionBatcher).Shutdown(ctx)
-		}()
-		return true
-	})
+			_ = s.Shutdown(ctx)
+		}(shard)
+	}
 	wg.Wait()
 	return nil
 }
