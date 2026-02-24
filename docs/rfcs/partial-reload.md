@@ -4,9 +4,9 @@ Support partial configuration reload to rebuild only affected components, reduci
 
 ## Motivation
 
-Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in costly re-initialization of components, loss of accumulated in-memory state, ingestion endpoint downtime where clients receive connection refused errors, disruption of consumption cursors and checkpoints, and unnecessary impact on external systems.
+Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in costly re-initialization of components, loss of accumulated in-memory state, disruption of consumption cursors and checkpoints, and unnecessary impact on external systems.
 
-A survey of components in the collector-contrib repository reveals the full scope of this problem across five categories of impact:
+A survey of components in the collector-contrib repository reveals the full scope of this problem across four categories of impact:
 
 ### Expensive Startup
 
@@ -15,32 +15,38 @@ Components with costly initialization that involves large state synchronization,
 - `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes.
 - `prometheusreceiver` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
 - `prometheusremotewriteexporter` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
+- `k8sattributesprocessor` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data.
 
 ### Accumulated State Loss
 
 Many components maintain in-memory state (buffers, counters, accumulators, caches) that is permanently lost on restart. This causes metric gaps, trace loss, incorrect calculations, and false alerts visible to end users.
 
-Affected components: `tailsamplingprocessor`, `groupbytraceprocessor`, `deltatocumulativeprocessor`, `cumulativetodeltaprocessor`, `intervalprocessor`, `logdedupprocessor`, `metricstarttimeprocessor`, `statsdreceiver`, `prometheusexporter`, `signalfxexporter`
-
-### Ingestion Endpoint Downtime
-
-Receivers that expose network endpoints (HTTP, gRPC, TCP, UDP) for push-based telemetry ingestion must close and rebind their listening sockets during a restart. During this window, clients sending data receive connection refused errors. Clients that implement retry logic can recover once the receiver is listening again, but clients that do not retry will permanently lose those events.
-
-In multi-replica deployments, this can be mitigated by rolling out configuration changes one instance at a time, but in IoT, edge, or single-instance deployments where only one collector is running, there is no redundancy to absorb the downtime.
-
-Affected components: `otlpreceiver`, `jaegerreceiver`, `zipkinreceiver`, `otelarrowreceiver`, `skywalkingreceiver`, `lokireceiver`, `datadogreceiver`, `splunkhecreceiver`, `signalfxreceiver`, `prometheusremotewritereceiver`, `fluentforwardreceiver`, `statsdreceiver`, `carbonreceiver`, `collectdreceiver`, `influxdbreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`, `awsfirehosereceiver`, `webhookeventreceiver`, `faroreceiver`, `libhoneyreceiver`, `googlecloudpubsubpushreceiver`
+- `tailsamplingprocessor` - buffers incomplete traces in memory while awaiting sampling decisions. On restart, all buffered traces and their accumulated span context are discarded, resulting in lost or incorrectly sampled traces.
+- `groupbytraceprocessor` - groups spans into complete traces in memory, holding them until a configured wait duration expires. On restart, incomplete traces waiting for additional spans are discarded and never forwarded.
+- `deltatocumulativeprocessor` - accumulates cumulative values from delta metric streams, indexed by stream identity. On restart, cumulative conversions lose continuity and restart from zero.
+- `cumulativetodeltaprocessor` - stores previous cumulative metric values needed to calculate deltas. On restart, the first cumulative value is treated as a reset, producing incorrect delta values until the next datapoint arrives.
+- `intervalprocessor` - aggregates metrics over a configured interval window. On restart, any metrics collected but not yet exported for the current interval are lost.
+- `logdedupprocessor` - tracks log deduplication counts, first-seen and last-seen timestamps per unique log entry. On restart, duplicate counts reset and previously seen logs are counted again.
+- `metricstarttimeprocessor` - caches first-seen metric datapoint values per resource to adjust start times. On restart, the processor cannot reconstruct original start times, causing inaccurate start time adjustments.
+- `statsdreceiver` - accumulates gauge, counter, histogram, and timing values from incoming StatsD packets between flush intervals. On restart, any partial aggregations not yet flushed are discarded.
+- `prometheusexporter` - maintains a metric registry storing the last known value for all time series exposed on the scrape endpoint. On restart, the endpoint returns empty metrics until new data arrives, potentially breaking alerting and dashboard rules.
+- `signalfxexporter` - buffers pending dimension metadata updates and correlation state for deduplication. On restart, pending dimension updates are lost and metadata associations must be re-established.
+- `k8sattributesprocessor` - maintains an in-memory metadata cache of Kubernetes resources (pods, namespaces, nodes, deployments) populated via informers. By default, the cache is refilled asynchronously so startup is not blocked, but data flowing through the processor during this period will have its Kubernetes metadata missing. With `wait_for_metadata: true`, the processor delays startup until the cache is fully synced, trading availability for correctness.
 
 ### Cursor and Checkpoint Disruption
 
 Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
 
-Affected components: `filelogreceiver`, `azureeventhubreceiver`, `awscloudwatchreceiver`, `googlecloudspannerreceiver`, `mongodbatlasreceiver`
+- `filelogreceiver` - tracks file read offsets and fingerprints for each monitored file. On restart without storage, all offsets are lost and files are re-read from the beginning, causing duplicate log ingestion.
+- `azureeventhubreceiver` - maintains partition-level sequence number checkpoints. On restart without storage, checkpoints are lost and the receiver reverts to the latest available message, causing missed events between shutdown and restart.
+- `awscloudwatchreceiver` - stores timestamp checkpoints per log group. On restart without storage, checkpoints reset to the configured `start_from` time, causing duplicate ingestion of logs already consumed.
+- `mongodbatlasreceiver` - stores the last recorded alert timestamp for polling. On restart without storage, the timestamp is lost and the receiver re-fetches alerts from the full polling window, causing alert duplication.
 
 ### External System Disruption
 
 Components whose restart causes disruption to external systems or other instances beyond the collector itself.
 
-- `kafkareceiver` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group. No messages are consumed by any member during the rebalance. This can be mitigated by configuring `group_instance_id` for static membership.
+- `kafkareceiver` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group.
 
 ---
 
@@ -48,12 +54,12 @@ By enabling partial reload, the collector can intelligently determine which comp
 
 ## Explanation
 
-When partial reload is enabled via the `service.partialReload` feature flag, the collector compares the incoming configuration with the current running configuration to determine the minimal set of components that need to be rebuilt. Unaffected components continue running without interruption.
+When partial reload is enabled via the `service.partialReload` feature flag, the collector compares the incoming configuration with the current running configuration to determine the minimal set of components that need to be rebuilt. Components not affected by the change continue running without interruption, unless they are upstream of a changed component in the same pipeline, in which case they are also rebuilt to ensure a clean data path.
 
 ### Component Changes
 
 - **Receiver modified**: Only the affected receiver is rebuilt. Downstream processors and exporters continue operating and will receive data from the new receiver instance once it starts.
-- **Processor modified**: The processor and all receivers upstream of it in the pipeline are rebuilt. This ensures that no in-flight data is lost during the processor restart.
+- **Processor modified**: The processor and all processors and receivers upstream of it in the pipeline are rebuilt. This ensures that no in-flight data is lost during the processor restart.
 - **Exporter modified**: The exporter, along with all processors and receivers upstream of it in the pipeline, are rebuilt. This provides a clean data path from ingestion to export.
 
 ### Pipeline Changes
@@ -66,8 +72,8 @@ When partial reload is enabled via the `service.partialReload` feature flag, the
 
 Connectors require special handling since they bridge two pipelines:
 
-- **Connector added**: On the exporter side (the pipeline feeding into the connector), the entire upstream pipeline is rebuilt to establish the new data flow. On the receiver side (the pipeline receiving from the connector), only the portion of the pipeline starting from the connector is affected.
-- **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector as a destination. On the receiver side, the portion of the pipeline that was receiving from the connector is torn down. If the receiving pipeline has other receivers, those portions continue operating unaffected.
+- **Connector added**: On the exporter side (the pipeline feeding into the connector), the entire upstream pipeline is rebuilt to establish the new data flow. On the receiver side (the pipeline receiving from the connector), the connector is started as a new receiver and downstream processors and exporters continue operating without interruption.
+- **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector as a destination. On the receiver side, the connector is stopped. If the receiving pipeline has other receivers, they continue operating unaffected.
 
 The general principle is that changes are propagated "up the graph" from the point of change, rebuilding components upstream while leaving downstream components untouched. This keeps the blast radius of any configuration change as small as possible.
 
@@ -79,7 +85,7 @@ Changes to telemetry or extension configurations will always result in a full re
 
 ### Feature Flag
 
-The partial reload functionality will be entirely behind a feature flag named `service.partialReload`. Only when this flag is explicitly enabled will the new partial reload code path be taken. When disabled, the collector continues to use the existing full reload behavior. This ensures that no existing behavior is changed by default. Once the feature has been validated as stable, the feature flag will be removed and partial reload will become the default behavior.
+The partial reload functionality will be entirely behind a feature flag named `service.partialReload`. Only when this flag is explicitly enabled will the new partial reload code path be taken. When disabled, the collector continues to use the existing full reload behavior. This ensures that no existing behavior is changed by default.
 
 ### Configuration Diff
 
@@ -141,6 +147,7 @@ Partial reload support for connectors, including adding, removing, and modifying
 ## Open questions
 
 - What metrics and observability should be added to track partial reload performance and success rates?
+- Should partial reload eventually become the default behavior, replacing full reload entirely, or should it remain opt-in behind a feature flag?
 
 ## Future possibilities
 
