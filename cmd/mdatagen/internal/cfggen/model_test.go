@@ -96,7 +96,7 @@ func TestConfigMetadata_Validate_InvalidType(t *testing.T) {
 					"endpoint": {Type: "string"},
 				},
 			},
-			wantErr: `config type must be "object":, got "string"`,
+			wantErr: `config type must be "object", got "string"`,
 		},
 		{
 			name: "type is empty string",
@@ -106,7 +106,7 @@ func TestConfigMetadata_Validate_InvalidType(t *testing.T) {
 					"endpoint": {Type: "string"},
 				},
 			},
-			wantErr: `config type must be "object":, got ""`,
+			wantErr: `config type must be "object", got ""`,
 		},
 	}
 
@@ -173,7 +173,7 @@ func TestConfigMetadata_Validate_MultipleErrors(t *testing.T) {
 			},
 			wantErrCount: 2,
 			wantErrContains: []string{
-				`config type must be "object":, got "string"`,
+				`config type must be "object", got "string"`,
 				"config must not be empty",
 			},
 		},
@@ -186,7 +186,7 @@ func TestConfigMetadata_Validate_MultipleErrors(t *testing.T) {
 			},
 			wantErrCount: 2,
 			wantErrContains: []string{
-				`config type must be "object":, got "array"`,
+				`config type must be "object", got "array"`,
 				"config must not be empty",
 			},
 		},

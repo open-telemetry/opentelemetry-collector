@@ -23,6 +23,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "",
 				defName:   "",
 				version:   "",
+				kind:      Internal,
 			},
 		},
 		{
@@ -33,6 +34,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "",
 				defName:   "target_type",
 				version:   "",
+				kind:      Internal,
 			},
 		},
 		{
@@ -43,6 +45,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "",
 				defName:   "target_type",
 				version:   "v1.0.0",
+				kind:      Internal,
 			},
 		},
 		{
@@ -53,6 +56,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "/config/configauth",
 				defName:   "config",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -63,6 +67,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "./internal/metadata",
 				defName:   "config",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -73,6 +78,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "../other",
 				defName:   "config",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -83,6 +89,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "/config/configauth",
 				defName:   "",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -93,6 +100,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "../",
 				defName:   "",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -103,6 +111,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "../",
 				defName:   "test",
 				version:   "",
+				kind:      Local,
 			},
 		},
 		{
@@ -113,6 +122,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "/config/configauth",
 				defName:   "config",
 				version:   "v1.0.0",
+				kind:      Local,
 			},
 		},
 		{
@@ -123,6 +133,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "config/confighttp",
 				defName:   "client_config",
 				version:   "v1.2.0",
+				kind:      External,
 			},
 		},
 		{
@@ -133,6 +144,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "config/confighttp",
 				defName:   "client_config",
 				version:   "",
+				kind:      External,
 			},
 		},
 		{
@@ -143,6 +155,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "config/confighttp",
 				defName:   "",
 				version:   "",
+				kind:      External,
 			},
 		},
 		{
@@ -153,6 +166,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "",
 				defName:   "",
 				version:   "",
+				kind:      External,
 			},
 		},
 		{
@@ -163,6 +177,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "custom",
 				defName:   "xyz",
 				version:   "v1.0.0",
+				kind:      External,
 			},
 		},
 		{
@@ -173,6 +188,7 @@ func TestNewRef(t *testing.T) {
 				schemaID:  "path",
 				defName:   "with.dots",
 				version:   "v1.0.0",
+				kind:      External,
 			},
 		},
 	}

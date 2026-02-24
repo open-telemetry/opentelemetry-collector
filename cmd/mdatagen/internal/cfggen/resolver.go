@@ -89,14 +89,6 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		}
 
 		switch field.Kind() {
-		case reflect.Struct:
-			if field.Type() == reflect.TypeFor[*ConfigMetadata]() {
-				newMeta := &ConfigMetadata{}
-				if err := r.resolveSchema(root, field.Addr().Interface().(*ConfigMetadata), newMeta, origin); err != nil {
-					return err
-				}
-				targetField.Set(reflect.ValueOf(newMeta).Elem())
-			}
 		case reflect.Ptr:
 			if !field.IsNil() && field.Elem().Kind() == reflect.Struct {
 				if field.Type() == reflect.TypeFor[*ConfigMetadata]() {

@@ -20,11 +20,20 @@ var namespaceToURL = map[string]string{
 
 var supportedNamespaces = slices.Collect(maps.Keys(namespaceToURL))
 
+type RefKind int
+
+const (
+	External RefKind = iota
+	Internal
+	Local
+)
+
 type Ref struct {
 	namespace string
 	schemaID  string
 	defName   string
 	version   string
+	kind      RefKind
 }
 
 var localRefPattern = regexp.MustCompile("^((?:/|\\.\\.?/).*?)(?:\\.([^./]+))?$")
@@ -32,23 +41,31 @@ var localRefPattern = regexp.MustCompile("^((?:/|\\.\\.?/).*?)(?:\\.([^./]+))?$"
 func NewRef(refPath string) *Ref {
 	cleanPath, version, _ := strings.Cut(refPath, "@")
 	var namespace, schemaID, defName string
+	var kind RefKind
 
 	switch {
 	case localRefPattern.MatchString(refPath):
 		matches := localRefPattern.FindStringSubmatch(cleanPath)
 		schemaID = matches[1]
 		defName = matches[2]
+		kind = Local
 	case !strings.ContainsRune(cleanPath, '/'):
 		defName = cleanPath
+		kind = Internal
 	default:
 		namespace = namespaceOf(refPath)
 		rest, _ := strings.CutPrefix(cleanPath, namespace)
 		schemaID, defName, _ = strings.Cut(rest, ".")
 		schemaID = strings.Trim(schemaID, "/")
+		kind = External
 	}
 
 	return &Ref{
-		namespace, schemaID, defName, version,
+		namespace,
+		schemaID,
+		defName,
+		version,
+		kind,
 	}
 }
 
@@ -63,6 +80,7 @@ func WithOrigin(refPath string, origin *Ref) *Ref {
 		} else if origin.isExternal() {
 			ref.namespace = origin.namespace
 			ref.version = origin.version
+			ref.kind = External
 			if !strings.HasPrefix(ref.schemaID, "/") {
 				ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
 			} else {
@@ -131,15 +149,15 @@ func (r *Ref) URL(version string) (string, error) {
 }
 
 func (r *Ref) isInternal() bool {
-	return r.schemaID == "" && r.namespace == ""
+	return r.kind == Internal
 }
 
 func (r *Ref) isLocal() bool {
-	return localRefPattern.MatchString(r.schemaID)
+	return r.kind == Local
 }
 
 func (r *Ref) isExternal() bool {
-	return !r.isInternal() && !r.isLocal()
+	return r.kind == External
 }
 
 func (r *Ref) Validate() error {
