@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -133,6 +134,29 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid key index 1"),
 		},
 		{
+			name: "with a key index equal to the source table length (boundary condition)",
+			keyValueAndUnit: func() KeyValueAndUnit {
+				kvu := NewKeyValueAndUnit()
+				kvu.SetKeyStrindex(2)
+				return kvu
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantKeyValueAndUnit: func() KeyValueAndUnit {
+				kvu := NewKeyValueAndUnit()
+				kvu.SetKeyStrindex(2)
+				return kvu
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid key index 2"),
+		},
+		{
 			name: "with an existing unit",
 			keyValueAndUnit: func() KeyValueAndUnit {
 				kvu := NewKeyValueAndUnit()
@@ -181,6 +205,29 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid unit index 1"),
 		},
+		{
+			name: "with a unit index equal to the source table length (boundary condition)",
+			keyValueAndUnit: func() KeyValueAndUnit {
+				kvu := NewKeyValueAndUnit()
+				kvu.SetUnitStrindex(2)
+				return kvu
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantKeyValueAndUnit: func() KeyValueAndUnit {
+				kvu := NewKeyValueAndUnit()
+				kvu.SetUnitStrindex(2)
+				return kvu
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid unit index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			kvu := tt.keyValueAndUnit
@@ -196,6 +243,26 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantKeyValueAndUnit, kvu)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	kvu := NewKeyValueAndUnit()
+	kvu.SetKeyStrindex(1)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test")
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		b.StartTimer()
+
+		_ = kvu.switchDictionary(src, dst)
 	}
 }
 

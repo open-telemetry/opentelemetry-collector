@@ -20,7 +20,9 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Development |
+| s | Sum | Int | Cumulative | true | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -43,7 +45,9 @@ The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Delta | false | Deprecated |
+| s | Sum | Double | Delta | false | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 ### metric.input_type
 
@@ -63,6 +67,37 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
+### reaggregate.metric
+
+Metric for testing spatial reaggregation
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
+### reaggregate.metric.with_required
+
+Metric for testing spatial reaggregation with required attributes
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| required_string_attr | A required attribute with a string value | Any Str | Required |
+| string_attr | Attribute with any string value. | Any Str | Recommended |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
 ### system.cpu.time
 
 Monotonic cumulative sum int metric enabled by default.
@@ -71,7 +106,7 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime) |
+| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
 
 ## Optional Metrics
 
@@ -89,7 +124,9 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Deprecated |
+| 1 | Gauge | Double | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -106,7 +143,9 @@ metrics:
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-|  | Gauge | Double | Deprecated |
+|  | Gauge | Double | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
 
 #### Attributes
 
@@ -202,11 +241,16 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]
+Number of times the batch was sent due to a size trigger
+
+> **Deprecated since 1.5.0**
+> This metric will be removed in favor of batch_send_trigger_size
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Deprecated |
+| {times} | Sum | Int | true | Deprecated since 1.5.0 |
+
+**Deprecation note**: This metric will be removed in favor of batch_send_trigger_size
 
 ### otelcol_process_runtime_total_alloc_bytes
 
@@ -218,7 +262,7 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 ### otelcol_queue_capacity
 
-Queue capacity - sync gauge example. [Development]
+Queue capacity - sync gauge example.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -226,7 +270,7 @@ Queue capacity - sync gauge example. [Development]
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]
+This metric is optional and therefore not initialized in NewTelemetryBuilder.
 
 For example this metric only exists if feature A is enabled.
 
@@ -236,8 +280,18 @@ For example this metric only exists if feature A is enabled.
 
 ### otelcol_request_duration
 
-Duration of request [Alpha]
+Duration of request
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Double | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.sample.featuregate.example` | alpha | This is an example feature gate for testing mdatagen code generation. | v0.100.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/12345) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

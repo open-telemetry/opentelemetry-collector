@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestMappingEqual(t *testing.T) {
@@ -143,6 +145,29 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid filename index 1"),
 		},
 		{
+			name: "with a filename index equal to the source table length (boundary condition)",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(2)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(2)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid filename index 2"),
+		},
+		{
 			name: "with an existing attribute",
 			mapping: func() Mapping {
 				m := NewMapping()
@@ -204,6 +229,30 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 1"),
 		},
+		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(2)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(2)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.mapping
@@ -219,6 +268,32 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantMapping, m)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkMappingSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	m := NewMapping()
+	m.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		dst.AttributeTable().AppendEmpty()
+		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		b.StartTimer()
+
+		_ = m.switchDictionary(src, dst)
 	}
 }
 

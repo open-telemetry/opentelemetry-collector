@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestValueTypeSwitchDictionary(t *testing.T) {
@@ -83,6 +85,29 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid type index 1"),
 		},
 		{
+			name: "with a type index equal to the source table length (boundary condition)",
+			valueType: func() ValueType {
+				vt := NewValueType()
+				vt.SetTypeStrindex(2)
+				return vt
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantValueType: func() ValueType {
+				vt := NewValueType()
+				vt.SetTypeStrindex(2)
+				return vt
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid type index 2"),
+		},
+		{
 			name: "with an existing unit",
 			valueType: func() ValueType {
 				vt := NewValueType()
@@ -131,6 +156,29 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid unit index 1"),
 		},
+		{
+			name: "with a unit index equal to the source table length (boundary condition)",
+			valueType: func() ValueType {
+				vt := NewValueType()
+				vt.SetUnitStrindex(2)
+				return vt
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantValueType: func() ValueType {
+				vt := NewValueType()
+				vt.SetUnitStrindex(2)
+				return vt
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid unit index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			vt := tt.valueType
@@ -146,5 +194,27 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantValueType, vt)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkValueTypeSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	vt := NewValueType()
+	vt.SetTypeStrindex(1)
+	vt.SetUnitStrindex(2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		b.StartTimer()
+
+		_ = vt.switchDictionary(src, dst)
 	}
 }

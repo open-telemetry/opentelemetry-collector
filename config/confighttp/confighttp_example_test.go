@@ -12,11 +12,14 @@ import (
 
 func ExampleServerConfig() {
 	settings := NewDefaultServerConfig()
-	settings.Endpoint = "localhost:443"
+	settings.NetAddr.Endpoint = "localhost:443"
+
+	// Typically obtained as an argument of Component.Start()
+	host := componenttest.NewNopHost()
 
 	s, err := settings.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		host.GetExtensions(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	if err != nil {

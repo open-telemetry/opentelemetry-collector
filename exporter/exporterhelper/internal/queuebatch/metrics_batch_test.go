@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -264,6 +265,7 @@ func TestMergeSplitManySmallMetrics(t *testing.T) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -278,6 +280,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -292,6 +295,7 @@ func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.
 }
 
 func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -604,7 +608,7 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := histogram.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}
@@ -653,7 +657,7 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			expHistogram := srcMetric.SetEmptyExponentialHistogram()
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := expHistogram.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}
@@ -702,7 +706,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			summary := srcMetric.SetEmptySummary()
 			for i := 0; i < tt.numDataPoints; i++ {
 				dp := summary.DataPoints().AppendEmpty()
-				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+				dp.SetCount(uint64(i))
 			}
 
 			sz := &mockMetricsSizer{dpSize: 1}

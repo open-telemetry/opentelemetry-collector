@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -179,7 +180,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := clientSettings.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {
@@ -472,13 +473,16 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 
 			// Create ServerConfig with the specified CompressionAlgorithms
 			serverConfig := &ServerConfig{
-				Endpoint:              "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				CompressionAlgorithms: tt.compressionAlgorithms,
 			}
 
 			srv, err := serverConfig.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
 			)

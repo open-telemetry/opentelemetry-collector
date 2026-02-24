@@ -22,13 +22,13 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Prepare Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
           git clone --depth=1 https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
           make CONTRIB_PATH=$contrib_path prepare-contrib
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: contrib
           path: /tmp/opentelemetry-collector-contrib/
@@ -57,21 +57,21 @@ jobs:
           - other
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Download contrib
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: contrib
           path: /tmp/contrib
       - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: oldstable
           cache: false
 
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
             ~/go/bin
@@ -80,7 +80,6 @@ jobs:
 
       - name: Run tests
         run: |
-          chmod +x /tmp/contrib/.tools/*
           make CONTRIB_PATH=/tmp/contrib SKIP_RESTORE_CONTRIB=true GROUP=${{ matrix.group }} check-contrib
 
   contrib_tests:

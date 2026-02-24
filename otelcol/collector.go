@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"sync"
 	"sync/atomic"
-	"syscall"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -99,7 +98,8 @@ type CollectorSettings struct {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
+	set            CollectorSettings
+	buildZapLogger func(zap.Config, ...zap.Option) (*zap.Logger, error)
 
 	configProvider *ConfigProvider
 
@@ -136,9 +136,10 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	state := new(atomic.Int64)
 	state.Store(int64(StateStarting))
 	return &Collector{
-		set:          set,
-		state:        state,
-		shutdownChan: make(chan struct{}),
+		set:            set,
+		buildZapLogger: zap.Config.Build,
+		state:          state,
+		shutdownChan:   make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
@@ -196,6 +197,17 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("could not marshal configuration: %w", err)
 	}
 
+	// Wrap the buildZapLogger to append LoggingOptions from collector settings,
+	// since service.Settings.LoggingOptions is deprecated.
+	buildZapLogger := col.buildZapLogger
+	if len(col.set.LoggingOptions) > 0 {
+		origBuildZapLogger := buildZapLogger
+		buildZapLogger = func(zapCfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+			opts = append(opts, col.set.LoggingOptions...)
+			return origBuildZapLogger(zapCfg, opts...)
+		}
+	}
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:     col.set.BuildInfo,
 		CollectorConf: conf,
@@ -219,7 +231,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Connector: buildModuleInfo(factories.ConnectorModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
-		LoggingOptions:    col.set.LoggingOptions,
+		BuildZapLogger:    buildZapLogger,
 		TelemetryFactory:  factories.Telemetry,
 	}, cfg.Service)
 	if err != nil {
@@ -335,12 +347,12 @@ func (col *Collector) Run(ctx context.Context) error {
 	}
 
 	// Always notify with SIGHUP for configuration reloading.
-	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+	signal.Notify(col.signalsChannel, SIGHUP)
 	defer signal.Stop(col.signalsChannel)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
-		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(col.signalsChannel, os.Interrupt, SIGTERM)
 	}
 
 	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
@@ -361,7 +373,7 @@ LOOP:
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.Logger().Info("Received signal from OS", zap.String("signal", s.String()))
-			if s != syscall.SIGHUP {
+			if s != SIGHUP {
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {

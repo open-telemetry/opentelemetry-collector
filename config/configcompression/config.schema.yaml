@@ -1,0 +1,11 @@
+$defs:
+  compression_params:
+    type: object
+    properties:
+      level:
+        $ref: level
+  level:
+    type: integer
+  type:
+    description: Type represents a compression method
+    type: string

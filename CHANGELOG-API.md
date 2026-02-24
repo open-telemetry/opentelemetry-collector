@@ -7,6 +7,175 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.52.0/v0.146.1
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Flatten the metric stability field (#14113)
+  So we better match the weaver schema. Additional deprecation data can be set within the `deprecated` field.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Declare removed aggregation elements as deprecated. (#14528)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add entity association requirement for metrics and events when entities are defined (#14284)
+- `pkg/otelcol`: Gate process signals behind build tags (#14542)
+  Particularly for Wasm on JS, there are no invalid process signal references, which would cause build failures.
+
+<!-- previous-version -->
+
+## v1.51.0/v0.145.0
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configgrpc`: add client info to context before server authentication (#12836)
+- `pkg/xscraperhelper`: Add AddProfilesScraper similar to scraperhelper.AddMetricsScraper (#14427)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configoptional`: Fix `Unmarshal` methods not being called when config is wrapped inside `Optional` (#14500)
+  This bug notably manifested in the fact that the `sending_queue::batch::sizer` config for exporters
+  stopped defaulting to `sending_queue::sizer`, which sometimes caused the wrong units to be used
+  when configuring `sending_queue::batch::min_size` and `max_size`.
+  
+  As part of the fix, `xconfmap` exposes a new `xconfmap.WithForceUnmarshaler` option, to be used in the `Unmarshal` methods
+  of wrapper types like `configoptional.Optional` to make sure the `Unmarshal` method of the inner type is called.
+  
+  The default behavior remains that calling `conf.Unmarshal` on the `confmap.Conf` passed as argument to an `Unmarshal`
+  method will skip any top-level `Unmarshal` methods to avoid infinite recursion in standard use cases. 
+  
+
+<!-- previous-version -->
+
+## v1.50.0/v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/confighttp`: Replace `ServerConfig.Endpoint` with `NetAddr confignet.AddrConfig`, enabling more flexible transport configuration. (#14187, #8752)
+  This change adds "transport" as a configuration option, allowing users to specify
+  different transport protocols (e.g., "tcp", "unix").
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/scraperhelper`: Deprecate the `AddScraper` method. (#14428)
+
+### 🚀 New components 🚀
+
+- `pkg/xscraperhelper`: Add xscraperhelper for the experimental OTel profiling signal. (#14235)
+
+### 💡 Enhancements 💡
+
+- `all`: Add support for deprecated component type aliases (#14208)
+  To add a deprecated type alias to a component factory, use the `WithDeprecatedTypeAlias` option.
+  ```go
+  return xexporter.NewFactory(
+      metadata.Type,
+      createDefaultConfig,
+      xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+      xexporter.WithDeprecatedTypeAlias("old_component_name"),
+  )
+  ```
+  When the alias is used in configuration, a deprecation warning will be automatically logged, and the component will function normally using the original implementation.
+  
+- `cmd/mdatagen`: Add the ability to disable attributes at the metric level and re-aggregate data points based off of these new dimensions (#10726)
+- `extension/xextension`: Add deprecated type alias support for extensions via `xextension` module (#14208)
+  Extensions can now register deprecated type aliases using the experimental `xextension.WithDeprecatedTypeAlias` option.
+  ```go
+  return xextension.NewFactory(
+      metadata.Type,
+      createDefaultConfig,
+      createExtension,
+      metadata.Stability,
+      xextension.WithDeprecatedTypeAlias("old_extension_name"),
+  )
+  ```
+  When the alias is used in configuration, a deprecation warning will be automatically logged, and the extension will function normally using the original implementation.
+  
+- `pkg/consumer/consumertest`: Add ProfileCount() (#14251)
+- `pkg/exporterhelper`: Add support for profile samples metrics (#14423)
+- `pkg/receiverhelper`: Add support for profile samples metrics (#14226)
+- `pkg/scraperhelper`: Introduce `AddMetricsScraper` to be more explicit than `AddScraper`. (#14428)
+- `receiver/otlp`: Add metrics tracking the number of receiver, refused and failed profile samples (#14226)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/xconnector`: Add component ID type validation to all xconnector Create methods (#14357)
+
+<!-- previous-version -->
+
+## v1.49.0/v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xprocessor`: Use pointer receivers in xprocessor factory methods for consistency with other factories. (#14348)
+
+<!-- previous-version -->
+
+## v1.48.0/v0.142.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/xpdata`: Rename `Entity.IDAttributes()` to `Entity.IdentifyingAttributes()` and `Entity.DescriptionAttributes()` to `Entity.DescriptiveAttributes()` to align with OpenTelemetry specification terminology for attributes. (#14275)
+- `pkg/exporterhelper`: Use `configoptional.Optional` for the `exporterhelper.QueueBatchConfig` (#14155)
+  It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/service`: Deprecate Settings.LoggingOptions and telemetry.LoggerSettings.ZapOptions, add telemetry.LoggerSettings.BuildZapLogger (#14002)
+  BuildZapLogger provides a more flexible way to build the Zap logger,
+  since the function will have access to the zap.Config. This is used
+  in otelcol to install a Windows Event Log output when the zap config
+  does not specify any file output.
+  
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: add ProfileCount() (#14239)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/confmap`: Ensure that embedded structs are not overwritten after Unmarshal is called (#14213)
+  This allows embedding structs which implement Unmarshal and contain a configopaque.String.
+  
+
+<!-- previous-version -->
+
+## v1.47.0/v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/configgrpc`: Replace `component.Host` parameter of ToServer/ToClientConn by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+- `pkg/config/confighttp`: Replace `component.Host` parameter of ToServer/ToClient by map of extensions (#13640)
+  Components must now pass the map obtained from the host's `GetExtensions` method
+  instead of the host itself.
+  
+  Nil may be used in tests where no middleware or authentication extensions are used.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/pdata`: Deprecate profile.Duration() and profile.SetDuration() (#14188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `MergeTo` method (#14091)
+- `pkg/pdata`: Add profile.DurationNano() and profile.SetDurationNano() (#14188)
+
+<!-- previous-version -->
+
 ## v1.46.0/v0.140.0
 
 ### 🛑 Breaking changes 🛑

@@ -1,3 +1,4 @@
+display_name: Service
 type: service
 github_project: open-telemetry/opentelemetry-collector
 
@@ -5,7 +6,7 @@ status:
   disable_codecov_badge: true
   class: pkg
   stability:
-    development: [traces, metrics, logs]
+    development: [traces, metrics, logs, profiles]
   distributions: [core, contrib]
 
 telemetry:
@@ -13,8 +14,7 @@ telemetry:
     connector.consumed.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items passed to the connector.
       unit: "{item}"
       sum:
@@ -24,8 +24,7 @@ telemetry:
     connector.consumed.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items passed to the connector, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
@@ -35,8 +34,7 @@ telemetry:
     connector.produced.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items emitted from the connector.
       unit: "{item}"
       sum:
@@ -46,8 +44,7 @@ telemetry:
     connector.produced.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items emitted from the connector, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
@@ -57,8 +54,7 @@ telemetry:
     exporter.consumed.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items passed to the exporter.
       unit: "{item}"
       sum:
@@ -68,8 +64,7 @@ telemetry:
     exporter.consumed.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items passed to the exporter, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
@@ -78,8 +73,7 @@ telemetry:
 
     process_cpu_seconds:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Total CPU user and system time in seconds
       unit: s
       sum:
@@ -89,8 +83,7 @@ telemetry:
 
     process_memory_rss:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Total physical memory (resident set size)
       unit: By
       gauge:
@@ -99,8 +92,7 @@ telemetry:
 
     process_runtime_heap_alloc_bytes:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
       unit: By
       gauge:
@@ -109,8 +101,7 @@ telemetry:
 
     process_runtime_total_alloc_bytes:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
       unit: By
       sum:
@@ -120,8 +111,7 @@ telemetry:
 
     process_runtime_total_sys_memory_bytes:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
       unit: By
       gauge:
@@ -130,8 +120,7 @@ telemetry:
 
     process_uptime:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Uptime of the process
       unit: s
       sum:
@@ -142,8 +131,7 @@ telemetry:
     processor.consumed.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items passed to the processor.
       unit: "{item}"
       sum:
@@ -153,8 +141,7 @@ telemetry:
     processor.consumed.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items passed to the processor, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
@@ -164,8 +151,7 @@ telemetry:
     processor.produced.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items emitted from the processor.
       unit: "{item}"
       sum:
@@ -175,8 +161,7 @@ telemetry:
     processor.produced.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items emitted from the processor, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
@@ -186,8 +171,7 @@ telemetry:
     receiver.produced.items:
       prefix: otelcol.
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of items emitted from the receiver.
       unit: "{item}"
       sum:
@@ -197,10 +181,26 @@ telemetry:
     receiver.produced.size:
       prefix: otelcol.
       enabled: false
-      stability:
-        level: development
+      stability: development
       description: Size of items emitted from the receiver, based on ProtoMarshaler.Sizer.
       unit: "{item}"
       sum:
         value_type: int
         monotonic: true
+
+feature_gates:
+  - id: service.AllowNoPipelines
+    description: 'Allow starting the Collector without starting any pipelines.'
+    stage: alpha
+    from_version: 'v0.122.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12613'
+  - id: service.profilesSupport
+    description: 'Controls whether profiles support can be enabled'
+    stage: alpha
+    from_version: 'v0.112.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
+  - id: telemetry.UseLocalHostAsDefaultMetricsAddress
+    description: 'Controls whether default Prometheus metrics server use localhost as the default host for their endpoints'
+    stage: beta
+    from_version: 'v0.111.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'

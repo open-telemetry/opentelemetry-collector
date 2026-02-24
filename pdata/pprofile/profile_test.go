@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -96,6 +97,30 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 1"),
+		},
+		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
 		},
 		{
 			name: "with a profile that has a sample",
@@ -208,6 +233,32 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantProfile, profile)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkProfileSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	p := NewProfile()
+	p.AttributeIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+	src.AttributeTable().AppendEmpty()
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(2)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		dst.AttributeTable().AppendEmpty()
+		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		b.StartTimer()
+
+		_ = p.switchDictionary(src, dst)
 	}
 }
 

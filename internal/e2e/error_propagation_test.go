@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -169,7 +170,7 @@ func createGRPCExporter(t *testing.T, s *status.Status) consumer.Logs {
 
 	f := otlpexporter.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpexporter.Config)
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
@@ -203,11 +204,11 @@ func createHTTPExporter(t *testing.T, code int) consumer.Logs {
 
 	f := otlphttpexporter.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlphttpexporter.Config)
-	cfg.QueueConfig.Enabled = false
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	cfg.RetryConfig.Enabled = false
 	cfg.Encoding = otlphttpexporter.EncodingProto
 	cfg.LogsEndpoint = srv.URL + "/v1/logs"
-	e, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(component.MustNewType("otlphttp")), cfg)
+	e, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(component.MustNewType("otlp_http")), cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -271,12 +272,16 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 	logProto, err := protoMarshaler.MarshalLogs(ld)
 	require.NoError(t, err)
 
+	addr := testutil.GetAvailableLocalAddress(t)
 	rf := otlpreceiver.NewFactory()
 	rcfg := rf.CreateDefaultConfig().(*otlpreceiver.Config)
 	rcfg.HTTP = configoptional.Some(
 		otlpreceiver.HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  addr,
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 			LogsURLPath: "/v1/logs",
 		},
@@ -292,7 +297,7 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	})
 
-	doHTTPRequest(t, rcfg.HTTP.Get().ServerConfig.Endpoint+"/v1/logs", logProto, code)
+	doHTTPRequest(t, addr+"/v1/logs", logProto, code)
 }
 
 func doHTTPRequest(

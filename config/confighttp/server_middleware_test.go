@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
@@ -54,11 +55,9 @@ func newTestServerConfig(name string) configmiddleware.Config {
 
 func TestServerMiddleware(t *testing.T) {
 	// Register two test extensions
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			component.MustNewID("test1"): newTestServerMiddleware("test1"),
-			component.MustNewID("test2"): newTestServerMiddleware("test2"),
-		},
+	extensions := map[component.ID]component.Component{
+		component.MustNewID("test1"): newTestServerMiddleware("test1"),
+		component.MustNewID("test2"): newTestServerMiddleware("test2"),
 	}
 
 	// Test with different middleware configurations
@@ -93,7 +92,10 @@ func TestServerMiddleware(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create server config with the test middlewares
 			cfg := ServerConfig{
-				Endpoint:    "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				Middlewares: tc.middlewares,
 			}
 
@@ -105,7 +107,7 @@ func TestServerMiddleware(t *testing.T) {
 			// Create the server
 			srv, err := cfg.ToServer(
 				context.Background(),
-				host,
+				extensions,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
 			)
@@ -141,18 +143,19 @@ func TestServerMiddlewareErrors(t *testing.T) {
 
 	// Test cases for HTTP server middleware errors
 	httpTests := []struct {
-		name    string
-		host    component.Host
-		config  ServerConfig
-		errText string
+		name       string
+		extensions map[component.ID]component.Component
+		config     ServerConfig
+		errText    string
 	}{
 		{
-			name: "extension_not_found",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{},
-			},
+			name:       "extension_not_found",
+			extensions: map[component.ID]component.Component{},
 			config: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				Middlewares: []configmiddleware.Config{
 					{
 						ID: component.MustNewID("nonexistent"),
@@ -163,13 +166,14 @@ func TestServerMiddlewareErrors(t *testing.T) {
 		},
 		{
 			name: "get_http_handler_fails",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("http middleware error")),
-				},
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("http middleware error")),
 			},
 			config: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				Middlewares: []configmiddleware.Config{
 					{
 						ID: component.MustNewID("errormw"),
@@ -185,7 +189,7 @@ func TestServerMiddlewareErrors(t *testing.T) {
 			// Trying to create the server should fail
 			_, err := tc.config.ToServer(
 				context.Background(),
-				tc.host,
+				tc.extensions,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
 			)
@@ -196,18 +200,19 @@ func TestServerMiddlewareErrors(t *testing.T) {
 
 	// Test cases for gRPC server middleware errors
 	grpcTests := []struct {
-		name    string
-		host    component.Host
-		config  ServerConfig
-		errText string
+		name       string
+		extensions map[component.ID]component.Component
+		config     ServerConfig
+		errText    string
 	}{
 		{
-			name: "grpc_extension_not_found",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{},
-			},
+			name:       "grpc_extension_not_found",
+			extensions: map[component.ID]component.Component{},
 			config: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				Middlewares: []configmiddleware.Config{
 					{
 						ID: component.MustNewID("nonexistent"),
@@ -218,13 +223,14 @@ func TestServerMiddlewareErrors(t *testing.T) {
 		},
 		{
 			name: "get_grpc_handler_fails",
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("grpc middleware error")),
-				},
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("grpc middleware error")),
 			},
 			config: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				Middlewares: []configmiddleware.Config{
 					{
 						ID: component.MustNewID("errormw"),
@@ -240,7 +246,7 @@ func TestServerMiddlewareErrors(t *testing.T) {
 			// Trying to create the server should fail
 			_, err := tc.config.ToServer(
 				context.Background(),
-				tc.host,
+				tc.extensions,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
 			)

@@ -9,6 +9,29 @@ interaction with a human (such as this Collector).
 
 ## Naming convention
 
+### Component naming
+
+Components (receivers, processors, exporters, extensions, and connectors) MUST use `lower_snake_case` naming convention. This ensures consistency and enhances readability for end users.
+
+This naming convention applies to the component identifier used in configuration files and component registration, not to Go package names which follow standard Go naming conventions (lowercase, no underscores).
+
+Examples of correct component names:
+- `memory_limiter` (not `memorylimiter`)
+- `otlp_http` (not `otlphttp`)
+
+For example, a component with identifier `memory_limiter` would typically have a Go package name like `memorylimiterprocessor`.
+
+#### Migration for existing components
+
+Components that currently use a different naming convention:
+- SHOULD add the `lower_snake_case` name as the primary identifier
+- MAY support the old name as a deprecated alias for backwards compatibility
+- MUST document the migration path in their README
+
+Only components following the `lower_snake_case` naming convention should be marked as stable.
+
+### Go API naming conventions
+
 To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
 
 - Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
@@ -38,7 +61,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
-### Configuration structs
+#### Configuration structs
 
 When naming configuration structs, use the following guidelines:
 
@@ -46,6 +69,51 @@ When naming configuration structs, use the following guidelines:
 - Use the `Config` suffix for configuration structs that have end user configuration (i.e. that set in their YAML configuration). For example, `configgrpc.ClientConfig` ends in `Config` since it contains end user configuration.
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
+
+#### Avoid Embedded Structs
+
+When defining configuration structs, avoid using embedded (anonymous) struct fields. Instead, use explicitly named fields.
+
+**Rationale:**
+
+1. **Unmarshal Compatibility**: Embedded structs can break custom `Unmarshal` implementations. If an embedded struct requires special unmarshaling logic, it may not function correctly when embedded.
+
+2. **Naming Conflicts**: Embedded structs can cause field name collisions. Even if the YAML configuration nests them properly (e.g., under `sending_queue`), having identical field names in embedded structs creates ambiguity in the Go code.
+
+3. **Clarity**: Named fields make the configuration structure more explicit and easier to understand.
+
+**Example:**
+
+```go
+// ❌ BAD: Using embedded structs
+type ExporterConfig struct {
+    exporterhelper.TimeoutConfig     // embedded
+    exporterhelper.QueueConfig       // embedded
+    exporterhelper.RetryConfig       // embedded
+}
+
+// ✅ GOOD: Using named fields
+type ExporterConfig struct {
+    Timeout exporterhelper.TimeoutConfig `mapstructure:"timeout"`
+    Queue   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+    Retry   exporterhelper.RetryConfig   `mapstructure:"retry_on_failure"`
+}
+```
+
+This practice ensures better maintainability and prevents subtle bugs related to struct composition and configuration unmarshaling.
+
+**Preserving Flat YAML Structure with the `squash` Tag:**
+
+In some cases, you may need to maintain backward compatibility with an existing flat YAML configuration structure while still using named fields in Go. The `mapstructure:",squash"` tag achieves this by flattening the nested struct's fields into the parent configuration:
+
+```go
+// Using named fields with squash tag for flat YAML structure
+type Config struct {
+    ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+}
+```
+
+This allows the YAML configuration to remain flat (fields at the top level) while the Go code uses a named field. However, prefer explicitly nested configurations (without `squash`) for new components, as the nested structure is clearer and avoids the issues mentioned above.
 
 ## Module organization
 
@@ -68,7 +136,9 @@ We use the following rules for some common situations where we split into separa
    it is part of the `config` folder, and `extensionauth` has `extension` as a prefix since it is
    part of the `extension` module.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
-   have a module `component`, the helpers should be in `component/componenttest`.
+   have a module `component`, the helpers should be in `component/componenttest`. Testing helpers
+   that are used across multiple modules should be in the [`internal/testutil`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/internal/testutil)
+   module.
 1. Experimental packages that will later be added to another module should be in their own module,
    named as they will be after integration. For example, if adding a `pprofile` package to `pdata`,
    you should add a separate module `pdata/pprofile` for the experimental code.
@@ -351,6 +421,40 @@ SemConv approvers.
 At their discretion, the code owners may choose to block the component’s implementation PR until the related
 Semantic Conventions changes are completed.
 
+## Telemetry Stability Levels
+
+### Metrics
+
+Metrics emitted by Collector scrapers/receivers (e.g. `system.cpu.time`) follow the same stability levels
+as the Collector's internal metrics (e.g. `otelcol_process_cpu_seconds`), as documented in
+[Internal Telemetry Stability](https://opentelemetry.io/docs/collector/internal-telemetry/#metrics).
+
+In particular, for beta and stable levels the following guidelines apply:
+
+#### Beta stability level
+
+It is highly encouraged that metrics in beta stage
+are also defined as Semantic Conventions based on the [Semantic Conventions compatibility](#semantic-conventions-compatibility),
+ensuring cross-project consistency.
+
+#### Stable stability level
+
+Before promoting a metric to stable, it should be discussed whether it needs to
+be defined as a Semantic Convention, following the [Semantic Conventions compatibility](#semantic-conventions-compatibility).
+Promoting a metric to stable without it being a Semantic Convention involves
+the risk of potential divergence within OpenTelemetry's projects.
+For example, a stable metric in the Collector might be introduced in a slightly
+different way in another OpenTelemetry project in the future, or it might be proposed
+as a Semantic Convention in the future.
+In case of such divergence, a stable Collector metric won't be allowed to
+change, and if wider alignment is needed, the metric should be deprecated and
+removed in order to come into alignment with the Semantic Conventions.
+Consequently, the Collector's maintainers and components' code owners should
+acknowledge that risk before marking a metric as stable without it being a
+stable Semantic Convention and should provide justification for the decision. In
+any case, [Semantic Conventions' guidelines](https://opentelemetry.io/docs/specs/semconv/how-to-write-conventions/)
+should be advised when metrics are defined within the Collector directly.
+
 ### Testing Library Recommendations
 
 To keep testing practices consistent across the project, it is advised to use these libraries under
@@ -409,6 +513,10 @@ package test
 // Deprecated: [v0.45.0] Use MustDoFoo instead.
 func DoFoo() {}
 ```
+
+If applicable, add the [`//go:fix inline`
+directive](https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/inline#hdr-Analyzer_inline) on
+the deprecated function to help with the migration.
 
 #### Example #1 - Renaming a function
 

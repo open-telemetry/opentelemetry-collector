@@ -25,6 +25,10 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 .PHONY: test
 test:
+    # GODEBUG=fips140=only is used to surface any FIPS-140-3 non-compliant cryptographic
+    # calls into the Go standard library. See: https://go.dev/doc/security/fips140#fips-140-3-mode
+	# disabling fips only to unblock CI. See https://github.com/open-telemetry/opentelemetry-collector/issues/13925
+	# GODEBUG=fips140=only $(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 	$(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
@@ -43,28 +47,24 @@ test-with-junit:
 
 .PHONY: benchmark
 benchmark:
-	$(GO_TOOL) gotestsum \
+	MEMBENCH=yes $(GO_TOOL) gotestsum \
 		--packages="$(ALL_PKGS)" -- \
 		-bench=. -run=notests ./... | tee benchmark.txt
 
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
 
-# `modernize' cannot be installed as a Go tool via `go get -tool'.
-#
-# See [1] for more details.
-#
-# [1]: https://github.com/golang/go/issues/73279
 .PHONY: modernize
 modernize:
-	$(GOCMD) run \
-		golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest \
-		-fix -test -v ./...
+	$(GO_TOOL) modernize \
+		-fix -test -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr -omitzero -plusbuild \
+		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroup ./...
 
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.24.0
+	$(GOCMD) mod tidy -compat=1.25.0
 
 .PHONY: lint
 lint:
@@ -99,3 +99,6 @@ impi:
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+timebenchmark:
+	go test -bench=. -benchtime=1s ./...

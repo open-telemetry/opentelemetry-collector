@@ -93,7 +93,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 
 	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -110,7 +110,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepGRPC))
 	}
 
 	var gln net.Listener
@@ -119,14 +119,11 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", gln.Addr().String()))
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
+	r.shutdownWG.Go(func() {
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -160,14 +157,14 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
+		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepHTTP)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})
 	}
 
 	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
@@ -177,14 +174,11 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", hln.Addr().String()))
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 

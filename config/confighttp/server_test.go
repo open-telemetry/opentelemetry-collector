@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -56,7 +58,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
@@ -67,7 +72,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
@@ -78,7 +86,10 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				TLS: configoptional.Some(configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				}),
@@ -93,7 +104,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 }
 
-func TestHttpReception(t *testing.T) {
+func TestHttpServerTLS(t *testing.T) {
 	tests := []struct {
 		name           string
 		tlsServerCreds configoptional.Optional[configtls.ServerConfig]
@@ -219,25 +230,19 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint: "localhost:0",
-				TLS:      tt.tlsServerCreds,
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				TLS: tt.tlsServerCreds,
 			}
 			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := sc.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "tt")
-					assert.NoError(t, errWrite)
-				}))
-			require.NoError(t, err)
-
-			go func() {
-				_ = s.Serve(ln)
-			}()
+			startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, errWrite := fmt.Fprint(w, "tt")
+				assert.NoError(t, errWrite)
+			}))
 
 			prefix := "https://"
 			expectedProto := "HTTP/2.0"
@@ -252,7 +257,7 @@ func TestHttpReception(t *testing.T) {
 				ForceAttemptHTTP2: true,
 			}
 
-			client, errClient := cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+			client, errClient := cc.ToClient(context.Background(), nil, nilProvidersSettings)
 			require.NoError(t, errClient)
 
 			if tt.forceHTTP1 {
@@ -270,7 +275,36 @@ func TestHttpReception(t *testing.T) {
 				assert.Equal(t, "tt", string(body))
 				assert.Equal(t, expectedProto, resp.Proto)
 			}
-			require.NoError(t, s.Close())
+		})
+	}
+}
+
+func TestHttpServerTransport(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		t.Run("unix", func(t *testing.T) {
+			addr := "@" + t.Name() // abstract unix socket
+			sc := &ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  addr,
+					Transport: confignet.TransportTypeUnix,
+				},
+			}
+			ln, err := sc.ToListener(context.Background())
+			require.NoError(t, err)
+			startServer(t, sc, ln, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+			client := http.Client{
+				Transport: &http.Transport{
+					DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+						return net.Dial("unix", addr)
+					},
+				},
+				Timeout: 5 * time.Second, // Set a client-level timeout
+			}
+			resp, err := client.Get("http://whatever/foo")
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		})
 	}
 }
@@ -332,25 +366,19 @@ func TestHttpCors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint: "localhost:0",
-				CORS:     tt.CORSConfig,
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				CORS: tt.CORSConfig,
 			}
 
 			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := sc.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				}))
-			require.NoError(t, err)
-
-			go func() {
-				_ = s.Serve(ln)
-			}()
+			startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
 
 			url := "http://" + ln.Addr().String()
 
@@ -367,22 +395,23 @@ func TestHttpCors(t *testing.T) {
 
 			// Verify disallowed domain gets responses that disallow CORS.
 			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSConfig, false, expectedStatus, tt.disallowedWorks)
-
-			require.NoError(t, s.Close())
 		})
 	}
 }
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
-		CORS:     configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		CORS: configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
 	s, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
@@ -392,7 +421,10 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 func TestHttpCorsWithSettings(t *testing.T) {
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
 		}),
@@ -403,15 +435,13 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("Settings failed")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("Settings failed")
+		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
@@ -446,32 +476,24 @@ func TestHttpServerHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint:        "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				ResponseHeaders: tt.headers,
 			}
 
 			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := sc.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				}))
-			require.NoError(t, err)
-
-			go func() {
-				_ = s.Serve(ln)
-			}()
+			startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
 
 			url := "http://" + ln.Addr().String()
 
 			// Verify allowed domain gets responses that allow CORS.
 			verifyHeadersResp(t, url, tt.headers)
-
-			require.NoError(t, s.Close())
 		})
 	}
 }
@@ -531,7 +553,10 @@ func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
@@ -539,13 +564,11 @@ func TestServerAuth(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				authCalled = true
-				return ctx, nil
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			authCalled = true
+			return ctx, nil
+		}),
 	}
 
 	handlerCalled := false
@@ -553,7 +576,7 @@ func TestServerAuth(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -573,7 +596,7 @@ func TestInvalidServerAuth(t *testing.T) {
 		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	srv, err := sc.ToServer(context.Background(), nil, componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
 }
@@ -581,22 +604,23 @@ func TestInvalidServerAuth(t *testing.T) {
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		}),
 	}
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("invalid authorization")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("invalid authorization")
+		}),
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// tt
@@ -611,19 +635,20 @@ func TestFailedServerAuth(t *testing.T) {
 func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		}),
 	}
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("invalid authorization")
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+			return ctx, errors.New("invalid authorization")
+		}),
 	}
 
 	eh := func(w http.ResponseWriter, _ *http.Request, err string, statusCode int) {
@@ -634,7 +659,7 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 		http.Error(w, err, http.StatusInternalServerError)
 	}
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
 	require.NoError(t, err)
 
 	// tt
@@ -649,7 +674,10 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 func TestServerWithErrorHandler(t *testing.T) {
 	// prepare
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 	}
 	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
 		assert.Equal(t, http.StatusBadRequest, statusCode)
@@ -659,7 +687,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithErrorHandler(eh),
@@ -680,14 +708,14 @@ func TestServerWithErrorHandler(t *testing.T) {
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
 	sc := NewDefaultServerConfig()
-	sc.Endpoint = "localhost:0"
+	sc.NetAddr.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithDecoder("something-else", decoder),
@@ -714,7 +742,7 @@ func TestServerWithDecompression(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 			actualBody, err := io.ReadAll(req.Body)
@@ -782,7 +810,7 @@ func TestDefaultMaxRequestBodySize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := tt.settings.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 			)
@@ -796,7 +824,10 @@ func TestAuthWithQueryParams(t *testing.T) {
 	// prepare
 	authCalled := false
 	sc := ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 		Auth: configoptional.Some(AuthConfig{
 			RequestParameters: []string{"auth"},
 			Config: configauth.Config{
@@ -805,15 +836,13 @@ func TestAuthWithQueryParams(t *testing.T) {
 		}),
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{
-			mockID: newMockAuthServer(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
-				require.Len(t, sources, 1)
-				assert.Equal(t, "1", sources["auth"][0])
-				authCalled = true
-				return ctx, nil
-			}),
-		},
+	extensions := map[component.ID]component.Component{
+		mockID: newMockAuthServer(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+			require.Len(t, sources, 1)
+			assert.Equal(t, "1", sources["auth"][0])
+			authCalled = true
+			return ctx, nil
+		}),
 	}
 
 	handlerCalled := false
@@ -821,7 +850,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -830,15 +859,6 @@ func TestAuthWithQueryParams(t *testing.T) {
 	// verify
 	assert.True(t, handlerCalled)
 	assert.True(t, authCalled)
-}
-
-type mockHost struct {
-	component.Host
-	ext map[component.ID]component.Component
-}
-
-func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.ext
 }
 
 func BenchmarkHttpRequest(b *testing.B) {
@@ -884,28 +904,20 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	sc := &ServerConfig{
-		Endpoint: "localhost:0",
-		TLS:      tlsServerCreds,
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		TLS: tlsServerCreds,
 	}
 
-	s, err := sc.ToServer(
-		context.Background(),
-		componenttest.NewNopHost(),
-		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, errWrite := fmt.Fprint(w, "tt")
-			assert.NoError(b, errWrite)
-		}))
-	require.NoError(b, err)
 	ln, err := sc.ToListener(context.Background())
 	require.NoError(b, err)
 
-	go func() {
-		_ = s.Serve(ln)
-	}()
-	defer func() {
-		_ = s.Close()
-	}()
+	startServer(b, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, errWrite := fmt.Fprint(w, "tt")
+		assert.NoError(b, errWrite)
+	}))
 
 	for _, bb := range tests {
 		cc := &ClientConfig{
@@ -916,12 +928,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+				c, err = cc.ToClient(context.Background(), nil, nilProvidersSettings)
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+					c, err = cc.ToClient(context.Background(), nil, nilProvidersSettings)
 					require.NoError(b, err)
 				}
 				if bb.forceHTTP1 {
@@ -976,34 +988,23 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &ServerConfig{
-				Endpoint:          "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
 				KeepAlivesEnabled: tt.keepAlivesEnabled,
 			}
-
-			server, err := sc.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				}))
-
-			require.NoError(t, err)
-			require.NotNil(t, server)
-
-			// Since http.Server.disableKeepAlives is a private field and difficult to test directly,
-			// we'll verify the configuration was set by testing the server behavior.
-			// The main verification is that ToServer() succeeds without error when DisableKeepAlives is set.
 
 			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			go func() {
-				_ = server.Serve(ln)
-			}()
-			defer func() {
-				_ = server.Close()
-			}()
+			startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+
+			// Since http.Server.disableKeepAlives is a private field and difficult to test directly,
+			// we'll verify the configuration was set by testing the server behavior.
+			// The main verification is that ToServer() succeeds without error when DisableKeepAlives is set.
 
 			resp, err := http.Get("http://" + ln.Addr().String())
 			require.NoError(t, err)
@@ -1024,28 +1025,41 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 
 	type testcase struct {
 		handler          http.Handler
+		httpMethod       string
 		expectedSpanName string
 	}
 
-	for name, testcase := range map[string]testcase{
+	for name, tc := range map[string]testcase{
 		"pattern": {
 			handler:          mux,
+			httpMethod:       "GET",
 			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 		"no_pattern": {
 			handler:          http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			httpMethod:       "GET",
 			expectedSpanName: "GET",
+		},
+		"unknown_method": {
+			handler:          mux,
+			httpMethod:       "FOOBAR",
+			expectedSpanName: "HTTP /b/{bucket}/o/{objectname...}",
+		},
+		"lowercase_method": {
+			handler:          mux,
+			httpMethod:       "get",
+			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
 			config := NewDefaultServerConfig()
-			config.Endpoint = "localhost:0"
+			config.NetAddr.Endpoint = "localhost:0"
 			srv, err := config.ToServer(
 				context.Background(),
-				componenttest.NewNopHost(),
+				nil,
 				telemetry.NewTelemetrySettings(),
-				testcase.handler,
+				tc.handler,
 			)
 			require.NoError(t, err)
 
@@ -1061,14 +1075,16 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				<-done
 			}()
 
-			resp, err := http.Get(fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()))
+			req, err := http.NewRequest(tc.httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			resp.Body.Close()
 
 			spans := telemetry.SpanRecorder.Ended()
 			require.Len(t, spans, 1)
-			assert.Equal(t, testcase.expectedSpanName, spans[0].Name())
+			assert.Equal(t, tc.expectedSpanName, spans[0].Name())
 		})
 	}
 }
@@ -1088,7 +1104,7 @@ func TestServerUnmarshalYAMLWithMiddlewares(t *testing.T) {
 	// Validate the server configuration using reflection-based validation
 	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
 
-	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
+	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	require.Len(t, serverConfig.Middlewares, 2)
 	assert.Equal(t, component.MustNewID("careful_middleware"), serverConfig.Middlewares[0].ID)
 	assert.Equal(t, component.MustNewID("support_middleware"), serverConfig.Middlewares[1].ID)
@@ -1110,7 +1126,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	// Verify basic fields
-	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
+	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
@@ -1150,17 +1166,11 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, component.MustNewID("server_middleware3"), serverConfig.Middlewares[2].ID)
 }
 
-// TestMiddlewaresFieldCompatibility tests that the new "middlewares" field name
-// is used instead of the old "middleware" name, ensuring the bug is fixed
-func TestServerMiddlewaresFieldCompatibility(t *testing.T) {
-	// Test that we can create a config with middlewares using the new field name
-	serverConfig := ServerConfig{
-		Endpoint: "0.0.0.0:4318",
-		Middlewares: []configmiddleware.Config{
-			{ID: component.MustNewID("server_middleware")},
-		},
-	}
-	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
-	assert.Len(t, serverConfig.Middlewares, 1)
-	assert.Equal(t, component.MustNewID("server_middleware"), serverConfig.Middlewares[0].ID)
+func startServer(tb testing.TB, sc *ServerConfig, ln net.Listener, h http.Handler) {
+	s, err := sc.ToServer(tb.Context(), nil, componenttest.NewNopTelemetrySettings(), h)
+	require.NoError(tb, err)
+	tb.Cleanup(func() {
+		require.NoError(tb, s.Close())
+	})
+	go func() { _ = s.Serve(ln) }()
 }

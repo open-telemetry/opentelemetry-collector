@@ -1,4 +1,5 @@
-type: otlphttp
+display_name: OTLP HTTP Exporter
+type: otlp_http
 github_project: open-telemetry/opentelemetry-collector
 
 status:
@@ -11,5 +12,7 @@ status:
 
 tests:
   config:
-    endpoint: "https://1.2.3.4:1234"
+    # use an endpoint that does not resolve, to ensure
+    # connection attempts fail quickly in tests
+    endpoint: "https://testing.invalid:1234"
 

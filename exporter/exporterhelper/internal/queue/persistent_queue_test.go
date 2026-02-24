@@ -432,13 +432,11 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			td := intRequest(10)
 			wg := &sync.WaitGroup{}
 			for range 10 {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					for range 100_000 {
 						assert.NoError(t, pq.Offer(context.Background(), td))
 					}
-				}()
+				})
 			}
 			wg.Wait()
 			// Because the persistent queue is not draining after Shutdown, need to wait here for the drain.
@@ -710,9 +708,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	proWg := sync.WaitGroup{}
 	// Sending small amount of data as windows test can't handle the test fast enough
 	for range 5 {
-		proWg.Add(1)
-		go func() {
-			defer proWg.Done()
+		proWg.Go(func() {
 			// Put in items up to capacity
 			for range 10 {
 				for {
@@ -723,18 +719,16 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 					time.Sleep(50 * time.Nanosecond)
 				}
 			}
-		}()
+		})
 	}
 
 	conWg := sync.WaitGroup{}
 	for range 5 {
-		conWg.Add(1)
-		go func() {
-			defer conWg.Done()
+		conWg.Go(func() {
 			for range 10 {
 				assert.True(t, consume(pq, func(context.Context, intRequest) error { return nil }))
 			}
-		}()
+		})
 	}
 
 	conDone := make(chan struct{})
@@ -806,11 +800,12 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		require.NoError(b, ps.Offer(context.Background(), req))
-	}
-
-	for b.Loop() {
-		require.True(b, consume(ps, func(context.Context, intRequest) error { return nil }))
+		for range 100 {
+			require.NoError(b, ps.Offer(context.Background(), req))
+		}
+		for range 100 {
+			require.True(b, consume(ps, func(context.Context, intRequest) error { return nil }))
+		}
 	}
 	require.NoError(b, ext.Shutdown(context.Background()))
 }
@@ -1184,7 +1179,6 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[intR
 func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
-	//nolint:gosec
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
 		buf = binary.LittleEndian.AppendUint64(buf, item)

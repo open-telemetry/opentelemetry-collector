@@ -58,11 +58,9 @@ func TestMemoryQueueBlockingCancelled(t *testing.T) {
 	require.NoError(t, q.Offer(context.Background(), 3))
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.ErrorIs(t, q.Offer(ctx, 3), context.Canceled)
-	}()
+	})
 	cancel()
 	wg.Wait()
 	assert.EqualValues(t, 3, q.Size())
@@ -139,14 +137,12 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 	set.WaitForResult = true
 	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, req, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		assert.EqualValues(t, 1, req)
 		done.OnDone(myErr)
-	}()
+	})
 	require.ErrorIs(t, q.Offer(context.Background(), intRequest(1)), myErr)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
@@ -161,22 +157,18 @@ func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		<-stop
 		done.OnDone(nil)
-	}()
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-time.After(time.Second)
 		cancel()
-	}()
+	})
 	require.ErrorIs(t, q.Offer(ctx, intRequest(1)), context.Canceled)
 	close(stop)
 	require.NoError(t, q.Shutdown(context.Background()))
@@ -192,22 +184,18 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		<-stop
 		done.OnDone(nil)
-	}()
+	})
 
 	assert.EqualValues(t, 0, q.Size())
 	assert.EqualValues(t, 100, q.Capacity())
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, q.Offer(context.Background(), intRequest(1)))
-	}()
+	})
 	assert.Eventually(t, func() bool { return q.Size() == 1 }, 1*time.Second, 10*time.Millisecond)
 	assert.EqualValues(t, 100, q.Capacity())
 	close(stop)
@@ -224,9 +212,7 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			_, req, done, ok := q.Read(context.Background())
 			if !ok {
@@ -235,14 +221,16 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 			consumed.Add(int64(req))
 			done.OnDone(nil)
 		}
-	}()
+	})
 
 	b.ReportAllocs()
 	for b.Loop() {
-		require.NoError(b, q.Offer(context.Background(), intRequest(1)))
+		for range 100 {
+			require.NoError(b, q.Offer(context.Background(), intRequest(1)))
+		}
 	}
 	require.NoError(b, q.Shutdown(context.Background()))
-	assert.Equal(b, int64(b.N), consumed.Load())
+	assert.Equal(b, int64(b.N)*100, consumed.Load())
 }
 
 func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {

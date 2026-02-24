@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -24,11 +25,10 @@ func TestCommand(t *testing.T) {
 		{
 			name: "command created",
 			want: &cobra.Command{
-				SilenceUsage:  true, // Don't print usage on Run error.
-				SilenceErrors: true, // Don't print errors; main does it.
-				Use:           "ocb",
-				Long:          "OpenTelemetry Collector Builder",
-				Args:          cobra.NoArgs,
+				SilenceUsage: true, // Don't print usage on Run error.
+				Use:          "ocb",
+				Long:         "OpenTelemetry Collector Builder",
+				Args:         cobra.NoArgs,
 			},
 			wantErr: false,
 		},
@@ -53,6 +53,23 @@ func TestCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommandErrorOutputOnce(t *testing.T) {
+	cmd, err := Command()
+	require.NoError(t, err)
+
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"/nonexistent/path/metadata.yaml"})
+
+	err = cmd.Execute()
+	require.Error(t, err)
+	out := stderr.String()
+	require.NotEmpty(t, out)
+
+	msg := err.Error()
+	assert.Equal(t, 1, strings.Count(out, msg), out)
 }
 
 func TestApplyFlags(t *testing.T) {

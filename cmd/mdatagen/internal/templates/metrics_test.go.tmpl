@@ -2,6 +2,8 @@
 
 package {{ .Package }}
 
+{{ $reag := .ReaggregationEnabled }}
+
 import (
 	"testing"
 
@@ -15,13 +17,15 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-
 type testDataSet int
 
 const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+  {{- if $reag }}
+  testDataSetReag
+  {{- end }}
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -39,6 +43,13 @@ func TestMetricsBuilder(t *testing.T) {
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
 		},
+    {{- if $reag }}
+    {
+      name: "reaggregate_set",
+      metricsSet: testDataSetReag,
+      resAttrsSet: testDataSetReag,
+    },
+    {{- end }}
 		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
@@ -67,6 +78,13 @@ func TestMetricsBuilder(t *testing.T) {
 	        {{- end }}
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+
+      {{- if $reag }}
+      aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+      {{- range $name, $_ := .Metrics }}
+      aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy 
+      {{- end }}
+      {{- end }}
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
@@ -110,8 +128,13 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+      {{- if $reag }}
+      if tt.metricsSet != testDataSetReag {
+			  assert.Equal(t, expectedWarnings, observedLogs.Len())
+      }
+      {{- else }}
+      assert.Equal(t, expectedWarnings, observedLogs.Len())
+      {{- end }}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -131,6 +154,26 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
+        {{- if $reag }}
+        if tt.name == "reaggregate_set" {
+          mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
+          {{- range $metric.Attributes -}}
+          {{- if not (attributeInfo .).IsConditional -}}
+            {{- if (attributeInfo .).IsRequired -}}
+            , {{- template "getAttributeValue" . -}}
+            {{- else -}}
+            , {{- template "getAttributeValueTwo" . -}}
+            {{- end -}}
+          {{- end -}}
+          {{- end -}}
+          {{- range $metric.Attributes -}}
+                  {{- if (attributeInfo .).IsConditional -}}
+                      , With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+                  {{- end -}}
+                  {{- end -}}
+                  )
+        }
+        {{- end }}
 			{{- end }}
 
 			{{ if .ResourceAttributes }}
@@ -147,6 +190,13 @@ func TestMetricsBuilder(t *testing.T) {
 			res := pcommon.NewResource()
 			{{- end }}
 			metrics := mb.Emit(WithResource(res))
+			{{- if $reag }}
+			if tt.name == "reaggregate_set" {
+				{{- range $name, $_ := .Metrics }}
+				assert.Empty(t, mb.metric{{ $name.Render }}.aggDataPoints)
+				{{- end }}
+			}
+			{{- end }}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -169,7 +219,107 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-					assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+          {{- if $reag }}
+          if tt.name != "reaggregate_set" {
+            assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+            validatedMetrics["{{ $name }}"] = true
+            assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+            assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- if len $metric.Unit}}
+            assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+            {{- else }}
+            assert.Empty(t, ms.At(i).Unit())
+            {{- end }}
+            {{- if $metric.Data.HasMonotonic }}
+            assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+            {{- end }}
+            {{- if $metric.Data.HasAggregated }}
+            assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+            {{- end }}
+            dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+            assert.Equal(t, start, dp.StartTimestamp())
+            assert.Equal(t, ts, dp.Timestamp())
+            assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+            {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+            assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+            {{- else }}
+            assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+            {{- end }}
+            {{- range $i, $attr := $metric.Attributes }}
+            {{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
+            attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.True(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+            {{- end }}
+            {{- end }}
+          } else {
+            assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+            validatedMetrics["{{ $name }}"] = true
+            assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+            assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+            assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+            {{- if len $metric.Unit}}
+            assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+            {{- else }}
+            assert.Empty(t, ms.At(i).Unit())
+            {{- end }}
+            {{- if $metric.Data.HasMonotonic }}
+            assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+            {{- end }}
+            {{- if $metric.Data.HasAggregated }}
+            assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+            {{- end }}
+            dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+            assert.Equal(t, start, dp.StartTimestamp())
+            assert.Equal(t, ts, dp.Timestamp())
+            assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+            switch aggMap["{{ $name }}"] {
+            case "sum":
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(4), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(4), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+            case "avg":
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(2), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+            case "min":
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+            case "max":
+              {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+              assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(3), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+              {{- else }}
+              assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(3), dp.{{ $metric.Data.MetricValueType }}Value())
+              {{- end }}
+            }
+            {{- range $i, $attr := $metric.Attributes }}
+            {{- if eq (attributeInfo $attr).RequirementLevel.String "Required" }}
+            _, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.True(t, ok)
+            {{- else if eq (attributeInfo $attr).RequirementLevel.String "Conditionally Required" }}
+            {{- else }}
+            _, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+            assert.False(t, ok)
+            {{- end }}
+            {{- end }}
+          }
+          {{- else }}
+          assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
@@ -207,6 +357,7 @@ func TestMetricsBuilder(t *testing.T) {
 					{{- end }}
 					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
 					{{- end }}
+          {{- end }}
 				{{- end }}
 				}
 			}

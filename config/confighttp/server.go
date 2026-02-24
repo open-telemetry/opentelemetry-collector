@@ -6,9 +6,11 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -22,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -32,10 +35,13 @@ const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
-	// Endpoint configures the listening address for the server.
-	Endpoint string `mapstructure:"endpoint,omitempty"`
+	// NetAddr holds configuration for the network listener.
+	//
+	// Transport defaults to "tcp" if unspecified, and only
+	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
-	// TLS struct exposes TLS client configuration.
+	// TLS struct exposes TLS server configuration.
 	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
@@ -101,7 +107,12 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
+	netAddr := confignet.NewDefaultAddrConfig()
+	// We typically want to create a TCP server and listen over a network.
+	netAddr.Transport = confignet.TransportTypeTCP
+
 	return ServerConfig{
+		NetAddr:           netAddr,
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -122,7 +133,7 @@ type AuthConfig struct {
 
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := net.Listen("tcp", sc.Endpoint)
+	listener, err := sc.NetAddr.Listen(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +179,11 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+//
+// To allow the configuration to reference middleware or authentication extensions,
+// the `extensions` argument should be the output of `host.GetExtensions()`.
+// It may also be `nil` in tests where no such extension is expected to be used.
+func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -183,8 +198,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	// Apply middlewares in reverse order so they execute in
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
+	if len(sc.Middlewares) > 0 && extensions == nil {
+		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
+	}
 	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -209,8 +227,12 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 	}
 
 	if sc.Auth.HasValue() {
+		if extensions == nil {
+			return nil, errors.New("authentication was configured but this component or its host does not support extensions")
+		}
+
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
+		server, err := auth.GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -245,13 +267,18 @@ func (sc *ServerConfig) ToServer(ctx context.Context, host component.Host, setti
 				//
 				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
 				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
-				//   ...
+				//
+				//   The {method} MUST be {http.request.method} if the method represents the original method known
+				//   to the instrumentation. In other cases (when {http.request.method} is set to _OTHER),
+				//   {method} MUST be HTTP.
+				//
 				//   Instrumentation MUST NOT default to using URI path as a {target}."
 				//
+				method := standardizeHTTPMethod(r.Method, "HTTP")
 				if r.Pattern != "" {
-					return r.Method + " " + r.Pattern
+					return method + " " + r.Pattern
 				}
-				return r.Method
+				return method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
@@ -356,4 +383,15 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// standardizeHTTPMethod returns an upper case HTTP method if well-known, otherwise unknown.
+// Based on https://github.com/open-telemetry/opentelemetry-go-contrib/blob/1530d71edc6d40d0659187d069081b639ef1b394/instrumentation/github.com/emicklei/go-restful/otelrestful/internal/semconv/util.go#L119
+func standardizeHTTPMethod(method, unknown string) string {
+	method = strings.ToUpper(method)
+	switch method {
+	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
+		return method
+	}
+	return unknown
 }

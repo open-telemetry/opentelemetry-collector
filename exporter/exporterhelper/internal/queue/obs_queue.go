@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 const (
@@ -74,6 +75,8 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		or.enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
 	case pipeline.SignalLogs:
 		or.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
+	case xpipeline.SignalProfiles:
+		or.enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
 	}
 
 	or.queueBatchSizeInst = tb.ExporterQueueBatchSendSize

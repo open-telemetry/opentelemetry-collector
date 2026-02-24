@@ -1,10 +1,20 @@
 # Sample metadata file with all available configurations for a receiver.
 
 type: sample
+display_name: Sample Receiver
+description: This receiver is used for testing purposes to check the output of mdatagen.
+reaggregation_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.37.0
+sem_conv_version: 1.38.0
+
+feature_gates:
+  - id: receiver.sample.featuregate.example
+    description: This is an example feature gate for testing mdatagen code generation.
+    stage: alpha
+    from_version: v0.100.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/12345
 
 status:
   disable_codecov_badge: true
@@ -113,6 +123,11 @@ attributes:
     description: Integer attribute with overridden name.
     type: int
 
+  required_string_attr:
+    description: A required attribute with a string value
+    type: string
+    requirement_level: required
+
   slice_attr:
     description: Attribute with a slice value.
     type: slice
@@ -161,8 +176,10 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
-    stability:
-      level: development
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: int
@@ -186,8 +203,10 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: s
     sum:
       value_type: double
@@ -199,8 +218,7 @@ metrics:
   metric.input_type:
     enabled: true
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -213,8 +231,10 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: "1"
     gauge:
       value_type: double
@@ -225,8 +245,10 @@ metrics:
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
     unit: ""
     gauge:
       value_type: double
@@ -234,10 +256,27 @@ metrics:
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
+  reaggregate.metric:
+    enabled: true
+    description: Metric for testing spatial reaggregation
+    unit: "1"
+    stability: beta
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+
+  reaggregate.metric.with_required:
+    enabled: true
+    description: Metric for testing spatial reaggregation with required attributes
+    unit: "1"
+    stability: beta
+    gauge:
+      value_type: double
+    attributes: [required_string_attr, string_attr, boolean_attr]
+
   system.cpu.time:
     enabled: true
-    stability:
-      level: beta
+    stability: beta
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     unit: s
@@ -246,15 +285,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.37.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
 
 telemetry:
   metrics:
     batch_size_trigger_send:
       enabled: true
-      stability:
-        level: deprecated
-        from: v0.110.0
+      stability: deprecated
+      deprecated:
+        since: "1.5.0"
+        note: "This metric will be removed in favor of batch_send_trigger_size"
       description: Number of times the batch was sent due to a size trigger
       unit: "{times}"
       sum:
@@ -262,8 +302,7 @@ telemetry:
         monotonic: true
     process_runtime_total_alloc_bytes:
       enabled: true
-      stability:
-        level: stable
+      stability: stable
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
       unit: By
       sum:
@@ -273,15 +312,13 @@ telemetry:
     queue_capacity:
       enabled: true
       description: Queue capacity - sync gauge example.
-      stability:
-        level: development
+      stability: development
       unit: "{items}"
       gauge:
         value_type: int
     queue_length:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
       unit: "{items}"
@@ -291,8 +328,7 @@ telemetry:
         value_type: int
     request_duration:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Duration of request
       unit: s
       histogram:

@@ -18,12 +18,16 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 func TestServerWithOtelHTTPOptions(t *testing.T) {
 	// prepare
 	sc := confighttp.ServerConfig{
-		Endpoint: "localhost:0",
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
 	}
 
 	telemetry := componenttest.NewNopTelemetrySettings()
@@ -32,7 +36,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 
 	srv, err := sc.ToServer(
 		context.Background(),
-		componenttest.NewNopHost(),
+		nil,
 		telemetry,
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithOtelHTTPOptions(

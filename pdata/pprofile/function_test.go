@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestFunctionEqual(t *testing.T) {
@@ -137,6 +139,29 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid name index 1"),
 		},
 		{
+			name: "with a name index equal to the source table length (boundary condition)",
+			function: func() Function {
+				fn := NewFunction()
+				fn.SetNameStrindex(2) // Index 2 with length 2 (indices 0,1 are valid)
+				return fn
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test") // Length 2: indices 0,1 valid
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantFunction: func() Function {
+				fn := NewFunction()
+				fn.SetNameStrindex(2)
+				return fn
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid name index 2"),
+		},
+		{
 			name: "with an existing system name",
 			function: func() Function {
 				fn := NewFunction()
@@ -184,6 +209,29 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid system name index 1"),
+		},
+		{
+			name: "with a system name index equal to the source table length (boundary condition)",
+			function: func() Function {
+				fn := NewFunction()
+				fn.SetSystemNameStrindex(2)
+				return fn
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantFunction: func() Function {
+				fn := NewFunction()
+				fn.SetSystemNameStrindex(2)
+				return fn
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid system name index 2"),
 		},
 		{
 			name: "with an existing filename",
@@ -234,6 +282,29 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid filename index 1"),
 		},
+		{
+			name: "with a filename index equal to the source table length (boundary condition)",
+			function: func() Function {
+				fn := NewFunction()
+				fn.SetFilenameStrindex(2)
+				return fn
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantFunction: func() Function {
+				fn := NewFunction()
+				fn.SetFilenameStrindex(2)
+				return fn
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid filename index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			fn := tt.function
@@ -249,6 +320,28 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantFunction, fn)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkFunctionSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	fn := NewFunction()
+	fn.SetNameStrindex(1)
+	fn.SetSystemNameStrindex(2)
+
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "test", "foo")
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.StringTable().Append("", "foo")
+		b.StartTimer()
+
+		_ = fn.switchDictionary(src, dst)
 	}
 }
 

@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestStackEqual(t *testing.T) {
@@ -178,6 +180,31 @@ func TestStackSwitchDictionary(t *testing.T) {
 
 			wantErr: errors.New("invalid location index 2"),
 		},
+		{
+			name: "with a location index equal to the source table length (boundary condition)",
+			stack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2) // Index 2 with length 2 (indices 0,1 are valid)
+				return s
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LocationTable().AppendEmpty() // Index 0
+				d.LocationTable().AppendEmpty() // Index 1
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantStack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(2)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+
+			wantErr: errors.New("invalid location index 2"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			stack := tt.stack
@@ -193,5 +220,29 @@ func TestStackSwitchDictionary(t *testing.T) {
 			assert.Equal(t, tt.wantStack, stack)
 			assert.Equal(t, tt.wantDictionary, dst)
 		})
+	}
+}
+
+func BenchmarkStackSwitchDictionary(b *testing.B) {
+	testutil.SkipMemoryBench(b)
+
+	s := NewStack()
+	s.LocationIndices().Append(1, 2)
+
+	src := NewProfilesDictionary()
+	src.LocationTable().AppendEmpty()
+	src.LocationTable().AppendEmpty().SetAddress(42)
+	src.LocationTable().AppendEmpty().SetAddress(43)
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		b.StopTimer()
+		dst := NewProfilesDictionary()
+		dst.LocationTable().AppendEmpty()
+		dst.LocationTable().AppendEmpty().SetAddress(43)
+		b.StartTimer()
+
+		_ = s.switchDictionary(src, dst)
 	}
 }

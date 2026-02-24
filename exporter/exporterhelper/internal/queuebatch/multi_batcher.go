@@ -111,19 +111,15 @@ func (mb *multiBatcher) getActivePartitionsCount() int64 {
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	mb.mu.Lock()
-	shards := make([]*partitionBatcher, 0, len(mb.shards))
-	for _, shard := range mb.shards {
-		shards = append(shards, shard.(*partitionBatcher))
-	}
-	mb.mu.Unlock()
+	defer mb.mu.Unlock()
 
 	var wg sync.WaitGroup
-	for _, shard := range shards {
+	for _, shard := range mb.shards {
 		wg.Add(1)
 		go func(s *partitionBatcher) {
 			defer wg.Done()
 			_ = s.Shutdown(ctx)
-		}(shard)
+		}(shard.(*partitionBatcher))
 	}
 	wg.Wait()
 	return nil

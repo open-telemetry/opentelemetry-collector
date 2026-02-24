@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -111,7 +113,8 @@ func createTestCases() []testCase {
 			name: "default config",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
-				c.QueueConfig.QueueSize = 10
+				c.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+				c.QueueConfig.Get().QueueSize = 10
 				return c
 			}(),
 		},
@@ -119,8 +122,21 @@ func createTestCases() []testCase {
 			name: "don't use internal logger",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.QueueConfig.QueueSize = 10
+				cfg.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+				cfg.QueueConfig.Get().QueueSize = 10
 				cfg.UseInternalLogger = false
+				return cfg
+			}(),
+		},
+		{
+			name: "custom output paths",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				queueCfg := exporterhelper.NewDefaultQueueConfig()
+				queueCfg.QueueSize = 10
+				cfg.QueueConfig = configoptional.Some(queueCfg)
+				cfg.UseInternalLogger = false
+				cfg.OutputPaths = []string{"stderr"}
 				return cfg
 			}(),
 		},

@@ -28,9 +28,12 @@ import (
 	"github.com/google/go-tpm/tpm2/transport/simulator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestTPM_loadCertificate(t *testing.T) {
+	testutil.SkipIfFIPSOnly(t, "use of CFB is not allowed in FIPS 140-only mode")
 	tpm, err := simulator.OpenSimulator()
 	require.NoError(t, err)
 	defer tpm.Close()
@@ -98,6 +101,7 @@ func TestTPM_loadCertificate_error(t *testing.T) {
 }
 
 func TestTPM_tpmCertificate_errors(t *testing.T) {
+	testutil.SkipIfFIPSOnly(t, "use of CFB is not allowed in FIPS 140-only mode")
 	tpm, err := simulator.OpenSimulator()
 	require.NoError(t, err)
 	defer tpm.Close()
