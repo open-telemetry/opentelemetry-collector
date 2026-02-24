@@ -6,17 +6,17 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	_ "embed"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 var (
 	//go:embed templates/message.go.tmpl
 	messageTemplateBytes []byte
-	messageTemplate      = template.Parse("message_internal_test.go", messageTemplateBytes)
+	messageTemplate      = tmplutil.Parse("message_internal_test.go", messageTemplateBytes)
 
 	//go:embed templates/message_test.go.tmpl
 	messageTestTemplateBytes []byte
-	messageTestTemplate      = template.Parse("message_internal_test.go", messageTestTemplateBytes)
+	messageTestTemplate      = tmplutil.Parse("message_internal_test.go", messageTestTemplateBytes)
 )
 
 type Message struct {
@@ -30,11 +30,11 @@ type Message struct {
 
 func (ms *Message) GenerateMessage(imports, testImports []string) []byte {
 	ms.metadata = newMetadata(ms)
-	return []byte(template.Execute(messageTemplate, ms.templateFields(imports, testImports)))
+	return []byte(tmplutil.Execute(messageTemplate, ms.templateFields(imports, testImports)))
 }
 
 func (ms *Message) GenerateMessageTests(imports, testImports []string) []byte {
-	return []byte(template.Execute(messageTestTemplate, ms.templateFields(imports, testImports)))
+	return []byte(tmplutil.Execute(messageTestTemplate, ms.templateFields(imports, testImports)))
 }
 
 func (ms *Message) GenerateMetadata() string {
@@ -55,7 +55,7 @@ func (ms *Message) templateFields(imports, testImports []string) map[string]any 
 	}
 }
 
-func (ms *Message) metadataSize() uint {
+func (ms *Message) metadataSize() int {
 	if ms.metadata == nil {
 		return 0
 	}
@@ -64,5 +64,5 @@ func (ms *Message) metadataSize() uint {
 		return 0
 	}
 
-	return uint(ms.metadata.OptionalFields[len(ms.metadata.OptionalFields)-1].Value/64 + 1)
+	return ms.metadata.OptionalFields[len(ms.metadata.OptionalFields)-1].Value/64 + 1
 }
