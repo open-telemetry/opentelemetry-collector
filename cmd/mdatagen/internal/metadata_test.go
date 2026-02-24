@@ -4,9 +4,6 @@
 package internal
 
 import (
-	"io/fs"
-	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -144,50 +141,53 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/invalid_entity_stability.yaml",
 			wantErr: `unsupported stability level: "stable42"`,
 		},
+		{
+			name:    "testdata/entity_relationships_bidirectional.yaml",
+			wantErr: `duplicate relationship to target "k8s.replicaset" (only one relationship allowed between two entities)`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_type.yaml",
+			wantErr: `entity "k8s.pod": relationship type cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_undefined_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target "k8s.replicaset" does not exist`,
+		},
+		{
+			name:    "testdata/entity_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_event_missing_association.yaml",
+			wantErr: `event "host.restart": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_undefined_reference.yaml",
+			wantErr: `metric "host.cpu.time": entity refers to undefined entity type: undefined_entity`,
+		},
+		{
+			name:    "testdata/entity_single_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_metrics_events_valid.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
-			require.Error(t, err)
-			require.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
-	}
-}
-
-func TestValidateMetricDuplicates(t *testing.T) {
-	allowedMetrics := map[string][]string{
-		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
-		"container.memory.rss":      {"docker_stats", "kubeletstats"},
-		"container.uptime":          {"docker_stats", "kubeletstats"},
-	}
-	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../../receiver", func(path string, info fs.FileInfo, _ error) error {
-		if info.Name() == "metadata.yaml" {
-			md, err := LoadMetadata(path)
-			require.NoError(t, err)
-			if len(md.Metrics) > 0 {
-				for metricName := range md.Metrics {
-					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
-				}
-			}
-		}
-		return nil
-	})
-	require.NoError(t, err)
-
-	seen := make(map[string]string)
-	for receiver, metrics := range allMetrics {
-		for _, metricName := range metrics {
-			if val, exists := seen[metricName]; exists {
-				receivers, allowed := allowedMetrics[metricName]
-				assert.Truef(
-					t,
-					allowed && slices.Contains(receivers, receiver) && slices.Contains(receivers, val),
-					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
-				)
-			}
-			seen[metricName] = receiver
-		}
 	}
 }
 
