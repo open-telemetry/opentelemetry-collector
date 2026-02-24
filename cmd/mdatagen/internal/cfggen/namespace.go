@@ -36,7 +36,7 @@ type Ref struct {
 	kind      RefKind
 }
 
-var localRefPattern = regexp.MustCompile("^((?:/|\\.\\.?/).*?)(?:\\.([^./]+))?$")
+var localRefPattern = regexp.MustCompile(`^((?:/|\.\..?/).*?)(?:\.([^./]+))?$`)
 
 func NewRef(refPath string) *Ref {
 	cleanPath, version, _ := strings.Cut(refPath, "@")

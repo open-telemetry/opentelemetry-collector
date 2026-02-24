@@ -24,7 +24,7 @@ func TestWriteJSONSchema(t *testing.T) {
 	err := WriteJSONSchema(dir, md)
 	require.NoError(t, err)
 
-	content, err := os.ReadFile(filepath.Join(dir, fileName))
+	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
 	require.NoError(t, err)
 	require.Contains(t, string(content), `"$schema"`)
 	require.Contains(t, string(content), `"endpoint"`)
