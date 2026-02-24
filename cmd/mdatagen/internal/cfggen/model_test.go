@@ -10,6 +10,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestConfigMetadata_ToJSON(t *testing.T) {
+	md := &ConfigMetadata{
+		Schema: schemaVersion,
+		Type:   "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Description: "The endpoint"},
+		},
+	}
+
+	data, err := md.ToJSON()
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"$schema"`)
+	assert.Contains(t, string(data), `"endpoint"`)
+	assert.Contains(t, string(data), `"The endpoint"`)
+}
+
 func TestConfigMetadata_Validate_Valid(t *testing.T) {
 	tests := []struct {
 		name string

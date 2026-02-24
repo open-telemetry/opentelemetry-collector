@@ -19,7 +19,7 @@ func TestLoader_Load_Cache(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
 
-	ref := *NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
 
 	// Pre-populate cache
 	expected := &ConfigMetadata{Title: "cached"}
@@ -101,7 +101,7 @@ type: string
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestLoader_LoadFromHTTP_NotFound(t *testing.T) {
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.ErrorIs(t, err, ErrNotFound)
@@ -140,7 +140,7 @@ func TestLoader_LoadFromHTTP_ServerError(t *testing.T) {
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.Error(t, err)
@@ -166,7 +166,7 @@ func TestLoader_TryLoad_WithVersion(t *testing.T) {
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	// Try to load with version
 	result, err := loader.tryLoad(ref, "v1.0.0")
@@ -186,7 +186,7 @@ func TestLoader_TryLoad_HTTPError(t *testing.T) {
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/nonexistent/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/nonexistent/path.config")
 
 	// tryLoad should return ErrNotFound
 	result, err := loader.tryLoad(ref, "v1.0.0")
@@ -222,7 +222,7 @@ func TestLoader_Load_CacheInteraction(t *testing.T) {
 
 	// Create a loader and manually populate its cache
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	expected := &ConfigMetadata{Title: "Pre-cached Schema"}
 	loader.cache[ref.CacheKey()] = expected
@@ -247,7 +247,7 @@ func TestLoader_TryLoad_InvalidYAML(t *testing.T) {
 
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
 	result, err := loader.tryLoad(ref, "main")
 	require.Error(t, err)
@@ -265,7 +265,7 @@ func TestLoader_Integration_MemoryCachePeristence(t *testing.T) {
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 
-	ref := *NewRef("go.opentelemetry.io/collector/test/path.config", "")
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 	expected := &ConfigMetadata{Title: "Integration Test"}
 
 	// Pre-populate cache

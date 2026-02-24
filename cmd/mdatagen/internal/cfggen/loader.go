@@ -69,7 +69,7 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
 
 	if ref.isLocal() {
 		var filePath string
-		if strings.HasPrefix(ref.path, "/") {
+		if strings.HasPrefix(ref.schemaID, "/") {
 			filePath = filepath.Join(repoRoot, ref.SchemaID(), schemaFileName)
 		} else {
 			filePath = filepath.Join(sl.cd, ref.SchemaID(), schemaFileName)

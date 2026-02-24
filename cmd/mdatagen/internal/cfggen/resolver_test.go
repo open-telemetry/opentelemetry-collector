@@ -80,7 +80,7 @@ func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 		},
 	}
 
-	// Should fail because the internal reference doesn't exist
+	// Should use "any" type because the internal reference doesn't exist
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 	require.Nil(t, result.Properties["config"].Type)
@@ -207,7 +207,7 @@ func TestResolver_LoadExternalRef_Success(t *testing.T) {
 		loader: ml,
 	}
 
-	ref := NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config", "")
+	ref := NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
 	result, err := resolver.loadExternalRef(ref)
 	require.NoError(t, err)
 	require.Equal(t, "object", result.Type)
@@ -223,7 +223,7 @@ func TestResolver_LoadExternalRef_InvalidPath(t *testing.T) {
 		loader: NewLoader(""),
 	}
 
-	ref := NewRef("invalid/path/without/namespace", "")
+	ref := NewRef("invalid/path/without/namespace")
 	result, err := resolver.loadExternalRef(ref)
 	require.Error(t, err)
 	require.Nil(t, result)
@@ -250,7 +250,7 @@ func TestResolver_LoadExternalRef_TypeNotFound(t *testing.T) {
 		loader: ml,
 	}
 
-	ref := NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config", "")
+	ref := NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
 	result, err := resolver.loadExternalRef(ref)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type \"controller_config\" not found")
@@ -292,7 +292,7 @@ func TestResolver_IsExternalRef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRef(tt.ref, "")
+			r := NewRef(tt.ref)
 			result := r.isExternal()
 			require.Equal(t, tt.expected, result)
 		})
@@ -741,4 +741,95 @@ func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
 	require.NotNil(t, tls)
 	require.Equal(t, "object", tls.Type)
 	require.Equal(t, "TLS settings", tls.Description)
+}
+
+func TestNewResolver(t *testing.T) {
+	dir := t.TempDir()
+	r := NewResolver("go.opentelemetry.io/collector/receiver/otlp", "receiver", "otlp", dir)
+	require.NotNil(t, r)
+	require.Equal(t, "go.opentelemetry.io/collector/receiver/otlp", r.pkgID)
+	require.Equal(t, "receiver", r.class)
+	require.Equal(t, "otlp", r.name)
+	require.NotNil(t, r.loader)
+}
+
+func TestResolver_ResolveSchema_UnknownNamespaceFallback(t *testing.T) {
+	// An external ref with an unsupported namespace should fall back to "any" type
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"custom": {
+				Ref: "github.com/example/custom.config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["custom"])
+	require.Equal(t, "github.com/example/custom.config", result.Properties["custom"].GoType)
+	require.Contains(t, result.Properties["custom"].Comment, "any")
+}
+
+func TestResolver_ResolveSchema_LoaderError(t *testing.T) {
+	ml := &mockLoader{schemas: map[string]*ConfigMetadata{}}
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"http": {
+				Ref: "go.opentelemetry.io/collector/config/confighttp.client_config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.Error(t, err)
+	require.Nil(t, result)
+}
+
+func TestResolver_ResolveSchema_ContentSchema(t *testing.T) {
+	// Test that ContentSchema (*ConfigMetadata pointer field) is recursively resolved
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"body": {
+				Type:             "string",
+				ContentMediaType: "application/json",
+				ContentSchema: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"name": {Type: "string"},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["body"])
+	require.NotNil(t, result.Properties["body"].ContentSchema)
+	require.Equal(t, "object", result.Properties["body"].ContentSchema.Type)
 }

@@ -40,7 +40,7 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 // Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
 func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	target := &ConfigMetadata{}
-	err := r.resolveSchema(src, src, target, "")
+	err := r.resolveSchema(src, src, target, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func transformDurationFormat(md *ConfigMetadata) {
 	}
 }
 
-func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin string) error {
+func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *Ref) error {
 	if current.Ref != "" {
 		resolved, err := r.resolveRef(root, current, origin)
 		if err != nil {
@@ -154,8 +154,8 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin s
 // resolveRef resolves a JSON Schema $ref, handling both internal and external references.
 // The origin parameter tracks which namespace the current schema was loaded from,
 // enabling local refs in remotely-fetched schemas to be converted to external refs.
-func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin string) (*ConfigMetadata, error) {
-	ref := NewRef(current.Ref, origin)
+func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*ConfigMetadata, error) {
+	ref := WithOrigin(current.Ref, origin)
 
 	if err := ref.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
@@ -194,10 +194,8 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
-	origin := ref.Origin()
-
 	resolved := &ConfigMetadata{}
-	if err := r.resolveSchema(md, md, resolved, origin); err != nil {
+	if err := r.resolveSchema(md, md, resolved, ref); err != nil {
 		return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
 	}
 

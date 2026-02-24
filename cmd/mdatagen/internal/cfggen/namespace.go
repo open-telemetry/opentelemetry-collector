@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"maps"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -20,93 +21,99 @@ var namespaceToURL = map[string]string{
 var supportedNamespaces = slices.Collect(maps.Keys(namespaceToURL))
 
 type Ref struct {
-	path string
+	namespace string
+	schemaID  string
+	defName   string
+	version   string
 }
 
-// NewRef creates a new Ref from a path string. If origin is non-empty (the module
-// path of the schema containing the ref, e.g. "go.opentelemetry.io/collector/config/confighttp"),
-// local refs are converted to fully qualified external refs:
-//   - "/config/configauth.config"       → namespace + path (absolute within namespace)
-//   - "./internal/metadata.config"      → origin + "/internal/metadata.config" (relative to schema)
-//   - "../configtls.config"             → parent(origin) + "/configtls.config" (parent-relative)
-func NewRef(refPath, origin string) *Ref {
-	if origin != "" {
-		// Split off inline version from origin (e.g. "mod/path@v1.2.0" → "mod/path", "v1.2.0")
-		originModule, originVersion, _ := strings.Cut(origin, "@")
+var localRefPattern = regexp.MustCompile("^((?:/|\\.\\.?/).*?)(?:\\.([^./]+))?$")
 
-		var resolved bool
-		switch {
-		case strings.HasPrefix(refPath, "/"):
-			if ns := namespaceOf(originModule); ns != "" {
-				refPath = path.Join(ns, refPath)
-				resolved = true
+func NewRef(refPath string) *Ref {
+	cleanPath, version, _ := strings.Cut(refPath, "@")
+	var namespace, schemaID, defName string
+
+	switch {
+	case localRefPattern.MatchString(refPath):
+		matches := localRefPattern.FindStringSubmatch(cleanPath)
+		schemaID = matches[1]
+		defName = matches[2]
+	case !strings.ContainsRune(cleanPath, '/'):
+		defName = cleanPath
+	default:
+		namespace = namespaceOf(refPath)
+		rest, _ := strings.CutPrefix(cleanPath, namespace)
+		schemaID, defName, _ = strings.Cut(rest, ".")
+		schemaID = strings.Trim(schemaID, "/")
+	}
+
+	return &Ref{
+		namespace, schemaID, defName, version,
+	}
+}
+
+func WithOrigin(refPath string, origin *Ref) *Ref {
+	ref := NewRef(refPath)
+	if origin != nil {
+		if ref.isExternal() {
+			// if both refs in the same namespace and ref has no inline version, inherit version from origin
+			if ref.namespace == origin.namespace && ref.version == "" {
+				ref.version = origin.version
 			}
-		case strings.HasPrefix(refPath, "./"), strings.HasPrefix(refPath, "../"):
-			refPath = path.Join(originModule, refPath)
-			resolved = true
-		}
-
-		if resolved && originVersion != "" {
-			refPath += "@" + originVersion
+		} else if origin.isExternal() {
+			ref.namespace = origin.namespace
+			ref.version = origin.version
+			if !strings.HasPrefix(ref.schemaID, "/") {
+				ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
+			} else {
+				ref.schemaID = strings.Trim(ref.schemaID, "/")
+			}
 		}
 	}
-	return &Ref{path: refPath}
+	return ref
 }
 
 func namespaceOf(path string) string {
-	for _, namespace := range supportedNamespaces {
-		if strings.HasPrefix(path, namespace) {
-			return namespace
-		}
+	if ns, ok := matchSupportedNamespace(path); ok {
+		return ns
+	}
+	if idx := strings.LastIndex(path, "/"); idx != -1 {
+		return path[:idx]
 	}
 	return ""
+}
+
+func matchSupportedNamespace(path string) (string, bool) {
+	for _, ns := range supportedNamespaces {
+		if strings.HasPrefix(path, ns) {
+			return ns, true
+		}
+	}
+	return "", false
 }
 
 func (r *Ref) Namespace() (string, bool) {
-	ns := namespaceOf(r.path)
-	return ns, ns != ""
+	_, ok := matchSupportedNamespace(r.namespace)
+	return r.namespace, ok
 }
 
 func (r *Ref) Module() string {
-	pathAndVersion := strings.Split(r.path, "@")[0]
-	moduleAndDef := strings.Split(pathAndVersion, ".")
-	return strings.Join(moduleAndDef[:len(moduleAndDef)-1], ".")
-}
-
-// Origin returns the module path with inline version (if any), suitable for
-// passing as origin to NewRef when resolving local refs inside this schema.
-func (r *Ref) Origin() string {
-	origin := r.Module()
-	if v := r.InlineVersion(); v != "" {
-		origin += "@" + v
+	if r.namespace != "" {
+		return r.namespace + "/" + r.schemaID
 	}
-	return origin
+	return ""
 }
 
 func (r *Ref) SchemaID() string {
-	module := r.Module()
-	namespace, ok := r.Namespace()
-	if ok {
-		return strings.TrimPrefix(module, namespace+"/")
-	}
-	return module
+	return r.schemaID
 }
 
 func (r *Ref) DefName() string {
-	if r.isInternal() {
-		return r.path
-	}
-	pathAndVersion := strings.Split(r.path, "@")
-	schemaAndDef := strings.Split(pathAndVersion[0], ".")
-	return schemaAndDef[len(schemaAndDef)-1]
+	return r.defName
 }
 
 func (r *Ref) InlineVersion() string {
-	pathAndVersion := strings.Split(r.path, "@")
-	if len(pathAndVersion) == 2 {
-		return pathAndVersion[1]
-	}
-	return ""
+	return r.version
 }
 
 func (r *Ref) URL(version string) (string, error) {
@@ -124,11 +131,11 @@ func (r *Ref) URL(version string) (string, error) {
 }
 
 func (r *Ref) isInternal() bool {
-	return !strings.ContainsRune(r.path, '/')
+	return r.schemaID == "" && r.namespace == ""
 }
 
 func (r *Ref) isLocal() bool {
-	return strings.HasPrefix(r.path, "./") || strings.HasPrefix(r.path, "../") || strings.HasPrefix(r.path, "/")
+	return localRefPattern.MatchString(r.schemaID)
 }
 
 func (r *Ref) isExternal() bool {
@@ -136,31 +143,50 @@ func (r *Ref) isExternal() bool {
 }
 
 func (r *Ref) Validate() error {
-	if r.path == "" {
+	if r.String() == "" {
 		return errors.New("empty path")
 	}
-	inlineVersion := r.InlineVersion()
-	if inlineVersion != "" {
-		if r.isInternal() || r.isLocal() {
-			return errors.New("inline version is not allowed for internal or local references")
+
+	if r.defName == "" {
+		return errors.New("missing definition name")
+	}
+	if r.isInternal() || r.isLocal() {
+		if r.version != "" {
+			return errors.New("version not allowed in internal/local reference")
 		}
-	}
-
-	if r.isInternal() && strings.Contains(r.path, ".") {
-		return errors.New("internal references should not contain '.' character")
-	}
-
-	if r.DefName() == "" {
-		return errors.New("reference must contain a definition part")
+		if r.isLocal() && r.schemaID == "" {
+			return errors.New("missing schema ID in local reference")
+		}
 	}
 
 	return nil
 }
 
-func (r *Ref) CacheKey() string {
-	return r.path
+func (r *Ref) String() string {
+	var sb strings.Builder
+	if r.namespace != "" {
+		sb.WriteString(r.namespace)
+	}
+	if r.schemaID != "" {
+		if sb.Len() > 0 {
+			sb.WriteRune('/')
+		}
+		sb.WriteString(r.schemaID)
+	}
+	if r.defName != "" {
+		if sb.Len() > 0 {
+			sb.WriteRune('.')
+		}
+		sb.WriteString(r.defName)
+	}
+	if r.version != "" {
+		sb.WriteRune('@')
+		sb.WriteString(r.version)
+	}
+
+	return sb.String()
 }
 
-func (r *Ref) String() string {
-	return r.path
+func (r *Ref) CacheKey() string {
+	return r.String()
 }
