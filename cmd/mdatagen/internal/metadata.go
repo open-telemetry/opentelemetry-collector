@@ -528,9 +528,12 @@ func (mvt ValueType) Primitive() string {
 
 type SemanticConvention struct {
 	SemanticConventionRef string `mapstructure:"ref"`
-	Package               string `mapstructure:"package"`
-	Type                  string `mapstructure:"type"`
-	UseSemconvValues      *bool  `mapstructure:"use_semconv_values"`
+	// Package is the inferred semconv Go package name (e.g. "systemconv").
+	// This field is computed from the metric name, not user-specified.
+	Package string
+	// Type is the inferred semconv Go type name (e.g. "CPUTime").
+	// This field is computed from the metric name, not user-specified.
+	Type string
 }
 
 type Warnings struct {
@@ -714,10 +717,7 @@ func (s *SemanticConvention) ShouldUseSemConvValues() bool {
 	if s == nil || s.Type == "" {
 		return false
 	}
-	if s.UseSemconvValues == nil {
-		return true
-	}
-	return *s.UseSemconvValues
+	return true
 }
 
 func (s *SemanticConvention) ImportPath(semConvVersion string) string {
@@ -728,22 +728,20 @@ func (s *SemanticConvention) ImportPath(semConvVersion string) string {
 }
 
 // inferSemConvTypes auto-populates Package and Type on any SemanticConvention
-// that has a ref URL but is missing Package/Type, by inferring them from the metric name.
+// that has a ref URL, by inferring them from the metric name.
 func (md *Metadata) inferSemConvTypes() {
 	for name, m := range md.Metrics {
 		sc := m.SemanticConvention
 		if sc == nil || sc.SemanticConventionRef == "" {
 			continue
 		}
-		if sc.Package == "" && sc.Type == "" {
-			pkg, typeName, err := InferSemConvFromMetricName(string(name))
-			if err != nil {
-				// If inference fails, leave them empty; validation will catch it.
-				continue
-			}
-			sc.Package = pkg
-			sc.Type = typeName
+		pkg, typeName, err := InferSemConvFromMetricName(string(name))
+		if err != nil {
+			// If inference fails, leave them empty; validation will catch it.
+			continue
 		}
+		sc.Package = pkg
+		sc.Type = typeName
 	}
 }
 

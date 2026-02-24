@@ -296,8 +296,6 @@ metrics:
     attributes: [cpu, state]
     semantic_convention:
       ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
-      package: systemconv
-      type: CPUTime
 
   system.memory.limit:
     enabled: true
@@ -308,7 +306,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    # package and type are intentionally omitted to test auto-inference from metric name
+    # package and type are auto-inferred from the metric name
     semantic_convention:
       ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit
 

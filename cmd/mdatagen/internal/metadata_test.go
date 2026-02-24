@@ -727,25 +727,6 @@ func TestInferSemConvTypes(t *testing.T) {
 			wantType: "DiskIO",
 		},
 		{
-			name:       "don't overwrite default values",
-			metricName: "system.memory.limit",
-			md: Metadata{
-				Metrics: map[MetricName]Metric{
-					"system.memory.limit": {
-						Signal: Signal{
-							SemanticConvention: &SemanticConvention{
-								SemanticConventionRef: "https://example.com",
-								Package:               "custom",
-								Type:                  "custom",
-							},
-						},
-					},
-				},
-			},
-			wantPkg:  "custom",
-			wantType: "custom",
-		},
-		{
 			name:       "no semantic convention doesn't do anything",
 			metricName: "default.metric",
 			md: Metadata{
@@ -872,9 +853,6 @@ func TestSemConvImports(t *testing.T) {
 }
 
 func TestShouldUseSemConvValues(t *testing.T) {
-	trueValue := true
-	falseValue := false
-
 	tests := []struct {
 		name string
 		sc   *SemanticConvention
@@ -891,19 +869,9 @@ func TestShouldUseSemConvValues(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "type set, UseSemconvValues nil (default true)",
+			name: "type set returns true",
 			sc:   &SemanticConvention{Type: "CPUTime"},
 			want: true,
-		},
-		{
-			name: "type set, UseSemconvValues true",
-			sc:   &SemanticConvention{Type: "CPUTime", UseSemconvValues: &trueValue},
-			want: true,
-		},
-		{
-			name: "type set, UseSemconvValues false",
-			sc:   &SemanticConvention{Type: "CPUTime", UseSemconvValues: &falseValue},
-			want: false,
 		},
 	}
 
