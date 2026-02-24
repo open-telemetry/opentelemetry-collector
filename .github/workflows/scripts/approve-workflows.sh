@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" || -z "${SENDER:-}" ]]; then
-    echo "PR_NUMBER, COMMENT, or SENDER not set"
+if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" || -z "${SENDER:-}" || -z "${ORG_TOKEN:-}" ]]; then
+    echo "PR_NUMBER, COMMENT, SENDER or ORG_TOKEN not set"
     exit 0
 fi
 
@@ -24,7 +24,7 @@ TEAMS=(
 
 IS_AUTHORIZED="false"
 for TEAM in "${TEAMS[@]}"; do
-    if gh api "orgs/open-telemetry/teams/${TEAM}/memberships/${SENDER}" --silent 2>/dev/null; then
+    if GH_TOKEN="${ORG_TOKEN}" gh api "orgs/open-telemetry/teams/${TEAM}/memberships/${SENDER}" --silent 2>/dev/null; then
         IS_AUTHORIZED="true"
         break
     fi
