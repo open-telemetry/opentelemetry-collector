@@ -211,7 +211,6 @@ func (sl *schemaLoader) repoRoot(componentDir string) (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	cmd.Dir = componentDir
 	output, err := cmd.Output()
-
 	if err != nil {
 		return "", fmt.Errorf("failed to determine repo root: %w", err)
 	}
