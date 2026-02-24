@@ -750,6 +750,8 @@ func TestLoadMetadata(t *testing.T) {
 							Stability:   component.StabilityLevelDevelopment,
 							SemanticConvention: &SemanticConvention{
 								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+								Package:               "systemconv",
+								Type:                  "DiskIOTime",
 							},
 						},
 						Unit: strPtr("s"),
