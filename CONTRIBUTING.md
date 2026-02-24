@@ -137,6 +137,16 @@ Example rerun comment:
 /rerun
 ```
 
+### Approving Workflows for Outside Contributors
+
+Members of the [approvers](./README.md#approvers) or [maintainers](./README.md#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## How to contribute
 
 ### Before you start
