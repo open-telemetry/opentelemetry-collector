@@ -35,6 +35,7 @@ type Loader interface {
 type schemaLoader struct {
 	cache      map[string]*ConfigMetadata
 	cd         string
+	rootDir    string
 	httpClient *http.Client
 }
 
@@ -62,7 +63,7 @@ func (sl *schemaLoader) Load(ref Ref) (*ConfigMetadata, error) {
 }
 
 func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
-	repoRoot, err := repoRoot(sl.cd)
+	repoRoot, err := sl.repoRoot(sl.cd)
 	if err != nil {
 		return nil, err
 	}
@@ -202,12 +203,19 @@ func (sl *schemaLoader) resolveModuleVersion(importPath string) string {
 	return pkg.Module.Version
 }
 
-func repoRoot(componentDir string) (string, error) {
+func (sl *schemaLoader) repoRoot(componentDir string) (string, error) {
+	if sl.rootDir != "" {
+		return sl.rootDir, nil
+	}
+
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	cmd.Dir = componentDir
 	output, err := cmd.Output()
+
 	if err != nil {
 		return "", fmt.Errorf("failed to determine repo root: %w", err)
 	}
-	return strings.TrimSpace(string(output)), nil
+	sl.rootDir = strings.TrimSpace(string(output))
+
+	return sl.rootDir, nil
 }
