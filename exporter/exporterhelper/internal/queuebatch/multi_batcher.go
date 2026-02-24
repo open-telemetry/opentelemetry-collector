@@ -6,6 +6,7 @@ import (
 	"context"
 	"sync"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,18 +16,14 @@ import (
 )
 
 type multiBatcher struct {
-	cfg                      BatchConfig
-	wp                       *workerPool
-	sizer                    request.Sizer
-	partitioner              Partitioner[request.Request]
-	mergeCtx                 func(context.Context, context.Context) context.Context
-	consumeFunc              sender.SendFunc[request.Request]
-	shards                   map[string]any
-	logger                   *zap.Logger
-	maxActivePartitionsCount int64
-	activePartitionsCount    int64
-	lruKeys                  *lru
-	mu                       sync.Mutex
+	cfg         BatchConfig
+	wp          *workerPool
+	sizer       request.Sizer
+	partitioner Partitioner[request.Request]
+	mergeCtx    func(context.Context, context.Context) context.Context
+	consumeFunc sender.SendFunc[request.Request]
+	partitions  *lru.Cache[string, *partitionBatcher]
+	logger      *zap.Logger
 }
 
 func newMultiBatcher(
@@ -38,60 +35,50 @@ func newMultiBatcher(
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
 ) *multiBatcher {
-	return &multiBatcher{
-		cfg:                      bCfg,
-		wp:                       wp,
-		sizer:                    sizer,
-		partitioner:              partitioner,
-		mergeCtx:                 mergeCtx,
-		consumeFunc:              next,
-		logger:                   logger,
-		maxActivePartitionsCount: int64(10000), // TODO: fix this by reading from config.
-		activePartitionsCount:    0,
-		lruKeys:                  newLRU(),
-		shards:                   make(map[string]any),
+	mb := &multiBatcher{
+		cfg:         bCfg,
+		wp:          wp,
+		sizer:       sizer,
+		partitioner: partitioner,
+		mergeCtx:    mergeCtx,
+		consumeFunc: next,
+		logger:      logger,
 	}
-}
 
-func (mb *multiBatcher) evictPartitionKey() {
-	key := mb.lruKeys.evictLRU()
-	if key == "" {
-		return
-	}
-	// remove the key from the map.
-	partition, ok := mb.shards[key]
-	if !ok {
-		return
-	}
-	mb.activePartitionsCount--
-	// flush partition on worker pool.
-	pb := partition.(*partitionBatcher)
-	mb.wp.execute(pb.flushCurrentBatchIfNecessary)
-	delete(mb.shards, key)
+	// Create LRU cache with eviction callback
+	// TODO: make maxActivePartitionsCount configurable
+	cache, _ := lru.NewWithEvict[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+		// Flush the partition when evicted
+		mb.wp.execute(pb.flushCurrentBatchIfNecessary)
+	})
+	mb.partitions = cache
+
+	return mb
 }
 
 func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
 	key := mb.partitioner.GetKey(ctx, req)
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
-	s, found := mb.shards[key]
-	// Fast path, shard already created.
-	if found {
-		mb.lruKeys.access(key)
-		return s.(*partitionBatcher)
+
+	// Fast path: partition already exists
+	if pb, ok := mb.partitions.Get(key); ok {
+		return pb
 	}
 
-	if mb.activePartitionsCount > mb.maxActivePartitionsCount {
-		// we need to evict a key.
-		mb.evictPartitionKey()
+	// Create new partition
+	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
+	_ = newPB.Start(ctx, nil)
+
+	// Atomic add - only adds if key doesn't exist
+	existed, _ := mb.partitions.ContainsOrAdd(key, newPB)
+	if existed {
+		// Another goroutine added it first - shut down our unused partition
+		_ = newPB.Shutdown(ctx)
+		// Return the one that was actually stored
+		pb, _ := mb.partitions.Get(key)
+		return pb
 	}
 
-	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
-	_ = newS.Start(ctx, nil)
-	mb.shards[key] = newS
-	mb.activePartitionsCount++
-	mb.lruKeys.access(key)
-	return newS
+	return newPB
 }
 
 func (mb *multiBatcher) Start(context.Context, component.Host) error {
@@ -104,22 +91,19 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 }
 
 func (mb *multiBatcher) getActivePartitionsCount() int64 {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
-	return mb.activePartitionsCount
+	return int64(mb.partitions.Len())
 }
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
-
 	var wg sync.WaitGroup
-	for _, shard := range mb.shards {
-		wg.Add(1)
-		go func(s *partitionBatcher) {
-			defer wg.Done()
-			_ = s.Shutdown(ctx)
-		}(shard.(*partitionBatcher))
+	for _, key := range mb.partitions.Keys() {
+		if pb, ok := mb.partitions.Peek(key); ok {
+			wg.Add(1)
+			go func(s *partitionBatcher) {
+				defer wg.Done()
+				_ = s.Shutdown(ctx)
+			}(pb)
+		}
 	}
 	wg.Wait()
 	return nil
