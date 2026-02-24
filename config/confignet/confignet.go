@@ -26,12 +26,13 @@ const (
 	TransportTypeUnix       TransportType = "unix"
 	TransportTypeUnixgram   TransportType = "unixgram"
 	TransportTypeUnixPacket TransportType = "unixpacket"
+	TransportTypeNpipe      TransportType = "npipe"
 	transportTypeEmpty      TransportType = ""
 )
 
 // UnmarshalText unmarshalls text to a TransportType.
 // Valid values are "tcp", "tcp4", "tcp6", "udp", "udp4",
-// "udp6", "ip", "ip4", "ip6", "unix", "unixgram" and "unixpacket"
+// "udp6", "ip", "ip4", "ip6", "unix", "unixgram", "unixpacket" and "npipe"
 func (tt *TransportType) UnmarshalText(in []byte) error {
 	typ := TransportType(in)
 	switch typ {
@@ -47,6 +48,7 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 		TransportTypeUnix,
 		TransportTypeUnixgram,
 		TransportTypeUnixPacket,
+		TransportTypeNpipe,
 		transportTypeEmpty:
 		*tt = typ
 		return nil
@@ -79,7 +81,8 @@ type AddrConfig struct {
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
-	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
+	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and
+	// "npipe" (Windows named pipes, Windows-only).
 	Transport TransportType `mapstructure:"transport,omitempty"`
 
 	// DialerConfig contains options for connecting to an address.
@@ -97,12 +100,18 @@ func NewDefaultAddrConfig() AddrConfig {
 
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
+	if na.Transport == TransportTypeNpipe {
+		return dialNpipe(ctx, na.Endpoint, na.DialerConfig.Timeout)
+	}
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
 	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
+	if na.Transport == TransportTypeNpipe {
+		return listenNpipe(na.Endpoint)
+	}
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
@@ -120,7 +129,8 @@ func (na *AddrConfig) Validate() error {
 		TransportTypeIP6,
 		TransportTypeUnix,
 		TransportTypeUnixgram,
-		TransportTypeUnixPacket:
+		TransportTypeUnixPacket,
+		TransportTypeNpipe:
 		return nil
 	default:
 		return fmt.Errorf("invalid transport type %q", na.Transport)
