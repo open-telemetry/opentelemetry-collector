@@ -11,26 +11,39 @@ jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver
+          - processor
+          - exporter
+          - extension
+          - connector
+          - pkg
+          - internal
+          - root
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: stable
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          cache: true
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@94b88560ad3ed11ed5e92a321518a47c35a1fed5 # v4.8.0
         with:
           mode: walltime
-          run: make for-all-target TARGET="timebenchmark"
-          cache-instruments: false
+          run: |
+            if [ "${{ matrix.group }}" == "root" ]; then
+              make for-all-target TARGET="timebenchmark" GOMODULES="$(pwd)"
+            else
+              MODULES=$(find ./${{ matrix.group }} -mindepth 1 -maxdepth 2 -type f -name "go.mod" -exec dirname {} \; 2>/dev/null | sort | tr '\n' ' ' || true)
+              if [ -z "$MODULES" ]; then
+                echo "No Go modules found in ${{ matrix.group }}, skipping."
+              else
+                make for-all-target TARGET="timebenchmark" GOMODULES="$MODULES"
+              fi
+            fi
+          cache-instruments: true
