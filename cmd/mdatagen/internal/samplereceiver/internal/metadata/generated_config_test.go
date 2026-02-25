@@ -65,7 +65,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []string{"cpu"},
+					},
+					SystemMemoryUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -122,7 +127,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []string{"cpu"},
+					},
+					SystemMemoryUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

@@ -24,7 +24,10 @@ all_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: true
+      attributes: ["state"]
   events:
     default.event:
       enabled: true
@@ -73,6 +76,9 @@ reaggregate_set:
       enabled: true
       attributes: ["required_string_attr"]
     system.cpu.time:
+      enabled: true
+      attributes: []
+    system.memory.usage:
       enabled: true
       attributes: []
   events:
@@ -124,7 +130,10 @@ none_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: false
+      attributes: ["state"]
   events:
     default.event:
       enabled: false

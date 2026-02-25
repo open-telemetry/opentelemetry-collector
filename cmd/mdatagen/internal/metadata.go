@@ -559,6 +559,8 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// RequirementLevel defines the requirement level of the attribute.
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
+	// The semantic convention reference of the attribute.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
