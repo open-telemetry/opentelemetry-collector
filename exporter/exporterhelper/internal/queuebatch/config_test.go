@@ -52,15 +52,15 @@ func TestConfig_Validate(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(cfg))
 }
 
-func TestConfig_Validate_MetadataKeys(t *testing.T) {
+func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 	t.Run("no duplicates - valid", func(t *testing.T) {
-		cfg := newTestConfig()
+		cfg := newTestBatchConfig()
 		cfg.MetadataKeys = []string{"key1", "key2", "key3"}
 		require.NoError(t, xconfmap.Validate(cfg))
 	})
 
 	t.Run("duplicate keys mixed case - invalid", func(t *testing.T) {
-		cfg := newTestConfig()
+		cfg := newTestBatchConfig()
 		cfg.MetadataKeys = []string{"Key1", "kEy1", "key2"}
 		err := xconfmap.Validate(cfg)
 		require.Error(t, err)
@@ -70,19 +70,19 @@ func TestConfig_Validate_MetadataKeys(t *testing.T) {
 	})
 
 	t.Run("empty metadata_keys - valid", func(t *testing.T) {
-		cfg := newTestConfig()
+		cfg := newTestBatchConfig()
 		cfg.MetadataKeys = []string{}
 		require.NoError(t, xconfmap.Validate(cfg))
 	})
 
 	t.Run("nil metadata_keys - valid", func(t *testing.T) {
-		cfg := newTestConfig()
+		cfg := newTestBatchConfig()
 		cfg.MetadataKeys = nil
 		require.NoError(t, xconfmap.Validate(cfg))
 	})
 
 	t.Run("multiple duplicates - reports first duplicate", func(t *testing.T) {
-		cfg := newTestConfig()
+		cfg := newTestBatchConfig()
 		cfg.MetadataKeys = []string{"key1", "key2", "key1", "key2"}
 		err := xconfmap.Validate(cfg)
 		require.Error(t, err)

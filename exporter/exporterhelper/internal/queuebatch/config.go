@@ -44,16 +44,6 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
-
-	// MetadataKeys is a list of client.Metadata keys that will be used to partition
-	// the data into batches. If this setting is empty, a single batcher instance
-	// will be used. When this setting is not empty, one batcher will be used per
-	// distinct combination of values for the listed metadata keys.
-	//
-	// Empty value and unset metadata are treated as distinct cases.
-	//
-	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
-	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -94,16 +84,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Validate metadata_keys for duplicates (case-insensitive)
-	uniq := map[string]bool{}
-	for _, k := range cfg.MetadataKeys {
-		l := strings.ToLower(k)
-		if _, has := uniq[l]; has {
-			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
-		}
-		uniq[l] = true
-	}
-
 	return nil
 }
 
@@ -122,6 +102,16 @@ type BatchConfig struct {
 
 	// MaxSize defines the configuration for the maximum size of a batch.
 	MaxSize int64 `mapstructure:"max_size"`
+
+	// MetadataKeys is a list of client.Metadata keys that will be used to partition
+	// the data into batches. If this setting is empty, a single batcher instance
+	// will be used. When this setting is not empty, one batcher will be used per
+	// distinct combination of values for the listed metadata keys.
+	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
+	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -148,6 +138,16 @@ func (cfg *BatchConfig) Validate() error {
 
 	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
 		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
+	}
+
+	// Validate metadata_keys for duplicates (case-insensitive)
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
+		}
+		uniq[l] = true
 	}
 
 	return nil
