@@ -1,4 +1,4 @@
-type: testreceiver
+type: receiver
 
 status:
   class: receiver
