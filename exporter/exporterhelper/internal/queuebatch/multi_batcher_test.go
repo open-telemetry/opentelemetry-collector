@@ -27,7 +27,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg,
+	ba, _ := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
@@ -83,7 +83,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg,
+	ba, _ := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {

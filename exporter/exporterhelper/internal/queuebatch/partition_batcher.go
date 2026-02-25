@@ -65,7 +65,7 @@ func (qb *partitionBatcher) resetTimer() {
 	if qb.timer != nil {
 		qb.timer.Stop()
 	}
-	qb.timer = time.AfterFunc(qb.cfg.FlushTimeout, qb.flushCurrentBatchIfNecessary)
+	qb.timer = time.AfterFunc(qb.cfg.FlushTimeout, qb.flushCurrentBatchIfNotEmpty)
 }
 
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
@@ -211,13 +211,13 @@ func (qb *partitionBatcher) Shutdown(context.Context) error {
 	qb.currentBatchMu.Unlock()
 
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNecessary()
+	qb.flushCurrentBatchIfNotEmpty()
 	qb.stopWG.Wait()
 	return nil
 }
 
-// flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
+// flushCurrentBatchIfNotEmpty sends out the current request batch if it is not nil
+func (qb *partitionBatcher) flushCurrentBatchIfNotEmpty() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()

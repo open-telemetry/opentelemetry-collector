@@ -34,7 +34,7 @@ func newMultiBatcher(
 	mergeCtx func(context.Context, context.Context) context.Context,
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
-) *multiBatcher {
+) (*multiBatcher, error) {
 	mb := &multiBatcher{
 		cfg:         bCfg,
 		wp:          wp,
@@ -47,13 +47,17 @@ func newMultiBatcher(
 
 	// Create LRU cache with eviction callback
 	// TODO: make maxActivePartitionsCount configurable
-	cache, _ := lru.NewWithEvict[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewWithEvict[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
-		mb.wp.execute(pb.flushCurrentBatchIfNecessary)
+		mb.wp.execute(pb.flushCurrentBatchIfNotEmpty)
 	})
 	mb.partitions = cache
 
-	return mb
+	if err != nil {
+		return nil, err
+	}
+
+	return mb, nil
 }
 
 func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
