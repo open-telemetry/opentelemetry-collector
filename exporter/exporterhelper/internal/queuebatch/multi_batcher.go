@@ -66,7 +66,6 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 
 	// Create new partition
 	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
-	_ = newPB.Start(ctx, nil)
 
 	// Atomic add - only adds if key doesn't exist
 	existed, _ := mb.partitions.ContainsOrAdd(key, newPB)
