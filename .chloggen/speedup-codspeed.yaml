@@ -1,5 +1,0 @@
-change_type: enhancement
-component: all
-note: Speed up CodSpeed benchmarks workflow via matrix sharding
-issues: [14636]
-change_logs: []
