@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
@@ -32,15 +32,15 @@ func (iss *primitiveSliceStruct) getPackageName() string {
 }
 
 func (iss *primitiveSliceStruct) generate(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(primitiveSliceTemplate, iss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(primitiveSliceTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) generateTests(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(primitiveSliceTestTemplate, iss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(primitiveSliceTestTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(primitiveSliceInternalTemplate, iss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(primitiveSliceInternalTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) getOriginName() string {
