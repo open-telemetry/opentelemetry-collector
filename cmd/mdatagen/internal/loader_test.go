@@ -677,6 +677,46 @@ func TestLoadMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
+			want: Metadata{
+				Type:                 "metricreceiver",
+				GeneratedPackageName: "metadata",
+				SemConvVersion:       "1.38.0",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
+				Metrics: map[MetricName]Metric{
+					"system.disk.io_time": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Time disk spent activated..",
+							Stability:   component.StabilityLevelDevelopment,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+							},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{ValueType: pmetric.NumberDataPointValueTypeDouble},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

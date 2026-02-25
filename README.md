@@ -189,6 +189,7 @@ the role of the [release manager](./docs/release.md#release-manager).
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues

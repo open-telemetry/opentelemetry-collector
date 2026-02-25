@@ -5,7 +5,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 
 import (
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 type baseSlice interface {
@@ -38,15 +38,15 @@ func (ss *messageSlice) getPackageName() string {
 }
 
 func (ss *messageSlice) generate(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(sliceTemplate, ss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(sliceTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *messageSlice) generateTests(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(sliceTestTemplate, ss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(sliceTestTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *messageSlice) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(sliceInternalTemplate, ss.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *messageSlice) templateFields(packageInfo *PackageInfo) map[string]any {
