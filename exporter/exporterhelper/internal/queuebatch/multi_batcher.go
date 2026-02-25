@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru/v2"
+	lru "github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,8 +22,9 @@ type multiBatcher struct {
 	partitioner Partitioner[request.Request]
 	mergeCtx    func(context.Context, context.Context) context.Context
 	consumeFunc sender.SendFunc[request.Request]
-	partitions  *lru.Cache[string, *partitionBatcher]
+	partitions  *lru.LRU[string, *partitionBatcher]
 	logger      *zap.Logger
+	lock        sync.Mutex
 }
 
 func newMultiBatcher(
@@ -47,7 +48,7 @@ func newMultiBatcher(
 
 	// Create LRU cache with eviction callback
 	// TODO: make maxActivePartitionsCount configurable
-	cache, err := lru.NewWithEvict[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.flushCurrentBatchIfNotEmpty)
 	})
@@ -64,23 +65,15 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	key := mb.partitioner.GetKey(ctx, req)
 
 	// Fast path: partition already exists
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	if pb, ok := mb.partitions.Get(key); ok {
 		return pb
 	}
 
 	// Create new partition
 	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
-
-	// Atomic add - only adds if key doesn't exist
-	existed, _ := mb.partitions.ContainsOrAdd(key, newPB)
-	if existed {
-		// Another goroutine added it first - shut down our unused partition
-		_ = newPB.Shutdown(ctx)
-		// Return the one that was actually stored
-		pb, _ := mb.partitions.Get(key)
-		return pb
-	}
-
+	_ = mb.partitions.Add(key, newPB)
 	return newPB
 }
 
@@ -94,11 +87,15 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 }
 
 func (mb *multiBatcher) getActivePartitionsCount() int64 {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	return int64(mb.partitions.Len())
 }
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	var wg sync.WaitGroup
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	for _, key := range mb.partitions.Keys() {
 		if pb, ok := mb.partitions.Peek(key); ok {
 			wg.Add(1)
@@ -109,5 +106,6 @@ func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 		}
 	}
 	wg.Wait()
+	mb.partitions.Purge()
 	return nil
 }
