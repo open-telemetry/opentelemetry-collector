@@ -4,18 +4,18 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/otelcol
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Ignore component aliases in the `otelcol components` command
+note: Fix semconv URL validation for metrics with underscores in their names
 
 # One or more tracking issues or pull requests related to the change
-issues: [14492]
+issues: [14583]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: "Metrics like `system.disk.io_time` now correctly validate against semantic convention URLs containing underscores in the anchor tag."
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

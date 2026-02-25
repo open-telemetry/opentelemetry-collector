@@ -229,11 +229,13 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 	}
 	batchToFlush := qb.currentBatch
 	qb.currentBatch = nil
+	// Reset timer while holding the lock to prevent data race with Consume() which
+	// also calls resetTimer() under the same lock.
+	qb.resetTimer()
 	qb.currentBatchMu.Unlock()
 
 	// flush() blocks until successfully started a goroutine for flushing.
 	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
-	qb.resetTimer()
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
