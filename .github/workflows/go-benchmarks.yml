@@ -31,19 +31,26 @@ jobs:
         with:
           go-version: stable
           cache: true
+          
+      - name: Calculate Modules
+        id: calc
+        run: |
+          if [ "${{ matrix.group }}" == "root" ]; then
+            echo "TARGET_MODULES=$(pwd)" >> $GITHUB_ENV
+          else
+            MODULES=$(find ./${{ matrix.group }} -mindepth 1 -maxdepth 2 -type f -name "go.mod" -exec dirname {} \; 2>/dev/null | sort | xargs echo -n || true)
+            if [ -z "$MODULES" ]; then
+              echo "SKIP_BENCH=true" >> $GITHUB_ENV
+              echo "No Go modules found in ${{ matrix.group }}, skipping this job."
+            else
+              echo "TARGET_MODULES=$MODULES" >> $GITHUB_ENV
+            fi
+          fi
+
       - name: Run the benchmarks
+        if: env.SKIP_BENCH != 'true'
         uses: CodSpeedHQ/action@94b88560ad3ed11ed5e92a321518a47c35a1fed5 # v4.8.0
         with:
           mode: walltime
-          run: |
-            if [ "${{ matrix.group }}" == "root" ]; then
-              make for-all-target TARGET="timebenchmark" GOMODULES="$(pwd)"
-            else
-              MODULES=$(find ./${{ matrix.group }} -mindepth 1 -maxdepth 2 -type f -name "go.mod" -exec dirname {} \; 2>/dev/null | sort | tr '\n' ' ' || true)
-              if [ -z "$MODULES" ]; then
-                echo "No Go modules found in ${{ matrix.group }}, skipping."
-              else
-                make for-all-target TARGET="timebenchmark" GOMODULES="$MODULES"
-              fi
-            fi
+          run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"
           cache-instruments: true
