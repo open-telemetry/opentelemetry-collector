@@ -52,12 +52,11 @@ func newMultiBatcher(
 		// Flush the partition when evicted
 		mb.wp.execute(pb.flushCurrentBatchIfNotEmpty)
 	})
-	mb.partitions = cache
-
 	if err != nil {
 		return nil, err
 	}
 
+	mb.partitions = cache
 	return mb, nil
 }
 
@@ -74,6 +73,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	// Create new partition
 	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
 	_ = mb.partitions.Add(key, newPB)
+	_ = newPB.Start(ctx, nil)
 	return newPB
 }
 
@@ -86,6 +86,7 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 	shard.Consume(ctx, req, done)
 }
 
+// getActivePartitionsCount is test only method
 func (mb *multiBatcher) getActivePartitionsCount() int64 {
 	mb.lock.Lock()
 	defer mb.lock.Unlock()
@@ -98,11 +99,9 @@ func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	defer mb.lock.Unlock()
 	for _, key := range mb.partitions.Keys() {
 		if pb, ok := mb.partitions.Peek(key); ok {
-			wg.Add(1)
-			go func(s *partitionBatcher) {
-				defer wg.Done()
-				_ = s.Shutdown(ctx)
-			}(pb)
+			wg.Go(func() {
+				_ = pb.Shutdown(ctx)
+			})
 		}
 	}
 	wg.Wait()

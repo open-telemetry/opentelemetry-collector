@@ -27,7 +27,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba, _ := newMultiBatcher(cfg,
+	ba, err := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
@@ -38,6 +38,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		zap.NewNop(),
 	)
 
+	require.NoError(t, err)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
@@ -83,7 +84,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba, _ := newMultiBatcher(cfg,
+	ba, err := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
@@ -94,6 +95,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		zap.NewNop(),
 	)
 
+	require.NoError(t, err)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
